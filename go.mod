@@ -6,7 +6,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/go-openapi/runtime v0.29.5
 	github.com/joho/godotenv v1.5.1
-	github.com/mark3labs/mcp-go v0.51.0
+	github.com/mark3labs/mcp-go v0.52.0
 	github.com/muesli/termenv v0.16.0
 	github.com/oapi-codegen/runtime v1.4.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
