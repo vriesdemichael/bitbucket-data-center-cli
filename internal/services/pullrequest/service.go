@@ -65,10 +65,11 @@ type Reviewer struct {
 }
 
 type CreateInput struct {
-	FromRef     string `json:"from_ref"`
-	ToRef       string `json:"to_ref"`
-	Title       string `json:"title"`
-	Description string `json:"description,omitempty"`
+	FromRef     string   `json:"from_ref"`
+	ToRef       string   `json:"to_ref"`
+	Title       string   `json:"title"`
+	Description string   `json:"description,omitempty"`
+	Reviewers   []string `json:"reviewers,omitempty"`
 }
 
 type UpdateInput struct {
@@ -880,6 +881,21 @@ func buildCreatePayload(input CreateInput) (map[string]any, error) {
 
 	if description := strings.TrimSpace(input.Description); description != "" {
 		payload["description"] = description
+	}
+
+	if len(input.Reviewers) > 0 {
+		reviewers := make([]map[string]any, 0, len(input.Reviewers))
+		for _, name := range input.Reviewers {
+			if n := strings.TrimSpace(name); n != "" {
+				reviewers = append(reviewers, map[string]any{
+					"user": map[string]any{"name": n},
+					"role": "REVIEWER",
+				})
+			}
+		}
+		if len(reviewers) > 0 {
+			payload["reviewers"] = reviewers
+		}
 	}
 
 	return payload, nil
