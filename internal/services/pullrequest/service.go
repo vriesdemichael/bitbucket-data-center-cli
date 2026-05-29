@@ -973,14 +973,20 @@ func (service *Service) updateReviewer(ctx context.Context, repository Repositor
 		return PullRequest{}, apperrors.New(apperrors.KindValidation, "reviewer username is required", nil)
 	}
 
-	path := fmt.Sprintf("%s/%s/participants/%s", pullRequestPath(repository), resolvedID, url.PathEscape(trimmedUsername))
-
 	var response pullRequestValue
 	if add {
-		if err := service.client.PutJSON(ctx, path, nil, map[string]any{}, &response); err != nil {
+		path := fmt.Sprintf("%s/%s/participants", pullRequestPath(repository), resolvedID)
+		payload := map[string]any{
+			"user": map[string]any{
+				"name": trimmedUsername,
+			},
+			"role": "REVIEWER",
+		}
+		if err := service.client.PostJSON(ctx, path, nil, payload, &response); err != nil {
 			return PullRequest{}, err
 		}
 	} else {
+		path := fmt.Sprintf("%s/%s/participants/%s", pullRequestPath(repository), resolvedID, url.PathEscape(trimmedUsername))
 		if err := service.client.DeleteJSON(ctx, path, nil, nil, &response); err != nil {
 			return PullRequest{}, err
 		}
