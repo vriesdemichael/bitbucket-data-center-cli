@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	mcpgo "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -73,6 +74,7 @@ func specCreatePullRequest() Spec {
 		mcpgo.WithString("to_ref", mcpgo.Description("Target branch name; defaults to repository default branch")),
 		mcpgo.WithString("title", mcpgo.Required(), mcpgo.Description("Pull request title")),
 		mcpgo.WithString("description", mcpgo.Description("Pull request description (optional)")),
+		mcpgo.WithString("reviewers", mcpgo.Description("Comma-separated reviewer usernames to add (e.g. alice,bob)")),
 	)
 	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
 		svc := pullrequestservice.NewService(c.HTTP)
@@ -88,6 +90,7 @@ func specCreatePullRequest() Spec {
 					ToRef:       req.GetString("to_ref", ""),
 					Title:       title,
 					Description: req.GetString("description", ""),
+					Reviewers:   parseCommaList(req.GetString("reviewers", "")),
 				},
 			)
 			if err != nil {
@@ -262,4 +265,21 @@ func specMergePullRequest() Spec {
 			return resultJSON(pr)
 		}
 	}}
+}
+
+func parseCommaList(s string) []string {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if trimmed := strings.TrimSpace(p); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }

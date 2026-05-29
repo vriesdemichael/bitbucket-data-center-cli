@@ -201,7 +201,7 @@ func TestPullRequestLifecycleReviewAndTaskOperations(t *testing.T) {
 			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"participants":[{"role":"REVIEWER","status":"APPROVED","approved":true,"user":{"name":"reviewer1"}}]}`)
 		case request.Method == http.MethodDelete && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/approve":
 			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"participants":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer1"}}]}`)
-		case request.Method == http.MethodPut && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/participants/reviewer2":
+		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/participants":
 			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"participants":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer2"}}]}`)
 		case request.Method == http.MethodDelete && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/participants/reviewer2":
 			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"participants":[]}`)
@@ -323,6 +323,49 @@ func TestPullRequestTaskAndUpdateValidation(t *testing.T) {
 	_, err = service.ListTasks(context.Background(), repo, "30", TaskListOptions{State: "bad"})
 	if err == nil || apperrors.ExitCode(err) != 2 {
 		t.Fatalf("expected task state validation error, got: %v", err)
+	}
+}
+
+func TestCreatePullRequestWithReviewers(t *testing.T) {
+	var receivedBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests" {
+			receivedBody = readBody(t, r)
+			_, _ = fmt.Fprint(w, `{"id":42,"title":"Feature","state":"OPEN","open":true,"closed":false,"fromRef":{"displayId":"feature/a"},"toRef":{"displayId":"main"},"reviewers":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"alice"}},{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"bob"}}]}`)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	service := NewService(httpclient.NewFromConfig(cfg))
+	created, err := service.Create(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CreateInput{
+		FromRef:   "feature/a",
+		ToRef:     "main",
+		Title:     "Feature",
+		Reviewers: []string{"alice", "bob"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if created.ID != 42 {
+		t.Fatalf("expected PR ID 42, got %d", created.ID)
+	}
+
+	// Verify the request body included reviewers
+	if !strings.Contains(receivedBody, `"reviewers"`) {
+		t.Fatal("expected request body to contain 'reviewers'")
+	}
+	if !strings.Contains(receivedBody, `"alice"`) || !strings.Contains(receivedBody, `"bob"`) {
+		t.Fatal("expected request body to contain reviewer names")
 	}
 }
 
@@ -709,6 +752,75 @@ func TestMapMergeabilityBranches(t *testing.T) {
 	}
 	if mapped.Blockers[0].Summary != "" || mapped.Blockers[0].Detail != "detail only blocker" {
 		t.Fatalf("expected detail-only blocker to be preserved, got %#v", mapped.Blockers[0])
+	}
+}
+
+func TestBuildCreatePayloadWithReviewers(t *testing.T) {
+	payload, err := buildCreatePayload(CreateInput{
+		FromRef:   "feature/my-work",
+		ToRef:     "main",
+		Title:     "My PR",
+		Reviewers: []string{"alice", "bob"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if payload["title"] != "My PR" {
+		t.Fatalf("expected title 'My PR', got %v", payload["title"])
+	}
+
+	reviewers, ok := payload["reviewers"].([]map[string]any)
+	if !ok {
+		t.Fatal("expected reviewers to be []map[string]any")
+	}
+	if len(reviewers) != 2 {
+		t.Fatalf("expected 2 reviewers, got %d", len(reviewers))
+	}
+
+	firstUser := reviewers[0]["user"].(map[string]any)
+	if firstUser["name"] != "alice" {
+		t.Fatalf("expected first reviewer 'alice', got %v", firstUser["name"])
+	}
+	if reviewers[0]["role"] != "REVIEWER" {
+		t.Fatalf("expected role 'REVIEWER', got %v", reviewers[0]["role"])
+	}
+
+	secondUser := reviewers[1]["user"].(map[string]any)
+	if secondUser["name"] != "bob" {
+		t.Fatalf("expected second reviewer 'bob', got %v", secondUser["name"])
+	}
+}
+
+func TestBuildCreatePayloadWithoutReviewers(t *testing.T) {
+	payload, err := buildCreatePayload(CreateInput{
+		FromRef: "feature/my-work",
+		ToRef:   "main",
+		Title:   "My PR",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, exists := payload["reviewers"]; exists {
+		t.Fatal("expected no reviewers key when none provided")
+	}
+}
+
+func TestBuildCreatePayloadWithBlankReviewers(t *testing.T) {
+	payload, err := buildCreatePayload(CreateInput{
+		FromRef:   "feature/my-work",
+		ToRef:     "main",
+		Title:     "My PR",
+		Reviewers: []string{"alice", "", "  ", "bob"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	reviewers := payload["reviewers"].([]map[string]any)
+	if len(reviewers) != 2 {
+		t.Fatalf("expected 2 reviewers (blank entries skipped), got %d", len(reviewers))
 	}
 }
 

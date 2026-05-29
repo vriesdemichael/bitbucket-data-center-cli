@@ -65,10 +65,11 @@ type Reviewer struct {
 }
 
 type CreateInput struct {
-	FromRef     string `json:"from_ref"`
-	ToRef       string `json:"to_ref"`
-	Title       string `json:"title"`
-	Description string `json:"description,omitempty"`
+	FromRef     string   `json:"from_ref"`
+	ToRef       string   `json:"to_ref"`
+	Title       string   `json:"title"`
+	Description string   `json:"description,omitempty"`
+	Reviewers   []string `json:"reviewers,omitempty"`
 }
 
 type UpdateInput struct {
@@ -882,6 +883,21 @@ func buildCreatePayload(input CreateInput) (map[string]any, error) {
 		payload["description"] = description
 	}
 
+	if len(input.Reviewers) > 0 {
+		reviewers := make([]map[string]any, 0, len(input.Reviewers))
+		for _, name := range input.Reviewers {
+			if n := strings.TrimSpace(name); n != "" {
+				reviewers = append(reviewers, map[string]any{
+					"user": map[string]any{"name": n},
+					"role": "REVIEWER",
+				})
+			}
+		}
+		if len(reviewers) > 0 {
+			payload["reviewers"] = reviewers
+		}
+	}
+
 	return payload, nil
 }
 
@@ -954,14 +970,20 @@ func (service *Service) updateReviewer(ctx context.Context, repository Repositor
 		return PullRequest{}, apperrors.New(apperrors.KindValidation, "reviewer username is required", nil)
 	}
 
-	path := fmt.Sprintf("%s/%s/participants/%s", pullRequestPath(repository), resolvedID, url.PathEscape(trimmedUsername))
-
 	var response pullRequestValue
 	if add {
-		if err := service.client.PutJSON(ctx, path, nil, map[string]any{}, &response); err != nil {
+		path := fmt.Sprintf("%s/%s/participants", pullRequestPath(repository), resolvedID)
+		payload := map[string]any{
+			"user": map[string]any{
+				"name": trimmedUsername,
+			},
+			"role": "REVIEWER",
+		}
+		if err := service.client.PostJSON(ctx, path, nil, payload, &response); err != nil {
 			return PullRequest{}, err
 		}
 	} else {
+		path := fmt.Sprintf("%s/%s/participants/%s", pullRequestPath(repository), resolvedID, url.PathEscape(trimmedUsername))
 		if err := service.client.DeleteJSON(ctx, path, nil, nil, &response); err != nil {
 			return PullRequest{}, err
 		}
