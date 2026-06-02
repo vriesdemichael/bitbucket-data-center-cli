@@ -69,7 +69,10 @@ type CreateInput struct {
 	ToRef       string   `json:"to_ref"`
 	Title       string   `json:"title"`
 	Description string   `json:"description,omitempty"`
-	Reviewers   []string `json:"reviewers,omitempty"`
+	// Reviewers lists usernames to add as PR reviewers on creation. Blank and
+	// whitespace-only entries are ignored; an empty result omits reviewers from
+	// the request payload.
+	Reviewers []string `json:"reviewers,omitempty"`
 }
 
 type UpdateInput struct {

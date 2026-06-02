@@ -267,6 +267,10 @@ func specMergePullRequest() Spec {
 	}}
 }
 
+// parseCommaList splits a comma-separated string into trimmed, non-empty
+// values, returning nil when the input yields no usable entries. MCP tool
+// arguments arrive as single strings, so this adapts them to the []string
+// inputs the service layer expects (e.g. "alice, bob" -> ["alice", "bob"]).
 func parseCommaList(s string) []string {
 	if s == "" {
 		return nil

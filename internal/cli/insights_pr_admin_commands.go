@@ -529,10 +529,14 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	var createToRef string
 	var createTitle string
 	var createDescription string
-	var createReviewers string
+	var createReviewers []string
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a pull request",
+		Example: "  # Create a pull request\n" +
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\"\n\n" +
+			"  # Create a pull request and assign reviewers (repeatable or comma-separated)\n" +
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --reviewers alice,bob",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := loadConfigAndClient()
 			if err != nil {
@@ -578,7 +582,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 					Capability:   capabilityFull,
 					Items: []dryRunItem{{
 						Intent:          "pr.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "from_ref": createFromRef, "to_ref": createToRef, "title": createTitle, "reviewers": parseCLICommaList(createReviewers)},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "from_ref": createFromRef, "to_ref": createToRef, "title": createTitle, "reviewers": createReviewers},
 						Action:          "create",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -608,7 +612,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				ToRef:       createToRef,
 				Title:       createTitle,
 				Description: createDescription,
-				Reviewers:   parseCLICommaList(createReviewers),
+				Reviewers:   createReviewers,
 			})
 			if err != nil {
 				return err
@@ -626,7 +630,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	createCmd.Flags().StringVar(&createToRef, "to-ref", "", "Target branch (name or refs/heads/name)")
 	createCmd.Flags().StringVar(&createTitle, "title", "", "Pull request title")
 	createCmd.Flags().StringVar(&createDescription, "description", "", "Pull request description")
-	createCmd.Flags().StringVar(&createReviewers, "reviewers", "", "Reviewer usernames to add (comma-separated, e.g. --reviewers alice,bob)")
+	createCmd.Flags().StringSliceVar(&createReviewers, "reviewers", nil, "Reviewer usernames to add (repeatable or comma-separated, e.g. --reviewers alice,bob)")
 	_ = createCmd.MarkFlagRequired("from-ref")
 	_ = createCmd.MarkFlagRequired("to-ref")
 	_ = createCmd.MarkFlagRequired("title")
@@ -1844,21 +1848,4 @@ func taskUpdateEquivalent(task pullrequestservice.Task, text string, resolved *b
 	}
 
 	return true
-}
-
-func parseCLICommaList(s string) []string {
-	if s == "" {
-		return nil
-	}
-	parts := strings.Split(s, ",")
-	result := make([]string, 0, len(parts))
-	for _, p := range parts {
-		if trimmed := strings.TrimSpace(p); trimmed != "" {
-			result = append(result, trimmed)
-		}
-	}
-	if len(result) == 0 {
-		return nil
-	}
-	return result
 }

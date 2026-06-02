@@ -2592,9 +2592,17 @@ Create a pull request
 Usage:
   bb pr create [flags]
 
+Examples:
+  # Create a pull request
+  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change"
+
+  # Create a pull request and assign reviewers (repeatable or comma-separated)
+  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --reviewers alice,bob
+
 Flags:
       --description string   Pull request description
       --from-ref string      Source branch (name or refs/heads/name)
+      --reviewers strings    Reviewer usernames to add (repeatable or comma-separated, e.g. --reviewers alice,bob)
       --title string         Pull request title
       --to-ref string        Target branch (name or refs/heads/name)
 
