@@ -1,0 +1,61 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.auth.login.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb auth login --json`. Data describes the stored credential result.",
+  "properties": {
+    "data": {
+      "additionalProperties": false,
+      "properties": {
+        "aliases": {
+          "description": "Discovered or configured host aliases stored for this server context.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "auth_mode": {
+          "description": "Stored authentication mode (token or basic).",
+          "type": "string"
+        },
+        "host": {
+          "description": "The Bitbucket Server host that credentials were stored for.",
+          "type": "string"
+        },
+        "used_insecure_storage": {
+          "description": "True when the system keyring was unavailable and the config fallback was used.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "host",
+        "aliases",
+        "auth_mode",
+        "used_insecure_storage"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb auth login output",
+  "type": "object"
+}

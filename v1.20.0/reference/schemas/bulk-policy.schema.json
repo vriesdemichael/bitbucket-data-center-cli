@@ -1,0 +1,503 @@
+{
+  "$defs": {
+    "ApplySummary": {
+      "additionalProperties": false,
+      "properties": {
+        "failedOperations": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "failedTargets": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "operationCount": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "skippedOperations": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "successfulOperations": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "successfulTargets": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "targetCount": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "targetCount",
+        "operationCount",
+        "successfulTargets",
+        "failedTargets",
+        "successfulOperations",
+        "failedOperations",
+        "skippedOperations"
+      ],
+      "type": "object"
+    },
+    "BuildRequiredCreateOperation": {
+      "additionalProperties": false,
+      "properties": {
+        "payload": {
+          "$ref": "#/$defs/RequiredBuildPayload"
+        },
+        "type": {
+          "const": "build.required.create"
+        }
+      },
+      "required": [
+        "type",
+        "payload"
+      ],
+      "type": "object"
+    },
+    "Operation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/RepoPermissionUserGrantOperation"
+        },
+        {
+          "$ref": "#/$defs/RepoPermissionGroupGrantOperation"
+        },
+        {
+          "$ref": "#/$defs/RepoWebhookCreateOperation"
+        },
+        {
+          "$ref": "#/$defs/RepoPullRequestAllTasksOperation"
+        },
+        {
+          "$ref": "#/$defs/RepoPullRequestApproversOperation"
+        },
+        {
+          "$ref": "#/$defs/BuildRequiredCreateOperation"
+        }
+      ]
+    },
+    "OperationResult": {
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "errorKind": {
+          "enum": [
+            "authentication",
+            "authorization",
+            "validation",
+            "not_found",
+            "conflict",
+            "transient",
+            "permanent",
+            "not_implemented",
+            "internal"
+          ],
+          "type": "string"
+        },
+        "output": {},
+        "status": {
+          "enum": [
+            "success",
+            "failed",
+            "skipped"
+          ],
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "repo.permission.user.grant",
+            "repo.permission.group.grant",
+            "repo.webhook.create",
+            "repo.pull-request-settings.required-all-tasks-complete",
+            "repo.pull-request-settings.required-approvers-count",
+            "build.required.create"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "status"
+      ],
+      "type": "object"
+    },
+    "PlanSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "operationCount": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "targetCount": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "targetCount",
+        "operationCount"
+      ],
+      "type": "object"
+    },
+    "Policy": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "const": "bb.io/v1alpha1"
+        },
+        "operations": {
+          "items": {
+            "$ref": "#/$defs/Operation"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "selector": {
+          "$ref": "#/$defs/Selector"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "selector",
+        "operations"
+      ],
+      "type": "object"
+    },
+    "RefMatcher": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "RepoPermissionGroupGrantOperation": {
+      "additionalProperties": false,
+      "properties": {
+        "group": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "permission": {
+          "enum": [
+            "REPO_READ",
+            "REPO_WRITE",
+            "REPO_ADMIN"
+          ],
+          "type": "string"
+        },
+        "type": {
+          "const": "repo.permission.group.grant"
+        }
+      },
+      "required": [
+        "type",
+        "group",
+        "permission"
+      ],
+      "type": "object"
+    },
+    "RepoPermissionUserGrantOperation": {
+      "additionalProperties": false,
+      "properties": {
+        "permission": {
+          "enum": [
+            "REPO_READ",
+            "REPO_WRITE",
+            "REPO_ADMIN"
+          ],
+          "type": "string"
+        },
+        "type": {
+          "const": "repo.permission.user.grant"
+        },
+        "username": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "username",
+        "permission"
+      ],
+      "type": "object"
+    },
+    "RepoPullRequestAllTasksOperation": {
+      "additionalProperties": false,
+      "properties": {
+        "requiredAllTasksComplete": {
+          "type": "boolean"
+        },
+        "type": {
+          "const": "repo.pull-request-settings.required-all-tasks-complete"
+        }
+      },
+      "required": [
+        "type",
+        "requiredAllTasksComplete"
+      ],
+      "type": "object"
+    },
+    "RepoPullRequestApproversOperation": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "type": {
+          "const": "repo.pull-request-settings.required-approvers-count"
+        }
+      },
+      "required": [
+        "type",
+        "count"
+      ],
+      "type": "object"
+    },
+    "RepoWebhookCreateOperation": {
+      "additionalProperties": false,
+      "properties": {
+        "active": {
+          "default": true,
+          "type": "boolean"
+        },
+        "events": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "name": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "type": {
+          "const": "repo.webhook.create"
+        },
+        "url": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "url"
+      ],
+      "type": "object"
+    },
+    "RepositoryTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "projectKey": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "slug": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectKey",
+        "slug"
+      ],
+      "type": "object"
+    },
+    "RequiredBuildPayload": {
+      "additionalProperties": true,
+      "properties": {
+        "buildParentKeys": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "exemptRefMatcher": {
+          "$ref": "#/$defs/RefMatcher"
+        },
+        "refMatcher": {
+          "$ref": "#/$defs/RefMatcher"
+        }
+      },
+      "required": [
+        "buildParentKeys",
+        "refMatcher"
+      ],
+      "type": "object"
+    },
+    "Selector": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "required": [
+                "projectKey"
+              ]
+            },
+            {
+              "required": [
+                "repoPattern"
+              ]
+            },
+            {
+              "required": [
+                "repositories"
+              ]
+            }
+          ]
+        },
+        {
+          "if": {
+            "required": [
+              "repoPattern"
+            ]
+          },
+          "then": {
+            "required": [
+              "projectKey"
+            ]
+          }
+        }
+      ],
+      "properties": {
+        "projectKey": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "repoPattern": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "repositories": {
+          "items": {
+            "minLength": 1,
+            "pattern": "^[^/\\s]+(?:/[^/\\s]+)?$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "type": "object"
+    },
+    "TargetPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "operations": {
+          "items": {
+            "$ref": "#/$defs/Operation"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "repository": {
+          "$ref": "#/$defs/RepositoryTarget"
+        },
+        "validation": {
+          "$ref": "#/$defs/ValidationResult"
+        }
+      },
+      "required": [
+        "repository",
+        "validation",
+        "operations"
+      ],
+      "type": "object"
+    },
+    "TargetResult": {
+      "additionalProperties": false,
+      "properties": {
+        "operations": {
+          "items": {
+            "$ref": "#/$defs/OperationResult"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "repository": {
+          "$ref": "#/$defs/RepositoryTarget"
+        },
+        "status": {
+          "enum": [
+            "success",
+            "failed"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository",
+        "status",
+        "operations"
+      ],
+      "type": "object"
+    },
+    "ValidationResult": {
+      "additionalProperties": false,
+      "properties": {
+        "errors": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "valid": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "valid",
+        "errors"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/vriesdemichael/bitbucket-server-cli/docs/reference/schemas/bulk-policy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Schema for multi-repository bulk policy files. JSON Schema can validate equivalent YAML documents.",
+  "properties": {
+    "apiVersion": {
+      "const": "bb.io/v1alpha1"
+    },
+    "operations": {
+      "items": {
+        "$ref": "#/$defs/Operation"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "selector": {
+      "$ref": "#/$defs/Selector"
+    }
+  },
+  "required": [
+    "apiVersion",
+    "selector",
+    "operations"
+  ],
+  "title": "BBSC Bulk Policy",
+  "type": "object"
+}

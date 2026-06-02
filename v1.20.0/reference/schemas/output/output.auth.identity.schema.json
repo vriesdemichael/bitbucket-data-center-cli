@@ -1,0 +1,71 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.auth.identity.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb auth identity --json` (alias: bb auth whoami). Data contains the authenticated user identity.",
+  "properties": {
+    "data": {
+      "additionalProperties": false,
+      "properties": {
+        "bitbucket_url": {
+          "description": "Bitbucket Server base URL used for the identity lookup.",
+          "type": "string"
+        },
+        "user": {
+          "additionalProperties": true,
+          "properties": {
+            "active": {
+              "type": "boolean"
+            },
+            "display_name": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "name": {
+              "type": "string"
+            },
+            "slug": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "bitbucket_url",
+        "user"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb auth identity output",
+  "type": "object"
+}
