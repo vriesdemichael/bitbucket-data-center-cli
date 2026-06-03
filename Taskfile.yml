@@ -212,6 +212,21 @@ tasks:
     cmds:
       - go run ./tools/quality-report -report-file docs/quality/coverage-report.json -raw-coverprofile-file docs/quality/coverage.combined.raw.out -scoped-coverprofile-file docs/quality/coverage.combined.scoped.out -verify-committed -min-global-combined {{.COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.COVERAGE_MIN_PATCH}} -min-patch-lines {{.COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.COVERAGE_MIN_CONTRACT}}
 
+  quality:spec-coverage:
+    desc: Print OpenAPI spec path coverage across both transports (generated client + raw httpclient)
+    cmds:
+      - go run ./tools/quality-report -spec-coverage
+
+  quality:spec-coverage:update:
+    desc: Update committed OpenAPI spec coverage artifact (CI-safe, no live execution)
+    cmds:
+      - go run ./tools/quality-report -spec-coverage -write-report -spec-coverage-file docs/quality/spec-coverage.json
+
+  quality:spec-coverage:verify:
+    desc: Verify committed OpenAPI spec coverage artifact is current (CI-safe, no live execution)
+    cmds:
+      - go run ./tools/quality-report -spec-coverage -verify-report -spec-coverage-file docs/quality/spec-coverage.json
+
   test:unit:
     desc: Run Go unit tests
     cmd: go test ./cmd/... ./internal/... ./tools/...

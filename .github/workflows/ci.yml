@@ -82,6 +82,9 @@ jobs:
       - name: Run Go tests (targeted non-live package scope)
         run: task test:go:safe
 
+      - name: Verify OpenAPI spec coverage artifact is current
+        run: task quality:spec-coverage:verify
+
   docs-site:
     name: Docs Site
     runs-on: ubuntu-latest

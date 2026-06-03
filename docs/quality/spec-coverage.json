@@ -1,0 +1,2695 @@
+{
+  "version": 1,
+  "spec": "docs/reference/atlassian/bitbucket-9.4-openapi.json",
+  "covered": 112,
+  "total": 546,
+  "coverage_percent": 20.51282051282051,
+  "by_tag": [
+    {
+      "tag": "",
+      "covered": 0,
+      "total": 2
+    },
+    {
+      "tag": "Authentication",
+      "covered": 0,
+      "total": 64
+    },
+    {
+      "tag": "Builds and Deployments",
+      "covered": 12,
+      "total": 21
+    },
+    {
+      "tag": "Capabilities",
+      "covered": 0,
+      "total": 2
+    },
+    {
+      "tag": "Dashboard",
+      "covered": 1,
+      "total": 2
+    },
+    {
+      "tag": "Deprecated",
+      "covered": 5,
+      "total": 10
+    },
+    {
+      "tag": "Jira Integration",
+      "covered": 0,
+      "total": 4
+    },
+    {
+      "tag": "Markup",
+      "covered": 0,
+      "total": 1
+    },
+    {
+      "tag": "Mirroring (Mirror)",
+      "covered": 0,
+      "total": 21
+    },
+    {
+      "tag": "Mirroring (Upstream)",
+      "covered": 0,
+      "total": 21
+    },
+    {
+      "tag": "Permission Management",
+      "covered": 6,
+      "total": 39
+    },
+    {
+      "tag": "Project",
+      "covered": 22,
+      "total": 73
+    },
+    {
+      "tag": "Pull Requests",
+      "covered": 30,
+      "total": 69
+    },
+    {
+      "tag": "Repository",
+      "covered": 36,
+      "total": 96
+    },
+    {
+      "tag": "Security",
+      "covered": 0,
+      "total": 42
+    },
+    {
+      "tag": "System Maintenance",
+      "covered": 0,
+      "total": 79
+    }
+  ],
+  "gaps": [
+    {
+      "method": "GET",
+      "path": "/access-tokens/latest/projects/{projectKey}",
+      "tag": "Authentication",
+      "summary": "Get project HTTP tokens"
+    },
+    {
+      "method": "PUT",
+      "path": "/access-tokens/latest/projects/{projectKey}",
+      "tag": "Authentication",
+      "summary": "Create project HTTP token"
+    },
+    {
+      "method": "GET",
+      "path": "/access-tokens/latest/projects/{projectKey}/repos/{repositorySlug}",
+      "tag": "Authentication",
+      "summary": "Get repository HTTP tokens"
+    },
+    {
+      "method": "PUT",
+      "path": "/access-tokens/latest/projects/{projectKey}/repos/{repositorySlug}",
+      "tag": "Authentication",
+      "summary": "Create repository HTTP token"
+    },
+    {
+      "method": "DELETE",
+      "path": "/access-tokens/latest/projects/{projectKey}/repos/{repositorySlug}/{tokenId}",
+      "tag": "Authentication",
+      "summary": "Delete a HTTP token"
+    },
+    {
+      "method": "GET",
+      "path": "/access-tokens/latest/projects/{projectKey}/repos/{repositorySlug}/{tokenId}",
+      "tag": "Authentication",
+      "summary": "Get HTTP token by ID"
+    },
+    {
+      "method": "POST",
+      "path": "/access-tokens/latest/projects/{projectKey}/repos/{repositorySlug}/{tokenId}",
+      "tag": "Authentication",
+      "summary": "Update HTTP token"
+    },
+    {
+      "method": "DELETE",
+      "path": "/access-tokens/latest/projects/{projectKey}/{tokenId}",
+      "tag": "Authentication",
+      "summary": "Delete a HTTP token"
+    },
+    {
+      "method": "GET",
+      "path": "/access-tokens/latest/projects/{projectKey}/{tokenId}",
+      "tag": "Authentication",
+      "summary": "Get HTTP token by ID"
+    },
+    {
+      "method": "POST",
+      "path": "/access-tokens/latest/projects/{projectKey}/{tokenId}",
+      "tag": "Authentication",
+      "summary": "Update HTTP token"
+    },
+    {
+      "method": "GET",
+      "path": "/access-tokens/latest/users/{userSlug}",
+      "tag": "Authentication",
+      "summary": "Get personal HTTP tokens"
+    },
+    {
+      "method": "PUT",
+      "path": "/access-tokens/latest/users/{userSlug}",
+      "tag": "Authentication",
+      "summary": "Create personal HTTP token"
+    },
+    {
+      "method": "DELETE",
+      "path": "/access-tokens/latest/users/{userSlug}/{tokenId}",
+      "tag": "Authentication",
+      "summary": "Delete a HTTP token"
+    },
+    {
+      "method": "GET",
+      "path": "/access-tokens/latest/users/{userSlug}/{tokenId}",
+      "tag": "Authentication",
+      "summary": "Get HTTP token by ID"
+    },
+    {
+      "method": "POST",
+      "path": "/access-tokens/latest/users/{userSlug}/{tokenId}",
+      "tag": "Authentication",
+      "summary": "Update HTTP token"
+    },
+    {
+      "method": "GET",
+      "path": "/admin",
+      "tag": "System Maintenance",
+      "summary": "Get global SSH key settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin",
+      "tag": "System Maintenance",
+      "summary": "Update global SSH key settings"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/supported-key-types",
+      "tag": "System Maintenance",
+      "summary": "Get supported SSH key algorithms and lengths"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/admin/banner",
+      "tag": "System Maintenance",
+      "summary": "Delete announcement banner"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/banner",
+      "tag": "System Maintenance",
+      "summary": "Get announcement banner"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/admin/banner",
+      "tag": "System Maintenance",
+      "summary": "Update/Set announcement banner"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/cluster",
+      "tag": "System Maintenance",
+      "summary": "Get cluster node information"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/admin/default-branch",
+      "tag": "System Maintenance",
+      "summary": "Clear default branch"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/default-branch",
+      "tag": "System Maintenance",
+      "summary": "Get the default branch"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/admin/default-branch",
+      "tag": "System Maintenance",
+      "summary": "Update/Set default branch"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/git/mesh/config/control-plane.pem",
+      "tag": "System Maintenance",
+      "summary": "Get the control plane PEM"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/git/mesh/diagnostics/connectivity",
+      "tag": "System Maintenance",
+      "summary": "Generate Mesh connectivity report"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/git/mesh/nodes",
+      "tag": "System Maintenance",
+      "summary": "Get all registered Mesh nodes"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/git/mesh/nodes",
+      "tag": "System Maintenance",
+      "summary": "Register new Mesh node"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/admin/git/mesh/nodes/{id}",
+      "tag": "System Maintenance",
+      "summary": "Delete Mesh node"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/git/mesh/nodes/{id}",
+      "tag": "System Maintenance",
+      "summary": "Get Mesh node"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/admin/git/mesh/nodes/{id}",
+      "tag": "System Maintenance",
+      "summary": "Update Mesh node"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/git/mesh/support-zips",
+      "tag": "System Maintenance",
+      "summary": "Get support zips for all Mesh nodes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/git/mesh/support-zips/{id}",
+      "tag": "System Maintenance",
+      "summary": "Get support zip for node"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/admin/groups",
+      "tag": "Permission Management",
+      "summary": "Remove group"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/groups",
+      "tag": "Permission Management",
+      "summary": "Get groups"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/groups",
+      "tag": "Permission Management",
+      "summary": "Create group"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/groups/add-user",
+      "tag": "Deprecated",
+      "summary": "Add user to group"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/groups/add-users",
+      "tag": "Permission Management",
+      "summary": "Add multiple users to group"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/groups/more-members",
+      "tag": "Permission Management",
+      "summary": "Get group members"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/groups/more-non-members",
+      "tag": "Permission Management",
+      "summary": "Get members not in group"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/groups/remove-user",
+      "tag": "Deprecated",
+      "summary": "Remove user from group"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/license",
+      "tag": "System Maintenance",
+      "summary": "Get license details"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/license",
+      "tag": "System Maintenance",
+      "summary": "Update license"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/admin/mail-server",
+      "tag": "System Maintenance",
+      "summary": "Delete mail configuration"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/mail-server",
+      "tag": "System Maintenance",
+      "summary": "Get mail configuration"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/admin/mail-server",
+      "tag": "System Maintenance",
+      "summary": "Update mail configuration"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/admin/mail-server/sender-address",
+      "tag": "System Maintenance",
+      "summary": "Update mail configuration"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/mail-server/sender-address",
+      "tag": "System Maintenance",
+      "summary": "Get server mail address"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/admin/mail-server/sender-address",
+      "tag": "System Maintenance",
+      "summary": "Update server mail address"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/admin/permissions/groups",
+      "tag": "Permission Management",
+      "summary": "Revoke all global permissions for group"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/permissions/groups",
+      "tag": "Permission Management",
+      "summary": "Get groups with a global permission"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/admin/permissions/groups",
+      "tag": "Permission Management",
+      "summary": "Update global permission for group"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/permissions/groups/none",
+      "tag": "Permission Management",
+      "summary": "Get groups with no global permission"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/admin/permissions/users",
+      "tag": "Permission Management",
+      "summary": "Revoke all global permissions for user"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/permissions/users",
+      "tag": "Permission Management",
+      "summary": "Get users with a global permission"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/admin/permissions/users",
+      "tag": "Permission Management",
+      "summary": "Update global permission for user"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/permissions/users/none",
+      "tag": "Permission Management",
+      "summary": "Get users with no global permission"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/pull-requests/{scmId}",
+      "tag": "Pull Requests",
+      "summary": "Get merge strategies"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/pull-requests/{scmId}",
+      "tag": "Pull Requests",
+      "summary": "Update merge strategies"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/rate-limit/history",
+      "tag": "System Maintenance",
+      "summary": "Get rate limit history"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/rate-limit/settings",
+      "tag": "System Maintenance",
+      "summary": "Get rate limit settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/admin/rate-limit/settings",
+      "tag": "System Maintenance",
+      "summary": "Set rate limit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/rate-limit/settings/users",
+      "tag": "System Maintenance",
+      "summary": "Get rate limit settings for user"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/rate-limit/settings/users",
+      "tag": "System Maintenance",
+      "summary": "Set rate limit settings for users"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/admin/rate-limit/settings/users/{userSlug}",
+      "tag": "System Maintenance",
+      "summary": "Delete user specific rate limit settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/rate-limit/settings/users/{userSlug}",
+      "tag": "System Maintenance",
+      "summary": "Get user specific rate limit settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/admin/rate-limit/settings/users/{userSlug}",
+      "tag": "System Maintenance",
+      "summary": "Set rate limit settings for user"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/user-directories",
+      "tag": "Permission Management",
+      "summary": "Get directories"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/admin/users",
+      "tag": "Permission Management",
+      "summary": "Remove user"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/users",
+      "tag": "Permission Management",
+      "summary": "Get users"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/users",
+      "tag": "Permission Management",
+      "summary": "Create user"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/admin/users",
+      "tag": "Permission Management",
+      "summary": "Update user details"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/users/add-group",
+      "tag": "Deprecated",
+      "summary": "Add user to group"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/users/add-groups",
+      "tag": "Permission Management",
+      "summary": "Add user to groups"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/admin/users/captcha",
+      "tag": "Permission Management",
+      "summary": "Clear CAPTCHA for user"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/admin/users/credentials",
+      "tag": "Permission Management",
+      "summary": "Set password for user"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/users/erasure",
+      "tag": "Permission Management",
+      "summary": "Check user removal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/users/erasure",
+      "tag": "Permission Management",
+      "summary": "Erase user information"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/users/more-members",
+      "tag": "Permission Management",
+      "summary": "Get groups for user"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/admin/users/more-non-members",
+      "tag": "Permission Management",
+      "summary": "Find other groups for user"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/users/remove-group",
+      "tag": "Permission Management",
+      "summary": "Remove user from group"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/admin/users/rename",
+      "tag": "Permission Management",
+      "summary": "Rename user"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/application-properties",
+      "tag": "System Maintenance",
+      "summary": "Get application properties"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/build/capabilities",
+      "tag": "Capabilities",
+      "summary": "Get build capabilities"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/dashboard/pull-request-suggestions",
+      "tag": "Dashboard",
+      "summary": "Get pull request suggestions"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/deployment/capabilities",
+      "tag": "Capabilities",
+      "summary": "Get deployment capabilities"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/groups",
+      "tag": "Permission Management",
+      "summary": "Get group names"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/hook-scripts",
+      "tag": "System Maintenance",
+      "summary": "Create a new hook script"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/hook-scripts/{scriptId}",
+      "tag": "System Maintenance",
+      "summary": "Delete a hook script."
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/hook-scripts/{scriptId}",
+      "tag": "System Maintenance",
+      "summary": "Get a hook script"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/hook-scripts/{scriptId}",
+      "tag": "System Maintenance",
+      "summary": "Update a hook script"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/hook-scripts/{scriptId}/content",
+      "tag": "System Maintenance",
+      "summary": "Get hook script content"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/hooks/{hookKey}/avatar",
+      "tag": "Project",
+      "summary": "Get project avatar"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/inbox/pull-requests",
+      "tag": "",
+      "summary": "Get pull requests in inbox"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/inbox/pull-requests/count",
+      "tag": "",
+      "summary": "Get total number of pull requests in inbox"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/labels",
+      "tag": "System Maintenance",
+      "summary": "Get all labels"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/labels/{labelName}",
+      "tag": "System Maintenance",
+      "summary": "Get label"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/labels/{labelName}/labeled",
+      "tag": "System Maintenance",
+      "summary": "Get labelables for label"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/logs/logger/{loggerName}",
+      "tag": "System Maintenance",
+      "summary": "Get current log level"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/logs/logger/{loggerName}/{levelName}",
+      "tag": "System Maintenance",
+      "summary": "Set log level"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/logs/rootLogger",
+      "tag": "System Maintenance",
+      "summary": "Get root log level"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/logs/rootLogger/{levelName}",
+      "tag": "System Maintenance",
+      "summary": "Set root log level"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/markup/preview",
+      "tag": "Markup",
+      "summary": "Preview markdown render"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/migration/exports",
+      "tag": "System Maintenance",
+      "summary": "Start export job"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/migration/exports/preview",
+      "tag": "System Maintenance",
+      "summary": "Preview export"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/migration/exports/{jobId}",
+      "tag": "System Maintenance",
+      "summary": "Get export job details"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/migration/exports/{jobId}/cancel",
+      "tag": "System Maintenance",
+      "summary": "Cancel export job"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/migration/exports/{jobId}/messages",
+      "tag": "System Maintenance",
+      "summary": "Get job messages"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/migration/imports",
+      "tag": "System Maintenance",
+      "summary": "Start import job"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/migration/imports/{jobId}",
+      "tag": "System Maintenance",
+      "summary": "Get import job status"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/migration/imports/{jobId}/cancel",
+      "tag": "System Maintenance",
+      "summary": "Cancel import job"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/migration/imports/{jobId}/messages",
+      "tag": "System Maintenance",
+      "summary": "Get import job messages"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/migration/mesh",
+      "tag": "System Maintenance",
+      "summary": "Start Mesh migration job"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/migration/mesh/preview",
+      "tag": "System Maintenance",
+      "summary": "Preview Mesh migration"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/migration/mesh/repos",
+      "tag": "System Maintenance",
+      "summary": "Find repositories by Mesh migration state"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/migration/mesh/summaries",
+      "tag": "System Maintenance",
+      "summary": "Get all Mesh migration job summaries"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/migration/mesh/summary",
+      "tag": "System Maintenance",
+      "summary": "Get summary for Mesh migration job"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/migration/mesh/{jobId}",
+      "tag": "System Maintenance",
+      "summary": "Get Mesh migration job details"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/migration/mesh/{jobId}/cancel",
+      "tag": "System Maintenance",
+      "summary": "Cancel Mesh migration job"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/migration/mesh/{jobId}/messages",
+      "tag": "System Maintenance",
+      "summary": "Get Mesh migration job messages"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/migration/mesh/{jobId}/summary",
+      "tag": "System Maintenance",
+      "summary": "Get Mesh migration job summary"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/profile/recent/repos",
+      "tag": "Repository",
+      "summary": "Get recently accessed repositories"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/avatar.png",
+      "tag": "Project",
+      "summary": "Get avatar for project"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/avatar.png",
+      "tag": "Project",
+      "summary": "Update project avatar"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/hook-scripts",
+      "tag": "Project",
+      "summary": "Get configured hook scripts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/hook-scripts/{scriptId}",
+      "tag": "Project",
+      "summary": "Remove a hook script"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/hook-scripts/{scriptId}",
+      "tag": "Project",
+      "summary": "Create/update a hook script"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/permissions",
+      "tag": "Project",
+      "summary": "Revoke project permissions"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/permissions/groups/none",
+      "tag": "Project",
+      "summary": "Get groups without project permission"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/permissions/search",
+      "tag": "Project",
+      "summary": "Search project permissions"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/permissions/users/none",
+      "tag": "Project",
+      "summary": "Get users without project permission"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/permissions/{permission}/all",
+      "tag": "Project",
+      "summary": "Check default project permission"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/permissions/{permission}/all",
+      "tag": "Project",
+      "summary": "Grant project permission"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos",
+      "tag": "Project",
+      "summary": "Get repositories for project"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}",
+      "tag": "Project",
+      "summary": "Get repository"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/archive",
+      "tag": "Repository",
+      "summary": "Stream archive of repository"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/attachments/{attachmentId}",
+      "tag": "Repository",
+      "summary": "Delete an attachment"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/attachments/{attachmentId}",
+      "tag": "Repository",
+      "summary": "Get an attachment"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/attachments/{attachmentId}/metadata",
+      "tag": "Repository",
+      "summary": "Delete attachment metadata"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/attachments/{attachmentId}/metadata",
+      "tag": "Repository",
+      "summary": "Get attachment metadata"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/attachments/{attachmentId}/metadata",
+      "tag": "Repository",
+      "summary": "Save attachment metadata"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/branches",
+      "tag": "Repository",
+      "summary": "Create branch"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/branches/default",
+      "tag": "Deprecated",
+      "summary": "Get default branch"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/branches/default",
+      "tag": "Deprecated",
+      "summary": "Update default branch"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/browse",
+      "tag": "Repository",
+      "summary": "Get file content at revision"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/browse/{path}",
+      "tag": "Repository",
+      "summary": "Edit file"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/changes",
+      "tag": "Repository",
+      "summary": "Get changes made in commit"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/builds",
+      "tag": "Builds and Deployments",
+      "summary": "Delete a specific build status"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/builds",
+      "tag": "Builds and Deployments",
+      "summary": "Get a specific build status"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/builds",
+      "tag": "Builds and Deployments",
+      "summary": "Store a build status"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/changes",
+      "tag": "Repository",
+      "summary": "Get changes in commit"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/deployments",
+      "tag": "Builds and Deployments",
+      "summary": "Delete a deployment"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/deployments",
+      "tag": "Builds and Deployments",
+      "summary": "Get a deployment"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/deployments",
+      "tag": "Builds and Deployments",
+      "summary": "Create or update a deployment"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/diff-stats-summary/{path}",
+      "tag": "Repository",
+      "summary": "Get diff stats summary between revisions"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/diff/{path}",
+      "tag": "Repository",
+      "summary": "Get diff between revisions"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/merge-base",
+      "tag": "Repository",
+      "summary": "Get the common ancestor between two commits"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/pull-requests",
+      "tag": "Pull Requests",
+      "summary": "Get repository pull requests containing commit"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/watch",
+      "tag": "Repository",
+      "summary": "Stop watching commit"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/watch",
+      "tag": "Repository",
+      "summary": "Watch commit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/compare/changes",
+      "tag": "Repository",
+      "summary": "Compare commits"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/compare/diff{path}",
+      "tag": "Repository",
+      "summary": "Get diff between commits"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/contributing",
+      "tag": "Project",
+      "summary": "Get repository contributing guidelines"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/diff",
+      "tag": "Repository",
+      "summary": "Get raw diff for path"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/forks",
+      "tag": "Project",
+      "summary": "Get repository forks"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/hook-scripts",
+      "tag": "Repository",
+      "summary": "Get hook scripts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/hook-scripts/{scriptId}",
+      "tag": "Repository",
+      "summary": "Remove a hook script"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/hook-scripts/{scriptId}",
+      "tag": "Repository",
+      "summary": "Create/update a hook script"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/labels",
+      "tag": "Repository",
+      "summary": "Get repository labels"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/labels",
+      "tag": "Repository",
+      "summary": "Add repository label"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/labels/{labelName}",
+      "tag": "Repository",
+      "summary": "Remove repository label"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/last-modified",
+      "tag": "Repository",
+      "summary": "Stream files"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/last-modified/{path}",
+      "tag": "Repository",
+      "summary": "Stream files with last modified commit in path"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/license",
+      "tag": "Project",
+      "summary": "Get repository license"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/participants",
+      "tag": "Pull Requests",
+      "summary": "Search pull request participants"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/permissions",
+      "tag": "Permission Management",
+      "summary": "Revoke all repository permissions for users and groups"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/permissions/groups/none",
+      "tag": "Permission Management",
+      "summary": "Get groups without repository permission"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/permissions/search",
+      "tag": "Permission Management",
+      "summary": "Search repository permissions"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/permissions/users/none",
+      "tag": "Permission Management",
+      "summary": "Get users without repository permission"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}",
+      "tag": "Pull Requests",
+      "summary": "Delete pull request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/blocker-comments",
+      "tag": "Pull Requests",
+      "summary": "Search pull request comments"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/blocker-comments",
+      "tag": "Pull Requests",
+      "summary": "Add new blocker comment"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/blocker-comments/{commentId}",
+      "tag": "Pull Requests",
+      "summary": "Delete pull request comment"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/blocker-comments/{commentId}",
+      "tag": "Pull Requests",
+      "summary": "Get pull request comment"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/blocker-comments/{commentId}",
+      "tag": "Pull Requests",
+      "summary": "Update pull request comment"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/changes",
+      "tag": "Pull Requests",
+      "summary": "Gets pull request changes"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId}/apply-suggestion",
+      "tag": "Pull Requests",
+      "summary": "Apply pull request suggestion"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/commit-message-suggestion",
+      "tag": "Pull Requests",
+      "summary": "Get commit message suggestion"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/commits",
+      "tag": "Pull Requests",
+      "summary": "Get pull request commits"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/diff/{path}",
+      "tag": "Pull Requests",
+      "summary": "Stream a diff within a pull request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/merge-base",
+      "tag": "Pull Requests",
+      "summary": "Get the common ancestor between the latest commits of the source and target branches of the pull request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/participants",
+      "tag": "Pull Requests",
+      "summary": "Get pull request participants"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/participants/{userSlug}",
+      "tag": "Pull Requests",
+      "summary": "Change pull request status"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/review",
+      "tag": "Pull Requests",
+      "summary": "Discard pull request review"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/review",
+      "tag": "Pull Requests",
+      "summary": "Get pull request comment thread"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/review",
+      "tag": "Pull Requests",
+      "summary": "Complete pull request review"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/watch",
+      "tag": "Pull Requests",
+      "summary": "Stop watching pull request"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/watch",
+      "tag": "Pull Requests",
+      "summary": "Watch pull request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/readme",
+      "tag": "Project",
+      "summary": "Get repository readme"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/recreate",
+      "tag": "Project",
+      "summary": "Retry repository creation"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/ref-change-activities",
+      "tag": "Repository",
+      "summary": "Get ref change activity"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/ref-change-activities/branches",
+      "tag": "Repository",
+      "summary": "Get branches with ref change activities for repository"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/related",
+      "tag": "Project",
+      "summary": "Get related repository"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/allowlist",
+      "tag": "Security",
+      "summary": "Find repository secret scanning allowlist rules"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/allowlist",
+      "tag": "Security",
+      "summary": "Create repository secret scanning allowlist rule"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/allowlist/{id}",
+      "tag": "Security",
+      "summary": "Delete a repository secret scanning allowlist rule"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/allowlist/{id}",
+      "tag": "Security",
+      "summary": "Get a repository secret scanning allowlist rule"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/allowlist/{id}",
+      "tag": "Security",
+      "summary": "Edit an existing repository secret scanning allowlist rule"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/exempt",
+      "tag": "Security",
+      "summary": "Delete an exempt repository"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/exempt",
+      "tag": "Security",
+      "summary": "Get whether a repository is exempt"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/exempt",
+      "tag": "Security",
+      "summary": "Exempt a repo from secret scanning"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/rules",
+      "tag": "Security",
+      "summary": "Find repository secret scanning rules"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/rules",
+      "tag": "Security",
+      "summary": "Create repository secret scanning rule"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/rules/{id}",
+      "tag": "Security",
+      "summary": "Delete a repository secret scanning rule"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/rules/{id}",
+      "tag": "Security",
+      "summary": "Get a repository secret scanning rule"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/secret-scanning/rules/{id}",
+      "tag": "Security",
+      "summary": "Edit an existing repository secret scanning rule"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/auto-decline",
+      "tag": "Repository",
+      "summary": "Delete auto decline settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/auto-decline",
+      "tag": "Repository",
+      "summary": "Get auto decline settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/auto-decline",
+      "tag": "Repository",
+      "summary": "Create auto decline settings"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/auto-merge",
+      "tag": "Repository",
+      "summary": "Delete pull request auto-merge settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/auto-merge",
+      "tag": "Repository",
+      "summary": "Get pull request auto-merge settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/auto-merge",
+      "tag": "Repository",
+      "summary": "Create or update the pull request auto-merge settings"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks/{hookKey}",
+      "tag": "Repository",
+      "summary": "Delete repository hook"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks/{hookKey}",
+      "tag": "Repository",
+      "summary": "Get repository hook"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/reviewer-groups",
+      "tag": "Pull Requests",
+      "summary": "Get all reviewer groups"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/reviewer-groups",
+      "tag": "Pull Requests",
+      "summary": "Create reviewer group"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/reviewer-groups/{id}",
+      "tag": "Pull Requests",
+      "summary": "Delete reviewer group"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/reviewer-groups/{id}",
+      "tag": "Pull Requests",
+      "summary": "Get reviewer group"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/reviewer-groups/{id}",
+      "tag": "Pull Requests",
+      "summary": "Update reviewer group attributes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/reviewer-groups/{id}/users",
+      "tag": "Pull Requests",
+      "summary": "Get reviewer group users"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/watch",
+      "tag": "Repository",
+      "summary": "Stop watching repository"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/watch",
+      "tag": "Repository",
+      "summary": "Watch repository"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/search",
+      "tag": "Repository",
+      "summary": "Search webhooks"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/test",
+      "tag": "Repository",
+      "summary": "Test webhook"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/{webhookId}",
+      "tag": "Repository",
+      "summary": "Get webhook"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/{webhookId}",
+      "tag": "Repository",
+      "summary": "Update webhook"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/{webhookId}/latest",
+      "tag": "Repository",
+      "summary": "Get last webhook invocation details"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/{webhookId}/statistics",
+      "tag": "Repository",
+      "summary": "Get webhook statistics"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/{webhookId}/statistics/summary",
+      "tag": "Repository",
+      "summary": "Get webhook statistics summary"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/allowlist",
+      "tag": "Security",
+      "summary": "Find project secret scanning allowlist rules"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/allowlist",
+      "tag": "Security",
+      "summary": "Create project secret scanning allowlist rule"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/allowlist/{id}",
+      "tag": "Security",
+      "summary": "Delete a project secret scanning allowlist rule"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/allowlist/{id}",
+      "tag": "Security",
+      "summary": "Get a project secret scanning allowlist rule"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/allowlist/{id}",
+      "tag": "Security",
+      "summary": "Edit an existing project secret scanning allowlist rule"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/exempt",
+      "tag": "Security",
+      "summary": "Find repos exempt from secret scanning for a project"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/exempt",
+      "tag": "Security",
+      "summary": "Bulk exempt repos from secret scanning"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/rules",
+      "tag": "Security",
+      "summary": "Find project secret scanning rules"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/rules",
+      "tag": "Security",
+      "summary": "Create project secret scanning rule"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/rules/{id}",
+      "tag": "Security",
+      "summary": "Delete a project secret scanning rule"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/rules/{id}",
+      "tag": "Security",
+      "summary": "Get a project secret scanning rule"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/secret-scanning/rules/{id}",
+      "tag": "Security",
+      "summary": "Edit an existing project secret scanning rule"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/settings-restriction",
+      "tag": "Project",
+      "summary": "Stop enforcing project restriction"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/settings-restriction",
+      "tag": "Project",
+      "summary": "Get enforcing project setting"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/settings-restriction",
+      "tag": "Project",
+      "summary": "Enforce project restriction"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/settings-restriction/all",
+      "tag": "Project",
+      "summary": "Get all enforcing project settings"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/settings/auto-decline",
+      "tag": "Project",
+      "summary": "Delete auto decline settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/settings/auto-decline",
+      "tag": "Project",
+      "summary": "Get auto decline settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/settings/auto-decline",
+      "tag": "Project",
+      "summary": "Create/Update auto decline settings"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/settings/auto-merge",
+      "tag": "Project",
+      "summary": "Delete pull request auto-merge settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/settings/auto-merge",
+      "tag": "Project",
+      "summary": "Get pull request auto-merge settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/settings/auto-merge",
+      "tag": "Project",
+      "summary": "Create or update the pull request auto-merge settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/settings/hooks/{hookKey}",
+      "tag": "Project",
+      "summary": "Get a repository hook"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/settings/pull-requests/{scmId}",
+      "tag": "Project",
+      "summary": "Get merge strategy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/settings/pull-requests/{scmId}",
+      "tag": "Project",
+      "summary": "Update merge strategy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/settings/reviewer-groups",
+      "tag": "Pull Requests",
+      "summary": "Get all reviewer groups"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/settings/reviewer-groups",
+      "tag": "Pull Requests",
+      "summary": "Create reviewer group"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/settings/reviewer-groups/{id}",
+      "tag": "Pull Requests",
+      "summary": "Delete reviewer group"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/settings/reviewer-groups/{id}",
+      "tag": "Pull Requests",
+      "summary": "Get reviewer group"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/settings/reviewer-groups/{id}",
+      "tag": "Pull Requests",
+      "summary": "Update reviewer group attributes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/webhooks",
+      "tag": "Project",
+      "summary": "Find webhooks"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/webhooks",
+      "tag": "Project",
+      "summary": "Create webhook"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/webhooks/test",
+      "tag": "Project",
+      "summary": "Test webhook"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}",
+      "tag": "Project",
+      "summary": "Delete webhook"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}",
+      "tag": "Project",
+      "summary": "Get webhook"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}",
+      "tag": "Project",
+      "summary": "Update webhook"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}/latest",
+      "tag": "Project",
+      "summary": "Get last webhook invocation details"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}/statistics",
+      "tag": "Project",
+      "summary": "Get webhook statistics"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}/statistics/summary",
+      "tag": "Project",
+      "summary": "Get webhook statistics summary"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/repos",
+      "tag": "Repository",
+      "summary": "Search for repositories"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/secret-scanning/exempt",
+      "tag": "Security",
+      "summary": "Find all repos exempt from secret scan"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/secret-scanning/exempt",
+      "tag": "Security",
+      "summary": "Bulk exempt repos from secret scanning"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/secret-scanning/rules",
+      "tag": "Security",
+      "summary": "Find global secret scanning rules"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/secret-scanning/rules",
+      "tag": "Security",
+      "summary": "Create global secret scanning rule"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/secret-scanning/rules/{id}",
+      "tag": "Security",
+      "summary": "Delete a global secret scanning rule"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/secret-scanning/rules/{id}",
+      "tag": "Security",
+      "summary": "Get a global secret scanning rule"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/secret-scanning/rules/{id}",
+      "tag": "Security",
+      "summary": "Edit a global secret scanning rule."
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/signing/x509-certificates",
+      "tag": "Security",
+      "summary": "Get all X.509 certificates"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/signing/x509-certificates",
+      "tag": "Security",
+      "summary": "Create an X.509 certificate"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/signing/x509-certificates/crl/{id}",
+      "tag": "Security",
+      "summary": "Update X.509 CRL entries"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/signing/x509-certificates/{id}",
+      "tag": "Security",
+      "summary": "Delete an X.509 certificate"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/system-signing/configuration",
+      "tag": "Security",
+      "summary": "Get system signing configuration"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/system-signing/configuration",
+      "tag": "Security",
+      "summary": "Update system signing configuration"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/users",
+      "tag": "System Maintenance",
+      "summary": "Get all users"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/users",
+      "tag": "System Maintenance",
+      "summary": "Update user details"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/users/credentials",
+      "tag": "System Maintenance",
+      "summary": "Set password"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/users/{userSlug}",
+      "tag": "System Maintenance",
+      "summary": "Get user"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/users/{userSlug}/avatar.png",
+      "tag": "System Maintenance",
+      "summary": "Delete user avatar"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/users/{userSlug}/avatar.png",
+      "tag": "System Maintenance",
+      "summary": "Update user avatar"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/users/{userSlug}/settings",
+      "tag": "System Maintenance",
+      "summary": "Get user settings"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/users/{userSlug}/settings",
+      "tag": "System Maintenance",
+      "summary": "Update user settings"
+    },
+    {
+      "method": "DELETE",
+      "path": "/audit/latest/notification-settings/retention-config-review",
+      "tag": "System Maintenance",
+      "summary": "Dismiss retention config notification"
+    },
+    {
+      "method": "GET",
+      "path": "/authconfig/latest/idps",
+      "tag": "Authentication",
+      "summary": "Get all configured IdPs"
+    },
+    {
+      "method": "POST",
+      "path": "/authconfig/latest/idps",
+      "tag": "Authentication",
+      "summary": "Create IdP configuration"
+    },
+    {
+      "method": "DELETE",
+      "path": "/authconfig/latest/idps/{id}",
+      "tag": "Authentication",
+      "summary": "Delete IdP configuration"
+    },
+    {
+      "method": "GET",
+      "path": "/authconfig/latest/idps/{id}",
+      "tag": "Authentication",
+      "summary": "Get IdP configuration"
+    },
+    {
+      "method": "PATCH",
+      "path": "/authconfig/latest/idps/{id}",
+      "tag": "Authentication",
+      "summary": "Update IdP configuration"
+    },
+    {
+      "method": "GET",
+      "path": "/authconfig/latest/jit-users",
+      "tag": "Authentication",
+      "summary": "Get all JIT provisioned users"
+    },
+    {
+      "method": "GET",
+      "path": "/authconfig/latest/login-options",
+      "tag": "Authentication",
+      "summary": "Get available login options"
+    },
+    {
+      "method": "GET",
+      "path": "/authconfig/latest/sso",
+      "tag": "Authentication",
+      "summary": "Get SSO configuration"
+    },
+    {
+      "method": "PATCH",
+      "path": "/authconfig/latest/sso",
+      "tag": "Authentication",
+      "summary": "Update SSO configuration"
+    },
+    {
+      "method": "GET",
+      "path": "/basicauth/latest/config",
+      "tag": "Authentication",
+      "summary": "Get basic auth configuration"
+    },
+    {
+      "method": "PUT",
+      "path": "/basicauth/latest/config",
+      "tag": "Authentication",
+      "summary": "Update basic auth configuration"
+    },
+    {
+      "method": "POST",
+      "path": "/branch-permissions/latest/projects/{projectKey}/repos/{repositorySlug}/restrictions",
+      "tag": "Repository",
+      "summary": "Create multiple ref restrictions"
+    },
+    {
+      "method": "GET",
+      "path": "/branch-permissions/latest/projects/{projectKey}/restrictions",
+      "tag": "Project",
+      "summary": "Search for ref restrictions"
+    },
+    {
+      "method": "POST",
+      "path": "/branch-permissions/latest/projects/{projectKey}/restrictions",
+      "tag": "Project",
+      "summary": "Create multiple ref restrictions"
+    },
+    {
+      "method": "DELETE",
+      "path": "/branch-permissions/latest/projects/{projectKey}/restrictions/{id}",
+      "tag": "Project",
+      "summary": "Delete a ref restriction"
+    },
+    {
+      "method": "GET",
+      "path": "/branch-permissions/latest/projects/{projectKey}/restrictions/{id}",
+      "tag": "Project",
+      "summary": "Get a ref restriction"
+    },
+    {
+      "method": "POST",
+      "path": "/build-status/latest/commits/stats",
+      "tag": "Builds and Deployments",
+      "summary": "Get build status statistics for multiple commits"
+    },
+    {
+      "method": "DELETE",
+      "path": "/comment-likes/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/comments/{commentId}/reactions/{emoticon}",
+      "tag": "Repository",
+      "summary": "Remove a reaction from comment"
+    },
+    {
+      "method": "PUT",
+      "path": "/comment-likes/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/comments/{commentId}/reactions/{emoticon}",
+      "tag": "Repository",
+      "summary": "React to a comment"
+    },
+    {
+      "method": "DELETE",
+      "path": "/comment-likes/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId}/reactions/{emoticon}",
+      "tag": "Pull Requests",
+      "summary": "Remove a reaction from a PR comment"
+    },
+    {
+      "method": "PUT",
+      "path": "/comment-likes/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId}/reactions/{emoticon}",
+      "tag": "Pull Requests",
+      "summary": "React to a PR comment"
+    },
+    {
+      "method": "GET",
+      "path": "/default-reviewers/latest/projects/{projectKey}/repos/{repositorySlug}/reviewers",
+      "tag": "Pull Requests",
+      "summary": "Get required reviewers for PR creation"
+    },
+    {
+      "method": "DELETE",
+      "path": "/default-tasks/latest/projects/{projectKey}/repos/{repositorySlug}/tasks",
+      "tag": "Repository",
+      "summary": "Deletes all default tasks for the repository"
+    },
+    {
+      "method": "GET",
+      "path": "/default-tasks/latest/projects/{projectKey}/repos/{repositorySlug}/tasks",
+      "tag": "Repository",
+      "summary": "Get a page of default tasks"
+    },
+    {
+      "method": "POST",
+      "path": "/default-tasks/latest/projects/{projectKey}/repos/{repositorySlug}/tasks",
+      "tag": "Repository",
+      "summary": "Add a default task"
+    },
+    {
+      "method": "DELETE",
+      "path": "/default-tasks/latest/projects/{projectKey}/repos/{repositorySlug}/tasks/{taskId}",
+      "tag": "Repository",
+      "summary": "Delete a specific default task"
+    },
+    {
+      "method": "PUT",
+      "path": "/default-tasks/latest/projects/{projectKey}/repos/{repositorySlug}/tasks/{taskId}",
+      "tag": "Repository",
+      "summary": "Update a default task"
+    },
+    {
+      "method": "DELETE",
+      "path": "/default-tasks/latest/projects/{projectKey}/tasks",
+      "tag": "Project",
+      "summary": "Deletes all default tasks for the project"
+    },
+    {
+      "method": "GET",
+      "path": "/default-tasks/latest/projects/{projectKey}/tasks",
+      "tag": "Project",
+      "summary": "Get a page of default tasks"
+    },
+    {
+      "method": "POST",
+      "path": "/default-tasks/latest/projects/{projectKey}/tasks",
+      "tag": "Project",
+      "summary": "Add a default task"
+    },
+    {
+      "method": "DELETE",
+      "path": "/default-tasks/latest/projects/{projectKey}/tasks/{taskId}",
+      "tag": "Project",
+      "summary": "Delete a specific default task"
+    },
+    {
+      "method": "PUT",
+      "path": "/default-tasks/latest/projects/{projectKey}/tasks/{taskId}",
+      "tag": "Project",
+      "summary": "Update a default task"
+    },
+    {
+      "method": "GET",
+      "path": "/git/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/rebase",
+      "tag": "Pull Requests",
+      "summary": "Check PR rebase precondition"
+    },
+    {
+      "method": "POST",
+      "path": "/git/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/rebase",
+      "tag": "Pull Requests",
+      "summary": "Rebase pull request"
+    },
+    {
+      "method": "POST",
+      "path": "/git/latest/projects/{projectKey}/repos/{repositorySlug}/tags",
+      "tag": "Repository",
+      "summary": "Create tag"
+    },
+    {
+      "method": "DELETE",
+      "path": "/gpg/latest/keys",
+      "tag": "Security",
+      "summary": "Delete all GPG keys for user"
+    },
+    {
+      "method": "GET",
+      "path": "/gpg/latest/keys",
+      "tag": "Security",
+      "summary": "Get all GPG keys"
+    },
+    {
+      "method": "POST",
+      "path": "/gpg/latest/keys",
+      "tag": "Security",
+      "summary": "Create a GPG key"
+    },
+    {
+      "method": "DELETE",
+      "path": "/gpg/latest/keys/{fingerprintOrId}",
+      "tag": "Security",
+      "summary": "Delete a GPG key"
+    },
+    {
+      "method": "GET",
+      "path": "/insights/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/annotations",
+      "tag": "Builds and Deployments",
+      "summary": "Get Code Insights annotations for a commit"
+    },
+    {
+      "method": "PUT",
+      "path": "/insights/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/reports/{key}/annotations/{externalId}",
+      "tag": "Builds and Deployments",
+      "summary": "Create or replace a Code Insights annotation"
+    },
+    {
+      "method": "POST",
+      "path": "/jira/latest/comments/{commentId}/issues",
+      "tag": "Jira Integration",
+      "summary": "Create Jira Issue"
+    },
+    {
+      "method": "GET",
+      "path": "/jira/latest/issues/{issueKey}/commits",
+      "tag": "Jira Integration",
+      "summary": "Get changesets for issue key"
+    },
+    {
+      "method": "GET",
+      "path": "/jira/latest/projects/{projectKey}/primary-enhanced-entitylink",
+      "tag": "Jira Integration",
+      "summary": "Get entity link"
+    },
+    {
+      "method": "GET",
+      "path": "/jira/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/issues",
+      "tag": "Jira Integration",
+      "summary": "Get issues for a pull request"
+    },
+    {
+      "method": "GET",
+      "path": "/keys/latest/projects/{projectKey}/repos/{repositorySlug}/ssh",
+      "tag": "Authentication",
+      "summary": "Get repository SSH keys"
+    },
+    {
+      "method": "POST",
+      "path": "/keys/latest/projects/{projectKey}/repos/{repositorySlug}/ssh",
+      "tag": "Authentication",
+      "summary": "Add repository SSH key"
+    },
+    {
+      "method": "DELETE",
+      "path": "/keys/latest/projects/{projectKey}/repos/{repositorySlug}/ssh/{keyId}",
+      "tag": "Authentication",
+      "summary": "Revoke repository SSH key"
+    },
+    {
+      "method": "GET",
+      "path": "/keys/latest/projects/{projectKey}/repos/{repositorySlug}/ssh/{keyId}",
+      "tag": "Authentication",
+      "summary": "Get repository SSH key"
+    },
+    {
+      "method": "PUT",
+      "path": "/keys/latest/projects/{projectKey}/repos/{repositorySlug}/ssh/{keyId}/permission/{permission}",
+      "tag": "Authentication",
+      "summary": "Update repository SSH key permission"
+    },
+    {
+      "method": "GET",
+      "path": "/keys/latest/projects/{projectKey}/ssh",
+      "tag": "Authentication",
+      "summary": "Get SSH key"
+    },
+    {
+      "method": "POST",
+      "path": "/keys/latest/projects/{projectKey}/ssh",
+      "tag": "Authentication",
+      "summary": "Add project SSH key"
+    },
+    {
+      "method": "DELETE",
+      "path": "/keys/latest/projects/{projectKey}/ssh/{keyId}",
+      "tag": "Authentication",
+      "summary": "Revoke project SSH key"
+    },
+    {
+      "method": "GET",
+      "path": "/keys/latest/projects/{projectKey}/ssh/{keyId}",
+      "tag": "Authentication",
+      "summary": "Get project SSH key"
+    },
+    {
+      "method": "PUT",
+      "path": "/keys/latest/projects/{projectKey}/ssh/{keyId}/permission/{permission}",
+      "tag": "Authentication",
+      "summary": "Update project SSH key permission"
+    },
+    {
+      "method": "DELETE",
+      "path": "/keys/latest/ssh/{keyId}",
+      "tag": "Authentication",
+      "summary": "Revoke project SSH key"
+    },
+    {
+      "method": "GET",
+      "path": "/keys/latest/ssh/{keyId}/projects",
+      "tag": "Authentication",
+      "summary": "Get project SSH keys"
+    },
+    {
+      "method": "GET",
+      "path": "/keys/latest/ssh/{keyId}/repos",
+      "tag": "Authentication",
+      "summary": "Get repository SSH key"
+    },
+    {
+      "method": "DELETE",
+      "path": "/mirroring/latest/account/settings/preferred-mirror",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Remove preferred mirror"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/account/settings/preferred-mirror",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Get preferred mirror"
+    },
+    {
+      "method": "POST",
+      "path": "/mirroring/latest/account/settings/preferred-mirror",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Set preferred mirror"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/analyticsSettings",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Get analytics settings from upstream"
+    },
+    {
+      "method": "POST",
+      "path": "/mirroring/latest/authenticate",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Authenticate on behalf of a user"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/farmNodes",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get farm nodes"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/mirrorRepos/{externalRepositoryId}",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get clone URLs"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/mirrorServers",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Get all mirrors"
+    },
+    {
+      "method": "DELETE",
+      "path": "/mirroring/latest/mirrorServers/{mirrorId}",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Delete mirror by ID"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/mirrorServers/{mirrorId}",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Get mirror by ID"
+    },
+    {
+      "method": "PUT",
+      "path": "/mirroring/latest/mirrorServers/{mirrorId}",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Upgrade mirror server"
+    },
+    {
+      "method": "POST",
+      "path": "/mirroring/latest/mirrorServers/{mirrorId}/events",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Publish RepositoryMirrorEvent"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/progress",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get synchronization progress state"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/projects/{projectId}",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Get project"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/projects/{projectId}/repos",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Get hashes for repositories in project"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/repos",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Get content hashes for repositories"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/repos/{repoId}",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Get content hash for a repository"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/repos/{repoId}/mirrors",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Get mirrors for repository"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/requests",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Get mirroring requests"
+    },
+    {
+      "method": "POST",
+      "path": "/mirroring/latest/requests",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Create a mirroring request"
+    },
+    {
+      "method": "DELETE",
+      "path": "/mirroring/latest/requests/{mirroringRequestId}",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Delete a mirroring request"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/requests/{mirroringRequestId}",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Get a mirroring request"
+    },
+    {
+      "method": "POST",
+      "path": "/mirroring/latest/requests/{mirroringRequestId}/accept",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Accept a mirroring request"
+    },
+    {
+      "method": "POST",
+      "path": "/mirroring/latest/requests/{mirroringRequestId}/reject",
+      "tag": "Mirroring (Upstream)",
+      "summary": "Reject a mirroring request"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/supportInfo/out-of-sync-repos/content",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get out-of-sync repositories"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/supportInfo/projects/{projectKey}/repos/{repositorySlug}/repo-lock-owner",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get the repository lock owner for the syncing process"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/supportInfo/projects/{projectKey}/repos/{repositorySlug}/repoSyncStatus",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Gets information about the mirrored repository"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/supportInfo/refChangesQueue",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get items in ref changes queue"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/supportInfo/refChangesQueue/count",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get total number of items in ref changes queue"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/supportInfo/repo-lock-owners",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get all the repository lock owners for the syncing process"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/supportInfo/repoSyncStatus",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get sync status of repositories"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/syncSettings",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get upstream settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/mirroring/latest/syncSettings",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Update upstream settings"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/syncSettings/mode",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get mirror mode"
+    },
+    {
+      "method": "PUT",
+      "path": "/mirroring/latest/syncSettings/mode",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Update mirror mode"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/syncSettings/projects",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get mirrored project IDs"
+    },
+    {
+      "method": "POST",
+      "path": "/mirroring/latest/syncSettings/projects",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Add multiple projects to be mirrored"
+    },
+    {
+      "method": "DELETE",
+      "path": "/mirroring/latest/syncSettings/projects/{projectId}",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Stop mirroring project"
+    },
+    {
+      "method": "POST",
+      "path": "/mirroring/latest/syncSettings/projects/{projectId}",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Add project to be mirrored"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/upstreamServer",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get upstream server"
+    },
+    {
+      "method": "POST",
+      "path": "/mirroring/latest/zdu/end",
+      "tag": "Mirroring (Mirror)",
+      "summary": "End ZDU upgrade on mirror farm"
+    },
+    {
+      "method": "POST",
+      "path": "/mirroring/latest/zdu/start",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Start ZDU upgrade on mirror farm"
+    },
+    {
+      "method": "GET",
+      "path": "/policies/latest/admin/repos/archive",
+      "tag": "System Maintenance",
+      "summary": "Get repository archive policy"
+    },
+    {
+      "method": "PUT",
+      "path": "/policies/latest/admin/repos/archive",
+      "tag": "System Maintenance",
+      "summary": "Update repository archive policy"
+    },
+    {
+      "method": "GET",
+      "path": "/policies/latest/admin/repos/delete",
+      "tag": "System Maintenance",
+      "summary": "Get repository delete policy"
+    },
+    {
+      "method": "PUT",
+      "path": "/policies/latest/admin/repos/delete",
+      "tag": "System Maintenance",
+      "summary": "Update the repository delete policy"
+    },
+    {
+      "method": "DELETE",
+      "path": "/ssh/latest/keys",
+      "tag": "Authentication",
+      "summary": "Delete all user SSH key"
+    },
+    {
+      "method": "GET",
+      "path": "/ssh/latest/keys",
+      "tag": "Authentication",
+      "summary": "Get SSH keys for user"
+    },
+    {
+      "method": "POST",
+      "path": "/ssh/latest/keys",
+      "tag": "Authentication",
+      "summary": "Add SSH key for user"
+    },
+    {
+      "method": "DELETE",
+      "path": "/ssh/latest/keys/{keyId}",
+      "tag": "Authentication",
+      "summary": "Remove SSH key"
+    },
+    {
+      "method": "GET",
+      "path": "/ssh/latest/keys/{keyId}",
+      "tag": "Authentication",
+      "summary": "Get SSH key for user by keyId"
+    },
+    {
+      "method": "GET",
+      "path": "/ssh/latest/settings",
+      "tag": "Authentication",
+      "summary": "Get SSH settings"
+    },
+    {
+      "method": "GET",
+      "path": "/sync/latest/projects/{projectKey}/repos/{repositorySlug}",
+      "tag": "Repository",
+      "summary": "Get synchronization status"
+    },
+    {
+      "method": "POST",
+      "path": "/sync/latest/projects/{projectKey}/repos/{repositorySlug}",
+      "tag": "Repository",
+      "summary": "Disable synchronization"
+    },
+    {
+      "method": "POST",
+      "path": "/sync/latest/projects/{projectKey}/repos/{repositorySlug}/synchronize",
+      "tag": "Repository",
+      "summary": "Manual synchronization"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/authenticate",
+      "tag": "Authentication",
+      "summary": "Authenticate with 2SV"
+    },
+    {
+      "method": "GET",
+      "path": "/tsv/latest/authenticate/captcha",
+      "tag": "Authentication",
+      "summary": "Get CAPTCHA challenge"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/authenticate/recovery-code",
+      "tag": "Authentication",
+      "summary": "Authenticate using recovery code"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/authenticate/totp-code",
+      "tag": "Authentication",
+      "summary": "Authenticate using TOTP code"
+    },
+    {
+      "method": "GET",
+      "path": "/tsv/latest/elevate-permissions",
+      "tag": "Authentication",
+      "summary": "Get elevated session status"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/elevate-permissions/password",
+      "tag": "Authentication",
+      "summary": "Create elevated session with password"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/elevate-permissions/recovery-code",
+      "tag": "Authentication",
+      "summary": "Create elevated session with recovery code"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/elevate-permissions/totp",
+      "tag": "Authentication",
+      "summary": "Create elevated session with TOTP"
+    },
+    {
+      "method": "GET",
+      "path": "/tsv/latest/sso-management-status",
+      "tag": "Authentication",
+      "summary": "Get SSO management status"
+    },
+    {
+      "method": "GET",
+      "path": "/tsv/latest/status",
+      "tag": "Authentication",
+      "summary": "Get two-step verification status"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/totp/complete-enforced-enrollment",
+      "tag": "Authentication",
+      "summary": "Complete enforced enrollment in 2SV"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/totp/complete-enrollment-update",
+      "tag": "Authentication",
+      "summary": "Complete authentication app update for 2SV"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/totp/complete-voluntary-enrollment",
+      "tag": "Authentication",
+      "summary": "Complete voluntary enrollment in 2SV"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/totp/recovery-code/rotate",
+      "tag": "Authentication",
+      "summary": "Rotate recovery code"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/totp/start-enforced-enrollment",
+      "tag": "Authentication",
+      "summary": "Start enforced enrollment in 2SV"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/totp/start-enrollment-update",
+      "tag": "Authentication",
+      "summary": "Start authentication app update for 2SV"
+    },
+    {
+      "method": "POST",
+      "path": "/tsv/latest/totp/start-voluntary-enrollment",
+      "tag": "Authentication",
+      "summary": "Start voluntary enrollment in 2SV"
+    },
+    {
+      "method": "DELETE",
+      "path": "/tsv/latest/totp/unenroll",
+      "tag": "Authentication",
+      "summary": "Uneroll current user from two-step verification"
+    },
+    {
+      "method": "DELETE",
+      "path": "/tsv/latest/totp/unenroll/user/{userName}",
+      "tag": "Authentication",
+      "summary": "Unenroll specific user from two-step verification"
+    }
+  ]
+}

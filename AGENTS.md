@@ -34,6 +34,17 @@
    git push --no-verify --force-with-lease
    ```
 
+### OpenAPI spec coverage artifact
+
+`docs/quality/spec-coverage.json` is a separate committed artifact that does **not** depend on coverage profiles or live tests. If you change the OpenAPI spec, the generated client, or how `internal/services` calls the API, regenerate it and commit the result:
+
+```bash
+task quality:spec-coverage:update
+git add docs/quality/spec-coverage.json
+```
+
+CI verifies it via `task quality:spec-coverage:verify` (CI-safe, no live infra).
+
 ### When running tests also uncovers a broken test
 
 If the rebase brought in API changes from `main` (e.g. a command's flag changed from `--host` to a positional argument), tests added on the branch may need updating. Fix them in the same amend so history stays clean.
