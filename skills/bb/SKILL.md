@@ -64,7 +64,31 @@ bb repo browse content --repo MYPROJ/payments
 bb branch list --repo MYPROJ/payments --filter feature/my-work
 ```
 
-### 2. Check whether a PR is ready to merge
+### 2. Open a pull request (optionally as a draft)
+
+```bash
+# Open a normal PR
+bb pr create --repo MYPROJ/payments --from-ref feature/my-work --to-ref main --title "Add payment retries"
+
+# Open a draft PR (Bitbucket DC 8.0+) — signals work-in-progress, not ready for review
+bb pr create --repo MYPROJ/payments --from-ref feature/my-work --to-ref main --title "Add payment retries" --draft
+
+# Assign reviewers at creation (repeatable or comma-separated)
+bb pr create --repo MYPROJ/payments --from-ref feature/my-work --to-ref main --title "Add payment retries" --reviewers alice,bob
+```
+
+When a draft PR is ready for review, flip the draft flag (the `--version` is the
+current PR version for optimistic locking, from `bb pr get`):
+
+```bash
+# Mark a draft PR as ready for review
+bb pr update 42 --repo MYPROJ/payments --version 3 --draft=false
+
+# Convert an open PR back to draft
+bb pr update 42 --repo MYPROJ/payments --version 3 --draft
+```
+
+### 3. Check whether a PR is ready to merge
 
 ```bash
 # Get approval status and merge state
@@ -80,7 +104,26 @@ bb build status get <commit-sha>
 bb build required list --repo MYPROJ/payments
 ```
 
-### 3. Address review feedback
+### 4. Merge automatically once checks pass
+
+Auto-merge lets Bitbucket complete the merge as soon as required builds pass and
+all approvals are in, instead of polling and merging manually (Bitbucket DC 8.0+).
+Only enable it after review feedback is addressed and required checks are green.
+
+```bash
+# Inspect current auto-merge configuration
+bb pr auto-merge get --repo MYPROJ/payments 42
+
+# Enable auto-merge (default strategy: no-ff). Prefer a rebase strategy for linear history.
+bb pr auto-merge enable --repo MYPROJ/payments 42 --strategy rebase-ff-only
+
+# Cancel auto-merge
+bb pr auto-merge disable --repo MYPROJ/payments 42
+```
+
+Valid `--strategy` values: `no-ff`, `ff-only`, `rebase-no-ff`, `rebase-ff-only`, `squash`, `squash-ff-only`.
+
+### 5. Address review feedback
 
 ```bash
 # Read inline review comments
@@ -90,7 +133,7 @@ bb pr comment list --repo MYPROJ/payments 42 --path src/main/java/com/example/Pa
 bb repo comment create --repo MYPROJ/payments --pr 42 "Fixed in <commit>. Please re-review."
 ```
 
-### 4. Diagnose a CI failure
+### 6. Diagnose a CI failure
 
 ```bash
 # Get build statuses for a specific commit
@@ -103,7 +146,7 @@ bb commit get --repo MYPROJ/payments <commit-sha>
 bb commit compare --repo MYPROJ/payments --from <green-sha> --to <failing-sha>
 ```
 
-### 5. Release tagging
+### 7. Release tagging
 
 ```bash
 # Find the current latest tag
@@ -159,7 +202,9 @@ bb ai mcp serve --tools get_pull_request,list_pr_comments,get_build_status
 | `get_repository_clone_info` | HTTPS and SSH clone URLs |
 | `resolve_ref` | Check branch/tag exists, get tip SHA |
 | `list_pull_requests` | Open PRs on a repo |
-| `create_pull_request` | Open a PR |
+| `create_pull_request` | Open a PR (supports `draft`) |
+| `enable_auto_merge` | Auto-merge a PR once checks pass |
+| `disable_auto_merge` | Cancel auto-merge on a PR |
 | `add_pr_comment` | Post a review comment |
 | `list_branches` | All branches, with optional filter |
 | `list_tags` | All tags |
