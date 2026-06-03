@@ -525,6 +525,123 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	}
 	prCmd.AddCommand(getCmd)
 
+	var commitsLimit, commitsStart int
+	commitsCmd := &cobra.Command{
+		Use:   "commits <id>",
+		Short: "List the commits in a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			commits, err := service.ListCommits(cmd.Context(), repo, args[0], pullrequestservice.PageOptions{Limit: commitsLimit, Start: commitsStart})
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "commits": commits})
+			}
+
+			if len(commits) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "No commits found")
+				return nil
+			}
+			for _, commit := range commits {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", shortCommitID(commit), firstMessageLine(commit.Message))
+			}
+			return nil
+		},
+	}
+	commitsCmd.Flags().IntVar(&commitsLimit, "limit", 25, "Page size for the pull request commit listing")
+	commitsCmd.Flags().IntVar(&commitsStart, "start", 0, "Start offset for the pull request commit listing")
+	prCmd.AddCommand(commitsCmd)
+
+	var filesLimit, filesStart int
+	filesCmd := &cobra.Command{
+		Use:     "files <id>",
+		Aliases: []string{"changes"},
+		Short:   "List the files changed in a pull request",
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			changes, err := service.ListChanges(cmd.Context(), repo, args[0], pullrequestservice.PageOptions{Limit: filesLimit, Start: filesStart})
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "changes": changes})
+			}
+
+			if len(changes) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "No changes found")
+				return nil
+			}
+			for _, change := range changes {
+				changeType := change.Type
+				if changeType == "" {
+					changeType = "MODIFY"
+				}
+				line := fmt.Sprintf("%s\t%s", changeType, change.Path)
+				if change.SrcPath != "" && change.SrcPath != change.Path {
+					line += fmt.Sprintf(" (from %s)", change.SrcPath)
+				}
+				fmt.Fprintln(cmd.OutOrStdout(), line)
+			}
+			return nil
+		},
+	}
+	filesCmd.Flags().IntVar(&filesLimit, "limit", 25, "Page size for the pull request change listing")
+	filesCmd.Flags().IntVar(&filesStart, "start", 0, "Start offset for the pull request change listing")
+	prCmd.AddCommand(filesCmd)
+
+	mergeBaseCmd := &cobra.Command{
+		Use:   "merge-base <id>",
+		Short: "Show the common ancestor commit of a pull request's source and target branches",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			commit, err := service.GetMergeBase(cmd.Context(), repo, args[0])
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "merge_base": commit})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", shortCommitID(commit), firstMessageLine(commit.Message))
+			return nil
+		},
+	}
+	prCmd.AddCommand(mergeBaseCmd)
+
 	var createFromRef string
 	var createToRef string
 	var createTitle string
@@ -2064,4 +2181,26 @@ func taskUpdateEquivalent(task pullrequestservice.Task, text string, resolved *b
 	}
 
 	return true
+}
+
+// shortCommitID returns the most human-friendly identifier for a commit,
+// preferring the abbreviated display id and falling back to a truncated hash.
+func shortCommitID(commit pullrequestservice.Commit) string {
+	if strings.TrimSpace(commit.DisplayID) != "" {
+		return commit.DisplayID
+	}
+	id := strings.TrimSpace(commit.ID)
+	if len(id) > 11 {
+		return id[:11]
+	}
+	return id
+}
+
+// firstMessageLine returns the first line of a commit message for compact output.
+func firstMessageLine(message string) string {
+	trimmed := strings.TrimSpace(message)
+	if index := strings.IndexByte(trimmed, '\n'); index >= 0 {
+		return strings.TrimSpace(trimmed[:index])
+	}
+	return trimmed
 }
