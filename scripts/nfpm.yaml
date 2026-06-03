@@ -1,0 +1,17 @@
+# Template consumed by `nfpm package` during the Release workflow.
+# nfpm expands ${VAR} at runtime; the workflow exports PKG_ARCH, PKG_VERSION
+# and PKG_BINARY for each Linux architecture before invoking nfpm.
+name: bb
+arch: ${PKG_ARCH}
+platform: linux
+version: ${PKG_VERSION}
+section: utils
+priority: optional
+maintainer: "Michael de Vries <vriesdemichael@users.noreply.github.com>"
+description: A CLI for Bitbucket Server / Bitbucket Data Center
+vendor: vriesdemichael
+homepage: https://github.com/vriesdemichael/bitbucket-server-cli
+license: Apache-2.0
+contents:
+  - src: ${PKG_BINARY}
+    dst: /usr/bin/bb

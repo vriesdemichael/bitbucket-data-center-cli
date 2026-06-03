@@ -41,6 +41,30 @@ scoop bucket add vriesdemichael https://github.com/vriesdemichael/scoop
 scoop install vriesdemichael/bb
 ```
 
+Install on macOS or Linux via Homebrew:
+
+```bash
+brew install vriesdemichael/tap/bb
+```
+
+Install on Arch Linux from the AUR:
+
+```bash
+yay -S bb-bin
+```
+
+Install on Debian/Ubuntu or RHEL/Fedora from the release `.deb`/`.rpm`:
+
+```bash
+VERSION=v1.0.0
+# Debian/Ubuntu
+curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.deb"
+sudo dpkg -i "bb_${VERSION#v}_linux_amd64.deb"
+# RHEL/Fedora
+curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.rpm"
+sudo rpm -i "bb_${VERSION#v}_linux_amd64.rpm"
+```
+
 Install from Releases (Linux amd64 example):
 
 ```bash

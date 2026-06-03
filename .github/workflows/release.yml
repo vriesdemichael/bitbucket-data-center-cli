@@ -472,6 +472,34 @@ jobs:
             git push origin "$VERSION"
           fi
 
+      - name: Build Linux .deb and .rpm packages
+        env:
+          VERSION: ${{ needs.determine-version.outputs.version }}
+        run: |
+          set -euo pipefail
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.46.3
+
+          VERSION_NO_V="${VERSION#v}"
+          workdir="$(mktemp -d)"
+
+          for arch in amd64 arm64; do
+            extract="${workdir}/${arch}"
+            mkdir -p "$extract"
+            tar -xzf "dist/bb_${VERSION_NO_V}_linux_${arch}.tar.gz" -C "$extract"
+
+            for packager in deb rpm; do
+              PKG_ARCH="$arch" \
+              PKG_VERSION="$VERSION_NO_V" \
+              PKG_BINARY="${extract}/bb" \
+                nfpm package \
+                  --config scripts/nfpm.yaml \
+                  --packager "$packager" \
+                  --target "dist/bb_${VERSION_NO_V}_linux_${arch}.${packager}"
+            done
+          done
+
+          ls -1 dist/*.deb dist/*.rpm
+
       - name: Generate checksums
         run: |
           set -euo pipefail
@@ -488,7 +516,7 @@ jobs:
           COSIGN_YES: "true"
         run: |
           set -euo pipefail
-          for file in dist/*.tar.gz dist/*.zip dist/sha256sums.txt; do
+          for file in dist/*.tar.gz dist/*.zip dist/*.deb dist/*.rpm dist/sha256sums.txt; do
             if [[ ! -f "$file" ]]; then
               continue
             fi
@@ -507,6 +535,8 @@ jobs:
           subject-path: |
             dist/*.tar.gz
             dist/*.zip
+            dist/*.deb
+            dist/*.rpm
 
       - name: Publish GitHub release
         env:
@@ -668,3 +698,105 @@ jobs:
           git add bb.json
           git diff --cached --quiet || git commit -m "Update bb to ${VERSION}"
           git push
+
+  homebrew-release:
+    name: Publish to Homebrew tap
+    needs:
+      - determine-version
+      - release
+    if: ${{ needs.determine-version.outputs.should_release == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.determine-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Download checksums from release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release download "$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "sha256sums.txt" \
+            --output sha256sums.txt
+
+      - name: Update Homebrew formula
+        env:
+          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone https://github.com/vriesdemichael/homebrew-tap.git tap
+
+          python scripts/gen_homebrew_formula.py \
+            --version "${VERSION#v}" \
+            --repository "$GITHUB_REPOSITORY" \
+            --sha256sums sha256sums.txt \
+            --output tap/Formula/bb.rb
+
+          cd tap
+          git config credential.helper \
+            '!f() { printf "username=x-access-token\npassword=%s\n" "${TAP_GITHUB_TOKEN}"; }; f'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/bb.rb
+          git diff --cached --quiet || git commit -m "Update bb to ${VERSION}"
+          git push
+
+  aur-release:
+    name: Publish to AUR
+    needs:
+      - determine-version
+      - release
+    if: ${{ needs.determine-version.outputs.should_release == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.determine-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Download checksums from release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release download "$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "sha256sums.txt" \
+            --output sha256sums.txt
+
+      - name: Generate PKGBUILD
+        run: |
+          set -euo pipefail
+          python scripts/gen_pkgbuild.py \
+            --version "${VERSION#v}" \
+            --repository "$GITHUB_REPOSITORY" \
+            --sha256sums sha256sums.txt \
+            --output PKGBUILD
+          cat PKGBUILD
+
+      - name: Publish to AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.3
+        with:
+          pkgname: bb-bin
+          pkgbuild: ./PKGBUILD
+          commit_username: github-actions[bot]
+          commit_email: 41898282+github-actions[bot]@users.noreply.github.com
+          ssh_private_key: ${{ secrets.AUR_KEY }}
+          commit_message: Update bb-bin to ${{ needs.determine-version.outputs.version }}
