@@ -66,14 +66,6 @@ func TestLoadFromEnvErrorsWhenNoHostConfigured(t *testing.T) {
 }
 
 func TestDotenvCandidatesWalkToRepositoryRoot(t *testing.T) {
-	originalWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = os.Chdir(originalWD)
-	})
-
 	repoRoot := t.TempDir()
 	if err := os.WriteFile(filepath.Join(repoRoot, "go.mod"), []byte("module example.com/testrepo\n\ngo 1.24\n"), 0o600); err != nil {
 		t.Fatalf("write go.mod: %v", err)
@@ -83,9 +75,7 @@ func TestDotenvCandidatesWalkToRepositoryRoot(t *testing.T) {
 	if err := os.MkdirAll(nested, 0o755); err != nil {
 		t.Fatalf("mkdir nested: %v", err)
 	}
-	if err := os.Chdir(nested); err != nil {
-		t.Fatalf("chdir nested: %v", err)
-	}
+	t.Chdir(nested)
 
 	candidates := dotenvCandidates()
 	if len(candidates) < 2 {
@@ -108,14 +98,6 @@ func TestDotenvCandidatesWalkToRepositoryRoot(t *testing.T) {
 }
 
 func TestLoadFromEnvFindsRepositoryDotenvFromNestedWorkingDirectory(t *testing.T) {
-	originalWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = os.Chdir(originalWD)
-	})
-
 	repoRoot := t.TempDir()
 	if err := os.WriteFile(filepath.Join(repoRoot, "go.mod"), []byte("module example.com/testrepo\n\ngo 1.24\n"), 0o600); err != nil {
 		t.Fatalf("write go.mod: %v", err)
@@ -128,9 +110,7 @@ func TestLoadFromEnvFindsRepositoryDotenvFromNestedWorkingDirectory(t *testing.T
 	if err := os.MkdirAll(nested, 0o755); err != nil {
 		t.Fatalf("mkdir nested: %v", err)
 	}
-	if err := os.Chdir(nested); err != nil {
-		t.Fatalf("chdir nested: %v", err)
-	}
+	t.Chdir(nested)
 
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	unsetEnvKeys(t,

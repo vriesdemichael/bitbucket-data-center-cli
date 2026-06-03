@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -815,7 +816,9 @@ func TestReplaceBinary(t *testing.T) {
 		if err != nil {
 			t.Fatalf("stat target: %v", err)
 		}
-		if info.Mode().Perm() != 0o700 {
+		// Windows does not model Unix permission bits; os.Chmod only toggles the
+		// read-only flag, so Mode().Perm() reports 0o666 regardless of finalMode.
+		if runtime.GOOS != "windows" && info.Mode().Perm() != 0o700 {
 			t.Fatalf("expected existing mode preserved, got %o", info.Mode().Perm())
 		}
 	})
@@ -829,7 +832,8 @@ func TestReplaceBinary(t *testing.T) {
 		if err != nil {
 			t.Fatalf("stat target: %v", err)
 		}
-		if info.Mode().Perm() != 0o755 {
+		// Windows does not model Unix permission bits (see note above).
+		if runtime.GOOS != "windows" && info.Mode().Perm() != 0o755 {
 			t.Fatalf("expected provided mode, got %o", info.Mode().Perm())
 		}
 	})
@@ -876,7 +880,9 @@ func TestStageWindowsBinary(t *testing.T) {
 		if err != nil {
 			t.Fatalf("stat staged path: %v", err)
 		}
-		if info.Mode().Perm() != 0o700 {
+		// Windows does not model Unix permission bits; os.Chmod only toggles the
+		// read-only flag, so Mode().Perm() reports 0o666 regardless of finalMode.
+		if runtime.GOOS != "windows" && info.Mode().Perm() != 0o700 {
 			t.Fatalf("expected existing mode preserved, got %o", info.Mode().Perm())
 		}
 	})
@@ -907,7 +913,8 @@ func TestStageWindowsBinary(t *testing.T) {
 		if err != nil {
 			t.Fatalf("stat staged path: %v", err)
 		}
-		if info.Mode().Perm() != 0o755 {
+		// Windows does not model Unix permission bits (see note above).
+		if runtime.GOOS != "windows" && info.Mode().Perm() != 0o755 {
 			t.Fatalf("expected provided mode, got %o", info.Mode().Perm())
 		}
 	})
@@ -976,6 +983,9 @@ func TestWindowsSwapHelpers(t *testing.T) {
 	})
 
 	t.Run("detached launch starts worker command", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("launcher fixture is a POSIX shell script and cannot be exec'd as powershell.exe on Windows")
+		}
 		tempDir := t.TempDir()
 		argsPath := filepath.Join(tempDir, "args.txt")
 		launcherPath := filepath.Join(tempDir, "powershell.exe")

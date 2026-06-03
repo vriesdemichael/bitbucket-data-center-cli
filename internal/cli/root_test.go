@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -1913,6 +1914,9 @@ func TestInferenceHelperFunctions(t *testing.T) {
 	})
 
 	t.Run("infer context returns nil when working directory cannot be resolved", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("simulates an unresolvable CWD by deleting it; Windows forbids removing a directory that is the process working directory")
+		}
 		gitBackendFactory = func() git.Backend {
 			return inferenceGitBackendStub{repoRoot: "/tmp/repo", remotes: []git.Remote{{Name: "origin", URL: "https://bitbucket.local/scm/PRJ/repo.git"}}}
 		}
