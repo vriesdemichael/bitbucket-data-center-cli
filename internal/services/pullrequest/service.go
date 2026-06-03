@@ -66,11 +66,11 @@ type Reviewer struct {
 }
 
 type CreateInput struct {
-	FromRef     string   `json:"from_ref"`
-	ToRef       string   `json:"to_ref"`
-	Title       string   `json:"title"`
-	Description string   `json:"description,omitempty"`
-	Draft       bool     `json:"draft,omitempty"`
+	FromRef     string `json:"from_ref"`
+	ToRef       string `json:"to_ref"`
+	Title       string `json:"title"`
+	Description string `json:"description,omitempty"`
+	Draft       bool   `json:"draft,omitempty"`
 	// Reviewers lists usernames to add as PR reviewers on creation. Blank and
 	// whitespace-only entries are ignored; an empty result omits reviewers from
 	// the request payload.

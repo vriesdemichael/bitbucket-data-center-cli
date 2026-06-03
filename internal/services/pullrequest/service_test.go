@@ -1094,4 +1094,3 @@ func TestEnableAutoMergeDefaultStrategy(t *testing.T) {
 		t.Fatalf("expected request body to contain no-ff, got: %s", receivedBody)
 	}
 }
-
