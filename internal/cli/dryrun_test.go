@@ -424,6 +424,8 @@ func TestDryRunPassthroughPathCoverage(t *testing.T) {
 		"pr task create",
 		"pr task update",
 		"pr task delete",
+		"pr auto-merge enable",
+		"pr auto-merge disable",
 		"build status set",
 		"build required create",
 		"build required update",
