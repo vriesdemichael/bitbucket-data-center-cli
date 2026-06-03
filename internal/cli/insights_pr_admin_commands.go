@@ -530,11 +530,14 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	var createTitle string
 	var createDescription string
 	var createReviewers []string
+	var createDraft bool
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a pull request",
 		Example: "  # Create a pull request\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\"\n\n" +
+			"  # Create a draft pull request (Bitbucket DC 8.0+)\n" +
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --draft\n\n" +
 			"  # Create a pull request and assign reviewers (repeatable or comma-separated)\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --reviewers alice,bob",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -582,7 +585,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 					Capability:   capabilityFull,
 					Items: []dryRunItem{{
 						Intent:          "pr.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "from_ref": createFromRef, "to_ref": createToRef, "title": createTitle, "reviewers": createReviewers},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "from_ref": createFromRef, "to_ref": createToRef, "title": createTitle, "reviewers": createReviewers, "draft": createDraft},
 						Action:          "create",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -613,6 +616,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				Title:       createTitle,
 				Description: createDescription,
 				Reviewers:   createReviewers,
+				Draft:       createDraft,
 			})
 			if err != nil {
 				return err
@@ -631,6 +635,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	createCmd.Flags().StringVar(&createTitle, "title", "", "Pull request title")
 	createCmd.Flags().StringVar(&createDescription, "description", "", "Pull request description")
 	createCmd.Flags().StringSliceVar(&createReviewers, "reviewers", nil, "Reviewer usernames to add (repeatable or comma-separated, e.g. --reviewers alice,bob)")
+	createCmd.Flags().BoolVar(&createDraft, "draft", false, "Create as a draft pull request (Bitbucket DC 8.0+)")
 	_ = createCmd.MarkFlagRequired("from-ref")
 	_ = createCmd.MarkFlagRequired("to-ref")
 	_ = createCmd.MarkFlagRequired("title")
@@ -639,10 +644,17 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	var updateTitle string
 	var updateDescription string
 	var updateVersion int
+	var updateDraft bool
 	updateCmd := &cobra.Command{
 		Use:   "update <id>",
 		Short: "Update pull request metadata",
-		Args:  cobra.ExactArgs(1),
+		Example: "  # Update title and description\n" +
+			"  bb pr update 42 --repo PROJ/repo --version 1 --title \"New title\"\n\n" +
+			"  # Mark a draft PR as ready for review\n" +
+			"  bb pr update 42 --repo PROJ/repo --version 1 --draft=false\n\n" +
+			"  # Convert an open PR to draft\n" +
+			"  bb pr update 42 --repo PROJ/repo --version 1 --draft",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := loadConfigAndClient()
 			if err != nil {
@@ -652,6 +664,11 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
 			if err != nil {
 				return err
+			}
+
+			var draft *bool
+			if cmd.Flags().Changed("draft") {
+				draft = &updateDraft
 			}
 
 			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
@@ -666,10 +683,12 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
+				draftChanged := draft != nil && current.Draft != *draft
 				predicted := "update"
 				reason := "pull request metadata will be updated"
 				if strings.EqualFold(strings.TrimSpace(current.Title), strings.TrimSpace(updateTitle)) &&
-					strings.EqualFold(strings.TrimSpace(current.Description), strings.TrimSpace(updateDescription)) {
+					strings.EqualFold(strings.TrimSpace(current.Description), strings.TrimSpace(updateDescription)) &&
+					!draftChanged {
 					predicted = "no-op"
 					reason = "pull request already matches requested metadata"
 				}
@@ -680,7 +699,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 					Capability:   capabilityFull,
 					Items: []dryRunItem{{
 						Intent:          "pr.update",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "title": updateTitle, "description": updateDescription, "version": updateVersion},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "title": updateTitle, "description": updateDescription, "version": updateVersion, "draft": draft},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -703,6 +722,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				Title:       updateTitle,
 				Description: updateDescription,
 				Version:     updateVersion,
+				Draft:       draft,
 			})
 			if err != nil {
 				return err
@@ -719,6 +739,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	updateCmd.Flags().StringVar(&updateTitle, "title", "", "Updated pull request title")
 	updateCmd.Flags().StringVar(&updateDescription, "description", "", "Updated pull request description")
 	updateCmd.Flags().IntVar(&updateVersion, "version", 0, "Expected pull request version")
+	updateCmd.Flags().BoolVar(&updateDraft, "draft", false, "Set draft state: --draft to mark as draft, --draft=false to mark as ready for review")
 	_ = updateCmd.MarkFlagRequired("version")
 	prCmd.AddCommand(updateCmd)
 
@@ -1752,6 +1773,201 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	}
 	buildCmd.AddCommand(buildStatusCmd)
 	prCmd.AddCommand(buildCmd)
+
+	// pr auto-merge
+	autoMergeCmd := &cobra.Command{
+		Use:   "auto-merge",
+		Short: "Pull request auto-merge commands (Bitbucket DC 8.0+)",
+	}
+
+	autoMergeGetCmd := &cobra.Command{
+		Use:   "get <id>",
+		Short: "Get auto-merge configuration for a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			autoMerge, err := service.GetAutoMerge(cmd.Context(), repo, args[0])
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "auto_merge": autoMerge})
+			}
+
+			if !autoMerge.Enabled {
+				fmt.Fprintln(cmd.OutOrStdout(), "Auto-merge: disabled")
+				return nil
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Auto-merge: enabled (strategy=%s)\n", autoMerge.StrategyID)
+			return nil
+		},
+	}
+	autoMergeCmd.AddCommand(autoMergeGetCmd)
+
+	var autoMergeStrategy string
+	autoMergeEnableCmd := &cobra.Command{
+		Use:   "enable <id>",
+		Short: "Enable auto-merge on a pull request",
+		Example: "  # Enable auto-merge with the default strategy (no-ff)\n" +
+			"  bb pr auto-merge enable 42 --repo PROJ/repo\n\n" +
+			"  # Enable auto-merge with a specific strategy\n" +
+			"  bb pr auto-merge enable 42 --repo PROJ/repo --strategy rebase-ff-only",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, apiClient, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			if options.DryRun {
+				checker := options.permissionCheckerFor(apiClient)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				current, err := service.GetAutoMerge(cmd.Context(), repo, args[0])
+				if err != nil {
+					return err
+				}
+
+				predicted := "update"
+				reason := "auto-merge will be enabled"
+				if current.Enabled && strings.EqualFold(strings.TrimSpace(current.StrategyID), strings.TrimSpace(autoMergeStrategy)) {
+					predicted = "no-op"
+					reason = "auto-merge is already enabled with the same strategy"
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.auto-merge.enable",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "strategy": autoMergeStrategy},
+						Action:          "update",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request auto-merge"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1},
+				}
+				if predicted == "update" {
+					preview.Summary.UpdateCount = 1
+				} else {
+					preview.Summary.NoopCount = 1
+				}
+
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			autoMerge, err := service.EnableAutoMerge(cmd.Context(), repo, args[0], autoMergeStrategy)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "auto_merge": autoMerge})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Enabled auto-merge on pull request #%s (strategy=%s)\n", args[0], autoMerge.StrategyID)
+			return nil
+		},
+	}
+	autoMergeEnableCmd.Flags().StringVar(&autoMergeStrategy, "strategy", "no-ff", "Merge strategy: no-ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only")
+	autoMergeCmd.AddCommand(autoMergeEnableCmd)
+
+	autoMergeDisableCmd := &cobra.Command{
+		Use:   "disable <id>",
+		Short: "Disable auto-merge on a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, apiClient, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			if options.DryRun {
+				checker := options.permissionCheckerFor(apiClient)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				current, err := service.GetAutoMerge(cmd.Context(), repo, args[0])
+				if err != nil {
+					return err
+				}
+
+				predicted := "delete"
+				reason := "auto-merge will be disabled"
+				if !current.Enabled {
+					predicted = "no-op"
+					reason = "auto-merge is not enabled"
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.auto-merge.disable",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Action:          "delete",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request auto-merge"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1},
+				}
+				if predicted == "delete" {
+					preview.Summary.DeleteCount = 1
+				} else {
+					preview.Summary.NoopCount = 1
+				}
+
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			if err := service.DisableAutoMerge(cmd.Context(), repo, args[0]); err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": repo, "pull_request_id": args[0]})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Disabled auto-merge on pull request #%s\n", args[0])
+			return nil
+		},
+	}
+	autoMergeCmd.AddCommand(autoMergeDisableCmd)
+	prCmd.AddCommand(autoMergeCmd)
 
 	return prCmd
 }

@@ -31,6 +31,7 @@ type PullRequest struct {
 	State        string         `json:"state"`
 	Open         bool           `json:"open"`
 	Closed       bool           `json:"closed"`
+	Draft        bool           `json:"draft,omitempty"`
 	Repository   *RepositoryRef `json:"repository,omitempty"`
 	Version      int            `json:"version,omitempty"`
 	Author       string         `json:"author,omitempty"`
@@ -69,6 +70,7 @@ type CreateInput struct {
 	ToRef       string   `json:"to_ref"`
 	Title       string   `json:"title"`
 	Description string   `json:"description,omitempty"`
+	Draft       bool     `json:"draft,omitempty"`
 	// Reviewers lists usernames to add as PR reviewers on creation. Blank and
 	// whitespace-only entries are ignored; an empty result omits reviewers from
 	// the request payload.
@@ -79,6 +81,15 @@ type UpdateInput struct {
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description,omitempty"`
 	Version     int    `json:"version"`
+	// Draft, when non-nil, sets or clears the draft flag on the pull request.
+	Draft *bool `json:"draft,omitempty"`
+}
+
+// AutoMerge represents the auto-merge configuration for a pull request.
+// Enabled is false when no auto-merge is configured (the API returns 404).
+type AutoMerge struct {
+	Enabled    bool   `json:"enabled"`
+	StrategyID string `json:"strategy_id,omitempty"`
 }
 
 type TaskListOptions struct {
@@ -613,6 +624,78 @@ func (service *Service) GetBuildStatuses(ctx context.Context, repository Reposit
 	return results, nil
 }
 
+// GetAutoMerge returns the auto-merge configuration for a pull request.
+// When auto-merge is not configured, Enabled is false and no error is returned.
+func (service *Service) GetAutoMerge(ctx context.Context, repository RepositoryRef, pullRequestID string) (AutoMerge, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return AutoMerge{}, err
+	}
+
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return AutoMerge{}, err
+	}
+
+	var response autoMergeValue
+	err = service.client.GetJSON(ctx, fmt.Sprintf("%s/%s/auto-merge", pullRequestPath(repository), resolvedID), nil, &response)
+	if err != nil {
+		if apperrors.IsKind(err, apperrors.KindNotFound) {
+			return AutoMerge{Enabled: false}, nil
+		}
+		return AutoMerge{}, err
+	}
+
+	strategyID := ""
+	if response.StrategyId != nil {
+		strategyID = *response.StrategyId
+	}
+	return AutoMerge{Enabled: true, StrategyID: strategyID}, nil
+}
+
+// EnableAutoMerge enables auto-merge on a pull request using the given merge strategy.
+// Valid strategy values: no-ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only.
+func (service *Service) EnableAutoMerge(ctx context.Context, repository RepositoryRef, pullRequestID string, strategyID string) (AutoMerge, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return AutoMerge{}, err
+	}
+
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return AutoMerge{}, err
+	}
+
+	strategy := strings.TrimSpace(strategyID)
+	if strategy == "" {
+		strategy = "no-ff"
+	}
+
+	payload := map[string]any{"strategyId": strategy}
+	var response autoMergeValue
+	if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/auto-merge", pullRequestPath(repository), resolvedID), nil, payload, &response); err != nil {
+		return AutoMerge{}, err
+	}
+
+	responseStrategy := strategy
+	if response.StrategyId != nil {
+		responseStrategy = *response.StrategyId
+	}
+	return AutoMerge{Enabled: true, StrategyID: responseStrategy}, nil
+}
+
+// DisableAutoMerge removes the auto-merge configuration from a pull request.
+func (service *Service) DisableAutoMerge(ctx context.Context, repository RepositoryRef, pullRequestID string) error {
+	if err := validateRepositoryRef(repository); err != nil {
+		return err
+	}
+
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return err
+	}
+
+	return service.client.DeleteJSON(ctx, fmt.Sprintf("%s/%s/auto-merge", pullRequestPath(repository), resolvedID), nil, nil, nil)
+}
+
 func normalizeState(state string) (string, error) {
 	resolved := strings.ToLower(strings.TrimSpace(state))
 	if resolved == "" {
@@ -695,6 +778,7 @@ func mapPullRequest(raw pullRequestValue) PullRequest {
 		State:        strings.TrimSpace(raw.State),
 		Open:         raw.Open,
 		Closed:       raw.Closed,
+		Draft:        raw.Draft,
 		Version:      raw.Version,
 		Author:       author,
 		SourceBranch: branchDisplayName(raw.FromRef),
@@ -882,6 +966,10 @@ func buildCreatePayload(input CreateInput) (map[string]any, error) {
 		"toRef":   map[string]any{"id": normalizeBranchRef(toRef)},
 	}
 
+	if input.Draft {
+		payload["draft"] = true
+	}
+
 	if description := strings.TrimSpace(input.Description); description != "" {
 		payload["description"] = description
 	}
@@ -918,9 +1006,12 @@ func buildUpdatePayload(input UpdateInput) (map[string]any, error) {
 	if description := strings.TrimSpace(input.Description); description != "" {
 		payload["description"] = description
 	}
+	if input.Draft != nil {
+		payload["draft"] = *input.Draft
+	}
 
 	if len(payload) == 1 {
-		return nil, apperrors.New(apperrors.KindValidation, "at least one of title or description is required", nil)
+		return nil, apperrors.New(apperrors.KindValidation, "at least one of title, description, or draft is required", nil)
 	}
 
 	return payload, nil
@@ -1048,6 +1139,7 @@ type pullRequestValue struct {
 	State        string                   `json:"state"`
 	Open         bool                     `json:"open"`
 	Closed       bool                     `json:"closed"`
+	Draft        bool                     `json:"draft"`
 	Version      int                      `json:"version"`
 	CreatedDate  int64                    `json:"createdDate"`
 	UpdatedDate  int64                    `json:"updatedDate"`
@@ -1055,6 +1147,10 @@ type pullRequestValue struct {
 	Participants []pullRequestParticipant `json:"participants"`
 	FromRef      *pullRequestRef          `json:"fromRef"`
 	ToRef        *pullRequestRef          `json:"toRef"`
+}
+
+type autoMergeValue struct {
+	StrategyId *string `json:"strategyId"`
 }
 
 type pullRequestParticipant struct {

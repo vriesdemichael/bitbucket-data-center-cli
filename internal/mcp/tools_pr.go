@@ -75,6 +75,7 @@ func specCreatePullRequest() Spec {
 		mcpgo.WithString("title", mcpgo.Required(), mcpgo.Description("Pull request title")),
 		mcpgo.WithString("description", mcpgo.Description("Pull request description (optional)")),
 		mcpgo.WithString("reviewers", mcpgo.Description("Comma-separated reviewer usernames to add (e.g. alice,bob)")),
+		mcpgo.WithBoolean("draft", mcpgo.Description("Create as a draft pull request (Bitbucket DC 8.0+; default false)")),
 	)
 	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
 		svc := pullrequestservice.NewService(c.HTTP)
@@ -91,6 +92,7 @@ func specCreatePullRequest() Spec {
 					Title:       title,
 					Description: req.GetString("description", ""),
 					Reviewers:   parseCommaList(req.GetString("reviewers", "")),
+					Draft:       req.GetBool("draft", false),
 				},
 			)
 			if err != nil {
@@ -263,6 +265,56 @@ func specMergePullRequest() Spec {
 				return mcpgo.NewToolResultErrorFromErr("merge_pull_request failed", err), nil
 			}
 			return resultJSON(pr)
+		}
+	}}
+}
+
+func specEnableAutoMerge() Spec {
+	tool := mcpgo.NewTool("enable_auto_merge",
+		mcpgo.WithDescription("Enable auto-merge on a pull request. The PR will be merged automatically once all required checks pass and reviewers have approved. Requires Bitbucket DC 8.0+."),
+		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
+		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
+		mcpgo.WithString("pr_id", mcpgo.Required(), mcpgo.Description("Pull request ID")),
+		mcpgo.WithString("strategy", mcpgo.Description("Merge strategy: no-ff (default), ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only"),
+			mcpgo.Enum("no-ff", "ff-only", "rebase-no-ff", "rebase-ff-only", "squash", "squash-ff-only")),
+	)
+	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
+		svc := pullrequestservice.NewService(c.HTTP)
+		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
+			project, _ := req.RequireString("project")
+			repo, _ := req.RequireString("repo")
+			prID, _ := req.RequireString("pr_id")
+			strategy := req.GetString("strategy", "no-ff")
+			autoMerge, err := svc.EnableAutoMerge(ctx,
+				pullrequestservice.RepositoryRef{ProjectKey: project, Slug: repo},
+				prID,
+				strategy,
+			)
+			if err != nil {
+				return mcpgo.NewToolResultErrorFromErr("enable_auto_merge failed", err), nil
+			}
+			return resultJSON(autoMerge)
+		}
+	}}
+}
+
+func specDisableAutoMerge() Spec {
+	tool := mcpgo.NewTool("disable_auto_merge",
+		mcpgo.WithDescription("Disable auto-merge on a pull request. The PR will no longer be merged automatically."),
+		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
+		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
+		mcpgo.WithString("pr_id", mcpgo.Required(), mcpgo.Description("Pull request ID")),
+	)
+	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
+		svc := pullrequestservice.NewService(c.HTTP)
+		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
+			project, _ := req.RequireString("project")
+			repo, _ := req.RequireString("repo")
+			prID, _ := req.RequireString("pr_id")
+			if err := svc.DisableAutoMerge(ctx, pullrequestservice.RepositoryRef{ProjectKey: project, Slug: repo}, prID); err != nil {
+				return mcpgo.NewToolResultErrorFromErr("disable_auto_merge failed", err), nil
+			}
+			return resultJSON(map[string]any{"status": "ok", "auto_merge": map[string]any{"enabled": false}})
 		}
 	}}
 }

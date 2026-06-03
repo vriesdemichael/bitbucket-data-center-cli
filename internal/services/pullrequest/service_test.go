@@ -824,3 +824,274 @@ func TestBuildCreatePayloadWithBlankReviewers(t *testing.T) {
 	}
 }
 
+func TestBuildCreatePayloadWithDraft(t *testing.T) {
+	payload, err := buildCreatePayload(CreateInput{
+		FromRef: "feature/my-work",
+		ToRef:   "main",
+		Title:   "My PR",
+		Draft:   true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	draft, ok := payload["draft"].(bool)
+	if !ok || !draft {
+		t.Fatalf("expected draft=true in payload, got %v", payload["draft"])
+	}
+}
+
+func TestBuildCreatePayloadNoDraftByDefault(t *testing.T) {
+	payload, err := buildCreatePayload(CreateInput{
+		FromRef: "feature/my-work",
+		ToRef:   "main",
+		Title:   "My PR",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, exists := payload["draft"]; exists {
+		t.Fatalf("expected no draft key when Draft=false, got %v", payload["draft"])
+	}
+}
+
+func TestBuildUpdatePayloadWithDraft(t *testing.T) {
+	trueVal := true
+	payload, err := buildUpdatePayload(UpdateInput{
+		Title:   "Updated title",
+		Version: 1,
+		Draft:   &trueVal,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if payload["draft"] != true {
+		t.Fatalf("expected draft=true in update payload, got %v", payload["draft"])
+	}
+}
+
+func TestBuildUpdatePayloadDraftOnlyRequiresVersion(t *testing.T) {
+	falseVal := false
+	payload, err := buildUpdatePayload(UpdateInput{
+		Version: 2,
+		Draft:   &falseVal,
+	})
+	if err != nil {
+		t.Fatalf("expected draft-only update to succeed, got: %v", err)
+	}
+
+	if payload["draft"] != false {
+		t.Fatalf("expected draft=false in update payload, got %v", payload["draft"])
+	}
+	if payload["version"] != 2 {
+		t.Fatalf("expected version=2 in update payload, got %v", payload["version"])
+	}
+}
+
+func TestBuildUpdatePayloadValidationRequiresField(t *testing.T) {
+	_, err := buildUpdatePayload(UpdateInput{Version: 1})
+	if err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected validation error exit code 2 when no fields set, got: %v", err)
+	}
+}
+
+func TestCreateDraftPullRequest(t *testing.T) {
+	var receivedBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests" {
+			receivedBody = readBody(t, r)
+			_, _ = fmt.Fprint(w, `{"id":50,"title":"Draft PR","state":"OPEN","open":true,"closed":false,"draft":true,"fromRef":{"displayId":"feature/draft"},"toRef":{"displayId":"main"}}`)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	service := NewService(httpclient.NewFromConfig(cfg))
+	created, err := service.Create(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CreateInput{
+		FromRef: "feature/draft",
+		ToRef:   "main",
+		Title:   "Draft PR",
+		Draft:   true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !created.Draft {
+		t.Fatal("expected created PR to have Draft=true")
+	}
+	if !strings.Contains(receivedBody, `"draft":true`) {
+		t.Fatalf("expected request body to contain draft:true, got: %s", receivedBody)
+	}
+}
+
+func TestUpdateDraftPullRequest(t *testing.T) {
+	var receivedBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/50" {
+			receivedBody = readBody(t, r)
+			_, _ = fmt.Fprint(w, `{"id":50,"title":"Draft PR","state":"OPEN","open":true,"closed":false,"draft":false,"version":2,"fromRef":{"displayId":"feature/draft"},"toRef":{"displayId":"main"}}`)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	falseVal := false
+	service := NewService(httpclient.NewFromConfig(cfg))
+	updated, err := service.Update(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "50", UpdateInput{
+		Title:   "Draft PR",
+		Version: 1,
+		Draft:   &falseVal,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if updated.Draft {
+		t.Fatal("expected updated PR to have Draft=false")
+	}
+	if !strings.Contains(receivedBody, `"draft":false`) {
+		t.Fatalf("expected request body to contain draft:false, got: %s", receivedBody)
+	}
+}
+
+func TestAutoMergeEnableDisableGet(t *testing.T) {
+	const autoMergePath = "/rest/api/latest/projects/TEST/repos/demo/pull-requests/42/auto-merge"
+	autoMergeEnabled := true
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != autoMergePath {
+			http.NotFound(w, r)
+			return
+		}
+		switch r.Method {
+		case http.MethodGet:
+			if !autoMergeEnabled {
+				http.NotFound(w, r)
+				return
+			}
+			_, _ = fmt.Fprint(w, `{"strategyId":"no-ff"}`)
+		case http.MethodPost:
+			autoMergeEnabled = true
+			_, _ = fmt.Fprint(w, `{"strategyId":"rebase-ff-only"}`)
+		case http.MethodDelete:
+			autoMergeEnabled = false
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	service := NewService(httpclient.NewFromConfig(cfg))
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	// GET when enabled
+	am, err := service.GetAutoMerge(context.Background(), repo, "42")
+	if err != nil {
+		t.Fatalf("GetAutoMerge: unexpected error: %v", err)
+	}
+	if !am.Enabled || am.StrategyID != "no-ff" {
+		t.Fatalf("GetAutoMerge: expected enabled=true strategy=no-ff, got %+v", am)
+	}
+
+	// Enable with a specific strategy
+	enabled, err := service.EnableAutoMerge(context.Background(), repo, "42", "rebase-ff-only")
+	if err != nil {
+		t.Fatalf("EnableAutoMerge: unexpected error: %v", err)
+	}
+	if !enabled.Enabled || enabled.StrategyID != "rebase-ff-only" {
+		t.Fatalf("EnableAutoMerge: expected enabled=true strategy=rebase-ff-only, got %+v", enabled)
+	}
+
+	// Disable
+	if err := service.DisableAutoMerge(context.Background(), repo, "42"); err != nil {
+		t.Fatalf("DisableAutoMerge: unexpected error: %v", err)
+	}
+
+	// GET after disable returns not-found → Enabled=false, no error
+	am, err = service.GetAutoMerge(context.Background(), repo, "42")
+	if err != nil {
+		t.Fatalf("GetAutoMerge after disable: unexpected error: %v", err)
+	}
+	if am.Enabled {
+		t.Fatalf("GetAutoMerge after disable: expected enabled=false, got %+v", am)
+	}
+}
+
+func TestAutoMergeValidation(t *testing.T) {
+	service := NewService(httpclient.NewFromConfig(config.AppConfig{BitbucketURL: "http://localhost:7990"}))
+
+	_, err := service.GetAutoMerge(context.Background(), RepositoryRef{}, "1")
+	if err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected validation error for missing repo ref, got: %v", err)
+	}
+
+	_, err = service.EnableAutoMerge(context.Background(), RepositoryRef{}, "1", "no-ff")
+	if err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected validation error for missing repo ref in enable, got: %v", err)
+	}
+
+	err = service.DisableAutoMerge(context.Background(), RepositoryRef{}, "1")
+	if err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected validation error for missing repo ref in disable, got: %v", err)
+	}
+}
+
+func TestEnableAutoMergeDefaultStrategy(t *testing.T) {
+	var receivedBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			receivedBody = readBody(t, r)
+			_, _ = fmt.Fprint(w, `{"strategyId":"no-ff"}`)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, _ := config.LoadFromEnv()
+	service := NewService(httpclient.NewFromConfig(cfg))
+
+	// Empty strategy should default to "no-ff"
+	am, err := service.EnableAutoMerge(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "1", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if am.StrategyID != "no-ff" {
+		t.Fatalf("expected strategy no-ff, got %s", am.StrategyID)
+	}
+	if !strings.Contains(receivedBody, `"strategyId":"no-ff"`) {
+		t.Fatalf("expected request body to contain no-ff, got: %s", receivedBody)
+	}
+}
+

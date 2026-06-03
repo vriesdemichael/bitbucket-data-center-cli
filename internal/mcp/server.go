@@ -61,6 +61,10 @@ func AllSpecs() []Spec {
 		{specSubmitPRReview().Tool, specSubmitPRReview().Handler, true},
 		// Merging is irreversible and affects the target branch — requires --yolo.
 		{specMergePullRequest().Tool, specMergePullRequest().Handler, false},
+		// Enabling auto-merge can trigger an irreversible merge — requires --yolo.
+		{specEnableAutoMerge().Tool, specEnableAutoMerge().Handler, false},
+		// Disabling auto-merge stops automation — safe (easily re-enabled).
+		{specDisableAutoMerge().Tool, specDisableAutoMerge().Handler, true},
 		// Repository group
 		{specSearchRepositories().Tool, specSearchRepositories().Handler, true},
 		{specGetRepositoryCloneInfo().Tool, specGetRepositoryCloneInfo().Handler, true},
