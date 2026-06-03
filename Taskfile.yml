@@ -231,12 +231,12 @@ tasks:
     desc: Run live integration tests with coverage profile output over hand-written packages
     cmds:
       - mkdir -p .tmp
-      - go test -tags=live -covermode=count -coverpkg=./cmd/...,./internal/...,./tools/... -coverprofile=.tmp/coverage.live.out ./tests/integration/live
+      - go test -tags=live -timeout 20m -covermode=count -coverpkg=./cmd/...,./internal/...,./tools/... -coverprofile=.tmp/coverage.live.out ./tests/integration/live
       - go tool cover -func=.tmp/coverage.live.out | tail -n 1
 
   test:live:
     desc: Run live integration tests against local Bitbucket stack
-    cmd: go test -tags=live ./tests/integration/live
+    cmd: go test -tags=live -timeout 20m ./tests/integration/live
 
   stack:up:
     desc: Start local Bitbucket + Postgres stack
