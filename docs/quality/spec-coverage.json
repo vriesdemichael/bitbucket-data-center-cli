@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-9.4-openapi.json",
-  "covered": 112,
+  "covered": 115,
   "total": 546,
-  "coverage_percent": 20.51282051282051,
+  "coverage_percent": 21.062271062271062,
   "by_tag": [
     {
       "tag": "",
@@ -67,7 +67,7 @@
     },
     {
       "tag": "Pull Requests",
-      "covered": 30,
+      "covered": 33,
       "total": 69
     },
     {
@@ -1204,12 +1204,6 @@
       "summary": "Update pull request comment"
     },
     {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/changes",
-      "tag": "Pull Requests",
-      "summary": "Gets pull request changes"
-    },
-    {
       "method": "POST",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId}/apply-suggestion",
       "tag": "Pull Requests",
@@ -1223,21 +1217,9 @@
     },
     {
       "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/commits",
-      "tag": "Pull Requests",
-      "summary": "Get pull request commits"
-    },
-    {
-      "method": "GET",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/diff/{path}",
       "tag": "Pull Requests",
       "summary": "Stream a diff within a pull request"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/merge-base",
-      "tag": "Pull Requests",
-      "summary": "Get the common ancestor between the latest commits of the source and target branches of the pull request"
     },
     {
       "method": "GET",
