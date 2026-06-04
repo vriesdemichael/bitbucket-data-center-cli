@@ -27,6 +27,7 @@ type Target struct {
 	Repository    RepositoryRef
 	CommitID      string
 	PullRequestID string
+	Blocker       bool
 }
 
 func (target Target) Context() Context {
@@ -59,7 +60,7 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 		return nil, err
 	}
 	trimmedPath := strings.TrimSpace(path)
-	if trimmedPath == "" {
+	if !target.Blocker && trimmedPath == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "comment path is required for list operations", nil)
 	}
 	if limit <= 0 {
@@ -75,6 +76,29 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 			response, err := service.client.GetCommentsWithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, &openapigenerated.GetCommentsParams{Path: &trimmedPath, Start: &start, Limit: &pageLimit})
 			if err != nil {
 				return nil, apperrors.New(apperrors.KindTransient, "failed to list commit comments", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return nil, err
+			}
+			if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
+				break
+			}
+
+			results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
+			if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
+				break
+			}
+			if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
+				break
+			}
+			start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
+			continue
+		}
+
+		if target.Blocker {
+			response, err := service.client.GetComments1WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, &openapigenerated.GetComments1Params{Start: &start, Limit: &pageLimit})
+			if err != nil {
+				return nil, apperrors.New(apperrors.KindTransient, "failed to list pull request blocker comments", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return nil, err
@@ -144,6 +168,20 @@ func (service *Service) Create(ctx context.Context, target Target, text string) 
 		return body, nil
 	}
 
+	if target.Blocker {
+		response, err := service.client.CreateComment1WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, body)
+		if err != nil {
+			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to create pull request blocker comment", err)
+		}
+		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+			return openapigenerated.RestComment{}, err
+		}
+		if response.ApplicationjsonCharsetUTF8201 != nil {
+			return *response.ApplicationjsonCharsetUTF8201, nil
+		}
+		return body, nil
+	}
+
 	response, err := service.client.CreateComment2WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, body)
 	if err != nil {
 		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to create pull request comment", err)
@@ -188,6 +226,20 @@ func (service *Service) Update(ctx context.Context, target Target, commentID str
 		response, err := service.client.UpdateCommentWithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, trimmedCommentID, body)
 		if err != nil {
 			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to update commit comment", err)
+		}
+		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+			return openapigenerated.RestComment{}, err
+		}
+		if response.ApplicationjsonCharsetUTF8200 != nil {
+			return *response.ApplicationjsonCharsetUTF8200, nil
+		}
+		return body, nil
+	}
+
+	if target.Blocker {
+		response, err := service.client.UpdateComment1WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, body)
+		if err != nil {
+			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to update pull request blocker comment", err)
 		}
 		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return openapigenerated.RestComment{}, err
@@ -248,6 +300,17 @@ func (service *Service) Delete(ctx context.Context, target Target, commentID str
 		return resolvedVersion, nil
 	}
 
+	if target.Blocker {
+		response, err := service.client.DeleteComment1WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, &openapigenerated.DeleteComment1Params{Version: versionParam})
+		if err != nil {
+			return nil, apperrors.New(apperrors.KindTransient, "failed to delete pull request blocker comment", err)
+		}
+		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+			return nil, err
+		}
+		return resolvedVersion, nil
+	}
+
 	response, err := service.client.DeleteComment2WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, &openapigenerated.DeleteComment2Params{Version: versionParam})
 	if err != nil {
 		return nil, apperrors.New(apperrors.KindTransient, "failed to delete pull request comment", err)
@@ -283,6 +346,20 @@ func (service *Service) Get(ctx context.Context, target Target, commentID string
 		return openapigenerated.RestComment{}, nil
 	}
 
+	if target.Blocker {
+		response, err := service.client.GetComment1WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID)
+		if err != nil {
+			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to get pull request blocker comment", err)
+		}
+		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+			return openapigenerated.RestComment{}, err
+		}
+		if response.ApplicationjsonCharsetUTF8200 != nil {
+			return *response.ApplicationjsonCharsetUTF8200, nil
+		}
+		return openapigenerated.RestComment{}, nil
+	}
+
 	response, err := service.client.GetComment2WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID)
 	if err != nil {
 		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to get pull request comment", err)
@@ -297,6 +374,83 @@ func (service *Service) Get(ctx context.Context, target Target, commentID string
 	return openapigenerated.RestComment{}, nil
 }
 
+func (service *Service) React(ctx context.Context, repo RepositoryRef, prID string, commentID string, emoticon string) (openapigenerated.RestUserReaction, error) {
+	trimmedPrID := strings.TrimSpace(prID)
+	trimmedCommentID := strings.TrimSpace(commentID)
+	trimmedEmoticon := strings.TrimSpace(emoticon)
+
+	if strings.TrimSpace(repo.ProjectKey) == "" || strings.TrimSpace(repo.Slug) == "" {
+		return openapigenerated.RestUserReaction{}, apperrors.New(apperrors.KindValidation, "repository must be specified as project/repo", nil)
+	}
+	if trimmedPrID == "" {
+		return openapigenerated.RestUserReaction{}, apperrors.New(apperrors.KindValidation, "pull request id is required", nil)
+	}
+	if trimmedCommentID == "" {
+		return openapigenerated.RestUserReaction{}, apperrors.New(apperrors.KindValidation, "comment id is required", nil)
+	}
+	if trimmedEmoticon == "" {
+		return openapigenerated.RestUserReaction{}, apperrors.New(apperrors.KindValidation, "emoticon is required", nil)
+	}
+
+	response, err := service.client.React1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedPrID, trimmedCommentID, trimmedEmoticon)
+	if err != nil {
+		return openapigenerated.RestUserReaction{}, apperrors.New(apperrors.KindTransient, "failed to add reaction", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapigenerated.RestUserReaction{}, err
+	}
+	if response.ApplicationjsonCharsetUTF8200 != nil {
+		return *response.ApplicationjsonCharsetUTF8200, nil
+	}
+	return openapigenerated.RestUserReaction{}, nil
+}
+
+func (service *Service) UnReact(ctx context.Context, repo RepositoryRef, prID string, commentID string, emoticon string) error {
+	trimmedPrID := strings.TrimSpace(prID)
+	trimmedCommentID := strings.TrimSpace(commentID)
+	trimmedEmoticon := strings.TrimSpace(emoticon)
+
+	if strings.TrimSpace(repo.ProjectKey) == "" || strings.TrimSpace(repo.Slug) == "" {
+		return apperrors.New(apperrors.KindValidation, "repository must be specified as project/repo", nil)
+	}
+	if trimmedPrID == "" {
+		return apperrors.New(apperrors.KindValidation, "pull request id is required", nil)
+	}
+	if trimmedCommentID == "" {
+		return apperrors.New(apperrors.KindValidation, "comment id is required", nil)
+	}
+	if trimmedEmoticon == "" {
+		return apperrors.New(apperrors.KindValidation, "emoticon is required", nil)
+	}
+
+	response, err := service.client.UnReact1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedPrID, trimmedCommentID, trimmedEmoticon)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to remove reaction", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+func (service *Service) ApplySuggestion(ctx context.Context, repo RepositoryRef, prID string, commentID string, req openapigenerated.RestApplySuggestionRequest) error {
+	trimmedPrID := strings.TrimSpace(prID)
+	trimmedCommentID := strings.TrimSpace(commentID)
+
+	if strings.TrimSpace(repo.ProjectKey) == "" || strings.TrimSpace(repo.Slug) == "" {
+		return apperrors.New(apperrors.KindValidation, "repository must be specified as project/repo", nil)
+	}
+	if trimmedPrID == "" {
+		return apperrors.New(apperrors.KindValidation, "pull request id is required", nil)
+	}
+	if trimmedCommentID == "" {
+		return apperrors.New(apperrors.KindValidation, "comment id is required", nil)
+	}
+
+	response, err := service.client.ApplySuggestionWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedPrID, trimmedCommentID, req)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to apply suggestion", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
 func validateTarget(target Target) error {
 	if strings.TrimSpace(target.Repository.ProjectKey) == "" || strings.TrimSpace(target.Repository.Slug) == "" {
 		return apperrors.New(apperrors.KindValidation, "repository must be specified as project/repo", nil)
@@ -307,6 +461,10 @@ func validateTarget(target Target) error {
 
 	if hasCommit == hasPullRequest {
 		return apperrors.New(apperrors.KindValidation, "exactly one of commit or pull request id is required", nil)
+	}
+
+	if target.Blocker && hasCommit {
+		return apperrors.New(apperrors.KindValidation, "blocker comments are only supported for pull requests, not commits", nil)
 	}
 
 	return nil

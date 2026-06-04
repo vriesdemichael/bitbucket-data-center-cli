@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -1409,10 +1410,11 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 
 	var commentPath string
 	var commentLimit int
+	var commentBlocker bool
 	commentListCmd := &cobra.Command{
 		Use:   "list <id>",
 		Short: "List comments for a pull request",
-		Long:  "List pull request comments. Without --path this uses the pull request activity timeline to return the aggregate comment view. With --path it uses the path-scoped comments endpoint.",
+		Long:  "List pull request comments. Without --path this uses the pull request activity timeline to return the aggregate comment view. With --path it uses the path-scoped comments endpoint. With --blocker it lists blocker comments.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := loadConfigAndClient()
@@ -1429,7 +1431,18 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 
 			source := "comments"
 			comments := make([]openapigenerated.RestComment, 0)
-			if trimmedCommentPath == "" {
+			if commentBlocker {
+				source = "blocker_comments"
+				service := commentservice.NewService(client)
+				comments, err = service.List(cmd.Context(), commentservice.Target{
+					Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+					PullRequestID: args[0],
+					Blocker:       true,
+				}, "", commentLimit)
+				if err != nil {
+					return err
+				}
+			} else if trimmedCommentPath == "" {
 				source = "activities"
 				activityService := pullrequestactivityservice.NewService(client)
 				activities, err := activityService.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0], pullrequestactivityservice.ListOptions{Limit: commentLimit})
@@ -1472,6 +1485,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	}
 	commentListCmd.Flags().StringVar(&commentPath, "path", "", "Optional file path for path-scoped pull request comment listing")
 	commentListCmd.Flags().IntVar(&commentLimit, "limit", 25, "Page size for pull request comment list operations")
+	commentListCmd.Flags().BoolVar(&commentBlocker, "blocker", false, "List pull request blocker comments")
 	commentCmd.AddCommand(commentListCmd)
 
 	commentGetCmd := &cobra.Command{
@@ -1508,6 +1522,254 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 	commentCmd.AddCommand(commentGetCmd)
+
+	var commentAddText string
+	var commentAddBlocker bool
+	commentAddCmd := &cobra.Command{
+		Use:   "add <pr-id>",
+		Short: "Add a comment to a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			target := commentservice.Target{
+				Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+				PullRequestID: args[0],
+				Blocker:       commentAddBlocker,
+			}
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.comment.add",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "text": commentAddText, "blocker": commentAddBlocker},
+						Action:          "create",
+						PredictedAction: "create",
+						Supported:       true,
+						Reason:          "pull request comment will be created",
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request reference"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, CreateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			service := commentservice.NewService(client)
+			created, err := service.Create(cmd.Context(), target, commentAddText)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "comment": created, "blocker": commentAddBlocker})
+			}
+
+			commentID := ""
+			if created.Id != nil {
+				commentID = strconv.Itoa(int(*created.Id))
+			}
+			blockerStr := ""
+			if commentAddBlocker {
+				blockerStr = " blocker"
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Created%s comment %s\n", blockerStr, commentID)
+			return nil
+		},
+	}
+	commentAddCmd.Flags().StringVar(&commentAddText, "text", "", "Comment text")
+	commentAddCmd.Flags().BoolVar(&commentAddBlocker, "blocker", false, "Mark the comment as a blocker")
+	_ = commentAddCmd.MarkFlagRequired("text")
+	commentCmd.AddCommand(commentAddCmd)
+
+	var commentReactRemove bool
+	commentReactCmd := &cobra.Command{
+		Use:   "react <pr-id> <comment-id> <emoji>",
+		Short: "Add or remove a reaction on a pull request comment",
+		Args:  cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			prID := args[0]
+			commentID := args[1]
+			emoticon := normalizeEmoticon(args[2])
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+					return err
+				}
+
+				action := "update"
+				predicted := "update"
+				intent := "pr.comment.react"
+				reason := "reaction will be added"
+				if commentReactRemove {
+					action = "delete"
+					predicted = "delete"
+					reason = "reaction will be removed"
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          intent,
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "pr_id": prID, "comment_id": commentID, "emoticon": emoticon},
+						Action:          action,
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request comment"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1},
+				}
+				if commentReactRemove {
+					preview.Summary.DeleteCount = 1
+				} else {
+					preview.Summary.UpdateCount = 1
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			service := commentservice.NewService(client)
+			if commentReactRemove {
+				err = service.UnReact(cmd.Context(), commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, prID, commentID, emoticon)
+				if err != nil {
+					return err
+				}
+
+				if options.JSON {
+					return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "action": "removed", "repository": repo, "pull_request_id": prID, "comment_id": commentID, "emoticon": emoticon})
+				}
+
+				fmt.Fprintf(cmd.OutOrStdout(), "Removed reaction :%s: from comment %s\n", emoticon, commentID)
+				return nil
+			}
+
+			reaction, err := service.React(cmd.Context(), commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, prID, commentID, emoticon)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": prID, "comment_id": commentID, "reaction": reaction})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Added reaction :%s: to comment %s\n", emoticon, commentID)
+			return nil
+		},
+	}
+	commentReactCmd.Flags().BoolVar(&commentReactRemove, "remove", false, "Remove the reaction instead of adding it")
+	commentCmd.AddCommand(commentReactCmd)
+
+	var commentSuggestionMsg string
+	var commentSuggestionIdx int32
+	var commentSuggestionCommentVer int32
+	var commentSuggestionPrVer int32
+	commentApplySuggestionCmd := &cobra.Command{
+		Use:   "apply-suggestion <pr-id> <comment-id>",
+		Short: "Apply a suggested change from a comment",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			prID := args[0]
+			commentID := args[1]
+
+			req := openapigenerated.RestApplySuggestionRequest{}
+			if cmd.Flags().Changed("commit-message") {
+				req.CommitMessage = &commentSuggestionMsg
+			}
+			if cmd.Flags().Changed("index") {
+				req.SuggestionIndex = &commentSuggestionIdx
+			}
+			if cmd.Flags().Changed("comment-version") {
+				req.CommentVersion = &commentSuggestionCommentVer
+			}
+			if cmd.Flags().Changed("pr-version") {
+				req.PullRequestVersion = &commentSuggestionPrVer
+			}
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.comment.apply-suggestion",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "pr_id": prID, "comment_id": commentID, "suggestion_index": commentSuggestionIdx},
+						Action:          "update",
+						PredictedAction: "update",
+						Supported:       true,
+						Reason:          "comment suggestion will be applied",
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request comment suggestion"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, UpdateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			service := commentservice.NewService(client)
+			err = service.ApplySuggestion(cmd.Context(), commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, prID, commentID, req)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": repo, "pull_request_id": prID, "comment_id": commentID})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Applied suggestion on comment %s for pull request %s\n", commentID, prID)
+			return nil
+		},
+	}
+	commentApplySuggestionCmd.Flags().StringVar(&commentSuggestionMsg, "commit-message", "", "Optional commit message for the suggestion application")
+	commentApplySuggestionCmd.Flags().Int32Var(&commentSuggestionIdx, "index", 0, "Optional index of the suggestion in the comment (default 0)")
+	commentApplySuggestionCmd.Flags().Int32Var(&commentSuggestionCommentVer, "comment-version", 0, "Optional expected version of the comment")
+	commentApplySuggestionCmd.Flags().Int32Var(&commentSuggestionPrVer, "pr-version", 0, "Optional expected version of the pull request")
+	commentCmd.AddCommand(commentApplySuggestionCmd)
+
 	prCmd.AddCommand(commentCmd)
 
 	activityCmd := &cobra.Command{
@@ -2582,4 +2844,8 @@ func firstMessageLine(message string) string {
 		return strings.TrimSpace(trimmed[:index])
 	}
 	return trimmed
+}
+
+func normalizeEmoticon(e string) string {
+	return strings.Trim(e, ":")
 }

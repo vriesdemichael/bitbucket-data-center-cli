@@ -350,3 +350,307 @@ func TestCommentServiceAdditionalBranches(t *testing.T) {
 		}
 	})
 }
+
+func TestServiceBlockerCommentsReactionsAndSuggestions(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		// Blocker List
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/blocker-comments":
+			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":100,"text":"blocker","version":1}]}`))
+		// Blocker Create
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/blocker-comments":
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":101,"text":"new blocker","version":0}`))
+		// Blocker Get
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/blocker-comments/101":
+			_, _ = w.Write([]byte(`{"id":101,"text":"current blocker","version":2}`))
+		// Blocker Update
+		case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/blocker-comments/101":
+			_, _ = w.Write([]byte(`{"id":101,"text":"updated blocker","version":3}`))
+		// Blocker Delete
+		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/blocker-comments/101":
+			if r.URL.Query().Get("version") != "2" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+
+		// Reaction Add
+		case r.Method == http.MethodPut && r.URL.Path == "/rest/comment-likes/latest/projects/TEST/repos/demo/pull-requests/12/comments/100/reactions/thumbsup":
+			_, _ = w.Write([]byte(`{"emoticon":{"shortcut":"thumbsup","value":"👍"}}`))
+		// Reaction Remove
+		case r.Method == http.MethodDelete && r.URL.Path == "/rest/comment-likes/latest/projects/TEST/repos/demo/pull-requests/12/comments/100/reactions/thumbsup":
+			w.WriteHeader(http.StatusNoContent)
+
+		// Apply Suggestion
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/comments/100/apply-suggestion":
+			w.WriteHeader(http.StatusOK)
+
+		default:
+			http.NotFound(w, r)
+		}
+	})
+
+	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12", Blocker: true}
+
+	// Test blocker validation error for commit
+	invalidTarget := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc", Blocker: true}
+	_, err := service.List(context.Background(), invalidTarget, "", 25)
+	if err == nil {
+		t.Fatal("expected blocker commit validation error")
+	}
+
+	// 1. List
+	list, err := service.List(context.Background(), target, "", 25)
+	if err != nil || len(list) != 1 || *list[0].Id != 100 {
+		t.Fatalf("expected 1 blocker comment, got %v err=%v", list, err)
+	}
+
+	// 2. Create
+	created, err := service.Create(context.Background(), target, "new blocker")
+	if err != nil || *created.Id != 101 {
+		t.Fatalf("expected created blocker comment, got %v err=%v", created, err)
+	}
+
+	// 3. Get
+	got, err := service.Get(context.Background(), target, "101")
+	if err != nil || *got.Version != 2 {
+		t.Fatalf("expected blocker comment details, got %v err=%v", got, err)
+	}
+
+	// 4. Update
+	updated, err := service.Update(context.Background(), target, "101", "updated blocker", nil)
+	if err != nil || *updated.Version != 3 {
+		t.Fatalf("expected updated blocker comment, got %v err=%v", updated, err)
+	}
+
+	// 5. Delete
+	resolvedVersion, err := service.Delete(context.Background(), target, "101", nil)
+	if err != nil || *resolvedVersion != 2 {
+		t.Fatalf("expected resolved version 2, got %v err=%v", resolvedVersion, err)
+	}
+
+	// 6. React
+	reaction, err := service.React(context.Background(), target.Repository, "12", "100", "thumbsup")
+	if err != nil || reaction.Emoticon == nil || *reaction.Emoticon.Shortcut != "thumbsup" {
+		t.Fatalf("expected reaction, got %v err=%v", reaction, err)
+	}
+
+	// 7. UnReact
+	err = service.UnReact(context.Background(), target.Repository, "12", "100", "thumbsup")
+	if err != nil {
+		t.Fatalf("expected successful unreact, got %v", err)
+	}
+
+	// 8. ApplySuggestion
+	err = service.ApplySuggestion(context.Background(), target.Repository, "12", "100", openapigenerated.RestApplySuggestionRequest{})
+	if err != nil {
+		t.Fatalf("expected successful suggestion application, got %v", err)
+	}
+}
+
+func TestServiceBlockerReactionsAndSuggestionsAdditionalErrors(t *testing.T) {
+	// Blocker pagination test
+	t.Run("blocker pagination", func(t *testing.T) {
+		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/blocker-comments" {
+				if r.URL.Query().Get("start") == "1" {
+					_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":101,"text":"blocker2","version":1}]}`))
+					return
+				}
+				_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"id":100,"text":"blocker1","version":1}]}`))
+				return
+			}
+			http.NotFound(w, r)
+		})
+		target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12", Blocker: true}
+		list, err := service.List(context.Background(), target, "", 2)
+		if err != nil || len(list) != 2 {
+			t.Fatalf("expected paginated blocker list, got len=%d err=%v", len(list), err)
+		}
+
+		// Pagination with nil NextPageStart
+		serviceNilNext := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"isLastPage":false,"values":[{"id":100,"text":"blocker1","version":1}]}`))
+		})
+		listNilNext, err := serviceNilNext.List(context.Background(), target, "", 2)
+		if err != nil || len(listNilNext) != 1 {
+			t.Fatalf("expected 1 element for nil next page start, got len=%d err=%v", len(listNilNext), err)
+		}
+	})
+
+	// React validation, transport, status errors
+	t.Run("reactions and suggestions errors", func(t *testing.T) {
+		// Validation
+		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		emptyRepo := RepositoryRef{}
+		validRepo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+		if _, err := service.React(context.Background(), emptyRepo, "12", "100", "thumbsup"); err == nil {
+			t.Fatal("expected error on empty repo for React")
+		}
+		if _, err := service.React(context.Background(), validRepo, "", "100", "thumbsup"); err == nil {
+			t.Fatal("expected error on empty prID for React")
+		}
+		if _, err := service.React(context.Background(), validRepo, "12", "", "thumbsup"); err == nil {
+			t.Fatal("expected error on empty commentID for React")
+		}
+		if _, err := service.React(context.Background(), validRepo, "12", "100", ""); err == nil {
+			t.Fatal("expected error on empty emoticon for React")
+		}
+
+		if err := service.UnReact(context.Background(), emptyRepo, "12", "100", "thumbsup"); err == nil {
+			t.Fatal("expected error on empty repo for UnReact")
+		}
+		if err := service.UnReact(context.Background(), validRepo, "", "100", "thumbsup"); err == nil {
+			t.Fatal("expected error on empty prID for UnReact")
+		}
+		if err := service.UnReact(context.Background(), validRepo, "12", "", "thumbsup"); err == nil {
+			t.Fatal("expected error on empty commentID for UnReact")
+		}
+		if err := service.UnReact(context.Background(), validRepo, "12", "100", ""); err == nil {
+			t.Fatal("expected error on empty emoticon for UnReact")
+		}
+
+		if err := service.ApplySuggestion(context.Background(), emptyRepo, "12", "100", openapigenerated.RestApplySuggestionRequest{}); err == nil {
+			t.Fatal("expected error on empty repo for ApplySuggestion")
+		}
+		if err := service.ApplySuggestion(context.Background(), validRepo, "", "100", openapigenerated.RestApplySuggestionRequest{}); err == nil {
+			t.Fatal("expected error on empty prID for ApplySuggestion")
+		}
+		if err := service.ApplySuggestion(context.Background(), validRepo, "12", "", openapigenerated.RestApplySuggestionRequest{}); err == nil {
+			t.Fatal("expected error on empty commentID for ApplySuggestion")
+		}
+
+		// Transport errors (client closed)
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		baseURL := server.URL
+		server.Close()
+		client, _ := openapigenerated.NewClientWithResponses(baseURL + "/rest")
+		serviceClosed := NewService(client)
+
+		if _, err := serviceClosed.React(context.Background(), validRepo, "12", "100", "thumbsup"); err == nil {
+			t.Fatal("expected transient react transport error")
+		}
+		if err := serviceClosed.UnReact(context.Background(), validRepo, "12", "100", "thumbsup"); err == nil {
+			t.Fatal("expected transient unreact transport error")
+		}
+		if err := serviceClosed.ApplySuggestion(context.Background(), validRepo, "12", "100", openapigenerated.RestApplySuggestionRequest{}); err == nil {
+			t.Fatal("expected transient apply suggestion transport error")
+		}
+
+		// Blocker transport errors
+		blockerTarget := Target{Repository: validRepo, PullRequestID: "12", Blocker: true}
+		if _, err := serviceClosed.List(context.Background(), blockerTarget, "", 25); err == nil {
+			t.Fatal("expected blocker list transport error")
+		}
+		if _, err := serviceClosed.Create(context.Background(), blockerTarget, "hello"); err == nil {
+			t.Fatal("expected blocker create transport error")
+		}
+		if _, err := serviceClosed.Update(context.Background(), blockerTarget, "100", "hello", nil); err == nil {
+			t.Fatal("expected blocker update transport error")
+		}
+		if _, err := serviceClosed.Delete(context.Background(), blockerTarget, "100", nil); err == nil {
+			t.Fatal("expected blocker delete transport error")
+		}
+		if _, err := serviceClosed.Get(context.Background(), blockerTarget, "100"); err == nil {
+			t.Fatal("expected blocker get transport error")
+		}
+
+		// Blocker API status error (e.g. Forbidden)
+		errService := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusForbidden)
+		})
+		if _, err := errService.List(context.Background(), blockerTarget, "", 25); err == nil || apperrors.ExitCode(err) != 3 {
+			t.Fatalf("expected forbidden error for blocker list, got %v", err)
+		}
+		if _, err := errService.Create(context.Background(), blockerTarget, "hello"); err == nil || apperrors.ExitCode(err) != 3 {
+			t.Fatalf("expected forbidden error for blocker create, got %v", err)
+		}
+		if _, err := errService.Update(context.Background(), blockerTarget, "100", "hello", nil); err == nil || apperrors.ExitCode(err) != 3 {
+			t.Fatalf("expected forbidden error for blocker update, got %v", err)
+		}
+		if _, err := errService.Delete(context.Background(), blockerTarget, "100", nil); err == nil || apperrors.ExitCode(err) != 3 {
+			t.Fatalf("expected forbidden error for blocker delete, got %v", err)
+		}
+		if _, err := errService.Get(context.Background(), blockerTarget, "100"); err == nil || apperrors.ExitCode(err) != 3 {
+			t.Fatalf("expected forbidden error for blocker get, got %v", err)
+		}
+
+		// Reaction and Suggestion API status error (Forbidden)
+		if _, err := errService.React(context.Background(), validRepo, "12", "100", "thumbsup"); err == nil || apperrors.ExitCode(err) != 3 {
+			t.Fatalf("expected forbidden react error, got %v", err)
+		}
+		if err := errService.UnReact(context.Background(), validRepo, "12", "100", "thumbsup"); err == nil || apperrors.ExitCode(err) != 3 {
+			t.Fatalf("expected forbidden unreact error, got %v", err)
+		}
+		if err := errService.ApplySuggestion(context.Background(), validRepo, "12", "100", openapigenerated.RestApplySuggestionRequest{}); err == nil || apperrors.ExitCode(err) != 3 {
+			t.Fatalf("expected forbidden apply suggestion error, got %v", err)
+		}
+	})
+}
+
+func TestServiceFallbacks(t *testing.T) {
+	validRepo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+	blockerTarget := Target{Repository: validRepo, PullRequestID: "12", Blocker: true}
+
+	t.Run("fallbacks for empty successful responses", func(t *testing.T) {
+		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK) // 200 OK with no body
+		})
+
+		// 1. List blocker (nil values / isLastPage / nextPageStart)
+		list, err := service.List(context.Background(), blockerTarget, "", 25)
+		if err != nil || len(list) != 0 {
+			t.Fatalf("expected empty list for fallback, got %v err=%v", list, err)
+		}
+
+		// 2. Create blocker (uses 201 Created mock)
+		createService := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusCreated) // 201 Created with no body
+		})
+		created, err := createService.Create(context.Background(), blockerTarget, "hello")
+		if err != nil || *created.Text != "hello" {
+			t.Fatalf("expected fallback create body, got %v err=%v", created, err)
+		}
+
+		// 3. Update blocker
+		updated, err := service.Update(context.Background(), blockerTarget, "100", "hello", nil)
+		if err != nil || *updated.Text != "hello" {
+			t.Fatalf("expected fallback update body, got %v err=%v", updated, err)
+		}
+
+		// 4. Delete blocker (uses fallback version resolution)
+		// If delete returns StatusNoContent, it tries to get the current version. We mock get returning StatusNoContent.
+		deleteService := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodDelete {
+				w.WriteHeader(http.StatusNoContent)
+			} else {
+				w.WriteHeader(http.StatusOK) // empty body for Get
+			}
+		})
+		resolvedVersion, err := deleteService.Delete(context.Background(), blockerTarget, "100", nil)
+		if err != nil || resolvedVersion != nil {
+			t.Fatalf("expected nil resolved version, got %v err=%v", resolvedVersion, err)
+		}
+
+		// 5. Get blocker
+		got, err := service.Get(context.Background(), blockerTarget, "100")
+		if err != nil || got.Id != nil {
+			t.Fatalf("expected empty get body, got %v err=%v", got, err)
+		}
+
+		// 6. React
+		reaction, err := service.React(context.Background(), validRepo, "12", "100", "thumbsup")
+		if err != nil || reaction.Emoticon != nil {
+			t.Fatalf("expected empty reaction fallback, got %v err=%v", reaction, err)
+		}
+	})
+}

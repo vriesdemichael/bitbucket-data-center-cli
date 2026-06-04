@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-9.4-openapi.json",
-  "covered": 133,
+  "covered": 141,
   "total": 546,
-  "coverage_percent": 24.358974358974358,
+  "coverage_percent": 25.82417582417583,
   "by_tag": [
     {
       "tag": "",
@@ -67,7 +67,7 @@
     },
     {
       "tag": "Pull Requests",
-      "covered": 51,
+      "covered": 59,
       "total": 69
     },
     {
@@ -1163,42 +1163,6 @@
     },
     {
       "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/blocker-comments",
-      "tag": "Pull Requests",
-      "summary": "Search pull request comments"
-    },
-    {
-      "method": "POST",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/blocker-comments",
-      "tag": "Pull Requests",
-      "summary": "Add new blocker comment"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/blocker-comments/{commentId}",
-      "tag": "Pull Requests",
-      "summary": "Delete pull request comment"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/blocker-comments/{commentId}",
-      "tag": "Pull Requests",
-      "summary": "Get pull request comment"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/blocker-comments/{commentId}",
-      "tag": "Pull Requests",
-      "summary": "Update pull request comment"
-    },
-    {
-      "method": "POST",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId}/apply-suggestion",
-      "tag": "Pull Requests",
-      "summary": "Apply pull request suggestion"
-    },
-    {
-      "method": "GET",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/commit-message-suggestion",
       "tag": "Pull Requests",
       "summary": "Get commit message suggestion"
@@ -1904,18 +1868,6 @@
       "path": "/comment-likes/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/comments/{commentId}/reactions/{emoticon}",
       "tag": "Repository",
       "summary": "React to a comment"
-    },
-    {
-      "method": "DELETE",
-      "path": "/comment-likes/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId}/reactions/{emoticon}",
-      "tag": "Pull Requests",
-      "summary": "Remove a reaction from a PR comment"
-    },
-    {
-      "method": "PUT",
-      "path": "/comment-likes/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId}/reactions/{emoticon}",
-      "tag": "Pull Requests",
-      "summary": "React to a PR comment"
     },
     {
       "method": "DELETE",
