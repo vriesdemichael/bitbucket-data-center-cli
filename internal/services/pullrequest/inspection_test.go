@@ -117,3 +117,21 @@ func TestInspectionValidatesInput(t *testing.T) {
 		t.Fatal("expected error for empty pull request id")
 	}
 }
+
+// TestInspectionPropagatesTransportErrors covers the error branches that run
+// after validation succeeds, when the server returns a non-2xx response.
+func TestInspectionPropagatesTransportErrors(t *testing.T) {
+	service := newInspectionService(t, func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, `{"errors":[{"message":"boom"}]}`, http.StatusInternalServerError)
+	})
+
+	if _, err := service.ListCommits(context.Background(), inspectionRepo, "7", PageOptions{}); err == nil {
+		t.Fatal("expected transport error from ListCommits")
+	}
+	if _, err := service.ListChanges(context.Background(), inspectionRepo, "7", PageOptions{}); err == nil {
+		t.Fatal("expected transport error from ListChanges")
+	}
+	if _, err := service.GetMergeBase(context.Background(), inspectionRepo, "7"); err == nil {
+		t.Fatal("expected transport error from GetMergeBase")
+	}
+}
