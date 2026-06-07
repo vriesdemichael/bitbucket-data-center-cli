@@ -93,6 +93,7 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(newRefCommand(options))
 	rootCmd.AddCommand(newProjectCommand(options))
 	rootCmd.AddCommand(newReviewerCommand(options))
+	rootCmd.AddCommand(newReviewerGroupCommand(options))
 	rootCmd.AddCommand(newHookCommand(options))
 	rootCmd.AddCommand(newBrowseCommand(options))
 	rootCmd.AddCommand(newSearchCommand(options))

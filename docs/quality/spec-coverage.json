@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-9.4-openapi.json",
-  "covered": 121,
+  "covered": 133,
   "total": 546,
-  "coverage_percent": 22.16117216117216,
+  "coverage_percent": 24.358974358974358,
   "by_tag": [
     {
       "tag": "",
@@ -67,7 +67,7 @@
     },
     {
       "tag": "Pull Requests",
-      "covered": 39,
+      "covered": 51,
       "total": 69
     },
     {
@@ -1396,42 +1396,6 @@
       "summary": "Get repository hook"
     },
     {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/reviewer-groups",
-      "tag": "Pull Requests",
-      "summary": "Get all reviewer groups"
-    },
-    {
-      "method": "POST",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/reviewer-groups",
-      "tag": "Pull Requests",
-      "summary": "Create reviewer group"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/reviewer-groups/{id}",
-      "tag": "Pull Requests",
-      "summary": "Delete reviewer group"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/reviewer-groups/{id}",
-      "tag": "Pull Requests",
-      "summary": "Get reviewer group"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/reviewer-groups/{id}",
-      "tag": "Pull Requests",
-      "summary": "Update reviewer group attributes"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/reviewer-groups/{id}/users",
-      "tag": "Pull Requests",
-      "summary": "Get reviewer group users"
-    },
-    {
       "method": "DELETE",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/watch",
       "tag": "Repository",
@@ -1634,36 +1598,6 @@
       "path": "/api/latest/projects/{projectKey}/settings/pull-requests/{scmId}",
       "tag": "Project",
       "summary": "Update merge strategy"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/settings/reviewer-groups",
-      "tag": "Pull Requests",
-      "summary": "Get all reviewer groups"
-    },
-    {
-      "method": "POST",
-      "path": "/api/latest/projects/{projectKey}/settings/reviewer-groups",
-      "tag": "Pull Requests",
-      "summary": "Create reviewer group"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/settings/reviewer-groups/{id}",
-      "tag": "Pull Requests",
-      "summary": "Delete reviewer group"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/settings/reviewer-groups/{id}",
-      "tag": "Pull Requests",
-      "summary": "Get reviewer group"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/latest/projects/{projectKey}/settings/reviewer-groups/{id}",
-      "tag": "Pull Requests",
-      "summary": "Update reviewer group attributes"
     },
     {
       "method": "GET",
@@ -1982,12 +1916,6 @@
       "path": "/comment-likes/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId}/reactions/{emoticon}",
       "tag": "Pull Requests",
       "summary": "React to a PR comment"
-    },
-    {
-      "method": "GET",
-      "path": "/default-reviewers/latest/projects/{projectKey}/repos/{repositorySlug}/reviewers",
-      "tag": "Pull Requests",
-      "summary": "Get required reviewers for PR creation"
     },
     {
       "method": "DELETE",

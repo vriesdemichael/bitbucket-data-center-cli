@@ -12,6 +12,7 @@ import (
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
+	reviewerservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reviewer"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
 
@@ -2348,7 +2349,123 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	_ = participantsCmd.MarkFlagRequired("search")
 	prCmd.AddCommand(participantsCmd)
 
+	var defaultReviewersSourceRepoId string
+	var defaultReviewersTargetRepoId string
+	var defaultReviewersSourceRef string
+	var defaultReviewersTargetRef string
+
+	defaultReviewersCmd := &cobra.Command{
+		Use:   "default-reviewers",
+		Short: "List default reviewers and matching conditions for repository",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolveRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := reviewerservice.NewService(client)
+
+			var sourceRepoIdPtr *string
+			var targetRepoIdPtr *string
+			var sourceRefPtr *string
+			var targetRefPtr *string
+
+			if defaultReviewersSourceRepoId != "" {
+				sourceRepoIdPtr = &defaultReviewersSourceRepoId
+			}
+			if defaultReviewersTargetRepoId != "" {
+				targetRepoIdPtr = &defaultReviewersTargetRepoId
+			}
+			if defaultReviewersSourceRef != "" {
+				sourceRefPtr = &defaultReviewersSourceRef
+			}
+			if defaultReviewersTargetRef != "" {
+				targetRefPtr = &defaultReviewersTargetRef
+			}
+
+			conditions, err := service.GetDefaultReviewers(cmd.Context(), repo.ProjectKey, repo.Slug, sourceRepoIdPtr, targetRepoIdPtr, sourceRefPtr, targetRefPtr)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"default_reviewers": conditions})
+			}
+
+			printDefaultReviewers(cmd, conditions)
+			return nil
+		},
+	}
+
+	defaultReviewersCmd.Flags().StringVar(&defaultReviewersSourceRepoId, "source-repo-id", "", "The ID of the repository in which the source ref exists")
+	defaultReviewersCmd.Flags().StringVar(&defaultReviewersTargetRepoId, "target-repo-id", "", "The ID of the repository in which the target ref exists")
+	defaultReviewersCmd.Flags().StringVar(&defaultReviewersSourceRef, "source-ref", "", "The ID of the source ref (e.g. refs/heads/feature)")
+	defaultReviewersCmd.Flags().StringVar(&defaultReviewersTargetRef, "target-ref", "", "The ID of the target ref (e.g. refs/heads/master)")
+
+	prCmd.AddCommand(defaultReviewersCmd)
+
 	return prCmd
+}
+
+func printDefaultReviewers(cmd *cobra.Command, conditions []openapigenerated.RestPullRequestCondition) {
+	if len(conditions) == 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No default reviewers or conditions found"))
+		return
+	}
+
+	rows := make([][]string, len(conditions))
+	for i, c := range conditions {
+		idStr := ""
+		if c.Id != nil {
+			idStr = fmt.Sprintf("%d", *c.Id)
+		}
+
+		sourceRef := "ANY"
+		if c.SourceRefMatcher != nil && c.SourceRefMatcher.DisplayId != nil {
+			sourceRef = *c.SourceRefMatcher.DisplayId
+		}
+
+		targetRef := "ANY"
+		if c.TargetRefMatcher != nil && c.TargetRefMatcher.DisplayId != nil {
+			targetRef = *c.TargetRefMatcher.DisplayId
+		}
+
+		reqApprovals := "0"
+		if c.RequiredApprovals != nil {
+			reqApprovals = fmt.Sprintf("%d", *c.RequiredApprovals)
+		}
+
+		var reviewers []string
+		if c.Reviewers != nil {
+			for _, r := range *c.Reviewers {
+				name := ""
+				if r.DisplayName != nil {
+					name = *r.DisplayName
+				} else if r.Name != nil {
+					name = *r.Name
+				}
+				if name != "" {
+					reviewers = append(reviewers, name)
+				}
+			}
+		}
+		reviewersStr := strings.Join(reviewers, ", ")
+
+		rows[i] = []string{
+			style.Secondary.Render(idStr),
+			style.Resource.Render(sourceRef),
+			style.Resource.Render(targetRef),
+			reqApprovals,
+			reviewersStr,
+		}
+	}
+
+	style.WriteTable(cmd.OutOrStdout(), rows)
 }
 
 func newAdminCommand(options *rootOptions) *cobra.Command {

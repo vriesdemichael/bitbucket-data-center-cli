@@ -125,6 +125,10 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"reviewer condition create": {Intent: "reviewer.condition.create", Action: "create", Stateful: true},
 	"reviewer condition update": {Intent: "reviewer.condition.update", Action: "update", Stateful: true},
 	"reviewer condition delete": {Intent: "reviewer.condition.delete", Action: "delete", Stateful: true},
+	// reviewer groups
+	"reviewer-group create": {Intent: "reviewer-group.create", Action: "create", Stateful: true},
+	"reviewer-group update": {Intent: "reviewer-group.update", Action: "update", Stateful: true},
+	"reviewer-group delete": {Intent: "reviewer-group.delete", Action: "delete", Stateful: true},
 	// hook
 	"hook enable":    {Intent: "hook.enable", Action: "update", Stateful: true},
 	"hook disable":   {Intent: "hook.disable", Action: "update", Stateful: true},

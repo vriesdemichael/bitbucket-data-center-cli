@@ -1,40 +1,40 @@
 {
   "version": 2,
   "coverage": {
-    "unit_raw_percent": 20.55532613611783,
-    "unit_scoped_percent": 88.33114323258869,
-    "live_raw_percent": 3.4678576480811594,
-    "live_scoped_percent": 12.430622852612103,
-    "combined_raw_percent": 21.160993451713765,
-    "combined_scoped_percent": 88.35742444152432,
-    "patch_percent": 89.28571428571429,
+    "unit_raw_percent": 21.273696913075636,
+    "unit_scoped_percent": 88.44221105527639,
+    "live_raw_percent": 19.71284594464886,
+    "live_scoped_percent": 47.4486359043449,
+    "combined_raw_percent": 29.890225388298493,
+    "combined_scoped_percent": 90.15075376884421,
+    "patch_percent": 95.14563106796116,
     "unit_statements": {
-      "covered": 10453,
-      "total": 50853
+      "covered": 10930,
+      "total": 51378
     },
     "live_statements": {
-      "covered": 1716,
-      "total": 49483
+      "covered": 9858,
+      "total": 50008
     },
     "combined_statements": {
-      "covered": 10761,
-      "total": 50853
+      "covered": 15357,
+      "total": 51378
     },
     "unit_scoped_statements": {
-      "covered": 10083,
-      "total": 11415
+      "covered": 10560,
+      "total": 11940
     },
     "live_scoped_statements": {
-      "covered": 1411,
-      "total": 11351
+      "covered": 5635,
+      "total": 11876
     },
     "combined_scoped_statements": {
-      "covered": 10086,
-      "total": 11415
+      "covered": 10764,
+      "total": 11940
     },
     "patch_lines": {
-      "covered": 150,
-      "total": 168
+      "covered": 294,
+      "total": 309
     },
     "scope": {
       "include_prefixes": [
@@ -48,11 +48,13 @@
     }
   },
   "generated_contracts": {
-    "coverage_percent": 39.04761904761905,
+    "coverage_percent": 35.04273504273504,
     "used_operations": [
       "AddAnnotationsWithResponse",
       "AddBuildStatusWithResponse",
       "CanRebaseWithResponse",
+      "Create1WithResponse",
+      "Create2WithResponse",
       "CreateBranchWithResponse",
       "CreateComment2WithResponse",
       "CreateCommentWithResponse",
@@ -63,6 +65,8 @@
       "CreateRequiredBuildsMergeCheckWithBodyWithResponse",
       "CreateTagForRepositoryWithResponse",
       "CreateWebhook1WithResponse",
+      "Delete6WithResponse",
+      "Delete7WithResponse",
       "DeleteACodeInsightsReportWithResponse",
       "DeleteAnnotationsWithResponse",
       "DeleteBranchWithResponse",
@@ -115,12 +119,18 @@
       "GetRepositoryHooksWithResponse",
       "GetRestriction1WithResponse",
       "GetRestrictions1WithResponse",
+      "GetReviewerGroup1WithResponse",
+      "GetReviewerGroupWithResponse",
+      "GetReviewerGroups1WithResponse",
+      "GetReviewerGroupsWithResponse",
+      "GetReviewersWithResponse",
       "GetSettings1WithResponse",
       "GetSettingsWithResponse",
       "GetTagWithResponse",
       "GetTagsWithResponse",
       "GetUsersWithAnyPermission1WithResponse",
       "GetUsersWithAnyPermission2WithResponse",
+      "GetUsersWithResponse",
       "PostJSON",
       "PutJSON",
       "RebaseWithResponse",
@@ -146,6 +156,8 @@
       "StreamRawDiff2WithResponse",
       "StreamRawWithResponse",
       "Unwatch1WithResponse",
+      "Update1WithResponse",
+      "Update2WithResponse",
       "UpdateComment2WithResponse",
       "UpdateCommentWithResponse",
       "UpdateProjectWithResponse",
@@ -201,11 +213,15 @@
     ],
     "unmapped_operations": [
       "CanRebaseWithResponse",
+      "Create1WithResponse",
+      "Create2WithResponse",
       "CreateBranchWithResponse",
       "CreateProjectWithResponse",
       "CreatePullRequestCondition1WithResponse",
       "CreatePullRequestConditionWithResponse",
       "CreateRepositoryWithResponse",
+      "Delete6WithResponse",
+      "Delete7WithResponse",
       "DeleteBranchWithResponse",
       "DeleteJSON",
       "DeleteProjectWithResponse",
@@ -237,9 +253,15 @@
       "GetRepositoryHooksWithResponse",
       "GetRestriction1WithResponse",
       "GetRestrictions1WithResponse",
+      "GetReviewerGroup1WithResponse",
+      "GetReviewerGroupWithResponse",
+      "GetReviewerGroups1WithResponse",
+      "GetReviewerGroupsWithResponse",
+      "GetReviewersWithResponse",
       "GetSettings1WithResponse",
       "GetSettingsWithResponse",
       "GetUsersWithAnyPermission1WithResponse",
+      "GetUsersWithResponse",
       "PostJSON",
       "PutJSON",
       "RebaseWithResponse",
@@ -259,6 +281,8 @@
       "StreamFilesWithResponse",
       "StreamRawWithResponse",
       "Unwatch1WithResponse",
+      "Update1WithResponse",
+      "Update2WithResponse",
       "UpdateProjectWithResponse",
       "UpdatePullRequestCondition1WithResponse",
       "UpdatePullRequestConditionWithResponse",
