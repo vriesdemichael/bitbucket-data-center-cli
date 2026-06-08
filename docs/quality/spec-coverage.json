@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-9.4-openapi.json",
-  "covered": 141,
+  "covered": 163,
   "total": 546,
-  "coverage_percent": 25.82417582417583,
+  "coverage_percent": 29.853479853479854,
   "by_tag": [
     {
       "tag": "",
@@ -72,7 +72,7 @@
     },
     {
       "tag": "Repository",
-      "covered": 36,
+      "covered": 58,
       "total": 96
     },
     {
@@ -1097,24 +1097,6 @@
     },
     {
       "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/labels",
-      "tag": "Repository",
-      "summary": "Get repository labels"
-    },
-    {
-      "method": "POST",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/labels",
-      "tag": "Repository",
-      "summary": "Add repository label"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/labels/{labelName}",
-      "tag": "Repository",
-      "summary": "Remove repository label"
-    },
-    {
-      "method": "GET",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/last-modified",
       "tag": "Repository",
       "summary": "Stream files"
@@ -1313,42 +1295,6 @@
     },
     {
       "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/auto-decline",
-      "tag": "Repository",
-      "summary": "Delete auto decline settings"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/auto-decline",
-      "tag": "Repository",
-      "summary": "Get auto decline settings"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/auto-decline",
-      "tag": "Repository",
-      "summary": "Create auto decline settings"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/auto-merge",
-      "tag": "Repository",
-      "summary": "Delete pull request auto-merge settings"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/auto-merge",
-      "tag": "Repository",
-      "summary": "Get pull request auto-merge settings"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/auto-merge",
-      "tag": "Repository",
-      "summary": "Create or update the pull request auto-merge settings"
-    },
-    {
-      "method": "DELETE",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks/{hookKey}",
       "tag": "Repository",
       "summary": "Delete repository hook"
@@ -1358,60 +1304,6 @@
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks/{hookKey}",
       "tag": "Repository",
       "summary": "Get repository hook"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/watch",
-      "tag": "Repository",
-      "summary": "Stop watching repository"
-    },
-    {
-      "method": "POST",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/watch",
-      "tag": "Repository",
-      "summary": "Watch repository"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/search",
-      "tag": "Repository",
-      "summary": "Search webhooks"
-    },
-    {
-      "method": "POST",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/test",
-      "tag": "Repository",
-      "summary": "Test webhook"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/{webhookId}",
-      "tag": "Repository",
-      "summary": "Get webhook"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/{webhookId}",
-      "tag": "Repository",
-      "summary": "Update webhook"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/{webhookId}/latest",
-      "tag": "Repository",
-      "summary": "Get last webhook invocation details"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/{webhookId}/statistics",
-      "tag": "Repository",
-      "summary": "Get webhook statistics"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/{webhookId}/statistics/summary",
-      "tag": "Repository",
-      "summary": "Get webhook statistics summary"
     },
     {
       "method": "GET",
@@ -1874,30 +1766,6 @@
       "path": "/default-tasks/latest/projects/{projectKey}/repos/{repositorySlug}/tasks",
       "tag": "Repository",
       "summary": "Deletes all default tasks for the repository"
-    },
-    {
-      "method": "GET",
-      "path": "/default-tasks/latest/projects/{projectKey}/repos/{repositorySlug}/tasks",
-      "tag": "Repository",
-      "summary": "Get a page of default tasks"
-    },
-    {
-      "method": "POST",
-      "path": "/default-tasks/latest/projects/{projectKey}/repos/{repositorySlug}/tasks",
-      "tag": "Repository",
-      "summary": "Add a default task"
-    },
-    {
-      "method": "DELETE",
-      "path": "/default-tasks/latest/projects/{projectKey}/repos/{repositorySlug}/tasks/{taskId}",
-      "tag": "Repository",
-      "summary": "Delete a specific default task"
-    },
-    {
-      "method": "PUT",
-      "path": "/default-tasks/latest/projects/{projectKey}/repos/{repositorySlug}/tasks/{taskId}",
-      "tag": "Repository",
-      "summary": "Update a default task"
     },
     {
       "method": "DELETE",
