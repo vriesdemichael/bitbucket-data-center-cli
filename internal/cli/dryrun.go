@@ -86,6 +86,10 @@ var dryRunProfiles = map[string]dryRunProfile{
 	// repo settings
 	"repo settings workflow webhooks create":           {Intent: "repo.webhook.create", Action: "create", Stateful: true},
 	"repo settings workflow webhooks delete":           {Intent: "repo.webhook.delete", Action: "delete", Stateful: true},
+	"repo settings auto-merge set":                     {Intent: "repo.settings.auto-merge.set", Action: "update", Stateful: true},
+	"repo settings auto-merge delete":                  {Intent: "repo.settings.auto-merge.delete", Action: "delete", Stateful: true},
+	"repo settings auto-decline set":                   {Intent: "repo.settings.auto-decline.set", Action: "update", Stateful: true},
+	"repo settings auto-decline delete":                {Intent: "repo.settings.auto-decline.delete", Action: "delete", Stateful: true},
 	"repo settings pull-requests update":               {Intent: "repo.pull-request-settings.update", Action: "update", Stateful: true},
 	"repo settings pull-requests update-approvers":     {Intent: "repo.pull-request-settings.update-approvers", Action: "update", Stateful: true},
 	"repo settings pull-requests set-strategy":         {Intent: "repo.pull-request-settings.set-strategy", Action: "update", Stateful: true},
@@ -93,6 +97,17 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"repo settings security permissions users revoke":  {Intent: "repo.permission.user.revoke", Action: "delete", Stateful: true},
 	"repo settings security permissions groups grant":  {Intent: "repo.permission.group.grant", Action: "update", Stateful: true},
 	"repo settings security permissions groups revoke": {Intent: "repo.permission.group.revoke", Action: "delete", Stateful: true},
+	// repo
+	"repo label add":            {Intent: "repo.label.add", Action: "create", Stateful: true},
+	"repo label remove":         {Intent: "repo.label.remove", Action: "delete", Stateful: true},
+	"repo watch":                {Intent: "repo.watch", Action: "update", Stateful: true},
+	"repo unwatch":              {Intent: "repo.unwatch", Action: "delete", Stateful: true},
+	"repo default-task add":     {Intent: "repo.default-task.create", Action: "create", Stateful: true},
+	"repo default-task update":  {Intent: "repo.default-task.update", Action: "update", Stateful: true},
+	"repo default-task delete":  {Intent: "repo.default-task.delete", Action: "delete", Stateful: true},
+	// webhook
+	"webhook update":            {Intent: "repo.webhook.update", Action: "update", Stateful: true},
+	"webhook test":              {Intent: "repo.webhook.test", Action: "update", Stateful: true},
 	// repo admin
 	"repo admin create": {Intent: "repo.admin.create", Action: "create", Stateful: true},
 	"repo admin fork":   {Intent: "repo.admin.fork", Action: "create", Stateful: true},

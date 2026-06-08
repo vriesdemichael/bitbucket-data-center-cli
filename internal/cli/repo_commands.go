@@ -77,6 +77,10 @@ func newRepoCommand(options *rootOptions) *cobra.Command {
 	repoCmd.AddCommand(newRepoCloneCommand(options))
 	repoCmd.AddCommand(newRepoAdminCommand(options))
 	repoCmd.AddCommand(newRepoPermissionsCommand(options))
+	repoCmd.AddCommand(newRepoLabelCommand(options))
+	repoCmd.AddCommand(newRepoWatchCommand(options))
+	repoCmd.AddCommand(newRepoUnwatchCommand(options))
+	repoCmd.AddCommand(newRepoDefaultTaskCommand(options))
 
 	return repoCmd
 }
@@ -1403,6 +1407,8 @@ func newRepoSettingsCommand(options *rootOptions) *cobra.Command {
 	pullRequestsCmd.AddCommand(pullRequestsUpdateCmd)
 	pullRequestsCmd.AddCommand(pullRequestsUpdateApproversCmd)
 	settingsCmd.AddCommand(pullRequestsCmd)
+	settingsCmd.AddCommand(newRepoSettingsAutoMergeCommand(options))
+	settingsCmd.AddCommand(newRepoSettingsAutoDeclineCommand(options))
 
 	return settingsCmd
 }
@@ -1527,4 +1533,786 @@ func newRepoPermissionsCommand(options *rootOptions) *cobra.Command {
 
 	permissionsCmd.AddCommand(showCmd)
 	return permissionsCmd
+}
+
+func newRepoSettingsAutoMergeCommand(options *rootOptions) *cobra.Command {
+	var repositorySelector string
+
+	autoMergeCmd := &cobra.Command{
+		Use:   "auto-merge",
+		Short: "Manage repository auto-merge settings",
+	}
+	autoMergeCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+
+	getCmd := &cobra.Command{
+		Use:   "get",
+		Short: "Get repository auto-merge settings",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			res, err := service.GetRepositoryAutoMergeSettings(cmd.Context(), repo)
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), res)
+			}
+			enabled := false
+			if res != nil && res.Enabled != nil {
+				enabled = *res.Enabled
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Auto-merge enabled: %t\n", enabled)
+			return nil
+		},
+	}
+
+	var setEnabled bool
+	setCmd := &cobra.Command{
+		Use:   "set",
+		Short: "Set repository auto-merge settings",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+					return err
+				}
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "repo.settings.auto-merge.set",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "enabled": setEnabled},
+						Action:          "update",
+						PredictedAction: "update",
+						Supported:       true,
+						Reason:          "auto-merge settings will be updated",
+						Confidence:      capabilityFull,
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, UpdateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+			res, err := service.UpdateRepositoryAutoMergeSettings(cmd.Context(), repo, setEnabled)
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), res)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Updated auto-merge settings: enabled=%t\n", setEnabled)
+			return nil
+		},
+	}
+	setCmd.Flags().BoolVar(&setEnabled, "enabled", false, "Enable or disable auto-merge")
+	_ = setCmd.MarkFlagRequired("enabled")
+
+	deleteCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete repository auto-merge settings",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+					return err
+				}
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "repo.settings.auto-merge.delete",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
+						Action:          "delete",
+						PredictedAction: "delete",
+						Supported:       true,
+						Reason:          "auto-merge settings will be deleted",
+						Confidence:      capabilityFull,
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, DeleteCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+			err = service.DeleteRepositoryAutoMergeSettings(cmd.Context(), repo)
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "deleted"})
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), "Deleted auto-merge settings")
+			return nil
+		},
+	}
+
+	autoMergeCmd.AddCommand(getCmd)
+	autoMergeCmd.AddCommand(setCmd)
+	autoMergeCmd.AddCommand(deleteCmd)
+	return autoMergeCmd
+}
+
+func newRepoSettingsAutoDeclineCommand(options *rootOptions) *cobra.Command {
+	var repositorySelector string
+
+	autoDeclineCmd := &cobra.Command{
+		Use:   "auto-decline",
+		Short: "Manage repository auto-decline settings",
+	}
+	autoDeclineCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+
+	getCmd := &cobra.Command{
+		Use:   "get",
+		Short: "Get repository auto-decline settings",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			res, err := service.GetRepositoryAutoDeclineSettings(cmd.Context(), repo)
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), res)
+			}
+			enabled := false
+			inactivityWeeks := int32(0)
+			if res != nil {
+				if res.Enabled != nil {
+					enabled = *res.Enabled
+				}
+				if res.InactivityWeeks != nil {
+					inactivityWeeks = *res.InactivityWeeks
+				}
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Auto-decline enabled: %t\n", enabled)
+			if enabled {
+				fmt.Fprintf(cmd.OutOrStdout(), "Inactivity weeks: %d\n", inactivityWeeks)
+			}
+			return nil
+		},
+	}
+
+	var setEnabled bool
+	var inactivityWeeks int32
+	setCmd := &cobra.Command{
+		Use:   "set",
+		Short: "Set repository auto-decline settings",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			if setEnabled && inactivityWeeks <= 0 {
+				return apperrors.New(apperrors.KindValidation, "inactivity weeks must be > 0 when enabled is true", nil)
+			}
+			service := reposettings.NewService(client)
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+					return err
+				}
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "repo.settings.auto-decline.set",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "enabled": setEnabled, "inactivityWeeks": inactivityWeeks},
+						Action:          "update",
+						PredictedAction: "update",
+						Supported:       true,
+						Reason:          "auto-decline settings will be updated",
+						Confidence:      capabilityFull,
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, UpdateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+			res, err := service.UpdateRepositoryAutoDeclineSettings(cmd.Context(), repo, setEnabled, inactivityWeeks)
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), res)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Updated auto-decline settings: enabled=%t inactivityWeeks=%d\n", setEnabled, inactivityWeeks)
+			return nil
+		},
+	}
+	setCmd.Flags().BoolVar(&setEnabled, "enabled", false, "Enable or disable auto-decline")
+	setCmd.Flags().Int32Var(&inactivityWeeks, "inactivity-weeks", 0, "Number of inactivity weeks before auto-decline")
+	_ = setCmd.MarkFlagRequired("enabled")
+
+	deleteCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete repository auto-decline settings",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+					return err
+				}
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "repo.settings.auto-decline.delete",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
+						Action:          "delete",
+						PredictedAction: "delete",
+						Supported:       true,
+						Reason:          "auto-decline settings will be deleted",
+						Confidence:      capabilityFull,
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, DeleteCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+			err = service.DeleteRepositoryAutoDeclineSettings(cmd.Context(), repo)
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "deleted"})
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), "Deleted auto-decline settings")
+			return nil
+		},
+	}
+
+	autoDeclineCmd.AddCommand(getCmd)
+	autoDeclineCmd.AddCommand(setCmd)
+	autoDeclineCmd.AddCommand(deleteCmd)
+	return autoDeclineCmd
+}
+
+func newRepoLabelCommand(options *rootOptions) *cobra.Command {
+	var repositorySelector string
+
+	labelCmd := &cobra.Command{
+		Use:   "label",
+		Short: "Manage repository labels",
+	}
+	labelCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List repository labels",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			labels, err := service.ListRepositoryLabels(cmd.Context(), repo)
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"labels": labels})
+			}
+			if len(labels) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No labels found"))
+				return nil
+			}
+			for _, label := range labels {
+				fmt.Fprintln(cmd.OutOrStdout(), style.Resource.Render(label))
+			}
+			return nil
+		},
+	}
+
+	addCmd := &cobra.Command{
+		Use:   "add <label>",
+		Short: "Add a repository label",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "repo.label.add",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "label": args[0]},
+						Action:          "create",
+						PredictedAction: "create",
+						Supported:       true,
+						Reason:          "label will be added to the repository",
+						Confidence:      capabilityFull,
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, CreateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+			err = service.AddRepositoryLabel(cmd.Context(), repo, args[0])
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "label": args[0]})
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Added label:"), style.Resource.Render(args[0]))
+			return nil
+		},
+	}
+
+	removeCmd := &cobra.Command{
+		Use:   "remove <label>",
+		Short: "Remove a repository label",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "repo.label.remove",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "label": args[0]},
+						Action:          "delete",
+						PredictedAction: "delete",
+						Supported:       true,
+						Reason:          "label will be removed from the repository",
+						Confidence:      capabilityFull,
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, DeleteCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+			err = service.RemoveRepositoryLabel(cmd.Context(), repo, args[0])
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "label": args[0]})
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Removed label:"), style.Resource.Render(args[0]))
+			return nil
+		},
+	}
+
+	labelCmd.AddCommand(listCmd)
+	labelCmd.AddCommand(addCmd)
+	labelCmd.AddCommand(removeCmd)
+	return labelCmd
+}
+
+func newRepoWatchCommand(options *rootOptions) *cobra.Command {
+	var repositorySelector string
+
+	watchCmd := &cobra.Command{
+		Use:   "watch",
+		Short: "Watch repository",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+					return err
+				}
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "repo.watch",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
+						Action:          "update",
+						PredictedAction: "update",
+						Supported:       true,
+						Reason:          "user will watch repository",
+						Confidence:      capabilityFull,
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, UpdateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+			err = service.WatchRepository(cmd.Context(), repo)
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "watching": true})
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Watching repository %s/%s\n", repo.ProjectKey, repo.Slug)
+			return nil
+		},
+	}
+	watchCmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	return watchCmd
+}
+
+func newRepoUnwatchCommand(options *rootOptions) *cobra.Command {
+	var repositorySelector string
+
+	unwatchCmd := &cobra.Command{
+		Use:   "unwatch",
+		Short: "Unwatch repository",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+					return err
+				}
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "repo.unwatch",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
+						Action:          "delete",
+						PredictedAction: "delete",
+						Supported:       true,
+						Reason:          "user will unwatch repository",
+						Confidence:      capabilityFull,
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, DeleteCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+			err = service.UnwatchRepository(cmd.Context(), repo)
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "watching": false})
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Unwatched repository %s/%s\n", repo.ProjectKey, repo.Slug)
+			return nil
+		},
+	}
+	unwatchCmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	return unwatchCmd
+}
+
+func newRepoDefaultTaskCommand(options *rootOptions) *cobra.Command {
+	var repositorySelector string
+
+	defaultTaskCmd := &cobra.Command{
+		Use:   "default-task",
+		Short: "Manage repository default checklist tasks",
+	}
+	defaultTaskCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List default checklist tasks",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			tasks, err := service.ListDefaultTasks(cmd.Context(), repo)
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), tasks)
+			}
+			if len(tasks) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No default checklist tasks found"))
+				return nil
+			}
+			rows := make([][]string, len(tasks))
+			for i, t := range tasks {
+				idStr := ""
+				if t.Id != nil {
+					idStr = strconv.FormatInt(int64(*t.Id), 10)
+				}
+				desc := ""
+				if t.Description != nil {
+					desc = *t.Description
+				}
+				src := "ANY"
+				if t.SourceMatcher != nil && t.SourceMatcher.Id != nil {
+					src = *t.SourceMatcher.Id
+				}
+				tgt := "ANY"
+				if t.TargetMatcher != nil && t.TargetMatcher.Id != nil {
+					tgt = *t.TargetMatcher.Id
+				}
+				rows[i] = []string{style.Secondary.Render(idStr), style.Resource.Render(desc), src, tgt}
+			}
+			style.WriteTable(cmd.OutOrStdout(), rows)
+			return nil
+		},
+	}
+
+	var sourceRef string
+	var targetRef string
+	addCmd := &cobra.Command{
+		Use:   "add <description>",
+		Short: "Add a default checklist task",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			var src *string
+			if cmd.Flags().Changed("source-ref") {
+				src = &sourceRef
+			}
+			var tgt *string
+			if cmd.Flags().Changed("target-ref") {
+				tgt = &targetRef
+			}
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+					return err
+				}
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "repo.default-task.create",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "description": args[0], "source_ref": src, "target_ref": tgt},
+						Action:          "create",
+						PredictedAction: "create",
+						Supported:       true,
+						Reason:          "default task will be created",
+						Confidence:      capabilityFull,
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, CreateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+			task, err := service.AddDefaultTask(cmd.Context(), repo, args[0], src, tgt)
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), task)
+			}
+			idStr := ""
+			if task != nil && task.Id != nil {
+				idStr = strconv.FormatInt(int64(*task.Id), 10)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created default task:"), style.Secondary.Render(idStr))
+			return nil
+		},
+	}
+	addCmd.Flags().StringVar(&sourceRef, "source-ref", "", "Source ref matcher (e.g. refs/heads/feature/*)")
+	addCmd.Flags().StringVar(&targetRef, "target-ref", "", "Target ref matcher (e.g. refs/heads/master)")
+
+	var updateDesc string
+	updateCmd := &cobra.Command{
+		Use:   "update <id>",
+		Short: "Update a default checklist task",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			var src *string
+			if cmd.Flags().Changed("source-ref") {
+				src = &sourceRef
+			}
+			var tgt *string
+			if cmd.Flags().Changed("target-ref") {
+				tgt = &targetRef
+			}
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+					return err
+				}
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "repo.default-task.update",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "description": updateDesc, "source_ref": src, "target_ref": tgt},
+						Action:          "update",
+						PredictedAction: "update",
+						Supported:       true,
+						Reason:          "default task will be updated",
+						Confidence:      capabilityFull,
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, UpdateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+			task, err := service.UpdateDefaultTask(cmd.Context(), repo, args[0], updateDesc, src, tgt)
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), task)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated default task:"), style.Secondary.Render(args[0]))
+			return nil
+		},
+	}
+	updateCmd.Flags().StringVar(&updateDesc, "description", "", "New task description")
+	updateCmd.Flags().StringVar(&sourceRef, "source-ref", "", "New source ref matcher")
+	updateCmd.Flags().StringVar(&targetRef, "target-ref", "", "New target ref matcher")
+	_ = updateCmd.MarkFlagRequired("description")
+
+	deleteCmd := &cobra.Command{
+		Use:   "delete <id>",
+		Short: "Delete a default checklist task",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+					return err
+				}
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "repo.default-task.delete",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Action:          "delete",
+						PredictedAction: "delete",
+						Supported:       true,
+						Reason:          "default task will be deleted",
+						Confidence:      capabilityFull,
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, DeleteCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+			err = service.DeleteDefaultTask(cmd.Context(), repo, args[0])
+			if err != nil {
+				return err
+			}
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "id": args[0]})
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted default task:"), style.Secondary.Render(args[0]))
+			return nil
+		},
+	}
+
+	defaultTaskCmd.AddCommand(listCmd)
+	defaultTaskCmd.AddCommand(addCmd)
+	defaultTaskCmd.AddCommand(updateCmd)
+	defaultTaskCmd.AddCommand(deleteCmd)
+	return defaultTaskCmd
 }

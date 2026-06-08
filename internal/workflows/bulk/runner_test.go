@@ -31,6 +31,9 @@ func TestServiceRunnerOperations(t *testing.T) {
 		{Type: OperationRepoPullRequestRequiredAllTasksComplete, RequiredAllTasksComplete: boolPtr(true)},
 		{Type: OperationRepoPullRequestRequiredApproversCount, Count: intPtr(1)},
 		{Type: OperationBuildRequiredCreate, Payload: map[string]any{"foo": "bar"}},
+		{Type: OperationRepoSettingsAutoMerge, Enabled: boolPtr(true)},
+		{Type: OperationRepoSettingsAutoDecline, Enabled: boolPtr(true), InactivityWeeks: intPtr(4)},
+		{Type: OperationRepoDefaultTaskCreate, Description: stringPtr("my task")},
 	}
 
 	for _, tc := range testCases {
@@ -62,6 +65,9 @@ func TestServiceRunnerUnconfigured(t *testing.T) {
 			{Type: OperationRepoPullRequestRequiredAllTasksComplete, RequiredAllTasksComplete: boolPtr(true)},
 			{Type: OperationRepoPullRequestRequiredApproversCount, Count: intPtr(1)},
 			{Type: OperationBuildRequiredCreate},
+			{Type: OperationRepoSettingsAutoMerge, Enabled: boolPtr(true)},
+			{Type: OperationRepoSettingsAutoDecline, Enabled: boolPtr(true), InactivityWeeks: intPtr(4)},
+			{Type: OperationRepoDefaultTaskCreate, Description: stringPtr("my task")},
 		}
 		for _, op := range ops {
 			_, err := runner.Run(context.Background(), repo, op)
@@ -105,6 +111,34 @@ func TestServiceRunnerValidationBranches(t *testing.T) {
 
 	t.Run("requiredApprovers count nil is validation error", func(t *testing.T) {
 		_, err := runner.Run(context.Background(), repo, OperationSpec{Type: OperationRepoPullRequestRequiredApproversCount})
+		if err == nil {
+			t.Fatal("expected validation error")
+		}
+	})
+
+	t.Run("auto-merge enabled nil is validation error", func(t *testing.T) {
+		_, err := runner.Run(context.Background(), repo, OperationSpec{Type: OperationRepoSettingsAutoMerge})
+		if err == nil {
+			t.Fatal("expected validation error")
+		}
+	})
+
+	t.Run("auto-decline enabled nil is validation error", func(t *testing.T) {
+		_, err := runner.Run(context.Background(), repo, OperationSpec{Type: OperationRepoSettingsAutoDecline})
+		if err == nil {
+			t.Fatal("expected validation error")
+		}
+	})
+
+	t.Run("auto-decline inactivityWeeks nil when enabled is validation error", func(t *testing.T) {
+		_, err := runner.Run(context.Background(), repo, OperationSpec{Type: OperationRepoSettingsAutoDecline, Enabled: boolPtr(true)})
+		if err == nil {
+			t.Fatal("expected validation error")
+		}
+	})
+
+	t.Run("default-task description nil is validation error", func(t *testing.T) {
+		_, err := runner.Run(context.Background(), repo, OperationSpec{Type: OperationRepoDefaultTaskCreate})
 		if err == nil {
 			t.Fatal("expected validation error")
 		}
