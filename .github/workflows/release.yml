@@ -191,9 +191,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
       - name: Validate version input
         env:
@@ -291,9 +289,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
       - name: Download packaged artifacts
         uses: actions/download-artifact@v8

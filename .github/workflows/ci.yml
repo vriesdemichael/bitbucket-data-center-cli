@@ -33,9 +33,7 @@ jobs:
           cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
       - name: Verify PR branch has no merge commits
         run: task quality:git:ensure-linear
@@ -54,9 +52,7 @@ jobs:
           cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
       - name: Validate ADR records
         run: task quality:validate-decisions
@@ -75,9 +71,7 @@ jobs:
           cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
       - name: Run Go tests (targeted non-live package scope)
         run: task test:go:safe
@@ -109,9 +103,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
       - name: Render changelog for docs validation
         env:
@@ -149,9 +141,7 @@ jobs:
           cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
       - name: Create .env file (required by docker/compose.yml env_file directive)
         run: touch .env
