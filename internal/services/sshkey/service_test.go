@@ -228,4 +228,66 @@ func TestSshKeyServiceTransientErrors(t *testing.T) {
 	if err := service.RemoveUserKey(ctx, "123"); err == nil || apperrors.ExitCode(err) != 3 {
 		t.Fatalf("expected unauthorized error, got %v", err)
 	}
+
+	if _, err := service.ListProjectKeys(ctx, "PRJ", 10); err == nil || apperrors.ExitCode(err) != 3 {
+		t.Fatalf("expected unauthorized error, got %v", err)
+	}
+	if _, err := service.AddProjectKey(ctx, "PRJ", "label", "ssh-rsa AAA", "PROJECT_READ"); err == nil || apperrors.ExitCode(err) != 3 {
+		t.Fatalf("expected unauthorized error, got %v", err)
+	}
+	if err := service.RemoveProjectKey(ctx, "PRJ", "123"); err == nil || apperrors.ExitCode(err) != 3 {
+		t.Fatalf("expected unauthorized error, got %v", err)
+	}
+
+	if _, err := service.ListRepoKeys(ctx, "PRJ", "repo", 10); err == nil || apperrors.ExitCode(err) != 3 {
+		t.Fatalf("expected unauthorized error, got %v", err)
+	}
+	if _, err := service.AddRepoKey(ctx, "PRJ", "repo", "label", "ssh-rsa AAA", "REPO_READ"); err == nil || apperrors.ExitCode(err) != 3 {
+		t.Fatalf("expected unauthorized error, got %v", err)
+	}
+	if err := service.RemoveRepoKey(ctx, "PRJ", "repo", "123"); err == nil || apperrors.ExitCode(err) != 3 {
+		t.Fatalf("expected unauthorized error, got %v", err)
+	}
+}
+
+func TestSshKeyServiceNetworkErrors(t *testing.T) {
+	client, err := openapigenerated.NewClientWithResponses("http://invalid.local/rest")
+	if err != nil {
+		t.Fatalf("create client: %v", err)
+	}
+	service := NewService(client)
+	ctx := context.Background()
+
+	// List User, Project, Repo
+	if _, err := service.ListUserKeys(ctx, 10); err == nil {
+		t.Fatal("expected network error")
+	}
+	if _, err := service.ListProjectKeys(ctx, "PRJ", 10); err == nil {
+		t.Fatal("expected network error")
+	}
+	if _, err := service.ListRepoKeys(ctx, "PRJ", "repo", 10); err == nil {
+		t.Fatal("expected network error")
+	}
+
+	// Add User, Project, Repo
+	if _, err := service.AddUserKey(ctx, "label", "ssh-rsa AAA"); err == nil {
+		t.Fatal("expected network error")
+	}
+	if _, err := service.AddProjectKey(ctx, "PRJ", "label", "ssh-rsa AAA", "PROJECT_READ"); err == nil {
+		t.Fatal("expected network error")
+	}
+	if _, err := service.AddRepoKey(ctx, "PRJ", "repo", "label", "ssh-rsa AAA", "REPO_READ"); err == nil {
+		t.Fatal("expected network error")
+	}
+
+	// Remove User, Project, Repo
+	if err := service.RemoveUserKey(ctx, "123"); err == nil {
+		t.Fatal("expected network error")
+	}
+	if err := service.RemoveProjectKey(ctx, "PRJ", "123"); err == nil {
+		t.Fatal("expected network error")
+	}
+	if err := service.RemoveRepoKey(ctx, "PRJ", "repo", "123"); err == nil {
+		t.Fatal("expected network error")
+	}
 }
