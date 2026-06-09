@@ -81,6 +81,7 @@ func newRepoCommand(options *rootOptions) *cobra.Command {
 	repoCmd.AddCommand(newRepoWatchCommand(options))
 	repoCmd.AddCommand(newRepoUnwatchCommand(options))
 	repoCmd.AddCommand(newRepoDefaultTaskCommand(options))
+	repoCmd.AddCommand(newRepoSshKeyCommand(options))
 
 	return repoCmd
 }

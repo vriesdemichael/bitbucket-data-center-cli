@@ -159,6 +159,16 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"project permissions users revoke":  {Intent: "project.permission.user.revoke", Action: "delete", Stateful: true},
 	"project permissions groups grant":  {Intent: "project.permission.group.grant", Action: "update", Stateful: true},
 	"project permissions groups revoke": {Intent: "project.permission.group.revoke", Action: "delete", Stateful: true},
+	// auth token
+	"auth token create": {Intent: "auth.token.create", Action: "create", Stateful: false},
+	"auth token update": {Intent: "auth.token.update", Action: "update", Stateful: false},
+	"auth token revoke": {Intent: "auth.token.revoke", Action: "delete", Stateful: false},
+	// ssh-key
+	"ssh-key add":    {Intent: "ssh-key.add", Action: "create", Stateful: false},
+	"ssh-key remove": {Intent: "ssh-key.remove", Action: "delete", Stateful: false},
+	// repo ssh-key
+	"repo ssh-key add":    {Intent: "repo.ssh-key.add", Action: "create", Stateful: false},
+	"repo ssh-key remove": {Intent: "repo.ssh-key.remove", Action: "delete", Stateful: false},
 }
 
 func registerGlobalDryRunInterceptors(root *cobra.Command, options *rootOptions) {

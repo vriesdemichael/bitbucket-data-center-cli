@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-9.4-openapi.json",
-  "covered": 163,
+  "covered": 187,
   "total": 546,
-  "coverage_percent": 29.853479853479854,
+  "coverage_percent": 34.24908424908425,
   "by_tag": [
     {
       "tag": "",
@@ -12,7 +12,7 @@
     },
     {
       "tag": "Authentication",
-      "covered": 0,
+      "covered": 24,
       "total": 64
     },
     {
@@ -87,96 +87,6 @@
     }
   ],
   "gaps": [
-    {
-      "method": "GET",
-      "path": "/access-tokens/latest/projects/{projectKey}",
-      "tag": "Authentication",
-      "summary": "Get project HTTP tokens"
-    },
-    {
-      "method": "PUT",
-      "path": "/access-tokens/latest/projects/{projectKey}",
-      "tag": "Authentication",
-      "summary": "Create project HTTP token"
-    },
-    {
-      "method": "GET",
-      "path": "/access-tokens/latest/projects/{projectKey}/repos/{repositorySlug}",
-      "tag": "Authentication",
-      "summary": "Get repository HTTP tokens"
-    },
-    {
-      "method": "PUT",
-      "path": "/access-tokens/latest/projects/{projectKey}/repos/{repositorySlug}",
-      "tag": "Authentication",
-      "summary": "Create repository HTTP token"
-    },
-    {
-      "method": "DELETE",
-      "path": "/access-tokens/latest/projects/{projectKey}/repos/{repositorySlug}/{tokenId}",
-      "tag": "Authentication",
-      "summary": "Delete a HTTP token"
-    },
-    {
-      "method": "GET",
-      "path": "/access-tokens/latest/projects/{projectKey}/repos/{repositorySlug}/{tokenId}",
-      "tag": "Authentication",
-      "summary": "Get HTTP token by ID"
-    },
-    {
-      "method": "POST",
-      "path": "/access-tokens/latest/projects/{projectKey}/repos/{repositorySlug}/{tokenId}",
-      "tag": "Authentication",
-      "summary": "Update HTTP token"
-    },
-    {
-      "method": "DELETE",
-      "path": "/access-tokens/latest/projects/{projectKey}/{tokenId}",
-      "tag": "Authentication",
-      "summary": "Delete a HTTP token"
-    },
-    {
-      "method": "GET",
-      "path": "/access-tokens/latest/projects/{projectKey}/{tokenId}",
-      "tag": "Authentication",
-      "summary": "Get HTTP token by ID"
-    },
-    {
-      "method": "POST",
-      "path": "/access-tokens/latest/projects/{projectKey}/{tokenId}",
-      "tag": "Authentication",
-      "summary": "Update HTTP token"
-    },
-    {
-      "method": "GET",
-      "path": "/access-tokens/latest/users/{userSlug}",
-      "tag": "Authentication",
-      "summary": "Get personal HTTP tokens"
-    },
-    {
-      "method": "PUT",
-      "path": "/access-tokens/latest/users/{userSlug}",
-      "tag": "Authentication",
-      "summary": "Create personal HTTP token"
-    },
-    {
-      "method": "DELETE",
-      "path": "/access-tokens/latest/users/{userSlug}/{tokenId}",
-      "tag": "Authentication",
-      "summary": "Delete a HTTP token"
-    },
-    {
-      "method": "GET",
-      "path": "/access-tokens/latest/users/{userSlug}/{tokenId}",
-      "tag": "Authentication",
-      "summary": "Get HTTP token by ID"
-    },
-    {
-      "method": "POST",
-      "path": "/access-tokens/latest/users/{userSlug}/{tokenId}",
-      "tag": "Authentication",
-      "summary": "Update HTTP token"
-    },
     {
       "method": "GET",
       "path": "/admin",
@@ -1865,24 +1775,6 @@
     },
     {
       "method": "GET",
-      "path": "/keys/latest/projects/{projectKey}/repos/{repositorySlug}/ssh",
-      "tag": "Authentication",
-      "summary": "Get repository SSH keys"
-    },
-    {
-      "method": "POST",
-      "path": "/keys/latest/projects/{projectKey}/repos/{repositorySlug}/ssh",
-      "tag": "Authentication",
-      "summary": "Add repository SSH key"
-    },
-    {
-      "method": "DELETE",
-      "path": "/keys/latest/projects/{projectKey}/repos/{repositorySlug}/ssh/{keyId}",
-      "tag": "Authentication",
-      "summary": "Revoke repository SSH key"
-    },
-    {
-      "method": "GET",
       "path": "/keys/latest/projects/{projectKey}/repos/{repositorySlug}/ssh/{keyId}",
       "tag": "Authentication",
       "summary": "Get repository SSH key"
@@ -1892,24 +1784,6 @@
       "path": "/keys/latest/projects/{projectKey}/repos/{repositorySlug}/ssh/{keyId}/permission/{permission}",
       "tag": "Authentication",
       "summary": "Update repository SSH key permission"
-    },
-    {
-      "method": "GET",
-      "path": "/keys/latest/projects/{projectKey}/ssh",
-      "tag": "Authentication",
-      "summary": "Get SSH key"
-    },
-    {
-      "method": "POST",
-      "path": "/keys/latest/projects/{projectKey}/ssh",
-      "tag": "Authentication",
-      "summary": "Add project SSH key"
-    },
-    {
-      "method": "DELETE",
-      "path": "/keys/latest/projects/{projectKey}/ssh/{keyId}",
-      "tag": "Authentication",
-      "summary": "Revoke project SSH key"
     },
     {
       "method": "GET",
@@ -2222,24 +2096,6 @@
       "path": "/ssh/latest/keys",
       "tag": "Authentication",
       "summary": "Delete all user SSH key"
-    },
-    {
-      "method": "GET",
-      "path": "/ssh/latest/keys",
-      "tag": "Authentication",
-      "summary": "Get SSH keys for user"
-    },
-    {
-      "method": "POST",
-      "path": "/ssh/latest/keys",
-      "tag": "Authentication",
-      "summary": "Add SSH key for user"
-    },
-    {
-      "method": "DELETE",
-      "path": "/ssh/latest/keys/{keyId}",
-      "tag": "Authentication",
-      "summary": "Remove SSH key"
     },
     {
       "method": "GET",

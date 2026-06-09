@@ -99,6 +99,7 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(newBrowseCommand(options))
 	rootCmd.AddCommand(newSearchCommand(options))
 	rootCmd.AddCommand(newUpdateCommand(options))
+	rootCmd.AddCommand(newSshKeyCommand(options))
 
 	registerGlobalDryRunInterceptors(rootCmd, options)
 
