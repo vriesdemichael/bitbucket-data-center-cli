@@ -1,40 +1,40 @@
 {
   "version": 2,
   "coverage": {
-    "unit_raw_percent": 23.767304694103725,
-    "unit_scoped_percent": 89.01290042035077,
-    "live_raw_percent": 20.12686538387383,
-    "live_scoped_percent": 42.83529925731761,
-    "combined_raw_percent": 32.70845464620471,
-    "combined_scoped_percent": 90.4913755616756,
-    "patch_percent": 85.45611015490535,
+    "unit_raw_percent": 24.320900249655327,
+    "unit_scoped_percent": 89.09729539866527,
+    "live_raw_percent": 20.067682542110397,
+    "live_scoped_percent": 41.91659021946228,
+    "combined_raw_percent": 33.18925364235943,
+    "combined_scoped_percent": 90.53038285914998,
+    "patch_percent": 86.11500701262273,
     "unit_statements": {
-      "covered": 12653,
-      "total": 53237
+      "covered": 13054,
+      "total": 53674
     },
     "live_statements": {
-      "covered": 10439,
-      "total": 51866
+      "covered": 10496,
+      "total": 52303
     },
     "combined_statements": {
-      "covered": 17413,
-      "total": 53237
+      "covered": 17814,
+      "total": 53674
     },
     "unit_scoped_statements": {
-      "covered": 12282,
-      "total": 13798
+      "covered": 12683,
+      "total": 14235
     },
     "live_scoped_statements": {
-      "covered": 5883,
-      "total": 13734
+      "covered": 5940,
+      "total": 14171
     },
     "combined_scoped_statements": {
-      "covered": 12486,
-      "total": 13798
+      "covered": 12887,
+      "total": 14235
     },
     "patch_lines": {
-      "covered": 993,
-      "total": 1162
+      "covered": 614,
+      "total": 713
     },
     "scope": {
       "include_prefixes": [
@@ -48,7 +48,7 @@
     }
   },
   "generated_contracts": {
-    "coverage_percent": 23.976608187134502,
+    "coverage_percent": 23.163841807909606,
     "used_operations": [
       "AddAnnotationsWithResponse",
       "AddBuildStatusWithResponse",
@@ -101,6 +101,7 @@
       "DeleteWebhook1WithResponse",
       "DisableHook1WithResponse",
       "DisableHookWithResponse",
+      "EditFileWithBodyWithResponse",
       "EnableHook1WithResponse",
       "EnableHookWithResponse",
       "FindByCommitWithResponse",
@@ -129,6 +130,7 @@
       "GetCommentsWithResponse",
       "GetCommitWithResponse",
       "GetCommitsWithResponse",
+      "GetConfigurations1WithResponse",
       "GetContent1WithResponse",
       "GetDefaultBranch2WithResponse",
       "GetDefaultTasks1WithResponse",
@@ -172,6 +174,7 @@
       "PutJSON",
       "React1WithResponse",
       "RebaseWithResponse",
+      "RemoveConfiguration1WithResponse",
       "RemoveLabelWithResponse",
       "RevokeForProjectWithResponse",
       "RevokeForRepositoryWithResponse",
@@ -184,6 +187,7 @@
       "Set1WithResponse",
       "SetACodeInsightsReportWithResponse",
       "SetAutoDeclineSettings1WithResponse",
+      "SetConfiguration1WithResponse",
       "SetDefaultBranch2WithResponse",
       "SetPermissionForGroupWithResponse",
       "SetPermissionForGroups1WithResponse",
@@ -191,7 +195,9 @@
       "SetPermissionForUsers1WithResponse",
       "SetSettings1WithBodyWithResponse",
       "SetSettingsWithBodyWithResponse",
+      "StreamChangesWithResponse",
       "StreamCommitsWithResponse",
+      "StreamDiff1WithResponse",
       "StreamFiles1WithResponse",
       "StreamFilesWithResponse",
       "StreamPatch1WithResponse",
@@ -303,6 +309,7 @@
       "DeleteSshKeyWithResponse",
       "DisableHook1WithResponse",
       "DisableHookWithResponse",
+      "EditFileWithBodyWithResponse",
       "EnableHook1WithResponse",
       "EnableHookWithResponse",
       "FindByCommitWithResponse",
@@ -322,6 +329,7 @@
       "GetComments1WithResponse",
       "GetCommitWithResponse",
       "GetCommitsWithResponse",
+      "GetConfigurations1WithResponse",
       "GetContent1WithResponse",
       "GetDefaultBranch2WithResponse",
       "GetDefaultTasks1WithResponse",
@@ -357,6 +365,7 @@
       "PutJSON",
       "React1WithResponse",
       "RebaseWithResponse",
+      "RemoveConfiguration1WithResponse",
       "RemoveLabelWithResponse",
       "RevokeForProjectWithResponse",
       "RevokeForRepositoryWithResponse",
@@ -368,13 +377,16 @@
       "SearchWithResponse",
       "Set1WithResponse",
       "SetAutoDeclineSettings1WithResponse",
+      "SetConfiguration1WithResponse",
       "SetDefaultBranch2WithResponse",
       "SetPermissionForGroupWithResponse",
       "SetPermissionForGroups1WithResponse",
       "SetPermissionForUsers1WithResponse",
       "SetSettings1WithBodyWithResponse",
       "SetSettingsWithBodyWithResponse",
+      "StreamChangesWithResponse",
       "StreamCommitsWithResponse",
+      "StreamDiff1WithResponse",
       "StreamFiles1WithResponse",
       "StreamFilesWithResponse",
       "StreamRawWithResponse",

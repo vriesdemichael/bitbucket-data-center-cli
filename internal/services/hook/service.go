@@ -250,3 +250,86 @@ func (service *Service) SetRepositoryHookSettings(ctx context.Context, projectKe
 	}
 	return result, nil
 }
+
+func (service *Service) ListHookScripts(ctx context.Context, projectKey, repoSlug string, limit int) ([]openapigenerated.RestHookScriptConfig, error) {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repoSlug) == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "project key and repository slug are required", nil)
+	}
+
+	if limit <= 0 {
+		limit = 100
+	}
+
+	start := float32(0)
+	pageLimit := float32(limit)
+	results := make([]openapigenerated.RestHookScriptConfig, 0)
+
+	for {
+		params := &openapigenerated.GetConfigurations1Params{
+			Start: &start,
+			Limit: &pageLimit,
+		}
+		response, err := service.client.GetConfigurations1WithResponse(ctx, projectKey, repoSlug, params)
+		if err != nil {
+			return nil, apperrors.New(apperrors.KindTransient, "failed to list repository hook scripts", err)
+		}
+		if response.StatusCode() != 200 {
+			return nil, openapi.MapStatusError(response.StatusCode(), response.Body)
+		}
+
+		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
+			break
+		}
+
+		results = append(results, *response.ApplicationjsonCharsetUTF8200.Values...)
+
+		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
+			break
+		}
+		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
+			break
+		}
+		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
+	}
+
+	return results, nil
+}
+
+func (service *Service) SetHookScript(ctx context.Context, projectKey, repoSlug, scriptId string, triggerIds []string) error {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repoSlug) == "" || strings.TrimSpace(scriptId) == "" {
+		return apperrors.New(apperrors.KindValidation, "project key, repository slug, and script ID are required", nil)
+	}
+
+	body := openapigenerated.RestHookScriptTriggers{
+		TriggerIds: &triggerIds,
+	}
+
+	response, err := service.client.SetConfiguration1WithResponse(ctx, projectKey, repoSlug, scriptId, body)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to configure repository hook script", err)
+	}
+
+	if response.StatusCode() != 200 && response.StatusCode() != 204 {
+		return openapi.MapStatusError(response.StatusCode(), response.Body)
+	}
+
+	return nil
+}
+
+func (service *Service) RemoveHookScript(ctx context.Context, projectKey, repoSlug, scriptId string) error {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repoSlug) == "" || strings.TrimSpace(scriptId) == "" {
+		return apperrors.New(apperrors.KindValidation, "project key, repository slug, and script ID are required", nil)
+	}
+
+	response, err := service.client.RemoveConfiguration1WithResponse(ctx, projectKey, repoSlug, scriptId)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to remove repository hook script configuration", err)
+	}
+
+	if response.StatusCode() != 204 && response.StatusCode() != 200 {
+		return openapi.MapStatusError(response.StatusCode(), response.Body)
+	}
+
+	return nil
+}
+

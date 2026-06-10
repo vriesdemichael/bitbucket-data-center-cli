@@ -1,11 +1,13 @@
 package browse
 
 import (
+	"bytes"
 	"context"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
+	"mime/multipart"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
@@ -22,6 +24,14 @@ type TreeOptions struct {
 type FileOptions struct {
 	At    string
 	Blame bool
+}
+
+type EditInput struct {
+	Branch         string
+	Message        string
+	Content        string
+	SourceBranch   string
+	SourceCommitId string
 }
 
 type Service struct {
@@ -177,6 +187,65 @@ func (service *Service) File(ctx context.Context, repo RepositoryRef, path strin
 	}
 
 	return resp.Body, nil
+}
+
+func (service *Service) Edit(ctx context.Context, repo RepositoryRef, path string, input EditInput) (*openapigenerated.RestCommit, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+
+	trimmedPath := strings.TrimSpace(path)
+	if trimmedPath == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "path is required", nil)
+	}
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	if input.Branch != "" {
+		if err := writer.WriteField("branch", input.Branch); err != nil {
+			return nil, apperrors.New(apperrors.KindInternal, "failed to write branch field", err)
+		}
+	}
+	if input.Message != "" {
+		if err := writer.WriteField("message", input.Message); err != nil {
+			return nil, apperrors.New(apperrors.KindInternal, "failed to write message field", err)
+		}
+	}
+	if input.Content != "" {
+		if err := writer.WriteField("content", input.Content); err != nil {
+			return nil, apperrors.New(apperrors.KindInternal, "failed to write content field", err)
+		}
+	}
+	if input.SourceBranch != "" {
+		if err := writer.WriteField("sourceBranch", input.SourceBranch); err != nil {
+			return nil, apperrors.New(apperrors.KindInternal, "failed to write sourceBranch field", err)
+		}
+	}
+	if input.SourceCommitId != "" {
+		if err := writer.WriteField("sourceCommitId", input.SourceCommitId); err != nil {
+			return nil, apperrors.New(apperrors.KindInternal, "failed to write sourceCommitId field", err)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, apperrors.New(apperrors.KindInternal, "failed to close multipart writer", err)
+	}
+
+	resp, err := service.client.EditFileWithBodyWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedPath, writer.FormDataContentType(), body)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to edit file", err)
+	}
+
+	if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
+		return nil, err
+	}
+
+	if resp.ApplicationjsonCharsetUTF8200 == nil {
+		return nil, apperrors.New(apperrors.KindPermanent, "empty commit response from server", nil)
+	}
+
+	return resp.ApplicationjsonCharsetUTF8200, nil
 }
 
 func validateRepositoryRef(repo RepositoryRef) error {

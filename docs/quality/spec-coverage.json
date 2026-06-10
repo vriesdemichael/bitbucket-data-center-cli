@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-9.4-openapi.json",
-  "covered": 187,
+  "covered": 193,
   "total": 546,
-  "coverage_percent": 34.24908424908425,
+  "coverage_percent": 35.34798534798535,
   "by_tag": [
     {
       "tag": "",
@@ -72,7 +72,7 @@
     },
     {
       "tag": "Repository",
-      "covered": 58,
+      "covered": 64,
       "total": 96
     },
     {
@@ -874,12 +874,6 @@
       "summary": "Get file content at revision"
     },
     {
-      "method": "PUT",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/browse/{path}",
-      "tag": "Repository",
-      "summary": "Edit file"
-    },
-    {
       "method": "GET",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/changes",
       "tag": "Repository",
@@ -959,18 +953,6 @@
     },
     {
       "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/compare/changes",
-      "tag": "Repository",
-      "summary": "Compare commits"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/compare/diff{path}",
-      "tag": "Repository",
-      "summary": "Get diff between commits"
-    },
-    {
-      "method": "GET",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/contributing",
       "tag": "Project",
       "summary": "Get repository contributing guidelines"
@@ -986,24 +968,6 @@
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/forks",
       "tag": "Project",
       "summary": "Get repository forks"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/hook-scripts",
-      "tag": "Repository",
-      "summary": "Get hook scripts"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/hook-scripts/{scriptId}",
-      "tag": "Repository",
-      "summary": "Remove a hook script"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/hook-scripts/{scriptId}",
-      "tag": "Repository",
-      "summary": "Create/update a hook script"
     },
     {
       "method": "GET",

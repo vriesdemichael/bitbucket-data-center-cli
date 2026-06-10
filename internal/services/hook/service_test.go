@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
@@ -189,3 +190,143 @@ func TestHookServiceErrors(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+
+func TestHookServiceScripts(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/hook-scripts":
+			_, _ = w.Write([]byte(`{"values":[{"script":{"id":123,"name":"my-script"}},{"script":{"id":456,"name":"another-script"}}],"isLastPage":true}`))
+		case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/hook-scripts/123":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/hook-scripts/123":
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	service := NewService(client)
+	ctx := context.Background()
+
+	t.Run("list scripts success", func(t *testing.T) {
+		scripts, err := service.ListHookScripts(ctx, "PRJ", "demo", 100)
+		if err != nil || len(scripts) != 2 {
+			t.Fatalf("expected 2 scripts, got %v: %v", scripts, err)
+		}
+		if *scripts[0].Script.Id != 123 {
+			t.Fatalf("expected id 123, got %d", *scripts[0].Script.Id)
+		}
+	})
+
+	t.Run("set script success", func(t *testing.T) {
+		err := service.SetHookScript(ctx, "PRJ", "demo", "123", []string{"trigger1"})
+		if err != nil {
+			t.Fatalf("expected set script success, got %v", err)
+		}
+	})
+
+	t.Run("remove script success", func(t *testing.T) {
+		err := service.RemoveHookScript(ctx, "PRJ", "demo", "123")
+		if err != nil {
+			t.Fatalf("expected remove script success, got %v", err)
+		}
+	})
+
+	t.Run("validation error", func(t *testing.T) {
+		if _, err := service.ListHookScripts(ctx, "", "demo", 10); err == nil {
+			t.Fatal("expected validation error")
+		}
+		if err := service.SetHookScript(ctx, "PRJ", "", "123", nil); err == nil {
+			t.Fatal("expected validation error")
+		}
+		if err := service.RemoveHookScript(ctx, "PRJ", "demo", ""); err == nil {
+			t.Fatal("expected validation error")
+		}
+	})
+
+	t.Run("transient errors", func(t *testing.T) {
+		badClient, _ := openapigenerated.NewClientWithResponses("http://invalid-url-that-does-not-exist.local")
+		badService := NewService(badClient)
+
+		if _, err := badService.ListHookScripts(ctx, "PRJ", "demo", 100); err == nil {
+			t.Fatal("expected transient error")
+		}
+		if err := badService.SetHookScript(ctx, "PRJ", "demo", "123", nil); err == nil {
+			t.Fatal("expected transient error")
+		}
+		if err := badService.RemoveHookScript(ctx, "PRJ", "demo", "123"); err == nil {
+			t.Fatal("expected transient error")
+		}
+	})
+
+	newHookTestService := func(t *testing.T, handler http.HandlerFunc) *Service {
+		srv := httptest.NewServer(handler)
+		t.Cleanup(srv.Close)
+		cl, _ := openapigenerated.NewClientWithResponses(srv.URL + "/rest")
+		return NewService(cl)
+	}
+
+	t.Run("list scripts coverage edge cases", func(t *testing.T) {
+		// Test limit <= 0 defaults limit
+		_, err := service.ListHookScripts(ctx, "PRJ", "demo", 0)
+		if err != nil {
+			t.Fatalf("expected list success with limit <= 0, got %v", err)
+		}
+
+		// Test status error
+		errService := newHookTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"errors":[]}`))
+		})
+		_, err = errService.ListHookScripts(ctx, "PRJ", "demo", 100)
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected not found, got %v", err)
+		}
+
+		// Test empty response body
+		nilBodyService := newHookTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{}`))
+		})
+		res, err := nilBodyService.ListHookScripts(ctx, "PRJ", "demo", 100)
+		if err != nil || len(res) != 0 {
+			t.Fatalf("expected empty response, got %v, err %v", res, err)
+		}
+
+		// Test pagination next page start processing
+		pageCalls := 0
+		paginatedService := newHookTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			pageCalls++
+			if pageCalls == 1 {
+				_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"script":{"id":1}}]}`))
+			} else {
+				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"script":{"id":2}}]}`))
+			}
+		})
+		res, err = paginatedService.ListHookScripts(ctx, "PRJ", "demo", 100)
+		if err != nil || len(res) != 2 {
+			t.Fatalf("expected 2 page items, got %v, err %v", res, err)
+		}
+	})
+
+	t.Run("set and remove script errors", func(t *testing.T) {
+		errService := newHookTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusConflict)
+		})
+		err := errService.SetHookScript(ctx, "PRJ", "demo", "123", nil)
+		if err == nil || apperrors.ExitCode(err) != 5 {
+			t.Fatalf("expected conflict on set, got %v", err)
+		}
+
+		err = errService.RemoveHookScript(ctx, "PRJ", "demo", "123")
+		if err == nil || apperrors.ExitCode(err) != 5 {
+			t.Fatalf("expected conflict on remove, got %v", err)
+		}
+	})
+}
+

@@ -185,3 +185,104 @@ func testMapStatusErrors(t *testing.T) {
 		t.Fatalf("expected permanent error")
 	}
 }
+
+func TestBrowseServiceEdit(t *testing.T) {
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	t.Run("success", func(t *testing.T) {
+		service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPut || r.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/browse/path/to/file.txt" {
+				http.NotFound(w, r)
+				return
+			}
+
+			err := r.ParseMultipartForm(10 * 1024)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte("bad multipart form"))
+				return
+			}
+
+			if r.FormValue("branch") != "main" ||
+				r.FormValue("message") != "my commit message" ||
+				r.FormValue("content") != "new content" ||
+				r.FormValue("sourceBranch") != "main" ||
+				r.FormValue("sourceCommitId") != "abc1234" {
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte("incorrect multipart fields"))
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"id":"def5678","displayId":"def5678"}`))
+		})
+
+		commit, err := service.Edit(context.Background(), repo, "path/to/file.txt", EditInput{
+			Branch:         "main",
+			Message:        "my commit message",
+			Content:        "new content",
+			SourceBranch:   "main",
+			SourceCommitId: "abc1234",
+		})
+		if err != nil {
+			t.Fatalf("expected edit success, got %v", err)
+		}
+		if commit == nil || *commit.Id != "def5678" {
+			t.Fatalf("expected returned commit to have Id def5678, got %+v", commit)
+		}
+	})
+
+	t.Run("empty path validation", func(t *testing.T) {
+		service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {})
+		_, err := service.Edit(context.Background(), repo, "", EditInput{})
+		if err == nil || !strings.Contains(err.Error(), "path is required") {
+			t.Fatalf("expected path validation error, got %v", err)
+		}
+	})
+
+	t.Run("empty repo validation", func(t *testing.T) {
+		service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {})
+		_, err := service.Edit(context.Background(), RepositoryRef{}, "file.txt", EditInput{})
+		if err == nil || !strings.Contains(err.Error(), "project/repo") {
+			t.Fatalf("expected repo validation error, got %v", err)
+		}
+	})
+
+	t.Run("transient network failure", func(t *testing.T) {
+		service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			hijacker, ok := w.(http.Hijacker)
+			if ok {
+				conn, _, hijackErr := hijacker.Hijack()
+				if hijackErr == nil {
+					_ = conn.Close()
+				}
+			}
+		})
+		_, err := service.Edit(context.Background(), repo, "file.txt", EditInput{Branch: "main"})
+		if err == nil || apperrors.ExitCode(err) != 10 {
+			t.Fatalf("expected transient network error, got %v", err)
+		}
+	})
+
+	t.Run("status error", func(t *testing.T) {
+		service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"errors":[{"message":"bad input"}]}`))
+		})
+		_, err := service.Edit(context.Background(), repo, "file.txt", EditInput{Branch: "main"})
+		if err == nil || apperrors.ExitCode(err) != 2 {
+			t.Fatalf("expected bad request exit code 2, got %v", err)
+		}
+	})
+
+	t.Run("empty response payload", func(t *testing.T) {
+		service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		_, err := service.Edit(context.Background(), repo, "file.txt", EditInput{Branch: "main"})
+		if err == nil || !strings.Contains(err.Error(), "empty commit response") {
+			t.Fatalf("expected empty response error, got %v", err)
+		}
+	})
+}
+
