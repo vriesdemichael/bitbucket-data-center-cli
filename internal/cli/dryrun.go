@@ -73,9 +73,14 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"branch restriction delete": {Intent: "branch.restriction.delete", Action: "delete", Stateful: true},
 	// build
 	"build status set":      {Intent: "build.status.set", Action: "update", Stateful: true},
+	"build set":             {Intent: "build.set", Action: "update", Stateful: true},
+	"build delete":          {Intent: "build.delete", Action: "delete", Stateful: true},
 	"build required create": {Intent: "build.required.create", Action: "create", Stateful: true},
 	"build required update": {Intent: "build.required.update", Action: "update", Stateful: true},
 	"build required delete": {Intent: "build.required.delete", Action: "delete", Stateful: true},
+	// deployment
+	"deployment create":     {Intent: "deployment.create", Action: "create", Stateful: true},
+	"deployment delete":     {Intent: "deployment.delete", Action: "delete", Stateful: true},
 	// tag
 	"tag create": {Intent: "tag.create", Action: "create", Stateful: true},
 	"tag delete": {Intent: "tag.delete", Action: "delete", Stateful: true},
@@ -120,6 +125,7 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"insights report set":        {Intent: "insights.report.set", Action: "update", Stateful: true},
 	"insights report delete":     {Intent: "insights.report.delete", Action: "delete", Stateful: true},
 	"insights annotation add":    {Intent: "insights.annotation.add", Action: "create", Stateful: true},
+	"insights annotation set":    {Intent: "insights.annotation.set", Action: "update", Stateful: true},
 	"insights annotation delete": {Intent: "insights.annotation.delete", Action: "delete", Stateful: true},
 	// pr
 	"pr create":                 {Intent: "pr.create", Action: "create", Stateful: true},

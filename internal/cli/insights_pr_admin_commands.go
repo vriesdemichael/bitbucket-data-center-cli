@@ -282,16 +282,21 @@ func newInsightsCommand(options *rootOptions) *cobra.Command {
 	annotationCmd.AddCommand(addAnnotationCmd)
 
 	annotationCmd.AddCommand(&cobra.Command{
-		Use:   "list <commit> <key>",
-		Short: "List annotations for a Code Insights report",
-		Args:  cobra.ExactArgs(2),
+		Use:   "list <commit> [key]",
+		Short: "List annotations for a Code Insights report or commit",
+		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, err := loadQualityRepoAndService(repositorySelector)
 			if err != nil {
 				return err
 			}
 
-			annotations, err := service.ListAnnotations(cmd.Context(), repo, args[0], args[1])
+			var annotations []openapigenerated.RestInsightAnnotation
+			if len(args) == 2 {
+				annotations, err = service.ListAnnotations(cmd.Context(), repo, args[0], args[1])
+			} else {
+				annotations, err = service.ListCommitAnnotations(cmd.Context(), repo, args[0], openapigenerated.GetAnnotations1Params{})
+			}
 			if err != nil {
 				return err
 			}
@@ -312,6 +317,112 @@ func newInsightsCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	})
+
+	var setAnnMessage string
+	var setAnnSeverity string
+	var setAnnPath string
+	var setAnnLine int32
+	var setAnnLink string
+	var setAnnType string
+
+	setAnnotationCmd := &cobra.Command{
+		Use:   "set <commit> <key> <external-id>",
+		Short: "Create or replace a Code Insights report annotation",
+		Args:  cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			repo, service, client, err := loadQualityRepoServiceAndClient(repositorySelector)
+			if err != nil {
+				return err
+			}
+
+			request := openapigenerated.RestSingleAddInsightAnnotationRequest{
+				Message:  setAnnMessage,
+				Severity: setAnnSeverity,
+			}
+			if cmd.Flags().Changed("path") {
+				request.Path = &setAnnPath
+			}
+			if cmd.Flags().Changed("line") {
+				request.Line = &setAnnLine
+			}
+			if cmd.Flags().Changed("link") {
+				request.Link = &setAnnLink
+			}
+			if cmd.Flags().Changed("type") {
+				request.Type = &setAnnType
+			}
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				annotations, err := service.ListAnnotations(cmd.Context(), repo, args[0], args[1])
+				predicted := "create"
+				reason := "insights annotation will be created"
+				if err == nil {
+					for _, annotation := range annotations {
+						if strings.EqualFold(strings.TrimSpace(safeString(annotation.ExternalId)), strings.TrimSpace(args[2])) {
+							predicted = "update"
+							reason = "insights annotation will be updated"
+							break
+						}
+					}
+				} else if apperrors.ExitCode(err) != 4 {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "insights.annotation.set",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": args[1], "external_id": args[2]},
+						Action:          "update",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"insights annotations list"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1},
+				}
+				if predicted == "create" {
+					preview.Summary.CreateCount = 1
+				} else {
+					preview.Summary.UpdateCount = 1
+				}
+
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			ann, err := service.SetAnnotation(cmd.Context(), repo, args[0], args[1], args[2], request)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), ann)
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Annotation %s set on report %s for commit %s\n", args[2], args[1], args[0])
+			return nil
+		},
+	}
+
+	setAnnotationCmd.Flags().StringVar(&setAnnMessage, "message", "", "Annotation message")
+	setAnnotationCmd.Flags().StringVar(&setAnnSeverity, "severity", "", "Annotation severity: LOW, MEDIUM, HIGH")
+	setAnnotationCmd.Flags().StringVar(&setAnnPath, "path", "", "File path containing the annotation")
+	setAnnotationCmd.Flags().Int32Var(&setAnnLine, "line", 0, "Line number containing the annotation")
+	setAnnotationCmd.Flags().StringVar(&setAnnLink, "link", "", "Link associated with the annotation")
+	setAnnotationCmd.Flags().StringVar(&setAnnType, "type", "", "Annotation type: BUG, CODE_SMELL, VULNERABILITY")
+
+	_ = setAnnotationCmd.MarkFlagRequired("message")
+	_ = setAnnotationCmd.MarkFlagRequired("severity")
+
+	annotationCmd.AddCommand(setAnnotationCmd)
 
 	var externalID string
 	deleteAnnotationCmd := &cobra.Command{

@@ -494,3 +494,256 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 	}
 }
 
+func TestIssue221CLICommands(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		// Scoped builds
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/commits/abc/builds":
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/commits/abc/builds" && r.URL.Query().Get("key") == "ci/main":
+			_, _ = w.Write([]byte(`{"key":"ci/main","state":"SUCCESSFUL","url":"https://ci.example"}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/commits/abc/builds" && r.URL.Query().Get("key") == "ci/main":
+			w.WriteHeader(http.StatusNoContent)
+
+		// Multi-commit stats
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/build-status/latest/commits/stats":
+			_, _ = w.Write([]byte(`{"abc":{"successful":1,"failed":0,"inProgress":0,"unknown":0,"cancelled":0}}`))
+
+		// Deployments
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/commits/abc/deployments":
+			_, _ = w.Write([]byte(`{"key":"dep1","displayName":"deploy1","state":"SUCCESSFUL","url":"https://deploy.example"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/commits/abc/deployments" && r.URL.Query().Get("key") == "dep1":
+			_, _ = w.Write([]byte(`{"key":"dep1","displayName":"deploy1","state":"SUCCESSFUL","url":"https://deploy.example"}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/commits/abc/deployments" && r.URL.Query().Get("key") == "dep1":
+			w.WriteHeader(http.StatusNoContent)
+
+		// Insights annotations
+		case r.Method == http.MethodPut && r.URL.Path == "/rest/insights/latest/projects/PRJ/repos/repo/commits/abc/reports/lint/annotations/a1":
+			_, _ = w.Write([]byte(`{"externalId":"a1","message":"fixed","severity":"LOW"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/insights/latest/projects/PRJ/repos/repo/commits/abc/reports/lint/annotations":
+			_, _ = w.Write([]byte(`{"annotations":[{"externalId":"a1","message":"fixed","severity":"LOW"}]}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/insights/latest/projects/PRJ/repos/repo/commits/abc/annotations":
+			_, _ = w.Write([]byte(`{"annotations":[{"externalId":"a1","message":"fixed","severity":"LOW"}]}`))
+
+		// Permission checks (for dry-run)
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/repos":
+			_, _ = w.Write([]byte(`{"values":[{"slug":"repo","project":{"key":"PRJ"}}],"isLastPage":true}`))
+
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_TOKEN", "test-token")
+	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
+	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
+
+	// 1. Scoped Builds
+	out, err := executeTestCLI(t, "build", "set", "abc", "--key", "ci/main", "--state", "SUCCESSFUL", "--url", "https://ci.example")
+	if err != nil {
+		t.Fatalf("build set failed: %v", err)
+	}
+	if !strings.Contains(out, "Repository-scoped build status ci/main set") {
+		t.Fatalf("unexpected build set output: %s", out)
+	}
+
+	out, err = executeTestCLI(t, "build", "get", "abc", "--key", "ci/main")
+	if err != nil {
+		t.Fatalf("build get failed: %v", err)
+	}
+	if !strings.Contains(out, "ci/main") {
+		t.Fatalf("unexpected build get output: %s", out)
+	}
+
+	out, err = executeTestCLI(t, "build", "delete", "abc", "--key", "ci/main")
+	if err != nil {
+		t.Fatalf("build delete failed: %v", err)
+	}
+	if !strings.Contains(out, "Deleted repository-scoped build status ci/main") {
+		t.Fatalf("unexpected build delete output: %s", out)
+	}
+
+	// 2. Multi-commit stats
+	out, err = executeTestCLI(t, "build", "status", "stats", "abc", "def")
+	if err != nil {
+		t.Fatalf("build status stats failed: %v", err)
+	}
+	if !strings.Contains(out, "COMMIT") || !strings.Contains(out, "abc") {
+		t.Fatalf("unexpected stats table: %s", out)
+	}
+
+	// 3. Deployments
+	out, err = executeTestCLI(t, "deployment", "create", "abc",
+		"--deployment-sequence-number", "1",
+		"--display-name", "deploy1",
+		"--key", "dep1",
+		"--state", "SUCCESSFUL",
+		"--url", "https://deploy.example",
+		"--env-key", "prod",
+		"--env-name", "Production",
+	)
+	if err != nil {
+		t.Fatalf("deployment create failed: %v", err)
+	}
+	if !strings.Contains(out, "Deployment dep1 (deploy1) set") {
+		t.Fatalf("unexpected deployment create output: %s", out)
+	}
+
+	out, err = executeTestCLI(t, "deployment", "get", "abc", "--key", "dep1")
+	if err != nil {
+		t.Fatalf("deployment get failed: %v", err)
+	}
+	if !strings.Contains(out, "dep1") {
+		t.Fatalf("unexpected deployment get output: %s", out)
+	}
+
+	out, err = executeTestCLI(t, "deployment", "delete", "abc", "--key", "dep1")
+	if err != nil {
+		t.Fatalf("deployment delete failed: %v", err)
+	}
+	if !strings.Contains(out, "Deleted deployment") {
+		t.Fatalf("unexpected deployment delete output: %s", out)
+	}
+
+	// 4. Insights Annotations
+	out, err = executeTestCLI(t, "insights", "annotation", "set", "abc", "lint", "a1", "--message", "fixed", "--severity", "LOW")
+	if err != nil {
+		t.Fatalf("insights annotation set failed: %v", err)
+	}
+	if !strings.Contains(out, "Annotation a1 set on report lint") {
+		t.Fatalf("unexpected annotation set output: %s", out)
+	}
+
+	out, err = executeTestCLI(t, "insights", "annotation", "list", "abc")
+	if err != nil {
+		t.Fatalf("insights annotation list commit-level failed: %v", err)
+	}
+	if !strings.Contains(out, "fixed") {
+		t.Fatalf("unexpected annotation list commit-level output: %s", out)
+	}
+
+	// 5. Dry-run support
+	dryRunCmds := [][]string{
+		{"build", "set", "abc", "--key", "ci/main", "--state", "SUCCESSFUL", "--url", "https://ci.example", "--dry-run"},
+		{"build", "set", "abc", "--key", "ci/other", "--state", "SUCCESSFUL", "--url", "https://ci.example", "--dry-run"}, // predicted: create
+		{"build", "delete", "abc", "--key", "ci/main", "--dry-run"}, // predicted: delete
+		{"build", "delete", "abc", "--key", "ci/other", "--dry-run"}, // predicted: no-op
+		{"deployment", "create", "abc",
+			"--deployment-sequence-number", "1",
+			"--display-name", "deploy1",
+			"--key", "dep1",
+			"--state", "SUCCESSFUL",
+			"--url", "https://deploy.example",
+			"--env-key", "prod",
+			"--env-name", "Production",
+			"--dry-run",
+		}, // predicted: update
+		{"deployment", "create", "abc",
+			"--deployment-sequence-number", "1",
+			"--display-name", "deploy1",
+			"--key", "dep-new",
+			"--state", "SUCCESSFUL",
+			"--url", "https://deploy.example",
+			"--env-key", "prod",
+			"--env-name", "Production",
+			"--dry-run",
+		}, // predicted: create
+		{"deployment", "delete", "abc", "--key", "dep1", "--dry-run"}, // predicted: delete
+		{"deployment", "delete", "abc", "--key", "dep-new", "--dry-run"}, // predicted: no-op
+		{"insights", "annotation", "set", "abc", "lint", "a1", "--message", "fixed", "--severity", "LOW", "--dry-run"}, // predicted: update
+		{"insights", "annotation", "set", "abc", "lint", "a2", "--message", "fixed", "--severity", "LOW", "--dry-run"}, // predicted: create
+	}
+
+	for _, args := range dryRunCmds {
+		cmd := NewRootCommand()
+		cmd.SetArgs(args)
+		if err := cmd.Execute(); err != nil {
+			t.Errorf("expected success for dry-run command %v, got %v", args, err)
+		}
+	}
+
+	// 6. JSON output testing for scoped builds, stats, deployments, annotations
+	jsonCmds := [][]string{
+		{"build", "set", "abc", "--key", "ci/main", "--state", "SUCCESSFUL", "--url", "https://ci.example", "--json"},
+		{"build", "get", "abc", "--key", "ci/main", "--json"},
+		{"build", "delete", "abc", "--key", "ci/main", "--json"},
+		{"build", "status", "stats", "abc", "def", "--json"},
+		{"deployment", "create", "abc",
+			"--deployment-sequence-number", "1",
+			"--display-name", "deploy1",
+			"--key", "dep1",
+			"--state", "SUCCESSFUL",
+			"--url", "https://deploy.example",
+			"--env-key", "prod",
+			"--env-name", "Production",
+			"--json",
+		},
+		{"deployment", "get", "abc", "--key", "dep1", "--json"},
+		{"deployment", "delete", "abc", "--key", "dep1", "--json"},
+		{"insights", "annotation", "set", "abc", "lint", "a1", "--message", "fixed", "--severity", "LOW", "--json"},
+		{"insights", "annotation", "list", "abc", "--json"},
+	}
+	for _, args := range jsonCmds {
+		out, err := executeTestCLI(t, args...)
+		if err != nil {
+			t.Fatalf("json run failed for %v: %v", args, err)
+		}
+		if !strings.HasPrefix(strings.TrimSpace(out), "{") && !strings.HasPrefix(strings.TrimSpace(out), "[") {
+			t.Fatalf("unexpected non-json output for %v: %s", args, out)
+		}
+	}
+
+	// 7. Optional flags testing for build set and insights annotation set
+	_, err = executeTestCLI(t, "build", "set", "abc",
+		"--key", "ci/main",
+		"--state", "SUCCESSFUL",
+		"--url", "https://ci.example",
+		"--name", "Build Name",
+		"--description", "Description",
+		"--ref", "refs/heads/main",
+		"--parent", "ci",
+		"--build-number", "123",
+		"--duration-ms", "1000",
+	)
+	if err != nil {
+		t.Fatalf("build set with optional flags failed: %v", err)
+	}
+
+	_, err = executeTestCLI(t, "insights", "annotation", "set", "abc", "lint", "a1",
+		"--message", "fixed",
+		"--severity", "LOW",
+		"--path", "main.go",
+		"--line", "42",
+		"--link", "https://violation.example",
+		"--type", "BUG",
+	)
+	if err != nil {
+		t.Fatalf("insights annotation set with optional flags failed: %v", err)
+	}
+
+	// 8. Error/Validation paths for CLI commands (to cover error checking code)
+	invalidCmds := [][]string{
+		{"build", "set", "abc", "--key", "", "--state", "SUCCESSFUL", "--url", "u"},
+		{"build", "set", "abc", "--key", "k", "--state", "", "--url", "u"},
+		{"build", "set", "abc", "--key", "k", "--state", "s", "--url", ""},
+		{"build", "get", "abc", "--key", ""},
+		{"build", "delete", "abc", "--key", ""},
+		{"build", "status", "stats"}, // missing args
+		{"deployment", "create", "abc", "--key", ""},
+		{"deployment", "get", "abc", "--key", ""},
+		{"deployment", "delete", "abc", "--key", ""},
+		{"insights", "annotation", "set", "abc", "lint", ""},
+	}
+	for _, args := range invalidCmds {
+		_, err := executeTestCLI(t, args...)
+		if err == nil {
+			t.Errorf("expected validation error for invalid command args: %v", args)
+		}
+	}
+}
+
+

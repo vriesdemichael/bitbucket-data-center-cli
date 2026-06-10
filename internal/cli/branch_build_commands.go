@@ -881,6 +881,7 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 		Use:   "build",
 		Short: "Build status and required merge-check commands",
 	}
+	buildCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	statusCmd := &cobra.Command{
 		Use:   "status",
@@ -1026,9 +1027,9 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 
 	var includeUnique bool
 	statusCmd.AddCommand(&cobra.Command{
-		Use:   "stats <commit>",
-		Short: "Get build status summary counts for a commit",
-		Args:  cobra.ExactArgs(1),
+		Use:   "stats <commit>...",
+		Short: "Get build status summary counts for one or more commits",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := loadConfigAndClient()
 			if err != nil {
@@ -1036,20 +1037,59 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := qualityservice.NewService(client)
-			stats, err := service.GetBuildStatusStats(cmd.Context(), args[0], includeUnique)
+			if len(args) == 1 {
+				stats, err := service.GetBuildStatusStats(cmd.Context(), args[0], includeUnique)
+				if err != nil {
+					return err
+				}
+
+				if options.JSON {
+					return writeJSON(cmd.OutOrStdout(), stats)
+				}
+
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Successful:"), style.Success.Render(fmt.Sprintf("%d", safeInt32(stats.Successful))))
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Failed:"), style.Deleted.Render(fmt.Sprintf("%d", safeInt32(stats.Failed))))
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("In Progress:"), safeInt32(stats.InProgress))
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Unknown:"), safeInt32(stats.Unknown))
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Cancelled:"), safeInt32(stats.Cancelled))
+				return nil
+			}
+
+			statsMap, err := service.GetMultipleBuildStatusStats(cmd.Context(), args)
 			if err != nil {
 				return err
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), stats)
+				return writeJSON(cmd.OutOrStdout(), statsMap)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Successful:"), style.Success.Render(fmt.Sprintf("%d", safeInt32(stats.Successful))))
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Failed:"), style.Deleted.Render(fmt.Sprintf("%d", safeInt32(stats.Failed))))
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("In Progress:"), safeInt32(stats.InProgress))
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Unknown:"), safeInt32(stats.Unknown))
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Cancelled:"), safeInt32(stats.Cancelled))
+			rows := make([][]string, 0, len(args)+1)
+			header := []string{
+				style.Label.Render("COMMIT"),
+				style.Label.Render("SUCCESSFUL"),
+				style.Label.Render("FAILED"),
+				style.Label.Render("IN PROGRESS"),
+				style.Label.Render("UNKNOWN"),
+				style.Label.Render("CANCELLED"),
+			}
+			rows = append(rows, header)
+			for _, commit := range args {
+				s, ok := statsMap[commit]
+				if !ok {
+					rows = append(rows, []string{style.Resource.Render(commit), "0", "0", "0", "0", "0"})
+					continue
+				}
+				rows = append(rows, []string{
+					style.Resource.Render(commit),
+					style.Success.Render(fmt.Sprintf("%d", safeInt32(s.Successful))),
+					style.Deleted.Render(fmt.Sprintf("%d", safeInt32(s.Failed))),
+					fmt.Sprintf("%d", safeInt32(s.InProgress)),
+					fmt.Sprintf("%d", safeInt32(s.Unknown)),
+					fmt.Sprintf("%d", safeInt32(s.Cancelled)),
+				})
+			}
+			style.WriteTable(cmd.OutOrStdout(), rows)
 			return nil
 		},
 	})
@@ -1059,7 +1099,6 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 		Use:   "required",
 		Short: "Required build merge-check management",
 	}
-	requiredCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	var requiredLimit int
 	requiredCmd.PersistentFlags().IntVar(&requiredLimit, "limit", 25, "Page size for list operations")
@@ -1281,8 +1320,209 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 		},
 	})
 
+	var scopedSetKey string
+	var scopedSetState string
+	var scopedSetURL string
+	var scopedSetName string
+	var scopedSetDescription string
+	var scopedSetRef string
+	var scopedSetParent string
+	var scopedSetBuildNumber string
+	var scopedSetDuration int64
+
+	scopedSetCmd := &cobra.Command{
+		Use:   "set <commit>",
+		Short: "Set repository-scoped build status for a commit",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			repo, service, client, err := loadQualityRepoServiceAndClient(repositorySelector)
+			if err != nil {
+				return err
+			}
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				_, err := service.GetScopedBuildStatus(cmd.Context(), repo, args[0], scopedSetKey)
+				predicted := "create"
+				reason := "repository-scoped build status will be created"
+				if err == nil {
+					predicted = "update"
+					reason = "repository-scoped build status will be updated"
+				} else if apperrors.ExitCode(err) != 4 {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "build.set",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": scopedSetKey, "state": scopedSetState},
+						Action:          "update",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"scoped build status get"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1},
+				}
+				if predicted == "create" {
+					preview.Summary.CreateCount = 1
+				} else {
+					preview.Summary.UpdateCount = 1
+				}
+
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			err = service.AddScopedBuildStatus(cmd.Context(), repo, args[0], qualityservice.BuildStatusSetInput{
+				Key:         scopedSetKey,
+				State:       scopedSetState,
+				URL:         scopedSetURL,
+				Name:        scopedSetName,
+				Description: scopedSetDescription,
+				Ref:         scopedSetRef,
+				Parent:      scopedSetParent,
+				BuildNumber: scopedSetBuildNumber,
+				DurationMS:  scopedSetDuration,
+			})
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": scopedSetKey})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Repository-scoped build status %s set on %s/%s at %s\n", scopedSetKey, repo.ProjectKey, repo.Slug, args[0])
+			return nil
+		},
+	}
+	scopedSetCmd.Flags().StringVar(&scopedSetKey, "key", "", "Build status key")
+	scopedSetCmd.Flags().StringVar(&scopedSetState, "state", "", "Build state (SUCCESSFUL, FAILED, INPROGRESS, UNKNOWN, CANCELLED)")
+	scopedSetCmd.Flags().StringVar(&scopedSetURL, "url", "", "Build URL")
+	scopedSetCmd.Flags().StringVar(&scopedSetName, "name", "", "Build display name")
+	scopedSetCmd.Flags().StringVar(&scopedSetDescription, "description", "", "Build description")
+	scopedSetCmd.Flags().StringVar(&scopedSetRef, "ref", "", "Build ref")
+	scopedSetCmd.Flags().StringVar(&scopedSetParent, "parent", "", "Build parent key")
+	scopedSetCmd.Flags().StringVar(&scopedSetBuildNumber, "build-number", "", "Build number")
+	scopedSetCmd.Flags().Int64Var(&scopedSetDuration, "duration-ms", 0, "Duration in milliseconds")
+	_ = scopedSetCmd.MarkFlagRequired("key")
+	_ = scopedSetCmd.MarkFlagRequired("state")
+	_ = scopedSetCmd.MarkFlagRequired("url")
+
+	var scopedGetKey string
+	scopedGetCmd := &cobra.Command{
+		Use:   "get <commit>",
+		Short: "Get repository-scoped build status by key",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			repo, service, err := loadQualityRepoAndService(repositorySelector)
+			if err != nil {
+				return err
+			}
+
+			build, err := service.GetScopedBuildStatus(cmd.Context(), repo, args[0], scopedGetKey)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), build)
+			}
+
+			state := safeStringFromBuildState(build.State)
+			rows := [][]string{
+				{style.Resource.Render(safeString(build.Key)), style.ActionStyle(state).Render(state), style.Secondary.Render(safeString(build.Url))},
+			}
+			style.WriteTable(cmd.OutOrStdout(), rows)
+			return nil
+		},
+	}
+	scopedGetCmd.Flags().StringVar(&scopedGetKey, "key", "", "Build status key")
+	_ = scopedGetCmd.MarkFlagRequired("key")
+
+	var scopedDeleteKey string
+	scopedDeleteCmd := &cobra.Command{
+		Use:   "delete <commit>",
+		Short: "Delete repository-scoped build status by key",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			repo, service, client, err := loadQualityRepoServiceAndClient(repositorySelector)
+			if err != nil {
+				return err
+			}
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				_, err := service.GetScopedBuildStatus(cmd.Context(), repo, args[0], scopedDeleteKey)
+				predicted := "delete"
+				reason := "repository-scoped build status will be deleted"
+				if err != nil {
+					if apperrors.ExitCode(err) == 4 {
+						predicted = "no-op"
+						reason = "repository-scoped build status was not found"
+					} else {
+						return err
+					}
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "build.delete",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": scopedDeleteKey},
+						Action:          "delete",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"scoped build status get"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1},
+				}
+				if predicted == "delete" {
+					preview.Summary.DeleteCount = 1
+				} else {
+					preview.Summary.NoopCount = 1
+				}
+
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			err = service.DeleteScopedBuildStatus(cmd.Context(), repo, args[0], scopedDeleteKey)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": scopedDeleteKey})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Deleted repository-scoped build status %s on %s/%s at %s\n", scopedDeleteKey, repo.ProjectKey, repo.Slug, args[0])
+			return nil
+		},
+	}
+	scopedDeleteCmd.Flags().StringVar(&scopedDeleteKey, "key", "", "Build status key")
+	_ = scopedDeleteCmd.MarkFlagRequired("key")
+
 	buildCmd.AddCommand(statusCmd)
 	buildCmd.AddCommand(requiredCmd)
+	buildCmd.AddCommand(scopedSetCmd)
+	buildCmd.AddCommand(scopedGetCmd)
+	buildCmd.AddCommand(scopedDeleteCmd)
 
 	return buildCmd
 }
