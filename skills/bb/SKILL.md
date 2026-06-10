@@ -156,6 +156,110 @@ bb tag list --repo MYPROJ/payments
 bb tag create --repo MYPROJ/payments v1.2.3 main
 ```
 
+### 8. File browse/edit, comparison and archives
+
+Read or edit repository files over REST without cloning, compare refs/branches, or download repository archives:
+
+```bash
+# Print raw file contents to stdout
+bb repo cat README.md --repo MYPROJ/payments --at main
+
+# Edit/create a file directly via REST
+bb repo edit README.md --repo MYPROJ/payments --branch main --message "Update README" --content "New content..."
+
+# Compare commits or branches to list changed files
+bb repo compare main feature/my-work --repo MYPROJ/payments
+
+# Show a unified diff of changes between two refs
+bb repo compare main feature/my-work --repo MYPROJ/payments --diff
+
+# Download a repository archive (defaults to zip format)
+bb repo archive --repo MYPROJ/payments --at main --output payments-main.zip
+
+# Stream repository archive to stdout
+bb repo archive --repo MYPROJ/payments --format tar.gz -o - > archive.tar.gz
+```
+
+### 9. Hook scripts management
+
+View and configure repository hook scripts and trigger configurations (Bitbucket DC 7.14+):
+
+```bash
+# List all configured hook scripts and their triggers on a repo
+bb repo hook-script list --repo MYPROJ/payments
+
+# Enable or update triggers for a hook script
+bb repo hook-script set 42 --repo MYPROJ/payments --trigger pr:opened,pr:from_ref_updated
+
+# Remove a hook script configuration
+bb repo hook-script remove 42 --repo MYPROJ/payments
+```
+
+### 10. SSH keys and HTTP Access Tokens
+
+Manage personal SSH keys or repository/project-level SSH access keys, and create/manage HTTP access tokens:
+
+```bash
+# --- SSH Keys ---
+# List your personal SSH keys
+bb ssh-key list
+
+# Add a personal SSH key
+bb ssh-key add ~/.ssh/id_ed25519.pub --label "My Laptop"
+
+# List repository-level SSH access keys (use --project for project-level)
+bb repo ssh-key list --repo MYPROJ/payments
+
+# Add repository-level SSH access key with read-write permission
+bb repo ssh-key add ~/.ssh/deploy_key.pub --repo MYPROJ/payments --label "CI Deploy" --read-write
+
+# --- HTTP Access Tokens ---
+# List your HTTP access tokens (defaults to user scope)
+bb auth token list
+
+# Create a project access token (Bitbucket DC 8.2+)
+bb auth token create "CI Token" --project MYPROJ --permission PROJECT_READ --expiry-days 90
+
+# Revoke an access token by ID
+bb auth token revoke token-id-123
+```
+
+### 11. Scoped builds and deployments
+
+Associate builds and deployments with specific commits, or view statistics across multiple commits (Bitbucket DC 7.4+):
+
+```bash
+# --- Repository-scoped Builds ---
+# Set a build status for a commit in a specific repository
+bb build set <commit-sha> --repo MYPROJ/payments --key "ci/test" --state SUCCESSFUL --url "https://ci.example.com" --name "Unit Tests"
+
+# Get a build status by key
+bb build get <commit-sha> --repo MYPROJ/payments --key "ci/test"
+
+# Delete a repository-scoped build status
+bb build delete <commit-sha> --repo MYPROJ/payments --key "ci/test"
+
+# View build statistics summary for multiple commits
+bb build status stats <commit-sha-1> <commit-sha-2> <commit-sha-3>
+
+# --- Deployments ---
+# Create or update a deployment status for a commit
+bb deployment create <commit-sha> --repo MYPROJ/payments --key "prod-deploy" --display-name "Production Deploy" --state SUCCESSFUL --url "https://deploy.example.com" --env-key "prod" --env-name "Production" --deployment-sequence-number 1
+
+# Get deployment status details
+bb deployment get <commit-sha> --repo MYPROJ/payments --key "prod-deploy"
+
+# Delete a deployment status
+bb deployment delete <commit-sha> --repo MYPROJ/payments --key "prod-deploy"
+
+# --- Code Insights Annotations ---
+# Set a code insight annotation on a commit report
+bb insights annotation set <commit-sha> lint a1 --repo MYPROJ/payments --message "Style violation" --severity LOW
+
+# List annotations on a commit
+bb insights annotation list <commit-sha> --repo MYPROJ/payments
+```
+
 ## MCP Server
 
 `bb` ships a built-in MCP server for IDE integration. It exposes Bitbucket operations as MCP tools that AI agents can call directly without constructing CLI arguments.

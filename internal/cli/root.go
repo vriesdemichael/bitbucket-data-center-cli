@@ -86,6 +86,7 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(newBranchCommand(options))
 	rootCmd.AddCommand(newDiffCommand(options))
 	rootCmd.AddCommand(newBuildCommand(options))
+	rootCmd.AddCommand(newDeploymentCommand(options))
 	rootCmd.AddCommand(newInsightsCommand(options))
 	rootCmd.AddCommand(newPRCommand(options))
 	rootCmd.AddCommand(newAdminCommand(options))

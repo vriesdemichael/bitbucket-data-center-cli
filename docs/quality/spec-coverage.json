@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-9.4-openapi.json",
-  "covered": 193,
+  "covered": 202,
   "total": 546,
-  "coverage_percent": 35.34798534798535,
+  "coverage_percent": 36.996336996337,
   "by_tag": [
     {
       "tag": "",
@@ -17,7 +17,7 @@
     },
     {
       "tag": "Builds and Deployments",
-      "covered": 12,
+      "covered": 21,
       "total": 21
     },
     {
@@ -880,46 +880,10 @@
       "summary": "Get changes made in commit"
     },
     {
-      "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/builds",
-      "tag": "Builds and Deployments",
-      "summary": "Delete a specific build status"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/builds",
-      "tag": "Builds and Deployments",
-      "summary": "Get a specific build status"
-    },
-    {
-      "method": "POST",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/builds",
-      "tag": "Builds and Deployments",
-      "summary": "Store a build status"
-    },
-    {
       "method": "GET",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/changes",
       "tag": "Repository",
       "summary": "Get changes in commit"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/deployments",
-      "tag": "Builds and Deployments",
-      "summary": "Delete a deployment"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/deployments",
-      "tag": "Builds and Deployments",
-      "summary": "Get a deployment"
-    },
-    {
-      "method": "POST",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/deployments",
-      "tag": "Builds and Deployments",
-      "summary": "Create or update a deployment"
     },
     {
       "method": "GET",
@@ -1618,12 +1582,6 @@
       "summary": "Get a ref restriction"
     },
     {
-      "method": "POST",
-      "path": "/build-status/latest/commits/stats",
-      "tag": "Builds and Deployments",
-      "summary": "Get build status statistics for multiple commits"
-    },
-    {
       "method": "DELETE",
       "path": "/comment-likes/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/comments/{commentId}/reactions/{emoticon}",
       "tag": "Repository",
@@ -1700,18 +1658,6 @@
       "path": "/gpg/latest/keys/{fingerprintOrId}",
       "tag": "Security",
       "summary": "Delete a GPG key"
-    },
-    {
-      "method": "GET",
-      "path": "/insights/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/annotations",
-      "tag": "Builds and Deployments",
-      "summary": "Get Code Insights annotations for a commit"
-    },
-    {
-      "method": "PUT",
-      "path": "/insights/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/reports/{key}/annotations/{externalId}",
-      "tag": "Builds and Deployments",
-      "summary": "Create or replace a Code Insights annotation"
     },
     {
       "method": "POST",

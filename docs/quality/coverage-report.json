@@ -1,40 +1,40 @@
 {
   "version": 2,
   "coverage": {
-    "unit_raw_percent": 24.320900249655327,
-    "unit_scoped_percent": 89.09729539866527,
-    "live_raw_percent": 20.067682542110397,
-    "live_scoped_percent": 41.91659021946228,
-    "combined_raw_percent": 33.18925364235943,
-    "combined_scoped_percent": 90.53038285914998,
-    "patch_percent": 86.11500701262273,
+    "unit_raw_percent": 24.942762186115214,
+    "unit_scoped_percent": 89.24738486618666,
+    "live_raw_percent": 20.070089032013637,
+    "live_scoped_percent": 41.19934506753991,
+    "combined_raw_percent": 33.729689807976364,
+    "combined_scoped_percent": 90.62627360412986,
+    "patch_percent": 89.10411622276028,
     "unit_statements": {
-      "covered": 13054,
-      "total": 53674
+      "covered": 13509,
+      "total": 54160
     },
     "live_statements": {
-      "covered": 10496,
-      "total": 52303
+      "covered": 10595,
+      "total": 52790
     },
     "combined_statements": {
-      "covered": 17814,
-      "total": 53674
+      "covered": 18268,
+      "total": 54160
     },
     "unit_scoped_statements": {
-      "covered": 12683,
-      "total": 14235
+      "covered": 13139,
+      "total": 14722
     },
     "live_scoped_statements": {
-      "covered": 5940,
-      "total": 14171
+      "covered": 6039,
+      "total": 14658
     },
     "combined_scoped_statements": {
-      "covered": 12887,
-      "total": 14235
+      "covered": 13342,
+      "total": 14722
     },
     "patch_lines": {
-      "covered": 614,
-      "total": 713
+      "covered": 736,
+      "total": 826
     },
     "scope": {
       "include_prefixes": [
@@ -48,7 +48,7 @@
     }
   },
   "generated_contracts": {
-    "coverage_percent": 23.163841807909606,
+    "coverage_percent": 22.043010752688172,
     "used_operations": [
       "AddAnnotationsWithResponse",
       "AddBuildStatusWithResponse",
@@ -57,6 +57,7 @@
       "AddForRepositoryWithResponse",
       "AddLabelWithResponse",
       "AddSshKeyWithResponse",
+      "AddWithBodyWithResponse",
       "ApplySuggestionWithResponse",
       "CanRebaseWithResponse",
       "Create1WithResponse",
@@ -68,6 +69,7 @@
       "CreateComment1WithResponse",
       "CreateComment2WithResponse",
       "CreateCommentWithResponse",
+      "CreateOrUpdateDeploymentWithBodyWithResponse",
       "CreateProjectWithResponse",
       "CreatePullRequestCondition1WithResponse",
       "CreatePullRequestConditionWithResponse",
@@ -75,6 +77,7 @@
       "CreateRequiredBuildsMergeCheckWithBodyWithResponse",
       "CreateTagForRepositoryWithResponse",
       "CreateWebhook1WithResponse",
+      "Delete1WithResponse",
       "Delete5WithResponse",
       "Delete6WithResponse",
       "Delete7WithResponse",
@@ -99,6 +102,7 @@
       "DeleteSshKeyWithResponse",
       "DeleteTagWithResponse",
       "DeleteWebhook1WithResponse",
+      "DeleteWithResponse",
       "DisableHook1WithResponse",
       "DisableHookWithResponse",
       "EditFileWithBodyWithResponse",
@@ -107,6 +111,7 @@
       "FindByCommitWithResponse",
       "FindWebhooks1WithResponse",
       "ForkRepositoryWithResponse",
+      "Get1WithResponse",
       "Get5WithResponse",
       "GetACodeInsightsReportWithResponse",
       "GetActivitiesWithResponse",
@@ -114,6 +119,7 @@
       "GetAllAccessTokens2WithResponse",
       "GetAllAccessTokensWithResponse",
       "GetAllLabelsForRepositoryWithResponse",
+      "GetAnnotations1WithResponse",
       "GetAnnotationsWithResponse",
       "GetAutoDeclineSettings1WithResponse",
       "GetBranchesWithResponse",
@@ -141,6 +147,7 @@
       "GetGroupsWithAnyPermission2WithResponse",
       "GetJSON",
       "GetLatestInvocation1WithResponse",
+      "GetMultipleBuildStatusStatsWithResponse",
       "GetPageOfRequiredBuildsMergeChecksWithResponse",
       "GetProjectWithResponse",
       "GetProjectsWithResponse",
@@ -170,6 +177,7 @@
       "GetUsersWithAnyPermission2WithResponse",
       "GetUsersWithResponse",
       "GetWebhook1WithResponse",
+      "GetWithResponse",
       "PostJSON",
       "PutJSON",
       "React1WithResponse",
@@ -186,6 +194,7 @@
       "SearchWithResponse",
       "Set1WithResponse",
       "SetACodeInsightsReportWithResponse",
+      "SetAnnotationWithResponse",
       "SetAutoDeclineSettings1WithResponse",
       "SetConfiguration1WithResponse",
       "SetDefaultBranch2WithResponse",
@@ -277,6 +286,7 @@
       "AddForRepositoryWithResponse",
       "AddLabelWithResponse",
       "AddSshKeyWithResponse",
+      "AddWithBodyWithResponse",
       "ApplySuggestionWithResponse",
       "CanRebaseWithResponse",
       "Create1WithResponse",
@@ -286,10 +296,12 @@
       "CreateAccessTokenWithResponse",
       "CreateBranchWithResponse",
       "CreateComment1WithResponse",
+      "CreateOrUpdateDeploymentWithBodyWithResponse",
       "CreateProjectWithResponse",
       "CreatePullRequestCondition1WithResponse",
       "CreatePullRequestConditionWithResponse",
       "CreateRepositoryWithResponse",
+      "Delete1WithResponse",
       "Delete5WithResponse",
       "Delete6WithResponse",
       "Delete7WithResponse",
@@ -307,6 +319,7 @@
       "DeleteRepositoryWithResponse",
       "DeleteRestriction1WithResponse",
       "DeleteSshKeyWithResponse",
+      "DeleteWithResponse",
       "DisableHook1WithResponse",
       "DisableHookWithResponse",
       "EditFileWithBodyWithResponse",
@@ -314,12 +327,14 @@
       "EnableHookWithResponse",
       "FindByCommitWithResponse",
       "ForkRepositoryWithResponse",
+      "Get1WithResponse",
       "Get5WithResponse",
       "GetActivitiesWithResponse",
       "GetAllAccessTokens1WithResponse",
       "GetAllAccessTokens2WithResponse",
       "GetAllAccessTokensWithResponse",
       "GetAllLabelsForRepositoryWithResponse",
+      "GetAnnotations1WithResponse",
       "GetAutoDeclineSettings1WithResponse",
       "GetBranchesWithResponse",
       "GetById1WithResponse",
@@ -338,6 +353,7 @@
       "GetGroupsWithAnyPermission2WithResponse",
       "GetJSON",
       "GetLatestInvocation1WithResponse",
+      "GetMultipleBuildStatusStatsWithResponse",
       "GetProjectWithResponse",
       "GetProjectsWithResponse",
       "GetPullRequestConditions1WithResponse",
@@ -361,6 +377,7 @@
       "GetUsersWithAnyPermission1WithResponse",
       "GetUsersWithResponse",
       "GetWebhook1WithResponse",
+      "GetWithResponse",
       "PostJSON",
       "PutJSON",
       "React1WithResponse",
@@ -376,6 +393,7 @@
       "SearchWebhooksWithResponse",
       "SearchWithResponse",
       "Set1WithResponse",
+      "SetAnnotationWithResponse",
       "SetAutoDeclineSettings1WithResponse",
       "SetConfiguration1WithResponse",
       "SetDefaultBranch2WithResponse",
