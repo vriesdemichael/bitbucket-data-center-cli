@@ -286,11 +286,15 @@ func cloneRepositoryWithAuthFallback(
 	}
 
 	if hasStoredHTTPAuth {
-		authenticatedCloneURL, err := buildAuthenticatedCloneURL(httpCloneURL, cloneAuth)
-		if err != nil {
-			return "", err
+		opts := cloneOptions
+		if cloneAuth.AuthMode() == "token" {
+			opts.AuthToken = cloneAuth.BitbucketToken
+		} else if cloneAuth.AuthMode() == "basic" {
+			opts.AuthUsername = cloneAuth.BitbucketUsername
+			opts.AuthPassword = cloneAuth.BitbucketPassword
 		}
-		if err := backend.Clone(cmd.Context(), authenticatedCloneURL, cloneOptions); err == nil {
+
+		if err := backend.Clone(cmd.Context(), httpCloneURL, opts); err == nil {
 			return httpCloneURL, nil
 		} else {
 			return "", err
@@ -309,11 +313,15 @@ func cloneRepositoryWithAuthFallback(
 		return "", newCloneLoginRequiredError(cloneHost, sshErr, transportMode == cloneTransportAuto)
 	}
 
-	authenticatedCloneURL, err := buildAuthenticatedCloneURL(httpCloneURL, promptedAuth)
-	if err != nil {
-		return "", err
+	opts := cloneOptions
+	if promptedAuth.AuthMode() == "token" {
+		opts.AuthToken = promptedAuth.BitbucketToken
+	} else if promptedAuth.AuthMode() == "basic" {
+		opts.AuthUsername = promptedAuth.BitbucketUsername
+		opts.AuthPassword = promptedAuth.BitbucketPassword
 	}
-	if err := backend.Clone(cmd.Context(), authenticatedCloneURL, cloneOptions); err != nil {
+
+	if err := backend.Clone(cmd.Context(), httpCloneURL, opts); err != nil {
 		return "", err
 	}
 
@@ -448,27 +456,6 @@ func resolveSSHCloneURL(rawInput string, usedURLInput bool, cloneHost string, re
 	return sshCloneURL, true, nil
 }
 
-func buildAuthenticatedCloneURL(cloneURL string, auth config.AppConfig) (string, error) {
-	parsed, err := url.Parse(strings.TrimSpace(cloneURL))
-	if err != nil || strings.TrimSpace(parsed.Scheme) == "" || strings.TrimSpace(parsed.Host) == "" {
-		return "", apperrors.New(apperrors.KindValidation, "clone URL must include a valid scheme and host", err)
-	}
-
-	switch auth.AuthMode() {
-	case "token":
-		username := strings.TrimSpace(auth.BitbucketUsername)
-		if username == "" {
-			username = "x-token-auth"
-		}
-		parsed.User = url.UserPassword(username, auth.BitbucketToken)
-	case "basic":
-		parsed.User = url.UserPassword(auth.BitbucketUsername, auth.BitbucketPassword)
-	default:
-		return "", apperrors.New(apperrors.KindValidation, "HTTP clone credentials are required", nil)
-	}
-
-	return parsed.String(), nil
-}
 
 func isExplicitCloneURL(rawInput string) bool {
 	trimmed := strings.TrimSpace(rawInput)

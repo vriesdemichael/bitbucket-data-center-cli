@@ -3,8 +3,10 @@ package execgit
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -12,6 +14,19 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
 )
+
+var (
+	urlCredRegex    = regexp.MustCompile(`(https?://)([^:@\s]*):([^@\s]+)@`)
+	authHeaderRegex = regexp.MustCompile(`(?i)(Authorization:\s*)(Bearer|Basic)\s+([^\s"']+)`)
+)
+
+func redact(s string) string {
+	// Redact URL credentials: replace password/token with ***
+	s = urlCredRegex.ReplaceAllString(s, "${1}${2}:***@")
+	// Redact Authorization headers: replace value/token with ***
+	s = authHeaderRegex.ReplaceAllString(s, "${1}${2} ***")
+	return s
+}
 
 const defaultTimeout = 60 * time.Second
 
@@ -41,7 +56,19 @@ func (backend *Backend) Clone(ctx context.Context, repositoryURL string, options
 		return apperrors.New(apperrors.KindValidation, "clone directory cannot be empty", nil)
 	}
 
-	args := []string{"clone"}
+	var headerVal string
+	if options.AuthToken != "" {
+		headerVal = fmt.Sprintf("Authorization: Bearer %s", options.AuthToken)
+	} else if options.AuthUsername != "" && options.AuthPassword != "" {
+		auth := options.AuthUsername + ":" + options.AuthPassword
+		headerVal = fmt.Sprintf("Authorization: Basic %s", base64.StdEncoding.EncodeToString([]byte(auth)))
+	}
+
+	var args []string
+	if headerVal != "" {
+		args = append(args, "-c", fmt.Sprintf("http.extraHeader=%s", headerVal))
+	}
+	args = append(args, "clone")
 	if options.Branch != "" {
 		args = append(args, "--branch", options.Branch)
 	}
@@ -54,7 +81,20 @@ func (backend *Backend) Clone(ctx context.Context, repositoryURL string, options
 	args = append(args, repositoryURL, options.Directory)
 
 	_, err := backend.run(ctx, runOptions{args: args})
-	return err
+	if err != nil {
+		return err
+	}
+
+	if headerVal != "" {
+		_, err = backend.run(ctx, runOptions{
+			args: []string{"-C", options.Directory, "config", "http.extraHeader", headerVal},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to configure local http.extraHeader: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (backend *Backend) Fetch(ctx context.Context, repositoryDirectory string, options git.FetchOptions) error {
@@ -197,13 +237,18 @@ func (backend *Backend) run(ctx context.Context, options runOptions) (runResult,
 	command.Stderr = &stderr
 
 	err := command.Run()
-	result := runResult{stdout: stdout.String(), stderr: stderr.String()}
+	result := runResult{stdout: redact(stdout.String()), stderr: redact(stderr.String())}
 	if err != nil {
 		message := strings.TrimSpace(result.stderr)
 		if message == "" {
 			message = strings.TrimSpace(err.Error())
 		}
-		return result, apperrors.New(apperrors.KindPermanent, fmt.Sprintf("git %s failed: %s", strings.Join(options.args, " "), message), err)
+		redactedArgs := make([]string, len(options.args))
+		for i, arg := range options.args {
+			redactedArgs[i] = redact(arg)
+		}
+		redactedMsg := redact(message)
+		return result, apperrors.New(apperrors.KindPermanent, fmt.Sprintf("git %s failed: %s", strings.Join(redactedArgs, " "), redactedMsg), err)
 	}
 
 	return result, nil
