@@ -739,6 +739,9 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 	permissionsCmd.AddCommand(permissionsShowCmd)
 
 	projectCmd.AddCommand(permissionsCmd)
+	projectCmd.AddCommand(newProjectWebhookCommand(options))
+	projectCmd.AddCommand(newProjectBranchRestrictionCommand(options))
+	projectCmd.AddCommand(newProjectDefaultTaskCommand(options))
 
 	return projectCmd
 }

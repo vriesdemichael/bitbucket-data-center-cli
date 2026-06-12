@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-9.4-openapi.json",
-  "covered": 209,
+  "covered": 224,
   "total": 546,
-  "coverage_percent": 38.27838827838828,
+  "coverage_percent": 41.02564102564102,
   "by_tag": [
     {
       "tag": "",
@@ -62,7 +62,7 @@
     },
     {
       "tag": "Project",
-      "covered": 22,
+      "covered": 37,
       "total": 73
     },
     {
@@ -1295,57 +1295,9 @@
     },
     {
       "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/webhooks",
-      "tag": "Project",
-      "summary": "Find webhooks"
-    },
-    {
-      "method": "POST",
-      "path": "/api/latest/projects/{projectKey}/webhooks",
-      "tag": "Project",
-      "summary": "Create webhook"
-    },
-    {
-      "method": "POST",
-      "path": "/api/latest/projects/{projectKey}/webhooks/test",
-      "tag": "Project",
-      "summary": "Test webhook"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}",
-      "tag": "Project",
-      "summary": "Delete webhook"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}",
-      "tag": "Project",
-      "summary": "Get webhook"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}",
-      "tag": "Project",
-      "summary": "Update webhook"
-    },
-    {
-      "method": "GET",
       "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}/latest",
       "tag": "Project",
       "summary": "Get last webhook invocation details"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}/statistics",
-      "tag": "Project",
-      "summary": "Get webhook statistics"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}/statistics/summary",
-      "tag": "Project",
-      "summary": "Get webhook statistics summary"
     },
     {
       "method": "GET",
@@ -1558,28 +1510,10 @@
       "summary": "Create multiple ref restrictions"
     },
     {
-      "method": "GET",
-      "path": "/branch-permissions/latest/projects/{projectKey}/restrictions",
-      "tag": "Project",
-      "summary": "Search for ref restrictions"
-    },
-    {
       "method": "POST",
       "path": "/branch-permissions/latest/projects/{projectKey}/restrictions",
       "tag": "Project",
       "summary": "Create multiple ref restrictions"
-    },
-    {
-      "method": "DELETE",
-      "path": "/branch-permissions/latest/projects/{projectKey}/restrictions/{id}",
-      "tag": "Project",
-      "summary": "Delete a ref restriction"
-    },
-    {
-      "method": "GET",
-      "path": "/branch-permissions/latest/projects/{projectKey}/restrictions/{id}",
-      "tag": "Project",
-      "summary": "Get a ref restriction"
     },
     {
       "method": "DELETE",
@@ -1604,30 +1538,6 @@
       "path": "/default-tasks/latest/projects/{projectKey}/tasks",
       "tag": "Project",
       "summary": "Deletes all default tasks for the project"
-    },
-    {
-      "method": "GET",
-      "path": "/default-tasks/latest/projects/{projectKey}/tasks",
-      "tag": "Project",
-      "summary": "Get a page of default tasks"
-    },
-    {
-      "method": "POST",
-      "path": "/default-tasks/latest/projects/{projectKey}/tasks",
-      "tag": "Project",
-      "summary": "Add a default task"
-    },
-    {
-      "method": "DELETE",
-      "path": "/default-tasks/latest/projects/{projectKey}/tasks/{taskId}",
-      "tag": "Project",
-      "summary": "Delete a specific default task"
-    },
-    {
-      "method": "PUT",
-      "path": "/default-tasks/latest/projects/{projectKey}/tasks/{taskId}",
-      "tag": "Project",
-      "summary": "Update a default task"
     },
     {
       "method": "POST",

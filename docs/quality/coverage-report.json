@@ -1,40 +1,40 @@
 {
   "version": 2,
   "coverage": {
-    "unit_raw_percent": 25.2906709769851,
-    "unit_scoped_percent": 89.29618768328446,
-    "live_raw_percent": 19.929529695507988,
-    "live_scoped_percent": 40.568942436412314,
-    "combined_raw_percent": 33.955723482694744,
-    "combined_scoped_percent": 90.34610794324361,
-    "patch_percent": 85.21739130434783,
+    "unit_raw_percent": 26.32292589445519,
+    "unit_scoped_percent": 89.38582677165354,
+    "live_raw_percent": 4.030180004819902,
+    "live_scoped_percent": 12.491303522863829,
+    "combined_raw_percent": 26.735125558187043,
+    "combined_scoped_percent": 89.56850393700788,
+    "patch_percent": 85.657104736491,
     "unit_statements": {
-      "covered": 13769,
-      "total": 54443
+      "covered": 14560,
+      "total": 55313
     },
     "live_statements": {
-      "covered": 10577,
-      "total": 53072
+      "covered": 2174,
+      "total": 53943
     },
     "combined_statements": {
-      "covered": 18513,
-      "total": 54521
+      "covered": 14788,
+      "total": 55313
     },
     "unit_scoped_statements": {
-      "covered": 13398,
-      "total": 15004
+      "covered": 14190,
+      "total": 15875
     },
     "live_scoped_statements": {
-      "covered": 6061,
-      "total": 14940
+      "covered": 1975,
+      "total": 15811
     },
     "combined_scoped_statements": {
-      "covered": 13626,
-      "total": 15082
+      "covered": 14219,
+      "total": 15875
     },
     "patch_lines": {
-      "covered": 392,
-      "total": 460
+      "covered": 1284,
+      "total": 1499
     },
     "scope": {
       "include_prefixes": [
@@ -48,11 +48,12 @@
     }
   },
   "generated_contracts": {
-    "coverage_percent": 21.243523316062177,
+    "coverage_percent": 19.71153846153846,
     "used_operations": [
       "AddAnnotationsWithResponse",
       "AddBuildStatusWithResponse",
       "AddDefaultTask1WithResponse",
+      "AddDefaultTaskWithResponse",
       "AddForProjectWithResponse",
       "AddForRepositoryWithResponse",
       "AddKeyWithResponse",
@@ -78,6 +79,7 @@
       "CreateRequiredBuildsMergeCheckWithBodyWithResponse",
       "CreateTagForRepositoryWithResponse",
       "CreateWebhook1WithResponse",
+      "CreateWebhookWithResponse",
       "Delete1WithResponse",
       "Delete5WithResponse",
       "Delete6WithResponse",
@@ -93,6 +95,7 @@
       "DeleteComment2WithResponse",
       "DeleteCommentWithResponse",
       "DeleteDefaultTask1WithResponse",
+      "DeleteDefaultTaskWithResponse",
       "DeleteForUserWithResponse",
       "DeleteJSON",
       "DeleteKeyWithResponse",
@@ -102,9 +105,11 @@
       "DeleteRepositoryWithResponse",
       "DeleteRequiredBuildsMergeCheckWithResponse",
       "DeleteRestriction1WithResponse",
+      "DeleteRestrictionWithResponse",
       "DeleteSshKeyWithResponse",
       "DeleteTagWithResponse",
       "DeleteWebhook1WithResponse",
+      "DeleteWebhookWithResponse",
       "DeleteWithResponse",
       "DisableHook1WithResponse",
       "DisableHookWithResponse",
@@ -113,6 +118,7 @@
       "EnableHookWithResponse",
       "FindByCommitWithResponse",
       "FindWebhooks1WithResponse",
+      "FindWebhooksWithResponse",
       "ForkRepositoryWithResponse",
       "Get1WithResponse",
       "Get5WithResponse",
@@ -143,6 +149,7 @@
       "GetContent1WithResponse",
       "GetDefaultBranch2WithResponse",
       "GetDefaultTasks1WithResponse",
+      "GetDefaultTasksWithResponse",
       "GetDiffStatsSummary1WithResponse",
       "GetDiffStatsSummary2WithResponse",
       "GetForRepository1WithResponse",
@@ -163,7 +170,9 @@
       "GetRepositoryHooks1WithResponse",
       "GetRepositoryHooksWithResponse",
       "GetRestriction1WithResponse",
+      "GetRestrictionWithResponse",
       "GetRestrictions1WithResponse",
+      "GetRestrictionsWithResponse",
       "GetReviewerGroup1WithResponse",
       "GetReviewerGroupWithResponse",
       "GetReviewerGroups1WithResponse",
@@ -175,6 +184,8 @@
       "GetSshKeysWithResponse",
       "GetStatistics1WithResponse",
       "GetStatisticsSummary1WithResponse",
+      "GetStatisticsSummaryWithResponse",
+      "GetStatisticsWithResponse",
       "GetStatus2WithResponse",
       "GetTagWithResponse",
       "GetTagsWithResponse",
@@ -182,6 +193,7 @@
       "GetUsersWithAnyPermission2WithResponse",
       "GetUsersWithResponse",
       "GetWebhook1WithResponse",
+      "GetWebhookWithResponse",
       "GetWithResponse",
       "PostJSON",
       "PutJSON",
@@ -222,6 +234,7 @@
       "StreamRawWithResponse",
       "SynchronizeWithResponse",
       "TestWebhook1WithResponse",
+      "TestWebhookWithResponse",
       "UnReact1WithResponse",
       "Unwatch1WithResponse",
       "Unwatch2WithResponse",
@@ -234,6 +247,7 @@
       "UpdateComment2WithResponse",
       "UpdateCommentWithResponse",
       "UpdateDefaultTask1WithResponse",
+      "UpdateDefaultTaskWithResponse",
       "UpdateProjectWithResponse",
       "UpdatePullRequestCondition1WithResponse",
       "UpdatePullRequestConditionWithResponse",
@@ -241,6 +255,7 @@
       "UpdateRepositoryWithResponse",
       "UpdateRequiredBuildsMergeCheckWithBodyWithResponse",
       "UpdateWebhook1WithResponse",
+      "UpdateWebhookWithResponse",
       "Watch1WithResponse",
       "Watch2WithResponse"
     ],
@@ -289,6 +304,7 @@
     ],
     "unmapped_operations": [
       "AddDefaultTask1WithResponse",
+      "AddDefaultTaskWithResponse",
       "AddForProjectWithResponse",
       "AddForRepositoryWithResponse",
       "AddKeyWithResponse",
@@ -309,6 +325,7 @@
       "CreatePullRequestCondition1WithResponse",
       "CreatePullRequestConditionWithResponse",
       "CreateRepositoryWithResponse",
+      "CreateWebhookWithResponse",
       "Delete1WithResponse",
       "Delete5WithResponse",
       "Delete6WithResponse",
@@ -320,6 +337,7 @@
       "DeleteByIdWithResponse",
       "DeleteComment1WithResponse",
       "DeleteDefaultTask1WithResponse",
+      "DeleteDefaultTaskWithResponse",
       "DeleteForUserWithResponse",
       "DeleteJSON",
       "DeleteKeyWithResponse",
@@ -328,7 +346,9 @@
       "DeletePullRequestConditionWithResponse",
       "DeleteRepositoryWithResponse",
       "DeleteRestriction1WithResponse",
+      "DeleteRestrictionWithResponse",
       "DeleteSshKeyWithResponse",
+      "DeleteWebhookWithResponse",
       "DeleteWithResponse",
       "DisableHook1WithResponse",
       "DisableHookWithResponse",
@@ -336,6 +356,7 @@
       "EnableHook1WithResponse",
       "EnableHookWithResponse",
       "FindByCommitWithResponse",
+      "FindWebhooksWithResponse",
       "ForkRepositoryWithResponse",
       "Get1WithResponse",
       "Get5WithResponse",
@@ -358,6 +379,7 @@
       "GetContent1WithResponse",
       "GetDefaultBranch2WithResponse",
       "GetDefaultTasks1WithResponse",
+      "GetDefaultTasksWithResponse",
       "GetForRepository1WithResponse",
       "GetGroupsWithAnyPermission1WithResponse",
       "GetGroupsWithAnyPermission2WithResponse",
@@ -373,7 +395,9 @@
       "GetRepositoryHooks1WithResponse",
       "GetRepositoryHooksWithResponse",
       "GetRestriction1WithResponse",
+      "GetRestrictionWithResponse",
       "GetRestrictions1WithResponse",
+      "GetRestrictionsWithResponse",
       "GetReviewerGroup1WithResponse",
       "GetReviewerGroupWithResponse",
       "GetReviewerGroups1WithResponse",
@@ -385,10 +409,13 @@
       "GetSshKeysWithResponse",
       "GetStatistics1WithResponse",
       "GetStatisticsSummary1WithResponse",
+      "GetStatisticsSummaryWithResponse",
+      "GetStatisticsWithResponse",
       "GetStatus2WithResponse",
       "GetUsersWithAnyPermission1WithResponse",
       "GetUsersWithResponse",
       "GetWebhook1WithResponse",
+      "GetWebhookWithResponse",
       "GetWithResponse",
       "PostJSON",
       "PutJSON",
@@ -423,6 +450,7 @@
       "StreamRawWithResponse",
       "SynchronizeWithResponse",
       "TestWebhook1WithResponse",
+      "TestWebhookWithResponse",
       "UnReact1WithResponse",
       "Unwatch1WithResponse",
       "Unwatch2WithResponse",
@@ -433,11 +461,13 @@
       "UpdateAccessTokenWithResponse",
       "UpdateComment1WithResponse",
       "UpdateDefaultTask1WithResponse",
+      "UpdateDefaultTaskWithResponse",
       "UpdateProjectWithResponse",
       "UpdatePullRequestCondition1WithResponse",
       "UpdatePullRequestConditionWithResponse",
       "UpdateRepositoryWithResponse",
       "UpdateWebhook1WithResponse",
+      "UpdateWebhookWithResponse",
       "Watch1WithResponse",
       "Watch2WithResponse"
     ]
