@@ -183,3 +183,68 @@ func TestCommitListEmpty(t *testing.T) {
 		t.Fatalf("expected empty-state message, got: %s", out)
 	}
 }
+
+func TestCommitListJira(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet && r.URL.Path == "/rest/jira/latest/issues/ISSUE-123/commits" {
+			_, _ = w.Write([]byte(`{
+				"isLastPage": true,
+				"values": [
+					{
+						"toCommit": {
+							"id": "jiracommit1",
+							"displayId": "jc1",
+							"message": "fix for issue 123"
+						}
+					}
+				]
+			}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
+	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
+	t.Setenv("BITBUCKET_TOKEN", "test-token")
+
+	out, err := executeTestCLI(t, "commit", "list", "--jira", "ISSUE-123")
+	if err != nil {
+		t.Fatalf("commit list --jira failed: %v", err)
+	}
+	if !strings.Contains(out, "jc1") || !strings.Contains(out, "fix for issue 123") {
+		t.Fatalf("unexpected list output: %s", out)
+	}
+
+	out, err = executeTestCLI(t, "--json", "commit", "list", "--jira", "ISSUE-123")
+	if err != nil {
+		t.Fatalf("commit list --jira json failed: %v", err)
+	}
+	if !strings.Contains(out, `"commits"`) || !strings.Contains(out, "jiracommit1") {
+		t.Fatalf("unexpected json output: %s", out)
+	}
+}
+
+func TestCommitListJiraError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"message":"jira error"}`))
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
+	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
+	t.Setenv("BITBUCKET_TOKEN", "test-token")
+
+	_, err := executeTestCLI(t, "commit", "list", "--jira", "ISSUE-123")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+

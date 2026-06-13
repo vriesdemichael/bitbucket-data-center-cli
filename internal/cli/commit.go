@@ -5,10 +5,13 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	commitservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/commit"
-	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
+	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	commitservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/commit"
+	jiraservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/jira"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
 
 func newCommitCommand(options *rootOptions) *cobra.Command {
@@ -24,6 +27,7 @@ func newCommitCommand(options *rootOptions) *cobra.Command {
 	commitCmd.PersistentFlags().IntVar(&limit, "limit", 25, "Page size for list operations")
 
 	var listPath string
+	var listJira string
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository commits",
@@ -41,10 +45,19 @@ func newCommitCommand(options *rootOptions) *cobra.Command {
 			// Map to commit service repo ref
 			repo := commitservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
 
-			service := commitservice.NewService(client)
-			commits, err := service.List(cmd.Context(), repo, commitservice.ListOptions{Limit: limit, Path: listPath})
-			if err != nil {
-				return err
+			var commits []openapigenerated.RestCommit
+			if strings.TrimSpace(listJira) != "" {
+				jiraService := jiraservice.NewService(httpclient.NewFromConfig(cfg))
+				commits, err = jiraService.GetIssueCommits(cmd.Context(), strings.TrimSpace(listJira), limit)
+				if err != nil {
+					return err
+				}
+			} else {
+				service := commitservice.NewService(client)
+				commits, err = service.List(cmd.Context(), repo, commitservice.ListOptions{Limit: limit, Path: listPath})
+				if err != nil {
+					return err
+				}
 			}
 
 			if options.JSON {
@@ -66,6 +79,7 @@ func newCommitCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 	listCmd.Flags().StringVar(&listPath, "path", "", "Filter commits by file path")
+	listCmd.Flags().StringVar(&listJira, "jira", "", "List commits associated with a Jira issue key")
 	commitCmd.AddCommand(listCmd)
 
 	getCmd := &cobra.Command{

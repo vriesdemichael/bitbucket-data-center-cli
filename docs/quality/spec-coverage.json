@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-9.4-openapi.json",
-  "covered": 224,
+  "covered": 226,
   "total": 546,
-  "coverage_percent": 41.02564102564102,
+  "coverage_percent": 41.39194139194139,
   "by_tag": [
     {
       "tag": "",
@@ -37,7 +37,7 @@
     },
     {
       "tag": "Jira Integration",
-      "covered": 0,
+      "covered": 2,
       "total": 4
     },
     {
@@ -1553,21 +1553,9 @@
     },
     {
       "method": "GET",
-      "path": "/jira/latest/issues/{issueKey}/commits",
-      "tag": "Jira Integration",
-      "summary": "Get changesets for issue key"
-    },
-    {
-      "method": "GET",
       "path": "/jira/latest/projects/{projectKey}/primary-enhanced-entitylink",
       "tag": "Jira Integration",
       "summary": "Get entity link"
-    },
-    {
-      "method": "GET",
-      "path": "/jira/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/issues",
-      "tag": "Jira Integration",
-      "summary": "Get issues for a pull request"
     },
     {
       "method": "GET",

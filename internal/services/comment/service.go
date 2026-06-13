@@ -28,6 +28,7 @@ type Target struct {
 	CommitID      string
 	PullRequestID string
 	Blocker       bool
+	Pending       bool
 }
 
 func (target Target) Context() Context {
@@ -152,7 +153,15 @@ func (service *Service) Create(ctx context.Context, target Target, text string) 
 		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindValidation, "comment text is required", nil)
 	}
 
-	body := openapigenerated.RestComment{Text: &trimmedText}
+	var pendingPtr *bool
+	if target.Pending {
+		p := true
+		pendingPtr = &p
+	}
+	body := openapigenerated.RestComment{
+		Text:    &trimmedText,
+		Pending: pendingPtr,
+	}
 
 	if strings.TrimSpace(target.CommitID) != "" {
 		response, err := service.client.CreateCommentWithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, nil, body)

@@ -9,8 +9,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
+	jiraservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/jira"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
 	reviewerservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reviewer"
@@ -1515,7 +1517,220 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	reviewerCmd.AddCommand(reviewerRemoveCmd)
 
 	reviewCmd.AddCommand(reviewerCmd)
+
+	var reviewGetCmd = &cobra.Command{
+		Use:   "get <id>",
+		Short: "Retrieve current draft review details",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			response, err := client.GetReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, args[0], nil)
+			if err != nil {
+				return err
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return err
+			}
+
+			var comments []openapigenerated.RestComment
+			if response.ApplicationjsonCharsetUTF8200 != nil && response.ApplicationjsonCharsetUTF8200.Values != nil {
+				comments = *response.ApplicationjsonCharsetUTF8200.Values
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "comments": comments})
+			}
+
+			if len(comments) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "No draft comments found in review")
+				return nil
+			}
+
+			for _, comment := range comments {
+				fmt.Fprintln(cmd.OutOrStdout(), formatCommentSummary(comment))
+			}
+			return nil
+		},
+	}
+	reviewCmd.AddCommand(reviewGetCmd)
+
+	var reviewCompleteStatus string
+	var reviewCompleteComment string
+	var reviewCompleteCmd = &cobra.Command{
+		Use:   "complete <id>",
+		Short: "Publish draft comments and optionally submit a status change",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			var body openapigenerated.RestPullRequestFinishReviewRequest
+			if reviewCompleteStatus != "" {
+				s := strings.ToUpper(reviewCompleteStatus)
+				body.ParticipantStatus = &s
+			}
+			if reviewCompleteComment != "" {
+				c := reviewCompleteComment
+				body.CommentText = &c
+			}
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.review.complete",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "status": reviewCompleteStatus, "comment": reviewCompleteComment},
+						Action:          "update",
+						PredictedAction: "update",
+						Supported:       true,
+						Reason:          "pull request review will be completed",
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, UpdateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			response, err := client.FinishReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, args[0], nil, body)
+			if err != nil {
+				return err
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "status": "completed"})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Completed review for pull request #%s\n", args[0])
+			return nil
+		},
+	}
+	reviewCompleteCmd.Flags().StringVar(&reviewCompleteStatus, "status", "", "Pull request status change (APPROVED, NEEDS_WORK, UNAPPROVED)")
+	reviewCompleteCmd.Flags().StringVar(&reviewCompleteComment, "comment", "", "Review completion comment text")
+	reviewCmd.AddCommand(reviewCompleteCmd)
+
+	var reviewDiscardCmd = &cobra.Command{
+		Use:   "discard <id>",
+		Short: "Discard all draft comments and cancel review",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.review.discard",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Action:          "delete",
+						PredictedAction: "delete",
+						Supported:       true,
+						Reason:          "pull request review will be discarded",
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, DeleteCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			response, err := client.DiscardReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, args[0])
+			if err != nil {
+				return err
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "status": "discarded"})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Discarded review for pull request #%s\n", args[0])
+			return nil
+		},
+	}
+	reviewCmd.AddCommand(reviewDiscardCmd)
+
 	prCmd.AddCommand(reviewCmd)
+
+	var jiraCmd = &cobra.Command{
+		Use:   "jira <id>",
+		Short: "List Jira issues associated with a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			jiraService := jiraservice.NewService(httpclient.NewFromConfig(cfg))
+			issues, err := jiraService.GetPRIssues(cmd.Context(), jiraservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0])
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "issues": issues})
+			}
+
+			if len(issues) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "No Jira issues associated with pull request")
+				return nil
+			}
+
+			rows := make([][]string, len(issues))
+			for i, issue := range issues {
+				rows[i] = []string{style.Secondary.Render(issue.Key), issue.URL}
+			}
+			style.WriteTable(cmd.OutOrStdout(), rows)
+
+			return nil
+		},
+	}
+	prCmd.AddCommand(jiraCmd)
 
 	commentCmd := &cobra.Command{Use: "comment", Short: "Pull request comment commands"}
 
@@ -1636,6 +1851,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 
 	var commentAddText string
 	var commentAddBlocker bool
+	var commentAddPending bool
 	commentAddCmd := &cobra.Command{
 		Use:   "add <pr-id>",
 		Short: "Add a comment to a pull request",
@@ -1655,6 +1871,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
 				PullRequestID: args[0],
 				Blocker:       commentAddBlocker,
+				Pending:       commentAddPending,
 			}
 
 			if options.DryRun {
@@ -1669,7 +1886,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 					Capability:   capabilityFull,
 					Items: []dryRunItem{{
 						Intent:          "pr.comment.add",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "text": commentAddText, "blocker": commentAddBlocker},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "text": commentAddText, "blocker": commentAddBlocker, "pending": commentAddPending},
 						Action:          "create",
 						PredictedAction: "create",
 						Supported:       true,
@@ -1689,7 +1906,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "comment": created, "blocker": commentAddBlocker})
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "comment": created, "blocker": commentAddBlocker, "pending": commentAddPending})
 			}
 
 			commentID := ""
@@ -1700,12 +1917,17 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			if commentAddBlocker {
 				blockerStr = " blocker"
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Created%s comment %s\n", blockerStr, commentID)
+			pendingStr := ""
+			if commentAddPending {
+				pendingStr = " pending"
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Created%s%s comment %s\n", blockerStr, pendingStr, commentID)
 			return nil
 		},
 	}
 	commentAddCmd.Flags().StringVar(&commentAddText, "text", "", "Comment text")
 	commentAddCmd.Flags().BoolVar(&commentAddBlocker, "blocker", false, "Mark the comment as a blocker")
+	commentAddCmd.Flags().BoolVar(&commentAddPending, "pending", false, "Mark the comment as pending (draft)")
 	_ = commentAddCmd.MarkFlagRequired("text")
 	commentCmd.AddCommand(commentAddCmd)
 

@@ -2,6 +2,7 @@ package comment
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	"net/http"
 	"net/http/httptest"
@@ -654,3 +655,41 @@ func TestServiceFallbacks(t *testing.T) {
 		}
 	})
 }
+
+func TestServiceCreatePendingComment(t *testing.T) {
+	var capturedBody openapigenerated.RestComment
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/comments" {
+			decoder := json.NewDecoder(r.Body)
+			if err := decoder.Decode(&capturedBody); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":15,"text":"pending comment","version":0,"pending":true}`))
+			return
+		}
+		http.NotFound(w, r)
+	})
+
+	target := Target{
+		Repository:    RepositoryRef{ProjectKey: "TEST", Slug: "demo"},
+		PullRequestID: "12",
+		Pending:       true,
+	}
+
+	created, err := service.Create(context.Background(), target, "pending comment")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if created.Pending == nil || !*created.Pending {
+		t.Errorf("expected created comment to have pending true, got: %v", created.Pending)
+	}
+
+	if capturedBody.Pending == nil || !*capturedBody.Pending {
+		t.Errorf("expected API payload to have pending true, got: %v", capturedBody.Pending)
+	}
+}
+
