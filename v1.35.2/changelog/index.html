@@ -1,0 +1,3113 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="CLI automation for Bitbucket Server and Data Center">
+      
+      
+      
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-server-cli/v1.35.2/changelog/">
+      
+      
+        <link rel="prev" href="../adr/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Changelog - Bitbucket Server CLI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"IBM Plex Sans";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Bitbucket Server CLI" class="md-header__button md-logo" aria-label="Bitbucket Server CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Bitbucket Server CLI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vriesdemichael/bitbucket-server-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-server-cli
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Bitbucket Server CLI" class="md-nav__button md-logo" aria-label="Bitbucket Server CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    Bitbucket Server CLI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vriesdemichael/bitbucket-server-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-server-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation-and-quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation and Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../basic-usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Command Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JSON Schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Topics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Topics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/repository-discovery-and-server-switching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository Discovery and Server Switching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/bulk-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bulk Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/dry-run-planning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-Run Planning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/machine-mode-diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Mode and Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai-and-llms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI and llms.txt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#v1352" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.35.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1351" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.35.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1210" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.21.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.20.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1200" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.20.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1192" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.19.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1191" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.19.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1190" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.19.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v11812" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.12
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v11811" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.11
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v11810" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.10
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1189" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.9
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1188" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.8
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1187" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.7
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1186" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.6
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1185" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.5
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1184" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.4
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1183" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.3
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1182" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1181" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1180" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1172" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.17.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1171" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.17.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1170" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.17.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.16.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.15.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1141" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.14.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.14.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.13.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.12.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1119" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.9
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1118" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.8
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1117" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.7
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1116" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.6
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1115" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.5
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1114" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.4
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1113" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.3
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1112" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1111" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1101" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.10.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.10.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v192" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.9.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v191" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.9.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v190" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.9.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v182" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.8.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v181" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.8.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v180" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.8.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v170" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.7.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.6.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.5.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v141" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.4.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.4.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v131" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.3.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.3.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.2.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v111" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.1.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.1.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v102" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v101" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v030" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.3.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v021" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.2.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v020" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.2.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v010" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.1.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v004" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.0.4
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v003" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.0.3
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v002" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.0.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v001" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.0.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#v1352" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.35.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1351" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.35.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1210" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.21.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.20.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1200" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.20.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1192" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.19.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1191" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.19.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1190" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.19.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v11812" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.12
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v11811" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.11
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v11810" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.10
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1189" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.9
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1188" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.8
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1187" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.7
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1186" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.6
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1185" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.5
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1184" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.4
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1183" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.3
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1182" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1181" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1180" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.18.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1172" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.17.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1171" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.17.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1170" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.17.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.16.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.15.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1141" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.14.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.14.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.13.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.12.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1119" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.9
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1118" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.8
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1117" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.7
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1116" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.6
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1115" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.5
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1114" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.4
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1113" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.3
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1112" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1111" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.11.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1101" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.10.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.10.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v192" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.9.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v191" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.9.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v190" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.9.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v182" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.8.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v181" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.8.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v180" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.8.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v170" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.7.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v160" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.6.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.5.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v141" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.4.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.4.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v131" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.3.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.3.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.2.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v111" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.1.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.1.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v102" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v101" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v030" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.3.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v021" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.2.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v020" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.2.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v010" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.1.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v004" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.0.4
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v003" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.0.3
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v002" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.0.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v001" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.0.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="v1352"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.35.2">v1.35.2</a><a class="headerlink" href="#v1352" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-06-15</p>
+<p>Changes since v1.35.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.35.1...v1.35.2">v1.35.1...v1.35.2</a></p>
+<p><strong>CI</strong>
+- release: remove failing AUR publishing job (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/6d4d2f22483ad1bcb590134bb4423c7ec4bee7c1">6d4d2f2</a>)</p>
+<h2 id="v1351"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.35.1">v1.35.1</a><a class="headerlink" href="#v1351" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-06-15</p>
+<p>Changes since v1.35.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.35.0...v1.35.1">v1.35.0...v1.35.1</a></p>
+<p><strong>Fixes</strong>
+- release: expand env vars in nfpm contents src (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/0a025266ddd931cc323735670fcd88ca4b98b0f7">0a02526</a>)</p>
+<p><strong>Chores</strong>
+- deps: bump github.com/go-openapi/spec (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/284e1bdbcf84aa7bf8cdf0f52d5f7c33553d0a38">284e1bd</a>)</p>
+<h2 id="v1210"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.21.0">v1.21.0</a><a class="headerlink" href="#v1210" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-06-03</p>
+<p>Changes since v1.20.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.20.1...v1.21.0">v1.20.1...v1.21.0</a></p>
+<p><strong>Features</strong>
+- pr: add --draft flag and auto-merge commands (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/24d33ed6e4659f38f9943f2747bb301686650891">24d33ed</a>)</p>
+<p><strong>Fixes</strong>
+- pr: support --dry-run for pr auto-merge enable/disable (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e15fae9d121ae057093ab11c4e9d4425c41bfea3">e15fae9</a>)</p>
+<p><strong>Docs</strong>
+- skill: document draft PRs and auto-merge in bb skill (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/c9d7667e9cfaf9a025534f35e81c711715476f17">c9d7667</a>)</p>
+<p><strong>Tests</strong>
+- pr: cover draft flag and auto-merge CLI commands (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/6a88ee3e282ecbb179b9a6523881569703888159">6a88ee3</a>)</p>
+<p><strong>Other</strong>
+- pr: gofmt CreateInput alignment and trailing newline (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/000b08bb1db10320f9c311104c65c79e391545f8">000b08b</a>)</p>
+<h2 id="v1201"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.20.1">v1.20.1</a><a class="headerlink" href="#v1201" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-06-02</p>
+<p>Changes since v1.20.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.20.0...v1.20.1">v1.20.0...v1.20.1</a></p>
+<p><strong>Fixes</strong>
+- use POST /participants instead of PUT /participants/{userSlug} for adding reviewers (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/60b28ca21362a638ddf1b314c2c0dd5dc3b3ab9e">60b28ca</a>)</p>
+<p><strong>Tests</strong>
+- update CLI reviewer-add mock to POST /participants (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/5f7c00cea2e34bd0dcc752cb3ad5dc0a19d08014">5f7c00c</a>)</p>
+<h2 id="v1200"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.20.0">v1.20.0</a><a class="headerlink" href="#v1200" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-06-02</p>
+<p>Changes since v1.19.2.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.19.2...v1.20.0">v1.19.2...v1.20.0</a></p>
+<p><strong>Features</strong>
+- pr: add --reviewers flag to pr create command (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/0e55bc007b63c3febe2221854f9d8af6dc83cd28">0e55bc0</a>)</p>
+<p><strong>Refactors</strong>
+- pr: align --reviewers flag with repo conventions and document (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/b358fa13328f9f237fea1922586ba29c315c1abf">b358fa1</a>)</p>
+<p><strong>Tests</strong>
+- mcp: cover parseCommaList reviewer parsing (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/d68a303f73946ccb5e0ff74d74869d25c871251e">d68a303</a>)</p>
+<p><strong>Chores</strong>
+- deps: bump the gomod-minor-patch group with 5 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/6886b88e2ed51421a4f100af82619392a9d91da9">6886b88</a>)
+- deps: bump github.com/sigstore/sigstore (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/945f9d612fca78681588c822dfe8b2ae47a1a0ad">945f9d6</a>)
+- deps: bump the gomod-minor-patch group with 5 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/2c9dce066ae0325d89b76000a44263e19158e8e5">2c9dce0</a>)
+- deps: bump the gomod-minor-patch group with 8 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/fad3b8be96019fe2d2d1543c44481c6ed4c62927">fad3b8b</a>)
+- deps: bump the gomod-minor-patch group with 3 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/a55d61ba397f424c348249e93d56fc35e8abd03a">a55d61b</a>)
+- deps: bump the gomod-minor-patch group with 4 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/54a08748989541a5693fb43f4c3cb08a91adb8c0">54a0874</a>)
+- deps: bump the gomod-minor-patch group with 2 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/105b38d476923bd2eb48ca6bf28f9d53d7831683">105b38d</a>)
+- deps: bump the gomod-minor-patch group with 2 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/0694f0d79f336f38ab56c7a212ef121708964932">0694f0d</a>)
+- deps: bump the gomod-minor-patch group with 2 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/4a6e0e8874904890ce5245df5ad57e49df75efdb">4a6e0e8</a>)
+- deps: bump github.com/letsencrypt/boulder (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/9b22f1768337335eddc6bcbc1fca9676394ddad4">9b22f17</a>)
+- deps: bump github.com/mark3labs/mcp-go (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/3f50ddb108308c5c87c2d863f75843d86c89b441">3f50ddb</a>)
+- deps: bump the gomod-minor-patch group with 6 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/74d9916a9be6ec864be04e12c7bfdf9ddb851b86">74d9916</a>)
+- deps: bump sigstore/cosign-installer from 4.1.1 to 4.1.2 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/dba7da4388a22b2d63aa865c88bdb7ee6227de32">dba7da4</a>)
+- deps: bump github.com/mark3labs/mcp-go (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/9d4df334294f7b6304346bb047c1af309a89757d">9d4df33</a>)
+- deps: bump the gomod-minor-patch group with 4 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/26c39de91ea95c1751d39907b1873dcc43f972f2">26c39de</a>)
+- deps: bump google.golang.org/grpc in the gomod-minor-patch group (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/abbb82aec1023e1de3953e0435542aec7fe87fbf">abbb82a</a>)
+- deps: bump github.com/mark3labs/mcp-go (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/3cfebbdbf7e67fa5f58e3c0bf3db12b1e699d0a6">3cfebbd</a>)
+- deps: bump github.com/go-openapi/strfmt (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/8e4a3c4c27168461ac6a2a119b2db2a7979b7ac4">8e4a3c4</a>)
+- deps: bump github.com/letsencrypt/boulder (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/7fa80829dbf5f315b0479b8a56a01c5fb360755d">7fa8082</a>)
+- deps: bump the gomod-minor-patch group with 7 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/a6b0fc6152c9a3aaaa4c830289908c7e36fd259f">a6b0fc6</a>)
+- deps: bump the gomod-minor-patch group with 33 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e3035dcc967d7a105fefa52113abad99179a76a0">e3035dc</a>)</p>
+<h2 id="v1192"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.19.2">v1.19.2</a><a class="headerlink" href="#v1192" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-27</p>
+<p>Changes since v1.19.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.19.1...v1.19.2">v1.19.1...v1.19.2</a></p>
+<p><strong>Chores</strong>
+- dependabot: configure updates for indirect deps and docker-compose (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/3fdd88fcd9465358ffa45cbc6eac995561154fc4">3fdd88f</a>)
+- deps: bump github.com/mark3labs/mcp-go (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/c106f12d4f741871b83690ce0c23a7e2da72be81">c106f12</a>)
+- deps: bump github.com/go-openapi/runtime (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/2582a5b42a60ff3c3b8cc47d5571b98417242fc3">2582a5b</a>)
+- deps: bump the gomod-minor-patch group with 2 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/85bbdc219820ebbe61c9746d19c9dc56ad868a57">85bbdc2</a>)</p>
+<h2 id="v1191"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.19.1">v1.19.1</a><a class="headerlink" href="#v1191" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-16</p>
+<p>Changes since v1.19.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.19.0...v1.19.1">v1.19.0...v1.19.1</a></p>
+<p><strong>Chores</strong>
+- dependabot: ignore bitbucket image updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/6e3e486b9ecb0b746312fe75591252755e4b64e5">6e3e486</a>)</p>
+<h2 id="v1190"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.19.0">v1.19.0</a><a class="headerlink" href="#v1190" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-16</p>
+<p>Changes since v1.18.12.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.12...v1.19.0">v1.18.12...v1.19.0</a></p>
+<p><strong>Features</strong>
+- update: add background Windows self-update (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/7c7fffe25a32f28c8e203dd917b43837b98f1fca">7c7fffe</a>)</p>
+<p><strong>Fixes</strong>
+- update: address review feedback (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/02d4ad24b6dc6d5648ae765fe5fd00a43b7b7946">02d4ad2</a>)</p>
+<p><strong>Tests</strong>
+- update: raise Windows patch coverage (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/3b42d6848e6bacdc01133d45f825153b26fbf300">3b42d68</a>)
+- update: cover Windows swap launcher helpers (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/9b2338098b93d6861c110e4ae65c568e2bdc6a75">9b23380</a>)</p>
+<h2 id="v11812"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.12">v1.18.12</a><a class="headerlink" href="#v11812" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-16</p>
+<p>Changes since v1.18.11.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.11...v1.18.12">v1.18.11...v1.18.12</a></p>
+<p><strong>Chores</strong>
+- deps: bump codecov/codecov-action from 4 to 6 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/52c113adda90e860532f4fd04a2e7a099bda9455">52c113a</a>)
+- deps: bump github.com/sigstore/sigstore-go from 0.6.2 to 1.1.4 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/139c634d0c56835a1bf8bb08b3ed35d02096f990">139c634</a>)
+- deps: bump actions/checkout from 4 to 6 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/7215a629850fd69811453f8050913e68d8fd26a7">7215a62</a>)
+- deps: bump actions/github-script from 7 to 9 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/daa20011bedd6ebb5eaf2185b0b31626c882c3b6">daa2001</a>)</p>
+<h2 id="v11811"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.11">v1.18.11</a><a class="headerlink" href="#v11811" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-16</p>
+<p>Changes since v1.18.10.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.10...v1.18.11">v1.18.10...v1.18.11</a></p>
+<p><strong>Chores</strong>
+- deps: bump actions/setup-go from 5 to 6 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/ac3abdb5be0595287e95379b124f69f99e5a046c">ac3abdb</a>)
+- deps: bump the gomod-minor-patch group with 6 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/047d40f8b593ca1c6975c014306f6d80e13c8175">047d40f</a>)
+- deps: bump actions/setup-python from 5 to 6 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/7dd2dd7cb38bb54920fa9fb922791fff2bccbe5c">7dd2dd7</a>)</p>
+<h2 id="v11810"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.10">v1.18.10</a><a class="headerlink" href="#v11810" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-16</p>
+<p>Changes since v1.18.9.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.9...v1.18.10">v1.18.9...v1.18.10</a></p>
+<p><strong>Fixes</strong>
+- ci: merge clean dependabot prs directly (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e83bb716e7239cca9aadf20c4167816738fcd282">e83bb71</a>)</p>
+<h2 id="v1189"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.9">v1.18.9</a><a class="headerlink" href="#v1189" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-16</p>
+<p>Changes since v1.18.8.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.8...v1.18.9">v1.18.8...v1.18.9</a></p>
+<p><strong>Fixes</strong>
+- ci: re-enable basic auth after bootstrap (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/fb1d6ddb6783e4a6becfcdf028cac92d9f7ff65a">fb1d6dd</a>)
+- ci: retry apt metadata refresh in faketime build (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/64fdddc99ab5deda2b8bcaa35da6d512952689e3">64fdddc</a>)
+- update: support Bitbucket 10.2.1 and sigstore-go 1.1.4 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/9c90a982b7ee060797f7883de0ff00866f17994b">9c90a98</a>)</p>
+<p><strong>Docs</strong>
+- update: clarify bootstrap license fallback comment (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/30d506b0553817cd1b0a7357575a34b4092f6a2d">30d506b</a>)</p>
+<h2 id="v1188"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.8">v1.18.8</a><a class="headerlink" href="#v1188" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-15</p>
+<p>Changes since v1.18.7.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.7...v1.18.8">v1.18.7...v1.18.8</a></p>
+<p><strong>Chores</strong>
+- deps: bump actions/upload-artifact from 4 to 7 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/14f708f8b8e446be33c510c36fc8775f547a1176">14f708f</a>)
+- deps: bump sigstore/cosign-installer from 3.8.1 to 4.1.1 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/7075c7e18b7ced66480cfc14452d82a1c6a8a353">7075c7e</a>)
+- deps: bump actions/attest-build-provenance from 2 to 4 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/d92ad1d07b2934204b0de2e2d344e469f90f41c9">d92ad1d</a>)
+- deps: bump actions/download-artifact from 4 to 8 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/df7253d15a4c8cc451e423c36e5167e147990b71">df7253d</a>)
+- deps: bump the python-docs-minor-patch group (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e8a16b617004865c83dd2f666d709e9334d28268">e8a16b6</a>)
+- deps: bump the gomod-minor-patch group with 6 updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/038b5feb5dd5f057e40f9980790b206d43f72240">038b5fe</a>)</p>
+<h2 id="v1187"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.7">v1.18.7</a><a class="headerlink" href="#v1187" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-15</p>
+<p>Changes since v1.18.6.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.6...v1.18.7">v1.18.6...v1.18.7</a></p>
+<p><strong>Chores</strong>
+- deps: bump astral-sh/setup-uv from 5 to 7 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/3281d8c32e2a219046a0f0c85a46c27e00c93faa">3281d8c</a>)</p>
+<h2 id="v1186"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.6">v1.18.6</a><a class="headerlink" href="#v1186" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-15</p>
+<p>Changes since v1.18.5.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.5...v1.18.6">v1.18.5...v1.18.6</a></p>
+<p><strong>Fixes</strong>
+- ci: revalidate dependabot PR state before merge actions (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/fd3c10fcfa0d47fd9d45626cb192a9e3ea6848b9">fd3c10f</a>)
+- ci: add dependabot auto-merge workflow (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/4b25cff4b96c7928eeea6e9a0413e43004d8682d">4b25cff</a>)</p>
+<h2 id="v1185"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.5">v1.18.5</a><a class="headerlink" href="#v1185" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-15</p>
+<p>Changes since v1.18.4.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.4...v1.18.5">v1.18.4...v1.18.5</a></p>
+<p><strong>Fixes</strong>
+- deps: use uv for docs dependabot updates (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/ce939d5ad62adc10d6d2a599875410432c4024d3">ce939d5</a>)</p>
+<p><strong>Chores</strong>
+- deps: add dependabot config (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/2e5ea1644f28a30689ea1ea5ea2efe08aa2cca38">2e5ea16</a>)</p>
+<h2 id="v1184"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.4">v1.18.4</a><a class="headerlink" href="#v1184" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-14</p>
+<p>Changes since v1.18.3.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.3...v1.18.4">v1.18.3...v1.18.4</a></p>
+<p><strong>Fixes</strong>
+- update: accept legacy sigstore bundles (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/a5c725b1a1eb3794d834c90da735e76be17471e1">a5c725b</a>)</p>
+<h2 id="v1183"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.3">v1.18.3</a><a class="headerlink" href="#v1183" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-13</p>
+<p>Changes since v1.18.2.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.2...v1.18.3">v1.18.2...v1.18.3</a></p>
+<p><strong>Fixes</strong>
+- release: address workflow review comments (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/1622f86cda9de4775f314e57ce5c801ff760ff27">1622f86</a>)
+- release: sync winget fork before publish (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/bfbf08e7adf8a6554861c9dd9cacd3c1c4a33652">bfbf08e</a>)</p>
+<h2 id="v1182"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.2">v1.18.2</a><a class="headerlink" href="#v1182" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-12</p>
+<p>Changes since v1.18.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.1...v1.18.2">v1.18.1...v1.18.2</a></p>
+<p><strong>Fixes</strong>
+- update: require sigstore verification for self-update (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/ebdef3bf383c031082d909ffd13ef51fcaec87b6">ebdef3b</a>)</p>
+<p><strong>Tests</strong>
+- update: address PR review feedback (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/feb9092000e113cb1336e97a6df1cd1766e7f5d9">feb9092</a>)</p>
+<h2 id="v1181"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.1">v1.18.1</a><a class="headerlink" href="#v1181" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-12</p>
+<p>Changes since v1.18.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.18.0...v1.18.1">v1.18.0...v1.18.1</a></p>
+<p><strong>Fixes</strong>
+- release: use computed winget release tag (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/fdb09a457f616385d3cfebb051a31bd2259a9c95">fdb09a4</a>)</p>
+<h2 id="v1180"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.18.0">v1.18.0</a><a class="headerlink" href="#v1180" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-11</p>
+<p>Changes since v1.17.2.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.17.2...v1.18.0">v1.17.2...v1.18.0</a></p>
+<p><strong>Features</strong>
+- harden Windows binary to reduce Defender false positives (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/9cdb88d458d99192c8efa63bbf64c8842145bea0">9cdb88d</a>)
+- add Apache 2.0 license; fix scoop workflow token handling and Python setup (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/2dd0c678f68300ce36e1f7ded3ea06631369a035">2dd0c67</a>)
+- add Scoop bucket release job and install docs (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/27a6232df04842faa54fbb9a7d7d89cb1d9f1d15">27a6232</a>)
+- publish releases to WinGet via vedantmgoyal9/winget-releaser (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/432e9befe93ee0b594f3f5844af4a0057b3162b0">432e9be</a>)</p>
+<p><strong>Fixes</strong>
+- use vriesdemichael as Scoop bucket alias in install commands (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/d25c94dbd6c5e9097ee18e324311327242a79872">d25c94d</a>)
+- rename Scoop bucket repo from scoop-bb to scoop (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/0f3eadfe64e453d9124d3d8782199c39e386b85f">0f3eadf</a>)
+- lowercase winget identifier to vriesdemichael.bb (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/fe4437d5ac1c8ff106d1bfb39d598710a13f1b99">fe4437d</a>)</p>
+<h2 id="v1172"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.17.2">v1.17.2</a><a class="headerlink" href="#v1172" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-09</p>
+<p>Changes since v1.17.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.17.1...v1.17.2">v1.17.1...v1.17.2</a></p>
+<p><strong>Fixes</strong>
+- auth: preserve canonical clone base paths (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/eeadacaffb9e87bea61bb3ba30c0ddf5180a9605">eeadaca</a>)</p>
+<h2 id="v1171"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.17.1">v1.17.1</a><a class="headerlink" href="#v1171" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-09</p>
+<p>Changes since v1.17.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.17.0...v1.17.1">v1.17.0...v1.17.1</a></p>
+<p><strong>Fixes</strong>
+- auth: resolve host alias review follow-up (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/d11136b17b26717c706fe05c862e32a59beda8ee">d11136b</a>)</p>
+<h2 id="v1170"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.17.0">v1.17.0</a><a class="headerlink" href="#v1170" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-09</p>
+<p>Changes since v1.16.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.16.0...v1.17.0">v1.16.0...v1.17.0</a></p>
+<p><strong>Features</strong>
+- auth: add host aliases and clone-url discovery (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/875e52aa4bae13b6c6e1af297e934bb38cb4af7d">875e52a</a>)</p>
+<p><strong>Tests</strong>
+- auth: raise alias discovery patch coverage (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/d7d3aac7ff1d872600dcaf1c598c416b68920b40">d7d3aac</a>)</p>
+<h2 id="v1160"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.16.0">v1.16.0</a><a class="headerlink" href="#v1160" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-08</p>
+<p>Changes since v1.15.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.15.0...v1.16.0">v1.15.0...v1.16.0</a></p>
+<p><strong>Features</strong>
+- pr: add pull request mergeability status (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/1d814484fe157f2acd278b771160049938ee7e7e">1d81448</a>)</p>
+<h2 id="v1150"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.15.0">v1.15.0</a><a class="headerlink" href="#v1150" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-08</p>
+<p>Changes since v1.14.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.14.1...v1.15.0">v1.14.1...v1.15.0</a></p>
+<p><strong>Features</strong>
+- add bb update command (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e992cbc4ab45e77888436dba96dd868b41f832be">e992cbc</a>)</p>
+<p><strong>Fixes</strong>
+- address update command review feedback (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/36d68d52660b7796471959052d03ded5d8f4bce3">36d68d5</a>)</p>
+<h2 id="v1141"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.14.1">v1.14.1</a><a class="headerlink" href="#v1141" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-08</p>
+<p>Changes since v1.14.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.14.0...v1.14.1">v1.14.0...v1.14.1</a></p>
+<p><strong>Fixes</strong>
+- wire repo inference for pr commands (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/8265d6a9fccab9140664dfd66c4db7448cb4cc98">8265d6a</a>)</p>
+<h2 id="v1140"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.14.0">v1.14.0</a><a class="headerlink" href="#v1140" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-08</p>
+<p>Changes since v1.13.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.13.0...v1.14.0">v1.13.0...v1.14.0</a></p>
+<p><strong>Features</strong>
+- add aggregate pull request comment retrieval (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/932c556d06db37f54a0b68eae5c36875dddb358b">932c556</a>)
+- add pull request comment list command (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/9c1b7083d2e4c5a69b019df116d64a2cd17338db">9c1b708</a>)</p>
+<h2 id="v1130"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.13.0">v1.13.0</a><a class="headerlink" href="#v1130" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-07</p>
+<p>Changes since v1.12.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.12.0...v1.13.0">v1.12.0...v1.13.0</a></p>
+<p><strong>Features</strong>
+- improve clone command ergonomics (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/d071aac4613a8638d521ef320ceaebf1f4132172">d071aac</a>)</p>
+<p><strong>Fixes</strong>
+- normalize http clone fallback for ssh urls (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/69028a10d75f4b24a489930e6d8f7cc7ce299d7c">69028a1</a>)
+- allow token auth with username (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/44d403cae64c92c56b7111726c82c88ca2953e32">44d403c</a>)</p>
+<p><strong>Docs</strong>
+- regenerate command reference (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e4e242156fb668d3949bd798493b6951ce6242a3">e4e2421</a>)</p>
+<h2 id="v1120"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.12.0">v1.12.0</a><a class="headerlink" href="#v1120" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-07</p>
+<p>Changes since v1.11.9.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.11.9...v1.12.0">v1.11.9...v1.12.0</a></p>
+<p><strong>Features</strong>
+- repo: filter repo list by project (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/aa21aa9ec59b08deeddac7d0347c930dbad28f33">aa21aa9</a>)</p>
+<h2 id="v1119"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.11.9">v1.11.9</a><a class="headerlink" href="#v1119" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-06</p>
+<p>Changes since v1.11.8.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.11.8...v1.11.9">v1.11.8...v1.11.9</a></p>
+<p><strong>Docs</strong>
+- limit changelog TOC to versions (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/a1adc7f6f740aac23fe717fe6f4b6b756b5be918">a1adc7f</a>)</p>
+<h2 id="v1118"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.11.8">v1.11.8</a><a class="headerlink" href="#v1118" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-06</p>
+<p>Changes since v1.11.7.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.11.7...v1.11.8">v1.11.7...v1.11.8</a></p>
+<p><strong>Fixes</strong>
+- harden docs changelog renderer (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/31da64a58cc6078eae1751f614cd52d6bb6de8a7">31da64a</a>)</p>
+<p><strong>Docs</strong>
+- fix changelog publishing and refresh llms guide (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/0b8a352c718364af777c3c41e443eb68de6bea6e">0b8a352</a>)</p>
+<h2 id="v1117"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.11.7">v1.11.7</a><a class="headerlink" href="#v1117" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-06</p>
+<p>Changes since v1.11.6.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.11.6...v1.11.7">v1.11.6...v1.11.7</a></p>
+<p><strong>Docs</strong>
+- improve nav and table legibility (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/9540d9565ff501a6f6e4d052bbcd026bc93c1165">9540d95</a>)</p>
+<h2 id="v1116"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.11.6">v1.11.6</a><a class="headerlink" href="#v1116" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-06</p>
+<p>Changes since v1.11.5.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.11.5...v1.11.6">v1.11.5...v1.11.6</a></p>
+<p><strong>Docs</strong>
+- tune landing page scale and secondary buttons (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/6366fb0d742101cf3000fcfd35b2a12db947e8bd">6366fb0</a>)</p>
+<h2 id="v1115"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.11.5">v1.11.5</a><a class="headerlink" href="#v1115" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-06</p>
+<p>Changes since v1.11.4.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.11.4...v1.11.5">v1.11.4...v1.11.5</a></p>
+<p><strong>Docs</strong>
+- refine landing page readability (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/31cd30da2229055fb6966cd8a3c93be4ec00063c">31cd30d</a>)</p>
+<h2 id="v1114"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.11.4">v1.11.4</a><a class="headerlink" href="#v1114" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-06</p>
+<p>Changes since v1.11.3.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.11.3...v1.11.4">v1.11.3...v1.11.4</a></p>
+<p><strong>Docs</strong>
+- fix scrolling docs background (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/30e37280ce46da6d133e142229402c476934d6e4">30e3728</a>)</p>
+<h2 id="v1113"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.11.3">v1.11.3</a><a class="headerlink" href="#v1113" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-06</p>
+<p>Changes since v1.11.2.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.11.2...v1.11.3">v1.11.2...v1.11.3</a></p>
+<p><strong>Docs</strong>
+- fix homepage front matter indentation (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/280094d8321c53a2c7b8cf9c7b972fce385b6f49">280094d</a>)
+- customize MkDocs visual design (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e539d3aa995435f459b2ce519607c4b9ba84e5cc">e539d3a</a>)
+- enable mike version picker in MkDocs Material (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/17ec68d8237384b111ef829e657f4d3152e7753d">17ec68d</a>)
+- add llms.txt for LLM-friendly site discovery (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/989b40b579f9955463f61717ae7eb75d79c70e26">989b40b</a>)</p>
+<h2 id="v1112"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.11.2">v1.11.2</a><a class="headerlink" href="#v1112" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-03</p>
+<p>Changes since v1.11.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.11.1...v1.11.2">v1.11.1...v1.11.2</a></p>
+<p><strong>Docs</strong>
+- improve README quick start section (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/ce4f86983a4035c2a4433b49e1ccb0a5490643fb">ce4f869</a>)</p>
+<h2 id="v1111"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.11.1">v1.11.1</a><a class="headerlink" href="#v1111" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-03</p>
+<p>Changes since v1.11.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.11.0...v1.11.1">v1.11.0...v1.11.1</a></p>
+<p><strong>CI</strong>
+- add repo-token to setup-task to bypass rate limiting (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/105722ea1d5fa03d344dd55d48ba9f94caf8b3a5">105722e</a>)</p>
+<h2 id="v1110"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.11.0">v1.11.0</a><a class="headerlink" href="#v1110" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-03</p>
+<p>Changes since v1.10.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.10.1...v1.11.0">v1.10.1...v1.11.0</a></p>
+<p><strong>Features</strong>
+- publish JSON schemas for per-command --json output contract (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/496bf79385a4252ac8f026e2f9cd04a07bca2377">496bf79</a>)
+- publish changelog to docs site on each release (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/f0d1ec0445737d4b078b87a150a0d834f5ebec94">f0d1ec0</a>)</p>
+<p><strong>Tests</strong>
+- add coverage for output schema functions to satisfy patch gate (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/6307f897816c223fc979b968398cdb51cd3b878f">6307f89</a>)</p>
+<p><strong>CI</strong>
+- remove changelog push-to-main step from release workflow (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/6167767317f63ed9723ade6fed873ff159b781f0">6167767</a>)</p>
+<h2 id="v1101"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.10.1">v1.10.1</a><a class="headerlink" href="#v1101" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-03</p>
+<p>Changes since v1.10.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.10.0...v1.10.1">v1.10.0...v1.10.1</a></p>
+<p><strong>Fixes</strong>
+- ci: switch changelog to release-asset download, add CHANGELOG.md reference (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/f14f4989a5ca644c3bf30e54c868dfcdbbff58ca">f14f498</a>)</p>
+<p><strong>CI</strong>
+- remove unused os import and html-escape changelog fields (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/6286421b09ea9df55c41879f53bee34b34e770d5">6286421</a>)</p>
+<h2 id="v1100"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.10.0">v1.10.0</a><a class="headerlink" href="#v1100" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-03</p>
+<p>Changes since v1.9.2.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.9.2...v1.10.0">v1.9.2...v1.10.0</a></p>
+<p><strong>Features</strong>
+- publish changelog to docs site on each release (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/c55bbd7574ba29f38dc59c37ed5d08430a1b56f1">c55bbd7</a>)</p>
+<p><strong>Docs</strong>
+- generate missing ADR markdown exports for 038-040 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/b2468d148857b5a8a898bf8e5fef37e984d3e356">b2468d1</a>)</p>
+<h2 id="v192"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.9.2">v1.9.2</a><a class="headerlink" href="#v192" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-03</p>
+<p>Changes since v1.9.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.9.1...v1.9.2">v1.9.1...v1.9.2</a></p>
+<p><strong>Fixes</strong>
+- ci: drop byte-for-byte coverage report verify (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/20c9af4b266188e229c4041b15bd7e776cc8cca2">20c9af4</a>)
+- ci: vendor libfaketime tarball to eliminate network dependency in Docker build (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/b0d18e36819f7a51ea4c0a968fa47997d2079c1a">b0d18e3</a>)
+- ci: two-stage Dockerfile build + license apply in bootstrap (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/fe7d0d65dbf530cd38160ed3276ad90deef3727b">fe7d0d6</a>)
+- ci: address Copilot review comments on live-tests job (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/73b05a68b03bc130d46972d110f796644d3a4efa">73b05a6</a>)
+- ci: correct bootstrap script and switch to named volumes (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/5a24737434ad3b944fb719bf6e695d8f2986f696">5a24737</a>)</p>
+<p><strong>Docs</strong>
+- quality: refresh coverage artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/409cdf0fa7644ac4b15423e630143c87d0612793">409cdf0</a>)</p>
+<p><strong>CI</strong>
+- opt into Node.js 24 actions + move Codecov upload to live-tests (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/9f6c34a61cc3ef0a4c637c8059bec1e196f2b331">9f6c34a</a>)
+- remove coverage-report-policy job (superseded by live-tests) (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/c2c057d6f61ea7ffd0db3db1560061811920102e">c2c057d</a>)
+- add live integration test job with Bitbucket DC bootstrap (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/56eb25be2384e2cb21280c9ad71a26345c6843da">56eb25b</a>)</p>
+<h2 id="v191"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.9.1">v1.9.1</a><a class="headerlink" href="#v191" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-02</p>
+<p>Changes since v1.9.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.9.0...v1.9.1">v1.9.0...v1.9.1</a></p>
+<p><strong>Fixes</strong>
+- mcp: move set_build_status behind --yolo (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/4bebe4c40f553594485945777c0f09f1713a7bf6">4bebe4c</a>)</p>
+<h2 id="v190"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.9.0">v1.9.0</a><a class="headerlink" href="#v190" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-02</p>
+<p>Changes since v1.8.2.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.8.2...v1.9.0">v1.8.2...v1.9.0</a></p>
+<p><strong>Features</strong>
+- mcp: restrict serve to safe tools by default; add --yolo for full access (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/2d6cac137fb101946457052c2ef9f3a240152711">2d6cac1</a>)</p>
+<p><strong>Fixes</strong>
+- config: default bare hostnames to https:// in normalizeURL (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/a50a2af45c0910a05608c5a624ece84ee32a4a6b">a50a2af</a>)</p>
+<h2 id="v182"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.8.2">v1.8.2</a><a class="headerlink" href="#v182" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-02</p>
+<p>Changes since v1.8.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.8.1...v1.8.2">v1.8.1...v1.8.2</a></p>
+<p><strong>Refactors</strong>
+- dryrun: merge dryRunProfiles and dryRunPassthroughPaths into unified map (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/2076c3d59efc61f407aeee94fd17c842d4e2d5f0">2076c3d</a>)</p>
+<h2 id="v181"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.8.1">v1.8.1</a><a class="headerlink" href="#v181" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-02</p>
+<p>Changes since v1.8.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.8.0...v1.8.1">v1.8.0...v1.8.1</a></p>
+<p><strong>Chores</strong>
+- docs: remove outdated migration checklist (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/5b88d15eb019969ffe56fd91f5a56c48f8155c46">5b88d15</a>)</p>
+<h2 id="v180"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.8.0">v1.8.0</a><a class="headerlink" href="#v180" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-02</p>
+<p>Changes since v1.7.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.7.0...v1.8.0">v1.7.0...v1.8.0</a></p>
+<p><strong>Features</strong>
+- ai: add bb ai mcp and bb ai skill CLI commands (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e708036ee2e3a1cb8eea246dd576e5476985f4a9">e708036</a>)
+- ai: add internal/mcp package with 20 MCP tool specs (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/afcc85676361b89984986296491ed27394066243">afcc856</a>)
+- ai: add skills/bb/SKILL.md agent skill for coding sessions (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/b226ca7b8cea3c80ac3888e7befd8c20f1a26208">b226ca7</a>)</p>
+<p><strong>Docs</strong>
+- decisions: add ADRs 038-040 for bb ai subcommand, MCP server and skill distribution (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e96f894561e42239c7d45f11f4d08a38262ef354">e96f894</a>)</p>
+<p><strong>Chores</strong>
+- deps: add github.com/mark3labs/mcp-go v0.46.0 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/f931ed97618ba390cb52a2a7f11f4b04cb66c5a6">f931ed9</a>)</p>
+<h2 id="v170"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.7.0">v1.7.0</a><a class="headerlink" href="#v170" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-02</p>
+<p>Changes since v1.6.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.6.0...v1.7.0">v1.6.0...v1.7.0</a></p>
+<p><strong>Features</strong>
+- rich colored terminal output with lipgloss (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/73a122de17cc8f3cde0cef8a3400992a20709ea2">73a122d</a>)</p>
+<p><strong>Refactors</strong>
+- style: address Copilot PR review comments (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/61431ae6efa78cf609e197f9bc4bd93bedc4d93c">61431ae</a>)</p>
+<h2 id="v160"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.6.0">v1.6.0</a><a class="headerlink" href="#v160" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-02</p>
+<p>Changes since v1.5.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.5.0...v1.6.0">v1.5.0...v1.6.0</a></p>
+<p><strong>Features</strong>
+- cli: add agent notice to bb --help for issue reporting (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/a4f86e92fe5d8d5417bea7263c50f945c86a0ef8">a4f86e9</a>)</p>
+<p><strong>Fixes</strong>
+- cli: use American spelling 'behavior' for consistency (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/87a87bc9702fe5b666841b545207b57e14f3b223">87a87bc</a>)</p>
+<h2 id="v150"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.5.0">v1.5.0</a><a class="headerlink" href="#v150" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-04-02</p>
+<p>Changes since v1.4.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.4.1...v1.5.0">v1.4.1...v1.5.0</a></p>
+<p><strong>Features</strong>
+- pr: add pr build status subcommand (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/de7263d03f847b0c8f063b0dab5ceb7414ce2e64">de7263d</a>)
+- cli: expose --version flag via cobra Version field (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/135009206b759d8332b8592847c736c2f067f0fa">1350092</a>)</p>
+<p><strong>Fixes</strong>
+- multi: address PR review comments (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/44c76c071bd1e4334c9fc28539537f302427dc83">44c76c0</a>)
+- auth: token-url resolves per-user PAT URL when authenticated (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/13c5d24ecd31cec8262b9d5853a7ed74f8e7866a">13c5d24</a>)
+- config: resolve stored credentials across http/https schemes (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/f1f5bf76d681d61199de68d17bed226a4c7bd395">f1f5bf7</a>)
+- repo-clone: implement ssh→token→prompt auth fallback order (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/fb685f9e2150c66b7806e2e04fea8a1b9077dfe7">fb685f9</a>)</p>
+<p><strong>Docs</strong>
+- quality: refresh coverage artifacts after PR comment fixes (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/5be4af503ac822c2c3cfdbc1ddf641aa232d1005">5be4af5</a>)
+- quality: re-sync coverage artifacts after fresh live run (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/f9c29027f77613793633176f32e4b27fb15773c1">f9c2902</a>)
+- quality: refresh coverage report artifacts for issues #88 #90 #91 #92 #94 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/bfa888df825227f87516131885ef71eaf88690df">bfa888d</a>)</p>
+<p><strong>Chores</strong>
+- add AGENTS.md with rebase + quality-artifact instructions (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e781c6bf3c54e9e5d10113d05fdfaadd685d2870">e781c6b</a>)
+- docker: update dev environment with faketime support and postgres 17 (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/5355d57fe34afcaeb89189ff29a0ce84f116cd34">5355d57</a>)</p>
+<h2 id="v141"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.4.1">v1.4.1</a><a class="headerlink" href="#v141" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-30</p>
+<p>Changes since v1.4.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.4.0...v1.4.1">v1.4.0...v1.4.1</a></p>
+<p><strong>Fixes</strong>
+- address PR review feedback on repo list tests and docs (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/1d2d49546635bf84bcbcd992a73d6450209c3d14">1d2d495</a>)
+- remove hardcoded host fallback, make auth login host positional, cap repo list --limit as total (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e201db92e806100134062ef3fd451aa55f5d4057">e201db9</a>)</p>
+<p><strong>Docs</strong>
+- quality: sync coverage artifacts with current live run (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e53f3cbfce40d1c95d321266edc5f3f82098dbcc">e53f3cb</a>)
+- quality: refresh coverage artifacts after review fixes (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/151de6fc43f518611f17d2150660602ecf6bebff">151de6f</a>)</p>
+<h2 id="v140"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.4.0">v1.4.0</a><a class="headerlink" href="#v140" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-15</p>
+<p>Changes since v1.3.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.3.1...v1.4.0">v1.3.1...v1.4.0</a></p>
+<p><strong>Features</strong>
+- cli: add repo/project permissions show commands (issue #81) (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/de7674d8c91cdb91a566ba1679143351a03af82b">de7674d</a>)</p>
+<p><strong>Fixes</strong>
+- test: replace t.Context() with context.Background() for Go 1.22 compat (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/ca51e50b44b3e2a38faff8e5d52a713c10ae53a7">ca51e50</a>)
+- review: address PR #83 Copilot review comments (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/04ed3d66457d9e2dbd2d518300f3c9dd23fe3be2">04ed3d6</a>)</p>
+<p><strong>Docs</strong>
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/ea2e36ce3e648598db71d7fb7f899f009ee8d9fe">ea2e36c</a>)
+- quality: refresh coverage report and command reference artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/c7f056809b1a5d3eff9ead5d69deb8773f1db58d">c7f0568</a>)</p>
+<h2 id="v131"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.3.1">v1.3.1</a><a class="headerlink" href="#v131" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-14</p>
+<p>Changes since v1.3.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.3.0...v1.3.1">v1.3.0...v1.3.1</a></p>
+<p><strong>Fixes</strong>
+- test: stabilize dry-run tests in CI (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/3a6d3c974f3518215075ca97a24c3e34577f5128">3a6d3c9</a>)
+- test: support Go 1.22 in permission checker tests (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/7997b990939e14ace0d60e01d249f267f861dd19">7997b99</a>)
+- cli: address permission precheck review feedback (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/8afb652501c0a5895756dd80e1dc517bec3df06b">8afb652</a>)
+- cli: surface dry-run auth failures before planning (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/8f9b3cc7a7b0fb500a6922785d56754ddf4179a2">8f9b3cc</a>)</p>
+<p><strong>Docs</strong>
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/62faaa56c0a539953e933edaa3c295fe7914538c">62faaa5</a>)
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/285a892daf7dcda59d3fa3eb00c392a05f4ccae4">285a892</a>)</p>
+<h2 id="v130"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.3.0">v1.3.0</a><a class="headerlink" href="#v130" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-14</p>
+<p>Changes since v1.2.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.2.0...v1.3.0">v1.2.0...v1.3.0</a></p>
+<p><strong>Features</strong>
+- cli: add gh-style browse and repo clone parity for Bitbucket (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/0e74130012ee3ce2d29279404e06025a30e3eb90">0e74130</a>)</p>
+<p><strong>Fixes</strong>
+- cli: address review comments for browse and clone commands (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/133252b94437cf810569f0dd69195e57f51f38be">133252b</a>)</p>
+<p><strong>Docs</strong>
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/0b32584e33d7218e2b94053f07b34f675dd779cd">0b32584</a>)
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/5245340f1a8b41e0cd0c67c7efdc4ae065e22240">5245340</a>)</p>
+<h2 id="v120"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.2.0">v1.2.0</a><a class="headerlink" href="#v120" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-13</p>
+<p>Changes since v1.1.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.1.1...v1.2.0">v1.1.1...v1.2.0</a></p>
+<p><strong>Features</strong>
+- auth: add whoami identity and PAT onboarding (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/f56b8d358fa97d6bb2851ca38c4b60c32f22abb8">f56b8d3</a>)</p>
+<p><strong>Docs</strong>
+- quality: refresh coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/09f0a6c9ecd5a69e4e7499038a07a748dabe45ad">09f0a6c</a>)
+- quality: refresh coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/67afad41cab5fa9a22b43e2267c3f690a4b4fd0a">67afad4</a>)</p>
+<h2 id="v111"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.1.1">v1.1.1</a><a class="headerlink" href="#v111" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-13</p>
+<p>Changes since v1.1.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.1.0...v1.1.1">v1.1.0...v1.1.1</a></p>
+<p><strong>Docs</strong>
+- readme: reposition as adopter-focused landing page (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/1890372d3241bf93c4b3a80bf0b932886c42ec29">1890372</a>)
+- site: address PR feedback on auth examples and precedence (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/de93894f98ecfcaa28ef2a5157d94d151346ca19">de93894</a>)
+- site: add repo discovery and server switching guidance (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/122ae89d03906199e88c11a05769799789d4cbec">122ae89</a>)</p>
+<h2 id="v110"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.1.0">v1.1.0</a><a class="headerlink" href="#v110" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-13</p>
+<p>Changes since v1.0.2.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.0.2...v1.1.0">v1.0.2...v1.1.0</a></p>
+<p><strong>Features</strong>
+- docs: restructure docs and automate generated references (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/c86b87a8ac5a184932418e3c0c6232a1b784a5c0">c86b87a</a>)</p>
+<p><strong>Docs</strong>
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/1d3cd039698af83a802e2acaad03d76b2fe0054e">1d3cd03</a>)
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/51b80d587055216f81b4a222993acc8f704e543d">51b80d5</a>)</p>
+<h2 id="v102"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.0.2">v1.0.2</a><a class="headerlink" href="#v102" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-13</p>
+<p>Changes since v1.0.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.0.1...v1.0.2">v1.0.1...v1.0.2</a></p>
+<p><strong>Docs</strong>
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/2548a9f0253f8bd312335edd484e3b89ecd3a2d7">2548a9f</a>)</p>
+<p><strong>CI</strong>
+- codecov: report scoped coverage only (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/c7d7bb3d7c7faab03a06a00be25d8681f76abe27">c7d7bb3</a>)</p>
+<h2 id="v101"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.0.1">v1.0.1</a><a class="headerlink" href="#v101" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-13</p>
+<p>Changes since v1.0.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v1.0.0...v1.0.1">v1.0.0...v1.0.1</a></p>
+<p><strong>CI</strong>
+- release: install docs tooling before docs deploy step (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/5452c0bf8d491070fc08d41ce272e67685011b2f">5452c0b</a>)</p>
+<h2 id="v100"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v1.0.0">v1.0.0</a><a class="headerlink" href="#v100" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-13</p>
+<p>Changes since v0.3.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v0.3.0...v1.0.0">v0.3.0...v1.0.0</a></p>
+<p><strong>⚠ Breaking Changes</strong>
+- rename public bbsc surface to bb (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/10463c7e174ec49b41e3b79d0db80cc464f979aa">10463c7</a>) — switch CLI identity to bb with BB_* env variables, bb.machine v2 envelope, bb.io/v1alpha1 bulk API identifiers, and bb release artifacts.</p>
+<p><strong>Features</strong>
+- docs: add versioned mkdocs foundation with uv (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/f925f86cf0c5c2c48626d92ed4df8007e5f9655a">f925f86</a>)
+- cli: rename public bbsc surface to bb (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/10463c7e174ec49b41e3b79d0db80cc464f979aa">10463c7</a>)</p>
+<p><strong>Docs</strong>
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/9e9400e4f43ae64439733d61d8c209d78fa851e9">9e9400e</a>)</p>
+<p><strong>CI</strong>
+- hooks: run docs validation before coverage verify (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/ee02b63f6343b6977fcac853d3c03bc0f07f58ad">ee02b63</a>)
+- docs: add bootstrap + pre-push mkdocs validation (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/018cb69944e7e9bdff6b0da737781927ea953e90">018cb69</a>)</p>
+<h2 id="v030"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v0.3.0">v0.3.0</a><a class="headerlink" href="#v030" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-12</p>
+<p>Changes since v0.2.1.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v0.2.1...v0.3.0">v0.2.1...v0.3.0</a></p>
+<p><strong>Features</strong>
+- cli: version machine-mode JSON output envelope (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e90099300ed1bd456f87337b20f02fbd24d9cc5d">e900993</a>)</p>
+<p><strong>Refactors</strong>
+- cli: centralize JSON envelope writer contract (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/1e6c5c064711b098f42f8c54958a2b49cc3f38fa">1e6c5c0</a>)</p>
+<p><strong>Docs</strong>
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/ef45ac1ae5ef9d932c3d11f34c0ecd6823e80682">ef45ac1</a>)
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/91aab378446c3d65fbd53b05132782e59c9c459d">91aab37</a>)
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/4dc078d2ae26db11d223e35d04aa13eb95bcf859">4dc078d</a>)
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/52d8deeedcf38aae5a9f1c2ad116991f2b39e90b">52d8dee</a>)</p>
+<h2 id="v021"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v0.2.1">v0.2.1</a><a class="headerlink" href="#v021" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-12</p>
+<p>Changes since v0.2.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v0.2.0...v0.2.1">v0.2.0...v0.2.1</a></p>
+<p><strong>Docs</strong>
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e4ca425faa36cf357973d1ff64d4ebd760d03b01">e4ca425</a>)
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/10d58af1b2ac9eeb4ef62e1e359808cf1e56ee8b">10d58af</a>)
+- openapi: record requiredApprovers payload deviation (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/2321d88d21d664bba2726c990af8f3e67f34b664">2321d88</a>)</p>
+<h2 id="v020"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v0.2.0">v0.2.0</a><a class="headerlink" href="#v020" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-12</p>
+<p>Changes since v0.1.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v0.1.0...v0.2.0">v0.1.0...v0.2.0</a></p>
+<p><strong>Features</strong>
+- cli: expand stateful dry-run coverage (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/0be9363c53e1f571ddb65281285bfb459d92aab5">0be9363</a>)
+- cli: add global dry-run planning previews for server mutations (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/53d15d36c25006473d34d590b87603174bbc1509">53d15d3</a>)</p>
+<p><strong>Fixes</strong>
+- cli: address dry-run review feedback (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/b294681562934e5c6b8ff686a56929d593360fef">b294681</a>)</p>
+<p><strong>Docs</strong>
+- quality: refresh committed coverage artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/dec36d03e83cc3bc3e6062b7747fcd35bbcb2721">dec36d0</a>)</p>
+<h2 id="v010"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v0.1.0">v0.1.0</a><a class="headerlink" href="#v010" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-11</p>
+<p>Changes since v0.0.4.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-server-cli/compare/v0.0.4...v0.1.0">v0.0.4...v0.1.0</a></p>
+<p><strong>Features</strong>
+- ci: automate main-branch release flow (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/246c641549c1d89546425168c3db128f86f5fb6a">246c641</a>)
+- cli: add server switching and git context inference (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/5e3e445b6d55f9ffa7fe44a87f778739a1df327c">5e3e445</a>)
+- bulk: add runtime JSON schema validation for bulk plan and apply (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/8478e89145e41f7cd3f494e21e4e4c693252e0be">8478e89</a>)
+- diagnostics: add structured safe logging controls (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/1af91e5f0b177b5f3c921919f90bd1d81f2c678f">1af91e5</a>)
+- cli: modularize root command construction (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/32be3aed8ac8899f8c82b30fc18b2855e59e1c09">32be3ae</a>)</p>
+<p><strong>Fixes</strong>
+- cli: address PR review feedback and document context inference (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/ebd1c35efd490f3b40fb1067dd9f316cd8010bea">ebd1c35</a>)
+- quality-report: align patch coverage with line-level overlap semantics (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/e093e7b57b3c553f1f6a0b0e6d0bdce0b4e10465">e093e7b</a>)
+- config: bound dotenv lookup and harden bulk/live assertions (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/f417f270bc86e68f2f07db1bb84a9800d0291b87">f417f27</a>)
+- diagnostics: address PR review feedback (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/66e80bc5b09ea81689c8f09d2c6ad43b336cc67f">66e80bc</a>)
+- cli: guard auth command dependencies (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/3c3013e616aa97a793bf909a077c00e24ebf2fbc">3c3013e</a>)</p>
+<p><strong>Docs</strong>
+- quality: refresh committed coverage report artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/7178a4d5d92538e57fddeb594cf4f4f3cf4d70f4">7178a4d</a>)
+- quality: refresh report after strict patch coverage alignment (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/bf7f31a25f885f508b4014d70ae0265b5bc74b1f">bf7f31a</a>)
+- quality: update coverage report for bulk feature (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/47188ec0e89940721f695d439978d1c85f7fe569">47188ec</a>)
+- quality: refresh coverage report after review fixes (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/eef5d76cea9c5fd1642947c10202d6e0cffd9243">eef5d76</a>)</p>
+<p><strong>Tests</strong>
+- coverage: raise bulk patch coverage above threshold (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/9b5fa0b18fae1266210f0e28df96a91336ee9c54">9b5fa0b</a>)
+- config: make dotenv tests hermetic (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/d21e7d589c409f2232428eae37c80773576be7de">d21e7d5</a>)</p>
+<p><strong>Chores</strong>
+- quality: refresh committed coverage report (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/89059128458a2bf82808a45412a5cbe8d717bd09">8905912</a>)
+- quality: refresh coverage artifacts after auth fix (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/d2b166aeb63a7d29785eced5a55a65a774d30aec">d2b166a</a>)
+- quality: refresh coverage artifacts (<a href="https://github.com/vriesdemichael/bitbucket-server-cli/commit/8a389e2a9bf6c9dad9807a58539fc0a2c781d83b">8a389e2</a>)</p>
+<h2 id="v004"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v0.0.4">v0.0.4</a><a class="headerlink" href="#v004" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-06</p>
+<p>Changes since v0.0.3.</p>
+<p><strong>Features</strong>
+- feat: add search command group for repos, commits, and prs
+- feat(transport): add configurable TLS and retry policy controls
+- feat(test): implement network isolation for unit testing
+- feat(reposettings): implement robust fallback for requiredApprovers payload
+- feat(governance): harden governance commands and standardize error handling</p>
+<p><strong>Fixes</strong>
+- fix(codecov): scope default status and keep raw comparator
+- fix(ci): quote workflow step name with colon
+- fix(coverage): address PR review on profile ranges and CI guards
+- fix(test): align ADR with project standards and finalize isolation
+- fix(governance): address remaining PR review comments
+- fix(governance): resolve regressions and satisfy coverage gate</p>
+<p><strong>Docs</strong>
+- docs(quality): refresh committed coverage report after linear rebase
+- docs(quality): update coverage report after addressing review comments
+- docs(quality): update coverage report for requiredApprovers fallback</p>
+<p><strong>Tests</strong>
+- test(network): add safe transport coverage and refresh report</p>
+<p><strong>CI</strong>
+- true
+- ci(coverage): add committed combined codecov profiles and thresholds</p>
+<p><strong>Chores</strong>
+- chore(codecov): add components and tighten generated exclusions
+- chore(coverage): refresh committed artifacts for codecov config update
+- chore(coverage): refresh committed coverage artifacts
+- chore(workflow): enforce linear PR history and deterministic rebase flow</p>
+<h2 id="v003"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v0.0.3">v0.0.3</a><a class="headerlink" href="#v003" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-05</p>
+<p>Changes since v0.0.2.</p>
+<p><strong>Features</strong>
+- feat: implement governance commands (permissions, hooks, reviewers, PR settings)
+- feat: implement CLI commands for project, repo, browse, and commit/ref
+- feat(branch): add branch lifecycle and restriction commands
+- feat(pr): implement lifecycle, review, and task operations</p>
+<p><strong>Fixes</strong>
+- fix: address PR review comments
+- fix: address PR review on branch restrictions
+- fix(pr): address review feedback on validation and coverage gating</p>
+<p><strong>Tests</strong>
+- test(branch): raise coverage to satisfy policy gates</p>
+<p><strong>CI</strong>
+- true</p>
+<p><strong>Chores</strong>
+- chore: update coverage report artifact
+- chore: refresh coverage report artifact
+- chore(quality): enforce global combined and patch coverage gates</p>
+<h2 id="v002"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v0.0.2">v0.0.2</a><a class="headerlink" href="#v002" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-03-02</p>
+<p>Changes since v0.0.1.</p>
+<p><strong>Features</strong>
+- feat(release): publish cross-platform binaries with checksums and provenance
+- feat(cli): implement pr list and remove issue placeholder</p>
+<p><strong>Fixes</strong>
+- fix(release): address PR review feedback
+- fix: address PR review comments</p>
+<p><strong>Tests</strong>
+- test: expand behavior coverage and unify cli setup wiring</p>
+<p><strong>CI</strong>
+- true</p>
+<p><strong>Chores</strong>
+- chore(quality): refresh committed coverage report</p>
+<h2 id="v001"><a href="https://github.com/vriesdemichael/bitbucket-server-cli/releases/tag/v0.0.1">v0.0.1</a><a class="headerlink" href="#v001" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-02-27</p>
+<p>Initial release changes.</p>
+<p><strong>Features</strong>
+- feat(ci): add GitHub Actions CI and release workflows
+- feat: add tag, build status, and insights commands
+- feat(comment): unify commit and PR comment operations
+- feat: implement issues #1 and #2 repo settings and diff parity
+- feat: establish go-first scaffold with openapi generation and live parity</p>
+<p><strong>CI</strong>
+- true
+- ci: add CI Complete aggregate check and explicit unit test job</p>
+<p><strong>Chores</strong>
+- chore: restore upstream vendored openapi artifact
+- chore: scaffold live-bitbucket cli repo with migration plan</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.top", "navigation.tracking", "navigation.sections", "navigation.expand", "content.code.copy", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
