@@ -1,0 +1,47 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.auth.server.use.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb auth server use --json`. Data confirms the new default server.",
+  "properties": {
+    "data": {
+      "additionalProperties": false,
+      "properties": {
+        "default_host": {
+          "description": "The configured default Bitbucket Server host.",
+          "type": "string"
+        },
+        "status": {
+          "const": "ok"
+        }
+      },
+      "required": [
+        "status",
+        "default_host"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb auth server use output",
+  "type": "object"
+}
