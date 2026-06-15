@@ -1,6 +1,9 @@
 # Template consumed by `nfpm package` during the Release workflow.
 # nfpm expands ${VAR} at runtime; the workflow exports PKG_ARCH, PKG_VERSION
 # and PKG_BINARY for each Linux architecture before invoking nfpm.
+#
+# Top-level fields (arch, version, ...) are always expanded, but env vars in a
+# `contents` entry are only expanded when that entry sets `expand: true`.
 name: bb
 arch: ${PKG_ARCH}
 platform: linux
@@ -15,3 +18,4 @@ license: Apache-2.0
 contents:
   - src: ${PKG_BINARY}
     dst: /usr/bin/bb
+    expand: true
