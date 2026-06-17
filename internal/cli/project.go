@@ -13,6 +13,7 @@ import (
 
 func newProjectCommand(options *rootOptions) *cobra.Command {
 	var limit int
+	var start int
 
 	projectCmd := &cobra.Command{
 		Use:   "project",
@@ -20,6 +21,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 	}
 
 	projectCmd.PersistentFlags().IntVar(&limit, "limit", 25, "Page size for list operations")
+	projectCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var listName string
 	listCmd := &cobra.Command{
@@ -34,6 +36,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 			service := projectservice.NewService(client)
 			projects, err := service.List(cmd.Context(), projectservice.ListOptions{
 				Limit: limit,
+				Start: start,
 				Name:  listName,
 			})
 			if err != nil {

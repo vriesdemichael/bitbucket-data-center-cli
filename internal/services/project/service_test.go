@@ -346,3 +346,55 @@ func TestProjectServicePermissionsMapStatusError(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+
+func TestProjectServicePaginationLimit(t *testing.T) {
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		calls++
+		if calls == 1 {
+			if r.URL.Query().Get("start") != "1" || r.URL.Query().Get("limit") != "3" {
+				t.Errorf("expected start=1 limit=3 on call 1, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
+			}
+			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":3,"values":[{"key":"P1"},{"key":"P2"}]}`))
+			return
+		}
+		if r.URL.Query().Get("start") != "3" || r.URL.Query().Get("limit") != "1" {
+			t.Errorf("expected start=3 limit=1 on call 2, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
+		}
+		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"key":"P3"}]}`))
+	}))
+	defer server.Close()
+
+	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	service := NewService(client)
+
+	projects, err := service.List(context.Background(), ListOptions{Limit: 3, Start: 1})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(projects) != 3 {
+		t.Errorf("expected 3 projects, got %d", len(projects))
+	}
+	if calls != 2 {
+		t.Errorf("expected 2 page requests, got %d", calls)
+	}
+}
+
+func TestProjectServicePaginationEdgeCases(t *testing.T) {
+	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Query().Get("start") != "0" {
+			t.Errorf("expected start=0, got start=%s", r.URL.Query().Get("start"))
+		}
+		_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":4,"values":[{"key":"P1"},{"key":"P2"},{"key":"P3"},{"key":"P4"}]}`))
+	})
+
+	projects, err := service.List(context.Background(), ListOptions{Start: -1, Limit: 3})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(projects) != 3 {
+		t.Errorf("expected 3 projects, got %d", len(projects))
+	}
+}

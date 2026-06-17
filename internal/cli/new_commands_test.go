@@ -52,6 +52,8 @@ func TestNewCLICommandsMock(t *testing.T) {
 			w.WriteHeader(http.StatusNoContent)
 
 		// Webhooks
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks":
+			_, _ = w.Write([]byte(`{"values":[{"id":1,"name":"hook1","url":"http://test","active":true,"events":["repo:refs_changed"]},{"id":2,"name":"hook2","url":"http://test2","active":false,"events":["repo:modified"]}]}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/1":
 			_, _ = w.Write([]byte(`{"id":1,"name":"hook1"}`))
 		case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/1":
@@ -240,6 +242,59 @@ func TestNewCLICommandsMock(t *testing.T) {
 	if !strings.Contains(out, "ok") {
 		t.Fatalf("unexpected webhook stats summary output: %s", out)
 	}
+
+	out, err = executeTestCLI(t, "webhook", "list")
+	if err != nil {
+		t.Fatalf("webhook list failed: %v", err)
+	}
+	if !strings.Contains(out, "hook1") || !strings.Contains(out, "hook2") {
+		t.Fatalf("unexpected webhook list output: %s", out)
+	}
+
+	// Test webhook list pagination
+	out, err = executeTestCLI(t, "webhook", "list", "--limit", "1", "--start", "0")
+	if err != nil {
+		t.Fatalf("webhook list pagination failed: %v", err)
+	}
+	if !strings.Contains(out, "hook1") || strings.Contains(out, "hook2") {
+		t.Fatalf("unexpected webhook list pagination output: %s", out)
+	}
+
+	out, err = executeTestCLI(t, "webhook", "list", "--limit", "1", "--start", "1")
+	if err != nil {
+		t.Fatalf("webhook list pagination offset failed: %v", err)
+	}
+	if strings.Contains(out, "hook1") || !strings.Contains(out, "hook2") {
+		t.Fatalf("unexpected webhook list pagination offset output: %s", out)
+	}
+
+	// Test webhook list pagination edge cases
+	out, err = executeTestCLI(t, "webhook", "list", "--limit", "1", "--start", "-1")
+	if err != nil {
+		t.Fatalf("webhook list pagination with negative start failed: %v", err)
+	}
+	if !strings.Contains(out, "hook1") || strings.Contains(out, "hook2") {
+		t.Fatalf("unexpected webhook list pagination negative start output: %s", out)
+	}
+
+	out, err = executeTestCLI(t, "webhook", "list", "--limit", "1", "--start", "99")
+	if err != nil {
+		t.Fatalf("webhook list pagination out of bounds failed: %v", err)
+	}
+	if !strings.Contains(out, "No webhooks found") {
+		t.Fatalf("unexpected webhook list pagination out of bounds output: %s", out)
+	}
+
+	// Test webhook list error paths
+	_, err = executeTestCLI(t, "webhook", "list", "--repo", "PRJ/missing")
+	if err == nil {
+		t.Fatal("expected error when webhook list fails on non-existent repo")
+	}
+
+	_, err = executeTestCLI(t, "webhook", "list", "--repo", "invalid-repo-format")
+	if err == nil {
+		t.Fatal("expected error when resolveRepositorySettingsReference fails")
+	}
 }
 
 func TestNewCLICommandsDryRunAndJSON(t *testing.T) {
@@ -287,6 +342,8 @@ func TestNewCLICommandsDryRunAndJSON(t *testing.T) {
 			w.WriteHeader(http.StatusNoContent)
 
 		// Webhooks
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks":
+			_, _ = w.Write([]byte(`{"values":[{"id":1,"name":"hook1","url":"http://test","active":true,"events":["repo:refs_changed"]},{"id":2,"name":"hook2","url":"http://test2","active":false,"events":["repo:modified"]}]}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/1":
 			_, _ = w.Write([]byte(`{"id":1,"name":"hook1"}`))
 		case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/1":
@@ -355,6 +412,7 @@ func TestNewCLICommandsDryRunAndJSON(t *testing.T) {
 		{"webhook", "test", "1", "--json"},
 		{"webhook", "stats", "1", "--json"},
 		{"webhook", "stats", "1", "--summary", "--json"},
+		{"webhook", "list", "--json"},
 	}
 	for _, args := range jsonRuns {
 		out, err := executeTestCLI(t, args...)

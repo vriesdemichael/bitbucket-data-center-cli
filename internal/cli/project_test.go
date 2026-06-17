@@ -12,7 +12,13 @@ func TestProjectCLICommandsMock(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"key":"PRJ","name":"Project"}]}`))
+			limit := r.URL.Query().Get("limit")
+			start := r.URL.Query().Get("start")
+			if limit == "1" && start == "2" {
+				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"key":"PRJ-paginated","name":"Project Paginated"}]}`))
+			} else {
+				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"key":"PRJ","name":"Project"}]}`))
+			}
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ":
 			_, _ = w.Write([]byte(`{"key":"PRJ","name":"Project"}`))
 		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects":
@@ -38,6 +44,14 @@ func TestProjectCLICommandsMock(t *testing.T) {
 	}
 	if !strings.Contains(out, "PRJ") || !strings.Contains(out, "Project") {
 		t.Fatalf("unexpected list output: %s", out)
+	}
+
+	out, err = executeTestCLI(t, "project", "list", "--limit", "1", "--start", "2")
+	if err != nil {
+		t.Fatalf("list with pagination flags failed: %v", err)
+	}
+	if !strings.Contains(out, "PRJ-paginated") {
+		t.Fatalf("unexpected list with pagination flags output: %s", out)
 	}
 
 	out, err = executeTestCLI(t, "--json", "project", "list")

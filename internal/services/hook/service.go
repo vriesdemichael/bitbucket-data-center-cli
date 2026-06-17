@@ -19,21 +19,29 @@ func NewService(client *openapigenerated.ClientWithResponses) *Service {
 	return &Service{client: client}
 }
 
-func (service *Service) ListProjectHooks(ctx context.Context, projectKey string, limit int) ([]openapigenerated.RestRepositoryHook, error) {
+func (service *Service) ListProjectHooks(ctx context.Context, projectKey string, limit int, start int) ([]openapigenerated.RestRepositoryHook, error) {
 	if strings.TrimSpace(projectKey) == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
 	if limit <= 0 {
 		limit = 100
 	}
+	if start < 0 {
+		start = 0
+	}
 
-	start := float32(0)
-	pageLimit := float32(limit)
+	startVal := float32(start)
 	results := make([]openapigenerated.RestRepositoryHook, 0)
 
 	for {
+		remaining := limit - len(results)
+		if remaining <= 0 {
+			break
+		}
+
+		pageLimit := float32(remaining)
 		response, err := service.client.GetRepositoryHooksWithResponse(ctx, projectKey, &openapigenerated.GetRepositoryHooksParams{
-			Start: &start,
+			Start: &startVal,
 			Limit: &pageLimit,
 		})
 		if err != nil {
@@ -49,33 +57,47 @@ func (service *Service) ListProjectHooks(ctx context.Context, projectKey string,
 
 		results = append(results, *response.ApplicationjsonCharsetUTF8200.Values...)
 
+		if len(results) >= limit {
+			break
+		}
 		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
 			break
 		}
 		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
 			break
 		}
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
+		startVal = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
 	}
 
+	if len(results) > limit {
+		results = results[:limit]
+	}
 	return results, nil
 }
 
-func (service *Service) ListRepositoryHooks(ctx context.Context, projectKey, repositorySlug string, limit int) ([]openapigenerated.RestRepositoryHook, error) {
+func (service *Service) ListRepositoryHooks(ctx context.Context, projectKey, repositorySlug string, limit int, start int) ([]openapigenerated.RestRepositoryHook, error) {
 	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repositorySlug) == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "project key and repository slug are required", nil)
 	}
 	if limit <= 0 {
 		limit = 100
 	}
+	if start < 0 {
+		start = 0
+	}
 
-	start := float32(0)
-	pageLimit := float32(limit)
+	startVal := float32(start)
 	results := make([]openapigenerated.RestRepositoryHook, 0)
 
 	for {
+		remaining := limit - len(results)
+		if remaining <= 0 {
+			break
+		}
+
+		pageLimit := float32(remaining)
 		response, err := service.client.GetRepositoryHooks1WithResponse(ctx, projectKey, repositorySlug, &openapigenerated.GetRepositoryHooks1Params{
-			Start: &start,
+			Start: &startVal,
 			Limit: &pageLimit,
 		})
 		if err != nil {
@@ -91,15 +113,21 @@ func (service *Service) ListRepositoryHooks(ctx context.Context, projectKey, rep
 
 		results = append(results, *response.ApplicationjsonCharsetUTF8200.Values...)
 
+		if len(results) >= limit {
+			break
+		}
 		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
 			break
 		}
 		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
 			break
 		}
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
+		startVal = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
 	}
 
+	if len(results) > limit {
+		results = results[:limit]
+	}
 	return results, nil
 }
 

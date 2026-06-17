@@ -210,7 +210,93 @@ func newWebhookCommand(options *rootOptions) *cobra.Command {
 	}
 	statsCmd.Flags().BoolVar(&summary, "summary", false, "Get statistics summary instead of detailed stats")
 
+	var listLimit int
+	var listStart int
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List repository webhooks",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolveRepositorySettingsReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			service := reposettings.NewService(client)
+			res, err := service.ListRepositoryWebhooks(cmd.Context(), repo)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), res.Payload)
+			}
+
+			var webhooks []WebhookModel
+			if res.Payload != nil {
+				raw, err := json.Marshal(res.Payload)
+				if err == nil {
+					_ = json.Unmarshal(raw, &webhooks)
+					if len(webhooks) == 0 {
+						var paginated struct {
+							Values []WebhookModel `json:"values"`
+						}
+						_ = json.Unmarshal(raw, &paginated)
+						webhooks = paginated.Values
+					}
+				}
+			}
+
+			if listStart < 0 {
+				listStart = 0
+			}
+			if listStart >= len(webhooks) {
+				webhooks = []WebhookModel{}
+			} else {
+				end := listStart + listLimit
+				if end > len(webhooks) {
+					end = len(webhooks)
+				}
+				webhooks = webhooks[listStart:end]
+			}
+
+			if len(webhooks) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No webhooks found"))
+				return nil
+			}
+
+			rows := make([][]string, len(webhooks))
+			for i, h := range webhooks {
+				idStr := ""
+				if h.Id != nil {
+					idStr = fmt.Sprintf("%d", *h.Id)
+				}
+				nameStr := safeString(h.Name)
+				urlStr := safeString(h.Url)
+				activeStr := "false"
+				if h.Active != nil && *h.Active {
+					activeStr = "true"
+				}
+				eventsStr := strings.Join(h.Events, ", ")
+				rows[i] = []string{
+					style.Secondary.Render(idStr),
+					nameStr,
+					urlStr,
+					activeStr,
+					eventsStr,
+				}
+			}
+			style.WriteTable(cmd.OutOrStdout(), rows)
+			return nil
+		},
+	}
+	listCmd.Flags().IntVar(&listLimit, "limit", 25, "Maximum number of webhooks to list")
+	listCmd.Flags().IntVar(&listStart, "start", 0, "Start index for webhooks listing")
+
 	webhookCmd.AddCommand(getCmd)
+	webhookCmd.AddCommand(listCmd)
 	webhookCmd.AddCommand(updateCmd)
 	webhookCmd.AddCommand(testCmd)
 	webhookCmd.AddCommand(statsCmd)

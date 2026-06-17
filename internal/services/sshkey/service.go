@@ -19,17 +19,25 @@ func NewService(client *openapigenerated.ClientWithResponses) *Service {
 	return &Service{client: client}
 }
 
-func (s *Service) ListUserKeys(ctx context.Context, limit int) ([]openapigenerated.RestSshKey, error) {
+func (s *Service) ListUserKeys(ctx context.Context, limit int, start int) ([]openapigenerated.RestSshKey, error) {
 	if limit <= 0 {
 		limit = 25
 	}
-	start := float32(0)
-	pageLimit := float32(limit)
+	if start < 0 {
+		start = 0
+	}
+	startVal := float32(start)
 	results := make([]openapigenerated.RestSshKey, 0)
 
 	for {
+		remaining := limit - len(results)
+		if remaining <= 0 {
+			break
+		}
+
+		pageLimit := float32(remaining)
 		params := &openapigenerated.GetSshKeysParams{
-			Start: &start,
+			Start: &startVal,
 			Limit: &pageLimit,
 		}
 		resp, err := s.client.GetSshKeysWithResponse(ctx, params)
@@ -48,7 +56,7 @@ func (s *Service) ListUserKeys(ctx context.Context, limit int) ([]openapigenerat
 		if len(results) >= limit || resp.ApplicationjsonCharsetUTF8200.IsLastPage == nil || *resp.ApplicationjsonCharsetUTF8200.IsLastPage || resp.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
 			break
 		}
-		start = float32(*resp.ApplicationjsonCharsetUTF8200.NextPageStart)
+		startVal = float32(*resp.ApplicationjsonCharsetUTF8200.NextPageStart)
 	}
 
 	if len(results) > limit {

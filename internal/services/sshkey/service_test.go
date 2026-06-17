@@ -42,7 +42,7 @@ func TestSshKeyServiceUserKeys(t *testing.T) {
 	ctx := context.Background()
 
 	// List
-	list, err := service.ListUserKeys(ctx, 10)
+	list, err := service.ListUserKeys(ctx, 10, 0)
 	if err != nil || len(list) != 1 || *list[0].Id != 123 {
 		t.Fatalf("expected user key list success, got len=%d err=%v", len(list), err)
 	}
@@ -199,15 +199,39 @@ func TestSshKeyServicePagination(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		calls++
 		if calls == 1 {
-			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"id":123,"label":"Key1"}]}`))
+			if r.URL.Query().Get("start") != "1" || r.URL.Query().Get("limit") != "3" {
+				t.Errorf("expected start=1 limit=3 on call 1, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
+			}
+			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":3,"values":[{"id":123,"label":"Key1"},{"id":124,"label":"Key2"}]}`))
 			return
 		}
-		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":456,"label":"Key2"}]}`))
+		if r.URL.Query().Get("start") != "3" || r.URL.Query().Get("limit") != "1" {
+			t.Errorf("expected start=3 limit=1 on call 2, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
+		}
+		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":125,"label":"Key3"}]}`))
 	})
 
-	keys, err := service.ListUserKeys(context.Background(), 10)
-	if err != nil || len(keys) != 2 {
-		t.Fatalf("expected paginated list, len=%d err=%v", len(keys), err)
+	keys, err := service.ListUserKeys(context.Background(), 3, 1)
+	if err != nil || len(keys) != 3 {
+		t.Fatalf("expected paginated list of 3 elements, len=%d err=%v", len(keys), err)
+	}
+	if calls != 2 {
+		t.Errorf("expected 2 page requests, got %d", calls)
+	}
+}
+
+func TestSshKeyServicePaginationEdgeCases(t *testing.T) {
+	service := newSshKeyTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Query().Get("start") != "0" {
+			t.Errorf("expected start=0, got start=%s", r.URL.Query().Get("start"))
+		}
+		_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":4,"values":[{"id":123,"label":"Key1"},{"id":124,"label":"Key2"},{"id":125,"label":"Key3"},{"id":126,"label":"Key4"}]}`))
+	})
+
+	keys, err := service.ListUserKeys(context.Background(), 3, -1)
+	if err != nil || len(keys) != 3 {
+		t.Fatalf("expected paginated list of 3 elements, len=%d err=%v", len(keys), err)
 	}
 }
 
@@ -219,7 +243,7 @@ func TestSshKeyServiceTransientErrors(t *testing.T) {
 
 	ctx := context.Background()
 
-	if _, err := service.ListUserKeys(ctx, 10); err == nil || apperrors.ExitCode(err) != 3 {
+	if _, err := service.ListUserKeys(ctx, 10, 0); err == nil || apperrors.ExitCode(err) != 3 {
 		t.Fatalf("expected unauthorized error, got %v", err)
 	}
 	if _, err := service.AddUserKey(ctx, "label", "ssh-rsa AAA"); err == nil || apperrors.ExitCode(err) != 3 {
@@ -259,7 +283,7 @@ func TestSshKeyServiceNetworkErrors(t *testing.T) {
 	ctx := context.Background()
 
 	// List User, Project, Repo
-	if _, err := service.ListUserKeys(ctx, 10); err == nil {
+	if _, err := service.ListUserKeys(ctx, 10, 0); err == nil {
 		t.Fatal("expected network error")
 	}
 	if _, err := service.ListProjectKeys(ctx, "PRJ", 10); err == nil {

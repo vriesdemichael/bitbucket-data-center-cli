@@ -24,8 +24,10 @@ func newRepoCommand(options *rootOptions) *cobra.Command {
 	}
 
 	var limit int
+	var start int
 	var projectKey string
 	repoCmd.PersistentFlags().IntVar(&limit, "limit", 25, "Maximum number of results to return")
+	repoCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -39,7 +41,7 @@ func newRepoCommand(options *rootOptions) *cobra.Command {
 			client := httpclient.NewFromConfig(cfg)
 			service := repository.NewService(client)
 
-			listOptions := repository.ListOptions{Limit: limit}
+			listOptions := repository.ListOptions{Limit: limit, Start: start}
 
 			var repos []repository.Repository
 			if projectKey != "" {

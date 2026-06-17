@@ -17,6 +17,7 @@ import (
 func newCommitCommand(options *rootOptions) *cobra.Command {
 	var repositorySelector string
 	var limit int
+	var start int
 
 	commitCmd := &cobra.Command{
 		Use:   "commit",
@@ -25,6 +26,7 @@ func newCommitCommand(options *rootOptions) *cobra.Command {
 
 	commitCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	commitCmd.PersistentFlags().IntVar(&limit, "limit", 25, "Page size for list operations")
+	commitCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var listPath string
 	var listJira string
@@ -54,7 +56,7 @@ func newCommitCommand(options *rootOptions) *cobra.Command {
 				}
 			} else {
 				service := commitservice.NewService(client)
-				commits, err = service.List(cmd.Context(), repo, commitservice.ListOptions{Limit: limit, Path: listPath})
+				commits, err = service.List(cmd.Context(), repo, commitservice.ListOptions{Limit: limit, Start: start, Path: listPath})
 				if err != nil {
 					return err
 				}

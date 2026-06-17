@@ -580,3 +580,53 @@ func TestBranchServiceTransientAcrossOperations(t *testing.T) {
 		t.Fatalf("expected delete restriction transient error, got %v (%d)", err, apperrors.ExitCode(err))
 	}
 }
+
+func TestBranchServicePaginationLimit(t *testing.T) {
+	calls := 0
+	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		calls++
+		if calls == 1 {
+			if r.URL.Query().Get("start") != "1" || r.URL.Query().Get("limit") != "3" {
+				t.Errorf("expected start=1 limit=3 on call 1, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
+			}
+			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":3,"values":[{"displayId":"b1"},{"displayId":"b2"}]}`))
+			return
+		}
+		if r.URL.Query().Get("start") != "3" || r.URL.Query().Get("limit") != "1" {
+			t.Errorf("expected start=3 limit=1 on call 2, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
+		}
+		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"displayId":"b3"}]}`))
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+	branches, err := service.List(context.Background(), repo, ListOptions{Limit: 3, Start: 1})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 3 {
+		t.Errorf("expected 3 branches, got %d", len(branches))
+	}
+	if calls != 2 {
+		t.Errorf("expected 2 page requests, got %d", calls)
+	}
+}
+
+func TestBranchServicePaginationEdgeCases(t *testing.T) {
+	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Query().Get("start") != "0" {
+			t.Errorf("expected start=0, got start=%s", r.URL.Query().Get("start"))
+		}
+		_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":4,"values":[{"displayId":"b1"},{"displayId":"b2"},{"displayId":"b3"},{"displayId":"b4"}]}`))
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+	branches, err := service.List(context.Background(), repo, ListOptions{Start: -1, Limit: 3})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 3 {
+		t.Errorf("expected 3 branches, got %d", len(branches))
+	}
+}
