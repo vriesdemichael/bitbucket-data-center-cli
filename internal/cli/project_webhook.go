@@ -25,6 +25,8 @@ func newProjectWebhookCommand(options *rootOptions) *cobra.Command {
 		Short: "Manage project webhooks",
 	}
 
+	var limit int
+	var start int
 	listCmd := &cobra.Command{
 		Use:   "list <project-key>",
 		Short: "List all webhooks configured for the project",
@@ -60,6 +62,19 @@ func newProjectWebhookCommand(options *rootOptions) *cobra.Command {
 				}
 			}
 
+			if start < 0 {
+				start = 0
+			}
+			if start >= len(webhooks) {
+				webhooks = []WebhookModel{}
+			} else {
+				end := start + limit
+				if end > len(webhooks) {
+					end = len(webhooks)
+				}
+				webhooks = webhooks[start:end]
+			}
+
 			if len(webhooks) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No webhooks found"))
 				return nil
@@ -90,6 +105,8 @@ func newProjectWebhookCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
+	listCmd.Flags().IntVar(&limit, "limit", 25, "Maximum number of webhooks to list")
+	listCmd.Flags().IntVar(&start, "start", 0, "Start index for webhooks listing")
 	webhookCmd.AddCommand(listCmd)
 
 	var createEvents []string

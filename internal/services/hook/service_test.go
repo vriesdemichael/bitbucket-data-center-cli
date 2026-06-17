@@ -54,12 +54,12 @@ func TestHookService(t *testing.T) {
 	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
 	service := NewService(client)
 
-	projHooks, err := service.ListProjectHooks(context.Background(), "PRJ", 1)
+	projHooks, err := service.ListProjectHooks(context.Background(), "PRJ", 1, 0)
 	if err != nil || len(projHooks) != 1 {
 		t.Fatalf("list project hooks failed: %v", err)
 	}
 
-	repoHooks, err := service.ListRepositoryHooks(context.Background(), "PRJ", "demo", 1)
+	repoHooks, err := service.ListRepositoryHooks(context.Background(), "PRJ", "demo", 1, 0)
 	if err != nil || len(repoHooks) != 1 {
 		t.Fatalf("list repository hooks failed: %v", err)
 	}
@@ -102,8 +102,8 @@ func TestHookServiceNetworkErrors(t *testing.T) {
 	service := NewService(client)
 	ctx := context.Background()
 
-	_, _ = service.ListProjectHooks(ctx, "P", 100)
-	_, _ = service.ListRepositoryHooks(ctx, "P", "S", 100)
+	_, _ = service.ListProjectHooks(ctx, "P", 100, 0)
+	_, _ = service.ListRepositoryHooks(ctx, "P", "S", 100, 0)
 	_, _ = service.EnableProjectHook(ctx, "P", "h1")
 	_ = service.DisableProjectHook(ctx, "P", "h1")
 	_, _ = service.EnableRepositoryHook(ctx, "P", "S", "h1")
@@ -116,10 +116,10 @@ func TestHookServiceNetworkErrors(t *testing.T) {
 func TestHookServiceValidation(t *testing.T) {
 	service := NewService(nil)
 	ctx := context.Background()
-	if _, err := service.ListProjectHooks(ctx, "", 100); err == nil {
+	if _, err := service.ListProjectHooks(ctx, "", 100, 0); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.ListRepositoryHooks(ctx, "", "", 100); err == nil {
+	if _, err := service.ListRepositoryHooks(ctx, "", "", 100, 0); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := service.EnableProjectHook(ctx, "", ""); err == nil {
@@ -158,7 +158,7 @@ func TestHookServiceErrors(t *testing.T) {
 	service := NewService(client)
 	ctx := context.Background()
 
-	if _, err := service.ListProjectHooks(ctx, "P", 100); err == nil {
+	if _, err := service.ListProjectHooks(ctx, "P", 100, 0); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := service.EnableProjectHook(ctx, "P", "h1"); err == nil {
@@ -174,7 +174,7 @@ func TestHookServiceErrors(t *testing.T) {
 		t.Fatal("expected error")
 	}
 
-	if _, err := service.ListRepositoryHooks(ctx, "P", "S", 100); err == nil {
+	if _, err := service.ListRepositoryHooks(ctx, "P", "S", 100, 0); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := service.EnableRepositoryHook(ctx, "P", "S", "h1"); err == nil {
@@ -328,5 +328,73 @@ func TestHookServiceScripts(t *testing.T) {
 			t.Fatalf("expected conflict on remove, got %v", err)
 		}
 	})
+}
+
+func TestHookServicePaginationLimit(t *testing.T) {
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		calls++
+		if calls == 1 {
+			if r.URL.Query().Get("start") != "1" || r.URL.Query().Get("limit") != "3" {
+				t.Errorf("expected start=1 limit=3 on call 1, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
+			}
+			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":3,"values":[{"details":{"key":"h1"}},{"details":{"key":"h2"}}]}`))
+			return
+		}
+		if r.URL.Query().Get("start") != "3" || r.URL.Query().Get("limit") != "1" {
+			t.Errorf("expected start=3 limit=1 on call 2, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
+		}
+		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"details":{"key":"h3"}}]}`))
+	}))
+	defer server.Close()
+
+	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	service := NewService(client)
+
+	hooks, err := service.ListRepositoryHooks(context.Background(), "PRJ", "demo", 3, 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(hooks) != 3 {
+		t.Errorf("expected 3 hooks, got %d", len(hooks))
+	}
+	if calls != 2 {
+		t.Errorf("expected 2 page requests, got %d", calls)
+	}
+}
+
+func TestHookServiceProjectPaginationLimit(t *testing.T) {
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		calls++
+		if calls == 1 {
+			if r.URL.Query().Get("start") != "1" || r.URL.Query().Get("limit") != "3" {
+				t.Errorf("expected start=1 limit=3 on call 1, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
+			}
+			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":3,"values":[{"details":{"key":"h1"}},{"details":{"key":"h2"}}]}`))
+			return
+		}
+		if r.URL.Query().Get("start") != "3" || r.URL.Query().Get("limit") != "1" {
+			t.Errorf("expected start=3 limit=1 on call 2, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
+		}
+		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"details":{"key":"h3"}}]}`))
+	}))
+	defer server.Close()
+
+	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	service := NewService(client)
+
+	hooks, err := service.ListProjectHooks(context.Background(), "PRJ", 3, 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(hooks) != 3 {
+		t.Errorf("expected 3 hooks, got %d", len(hooks))
+	}
+	if calls != 2 {
+		t.Errorf("expected 2 page requests, got %d", calls)
+	}
 }
 

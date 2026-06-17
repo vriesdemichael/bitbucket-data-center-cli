@@ -49,7 +49,13 @@ func TestCommitCLICommandsMock(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/commits":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"abc","displayId":"abc","message":"init"}]}`))
+			limit := r.URL.Query().Get("limit")
+			start := r.URL.Query().Get("start")
+			if limit == "1" && start == "2" {
+				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"abc-paginated","displayId":"abc-p","message":"init-paginated"}]}`))
+			} else {
+				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"abc","displayId":"abc","message":"init"}]}`))
+			}
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/commits/abc":
 			_, _ = w.Write([]byte(`{"id":"abc","displayId":"abc","message":"init"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/compare/commits":
@@ -77,6 +83,15 @@ func TestCommitCLICommandsMock(t *testing.T) {
 	}
 	if !strings.Contains(out, "abc") || !strings.Contains(out, "init") {
 		t.Fatalf("unexpected list output: %s", out)
+	}
+
+	// Commit list pagination
+	out, err = executeTestCLI(t, "commit", "list", "--limit", "1", "--start", "2")
+	if err != nil {
+		t.Fatalf("commit list pagination failed: %v", err)
+	}
+	if !strings.Contains(out, "abc-p") || !strings.Contains(out, "init-paginated") {
+		t.Fatalf("unexpected list output with pagination flags: %s", out)
 	}
 
 	out, err = executeTestCLI(t, "--json", "commit", "list")

@@ -14,8 +14,12 @@ func TestSshKeyCLICommands(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/ssh/latest/keys":
-			if r.URL.Query().Get("limit") == "5" {
+			limit := r.URL.Query().Get("limit")
+			start := r.URL.Query().Get("start")
+			if limit == "5" {
 				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
+			} else if start == "2" {
+				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":321,"label":"MyKeyPaginated","text":"ssh-rsa AAA","fingerprint":"fp-321"}]}`))
 			} else {
 				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":123,"label":"MyKey","text":"ssh-rsa AAA","fingerprint":"fp-123"}]}`))
 			}
@@ -66,6 +70,15 @@ func TestSshKeyCLICommands(t *testing.T) {
 	}
 	if !strings.Contains(out, "123") || !strings.Contains(out, "MyKey") || !strings.Contains(out, "fp-123") {
 		t.Fatalf("unexpected ssh-key list output: %s", out)
+	}
+
+	// Test ssh-key list with start
+	out, err = executeTestCLI(t, "ssh-key", "list", "--start", "2")
+	if err != nil {
+		t.Fatalf("ssh-key list with start option failed: %v", err)
+	}
+	if !strings.Contains(out, "321") || !strings.Contains(out, "MyKeyPaginated") {
+		t.Fatalf("unexpected ssh-key list output with start option: %s", out)
 	}
 
 	out, err = executeTestCLI(t, "ssh-key", "add", "ssh-rsa AAA", "--label", "MyKey")

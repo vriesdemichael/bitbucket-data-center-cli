@@ -13,7 +13,7 @@ func TestProjectSettingsCLI(t *testing.T) {
 		switch {
 		// Project Webhooks Mock
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/webhooks":
-			_, _ = w.Write([]byte(`[{"id":123,"name":"wh","url":"http://url","active":true,"events":["repo:refs_changed"]}]`))
+			_, _ = w.Write([]byte(`[{"id":123,"name":"wh","url":"http://url","active":true,"events":["repo:refs_changed"]},{"id":124,"name":"wh2","url":"http://url2","active":false,"events":["repo:modified"]}]`))
 		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/webhooks":
 			w.WriteHeader(http.StatusCreated)
 			_, _ = w.Write([]byte(`{"id":123,"name":"wh","url":"http://url","active":true}`))
@@ -73,6 +73,40 @@ func TestProjectSettingsCLI(t *testing.T) {
 		}
 		if !strings.Contains(out, "123") || !strings.Contains(out, "wh") {
 			t.Fatalf("unexpected webhook list output: %s", out)
+		}
+
+		// Test project webhook list pagination
+		out, err = executeTestCLI(t, "project", "webhook", "list", "PRJ", "--limit", "1", "--start", "0")
+		if err != nil {
+			t.Fatalf("webhook list pagination failed: %v", err)
+		}
+		if !strings.Contains(out, "123") || strings.Contains(out, "124") {
+			t.Fatalf("unexpected webhook list pagination output: %s", out)
+		}
+
+		out, err = executeTestCLI(t, "project", "webhook", "list", "PRJ", "--limit", "1", "--start", "1")
+		if err != nil {
+			t.Fatalf("webhook list pagination offset failed: %v", err)
+		}
+		if strings.Contains(out, "123") || !strings.Contains(out, "124") {
+			t.Fatalf("unexpected webhook list pagination offset output: %s", out)
+		}
+
+		// Test project webhook list pagination edge cases
+		out, err = executeTestCLI(t, "project", "webhook", "list", "PRJ", "--limit", "1", "--start", "-1")
+		if err != nil {
+			t.Fatalf("webhook list pagination negative start failed: %v", err)
+		}
+		if !strings.Contains(out, "123") || strings.Contains(out, "124") {
+			t.Fatalf("unexpected webhook list pagination negative start output: %s", out)
+		}
+
+		out, err = executeTestCLI(t, "project", "webhook", "list", "PRJ", "--limit", "1", "--start", "99")
+		if err != nil {
+			t.Fatalf("webhook list pagination out of bounds failed: %v", err)
+		}
+		if !strings.Contains(out, "No webhooks found") {
+			t.Fatalf("unexpected webhook list pagination out of bounds output: %s", out)
 		}
 
 		// create

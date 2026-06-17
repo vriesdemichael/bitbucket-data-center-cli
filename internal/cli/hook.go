@@ -17,6 +17,8 @@ import (
 func newHookCommand(options *rootOptions) *cobra.Command {
 	var projectKey string
 	var repositorySelector string
+	var limit int
+	var start int
 
 	hookCmd := &cobra.Command{
 		Use:   "hook",
@@ -42,7 +44,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				hooks, err := service.ListRepositoryHooks(cmd.Context(), repo.ProjectKey, repo.Slug, 100)
+				hooks, err := service.ListRepositoryHooks(cmd.Context(), repo.ProjectKey, repo.Slug, limit, start)
 				if err != nil {
 					return err
 				}
@@ -60,7 +62,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 				return fmt.Errorf("project key is required (use --project or --repo)")
 			}
 
-			hooks, err := service.ListProjectHooks(cmd.Context(), projectKey, 100)
+			hooks, err := service.ListProjectHooks(cmd.Context(), projectKey, limit, start)
 			if err != nil {
 				return err
 			}
@@ -71,6 +73,8 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
+	listCmd.Flags().IntVar(&limit, "limit", 25, "Maximum number of hooks to list")
+	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
 	hookCmd.AddCommand(listCmd)
 
 	enableCmd := &cobra.Command{
@@ -97,7 +101,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 						return err
 					}
 
-					hooks, err := service.ListRepositoryHooks(cmd.Context(), repo.ProjectKey, repo.Slug, 100)
+					hooks, err := service.ListRepositoryHooks(cmd.Context(), repo.ProjectKey, repo.Slug, 100, 0)
 					if err != nil {
 						return err
 					}
@@ -159,7 +163,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
-				hooks, err := service.ListProjectHooks(cmd.Context(), projectKey, 100)
+				hooks, err := service.ListProjectHooks(cmd.Context(), projectKey, 100, 0)
 				if err != nil {
 					return err
 				}
@@ -234,7 +238,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 						return err
 					}
 
-					hooks, err := service.ListRepositoryHooks(cmd.Context(), repo.ProjectKey, repo.Slug, 100)
+					hooks, err := service.ListRepositoryHooks(cmd.Context(), repo.ProjectKey, repo.Slug, 100, 0)
 					if err != nil {
 						return err
 					}
@@ -295,7 +299,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
-				hooks, err := service.ListProjectHooks(cmd.Context(), projectKey, 100)
+				hooks, err := service.ListProjectHooks(cmd.Context(), projectKey, 100, 0)
 				if err != nil {
 					return err
 				}
@@ -447,7 +451,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 						return err
 					}
 
-					hooks, err := service.ListRepositoryHooks(cmd.Context(), repo.ProjectKey, repo.Slug, 100)
+					hooks, err := service.ListRepositoryHooks(cmd.Context(), repo.ProjectKey, repo.Slug, 100, 0)
 					if err != nil {
 						return err
 					}
@@ -513,7 +517,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
-				hooks, err := service.ListProjectHooks(cmd.Context(), projectKey, 100)
+				hooks, err := service.ListProjectHooks(cmd.Context(), projectKey, 100, 0)
 				if err != nil {
 					return err
 				}

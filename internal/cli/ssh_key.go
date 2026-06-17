@@ -18,6 +18,7 @@ func newSshKeyCommand(options *rootOptions) *cobra.Command {
 	}
 
 	var limit int
+	var start int
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List personal SSH keys",
@@ -28,7 +29,7 @@ func newSshKeyCommand(options *rootOptions) *cobra.Command {
 			}
 			svc := sshkey.NewService(client)
 
-			keys, err := svc.ListUserKeys(cmd.Context(), limit)
+			keys, err := svc.ListUserKeys(cmd.Context(), limit, start)
 			if err != nil {
 				return err
 			}
@@ -62,6 +63,7 @@ func newSshKeyCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 	listCmd.Flags().IntVar(&limit, "limit", 25, "Maximum number of SSH keys to list")
+	listCmd.Flags().IntVar(&start, "start", 0, "Start index for SSH keys listing")
 	sshCmd.AddCommand(listCmd)
 
 	var labelFlag string

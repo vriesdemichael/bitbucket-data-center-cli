@@ -18,6 +18,7 @@ import (
 func newBranchCommand(options *rootOptions) *cobra.Command {
 	var repositorySelector string
 	var limit int
+	var start int
 
 	branchCmd := &cobra.Command{
 		Use:   "branch",
@@ -26,6 +27,7 @@ func newBranchCommand(options *rootOptions) *cobra.Command {
 
 	branchCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	branchCmd.PersistentFlags().IntVar(&limit, "limit", 25, "Page size for list operations")
+	branchCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var orderBy string
 	var filterText string
@@ -53,6 +55,7 @@ func newBranchCommand(options *rootOptions) *cobra.Command {
 			service := branchservice.NewService(client)
 			branches, err := service.List(cmd.Context(), repo, branchservice.ListOptions{
 				Limit:      limit,
+				Start:      start,
 				OrderBy:    orderBy,
 				FilterText: filterText,
 				Base:       base,
