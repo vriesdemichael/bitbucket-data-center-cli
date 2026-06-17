@@ -1,0 +1,78 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.commit.list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb commit list --json`. Data contains the repository reference and a list of commits.",
+  "properties": {
+    "data": {
+      "additionalProperties": true,
+      "properties": {
+        "commits": {
+          "items": {
+            "additionalProperties": true,
+            "properties": {
+              "authorTimestamp": {
+                "type": "integer"
+              },
+              "committerTimestamp": {
+                "type": "integer"
+              },
+              "displayId": {
+                "description": "Abbreviated commit SHA1.",
+                "type": "string"
+              },
+              "id": {
+                "description": "Full commit SHA1.",
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "repository": {
+          "additionalProperties": true,
+          "properties": {
+            "ProjectKey": {
+              "type": "string"
+            },
+            "Slug": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "repository",
+        "commits"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb commit list output",
+  "type": "object"
+}

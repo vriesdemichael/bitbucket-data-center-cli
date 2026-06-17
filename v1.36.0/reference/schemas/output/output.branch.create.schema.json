@@ -1,0 +1,78 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.branch.create.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb branch create --json`. Data contains the repository and the newly created branch.",
+  "properties": {
+    "data": {
+      "additionalProperties": true,
+      "properties": {
+        "branch": {
+          "additionalProperties": true,
+          "properties": {
+            "default": {
+              "type": "boolean"
+            },
+            "displayId": {
+              "description": "Short branch name (e.g. main).",
+              "type": "string"
+            },
+            "id": {
+              "description": "Full branch ref name (e.g. refs/heads/main).",
+              "type": "string"
+            },
+            "latestChangeset": {
+              "type": "string"
+            },
+            "latestCommit": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "repository": {
+          "additionalProperties": true,
+          "properties": {
+            "ProjectKey": {
+              "type": "string"
+            },
+            "Slug": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "repository",
+        "branch"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb branch create output",
+  "type": "object"
+}

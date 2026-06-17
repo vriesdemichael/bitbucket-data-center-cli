@@ -1,0 +1,58 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.auth.status.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb auth status --json`. Data contains the currently configured Bitbucket connection and auth settings.",
+  "properties": {
+    "data": {
+      "additionalProperties": false,
+      "properties": {
+        "auth_mode": {
+          "description": "Active authentication mode (token, basic, none).",
+          "type": "string"
+        },
+        "auth_source": {
+          "description": "Source of the auth configuration (env, keyring, config).",
+          "type": "string"
+        },
+        "bitbucket_url": {
+          "description": "The configured Bitbucket Server base URL.",
+          "type": "string"
+        },
+        "bitbucket_version_target": {
+          "description": "Expected Bitbucket version string.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bitbucket_url",
+        "bitbucket_version_target",
+        "auth_mode",
+        "auth_source"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb auth status output",
+  "type": "object"
+}
