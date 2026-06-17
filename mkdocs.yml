@@ -1,5 +1,5 @@
-site_name: Bitbucket Server CLI
-site_description: CLI automation for Bitbucket Server and Data Center
+site_name: Bitbucket Data Center CLI
+site_description: CLI automation for Bitbucket Data Center
 site_url: https://vriesdemichael.github.io/bitbucket-server-cli/
 repo_url: https://github.com/vriesdemichael/bitbucket-server-cli
 repo_name: vriesdemichael/bitbucket-server-cli

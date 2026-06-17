@@ -8,7 +8,7 @@
       "additionalProperties": false,
       "properties": {
         "bitbucket_url": {
-          "description": "Bitbucket Server base URL.",
+          "description": "Bitbucket Data Center base URL.",
           "type": "string"
         },
         "token_url": {

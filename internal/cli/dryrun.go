@@ -19,10 +19,11 @@ const (
 )
 
 type dryRunProfile struct {
-	Intent        string
-	Action        string
-	Stateful      bool
-	CapabilityMsg string
+	Intent                  string
+	Action                  string
+	Stateful                bool
+	CapabilityMsg           string
+	DryRunDoesNotAddBenefit bool
 }
 
 type dryRunItem struct {
@@ -184,6 +185,9 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"auth token create": {Intent: "auth.token.create", Action: "create", Stateful: false},
 	"auth token update": {Intent: "auth.token.update", Action: "update", Stateful: false},
 	"auth token revoke": {Intent: "auth.token.revoke", Action: "delete", Stateful: false},
+	// auth gpg-key
+	"auth gpg-key add":    {Intent: "auth.gpg-key.add", Action: "create", Stateful: false},
+	"auth gpg-key remove": {Intent: "auth.gpg-key.remove", Action: "delete", Stateful: false},
 	// ssh-key
 	"ssh-key add":    {Intent: "ssh-key.add", Action: "create", Stateful: false},
 	"ssh-key remove": {Intent: "ssh-key.remove", Action: "delete", Stateful: false},
@@ -194,6 +198,8 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"repo sync":         {Intent: "repo.sync.trigger", Action: "update", Stateful: true},
 	"repo sync enable":  {Intent: "repo.sync.enable", Action: "update", Stateful: true},
 	"repo sync disable": {Intent: "repo.sync.disable", Action: "update", Stateful: true},
+	// bulk
+	"bulk apply":        {Intent: "bulk.apply", Action: "apply", Stateful: false, DryRunDoesNotAddBenefit: true},
 }
 
 func registerGlobalDryRunInterceptors(root *cobra.Command, options *rootOptions) {
@@ -214,6 +220,10 @@ func registerGlobalDryRunInterceptors(root *cobra.Command, options *rootOptions)
 			command.RunE = func(cmd *cobra.Command, args []string) error {
 				if !options.DryRun {
 					return originalRun(cmd, args)
+				}
+
+				if profile.DryRunDoesNotAddBenefit {
+					return dryRunUnsupportedError(path)
 				}
 
 				if profile.Stateful {
@@ -253,6 +263,11 @@ func isServerMutatingPath(path string) bool {
 		return false
 	}
 	if strings.EqualFold(trimmedPath, "update") {
+		return false
+	}
+
+	// Local helper and configuration commands are not server mutating
+	if strings.HasPrefix(trimmedPath, "ai ") || strings.HasPrefix(trimmedPath, "auth alias ") {
 		return false
 	}
 

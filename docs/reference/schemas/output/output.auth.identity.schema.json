@@ -8,7 +8,7 @@
       "additionalProperties": false,
       "properties": {
         "bitbucket_url": {
-          "description": "Bitbucket Server base URL used for the identity lookup.",
+          "description": "Bitbucket Data Center base URL used for the identity lookup.",
           "type": "string"
         },
         "user": {

@@ -27,10 +27,10 @@ func NewRootCommand() *cobra.Command {
 
 	rootCmd := &cobra.Command{
 		Use:   "bb",
-		Short: "Bitbucket Server CLI (live-behavior first)",
-		Long: `bb — Bitbucket Server CLI (live-behavior first)
+		Short: "Bitbucket Data Center CLI (live-behavior first)",
+		Long: `bb — Bitbucket Data Center CLI (live-behavior first)
 
-A CLI for interacting with Bitbucket Server / Data Center APIs.
+A CLI for interacting with recent versions of Bitbucket for Data Center APIs.
 
 AGENT NOTICE
 If you are an AI agent or automated tool using this CLI and you encounter

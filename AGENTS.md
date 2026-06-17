@@ -52,7 +52,17 @@ If the rebase brought in API changes from `main` (e.g. a command's flag changed 
 ## Development Tips & Gotchas
 
 ### Stateful Dry-Run Interceptor
-Bitbucket server-mutating CLI commands (ending in words like `create`, `update`, `delete`, `add`, etc.) are intercepted by the global dry-run interceptor (`internal/cli/dryrun.go`). Any new mutating command must be registered in the `dryRunProfiles` map as `Stateful: true` (or `Stateful: false` if it has stateless behaviour). Failing to do so will result in a "dry-run is not implemented" error when `--dry-run` is supplied.
+Bitbucket server-mutating CLI commands (ending in words like `create`, `update`, `delete`, `add`, etc.) are intercepted by the global dry-run interceptor (`internal/cli/dryrun.go`). Any new mutating command must be registered in the `dryRunProfiles` map as `Stateful: true` (or `Stateful: false` if it has stateless behaviour). For commands that are server-mutating but where dry-run does not add any operational benefit or is not supported (such as `bulk apply`), you must explicitly register them with `DryRunDoesNotAddBenefit: true`. Failing to register a mutating command will cause the unit test `TestAllMutatingCommandsHaveDryRunProfile` in `internal/cli/dryrun_test.go` to fail.
+
+### Generating CLI Reference Documentation
+The CLI command reference documentation (`docs/site/reference/commands/index.md`) is generated from Cobra command definitions. When adding commands, modifying flags, or changing help descriptions, always regenerate the documentation using:
+```bash
+task docs:generate
+```
+Verify the generated docs with:
+```bash
+task docs:verify-generated
+```
 
 ### Mocking Stdin for CLI Prompts
 When testing CLI commands that prompt the user for confirmation (e.g., typing `y` or `n`), mock the standard input (`os.Stdin`) directly using `os.Pipe()` rather than relying solely on Cobra's `InOrStdin()`. Many standard scanner functions (like `fmt.Scanln`) read directly from `os.Stdin`, bypass Cobra's stream overrides, and will block/fail if real stdin is empty.
