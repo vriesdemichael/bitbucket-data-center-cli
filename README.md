@@ -1,19 +1,19 @@
-# Bitbucket Server CLI (`bb`)
+# Bitbucket Data Center CLI (`bb`)
 
 [![codecov](https://codecov.io/gh/vriesdemichael/bitbucket-server-cli/branch/main/graph/badge.svg?flag=combined_scoped)](https://codecov.io/gh/vriesdemichael/bitbucket-server-cli?flag=combined_scoped)
 
-`bb` is a production-focused CLI for automating Bitbucket Server/Data Center workflows.
+`bb` is a production-focused CLI for automating Bitbucket Data Center workflows (targeting recent versions of Bitbucket for Data Center).
 It combines scriptable machine output, safe dry-run planning, and high-coverage live-behavior
 validation against real Bitbucket APIs.
 
-It is designed as the `gh`-style CLI experience for Bitbucket Server/Data Center, including
+It is designed as the `gh`-style CLI experience for Bitbucket Data Center, including
 repository cloning and browser navigation ergonomics tailored to Bitbucket-hosted projects.
 
 ## Why teams adopt `bb`
 
 - **Operationally safe by default**: dry-run planning for server mutations and explicit bulk plan/apply workflows.
 - **Automation friendly**: stable JSON envelope contract (`bb.machine`, `v2`) for CI/CD and internal tooling.
-- **Spec-driven API interactions**: client/server interactions are derived from Bitbucket Server's official OpenAPI spec.
+- **Spec-driven API interactions**: client/server interactions are derived from Bitbucket Data Center's official OpenAPI spec.
 - **Git-native ergonomics**: repository discovery from matching remotes to reduce repetitive `--repo` usage.
 - **Enterprise-ready auth model**: token/basic auth with persisted server contexts and secure credential handling.
 - **Live-tested command behavior**: command workflows are validated against a real Bitbucket Data Center server, not mocks alone.
@@ -161,5 +161,5 @@ This README is an adopter-focused landing page.
 
 ## License and platform note
 
-Atlassian Bitbucket Server/Data Center is proprietary software.
+Atlassian Bitbucket Data Center is proprietary software.
 Use of local Docker images and server instances must comply with Atlassian licensing terms.

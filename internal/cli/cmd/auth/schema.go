@@ -10,7 +10,7 @@ func authStatusDataSchema() map[string]any {
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"bitbucket_url":            map[string]any{"type": "string", "description": "The configured Bitbucket Server base URL."},
+			"bitbucket_url":            map[string]any{"type": "string", "description": "The configured Bitbucket Data Center base URL."},
 			"bitbucket_version_target": map[string]any{"type": "string", "description": "Expected Bitbucket version string."},
 			"auth_mode":                map[string]any{"type": "string", "description": "Active authentication mode (token, basic, none)."},
 			"auth_source":              map[string]any{"type": "string", "description": "Source of the auth configuration (env, keyring, config)."},
@@ -25,7 +25,7 @@ func authLoginDataSchema() map[string]any {
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"host":                  map[string]any{"type": "string", "description": "The Bitbucket Server host that credentials were stored for."},
+			"host":                  map[string]any{"type": "string", "description": "The Bitbucket Data Center host that credentials were stored for."},
 			"aliases":               map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Discovered or configured host aliases stored for this server context."},
 			"auth_mode":             map[string]any{"type": "string", "description": "Stored authentication mode (token or basic)."},
 			"used_insecure_storage": map[string]any{"type": "boolean", "description": "True when the system keyring was unavailable and the config fallback was used."},
@@ -57,7 +57,7 @@ func authIdentityDataSchema() map[string]any {
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"bitbucket_url": map[string]any{"type": "string", "description": "Bitbucket Server base URL used for the identity lookup."},
+			"bitbucket_url": map[string]any{"type": "string", "description": "Bitbucket Data Center base URL used for the identity lookup."},
 			"user":          authIdentityUserSchema(),
 		},
 		"required": []any{"bitbucket_url", "user"},
@@ -70,7 +70,7 @@ func authTokenURLDataSchema() map[string]any {
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"bitbucket_url": map[string]any{"type": "string", "description": "Bitbucket Server base URL."},
+			"bitbucket_url": map[string]any{"type": "string", "description": "Bitbucket Data Center base URL."},
 			"token_url":     map[string]any{"type": "string", "format": "uri", "description": "URL to the personal access token creation page."},
 		},
 		"required": []any{"bitbucket_url", "token_url"},
@@ -139,7 +139,7 @@ func authServerUseDataSchema() map[string]any {
 		"additionalProperties": false,
 		"properties": map[string]any{
 			"status":       map[string]any{"const": "ok"},
-			"default_host": map[string]any{"type": "string", "description": "The configured default Bitbucket Server host."},
+			"default_host": map[string]any{"type": "string", "description": "The configured default Bitbucket Data Center host."},
 		},
 		"required": []any{"status", "default_host"},
 	}

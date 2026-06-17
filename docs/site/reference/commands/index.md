@@ -6,12 +6,12 @@ Generated command entries: 293
 
 ## `bb`
 
-Bitbucket Server CLI (live-behavior first)
+Bitbucket Data Center CLI (live-behavior first)
 
 ```text
-bb — Bitbucket Server CLI (live-behavior first)
+bb — Bitbucket Data Center CLI (live-behavior first)
 
-A CLI for interacting with Bitbucket Server / Data Center APIs.
+A CLI for interacting with recent versions of Bitbucket for Data Center APIs.
 
 AGENT NOTICE
 If you are an AI agent or automated tool using this CLI and you encounter

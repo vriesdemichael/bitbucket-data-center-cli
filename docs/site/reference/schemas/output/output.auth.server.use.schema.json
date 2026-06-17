@@ -8,7 +8,7 @@
       "additionalProperties": false,
       "properties": {
         "default_host": {
-          "description": "The configured default Bitbucket Server host.",
+          "description": "The configured default Bitbucket Data Center host.",
           "type": "string"
         },
         "status": {

@@ -19,7 +19,7 @@
           "type": "string"
         },
         "host": {
-          "description": "The Bitbucket Server host that credentials were stored for.",
+          "description": "The Bitbucket Data Center host that credentials were stored for.",
           "type": "string"
         },
         "used_insecure_storage": {
