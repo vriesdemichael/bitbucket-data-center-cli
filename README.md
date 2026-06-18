@@ -1,6 +1,6 @@
 # Bitbucket Data Center CLI (`bb`)
 
-[![codecov](https://codecov.io/gh/vriesdemichael/bitbucket-server-cli/branch/main/graph/badge.svg?flag=combined_scoped)](https://codecov.io/gh/vriesdemichael/bitbucket-server-cli?flag=combined_scoped)
+[![codecov](https://codecov.io/gh/vriesdemichael/bitbucket-data-center-cli/branch/main/graph/badge.svg?flag=combined_scoped)](https://codecov.io/gh/vriesdemichael/bitbucket-data-center-cli?flag=combined_scoped)
 
 `bb` is a production-focused CLI for automating Bitbucket Data Center workflows (targeting recent versions of Bitbucket for Data Center).
 It combines scriptable machine output, safe dry-run planning, and high-coverage live-behavior
@@ -58,10 +58,10 @@ Install on Debian/Ubuntu or RHEL/Fedora from the release `.deb`/`.rpm`:
 ```bash
 VERSION=v1.0.0
 # Debian/Ubuntu
-curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.deb"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.deb"
 sudo dpkg -i "bb_${VERSION#v}_linux_amd64.deb"
 # RHEL/Fedora
-curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.rpm"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.rpm"
 sudo rpm -i "bb_${VERSION#v}_linux_amd64.rpm"
 ```
 
@@ -69,8 +69,8 @@ Install from Releases (Linux amd64 example):
 
 ```bash
 VERSION=v1.0.0
-curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.tar.gz"
-curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/sha256sums.txt"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.tar.gz"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sha256sums.txt"
 sha256sum -c sha256sums.txt --ignore-missing
 tar -xzf "bb_${VERSION#v}_linux_amd64.tar.gz"
 install -m 0755 bb /usr/local/bin/bb
@@ -135,8 +135,8 @@ bb --json auth status
 
 ## Docs
 
-- Full docs site: <https://vriesdemichael.github.io/bitbucket-server-cli/latest/>
-- LLM guide (`llms.txt`): <https://vriesdemichael.github.io/bitbucket-server-cli/latest/llms.txt>
+- Full docs site: <https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/>
+- LLM guide (`llms.txt`): <https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/llms.txt>
 - AI and llms.txt overview: [docs/site/ai-and-llms.md](docs/site/ai-and-llms.md)
 - Installation and Quickstart: [docs/site/installation-and-quickstart.md](docs/site/installation-and-quickstart.md)
 - Basic Usage: [docs/site/basic-usage.md](docs/site/basic-usage.md)

@@ -13,7 +13,7 @@ description: Interact with Bitbucket Data Center from an AI agent. Covers pull r
 
 ```bash
 # Via npx skills (matches the bb release at the time of install):
-npx skills add vriesdemichael/bitbucket-server-cli
+npx skills add vriesdemichael/bitbucket-data-center-cli
 
 # Version-accurate skill (always matches your installed bb binary):
 bb ai skill show > .agents/skills/bb/SKILL.md
@@ -335,7 +335,7 @@ bb tag list --repo MYPROJ/payments --json
 If `bb` behaves unexpectedly, create an issue:
 
 ```
-https://github.com/vriesdemichael/bitbucket-server-cli/issues/new
+https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/new
 ```
 
 If you cannot open the URL directly, ask the user to file the issue on your behalf.

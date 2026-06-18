@@ -13,7 +13,7 @@ priority: optional
 maintainer: "Michael de Vries <vriesdemichael@users.noreply.github.com>"
 description: A CLI for Bitbucket Server / Bitbucket Data Center
 vendor: vriesdemichael
-homepage: https://github.com/vriesdemichael/bitbucket-server-cli
+homepage: https://github.com/vriesdemichael/bitbucket-data-center-cli
 license: Apache-2.0
 contents:
   - src: ${PKG_BINARY}

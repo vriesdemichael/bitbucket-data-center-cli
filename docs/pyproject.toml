@@ -1,7 +1,7 @@
 [project]
-name = "bitbucket-server-cli-docs"
+name = "bitbucket-data-center-cli-docs"
 version = "0.1.0"
-description = "Docs tooling for bitbucket-server-cli"
+description = "Docs tooling for bitbucket-data-center-cli"
 requires-python = ">=3.10"
 dependencies = [
   "mkdocs==1.6.1",
