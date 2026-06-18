@@ -367,7 +367,7 @@ Consult your agent's documentation if the above path does not work.
 A baseline skill (fixed at release time) is also distributed via the open
 agent skills ecosystem and can be installed without bb being present:
 
-  npx skills add vriesdemichael/bitbucket-server-cli
+  npx skills add vriesdemichael/bitbucket-data-center-cli
 
 The npx-installed file is a snapshot from the repository. Use this command
 to get a skill that always matches your installed bb version.
