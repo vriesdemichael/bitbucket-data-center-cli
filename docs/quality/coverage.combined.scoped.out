@@ -5036,7 +5036,7 @@ github.com/vriesdemichael/bitbucket-server-cli/internal/cli/root_helpers.go:234.
 github.com/vriesdemichael/bitbucket-server-cli/internal/cli/root_helpers.go:235.1,237.1 1 1
 github.com/vriesdemichael/bitbucket-server-cli/internal/cli/root_helpers.go:238.1,238.2 1 0
 github.com/vriesdemichael/bitbucket-server-cli/internal/cli/root_helpers.go:240.1,240.2 1 1
-github.com/vriesdemichael/bitbucket-server-cli/internal/cli/root_helpers.go:240.1,242.1 1 0
+github.com/vriesdemichael/bitbucket-server-cli/internal/cli/root_helpers.go:240.1,242.1 1 1
 github.com/vriesdemichael/bitbucket-server-cli/internal/cli/root_helpers.go:243.1,243.2 1 1
 github.com/vriesdemichael/bitbucket-server-cli/internal/cli/root_helpers.go:243.1,245.1 1 1
 github.com/vriesdemichael/bitbucket-server-cli/internal/cli/root_helpers.go:246.1,246.2 1 1
