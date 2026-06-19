@@ -28,7 +28,7 @@ jobs:
       previous_tag: ${{ steps.compute.outputs.previous_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -174,7 +174,7 @@ jobs:
             binary_ext: .exe
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -270,7 +270,7 @@ jobs:
       attestations: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -708,7 +708,7 @@ jobs:
       VERSION: ${{ needs.determine-version.outputs.version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Python
         uses: actions/setup-python@v6
