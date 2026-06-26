@@ -255,8 +255,8 @@ github.com/letsencrypt/boulder v0.20260623.0 h1:rD3KN7sShxgRzYjf5x1ACF1DuoMZ6dQa
 github.com/letsencrypt/boulder v0.20260623.0/go.mod h1:iI3Sx0wisa96DyIwvSUNSd53NHg+cNLYUzFEUx/7iQQ=
 github.com/lucasb-eyer/go-colorful v1.4.0 h1:UtrWVfLdarDgc44HcS7pYloGHJUjHV/4FwW4TvVgFr4=
 github.com/lucasb-eyer/go-colorful v1.4.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
-github.com/mark3labs/mcp-go v0.55.0 h1:lJfz2aoctiwK+sI991+uIYwmKNIBciI+O7zsyDsa4U8=
-github.com/mark3labs/mcp-go v0.55.0/go.mod h1:+8WclSK1ZUweCP3hvktSji8n8ABG/95QaEkeVE/Uwas=
+github.com/mark3labs/mcp-go v0.55.1 h1:GLYqNm9qdMGPhCtK4g1t1y1vhAPfayOBuaibDi4mrSA=
+github.com/mark3labs/mcp-go v0.55.1/go.mod h1:+8WclSK1ZUweCP3hvktSji8n8ABG/95QaEkeVE/Uwas=
 github.com/mattn/go-isatty v0.0.22 h1:j8l17JJ9i6VGPUFUYoTUKPSgKe/83EYU2zBC7YNKMw4=
 github.com/mattn/go-isatty v0.0.22/go.mod h1:ZXfXG4SQHsB/w3ZeOYbR0PrPwLy+n6xiMrJlRFqopa4=
 github.com/mattn/go-runewidth v0.0.24 h1:cpokDiIn0MGnhdHwuWnJBITySJ20QyNGnY2kR/ay2DU=
