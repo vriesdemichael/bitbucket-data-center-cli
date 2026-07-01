@@ -1,0 +1,72 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.auth.server.list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb auth server list --json`. Data lists all stored Bitbucket server contexts.",
+  "properties": {
+    "data": {
+      "additionalProperties": false,
+      "properties": {
+        "servers": {
+          "items": {
+            "additionalProperties": true,
+            "properties": {
+              "Aliases": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "AuthMode": {
+                "type": "string"
+              },
+              "Host": {
+                "type": "string"
+              },
+              "IsDefault": {
+                "type": "boolean"
+              },
+              "Username": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "Host",
+              "Aliases",
+              "AuthMode",
+              "IsDefault"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "servers"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb auth server list output",
+  "type": "object"
+}
