@@ -205,7 +205,14 @@ func parseCloneSelector(value, defaultProjectKey string) (repositorySelector, cl
 		if project == "" {
 			return repositorySelector{}, cloneSelectorSlugOnly, apperrors.New(apperrors.KindValidation, "repository must be in PROJECT/slug format when BITBUCKET_PROJECT_KEY is not set", nil)
 		}
-		return repositorySelector{ProjectKey: project, Slug: trimmed}, cloneSelectorSlugOnly, nil
+		if unescaped, err := url.PathUnescape(project); err == nil {
+			project = unescaped
+		}
+		slug := trimmed
+		if unescaped, err := url.PathUnescape(slug); err == nil {
+			slug = unescaped
+		}
+		return repositorySelector{ProjectKey: project, Slug: slug}, cloneSelectorSlugOnly, nil
 	}
 
 	if len(parts) != 2 {
@@ -216,6 +223,13 @@ func parseCloneSelector(value, defaultProjectKey string) (repositorySelector, cl
 	slug := strings.TrimSpace(parts[1])
 	if projectKey == "" || slug == "" {
 		return repositorySelector{}, cloneSelectorProjectSlug, apperrors.New(apperrors.KindValidation, "repository must be in PROJECT/slug format", nil)
+	}
+
+	if unescaped, err := url.PathUnescape(projectKey); err == nil {
+		projectKey = unescaped
+	}
+	if unescaped, err := url.PathUnescape(slug); err == nil {
+		slug = unescaped
 	}
 
 	return repositorySelector{ProjectKey: projectKey, Slug: slug}, cloneSelectorProjectSlug, nil
@@ -445,6 +459,9 @@ func resolveSSHCloneURL(rawInput string, usedURLInput bool, cloneHost string, re
 	if usedURLInput {
 		trimmed := strings.TrimSpace(rawInput)
 		if strings.HasPrefix(trimmed, "git@") || strings.HasPrefix(trimmed, "ssh://") {
+			if unescaped, err := url.PathUnescape(trimmed); err == nil {
+				trimmed = unescaped
+			}
 			return trimmed, true, nil
 		}
 	}
