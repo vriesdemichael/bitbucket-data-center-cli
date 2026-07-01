@@ -354,6 +354,13 @@ func parseHostQualifiedRepositorySelector(value string) (string, repositorySelec
 		return "", repositorySelector{}, false
 	}
 
+	if unescaped, err := url.PathUnescape(project); err == nil {
+		project = unescaped
+	}
+	if unescaped, err := url.PathUnescape(slug); err == nil {
+		slug = unescaped
+	}
+
 	return host, repositorySelector{ProjectKey: project, Slug: slug}, true
 }
 

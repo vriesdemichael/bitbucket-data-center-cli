@@ -362,11 +362,11 @@ func resolveRepoSshKeyScope(projectFlag, repoFlag string) (string, string, bool,
 		return projectFlag, "", true, nil
 	}
 	if repoFlag != "" {
-		parts := strings.Split(repoFlag, "/")
-		if len(parts) != 2 || strings.TrimSpace(parts[0]) == "" || strings.TrimSpace(parts[1]) == "" {
+		repo, err := parseRepositorySelector(repoFlag)
+		if err != nil {
 			return "", "", false, apperrors.New(apperrors.KindValidation, "--repo must be in projectKey/repositorySlug format", nil)
 		}
-		return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), false, nil
+		return repo.ProjectKey, repo.Slug, false, nil
 	}
 	return "", "", false, apperrors.New(apperrors.KindValidation, "either --project or --repo is required", nil)
 }

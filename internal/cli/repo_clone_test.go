@@ -1371,3 +1371,77 @@ type errorReader struct {
 func (r *errorReader) Read(p []byte) (n int, err error) {
 	return 0, r.err
 }
+
+func TestRepoCloneCommandUserNamespace(t *testing.T) {
+	originalFactory := gitBackendFactory
+	stub := &cloneBackendStub{}
+	gitBackendFactory = func() git.Backend { return stub }
+	t.Cleanup(func() { gitBackendFactory = originalFactory })
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
+	t.Setenv("BITBUCKET_PROJECT_KEY", "")
+	t.Setenv("BITBUCKET_REPO_SLUG", "")
+
+	// 1. Test cloning using tilde username format
+	output, err := executeTestCLI(t, "repo", "clone", "~userid/somerepo")
+	if err != nil {
+		t.Fatalf("repo clone with user namespace failed: %v", err)
+	}
+
+	if len(stub.cloneCalls) != 1 {
+		t.Fatalf("expected one clone call, got %d", len(stub.cloneCalls))
+	}
+
+	call := stub.cloneCalls[0]
+	if call.repositoryURL != "git@bitbucket.example.com:scm/~userid/somerepo.git" {
+		t.Fatalf("unexpected clone URL: %s", call.repositoryURL)
+	}
+	if call.options.Directory != "somerepo" {
+		t.Fatalf("unexpected clone directory: %s", call.options.Directory)
+	}
+
+	if !strings.Contains(output, "Cloned ~userid/somerepo into somerepo") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+
+	// 2. Test cloning using full URL with unescaped tilde
+	stub.cloneCalls = nil
+	_, err = executeTestCLI(t, "repo", "clone", "https://bitbucket.example.com/scm/~userid/somerepo.git")
+	if err != nil {
+		t.Fatalf("repo clone with full URL containing tilde failed: %v", err)
+	}
+	if len(stub.cloneCalls) != 1 {
+		t.Fatalf("expected one clone call, got %d", len(stub.cloneCalls))
+	}
+	if stub.cloneCalls[0].repositoryURL != "git@bitbucket.example.com:scm/~userid/somerepo.git" {
+		t.Fatalf("unexpected clone URL: %s", stub.cloneCalls[0].repositoryURL)
+	}
+
+	// 3. Test cloning using full URL with escaped tilde (%7E)
+	stub.cloneCalls = nil
+	_, err = executeTestCLI(t, "repo", "clone", "https://bitbucket.example.com/scm/%7Euserid/somerepo.git")
+	if err != nil {
+		t.Fatalf("repo clone with full URL containing escaped tilde failed: %v", err)
+	}
+	if len(stub.cloneCalls) != 1 {
+		t.Fatalf("expected one clone call, got %d", len(stub.cloneCalls))
+	}
+	if stub.cloneCalls[0].repositoryURL != "git@bitbucket.example.com:scm/~userid/somerepo.git" {
+		t.Fatalf("unexpected clone URL: %s", stub.cloneCalls[0].repositoryURL)
+	}
+
+	// 4. Test cloning using SSH URL with escaped tilde (%7E)
+	stub.cloneCalls = nil
+	_, err = executeTestCLI(t, "repo", "clone", "git@bitbucket.example.com:scm/%7Euserid/somerepo.git")
+	if err != nil {
+		t.Fatalf("repo clone with SSH URL containing escaped tilde failed: %v", err)
+	}
+	if len(stub.cloneCalls) != 1 {
+		t.Fatalf("expected one clone call, got %d", len(stub.cloneCalls))
+	}
+	if stub.cloneCalls[0].repositoryURL != "git@bitbucket.example.com:scm/~userid/somerepo.git" {
+		t.Fatalf("unexpected clone URL: %s", stub.cloneCalls[0].repositoryURL)
+	}
+}
+
