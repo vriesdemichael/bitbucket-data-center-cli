@@ -1,0 +1,59 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.bulk.plan.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb bulk plan --json`. Data is a bulk plan artifact. Full artifact schema: reference/schemas/bulk-plan.schema.json.",
+  "properties": {
+    "data": {
+      "additionalProperties": true,
+      "properties": {
+        "apiVersion": {
+          "type": "string"
+        },
+        "kind": {
+          "const": "BulkPlan"
+        },
+        "planHash": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "object"
+        },
+        "targets": {
+          "type": "array"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "planHash"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb bulk plan output",
+  "type": "object"
+}

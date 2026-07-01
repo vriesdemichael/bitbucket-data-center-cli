@@ -1,0 +1,47 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.tag.delete.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb tag delete --json`. Data confirms the deleted tag name.",
+  "properties": {
+    "data": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "ok"
+        },
+        "tag": {
+          "description": "Name of the deleted tag.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "tag"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb tag delete output",
+  "type": "object"
+}
