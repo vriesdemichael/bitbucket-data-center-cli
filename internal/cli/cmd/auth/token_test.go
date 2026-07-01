@@ -45,6 +45,28 @@ func (m *mockUsersClient) GetUsers2WithResponse(ctx context.Context, params *ope
 	return resp, nil
 }
 
+func (m *mockUsersClient) GetUserWithResponse(ctx context.Context, userSlug string, reqEditors ...openapigenerated.RequestEditorFn) (*openapigenerated.GetUserResponse, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	if m.status != 0 && (m.status < 200 || m.status >= 300) {
+		return &openapigenerated.GetUserResponse{
+			HTTPResponse: &http.Response{StatusCode: m.status},
+		}, nil
+	}
+	name := "Alice"
+	active := true
+	return &openapigenerated.GetUserResponse{
+		HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+		ApplicationjsonCharsetUTF8200: &openapigenerated.RestApplicationUser{
+			Name:         &name,
+			Slug:         &m.userSlug,
+			DisplayName:  &name,
+			Active:       &active,
+		},
+	}, nil
+}
+
 func TestAuthTokenCommands(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

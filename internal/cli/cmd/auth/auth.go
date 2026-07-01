@@ -18,6 +18,7 @@ import (
 
 type usersClient interface {
 	GetUsers2WithResponse(ctx context.Context, params *openapigenerated.GetUsers2Params, reqEditors ...openapigenerated.RequestEditorFn) (*openapigenerated.GetUsers2Response, error)
+	GetUserWithResponse(ctx context.Context, userSlug string, reqEditors ...openapigenerated.RequestEditorFn) (*openapigenerated.GetUserResponse, error)
 }
 
 type repositoriesClient interface {
@@ -497,20 +498,47 @@ func resolveIdentity(ctx context.Context, cfg config.AppConfig, newUsersClient f
 		return authIdentity{}, apperrors.New(apperrors.KindTransient, "identity lookup failed", err)
 	}
 
-	if response.StatusCode() < 200 || response.StatusCode() >= 300 || response.ApplicationjsonCharsetUTF8200 == nil {
+	if response.StatusCode() < 200 || response.StatusCode() >= 300 {
 		return authIdentity{}, openapi.MapStatusError(response.StatusCode(), response.Body)
 	}
 
-	user := response.ApplicationjsonCharsetUTF8200
-	return authIdentity{
-		Name:        strings.TrimSpace(safeString(user.Name)),
-		Slug:        strings.TrimSpace(safeString(user.Slug)),
-		DisplayName: strings.TrimSpace(safeString(user.DisplayName)),
-		Email:       strings.TrimSpace(safeString(user.EmailAddress)),
-		ID:          int64(safeInt32(user.Id)),
-		Type:        strings.TrimSpace(safeStringFromEnum(user.Type)),
-		Active:      safeBool(user.Active),
-	}, nil
+	// Try to get authenticated username from the X-AUSERNAME header
+	var username string
+	if response.HTTPResponse != nil {
+		username = strings.TrimSpace(response.HTTPResponse.Header.Get("X-AUSERNAME"))
+	}
+
+	if username != "" {
+		userResponse, err := client.GetUserWithResponse(ctx, username)
+		if err == nil && userResponse.StatusCode() == 200 && userResponse.ApplicationjsonCharsetUTF8200 != nil {
+			user := userResponse.ApplicationjsonCharsetUTF8200
+			return authIdentity{
+				Name:        strings.TrimSpace(safeString(user.Name)),
+				Slug:        strings.TrimSpace(safeString(user.Slug)),
+				DisplayName: strings.TrimSpace(safeString(user.DisplayName)),
+				Email:       strings.TrimSpace(safeString(user.EmailAddress)),
+				ID:          int64(safeInt32(user.Id)),
+				Type:        strings.TrimSpace(safeStringFromEnum(user.Type)),
+				Active:      safeBool(user.Active),
+			}, nil
+		}
+	}
+
+	// Fallback to the old logic (parsing response directly as RestApplicationUser, which works for some mocks/servers)
+	if response.ApplicationjsonCharsetUTF8200 != nil {
+		user := response.ApplicationjsonCharsetUTF8200
+		return authIdentity{
+			Name:        strings.TrimSpace(safeString(user.Name)),
+			Slug:        strings.TrimSpace(safeString(user.Slug)),
+			DisplayName: strings.TrimSpace(safeString(user.DisplayName)),
+			Email:       strings.TrimSpace(safeString(user.EmailAddress)),
+			ID:          int64(safeInt32(user.Id)),
+			Type:        strings.TrimSpace(safeStringFromEnum(user.Type)),
+			Active:      safeBool(user.Active),
+		}, nil
+	}
+
+	return authIdentity{}, apperrors.New(apperrors.KindAuthentication, "failed to resolve identity: authenticated username not found", nil)
 }
 
 func identityHumanSummary(identity authIdentity) string {

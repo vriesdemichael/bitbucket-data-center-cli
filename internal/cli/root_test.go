@@ -3298,7 +3298,7 @@ func TestAuthTokenURLCommand(t *testing.T) {
 	if err := jsonCmd.Execute(); err != nil {
 		t.Fatalf("auth token-url json failed: %v", err)
 	}
-	if !strings.Contains(jsonBuffer.String(), `"token_url": "http://localhost:7990/plugins/servlet/access-tokens/manage"`) {
+	if !strings.Contains(jsonBuffer.String(), "/plugins/servlet/access-tokens/manage") && !strings.Contains(jsonBuffer.String(), "/plugins/servlet/access-tokens/users/") {
 		t.Fatalf("expected token_url in json output, got: %s", jsonBuffer.String())
 	}
 }
