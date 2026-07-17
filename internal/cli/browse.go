@@ -9,6 +9,7 @@ import (
 	browseservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/browse"
 	commitservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/commit"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
 
 func newRepoBrowseCommand(options *rootOptions) *cobra.Command {
@@ -39,7 +40,7 @@ func newRepoBrowseCommand(options *rootOptions) *cobra.Command {
 			}
 
 			repo := browseservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
-			service := browseservice.NewService(client)
+			service := browseservice.NewService(client, httpclient.NewFromConfig(cfg), strings.TrimRight(cfg.BitbucketURL, "/" ))
 
 			path := ""
 			if len(args) > 0 {
@@ -91,7 +92,7 @@ func newRepoBrowseCommand(options *rootOptions) *cobra.Command {
 			}
 
 			repo := browseservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
-			service := browseservice.NewService(client)
+			service := browseservice.NewService(client, httpclient.NewFromConfig(cfg), strings.TrimRight(cfg.BitbucketURL, "/" ))
 
 			content, err := service.Raw(cmd.Context(), repo, args[0], rawAt)
 			if err != nil {
@@ -123,7 +124,7 @@ func newRepoBrowseCommand(options *rootOptions) *cobra.Command {
 			}
 
 			repo := browseservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
-			service := browseservice.NewService(client)
+			service := browseservice.NewService(client, httpclient.NewFromConfig(cfg), strings.TrimRight(cfg.BitbucketURL, "/" ))
 
 			content, err := service.File(cmd.Context(), repo, args[0], browseservice.FileOptions{
 				At:    fileAt,
@@ -180,7 +181,7 @@ func newRepoBrowseCommand(options *rootOptions) *cobra.Command {
 			}
 
 			repo := browseservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
-			service := browseservice.NewService(client)
+			service := browseservice.NewService(client, httpclient.NewFromConfig(cfg), strings.TrimRight(cfg.BitbucketURL, "/" ))
 
 			content, err := service.File(cmd.Context(), repo, args[0], browseservice.FileOptions{
 				At:    blameAt,
