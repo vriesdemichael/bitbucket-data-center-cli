@@ -69,6 +69,39 @@ func (client *Client) GetJSON(ctx context.Context, path string, query map[string
 	return client.doJSON(ctx, http.MethodGet, path, query, nil, out)
 }
 
+// CurrentUserSlug returns the authenticated user's slug by reading the
+// X-AUSERNAME response header from a lightweight API request.
+func (client *Client) CurrentUserSlug(ctx context.Context) (string, error) {
+	if client.initErr != nil {
+		return "", apperrors.New(apperrors.KindValidation, "failed to initialize HTTP transport", client.initErr)
+	}
+
+	requestURL, err := url.Parse(client.baseURL + "/rest/api/latest/users")
+	if err != nil {
+		return "", apperrors.New(apperrors.KindValidation, "invalid request URL", err)
+	}
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL.String(), nil)
+	if err != nil {
+		return "", apperrors.New(apperrors.KindInternal, "failed to build request", err)
+	}
+	request.Header.Set("Accept", "application/json")
+	client.applyAuth(request)
+
+	response, err := client.http.Do(request)
+	if err != nil {
+		return "", apperrors.New(apperrors.KindTransient, "request failed", err)
+	}
+	defer response.Body.Close()
+	_, _ = io.Copy(io.Discard, response.Body)
+
+	slug := strings.TrimSpace(response.Header.Get("X-AUSERNAME"))
+	if slug == "" {
+		return "", apperrors.New(apperrors.KindAuthentication, "X-AUSERNAME header not found in response", nil)
+	}
+	return slug, nil
+}
+
 func (client *Client) PostJSON(ctx context.Context, path string, query map[string]string, in any, out any) error {
 	return client.doJSON(ctx, http.MethodPost, path, query, in, out)
 }
@@ -79,6 +112,108 @@ func (client *Client) PutJSON(ctx context.Context, path string, query map[string
 
 func (client *Client) DeleteJSON(ctx context.Context, path string, query map[string]string, in any, out any) error {
 	return client.doJSON(ctx, http.MethodDelete, path, query, in, out)
+}
+
+// GetRaw performs a GET request and returns the raw response body as bytes.
+// Unlike GetJSON, it does not set Accept: application/json or attempt to unmarshal.
+func (client *Client) GetRaw(ctx context.Context, path string, query map[string]string) ([]byte, error) {
+	if client.initErr != nil {
+		return nil, apperrors.New(apperrors.KindValidation, "failed to initialize HTTP transport", client.initErr)
+	}
+
+	requestURL, err := url.Parse(client.baseURL + path)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindValidation, "invalid request URL", err)
+	}
+
+	values := requestURL.Query()
+	for key, value := range query {
+		values.Set(key, value)
+	}
+	requestURL.RawQuery = values.Encode()
+
+	var lastErr error
+	for attempt := 0; attempt <= client.retries; attempt++ {
+		started := time.Now()
+		request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL.String(), nil)
+		if err != nil {
+			return nil, apperrors.New(apperrors.KindInternal, "failed to build request", err)
+		}
+		client.applyAuth(request)
+
+		response, err := client.http.Do(request)
+		if err != nil {
+			fields := map[string]any{
+				"method":      http.MethodGet,
+				"endpoint":    requestURL.Path,
+				"attempt":     attempt + 1,
+				"retry_count": client.retries,
+				"duration_ms": time.Since(started).Milliseconds(),
+				"error":       err.Error(),
+			}
+			lastErr = apperrors.New(apperrors.KindTransient, "request failed", err)
+			if attempt < client.retries {
+				client.logger.Warn("http request failed", fields)
+				if sleepErr := sleepWithContext(ctx, time.Duration(attempt+1)*client.backoff); sleepErr != nil {
+					return nil, apperrors.New(apperrors.KindTransient, "request canceled while waiting to retry", sleepErr)
+				}
+				continue
+			}
+			client.logger.Error("http request failed", fields)
+			return nil, lastErr
+		}
+
+		body, readErr := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		if readErr != nil {
+			return nil, apperrors.New(apperrors.KindTransient, "failed to read response", readErr)
+		}
+
+		if response.StatusCode >= 200 && response.StatusCode < 300 {
+			client.logger.Debug("http request completed", map[string]any{
+				"method":      http.MethodGet,
+				"endpoint":    requestURL.Path,
+				"status":      response.StatusCode,
+				"attempt":     attempt + 1,
+				"retry_count": client.retries,
+				"duration_ms": time.Since(started).Milliseconds(),
+			})
+			return body, nil
+		}
+
+		mappedErr := openapi.MapStatusError(response.StatusCode, body)
+		fields := map[string]any{
+			"method":      http.MethodGet,
+			"endpoint":    requestURL.Path,
+			"status":      response.StatusCode,
+			"attempt":     attempt + 1,
+			"retry_count": client.retries,
+			"duration_ms": time.Since(started).Milliseconds(),
+			"error":       mappedErr.Error(),
+		}
+		if response.StatusCode == http.StatusTooManyRequests || response.StatusCode >= 500 {
+			lastErr = mappedErr
+			retryDelay := retryDelayFromResponse(response.Header, attempt, client.backoff)
+			fields["retry_delay"] = retryDelay.String()
+			if attempt < client.retries {
+				client.logger.Warn("http request returned error status", fields)
+				if sleepErr := sleepWithContext(ctx, retryDelay); sleepErr != nil {
+					return nil, apperrors.New(apperrors.KindTransient, "request canceled while waiting to retry", sleepErr)
+				}
+				continue
+			}
+			client.logger.Error("http request returned error status", fields)
+			return nil, lastErr
+		}
+
+		client.logger.Error("http request returned error status", fields)
+		return nil, mappedErr
+	}
+
+	if lastErr != nil {
+		return nil, lastErr
+	}
+	return nil, apperrors.New(apperrors.KindTransient, "request failed after retries", nil)
 }
 
 func (client *Client) doJSON(ctx context.Context, method string, path string, query map[string]string, in any, out any) error {

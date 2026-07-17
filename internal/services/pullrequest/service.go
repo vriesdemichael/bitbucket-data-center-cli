@@ -25,6 +25,7 @@ type ListOptions struct {
 	Start        int    `json:"start"`
 	SourceBranch string `json:"source_branch,omitempty"`
 	TargetBranch string `json:"target_branch,omitempty"`
+	Role         string `json:"role,omitempty"`
 }
 
 type PullRequest struct {
@@ -226,6 +227,9 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, opti
 		} else {
 			query["state"] = "ALL"
 		}
+		if options.Role != "" {
+			query["role"] = strings.ToUpper(options.Role)
+		}
 
 		var response pagedPullRequestResponse
 		if err := service.client.GetJSON(ctx, path, query, &response); err != nil {
@@ -389,6 +393,119 @@ func (service *Service) Unapprove(ctx context.Context, repository RepositoryRef,
 	}
 
 	return mapPullRequest(response), nil
+}
+
+// NeedsWork sets the current user's review status to NEEDS_WORK on a pull request.
+// Uses PUT .../participants/{userSlug} with {"status": "NEEDS_WORK"}.
+// The userSlug is resolved by posting a temporary comment and reading the author from the response.
+func (service *Service) NeedsWork(ctx context.Context, repository RepositoryRef, pullRequestID string) (PullRequest, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return PullRequest{}, err
+	}
+
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return PullRequest{}, err
+	}
+
+	userSlug, err := service.client.CurrentUserSlug(ctx)
+	if err != nil {
+		return PullRequest{}, err
+	}
+
+	path := fmt.Sprintf("%s/%s/participants/%s", pullRequestPath(repository), resolvedID, url.PathEscape(userSlug))
+	payload := map[string]any{"status": "NEEDS_WORK"}
+
+	var response pullRequestValue
+	if err := service.client.PutJSON(ctx, path, nil, payload, &response); err != nil {
+		return PullRequest{}, err
+	}
+
+	return mapPullRequest(response), nil
+}
+
+// InlineCommentAnchor specifies the file location for an inline PR comment.
+type InlineCommentAnchor struct {
+	Line     int    `json:"line"`
+	Path    string `json:"path"`
+	LineType string `json:"lineType"` // ADDED, REMOVED, or CONTEXT
+}
+
+// Comment represents a pull request comment returned by the API.
+type Comment struct {
+	ID      int64  `json:"id"`
+	Version int    `json:"version"`
+	Text    string `json:"text"`
+	Author  struct {
+		Name        string `json:"name"`
+		DisplayName string `json:"displayName"`
+		Slug        string `json:"slug"`
+	} `json:"author"`
+}
+
+// AddComment adds a general comment to a pull request.
+// If parentID > 0, the comment is posted as a reply to that comment.
+func (service *Service) AddComment(ctx context.Context, repository RepositoryRef, pullRequestID string, text string, parentID int64) (Comment, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return Comment{}, err
+	}
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return Comment{}, err
+	}
+	trimmedText := strings.TrimSpace(text)
+	if trimmedText == "" {
+		return Comment{}, apperrors.New(apperrors.KindValidation, "comment text is required", nil)
+	}
+	path := fmt.Sprintf("%s/%s/comments", pullRequestPath(repository), resolvedID)
+	payload := map[string]any{"text": trimmedText}
+	if parentID > 0 {
+		payload["parent"] = map[string]any{"id": parentID}
+	}
+	var result Comment
+	if err := service.client.PostJSON(ctx, path, nil, payload, &result); err != nil {
+		return Comment{}, err
+	}
+	return result, nil
+}
+
+// AddInlineComment adds a comment on a specific line of a file in a pull request diff.
+func (service *Service) AddInlineComment(ctx context.Context, repository RepositoryRef, pullRequestID string, text string, anchor InlineCommentAnchor) (Comment, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return Comment{}, err
+	}
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return Comment{}, err
+	}
+	trimmedText := strings.TrimSpace(text)
+	if trimmedText == "" {
+		return Comment{}, apperrors.New(apperrors.KindValidation, "comment text is required", nil)
+	}
+	if anchor.Path == "" {
+		return Comment{}, apperrors.New(apperrors.KindValidation, "file path is required for inline comments", nil)
+	}
+	if anchor.Line <= 0 {
+		return Comment{}, apperrors.New(apperrors.KindValidation, "line must be a positive integer", nil)
+	}
+	lineType := strings.ToUpper(strings.TrimSpace(anchor.LineType))
+	if lineType == "" {
+		lineType = "ADDED"
+	}
+	path := fmt.Sprintf("%s/%s/comments", pullRequestPath(repository), resolvedID)
+	payload := map[string]any{
+		"text": trimmedText,
+		"anchor": map[string]any{
+			"line":     anchor.Line,
+			"path":    anchor.Path,
+			"lineType": lineType,
+		},
+	}
+	var result Comment
+	if err := service.client.PostJSON(ctx, path, nil, payload, &result); err != nil {
+		return Comment{}, err
+	}
+	return result, nil
 }
 
 func (service *Service) AddReviewer(ctx context.Context, repository RepositoryRef, pullRequestID string, username string) (PullRequest, error) {
@@ -796,7 +913,7 @@ func mapPullRequest(raw pullRequestValue) PullRequest {
 		SourceCommit: sourceCommit(raw.FromRef),
 		CreatedDate:  raw.CreatedDate,
 		UpdatedDate:  raw.UpdatedDate,
-		Reviewers:    mapReviewers(raw.Participants),
+		Reviewers:    mapReviewers(raw.Participants, raw.Reviewers),
 	}
 
 	if raw.ToRef != nil && raw.ToRef.Repository != nil {
@@ -809,13 +926,21 @@ func mapPullRequest(raw pullRequestValue) PullRequest {
 	return pr
 }
 
-func mapReviewers(participants []pullRequestParticipant) []Reviewer {
-	if len(participants) == 0 {
+// mapReviewers maps PR participants to reviewers. On Bitbucket Data Center 9.4.16,
+// the PR response "participants" field is always empty; only "reviewers" contains
+// the assigned reviewers with their approval status. Falls back to "reviewers"
+// when "participants" is empty. Filters out role=="author" as a safety net.
+func mapReviewers(participants []pullRequestParticipant, reviewers []pullRequestParticipant) []Reviewer {
+	raw := participants
+	if len(raw) == 0 {
+		raw = reviewers
+	}
+	if len(raw) == 0 {
 		return nil
 	}
 
-	reviewers := make([]Reviewer, 0, len(participants))
-	for _, participant := range participants {
+	result := make([]Reviewer, 0, len(raw))
+	for _, participant := range raw {
 		if participant.User == nil {
 			continue
 		}
@@ -833,14 +958,14 @@ func mapReviewers(participants []pullRequestParticipant) []Reviewer {
 			continue
 		}
 
-		reviewers = append(reviewers, reviewer)
+		result = append(result, reviewer)
 	}
 
-	if len(reviewers) == 0 {
+	if len(result) == 0 {
 		return nil
 	}
 
-	return reviewers
+	return result
 }
 
 func mapMergeability(raw mergeabilityValue) Mergeability {
@@ -1155,6 +1280,7 @@ type pullRequestValue struct {
 	UpdatedDate  int64                    `json:"updatedDate"`
 	Author       *pullRequestUser         `json:"author"`
 	Participants []pullRequestParticipant `json:"participants"`
+	Reviewers    []pullRequestParticipant `json:"reviewers"`
 	FromRef      *pullRequestRef          `json:"fromRef"`
 	ToRef        *pullRequestRef          `json:"toRef"`
 }

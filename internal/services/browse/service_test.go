@@ -2,14 +2,17 @@ package browse
 
 import (
 	"context"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
 
 func newBrowseTestService(t *testing.T, handler http.HandlerFunc) *Service {
@@ -22,7 +25,15 @@ func newBrowseTestService(t *testing.T, handler http.HandlerFunc) *Service {
 		t.Fatalf("create client: %v", err)
 	}
 
-	return NewService(client)
+	// Build a minimal httpclient.Client for tests using exported constructor.
+	// The config doesn't need real credentials for httptest.
+	cfg := config.AppConfig{
+		BitbucketURL:    server.URL,
+		RequestTimeout:  10 * time.Second,
+		RetryCount:      0,
+	}
+	httpClient := httpclient.NewFromConfig(cfg)
+	return NewService(client, httpClient, strings.TrimRight(server.URL, "/"))
 }
 
 func TestBrowseServiceCoreCommands(t *testing.T) {

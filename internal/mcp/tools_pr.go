@@ -8,7 +8,9 @@ import (
 	mcpgo "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	browseservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/browse"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
+	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
 )
@@ -37,30 +39,49 @@ func specGetPullRequest() Spec {
 
 func specListPullRequests() Spec {
 	tool := mcpgo.NewTool("list_pull_requests",
-		mcpgo.WithDescription("List pull requests for a repository. Defaults to OPEN state."),
-		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
-		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
+		mcpgo.WithDescription("List pull requests. Without project/repo, lists the current user's PRs across all repositories (dashboard)."),
+		mcpgo.WithString("project", mcpgo.Description("Bitbucket project key (omit for dashboard mode)")),
+		mcpgo.WithString("repo", mcpgo.Description("Repository slug (omit for dashboard mode)")),
 		mcpgo.WithString("state", mcpgo.Description("Filter by state: OPEN (default), MERGED, DECLINED, ALL")),
-		mcpgo.WithString("source_branch", mcpgo.Description("Filter by source branch name")),
-		mcpgo.WithString("target_branch", mcpgo.Description("Filter by target branch name")),
+		mcpgo.WithString("role", mcpgo.Description("Filter by role: REVIEWER, AUTHOR, or PARTICIPANT (works in both repo and dashboard mode)")),
+		mcpgo.WithString("source_branch", mcpgo.Description("Filter by source branch name (repo mode only)")),
+		mcpgo.WithString("target_branch", mcpgo.Description("Filter by target branch name (repo mode only)")),
 		mcpgo.WithNumber("limit", mcpgo.Description("Maximum number of results (default 25)")),
 	)
 	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
-			project, _ := req.RequireString("project")
-			repo, _ := req.RequireString("repo")
-			opts := pullrequestservice.ListOptions{
-				State:        req.GetString("state", "OPEN"),
-				SourceBranch: req.GetString("source_branch", ""),
-				TargetBranch: req.GetString("target_branch", ""),
-				Limit:        req.GetInt("limit", 25),
+			project := req.GetString("project", "")
+			repo := req.GetString("repo", "")
+			state := req.GetString("state", "OPEN")
+			limit := req.GetInt("limit", 25)
+
+			var prs []pullrequestservice.PullRequest
+			var err error
+
+			if project != "" && repo != "" {
+				opts := pullrequestservice.ListOptions{
+					State:        state,
+					Role:         req.GetString("role", ""),
+					SourceBranch: req.GetString("source_branch", ""),
+					TargetBranch: req.GetString("target_branch", ""),
+					Limit:        limit,
+				}
+				prs, err = svc.List(ctx, pullrequestservice.RepositoryRef{ProjectKey: project, Slug: repo}, opts)
+			} else if project != "" || repo != "" {
+				return mcpgo.NewToolResultError("list_pull_requests requires both project and repo, or neither for dashboard mode"), nil
+			} else {
+				opts := pullrequestservice.DashboardListOptions{
+					State: state,
+					Role:  req.GetString("role", "REVIEWER"),
+					Limit: limit,
+				}
+				prs, err = svc.ListDashboard(ctx, opts)
 			}
-			prs, err := svc.List(ctx, pullrequestservice.RepositoryRef{ProjectKey: project, Slug: repo}, opts)
 			if err != nil {
 				return mcpgo.NewToolResultErrorFromErr("list_pull_requests failed", err), nil
 			}
-			return resultJSON(prs)
+			return resultJSON(map[string]any{"pull_requests": prs})
 		}
 	}}
 }
@@ -146,24 +167,40 @@ func specListPRComments() Spec {
 
 func specAddPRComment() Spec {
 	tool := mcpgo.NewTool("add_pr_comment",
-		mcpgo.WithDescription("Add a comment to a pull request."),
+		mcpgo.WithDescription("Add a comment to a pull request. Provide path and line to create an inline comment on a specific file line. Provide parent_id to reply to an existing comment."),
 		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
 		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
 		mcpgo.WithString("pr_id", mcpgo.Required(), mcpgo.Description("Pull request ID")),
 		mcpgo.WithString("text", mcpgo.Required(), mcpgo.Description("Comment text (Markdown supported)")),
+		mcpgo.WithString("path", mcpgo.Description("File path for inline comment (e.g. src/main.go)")),
+		mcpgo.WithNumber("line", mcpgo.Description("Line number for inline comment")),
+		mcpgo.WithString("line_type", mcpgo.Description("Diff side for inline comment: ADDED (default), REMOVED, or CONTEXT")),
+		mcpgo.WithNumber("parent_id", mcpgo.Description("Parent comment ID to reply to")),
 	)
 	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
-		svc := commentservice.NewService(c.OpenAPI)
+		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
 			project, _ := req.RequireString("project")
 			repo, _ := req.RequireString("repo")
 			prID, _ := req.RequireString("pr_id")
 			text, _ := req.RequireString("text")
-			target := commentservice.Target{
-				Repository:    commentservice.RepositoryRef{ProjectKey: project, Slug: repo},
-				PullRequestID: prID,
+			filePath := req.GetString("path", "")
+			line := req.GetInt("line", 0)
+			ref := pullrequestservice.RepositoryRef{ProjectKey: project, Slug: repo}
+			var comment pullrequestservice.Comment
+			var err error
+			if filePath != "" && line > 0 {
+				comment, err = svc.AddInlineComment(ctx, ref, prID, text,
+					pullrequestservice.InlineCommentAnchor{
+						Line:     line,
+						Path:    filePath,
+						LineType: req.GetString("line_type", "ADDED"),
+					},
+				)
+			} else {
+				parentID := int64(req.GetInt("parent_id", 0))
+				comment, err = svc.AddComment(ctx, ref, prID, text, parentID)
 			}
-			comment, err := svc.Create(ctx, target, text)
 			if err != nil {
 				return mcpgo.NewToolResultErrorFromErr("add_pr_comment failed", err), nil
 			}
@@ -205,12 +242,12 @@ func specListPRTasks() Spec {
 
 func specSubmitPRReview() Spec {
 	tool := mcpgo.NewTool("submit_pr_review",
-		mcpgo.WithDescription("Approve or unapprove a pull request."),
+		mcpgo.WithDescription("Set review status on a pull request: approve, unapprove, or request changes (needs_work)."),
 		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
 		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
 		mcpgo.WithString("pr_id", mcpgo.Required(), mcpgo.Description("Pull request ID")),
-		mcpgo.WithString("action", mcpgo.Required(), mcpgo.Description("Action to take: approve or unapprove"),
-			mcpgo.Enum("approve", "unapprove")),
+		mcpgo.WithString("action", mcpgo.Required(), mcpgo.Description("Action to take: approve, unapprove, or needs_work"),
+			mcpgo.Enum("approve", "unapprove", "needs_work")),
 	)
 	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
 		svc := pullrequestservice.NewService(c.HTTP)
@@ -227,6 +264,8 @@ func specSubmitPRReview() Spec {
 				pr, err = svc.Approve(ctx, ref, prID)
 			case "unapprove":
 				pr, err = svc.Unapprove(ctx, ref, prID)
+			case "needs_work":
+				pr, err = svc.NeedsWork(ctx, ref, prID)
 			default:
 				return mcpgo.NewToolResultErrorFromErr("submit_pr_review: unknown action "+strconv.Quote(action), nil), nil
 			}
@@ -338,4 +377,54 @@ func parseCommaList(s string) []string {
 		return nil
 	}
 	return result
+}
+
+func specGetPRDiff() Spec {
+	tool := mcpgo.NewTool("get_pr_diff",
+		mcpgo.WithDescription("Get the diff of a pull request as unified diff text."),
+		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
+		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
+		mcpgo.WithString("pr_id", mcpgo.Required(), mcpgo.Description("Pull request ID")),
+	)
+	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
+		svc := diffservice.NewService(c.OpenAPI)
+		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
+			project, _ := req.RequireString("project")
+			repo, _ := req.RequireString("repo")
+			prID, _ := req.RequireString("pr_id")
+			result, err := svc.DiffPR(ctx, diffservice.DiffPRInput{
+				Repository:    diffservice.RepositoryRef{ProjectKey: project, Slug: repo},
+				PullRequestID: prID,
+				Output:        diffservice.OutputKindRaw,
+			})
+			if err != nil {
+				return mcpgo.NewToolResultErrorFromErr("get_pr_diff failed", err), nil
+			}
+			return resultJSON(result)
+		}
+	}}
+}
+
+func specGetFileContent() Spec {
+	tool := mcpgo.NewTool("get_file_content",
+		mcpgo.WithDescription("Get the raw content of a file in a repository."),
+		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
+		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
+		mcpgo.WithString("path", mcpgo.Required(), mcpgo.Description("File path in the repository")),
+		mcpgo.WithString("at", mcpgo.Description("Git ref or branch to read from (e.g. refs/heads/main)")),
+	)
+	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
+		svc := browseservice.NewService(c.OpenAPI, c.HTTP, c.BaseURL)
+		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
+			project, _ := req.RequireString("project")
+			repo, _ := req.RequireString("repo")
+			path, _ := req.RequireString("path")
+			at := req.GetString("at", "")
+			content, err := svc.Raw(ctx, browseservice.RepositoryRef{ProjectKey: project, Slug: repo}, path, at)
+			if err != nil {
+				return mcpgo.NewToolResultErrorFromErr("get_file_content failed", err), nil
+			}
+			return mcpgo.NewToolResultText(string(content)), nil
+		}
+	}}
 }
