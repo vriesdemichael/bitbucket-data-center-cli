@@ -183,3 +183,279 @@ func (service *Service) UpdateRepositoryCondition(ctx context.Context, projectKe
 
 	return openapigenerated.RestPullRequestCondition{}, nil
 }
+
+func (service *Service) ListRepositoryReviewerGroups(ctx context.Context, projectKey, repositorySlug string) ([]openapigenerated.RestReviewerGroup, error) {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repositorySlug) == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "project key and repository slug are required", nil)
+	}
+
+	response, err := service.client.GetReviewerGroups1WithResponse(ctx, projectKey, repositorySlug, nil)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to list repository reviewer groups", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+
+	if response.ApplicationjsonCharsetUTF8200 != nil && response.ApplicationjsonCharsetUTF8200.Values != nil {
+		return *response.ApplicationjsonCharsetUTF8200.Values, nil
+	}
+
+	return []openapigenerated.RestReviewerGroup{}, nil
+}
+
+func (service *Service) CreateRepositoryReviewerGroup(ctx context.Context, projectKey, repositorySlug string, name, description string) (openapigenerated.RestReviewerGroup, error) {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repositorySlug) == "" || strings.TrimSpace(name) == "" {
+		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindValidation, "project key, repository slug, and name are required", nil)
+	}
+
+	body := openapigenerated.RestReviewerGroup{
+		Name: &name,
+	}
+	if description != "" {
+		body.Description = &description
+	}
+
+	response, err := service.client.Create2WithResponse(ctx, projectKey, repositorySlug, body)
+	if err != nil {
+		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindTransient, "failed to create repository reviewer group", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapigenerated.RestReviewerGroup{}, err
+	}
+
+	if response.ApplicationjsonCharsetUTF8201 != nil {
+		return *response.ApplicationjsonCharsetUTF8201, nil
+	}
+
+	if response.StatusCode() == 200 || response.StatusCode() == 201 {
+		var group openapigenerated.RestReviewerGroup
+		if err := json.Unmarshal(response.Body, &group); err == nil {
+			return group, nil
+		}
+	}
+
+	return openapigenerated.RestReviewerGroup{}, nil
+}
+
+func (service *Service) GetRepositoryReviewerGroup(ctx context.Context, projectKey, repositorySlug string, id string) (openapigenerated.RestReviewerGroup, error) {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repositorySlug) == "" || strings.TrimSpace(id) == "" {
+		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindValidation, "project key, repository slug, and ID are required", nil)
+	}
+
+	response, err := service.client.GetReviewerGroup1WithResponse(ctx, projectKey, repositorySlug, id)
+	if err != nil {
+		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindTransient, "failed to get repository reviewer group", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapigenerated.RestReviewerGroup{}, err
+	}
+
+	if response.ApplicationjsonCharsetUTF8200 != nil {
+		return *response.ApplicationjsonCharsetUTF8200, nil
+	}
+
+	return openapigenerated.RestReviewerGroup{}, nil
+}
+
+func (service *Service) UpdateRepositoryReviewerGroup(ctx context.Context, projectKey, repositorySlug string, id string, name, description string) (openapigenerated.RestReviewerGroup, error) {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repositorySlug) == "" || strings.TrimSpace(id) == "" {
+		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindValidation, "project key, repository slug, and ID are required", nil)
+	}
+
+	body := openapigenerated.RestReviewerGroup{}
+	if name != "" {
+		body.Name = &name
+	}
+	if description != "" {
+		body.Description = &description
+	}
+
+	response, err := service.client.Update2WithResponse(ctx, projectKey, repositorySlug, id, body)
+	if err != nil {
+		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindTransient, "failed to update repository reviewer group", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapigenerated.RestReviewerGroup{}, err
+	}
+
+	if response.ApplicationjsonCharsetUTF8200 != nil {
+		return *response.ApplicationjsonCharsetUTF8200, nil
+	}
+
+	return openapigenerated.RestReviewerGroup{}, nil
+}
+
+func (service *Service) DeleteRepositoryReviewerGroup(ctx context.Context, projectKey, repositorySlug string, id string) error {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repositorySlug) == "" || strings.TrimSpace(id) == "" {
+		return apperrors.New(apperrors.KindValidation, "project key, repository slug, and ID are required", nil)
+	}
+
+	response, err := service.client.Delete7WithResponse(ctx, projectKey, repositorySlug, id)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to delete repository reviewer group", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+func (service *Service) ListRepositoryReviewerGroupUsers(ctx context.Context, projectKey, repositorySlug string, id string) ([]openapigenerated.RestApplicationUser, error) {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repositorySlug) == "" || strings.TrimSpace(id) == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "project key, repository slug, and ID are required", nil)
+	}
+
+	response, err := service.client.GetUsersWithResponse(ctx, projectKey, repositorySlug, id)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to list repository reviewer group users", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+
+	if response.ApplicationjsonCharsetUTF8200 == nil {
+		return []openapigenerated.RestApplicationUser{}, nil
+	}
+
+	return *response.ApplicationjsonCharsetUTF8200, nil
+}
+
+func (service *Service) ListProjectReviewerGroups(ctx context.Context, projectKey string) ([]openapigenerated.RestReviewerGroup, error) {
+	if strings.TrimSpace(projectKey) == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
+	}
+
+	response, err := service.client.GetReviewerGroupsWithResponse(ctx, projectKey, nil)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to list project reviewer groups", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+
+	if response.ApplicationjsonCharsetUTF8200 != nil && response.ApplicationjsonCharsetUTF8200.Values != nil {
+		return *response.ApplicationjsonCharsetUTF8200.Values, nil
+	}
+
+	return []openapigenerated.RestReviewerGroup{}, nil
+}
+
+func (service *Service) CreateProjectReviewerGroup(ctx context.Context, projectKey string, name, description string) (openapigenerated.RestReviewerGroup, error) {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(name) == "" {
+		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindValidation, "project key and name are required", nil)
+	}
+
+	body := openapigenerated.RestReviewerGroup{
+		Name: &name,
+	}
+	if description != "" {
+		body.Description = &description
+	}
+
+	response, err := service.client.Create1WithResponse(ctx, projectKey, body)
+	if err != nil {
+		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindTransient, "failed to create project reviewer group", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapigenerated.RestReviewerGroup{}, err
+	}
+
+	if response.ApplicationjsonCharsetUTF8201 != nil {
+		return *response.ApplicationjsonCharsetUTF8201, nil
+	}
+
+	if response.StatusCode() == 200 || response.StatusCode() == 201 {
+		var group openapigenerated.RestReviewerGroup
+		if err := json.Unmarshal(response.Body, &group); err == nil {
+			return group, nil
+		}
+	}
+
+	return openapigenerated.RestReviewerGroup{}, nil
+}
+
+func (service *Service) GetProjectReviewerGroup(ctx context.Context, projectKey string, id string) (openapigenerated.RestReviewerGroup, error) {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(id) == "" {
+		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindValidation, "project key and ID are required", nil)
+	}
+
+	response, err := service.client.GetReviewerGroupWithResponse(ctx, projectKey, id)
+	if err != nil {
+		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindTransient, "failed to get project reviewer group", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapigenerated.RestReviewerGroup{}, err
+	}
+
+	if response.ApplicationjsonCharsetUTF8200 != nil {
+		return *response.ApplicationjsonCharsetUTF8200, nil
+	}
+
+	return openapigenerated.RestReviewerGroup{}, nil
+}
+
+func (service *Service) UpdateProjectReviewerGroup(ctx context.Context, projectKey string, id string, name, description string) (openapigenerated.RestReviewerGroup, error) {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(id) == "" {
+		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindValidation, "project key and ID are required", nil)
+	}
+
+	body := openapigenerated.RestReviewerGroup{}
+	if name != "" {
+		body.Name = &name
+	}
+	if description != "" {
+		body.Description = &description
+	}
+
+	response, err := service.client.Update1WithResponse(ctx, projectKey, id, body)
+	if err != nil {
+		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindTransient, "failed to update project reviewer group", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapigenerated.RestReviewerGroup{}, err
+	}
+
+	if response.ApplicationjsonCharsetUTF8200 != nil {
+		return *response.ApplicationjsonCharsetUTF8200, nil
+	}
+
+	return openapigenerated.RestReviewerGroup{}, nil
+}
+
+func (service *Service) DeleteProjectReviewerGroup(ctx context.Context, projectKey string, id string) error {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(id) == "" {
+		return apperrors.New(apperrors.KindValidation, "project key and ID are required", nil)
+	}
+
+	response, err := service.client.Delete6WithResponse(ctx, projectKey, id)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to delete project reviewer group", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+func (service *Service) GetDefaultReviewers(ctx context.Context, projectKey, repositorySlug string, sourceRepoId, targetRepoId, sourceRefId, targetRefId *string) ([]openapigenerated.RestPullRequestCondition, error) {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repositorySlug) == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "project key and repository slug are required", nil)
+	}
+
+	params := &openapigenerated.GetReviewersParams{
+		SourceRepoId: sourceRepoId,
+		TargetRepoId: targetRepoId,
+		SourceRefId:  sourceRefId,
+		TargetRefId:  targetRefId,
+	}
+
+	response, err := service.client.GetReviewersWithResponse(ctx, projectKey, repositorySlug, params)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to get default reviewers", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+
+	if response.JSON200 == nil {
+		return []openapigenerated.RestPullRequestCondition{}, nil
+	}
+
+	return *response.JSON200, nil
+}
+

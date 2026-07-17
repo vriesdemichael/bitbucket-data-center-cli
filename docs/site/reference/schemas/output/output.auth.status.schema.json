@@ -16,7 +16,7 @@
           "type": "string"
         },
         "bitbucket_url": {
-          "description": "The configured Bitbucket Server base URL.",
+          "description": "The configured Bitbucket Data Center base URL.",
           "type": "string"
         },
         "bitbucket_version_target": {

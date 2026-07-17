@@ -36,5 +36,5 @@ bb bulk status <operation-id>
 - Add YAML schema comment for editor validation and completion:
 
 ```yaml
-# yaml-language-server: $schema=https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/bulk-policy.schema.json
+# yaml-language-server: $schema=https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/bulk-policy.schema.json
 ```

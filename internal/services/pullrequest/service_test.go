@@ -11,6 +11,7 @@ import (
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
 
@@ -821,6 +822,556 @@ func TestBuildCreatePayloadWithBlankReviewers(t *testing.T) {
 	reviewers := payload["reviewers"].([]map[string]any)
 	if len(reviewers) != 2 {
 		t.Fatalf("expected 2 reviewers (blank entries skipped), got %d", len(reviewers))
+	}
+}
+
+func TestBuildCreatePayloadWithDraft(t *testing.T) {
+	payload, err := buildCreatePayload(CreateInput{
+		FromRef: "feature/my-work",
+		ToRef:   "main",
+		Title:   "My PR",
+		Draft:   true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	draft, ok := payload["draft"].(bool)
+	if !ok || !draft {
+		t.Fatalf("expected draft=true in payload, got %v", payload["draft"])
+	}
+}
+
+func TestBuildCreatePayloadNoDraftByDefault(t *testing.T) {
+	payload, err := buildCreatePayload(CreateInput{
+		FromRef: "feature/my-work",
+		ToRef:   "main",
+		Title:   "My PR",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, exists := payload["draft"]; exists {
+		t.Fatalf("expected no draft key when Draft=false, got %v", payload["draft"])
+	}
+}
+
+func TestBuildUpdatePayloadWithDraft(t *testing.T) {
+	trueVal := true
+	payload, err := buildUpdatePayload(UpdateInput{
+		Title:   "Updated title",
+		Version: 1,
+		Draft:   &trueVal,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if payload["draft"] != true {
+		t.Fatalf("expected draft=true in update payload, got %v", payload["draft"])
+	}
+}
+
+func TestBuildUpdatePayloadDraftOnlyRequiresVersion(t *testing.T) {
+	falseVal := false
+	payload, err := buildUpdatePayload(UpdateInput{
+		Version: 2,
+		Draft:   &falseVal,
+	})
+	if err != nil {
+		t.Fatalf("expected draft-only update to succeed, got: %v", err)
+	}
+
+	if payload["draft"] != false {
+		t.Fatalf("expected draft=false in update payload, got %v", payload["draft"])
+	}
+	if payload["version"] != 2 {
+		t.Fatalf("expected version=2 in update payload, got %v", payload["version"])
+	}
+}
+
+func TestBuildUpdatePayloadValidationRequiresField(t *testing.T) {
+	_, err := buildUpdatePayload(UpdateInput{Version: 1})
+	if err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected validation error exit code 2 when no fields set, got: %v", err)
+	}
+}
+
+func TestCreateDraftPullRequest(t *testing.T) {
+	var receivedBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests" {
+			receivedBody = readBody(t, r)
+			_, _ = fmt.Fprint(w, `{"id":50,"title":"Draft PR","state":"OPEN","open":true,"closed":false,"draft":true,"fromRef":{"displayId":"feature/draft"},"toRef":{"displayId":"main"}}`)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	service := NewService(httpclient.NewFromConfig(cfg))
+	created, err := service.Create(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CreateInput{
+		FromRef: "feature/draft",
+		ToRef:   "main",
+		Title:   "Draft PR",
+		Draft:   true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !created.Draft {
+		t.Fatal("expected created PR to have Draft=true")
+	}
+	if !strings.Contains(receivedBody, `"draft":true`) {
+		t.Fatalf("expected request body to contain draft:true, got: %s", receivedBody)
+	}
+}
+
+func TestUpdateDraftPullRequest(t *testing.T) {
+	var receivedBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/50" {
+			receivedBody = readBody(t, r)
+			_, _ = fmt.Fprint(w, `{"id":50,"title":"Draft PR","state":"OPEN","open":true,"closed":false,"draft":false,"version":2,"fromRef":{"displayId":"feature/draft"},"toRef":{"displayId":"main"}}`)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	falseVal := false
+	service := NewService(httpclient.NewFromConfig(cfg))
+	updated, err := service.Update(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "50", UpdateInput{
+		Title:   "Draft PR",
+		Version: 1,
+		Draft:   &falseVal,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if updated.Draft {
+		t.Fatal("expected updated PR to have Draft=false")
+	}
+	if !strings.Contains(receivedBody, `"draft":false`) {
+		t.Fatalf("expected request body to contain draft:false, got: %s", receivedBody)
+	}
+}
+
+func TestAutoMergeEnableDisableGet(t *testing.T) {
+	const autoMergePath = "/rest/api/latest/projects/TEST/repos/demo/pull-requests/42/auto-merge"
+	autoMergeEnabled := true
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != autoMergePath {
+			http.NotFound(w, r)
+			return
+		}
+		switch r.Method {
+		case http.MethodGet:
+			if !autoMergeEnabled {
+				http.NotFound(w, r)
+				return
+			}
+			_, _ = fmt.Fprint(w, `{"strategyId":"no-ff"}`)
+		case http.MethodPost:
+			autoMergeEnabled = true
+			_, _ = fmt.Fprint(w, `{"strategyId":"rebase-ff-only"}`)
+		case http.MethodDelete:
+			autoMergeEnabled = false
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	service := NewService(httpclient.NewFromConfig(cfg))
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	// GET when enabled
+	am, err := service.GetAutoMerge(context.Background(), repo, "42")
+	if err != nil {
+		t.Fatalf("GetAutoMerge: unexpected error: %v", err)
+	}
+	if !am.Enabled || am.StrategyID != "no-ff" {
+		t.Fatalf("GetAutoMerge: expected enabled=true strategy=no-ff, got %+v", am)
+	}
+
+	// Enable with a specific strategy
+	enabled, err := service.EnableAutoMerge(context.Background(), repo, "42", "rebase-ff-only")
+	if err != nil {
+		t.Fatalf("EnableAutoMerge: unexpected error: %v", err)
+	}
+	if !enabled.Enabled || enabled.StrategyID != "rebase-ff-only" {
+		t.Fatalf("EnableAutoMerge: expected enabled=true strategy=rebase-ff-only, got %+v", enabled)
+	}
+
+	// Disable
+	if err := service.DisableAutoMerge(context.Background(), repo, "42"); err != nil {
+		t.Fatalf("DisableAutoMerge: unexpected error: %v", err)
+	}
+
+	// GET after disable returns not-found → Enabled=false, no error
+	am, err = service.GetAutoMerge(context.Background(), repo, "42")
+	if err != nil {
+		t.Fatalf("GetAutoMerge after disable: unexpected error: %v", err)
+	}
+	if am.Enabled {
+		t.Fatalf("GetAutoMerge after disable: expected enabled=false, got %+v", am)
+	}
+}
+
+func TestAutoMergeValidation(t *testing.T) {
+	service := NewService(httpclient.NewFromConfig(config.AppConfig{BitbucketURL: "http://localhost:7990"}))
+
+	_, err := service.GetAutoMerge(context.Background(), RepositoryRef{}, "1")
+	if err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected validation error for missing repo ref, got: %v", err)
+	}
+
+	_, err = service.EnableAutoMerge(context.Background(), RepositoryRef{}, "1", "no-ff")
+	if err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected validation error for missing repo ref in enable, got: %v", err)
+	}
+
+	err = service.DisableAutoMerge(context.Background(), RepositoryRef{}, "1")
+	if err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected validation error for missing repo ref in disable, got: %v", err)
+	}
+}
+
+func TestEnableAutoMergeDefaultStrategy(t *testing.T) {
+	var receivedBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			receivedBody = readBody(t, r)
+			_, _ = fmt.Fprint(w, `{"strategyId":"no-ff"}`)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, _ := config.LoadFromEnv()
+	service := NewService(httpclient.NewFromConfig(cfg))
+
+	// Empty strategy should default to "no-ff"
+	am, err := service.EnableAutoMerge(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "1", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if am.StrategyID != "no-ff" {
+		t.Fatalf("expected strategy no-ff, got %s", am.StrategyID)
+	}
+	if !strings.Contains(receivedBody, `"strategyId":"no-ff"`) {
+		t.Fatalf("expected request body to contain no-ff, got: %s", receivedBody)
+	}
+}
+
+func TestWatchUnwatchRebase(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/42/watch":
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/42/watch":
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/git/latest/projects/TEST/repos/demo/pull-requests/42/rebase":
+			_, _ = fmt.Fprint(w, `{"vetoes":[{"summaryMessage":"blocked","detailedMessage":"conflict"}]}`)
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/git/latest/projects/TEST/repos/demo/pull-requests/42/rebase":
+			_, _ = fmt.Fprint(w, `{"refChange":{"toHash":"newhash"}}`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+
+	service := NewService(nil).WithAPIClient(client)
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	// Test Watch
+	err = service.Watch(context.Background(), repo, "42")
+	if err != nil {
+		t.Fatalf("unexpected error on Watch: %v", err)
+	}
+
+	// Test Unwatch
+	err = service.Unwatch(context.Background(), repo, "42")
+	if err != nil {
+		t.Fatalf("unexpected error on Unwatch: %v", err)
+	}
+
+	// Test CanRebase
+	rebaseability, err := service.CanRebase(context.Background(), repo, "42")
+	if err != nil {
+		t.Fatalf("unexpected error on CanRebase: %v", err)
+	}
+	if rebaseability == nil || rebaseability.Vetoes == nil || len(*rebaseability.Vetoes) != 1 || *(*rebaseability.Vetoes)[0].SummaryMessage != "blocked" {
+		t.Fatalf("unexpected rebaseability: %+v", rebaseability)
+	}
+
+	// Test Rebase
+	version := 3
+	result, err := service.Rebase(context.Background(), repo, "42", &version)
+	if err != nil {
+		t.Fatalf("unexpected error on Rebase: %v", err)
+	}
+	if result == nil || result.RefChange == nil || *result.RefChange.ToHash != "newhash" {
+		t.Fatalf("unexpected rebase result: %+v", result)
+	}
+}
+
+func TestWatchUnwatchRebaseValidation(t *testing.T) {
+	service := NewService(nil)
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	// Nil client error
+	err := service.Watch(context.Background(), repo, "42")
+	if err == nil || !strings.Contains(err.Error(), "openapi client is not configured") {
+		t.Fatalf("expected nil client error, got: %v", err)
+	}
+
+	err = service.Unwatch(context.Background(), repo, "42")
+	if err == nil || !strings.Contains(err.Error(), "openapi client is not configured") {
+		t.Fatalf("expected nil client error, got: %v", err)
+	}
+
+	_, err = service.CanRebase(context.Background(), repo, "42")
+	if err == nil || !strings.Contains(err.Error(), "openapi client is not configured") {
+		t.Fatalf("expected nil client error, got: %v", err)
+	}
+
+	_, err = service.Rebase(context.Background(), repo, "42", nil)
+	if err == nil || !strings.Contains(err.Error(), "openapi client is not configured") {
+		t.Fatalf("expected nil client error, got: %v", err)
+	}
+
+	// Validation errors (missing repository)
+	client := &openapigenerated.ClientWithResponses{}
+	service.WithAPIClient(client)
+
+	for _, op := range []string{"watch", "unwatch", "canrebase", "rebase"} {
+		var err error
+		if op == "watch" {
+			err = service.Watch(context.Background(), RepositoryRef{}, "42")
+		} else if op == "unwatch" {
+			err = service.Unwatch(context.Background(), RepositoryRef{}, "42")
+		} else if op == "canrebase" {
+			_, err = service.CanRebase(context.Background(), RepositoryRef{}, "42")
+		} else {
+			_, err = service.Rebase(context.Background(), RepositoryRef{}, "42", nil)
+		}
+		if err == nil || apperrors.ExitCode(err) != 2 {
+			t.Fatalf("expected validation error (repo) on %s, got: %v", op, err)
+		}
+	}
+
+	// Validation errors (invalid PR ID)
+	for _, op := range []string{"watch", "unwatch", "canrebase", "rebase"} {
+		var err error
+		if op == "watch" {
+			err = service.Watch(context.Background(), repo, "invalid")
+		} else if op == "unwatch" {
+			err = service.Unwatch(context.Background(), repo, "invalid")
+		} else if op == "canrebase" {
+			_, err = service.CanRebase(context.Background(), repo, "invalid")
+		} else {
+			_, err = service.Rebase(context.Background(), repo, "invalid", nil)
+		}
+		if err == nil || apperrors.ExitCode(err) != 2 {
+			t.Fatalf("expected validation error (pr id) on %s, got: %v", op, err)
+		}
+	}
+}
+
+func TestWatchUnwatchRebaseAPIErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = fmt.Fprint(w, `{"errors":[{"message":"internal error"}]}`)
+	}))
+	defer server.Close()
+
+	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+
+	service := NewService(nil).WithAPIClient(client)
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	// Test Watch error
+	err = service.Watch(context.Background(), repo, "42")
+	if err == nil {
+		t.Fatalf("expected error on Watch")
+	}
+
+	// Test Unwatch error
+	err = service.Unwatch(context.Background(), repo, "42")
+	if err == nil {
+		t.Fatalf("expected error on Unwatch")
+	}
+
+	// Test CanRebase error
+	_, err = service.CanRebase(context.Background(), repo, "42")
+	if err == nil {
+		t.Fatalf("expected error on CanRebase")
+	}
+
+	// Test Rebase error
+	_, err = service.Rebase(context.Background(), repo, "42", nil)
+	if err == nil {
+		t.Fatalf("expected error on Rebase")
+	}
+}
+
+func TestListPullRequestsContainingCommitAndSearchParticipants(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/sha123/pull-requests":
+			_, _ = fmt.Fprint(w, `{"values":[{"id":42,"title":"PR Title","state":"OPEN","open":true,"closed":false,"draft":false,"version":1}]}`)
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/participants":
+			if r.URL.Query().Get("filter") == "user1" {
+				_, _ = fmt.Fprint(w, `{"values":[{"active":true,"displayName":"User One","emailAddress":"user1@example.com","id":1,"name":"user1","slug":"user1"}]}`)
+			} else {
+				_, _ = fmt.Fprint(w, `{"values":[]}`)
+			}
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+
+	service := NewService(nil).WithAPIClient(client)
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	// Test ListPullRequestsContainingCommit
+	prs, err := service.ListPullRequestsContainingCommit(context.Background(), repo, "sha123")
+	if err != nil {
+		t.Fatalf("unexpected error on ListPullRequestsContainingCommit: %v", err)
+	}
+	if len(prs) != 1 || prs[0].ID != 42 || prs[0].Title != "PR Title" {
+		t.Fatalf("unexpected PRs: %+v", prs)
+	}
+
+	// Test SearchParticipants
+	users, err := service.SearchParticipants(context.Background(), repo, "user1")
+	if err != nil {
+		t.Fatalf("unexpected error on SearchParticipants: %v", err)
+	}
+	if len(users) != 1 || users[0].Name != "user1" || users[0].DisplayName != "User One" || users[0].EmailAddress != "user1@example.com" || !users[0].Active {
+		t.Fatalf("unexpected participants: %+v", users)
+	}
+}
+
+func TestListPullRequestsContainingCommitAndSearchParticipantsValidation(t *testing.T) {
+	service := NewService(nil)
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	// Nil client error
+	_, err := service.ListPullRequestsContainingCommit(context.Background(), repo, "sha123")
+	if err == nil || !strings.Contains(err.Error(), "openapi client is not configured") {
+		t.Fatalf("expected nil client error, got: %v", err)
+	}
+
+	_, err = service.SearchParticipants(context.Background(), repo, "filter")
+	if err == nil || !strings.Contains(err.Error(), "openapi client is not configured") {
+		t.Fatalf("expected nil client error, got: %v", err)
+	}
+
+	// Validation errors (missing repository)
+	client := &openapigenerated.ClientWithResponses{}
+	service.WithAPIClient(client)
+
+	for _, op := range []string{"commit_prs", "participants"} {
+		var err error
+		if op == "commit_prs" {
+			_, err = service.ListPullRequestsContainingCommit(context.Background(), RepositoryRef{}, "sha123")
+		} else {
+			_, err = service.SearchParticipants(context.Background(), RepositoryRef{}, "filter")
+		}
+		if err == nil || apperrors.ExitCode(err) != 2 {
+			t.Fatalf("expected validation error (repo) on %s, got: %v", op, err)
+		}
+	}
+
+	// Validation errors (missing inputs)
+	_, err = service.ListPullRequestsContainingCommit(context.Background(), repo, "")
+	if err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected validation error (commit ID) on commit_prs, got: %v", err)
+	}
+
+	_, err = service.SearchParticipants(context.Background(), repo, "")
+	if err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected validation error (filter) on participants, got: %v", err)
+	}
+}
+
+func TestListPullRequestsContainingCommitAndSearchParticipantsAPIErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = fmt.Fprint(w, `{"errors":[{"message":"internal error"}]}`)
+	}))
+	defer server.Close()
+
+	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+
+	service := NewService(nil).WithAPIClient(client)
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	// Test commit prs error
+	_, err = service.ListPullRequestsContainingCommit(context.Background(), repo, "sha123")
+	if err == nil {
+		t.Fatalf("expected error on ListPullRequestsContainingCommit")
+	}
+
+	// Test participants error
+	_, err = service.SearchParticipants(context.Background(), repo, "filter")
+	if err == nil {
+		t.Fatalf("expected error on SearchParticipants")
 	}
 }
 

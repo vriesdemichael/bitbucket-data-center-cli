@@ -410,7 +410,8 @@ func runGit(directory string, args ...string) error {
 
 	var lastErr error
 	for attempt := 0; attempt <= maxRetries; attempt++ {
-		command := exec.Command("git", args...)
+		gitArgs := append([]string{"-c", "credential.helper="}, args...)
+		command := exec.Command("git", gitArgs...)
 		command.Dir = directory
 		command.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
 		output, err := command.CombinedOutput()

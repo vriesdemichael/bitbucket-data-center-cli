@@ -24,18 +24,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
       - name: Verify PR branch has no merge commits
         run: task quality:git:ensure-linear
@@ -45,18 +43,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
       - name: Validate ADR records
         run: task quality:validate-decisions
@@ -66,21 +62,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
       - name: Run Go tests (targeted non-live package scope)
         run: task test:go:safe
+
+      - name: Verify OpenAPI spec coverage artifact is current
+        run: task quality:spec-coverage:verify
 
   docs-site:
     name: Docs Site
@@ -89,10 +86,10 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -106,9 +103,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
       - name: Render changelog for docs validation
         env:
@@ -135,20 +130,18 @@ jobs:
       ADMIN_PASSWORD: admin
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
       - name: Create .env file (required by docker/compose.yml env_file directive)
         run: touch .env
@@ -224,7 +217,7 @@ jobs:
 
       - name: Upload combined scoped coverage to Codecov
         if: env.CODECOV_TOKEN != ''
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ env.CODECOV_TOKEN }}
           files: .tmp/coverage.combined.scoped.out

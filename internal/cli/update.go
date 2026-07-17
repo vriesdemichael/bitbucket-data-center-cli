@@ -39,7 +39,7 @@ var updateRunnerFactory = func(version string, httpConfig updateCommandHTTPConfi
 	return updateworkflow.NewRunner(updateworkflow.Dependencies{
 		Releases:        client,
 		RepositoryOwner: "vriesdemichael",
-		RepositoryName:  "bitbucket-server-cli",
+		RepositoryName:  "bitbucket-data-center-cli",
 		CurrentVersion:  func() string { return strings.TrimSpace(version) },
 		ExecutablePath:  os.Executable,
 		Platform:        func() (string, string) { return runtime.GOOS, runtime.GOARCH },

@@ -1,19 +1,19 @@
-# Bitbucket Server CLI (`bb`)
+# Bitbucket Data Center CLI (`bb`)
 
-[![codecov](https://codecov.io/gh/vriesdemichael/bitbucket-server-cli/branch/main/graph/badge.svg?flag=combined_scoped)](https://codecov.io/gh/vriesdemichael/bitbucket-server-cli?flag=combined_scoped)
+[![codecov](https://codecov.io/gh/vriesdemichael/bitbucket-data-center-cli/branch/main/graph/badge.svg?flag=combined_scoped)](https://codecov.io/gh/vriesdemichael/bitbucket-data-center-cli?flag=combined_scoped)
 
-`bb` is a production-focused CLI for automating Bitbucket Server/Data Center workflows.
+`bb` is a production-focused CLI for automating Bitbucket Data Center workflows (targeting recent versions of Bitbucket for Data Center).
 It combines scriptable machine output, safe dry-run planning, and high-coverage live-behavior
 validation against real Bitbucket APIs.
 
-It is designed as the `gh`-style CLI experience for Bitbucket Server/Data Center, including
+It is designed as the `gh`-style CLI experience for Bitbucket Data Center, including
 repository cloning and browser navigation ergonomics tailored to Bitbucket-hosted projects.
 
 ## Why teams adopt `bb`
 
 - **Operationally safe by default**: dry-run planning for server mutations and explicit bulk plan/apply workflows.
 - **Automation friendly**: stable JSON envelope contract (`bb.machine`, `v2`) for CI/CD and internal tooling.
-- **Spec-driven API interactions**: client/server interactions are derived from Bitbucket Server's official OpenAPI spec.
+- **Spec-driven API interactions**: client/server interactions are derived from Bitbucket Data Center's official OpenAPI spec.
 - **Git-native ergonomics**: repository discovery from matching remotes to reduce repetitive `--repo` usage.
 - **Enterprise-ready auth model**: token/basic auth with persisted server contexts and secure credential handling.
 - **Live-tested command behavior**: command workflows are validated against a real Bitbucket Data Center server, not mocks alone.
@@ -41,12 +41,36 @@ scoop bucket add vriesdemichael https://github.com/vriesdemichael/scoop
 scoop install vriesdemichael/bb
 ```
 
+Install on macOS or Linux via Homebrew:
+
+```bash
+brew install vriesdemichael/tap/bb
+```
+
+Install on Arch Linux from the AUR:
+
+```bash
+yay -S bb-bin
+```
+
+Install on Debian/Ubuntu or RHEL/Fedora from the release `.deb`/`.rpm`:
+
+```bash
+VERSION=v1.0.0
+# Debian/Ubuntu
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.deb"
+sudo dpkg -i "bb_${VERSION#v}_linux_amd64.deb"
+# RHEL/Fedora
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.rpm"
+sudo rpm -i "bb_${VERSION#v}_linux_amd64.rpm"
+```
+
 Install from Releases (Linux amd64 example):
 
 ```bash
 VERSION=v1.0.0
-curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.tar.gz"
-curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/sha256sums.txt"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.tar.gz"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sha256sums.txt"
 sha256sum -c sha256sums.txt --ignore-missing
 tar -xzf "bb_${VERSION#v}_linux_amd64.tar.gz"
 install -m 0755 bb /usr/local/bin/bb
@@ -111,8 +135,8 @@ bb --json auth status
 
 ## Docs
 
-- Full docs site: <https://vriesdemichael.github.io/bitbucket-server-cli/latest/>
-- LLM guide (`llms.txt`): <https://vriesdemichael.github.io/bitbucket-server-cli/latest/llms.txt>
+- Full docs site: <https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/>
+- LLM guide (`llms.txt`): <https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/llms.txt>
 - AI and llms.txt overview: [docs/site/ai-and-llms.md](docs/site/ai-and-llms.md)
 - Installation and Quickstart: [docs/site/installation-and-quickstart.md](docs/site/installation-and-quickstart.md)
 - Basic Usage: [docs/site/basic-usage.md](docs/site/basic-usage.md)
@@ -137,5 +161,5 @@ This README is an adopter-focused landing page.
 
 ## License and platform note
 
-Atlassian Bitbucket Server/Data Center is proprietary software.
+Atlassian Bitbucket Data Center is proprietary software.
 Use of local Docker images and server instances must comply with Atlassian licensing terms.

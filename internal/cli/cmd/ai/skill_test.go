@@ -210,6 +210,7 @@ func TestResolveInstallPathGlobal(t *testing.T) {
 func TestSkillInstallGlobalWritesFile(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home) // os.UserHomeDir() reads USERPROFILE on Windows, HOME elsewhere
 
 	cmd := New(testSkillDeps("4.0.0"))
 	buf := &bytes.Buffer{}

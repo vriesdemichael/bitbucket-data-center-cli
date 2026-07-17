@@ -695,3 +695,430 @@ func TestQualityRequiredAndInsightsErrorHandlingBranches(t *testing.T) {
 		}
 	})
 }
+
+func TestQualityServiceScopedAndDeploymentsFlow(t *testing.T) {
+	service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/builds":
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/builds":
+			if r.URL.Query().Get("key") != "ci/main" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			_, _ = w.Write([]byte(`{"key":"ci/main","state":"SUCCESSFUL"}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/builds":
+			if r.URL.Query().Get("key") != "ci/main" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/build-status/latest/commits/stats":
+			_, _ = w.Write([]byte(`{"abc":{"successful":1}}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/deployments":
+			_, _ = w.Write([]byte(`{"key":"dep1","state":"SUCCESSFUL"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/deployments":
+			if r.URL.Query().Get("key") != "dep1" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			_, _ = w.Write([]byte(`{"key":"dep1","state":"SUCCESSFUL"}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/deployments":
+			if r.URL.Query().Get("key") != "dep1" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPut && r.URL.Path == "/rest/insights/latest/projects/TEST/repos/demo/commits/abc/reports/lint/annotations/a1":
+			_, _ = w.Write([]byte(`{"externalId":"a1","message":"fixed"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/insights/latest/projects/TEST/repos/demo/commits/abc/annotations":
+			_, _ = w.Write([]byte(`{"annotations":[{"externalId":"a1","message":"fixed"}]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	// 1. Scoped Build Status
+	err := service.AddScopedBuildStatus(context.Background(), repo, "abc", BuildStatusSetInput{
+		Key:         "ci/main",
+		State:       "SUCCESSFUL",
+		URL:         "https://ci.example",
+		Name:        "Build Name",
+		Description: "Build Desc",
+		Ref:         "refs/heads/main",
+		Parent:      "ci",
+		BuildNumber: "100",
+		DurationMS:  2000,
+	})
+	if err != nil {
+		t.Fatalf("AddScopedBuildStatus failed: %v", err)
+	}
+
+	build, err := service.GetScopedBuildStatus(context.Background(), repo, "abc", "ci/main")
+	if err != nil || build.Key == nil || *build.Key != "ci/main" {
+		t.Fatalf("GetScopedBuildStatus failed: err=%v build=%v", err, build)
+	}
+
+	err = service.DeleteScopedBuildStatus(context.Background(), repo, "abc", "ci/main")
+	if err != nil {
+		t.Fatalf("DeleteScopedBuildStatus failed: %v", err)
+	}
+
+	// 2. Multi-commit stats
+	statsMap, err := service.GetMultipleBuildStatusStats(context.Background(), []string{"abc"})
+	if err != nil || len(statsMap) != 1 || statsMap["abc"].Successful == nil || *statsMap["abc"].Successful != 1 {
+		t.Fatalf("GetMultipleBuildStatusStats failed: err=%v statsMap=%v", err, statsMap)
+	}
+
+	// 3. Deployments
+	envKey := "prod"
+	envName := "Production"
+	envType := "PRODUCTION"
+	dep, err := service.CreateOrUpdateDeployment(context.Background(), repo, "abc", openapigenerated.RestDeploymentSetRequest{
+		DeploymentSequenceNumber: 1,
+		Description:              "Prod Deploy",
+		DisplayName:              "Prod Deploy",
+		Key:                      "dep1",
+		State:                    "SUCCESSFUL",
+		Url:                      "https://deploy.example",
+		Environment: openapigenerated.RestDeploymentEnvironment{
+			Key:         &envKey,
+			DisplayName: &envName,
+			Type:        &envType,
+		},
+	})
+	if err != nil || dep.Key == nil || *dep.Key != "dep1" {
+		t.Fatalf("CreateOrUpdateDeployment failed: err=%v dep=%v", err, dep)
+	}
+
+	depKey := "dep1"
+	gotDep, err := service.GetDeployment(context.Background(), repo, "abc", openapigenerated.Get1Params{
+		Key: &depKey,
+	})
+	if err != nil || gotDep.Key == nil || *gotDep.Key != "dep1" {
+		t.Fatalf("GetDeployment failed: err=%v gotDep=%v", err, gotDep)
+	}
+
+	err = service.DeleteDeployment(context.Background(), repo, "abc", openapigenerated.Delete1Params{
+		Key: &depKey,
+	})
+	if err != nil {
+		t.Fatalf("DeleteDeployment failed: %v", err)
+	}
+
+	// 4. Code Insights single annotation Set
+	ann, err := service.SetAnnotation(context.Background(), repo, "abc", "lint", "a1", openapigenerated.RestSingleAddInsightAnnotationRequest{
+		Message:  "fixed",
+		Severity: "LOW",
+	})
+	if err != nil || ann.ExternalId == nil || *ann.ExternalId != "a1" {
+		t.Fatalf("SetAnnotation failed: err=%v ann=%v", err, ann)
+	}
+
+	// 5. Code Insights list commit annotations
+	anns, err := service.ListCommitAnnotations(context.Background(), repo, "abc", openapigenerated.GetAnnotations1Params{})
+	if err != nil || len(anns) != 1 || anns[0].ExternalId == nil || *anns[0].ExternalId != "a1" {
+		t.Fatalf("ListCommitAnnotations failed: err=%v anns=%v", err, anns)
+	}
+}
+
+func TestQualityServiceScopedAndDeploymentsErrorPaths(t *testing.T) {
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+	emptyRepo := RepositoryRef{}
+
+	// 1. Validation guards
+	t.Run("validation guards", func(t *testing.T) {
+		service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+
+		// AddScopedBuildStatus
+		if err := service.AddScopedBuildStatus(context.Background(), emptyRepo, "abc", BuildStatusSetInput{}); err == nil {
+			t.Fatal("expected empty repo error")
+		}
+		if err := service.AddScopedBuildStatus(context.Background(), repo, "", BuildStatusSetInput{}); err == nil {
+			t.Fatal("expected empty commit error")
+		}
+		if err := service.AddScopedBuildStatus(context.Background(), repo, "abc", BuildStatusSetInput{}); err == nil {
+			t.Fatal("expected empty key error")
+		}
+		if err := service.AddScopedBuildStatus(context.Background(), repo, "abc", BuildStatusSetInput{Key: "k"}); err == nil {
+			t.Fatal("expected empty state error")
+		}
+		if err := service.AddScopedBuildStatus(context.Background(), repo, "abc", BuildStatusSetInput{Key: "k", State: "s"}); err == nil {
+			t.Fatal("expected empty url error")
+		}
+
+		// GetScopedBuildStatus
+		if _, err := service.GetScopedBuildStatus(context.Background(), emptyRepo, "abc", "k"); err == nil {
+			t.Fatal("expected empty repo error")
+		}
+		if _, err := service.GetScopedBuildStatus(context.Background(), repo, "", "k"); err == nil {
+			t.Fatal("expected empty commit error")
+		}
+		if _, err := service.GetScopedBuildStatus(context.Background(), repo, "abc", ""); err == nil {
+			t.Fatal("expected empty key error")
+		}
+
+		// DeleteScopedBuildStatus
+		if err := service.DeleteScopedBuildStatus(context.Background(), emptyRepo, "abc", "k"); err == nil {
+			t.Fatal("expected empty repo error")
+		}
+		if err := service.DeleteScopedBuildStatus(context.Background(), repo, "", "k"); err == nil {
+			t.Fatal("expected empty commit error")
+		}
+		if err := service.DeleteScopedBuildStatus(context.Background(), repo, "abc", ""); err == nil {
+			t.Fatal("expected empty key error")
+		}
+
+		// GetMultipleBuildStatusStats
+		if _, err := service.GetMultipleBuildStatusStats(context.Background(), nil); err == nil {
+			t.Fatal("expected nil commits error")
+		}
+		if _, err := service.GetMultipleBuildStatusStats(context.Background(), []string{" "}); err == nil {
+			t.Fatal("expected empty commits error")
+		}
+
+		// CreateOrUpdateDeployment
+		if _, err := service.CreateOrUpdateDeployment(context.Background(), emptyRepo, "abc", openapigenerated.RestDeploymentSetRequest{}); err == nil {
+			t.Fatal("expected empty repo error")
+		}
+		if _, err := service.CreateOrUpdateDeployment(context.Background(), repo, "", openapigenerated.RestDeploymentSetRequest{}); err == nil {
+			t.Fatal("expected empty commit error")
+		}
+
+		// GetDeployment
+		if _, err := service.GetDeployment(context.Background(), emptyRepo, "abc", openapigenerated.Get1Params{}); err == nil {
+			t.Fatal("expected empty repo error")
+		}
+		if _, err := service.GetDeployment(context.Background(), repo, "", openapigenerated.Get1Params{}); err == nil {
+			t.Fatal("expected empty commit error")
+		}
+
+		// DeleteDeployment
+		if err := service.DeleteDeployment(context.Background(), emptyRepo, "abc", openapigenerated.Delete1Params{}); err == nil {
+			t.Fatal("expected empty repo error")
+		}
+		if err := service.DeleteDeployment(context.Background(), repo, "", openapigenerated.Delete1Params{}); err == nil {
+			t.Fatal("expected empty commit error")
+		}
+
+		// SetAnnotation
+		if _, err := service.SetAnnotation(context.Background(), emptyRepo, "abc", "r", "a", openapigenerated.RestSingleAddInsightAnnotationRequest{}); err == nil {
+			t.Fatal("expected empty repo error")
+		}
+		if _, err := service.SetAnnotation(context.Background(), repo, "", "r", "a", openapigenerated.RestSingleAddInsightAnnotationRequest{}); err == nil {
+			t.Fatal("expected empty commit error")
+		}
+		if _, err := service.SetAnnotation(context.Background(), repo, "abc", "", "a", openapigenerated.RestSingleAddInsightAnnotationRequest{}); err == nil {
+			t.Fatal("expected empty reportKey error")
+		}
+		if _, err := service.SetAnnotation(context.Background(), repo, "abc", "r", "", openapigenerated.RestSingleAddInsightAnnotationRequest{}); err == nil {
+			t.Fatal("expected empty externalID error")
+		}
+
+		// ListCommitAnnotations
+		if _, err := service.ListCommitAnnotations(context.Background(), emptyRepo, "abc", openapigenerated.GetAnnotations1Params{}); err == nil {
+			t.Fatal("expected empty repo error")
+		}
+		if _, err := service.ListCommitAnnotations(context.Background(), repo, "", openapigenerated.GetAnnotations1Params{}); err == nil {
+			t.Fatal("expected empty commit error")
+		}
+	})
+
+	// 2. Transport / Status mapping failures
+	t.Run("transport and status error mappings", func(t *testing.T) {
+		service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte("not found"))
+		})
+
+		// AddScopedBuildStatus mapping
+		err := service.AddScopedBuildStatus(context.Background(), repo, "abc", BuildStatusSetInput{Key: "k", State: "s", URL: "u"})
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected 404 exit code 4, got: %v", err)
+		}
+
+		// GetScopedBuildStatus mapping
+		_, err = service.GetScopedBuildStatus(context.Background(), repo, "abc", "k")
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected 404 exit code 4, got: %v", err)
+		}
+
+		// DeleteScopedBuildStatus mapping
+		err = service.DeleteScopedBuildStatus(context.Background(), repo, "abc", "k")
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected 404 exit code 4, got: %v", err)
+		}
+
+		// GetMultipleBuildStatusStats mapping
+		_, err = service.GetMultipleBuildStatusStats(context.Background(), []string{"abc"})
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected 404 exit code 4, got: %v", err)
+		}
+
+		// CreateOrUpdateDeployment mapping
+		_, err = service.CreateOrUpdateDeployment(context.Background(), repo, "abc", openapigenerated.RestDeploymentSetRequest{Key: "k"})
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected 404 exit code 4, got: %v", err)
+		}
+
+		// GetDeployment mapping
+		depKey := "k"
+		_, err = service.GetDeployment(context.Background(), repo, "abc", openapigenerated.Get1Params{Key: &depKey})
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected 404 exit code 4, got: %v", err)
+		}
+
+		// DeleteDeployment mapping
+		err = service.DeleteDeployment(context.Background(), repo, "abc", openapigenerated.Delete1Params{Key: &depKey})
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected 404 exit code 4, got: %v", err)
+		}
+
+		// SetAnnotation mapping
+		_, err = service.SetAnnotation(context.Background(), repo, "abc", "r", "a", openapigenerated.RestSingleAddInsightAnnotationRequest{})
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected 404 exit code 4, got: %v", err)
+		}
+
+		// ListCommitAnnotations mapping
+		_, err = service.ListCommitAnnotations(context.Background(), repo, "abc", openapigenerated.GetAnnotations1Params{})
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected 404 exit code 4, got: %v", err)
+		}
+	})
+
+	// 3. Transient transport failures
+	t.Run("transient transport failures", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		baseURL := server.URL
+		server.Close()
+
+		client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
+		if err != nil {
+			t.Fatalf("create client: %v", err)
+		}
+		service := NewService(client)
+
+		depKey := "k"
+
+		if err := service.AddScopedBuildStatus(context.Background(), repo, "abc", BuildStatusSetInput{Key: "k", State: "s", URL: "u"}); err == nil || apperrors.ExitCode(err) != 10 {
+			t.Fatalf("expected transient error, got: %v", err)
+		}
+		if _, err := service.GetScopedBuildStatus(context.Background(), repo, "abc", "k"); err == nil || apperrors.ExitCode(err) != 10 {
+			t.Fatalf("expected transient error, got: %v", err)
+		}
+		if err := service.DeleteScopedBuildStatus(context.Background(), repo, "abc", "k"); err == nil || apperrors.ExitCode(err) != 10 {
+			t.Fatalf("expected transient error, got: %v", err)
+		}
+		if _, err := service.GetMultipleBuildStatusStats(context.Background(), []string{"abc"}); err == nil || apperrors.ExitCode(err) != 10 {
+			t.Fatalf("expected transient error, got: %v", err)
+		}
+		if _, err := service.CreateOrUpdateDeployment(context.Background(), repo, "abc", openapigenerated.RestDeploymentSetRequest{Key: "k"}); err == nil || apperrors.ExitCode(err) != 10 {
+			t.Fatalf("expected transient error, got: %v", err)
+		}
+		if _, err := service.GetDeployment(context.Background(), repo, "abc", openapigenerated.Get1Params{Key: &depKey}); err == nil || apperrors.ExitCode(err) != 10 {
+			t.Fatalf("expected transient error, got: %v", err)
+		}
+		if err := service.DeleteDeployment(context.Background(), repo, "abc", openapigenerated.Delete1Params{Key: &depKey}); err == nil || apperrors.ExitCode(err) != 10 {
+			t.Fatalf("expected transient error, got: %v", err)
+		}
+		if _, err := service.SetAnnotation(context.Background(), repo, "abc", "r", "a", openapigenerated.RestSingleAddInsightAnnotationRequest{}); err == nil || apperrors.ExitCode(err) != 10 {
+			t.Fatalf("expected transient error, got: %v", err)
+		}
+		if _, err := service.ListCommitAnnotations(context.Background(), repo, "abc", openapigenerated.GetAnnotations1Params{}); err == nil || apperrors.ExitCode(err) != 10 {
+			t.Fatalf("expected transient error, got: %v", err)
+		}
+	})
+
+	// 4. JSON parsing failures
+	t.Run("json unmarshal failures", func(t *testing.T) {
+		service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`42`))
+		})
+
+		_, err := service.GetMultipleBuildStatusStats(context.Background(), []string{"abc"})
+		if err == nil || !strings.Contains(err.Error(), "failed to unmarshal") {
+			t.Fatalf("expected unmarshal error, got: %v", err)
+		}
+
+		serviceSetAnn := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{invalid}`))
+		})
+
+		_, err = serviceSetAnn.SetAnnotation(context.Background(), repo, "abc", "r", "a", openapigenerated.RestSingleAddInsightAnnotationRequest{})
+		if err == nil || !strings.Contains(err.Error(), "failed to decode code insights annotation") {
+			t.Fatalf("expected decode error, got: %v", err)
+		}
+	})
+
+	// 5. Nil payload fallback checks
+	t.Run("nil payload fallbacks", func(t *testing.T) {
+		service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{}`))
+		})
+
+		anns, err := service.ListCommitAnnotations(context.Background(), repo, "abc", openapigenerated.GetAnnotations1Params{})
+		if err != nil || len(anns) != 0 {
+			t.Fatalf("expected empty annotations, got: err=%v anns=%v", err, anns)
+		}
+
+		build, err := service.GetScopedBuildStatus(context.Background(), repo, "abc", "k")
+		if err != nil || build.Key != nil {
+			t.Fatalf("expected empty build, got: err=%v build=%v", err, build)
+		}
+
+		stats, err := service.GetMultipleBuildStatusStats(context.Background(), []string{"abc"})
+		if err != nil || len(stats) != 0 {
+			t.Fatalf("expected empty stats, got: err=%v stats=%v", err, stats)
+		}
+
+		dep, err := service.CreateOrUpdateDeployment(context.Background(), repo, "abc", openapigenerated.RestDeploymentSetRequest{})
+		if err != nil || dep.Key != nil {
+			t.Fatalf("expected empty deployment, got: err=%v dep=%v", err, dep)
+		}
+
+		depKey := "k"
+		depGet, err := service.GetDeployment(context.Background(), repo, "abc", openapigenerated.Get1Params{Key: &depKey})
+		if err != nil || depGet.Key != nil {
+			t.Fatalf("expected empty deployment, got: err=%v depGet=%v", err, depGet)
+		}
+	})
+
+	t.Run("nil response bodies when content type is not json", func(t *testing.T) {
+		service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`ok`))
+		})
+
+		build, err := service.GetScopedBuildStatus(context.Background(), repo, "abc", "k")
+		if err != nil || build.Key != nil {
+			t.Fatalf("expected empty build, got: err=%v build=%v", err, build)
+		}
+
+		dep, err := service.CreateOrUpdateDeployment(context.Background(), repo, "abc", openapigenerated.RestDeploymentSetRequest{})
+		if err != nil || dep.Key != nil {
+			t.Fatalf("expected empty deployment, got: err=%v dep=%v", err, dep)
+		}
+
+		depKey := "k"
+		depGet, err := service.GetDeployment(context.Background(), repo, "abc", openapigenerated.Get1Params{Key: &depKey})
+		if err != nil || depGet.Key != nil {
+			t.Fatalf("expected empty deployment, got: err=%v depGet=%v", err, depGet)
+		}
+
+		stats, err := service.GetMultipleBuildStatusStats(context.Background(), []string{"abc"})
+		if err != nil || len(stats) != 0 {
+			t.Fatalf("expected empty stats, got: err=%v stats=%v", err, stats)
+		}
+	})
+}

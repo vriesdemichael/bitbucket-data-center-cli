@@ -597,6 +597,122 @@ func TestRepositoryServicePermissionsValidationAdditional(t *testing.T) {
 	}
 }
 
+func TestNewRepositoryServiceValidationErrors(t *testing.T) {
+	service := NewService(nil)
+	repo := RepositoryRef{ProjectKey: "P", Slug: "S"}
+	emptyRepo := RepositoryRef{}
+	ctx := context.Background()
+
+	// RepositoryRef validation check on all new methods
+	if _, err := service.GetRepositoryAutoMergeSettings(ctx, emptyRepo); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.UpdateRepositoryAutoMergeSettings(ctx, emptyRepo, true); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.DeleteRepositoryAutoMergeSettings(ctx, emptyRepo); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.GetRepositoryAutoDeclineSettings(ctx, emptyRepo); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.UpdateRepositoryAutoDeclineSettings(ctx, emptyRepo, true, 4); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.DeleteRepositoryAutoDeclineSettings(ctx, emptyRepo); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.ListRepositoryLabels(ctx, emptyRepo); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.AddRepositoryLabel(ctx, emptyRepo, "label"); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.RemoveRepositoryLabel(ctx, emptyRepo, "label"); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.WatchRepository(ctx, emptyRepo); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.UnwatchRepository(ctx, emptyRepo); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.ListDefaultTasks(ctx, emptyRepo); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.AddDefaultTask(ctx, emptyRepo, "desc", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.UpdateDefaultTask(ctx, emptyRepo, "123", "desc", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.DeleteDefaultTask(ctx, emptyRepo, "123"); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.GetWebhook(ctx, emptyRepo, "1"); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.UpdateWebhook(ctx, emptyRepo, "1", "name", "url", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.SearchWebhooks(ctx, emptyRepo, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.TestWebhook(ctx, emptyRepo, "1"); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.GetWebhookLatestInvocation(ctx, emptyRepo, "1", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.GetWebhookStatistics(ctx, emptyRepo, "1"); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.GetWebhookStatisticsSummary(ctx, emptyRepo, "1"); err == nil {
+		t.Fatal("expected error")
+	}
+
+	// Parameter validations
+	if err := service.AddRepositoryLabel(ctx, repo, ""); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.RemoveRepositoryLabel(ctx, repo, " "); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.AddDefaultTask(ctx, repo, "", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.UpdateDefaultTask(ctx, repo, "", "desc", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.UpdateDefaultTask(ctx, repo, "123", "", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.DeleteDefaultTask(ctx, repo, " "); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.GetWebhook(ctx, repo, ""); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.UpdateWebhook(ctx, repo, "", "name", "url", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.TestWebhook(ctx, repo, ""); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.TestWebhook(ctx, repo, "not-an-int"); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.GetWebhookLatestInvocation(ctx, repo, "", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.GetWebhookStatistics(ctx, repo, ""); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.GetWebhookStatisticsSummary(ctx, repo, ""); err == nil {
+		t.Fatal("expected error")
+	}
+}
+
 func TestRepositoryServiceAdditionalCoverage(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -675,4 +791,256 @@ func TestRepositoryServiceErrors(t *testing.T) {
 	if _, err := service.ListRequiredBuildsMergeChecks(ctx, repo); err == nil {
 		t.Fatal("expected error")
 	}
+
+	// Auto-merge
+	if _, err := service.GetRepositoryAutoMergeSettings(ctx, repo); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.UpdateRepositoryAutoMergeSettings(ctx, repo, true); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.DeleteRepositoryAutoMergeSettings(ctx, repo); err == nil {
+		t.Fatal("expected error")
+	}
+
+	// Auto-decline
+	if _, err := service.GetRepositoryAutoDeclineSettings(ctx, repo); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.UpdateRepositoryAutoDeclineSettings(ctx, repo, true, 4); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.DeleteRepositoryAutoDeclineSettings(ctx, repo); err == nil {
+		t.Fatal("expected error")
+	}
+
+	// Labels
+	if _, err := service.ListRepositoryLabels(ctx, repo); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.AddRepositoryLabel(ctx, repo, "label"); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.RemoveRepositoryLabel(ctx, repo, "label"); err == nil {
+		t.Fatal("expected error")
+	}
+
+	// Watch
+	if err := service.WatchRepository(ctx, repo); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.UnwatchRepository(ctx, repo); err == nil {
+		t.Fatal("expected error")
+	}
+
+	// Default tasks
+	if _, err := service.ListDefaultTasks(ctx, repo); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.AddDefaultTask(ctx, repo, "desc", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.UpdateDefaultTask(ctx, repo, "123", "desc", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if err := service.DeleteDefaultTask(ctx, repo, "123"); err == nil {
+		t.Fatal("expected error")
+	}
+
+	// Webhook
+	if _, err := service.GetWebhook(ctx, repo, "1"); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.UpdateWebhook(ctx, repo, "1", "name", "url", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.SearchWebhooks(ctx, repo, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.TestWebhook(ctx, repo, "1"); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.GetWebhookLatestInvocation(ctx, repo, "1", nil, nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.GetWebhookStatistics(ctx, repo, "1"); err == nil {
+		t.Fatal("expected error")
+	}
+	if _, err := service.GetWebhookStatisticsSummary(ctx, repo, "1"); err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestNewRepositorySettingsMethods(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		
+		switch {
+		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-merge":
+			_, _ = writer.Write([]byte(`{"enabled":true}`))
+		case request.Method == http.MethodPut && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-merge":
+			_, _ = writer.Write([]byte(`{"enabled":true}`))
+		case request.Method == http.MethodDelete && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-merge":
+			writer.WriteHeader(http.StatusNoContent)
+		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-decline":
+			_, _ = writer.Write([]byte(`{"enabled":true,"inactivityWeeks":4}`))
+		case request.Method == http.MethodPut && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-decline":
+			_, _ = writer.Write([]byte(`{"enabled":true,"inactivityWeeks":4}`))
+		case request.Method == http.MethodDelete && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-decline":
+			writer.WriteHeader(http.StatusNoContent)
+		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/labels":
+			_, _ = writer.Write([]byte(`{"values":[{"name":"label1"},{"name":"label2"}]}`))
+		case request.Method == http.MethodPost && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/labels":
+			writer.WriteHeader(http.StatusNoContent)
+		case request.Method == http.MethodDelete && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/labels/label1":
+			writer.WriteHeader(http.StatusNoContent)
+		case request.Method == http.MethodPost && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/watch":
+			writer.WriteHeader(http.StatusNoContent)
+		case request.Method == http.MethodDelete && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/watch":
+			writer.WriteHeader(http.StatusNoContent)
+		case request.Method == http.MethodGet && request.URL.Path == "/default-tasks/latest/projects/PRJ/repos/demo/tasks":
+			_, _ = writer.Write([]byte(`{"values":[{"id":123,"description":"task1"}]}`))
+		case request.Method == http.MethodPost && request.URL.Path == "/default-tasks/latest/projects/PRJ/repos/demo/tasks":
+			_, _ = writer.Write([]byte(`{"id":123,"description":"task1"}`))
+		case request.Method == http.MethodPut && request.URL.Path == "/default-tasks/latest/projects/PRJ/repos/demo/tasks/123":
+			_, _ = writer.Write([]byte(`{"id":123,"description":"task1-updated"}`))
+		case request.Method == http.MethodDelete && request.URL.Path == "/default-tasks/latest/projects/PRJ/repos/demo/tasks/123":
+			writer.WriteHeader(http.StatusNoContent)
+		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1":
+			_, _ = writer.Write([]byte(`{"id":1,"name":"hook1"}`))
+		case request.Method == http.MethodPut && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1":
+			_, _ = writer.Write([]byte(`{"id":1,"name":"hook1-updated"}`))
+		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/search":
+			_, _ = writer.Write([]byte(`{"values":[{"id":1}]}`))
+		case request.Method == http.MethodPost && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/test":
+			_, _ = writer.Write([]byte(`{"status":"success"}`))
+		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1/latest":
+			_, _ = writer.Write([]byte(`{"outcome":"success"}`))
+		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1/statistics":
+			_, _ = writer.Write([]byte(`{"invocations":10}`))
+		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1/statistics/summary":
+			_, _ = writer.Write([]byte(`{"summary":"ok"}`))
+		default:
+			http.NotFound(writer, request)
+		}
+	}))
+	defer server.Close()
+
+	client, err := openapigenerated.NewClientWithResponses(server.URL)
+	if err != nil {
+		t.Fatalf("create generated client: %v", err)
+	}
+
+	service := NewService(client)
+	repo := RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}
+	ctx := context.Background()
+
+	// Auto-merge settings tests
+	amSettings, err := service.GetRepositoryAutoMergeSettings(ctx, repo)
+	if err != nil || amSettings == nil || amSettings.Enabled == nil || !*amSettings.Enabled {
+		t.Errorf("GetRepositoryAutoMergeSettings failed: %v", err)
+	}
+	amSettings, err = service.UpdateRepositoryAutoMergeSettings(ctx, repo, true)
+	if err != nil || amSettings == nil || amSettings.Enabled == nil || !*amSettings.Enabled {
+		t.Errorf("UpdateRepositoryAutoMergeSettings failed: %v", err)
+	}
+	err = service.DeleteRepositoryAutoMergeSettings(ctx, repo)
+	if err != nil {
+		t.Errorf("DeleteRepositoryAutoMergeSettings failed: %v", err)
+	}
+
+	// Auto-decline settings tests
+	adSettings, err := service.GetRepositoryAutoDeclineSettings(ctx, repo)
+	if err != nil || adSettings == nil || adSettings.Enabled == nil || !*adSettings.Enabled || adSettings.InactivityWeeks == nil || *adSettings.InactivityWeeks != 4 {
+		t.Errorf("GetRepositoryAutoDeclineSettings failed: %v", err)
+	}
+	adSettings, err = service.UpdateRepositoryAutoDeclineSettings(ctx, repo, true, 4)
+	if err != nil || adSettings == nil || adSettings.Enabled == nil || !*adSettings.Enabled || adSettings.InactivityWeeks == nil || *adSettings.InactivityWeeks != 4 {
+		t.Errorf("UpdateRepositoryAutoDeclineSettings failed: %v", err)
+	}
+	err = service.DeleteRepositoryAutoDeclineSettings(ctx, repo)
+	if err != nil {
+		t.Errorf("DeleteRepositoryAutoDeclineSettings failed: %v", err)
+	}
+
+	// Labels tests
+	labels, err := service.ListRepositoryLabels(ctx, repo)
+	if err != nil || len(labels) != 2 || labels[0] != "label1" {
+		t.Errorf("ListRepositoryLabels failed: %v", err)
+	}
+	err = service.AddRepositoryLabel(ctx, repo, "label3")
+	if err != nil {
+		t.Errorf("AddRepositoryLabel failed: %v", err)
+	}
+	err = service.RemoveRepositoryLabel(ctx, repo, "label1")
+	if err != nil {
+		t.Errorf("RemoveRepositoryLabel failed: %v", err)
+	}
+
+	// Watch tests
+	err = service.WatchRepository(ctx, repo)
+	if err != nil {
+		t.Errorf("WatchRepository failed: %v", err)
+	}
+	err = service.UnwatchRepository(ctx, repo)
+	if err != nil {
+		t.Errorf("UnwatchRepository failed: %v", err)
+	}
+
+	// Default tasks tests
+	tasks, err := service.ListDefaultTasks(ctx, repo)
+	if err != nil || len(tasks) != 1 || tasks[0].Id == nil || *tasks[0].Id != 123 {
+		t.Errorf("ListDefaultTasks failed: %v", err)
+	}
+	sourceRef := "refs/heads/feature"
+	targetRef := "refs/heads/master"
+	task, err := service.AddDefaultTask(ctx, repo, "task1", &sourceRef, &targetRef)
+	if err != nil || task == nil || task.Id == nil || *task.Id != 123 {
+		t.Errorf("AddDefaultTask failed: %v", err)
+	}
+	task, err = service.UpdateDefaultTask(ctx, repo, "123", "task1-updated", &sourceRef, &targetRef)
+	if err != nil || task == nil || task.Id == nil || *task.Id != 123 || task.Description == nil || *task.Description != "task1-updated" {
+		t.Errorf("UpdateDefaultTask failed: %v", err)
+	}
+	err = service.DeleteDefaultTask(ctx, repo, "123")
+	if err != nil {
+		t.Errorf("DeleteDefaultTask failed: %v", err)
+	}
+
+	// Webhook lifecycle tests
+	webhook, err := service.GetWebhook(ctx, repo, "1")
+	if err != nil {
+		t.Errorf("GetWebhook failed: %v", err)
+	}
+	webhook, err = service.UpdateWebhook(ctx, repo, "1", "hook1-updated", "http://url", []string{"repo:refs_changed"}, nil)
+	if err != nil {
+		t.Errorf("UpdateWebhook failed: %v", err)
+	}
+	searchRes, err := service.SearchWebhooks(ctx, repo, &sourceRef)
+	if err != nil {
+		t.Errorf("SearchWebhooks failed: %v", err)
+	}
+	testRes, err := service.TestWebhook(ctx, repo, "1")
+	if err != nil {
+		t.Errorf("TestWebhook failed: %v", err)
+	}
+	latestRes, err := service.GetWebhookLatestInvocation(ctx, repo, "1", nil, nil)
+	if err != nil {
+		t.Errorf("GetWebhookLatestInvocation failed: %v", err)
+	}
+	statsRes, err := service.GetWebhookStatistics(ctx, repo, "1")
+	if err != nil {
+		t.Errorf("GetWebhookStatistics failed: %v", err)
+	}
+	summaryRes, err := service.GetWebhookStatisticsSummary(ctx, repo, "1")
+	if err != nil {
+		t.Errorf("GetWebhookStatisticsSummary failed: %v", err)
+	}
+
+	_ = webhook
+	_ = searchRes
+	_ = testRes
+	_ = latestRes
+	_ = statsRes
+	_ = summaryRes
 }

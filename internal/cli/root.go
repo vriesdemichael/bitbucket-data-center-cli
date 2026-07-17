@@ -27,10 +27,10 @@ func NewRootCommand() *cobra.Command {
 
 	rootCmd := &cobra.Command{
 		Use:   "bb",
-		Short: "Bitbucket Server CLI (live-behavior first)",
-		Long: `bb — Bitbucket Server CLI (live-behavior first)
+		Short: "Bitbucket Data Center CLI (live-behavior first)",
+		Long: `bb — Bitbucket Data Center CLI (live-behavior first)
 
-A CLI for interacting with Bitbucket Server / Data Center APIs.
+A CLI for interacting with recent versions of Bitbucket for Data Center APIs.
 
 AGENT NOTICE
 If you are an AI agent or automated tool using this CLI and you encounter
@@ -86,6 +86,7 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(newBranchCommand(options))
 	rootCmd.AddCommand(newDiffCommand(options))
 	rootCmd.AddCommand(newBuildCommand(options))
+	rootCmd.AddCommand(newDeploymentCommand(options))
 	rootCmd.AddCommand(newInsightsCommand(options))
 	rootCmd.AddCommand(newPRCommand(options))
 	rootCmd.AddCommand(newAdminCommand(options))
@@ -93,10 +94,13 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(newRefCommand(options))
 	rootCmd.AddCommand(newProjectCommand(options))
 	rootCmd.AddCommand(newReviewerCommand(options))
+	rootCmd.AddCommand(newReviewerGroupCommand(options))
 	rootCmd.AddCommand(newHookCommand(options))
+	rootCmd.AddCommand(newWebhookCommand(options))
 	rootCmd.AddCommand(newBrowseCommand(options))
 	rootCmd.AddCommand(newSearchCommand(options))
 	rootCmd.AddCommand(newUpdateCommand(options))
+	rootCmd.AddCommand(newSshKeyCommand(options))
 
 	registerGlobalDryRunInterceptors(rootCmd, options)
 

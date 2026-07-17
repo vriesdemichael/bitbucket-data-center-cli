@@ -2,6 +2,7 @@ package execgit
 
 import (
 	"context"
+	"encoding/base64"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -340,3 +341,149 @@ func TestListRemotesMultiURLOriginOrdering(t *testing.T) {
 		t.Fatalf("expected origin to be sorted first, got %+v", remotes)
 	}
 }
+
+func TestRedact(t *testing.T) {
+	cases := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "git clone https://x-token-auth:my-secret-token@bitbucket.org/repo.git",
+			expected: "git clone https://x-token-auth:***@bitbucket.org/repo.git",
+		},
+		{
+			input:    "git clone http://user:pass@host:8080/repo.git",
+			expected: "git clone http://user:***@host:8080/repo.git",
+		},
+		{
+			input:    "git -c http.extraHeader=\"Authorization: Bearer my-secret-token\" clone https://host/repo.git",
+			expected: "git -c http.extraHeader=\"Authorization: Bearer ***\" clone https://host/repo.git",
+		},
+		{
+			input:    "git -c http.extraHeader=Authorization: Basic dXNlcjpwYXNz clone https://host/repo.git",
+			expected: "git -c http.extraHeader=Authorization: Basic *** clone https://host/repo.git",
+		},
+		{
+			input:    "some clean output without credentials",
+			expected: "some clean output without credentials",
+		},
+	}
+
+	for _, tc := range cases {
+		actual := redact(tc.input)
+		if actual != tc.expected {
+			t.Errorf("redact(%q) = %q; want %q", tc.input, actual, tc.expected)
+		}
+	}
+}
+
+func TestCloneAuthenticationOptionsAndLocalConfigPersistence(t *testing.T) {
+	backend := New()
+	backend.Timeout = 5 * time.Second
+
+	temporary := t.TempDir()
+	remoteDir := filepath.Join(temporary, "remote.git")
+	cloneDir := filepath.Join(temporary, "clone")
+
+	if _, err := backend.run(context.Background(), runOptions{args: []string{"init", "--bare", remoteDir}}); err != nil {
+		t.Fatalf("failed to initialize bare repository: %v", err)
+	}
+
+	// Clone with a dummy AuthToken
+	err := backend.Clone(context.Background(), remoteDir, git.CloneOptions{
+		Directory: cloneDir,
+		AuthToken: "dummy-secret-token",
+	})
+	if err != nil {
+		t.Fatalf("expected clone to succeed, got: %v", err)
+	}
+
+	// Verify that the local configuration http.extraHeader is persisted directly in .git/config file
+	configContent, err := os.ReadFile(filepath.Join(cloneDir, ".git", "config"))
+	if err != nil {
+		t.Fatalf("failed to read local .git/config: %v", err)
+	}
+
+	contentStr := string(configContent)
+	expectedConfig := "extraHeader = Authorization: Bearer dummy-secret-token"
+	if !strings.Contains(contentStr, expectedConfig) {
+		t.Fatalf("expected config file to contain %q, but got:\n%s", expectedConfig, contentStr)
+	}
+}
+
+func TestCloneBasicAuthenticationOptionsAndLocalConfigPersistence(t *testing.T) {
+	backend := New()
+	backend.Timeout = 5 * time.Second
+
+	temporary := t.TempDir()
+	remoteDir := filepath.Join(temporary, "remote.git")
+	cloneDir := filepath.Join(temporary, "clone")
+
+	if _, err := backend.run(context.Background(), runOptions{args: []string{"init", "--bare", remoteDir}}); err != nil {
+		t.Fatalf("failed to initialize bare repository: %v", err)
+	}
+
+	// Clone with AuthUsername and AuthPassword
+	err := backend.Clone(context.Background(), remoteDir, git.CloneOptions{
+		Directory:    cloneDir,
+		AuthUsername: "dummy-user",
+		AuthPassword: "dummy-password",
+	})
+	if err != nil {
+		t.Fatalf("expected clone to succeed, got: %v", err)
+	}
+
+	// Verify that the local configuration http.extraHeader is persisted directly in .git/config file
+	configContent, err := os.ReadFile(filepath.Join(cloneDir, ".git", "config"))
+	if err != nil {
+		t.Fatalf("failed to read local .git/config: %v", err)
+	}
+
+	contentStr := string(configContent)
+	expectedConfig := "extraHeader = Authorization: Basic " + base64.StdEncoding.EncodeToString([]byte("dummy-user:dummy-password"))
+	if !strings.Contains(contentStr, expectedConfig) {
+		t.Fatalf("expected config file to contain %q, but got:\n%s", expectedConfig, contentStr)
+	}
+}
+
+func TestCloneFailureRedactsCredentials(t *testing.T) {
+	backend := New()
+	backend.Timeout = 5 * time.Second
+
+	err := backend.Clone(context.Background(), "https://bitbucket.example.com/scm/PRJ/does-not-exist.git", git.CloneOptions{
+		Directory: "unused-dir",
+		AuthToken: "super-secret-token-12345",
+	})
+	if err == nil {
+		t.Fatal("expected clone to fail")
+	}
+
+	errMsg := err.Error()
+	if strings.Contains(errMsg, "super-secret-token-12345") {
+		t.Fatalf("error message leaked secret token: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "Authorization: Bearer ***") {
+		t.Fatalf("expected error message to contain redacted token header, got: %s", errMsg)
+	}
+}
+
+func TestCloneFailureRedactsURLCredentials(t *testing.T) {
+	backend := New()
+	backend.Timeout = 5 * time.Second
+
+	err := backend.Clone(context.Background(), "https://x-token-auth:super-secret-password-54321@bitbucket.example.com/scm/PRJ/does-not-exist.git", git.CloneOptions{
+		Directory: "unused-dir",
+	})
+	if err == nil {
+		t.Fatal("expected clone to fail")
+	}
+
+	errMsg := err.Error()
+	if strings.Contains(errMsg, "super-secret-password-54321") {
+		t.Fatalf("error message leaked secret URL password: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "https://x-token-auth:***@bitbucket.example.com") {
+		t.Fatalf("expected error message to contain redacted URL basic auth, got: %s", errMsg)
+	}
+}
+

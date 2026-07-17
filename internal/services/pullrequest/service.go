@@ -2,12 +2,15 @@ package pullrequest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
+	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
 
@@ -31,6 +34,7 @@ type PullRequest struct {
 	State        string         `json:"state"`
 	Open         bool           `json:"open"`
 	Closed       bool           `json:"closed"`
+	Draft        bool           `json:"draft,omitempty"`
 	Repository   *RepositoryRef `json:"repository,omitempty"`
 	Version      int            `json:"version,omitempty"`
 	Author       string         `json:"author,omitempty"`
@@ -65,17 +69,30 @@ type Reviewer struct {
 }
 
 type CreateInput struct {
-	FromRef     string   `json:"from_ref"`
-	ToRef       string   `json:"to_ref"`
-	Title       string   `json:"title"`
-	Description string   `json:"description,omitempty"`
-	Reviewers   []string `json:"reviewers,omitempty"`
+	FromRef     string `json:"from_ref"`
+	ToRef       string `json:"to_ref"`
+	Title       string `json:"title"`
+	Description string `json:"description,omitempty"`
+	Draft       bool   `json:"draft,omitempty"`
+	// Reviewers lists usernames to add as PR reviewers on creation. Blank and
+	// whitespace-only entries are ignored; an empty result omits reviewers from
+	// the request payload.
+	Reviewers []string `json:"reviewers,omitempty"`
 }
 
 type UpdateInput struct {
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description,omitempty"`
 	Version     int    `json:"version"`
+	// Draft, when non-nil, sets or clears the draft flag on the pull request.
+	Draft *bool `json:"draft,omitempty"`
+}
+
+// AutoMerge represents the auto-merge configuration for a pull request.
+// Enabled is false when no auto-merge is configured (the API returns 404).
+type AutoMerge struct {
+	Enabled    bool   `json:"enabled"`
+	StrategyID string `json:"strategy_id,omitempty"`
 }
 
 type TaskListOptions struct {
@@ -97,12 +114,19 @@ type Task struct {
 }
 
 type Service struct {
-	client *httpclient.Client
+	client    *httpclient.Client
+	apiClient *openapigenerated.ClientWithResponses
 }
 
 func NewService(client *httpclient.Client) *Service {
 	return &Service{client: client}
 }
+
+func (service *Service) WithAPIClient(apiClient *openapigenerated.ClientWithResponses) *Service {
+	service.apiClient = apiClient
+	return service
+}
+
 
 type DashboardListOptions struct {
 	State string
@@ -610,6 +634,78 @@ func (service *Service) GetBuildStatuses(ctx context.Context, repository Reposit
 	return results, nil
 }
 
+// GetAutoMerge returns the auto-merge configuration for a pull request.
+// When auto-merge is not configured, Enabled is false and no error is returned.
+func (service *Service) GetAutoMerge(ctx context.Context, repository RepositoryRef, pullRequestID string) (AutoMerge, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return AutoMerge{}, err
+	}
+
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return AutoMerge{}, err
+	}
+
+	var response autoMergeValue
+	err = service.client.GetJSON(ctx, fmt.Sprintf("%s/%s/auto-merge", pullRequestPath(repository), resolvedID), nil, &response)
+	if err != nil {
+		if apperrors.IsKind(err, apperrors.KindNotFound) {
+			return AutoMerge{Enabled: false}, nil
+		}
+		return AutoMerge{}, err
+	}
+
+	strategyID := ""
+	if response.StrategyId != nil {
+		strategyID = *response.StrategyId
+	}
+	return AutoMerge{Enabled: true, StrategyID: strategyID}, nil
+}
+
+// EnableAutoMerge enables auto-merge on a pull request using the given merge strategy.
+// Valid strategy values: no-ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only.
+func (service *Service) EnableAutoMerge(ctx context.Context, repository RepositoryRef, pullRequestID string, strategyID string) (AutoMerge, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return AutoMerge{}, err
+	}
+
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return AutoMerge{}, err
+	}
+
+	strategy := strings.TrimSpace(strategyID)
+	if strategy == "" {
+		strategy = "no-ff"
+	}
+
+	payload := map[string]any{"strategyId": strategy}
+	var response autoMergeValue
+	if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/auto-merge", pullRequestPath(repository), resolvedID), nil, payload, &response); err != nil {
+		return AutoMerge{}, err
+	}
+
+	responseStrategy := strategy
+	if response.StrategyId != nil {
+		responseStrategy = *response.StrategyId
+	}
+	return AutoMerge{Enabled: true, StrategyID: responseStrategy}, nil
+}
+
+// DisableAutoMerge removes the auto-merge configuration from a pull request.
+func (service *Service) DisableAutoMerge(ctx context.Context, repository RepositoryRef, pullRequestID string) error {
+	if err := validateRepositoryRef(repository); err != nil {
+		return err
+	}
+
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return err
+	}
+
+	return service.client.DeleteJSON(ctx, fmt.Sprintf("%s/%s/auto-merge", pullRequestPath(repository), resolvedID), nil, nil, nil)
+}
+
 func normalizeState(state string) (string, error) {
 	resolved := strings.ToLower(strings.TrimSpace(state))
 	if resolved == "" {
@@ -692,6 +788,7 @@ func mapPullRequest(raw pullRequestValue) PullRequest {
 		State:        strings.TrimSpace(raw.State),
 		Open:         raw.Open,
 		Closed:       raw.Closed,
+		Draft:        raw.Draft,
 		Version:      raw.Version,
 		Author:       author,
 		SourceBranch: branchDisplayName(raw.FromRef),
@@ -879,6 +976,10 @@ func buildCreatePayload(input CreateInput) (map[string]any, error) {
 		"toRef":   map[string]any{"id": normalizeBranchRef(toRef)},
 	}
 
+	if input.Draft {
+		payload["draft"] = true
+	}
+
 	if description := strings.TrimSpace(input.Description); description != "" {
 		payload["description"] = description
 	}
@@ -915,9 +1016,12 @@ func buildUpdatePayload(input UpdateInput) (map[string]any, error) {
 	if description := strings.TrimSpace(input.Description); description != "" {
 		payload["description"] = description
 	}
+	if input.Draft != nil {
+		payload["draft"] = *input.Draft
+	}
 
 	if len(payload) == 1 {
-		return nil, apperrors.New(apperrors.KindValidation, "at least one of title or description is required", nil)
+		return nil, apperrors.New(apperrors.KindValidation, "at least one of title, description, or draft is required", nil)
 	}
 
 	return payload, nil
@@ -1045,6 +1149,7 @@ type pullRequestValue struct {
 	State        string                   `json:"state"`
 	Open         bool                     `json:"open"`
 	Closed       bool                     `json:"closed"`
+	Draft        bool                     `json:"draft"`
 	Version      int                      `json:"version"`
 	CreatedDate  int64                    `json:"createdDate"`
 	UpdatedDate  int64                    `json:"updatedDate"`
@@ -1052,6 +1157,10 @@ type pullRequestValue struct {
 	Participants []pullRequestParticipant `json:"participants"`
 	FromRef      *pullRequestRef          `json:"fromRef"`
 	ToRef        *pullRequestRef          `json:"toRef"`
+}
+
+type autoMergeValue struct {
+	StrategyId *string `json:"strategyId"`
 }
 
 type pullRequestParticipant struct {
@@ -1104,3 +1213,228 @@ type taskValue struct {
 	Author      *pullRequestUserIdentity `json:"author"`
 	Assignee    *pullRequestUserIdentity `json:"assignee"`
 }
+
+func (service *Service) Watch(ctx context.Context, repository RepositoryRef, pullRequestID string) error {
+	if err := validateRepositoryRef(repository); err != nil {
+		return err
+	}
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return err
+	}
+	if service.apiClient == nil {
+		return apperrors.New(apperrors.KindInternal, "openapi client is not configured on pullrequest service", nil)
+	}
+
+	var wrapper struct {
+		client *openapigenerated.ClientWithResponses
+	}
+	wrapper.client = service.apiClient
+
+	response, err := wrapper.client.Watch1WithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to watch pull request", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+func (service *Service) Unwatch(ctx context.Context, repository RepositoryRef, pullRequestID string) error {
+	if err := validateRepositoryRef(repository); err != nil {
+		return err
+	}
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return err
+	}
+	if service.apiClient == nil {
+		return apperrors.New(apperrors.KindInternal, "openapi client is not configured on pullrequest service", nil)
+	}
+
+	var wrapper struct {
+		client *openapigenerated.ClientWithResponses
+	}
+	wrapper.client = service.apiClient
+
+	response, err := wrapper.client.Unwatch1WithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to unwatch pull request", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+func (service *Service) CanRebase(ctx context.Context, repository RepositoryRef, pullRequestID string) (*openapigenerated.RestPullRequestRebaseability, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return nil, err
+	}
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return nil, err
+	}
+	if service.apiClient == nil {
+		return nil, apperrors.New(apperrors.KindInternal, "openapi client is not configured on pullrequest service", nil)
+	}
+
+	var wrapper struct {
+		client *openapigenerated.ClientWithResponses
+	}
+	wrapper.client = service.apiClient
+
+	response, err := wrapper.client.CanRebaseWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to check rebase status", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	if response.ApplicationjsonCharsetUTF8200 == nil {
+		return nil, apperrors.New(apperrors.KindInternal, "unexpected empty rebaseability response body", nil)
+	}
+	return response.ApplicationjsonCharsetUTF8200, nil
+}
+
+func (service *Service) Rebase(ctx context.Context, repository RepositoryRef, pullRequestID string, version *int) (*openapigenerated.RestPullRequestRebaseResult, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return nil, err
+	}
+	resolvedID, err := normalizePullRequestID(pullRequestID)
+	if err != nil {
+		return nil, err
+	}
+	if service.apiClient == nil {
+		return nil, apperrors.New(apperrors.KindInternal, "openapi client is not configured on pullrequest service", nil)
+	}
+
+	var request openapigenerated.RestPullRequestRebaseRequest
+	if version != nil {
+		v32 := int32(*version)
+		request.Version = &v32
+	}
+
+	var wrapper struct {
+		client *openapigenerated.ClientWithResponses
+	}
+	wrapper.client = service.apiClient
+
+	response, err := wrapper.client.RebaseWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID, request)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to rebase pull request", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	if response.ApplicationjsonCharsetUTF8200 == nil {
+		return nil, apperrors.New(apperrors.KindInternal, "unexpected empty rebase response body", nil)
+	}
+	return response.ApplicationjsonCharsetUTF8200, nil
+}
+
+type Participant struct {
+	Name         string `json:"name"`
+	DisplayName  string `json:"displayName"`
+	EmailAddress string `json:"emailAddress"`
+	Active       bool   `json:"active"`
+}
+
+func (service *Service) ListPullRequestsContainingCommit(ctx context.Context, repository RepositoryRef, commitID string) ([]PullRequest, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return nil, err
+	}
+	trimmedCommit := strings.TrimSpace(commitID)
+	if trimmedCommit == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "commit ID is required", nil)
+	}
+	if service.apiClient == nil {
+		return nil, apperrors.New(apperrors.KindInternal, "openapi client is not configured on pullrequest service", nil)
+	}
+
+	var wrapper struct {
+		client *openapigenerated.ClientWithResponses
+	}
+	wrapper.client = service.apiClient
+
+	response, err := wrapper.client.GetPullRequestsWithResponse(ctx, repository.ProjectKey, repository.Slug, trimmedCommit, nil)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to list pull requests containing commit", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
+		return []PullRequest{}, nil
+	}
+
+	rawValues := *response.ApplicationjsonCharsetUTF8200.Values
+	results := make([]PullRequest, 0, len(rawValues))
+	for _, openapiPR := range rawValues {
+		data, err := json.Marshal(openapiPR)
+		if err != nil {
+			return nil, apperrors.New(apperrors.KindInternal, "failed to marshal openapi pull request", err)
+		}
+		var raw pullRequestValue
+		if err := json.Unmarshal(data, &raw); err != nil {
+			return nil, apperrors.New(apperrors.KindInternal, "failed to unmarshal pull request value", err)
+		}
+		results = append(results, mapPullRequest(raw))
+	}
+	return results, nil
+}
+
+func (service *Service) SearchParticipants(ctx context.Context, repository RepositoryRef, filter string) ([]Participant, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return nil, err
+	}
+	trimmedFilter := strings.TrimSpace(filter)
+	if trimmedFilter == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "search query/filter is required", nil)
+	}
+	if service.apiClient == nil {
+		return nil, apperrors.New(apperrors.KindInternal, "openapi client is not configured on pullrequest service", nil)
+	}
+
+	var wrapper struct {
+		client *openapigenerated.ClientWithResponses
+	}
+	wrapper.client = service.apiClient
+
+	response, err := wrapper.client.SearchWithResponse(ctx, repository.ProjectKey, repository.Slug, &openapigenerated.SearchParams{
+		Filter: &trimmedFilter,
+	})
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to search participants", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
+		return []Participant{}, nil
+	}
+
+	rawUsers := *response.ApplicationjsonCharsetUTF8200.Values
+	results := make([]Participant, 0, len(rawUsers))
+	for _, rawUser := range rawUsers {
+		name := ""
+		if rawUser.Name != nil {
+			name = *rawUser.Name
+		}
+		displayName := ""
+		if rawUser.DisplayName != nil {
+			displayName = *rawUser.DisplayName
+		}
+		email := ""
+		if rawUser.EmailAddress != nil {
+			email = *rawUser.EmailAddress
+		}
+		active := false
+		if rawUser.Active != nil {
+			active = *rawUser.Active
+		}
+		results = append(results, Participant{
+			Name:         name,
+			DisplayName:  displayName,
+			EmailAddress: email,
+			Active:       active,
+		})
+	}
+	return results, nil
+}
+

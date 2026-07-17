@@ -3,14 +3,19 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
+	jiraservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/jira"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
+	reviewerservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reviewer"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
 
@@ -279,16 +284,21 @@ func newInsightsCommand(options *rootOptions) *cobra.Command {
 	annotationCmd.AddCommand(addAnnotationCmd)
 
 	annotationCmd.AddCommand(&cobra.Command{
-		Use:   "list <commit> <key>",
-		Short: "List annotations for a Code Insights report",
-		Args:  cobra.ExactArgs(2),
+		Use:   "list <commit> [key]",
+		Short: "List annotations for a Code Insights report or commit",
+		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, err := loadQualityRepoAndService(repositorySelector)
 			if err != nil {
 				return err
 			}
 
-			annotations, err := service.ListAnnotations(cmd.Context(), repo, args[0], args[1])
+			var annotations []openapigenerated.RestInsightAnnotation
+			if len(args) == 2 {
+				annotations, err = service.ListAnnotations(cmd.Context(), repo, args[0], args[1])
+			} else {
+				annotations, err = service.ListCommitAnnotations(cmd.Context(), repo, args[0], openapigenerated.GetAnnotations1Params{})
+			}
 			if err != nil {
 				return err
 			}
@@ -309,6 +319,112 @@ func newInsightsCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	})
+
+	var setAnnMessage string
+	var setAnnSeverity string
+	var setAnnPath string
+	var setAnnLine int32
+	var setAnnLink string
+	var setAnnType string
+
+	setAnnotationCmd := &cobra.Command{
+		Use:   "set <commit> <key> <external-id>",
+		Short: "Create or replace a Code Insights report annotation",
+		Args:  cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			repo, service, client, err := loadQualityRepoServiceAndClient(repositorySelector)
+			if err != nil {
+				return err
+			}
+
+			request := openapigenerated.RestSingleAddInsightAnnotationRequest{
+				Message:  setAnnMessage,
+				Severity: setAnnSeverity,
+			}
+			if cmd.Flags().Changed("path") {
+				request.Path = &setAnnPath
+			}
+			if cmd.Flags().Changed("line") {
+				request.Line = &setAnnLine
+			}
+			if cmd.Flags().Changed("link") {
+				request.Link = &setAnnLink
+			}
+			if cmd.Flags().Changed("type") {
+				request.Type = &setAnnType
+			}
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				annotations, err := service.ListAnnotations(cmd.Context(), repo, args[0], args[1])
+				predicted := "create"
+				reason := "insights annotation will be created"
+				if err == nil {
+					for _, annotation := range annotations {
+						if strings.EqualFold(strings.TrimSpace(safeString(annotation.ExternalId)), strings.TrimSpace(args[2])) {
+							predicted = "update"
+							reason = "insights annotation will be updated"
+							break
+						}
+					}
+				} else if apperrors.ExitCode(err) != 4 {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "insights.annotation.set",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": args[1], "external_id": args[2]},
+						Action:          "update",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"insights annotations list"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1},
+				}
+				if predicted == "create" {
+					preview.Summary.CreateCount = 1
+				} else {
+					preview.Summary.UpdateCount = 1
+				}
+
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			ann, err := service.SetAnnotation(cmd.Context(), repo, args[0], args[1], args[2], request)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), ann)
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Annotation %s set on report %s for commit %s\n", args[2], args[1], args[0])
+			return nil
+		},
+	}
+
+	setAnnotationCmd.Flags().StringVar(&setAnnMessage, "message", "", "Annotation message")
+	setAnnotationCmd.Flags().StringVar(&setAnnSeverity, "severity", "", "Annotation severity: LOW, MEDIUM, HIGH")
+	setAnnotationCmd.Flags().StringVar(&setAnnPath, "path", "", "File path containing the annotation")
+	setAnnotationCmd.Flags().Int32Var(&setAnnLine, "line", 0, "Line number containing the annotation")
+	setAnnotationCmd.Flags().StringVar(&setAnnLink, "link", "", "Link associated with the annotation")
+	setAnnotationCmd.Flags().StringVar(&setAnnType, "type", "", "Annotation type: BUG, CODE_SMELL, VULNERABILITY")
+
+	_ = setAnnotationCmd.MarkFlagRequired("message")
+	_ = setAnnotationCmd.MarkFlagRequired("severity")
+
+	annotationCmd.AddCommand(setAnnotationCmd)
 
 	var externalID string
 	deleteAnnotationCmd := &cobra.Command{
@@ -525,14 +641,138 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	}
 	prCmd.AddCommand(getCmd)
 
+	var commitsLimit, commitsStart int
+	commitsCmd := &cobra.Command{
+		Use:   "commits <id>",
+		Short: "List the commits in a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			commits, err := service.ListCommits(cmd.Context(), repo, args[0], pullrequestservice.PageOptions{Limit: commitsLimit, Start: commitsStart})
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "commits": commits})
+			}
+
+			if len(commits) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "No commits found")
+				return nil
+			}
+			for _, commit := range commits {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", shortCommitID(commit), firstMessageLine(commit.Message))
+			}
+			return nil
+		},
+	}
+	commitsCmd.Flags().IntVar(&commitsLimit, "limit", 25, "Page size for the pull request commit listing")
+	commitsCmd.Flags().IntVar(&commitsStart, "start", 0, "Start offset for the pull request commit listing")
+	prCmd.AddCommand(commitsCmd)
+
+	var filesLimit, filesStart int
+	filesCmd := &cobra.Command{
+		Use:     "files <id>",
+		Aliases: []string{"changes"},
+		Short:   "List the files changed in a pull request",
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			changes, err := service.ListChanges(cmd.Context(), repo, args[0], pullrequestservice.PageOptions{Limit: filesLimit, Start: filesStart})
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "changes": changes})
+			}
+
+			if len(changes) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "No changes found")
+				return nil
+			}
+			for _, change := range changes {
+				changeType := change.Type
+				if changeType == "" {
+					changeType = "MODIFY"
+				}
+				line := fmt.Sprintf("%s\t%s", changeType, change.Path)
+				if change.SrcPath != "" && change.SrcPath != change.Path {
+					line += fmt.Sprintf(" (from %s)", change.SrcPath)
+				}
+				fmt.Fprintln(cmd.OutOrStdout(), line)
+			}
+			return nil
+		},
+	}
+	filesCmd.Flags().IntVar(&filesLimit, "limit", 25, "Page size for the pull request change listing")
+	filesCmd.Flags().IntVar(&filesStart, "start", 0, "Start offset for the pull request change listing")
+	prCmd.AddCommand(filesCmd)
+
+	mergeBaseCmd := &cobra.Command{
+		Use:   "merge-base <id>",
+		Short: "Show the common ancestor commit of a pull request's source and target branches",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			commit, err := service.GetMergeBase(cmd.Context(), repo, args[0])
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "merge_base": commit})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", shortCommitID(commit), firstMessageLine(commit.Message))
+			return nil
+		},
+	}
+	prCmd.AddCommand(mergeBaseCmd)
+
 	var createFromRef string
 	var createToRef string
 	var createTitle string
 	var createDescription string
-	var createReviewers string
+	var createReviewers []string
+	var createDraft bool
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a pull request",
+		Example: "  # Create a pull request\n" +
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\"\n\n" +
+			"  # Create a draft pull request (Bitbucket DC 8.0+)\n" +
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --draft\n\n" +
+			"  # Create a pull request and assign reviewers (repeatable or comma-separated)\n" +
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --reviewers alice,bob",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := loadConfigAndClient()
 			if err != nil {
@@ -578,7 +818,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 					Capability:   capabilityFull,
 					Items: []dryRunItem{{
 						Intent:          "pr.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "from_ref": createFromRef, "to_ref": createToRef, "title": createTitle, "reviewers": parseCLICommaList(createReviewers)},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "from_ref": createFromRef, "to_ref": createToRef, "title": createTitle, "reviewers": createReviewers, "draft": createDraft},
 						Action:          "create",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -608,7 +848,8 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				ToRef:       createToRef,
 				Title:       createTitle,
 				Description: createDescription,
-				Reviewers:   parseCLICommaList(createReviewers),
+				Reviewers:   createReviewers,
+				Draft:       createDraft,
 			})
 			if err != nil {
 				return err
@@ -626,7 +867,8 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	createCmd.Flags().StringVar(&createToRef, "to-ref", "", "Target branch (name or refs/heads/name)")
 	createCmd.Flags().StringVar(&createTitle, "title", "", "Pull request title")
 	createCmd.Flags().StringVar(&createDescription, "description", "", "Pull request description")
-	createCmd.Flags().StringVar(&createReviewers, "reviewers", "", "Reviewer usernames to add (comma-separated, e.g. --reviewers alice,bob)")
+	createCmd.Flags().StringSliceVar(&createReviewers, "reviewers", nil, "Reviewer usernames to add (repeatable or comma-separated, e.g. --reviewers alice,bob)")
+	createCmd.Flags().BoolVar(&createDraft, "draft", false, "Create as a draft pull request (Bitbucket DC 8.0+)")
 	_ = createCmd.MarkFlagRequired("from-ref")
 	_ = createCmd.MarkFlagRequired("to-ref")
 	_ = createCmd.MarkFlagRequired("title")
@@ -635,10 +877,17 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	var updateTitle string
 	var updateDescription string
 	var updateVersion int
+	var updateDraft bool
 	updateCmd := &cobra.Command{
 		Use:   "update <id>",
 		Short: "Update pull request metadata",
-		Args:  cobra.ExactArgs(1),
+		Example: "  # Update title and description\n" +
+			"  bb pr update 42 --repo PROJ/repo --version 1 --title \"New title\"\n\n" +
+			"  # Mark a draft PR as ready for review\n" +
+			"  bb pr update 42 --repo PROJ/repo --version 1 --draft=false\n\n" +
+			"  # Convert an open PR to draft\n" +
+			"  bb pr update 42 --repo PROJ/repo --version 1 --draft",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := loadConfigAndClient()
 			if err != nil {
@@ -648,6 +897,11 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
 			if err != nil {
 				return err
+			}
+
+			var draft *bool
+			if cmd.Flags().Changed("draft") {
+				draft = &updateDraft
 			}
 
 			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
@@ -662,10 +916,12 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
+				draftChanged := draft != nil && current.Draft != *draft
 				predicted := "update"
 				reason := "pull request metadata will be updated"
 				if strings.EqualFold(strings.TrimSpace(current.Title), strings.TrimSpace(updateTitle)) &&
-					strings.EqualFold(strings.TrimSpace(current.Description), strings.TrimSpace(updateDescription)) {
+					strings.EqualFold(strings.TrimSpace(current.Description), strings.TrimSpace(updateDescription)) &&
+					!draftChanged {
 					predicted = "no-op"
 					reason = "pull request already matches requested metadata"
 				}
@@ -676,7 +932,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 					Capability:   capabilityFull,
 					Items: []dryRunItem{{
 						Intent:          "pr.update",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "title": updateTitle, "description": updateDescription, "version": updateVersion},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "title": updateTitle, "description": updateDescription, "version": updateVersion, "draft": draft},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -699,6 +955,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				Title:       updateTitle,
 				Description: updateDescription,
 				Version:     updateVersion,
+				Draft:       draft,
 			})
 			if err != nil {
 				return err
@@ -715,6 +972,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	updateCmd.Flags().StringVar(&updateTitle, "title", "", "Updated pull request title")
 	updateCmd.Flags().StringVar(&updateDescription, "description", "", "Updated pull request description")
 	updateCmd.Flags().IntVar(&updateVersion, "version", 0, "Expected pull request version")
+	updateCmd.Flags().BoolVar(&updateDraft, "draft", false, "Set draft state: --draft to mark as draft, --draft=false to mark as ready for review")
 	_ = updateCmd.MarkFlagRequired("version")
 	prCmd.AddCommand(updateCmd)
 
@@ -1259,16 +1517,230 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	reviewerCmd.AddCommand(reviewerRemoveCmd)
 
 	reviewCmd.AddCommand(reviewerCmd)
+
+	var reviewGetCmd = &cobra.Command{
+		Use:   "get <id>",
+		Short: "Retrieve current draft review details",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			response, err := client.GetReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, args[0], nil)
+			if err != nil {
+				return err
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return err
+			}
+
+			var comments []openapigenerated.RestComment
+			if response.ApplicationjsonCharsetUTF8200 != nil && response.ApplicationjsonCharsetUTF8200.Values != nil {
+				comments = *response.ApplicationjsonCharsetUTF8200.Values
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "comments": comments})
+			}
+
+			if len(comments) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "No draft comments found in review")
+				return nil
+			}
+
+			for _, comment := range comments {
+				fmt.Fprintln(cmd.OutOrStdout(), formatCommentSummary(comment))
+			}
+			return nil
+		},
+	}
+	reviewCmd.AddCommand(reviewGetCmd)
+
+	var reviewCompleteStatus string
+	var reviewCompleteComment string
+	var reviewCompleteCmd = &cobra.Command{
+		Use:   "complete <id>",
+		Short: "Publish draft comments and optionally submit a status change",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			var body openapigenerated.RestPullRequestFinishReviewRequest
+			if reviewCompleteStatus != "" {
+				s := strings.ToUpper(reviewCompleteStatus)
+				body.ParticipantStatus = &s
+			}
+			if reviewCompleteComment != "" {
+				c := reviewCompleteComment
+				body.CommentText = &c
+			}
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.review.complete",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "status": reviewCompleteStatus, "comment": reviewCompleteComment},
+						Action:          "update",
+						PredictedAction: "update",
+						Supported:       true,
+						Reason:          "pull request review will be completed",
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, UpdateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			response, err := client.FinishReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, args[0], nil, body)
+			if err != nil {
+				return err
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "status": "completed"})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Completed review for pull request #%s\n", args[0])
+			return nil
+		},
+	}
+	reviewCompleteCmd.Flags().StringVar(&reviewCompleteStatus, "status", "", "Pull request status change (APPROVED, NEEDS_WORK, UNAPPROVED)")
+	reviewCompleteCmd.Flags().StringVar(&reviewCompleteComment, "comment", "", "Review completion comment text")
+	reviewCmd.AddCommand(reviewCompleteCmd)
+
+	var reviewDiscardCmd = &cobra.Command{
+		Use:   "discard <id>",
+		Short: "Discard all draft comments and cancel review",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.review.discard",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Action:          "delete",
+						PredictedAction: "delete",
+						Supported:       true,
+						Reason:          "pull request review will be discarded",
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, DeleteCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			response, err := client.DiscardReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, args[0])
+			if err != nil {
+				return err
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "status": "discarded"})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Discarded review for pull request #%s\n", args[0])
+			return nil
+		},
+	}
+	reviewCmd.AddCommand(reviewDiscardCmd)
+
 	prCmd.AddCommand(reviewCmd)
+
+	var jiraCmd = &cobra.Command{
+		Use:   "jira <id>",
+		Short: "List Jira issues associated with a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			jiraService := jiraservice.NewService(httpclient.NewFromConfig(cfg))
+			issues, err := jiraService.GetPRIssues(cmd.Context(), jiraservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0])
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "issues": issues})
+			}
+
+			if len(issues) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "No Jira issues associated with pull request")
+				return nil
+			}
+
+			rows := make([][]string, len(issues))
+			for i, issue := range issues {
+				rows[i] = []string{style.Secondary.Render(issue.Key), issue.URL}
+			}
+			style.WriteTable(cmd.OutOrStdout(), rows)
+
+			return nil
+		},
+	}
+	prCmd.AddCommand(jiraCmd)
 
 	commentCmd := &cobra.Command{Use: "comment", Short: "Pull request comment commands"}
 
 	var commentPath string
 	var commentLimit int
+	var commentBlocker bool
 	commentListCmd := &cobra.Command{
 		Use:   "list <id>",
 		Short: "List comments for a pull request",
-		Long:  "List pull request comments. Without --path this uses the pull request activity timeline to return the aggregate comment view. With --path it uses the path-scoped comments endpoint.",
+		Long:  "List pull request comments. Without --path this uses the pull request activity timeline to return the aggregate comment view. With --path it uses the path-scoped comments endpoint. With --blocker it lists blocker comments.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := loadConfigAndClient()
@@ -1285,7 +1757,18 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 
 			source := "comments"
 			comments := make([]openapigenerated.RestComment, 0)
-			if trimmedCommentPath == "" {
+			if commentBlocker {
+				source = "blocker_comments"
+				service := commentservice.NewService(client)
+				comments, err = service.List(cmd.Context(), commentservice.Target{
+					Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+					PullRequestID: args[0],
+					Blocker:       true,
+				}, "", commentLimit)
+				if err != nil {
+					return err
+				}
+			} else if trimmedCommentPath == "" {
 				source = "activities"
 				activityService := pullrequestactivityservice.NewService(client)
 				activities, err := activityService.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0], pullrequestactivityservice.ListOptions{Limit: commentLimit})
@@ -1328,6 +1811,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	}
 	commentListCmd.Flags().StringVar(&commentPath, "path", "", "Optional file path for path-scoped pull request comment listing")
 	commentListCmd.Flags().IntVar(&commentLimit, "limit", 25, "Page size for pull request comment list operations")
+	commentListCmd.Flags().BoolVar(&commentBlocker, "blocker", false, "List pull request blocker comments")
 	commentCmd.AddCommand(commentListCmd)
 
 	commentGetCmd := &cobra.Command{
@@ -1364,6 +1848,261 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 	commentCmd.AddCommand(commentGetCmd)
+
+	var commentAddText string
+	var commentAddBlocker bool
+	var commentAddPending bool
+	commentAddCmd := &cobra.Command{
+		Use:   "add <pr-id>",
+		Short: "Add a comment to a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			target := commentservice.Target{
+				Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+				PullRequestID: args[0],
+				Blocker:       commentAddBlocker,
+				Pending:       commentAddPending,
+			}
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.comment.add",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "text": commentAddText, "blocker": commentAddBlocker, "pending": commentAddPending},
+						Action:          "create",
+						PredictedAction: "create",
+						Supported:       true,
+						Reason:          "pull request comment will be created",
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request reference"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, CreateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			service := commentservice.NewService(client)
+			created, err := service.Create(cmd.Context(), target, commentAddText)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "comment": created, "blocker": commentAddBlocker, "pending": commentAddPending})
+			}
+
+			commentID := ""
+			if created.Id != nil {
+				commentID = strconv.Itoa(int(*created.Id))
+			}
+			blockerStr := ""
+			if commentAddBlocker {
+				blockerStr = " blocker"
+			}
+			pendingStr := ""
+			if commentAddPending {
+				pendingStr = " pending"
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Created%s%s comment %s\n", blockerStr, pendingStr, commentID)
+			return nil
+		},
+	}
+	commentAddCmd.Flags().StringVar(&commentAddText, "text", "", "Comment text")
+	commentAddCmd.Flags().BoolVar(&commentAddBlocker, "blocker", false, "Mark the comment as a blocker")
+	commentAddCmd.Flags().BoolVar(&commentAddPending, "pending", false, "Mark the comment as pending (draft)")
+	_ = commentAddCmd.MarkFlagRequired("text")
+	commentCmd.AddCommand(commentAddCmd)
+
+	var commentReactRemove bool
+	commentReactCmd := &cobra.Command{
+		Use:   "react <pr-id> <comment-id> <emoji>",
+		Short: "Add or remove a reaction on a pull request comment",
+		Args:  cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			prID := args[0]
+			commentID := args[1]
+			emoticon := normalizeEmoticon(args[2])
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+					return err
+				}
+
+				action := "update"
+				predicted := "update"
+				intent := "pr.comment.react"
+				reason := "reaction will be added"
+				if commentReactRemove {
+					action = "delete"
+					predicted = "delete"
+					reason = "reaction will be removed"
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          intent,
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "pr_id": prID, "comment_id": commentID, "emoticon": emoticon},
+						Action:          action,
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request comment"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1},
+				}
+				if commentReactRemove {
+					preview.Summary.DeleteCount = 1
+				} else {
+					preview.Summary.UpdateCount = 1
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			service := commentservice.NewService(client)
+			if commentReactRemove {
+				err = service.UnReact(cmd.Context(), commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, prID, commentID, emoticon)
+				if err != nil {
+					return err
+				}
+
+				if options.JSON {
+					return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "action": "removed", "repository": repo, "pull_request_id": prID, "comment_id": commentID, "emoticon": emoticon})
+				}
+
+				fmt.Fprintf(cmd.OutOrStdout(), "Removed reaction :%s: from comment %s\n", emoticon, commentID)
+				return nil
+			}
+
+			reaction, err := service.React(cmd.Context(), commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, prID, commentID, emoticon)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": prID, "comment_id": commentID, "reaction": reaction})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Added reaction :%s: to comment %s\n", emoticon, commentID)
+			return nil
+		},
+	}
+	commentReactCmd.Flags().BoolVar(&commentReactRemove, "remove", false, "Remove the reaction instead of adding it")
+	commentCmd.AddCommand(commentReactCmd)
+
+	var commentSuggestionMsg string
+	var commentSuggestionIdx int32
+	var commentSuggestionCommentVer int32
+	var commentSuggestionPrVer int32
+	commentApplySuggestionCmd := &cobra.Command{
+		Use:   "apply-suggestion <pr-id> <comment-id>",
+		Short: "Apply a suggested change from a comment",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			prID := args[0]
+			commentID := args[1]
+
+			req := openapigenerated.RestApplySuggestionRequest{}
+			if cmd.Flags().Changed("commit-message") {
+				req.CommitMessage = &commentSuggestionMsg
+			}
+			if cmd.Flags().Changed("index") {
+				req.SuggestionIndex = &commentSuggestionIdx
+			}
+			if cmd.Flags().Changed("comment-version") {
+				req.CommentVersion = &commentSuggestionCommentVer
+			}
+			if cmd.Flags().Changed("pr-version") {
+				req.PullRequestVersion = &commentSuggestionPrVer
+			}
+
+			if options.DryRun {
+				checker := options.permissionCheckerFor(client)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.comment.apply-suggestion",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "pr_id": prID, "comment_id": commentID, "suggestion_index": commentSuggestionIdx},
+						Action:          "update",
+						PredictedAction: "update",
+						Supported:       true,
+						Reason:          "comment suggestion will be applied",
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request comment suggestion"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, UpdateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			service := commentservice.NewService(client)
+			err = service.ApplySuggestion(cmd.Context(), commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, prID, commentID, req)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": repo, "pull_request_id": prID, "comment_id": commentID})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Applied suggestion on comment %s for pull request %s\n", commentID, prID)
+			return nil
+		},
+	}
+	commentApplySuggestionCmd.Flags().StringVar(&commentSuggestionMsg, "commit-message", "", "Optional commit message for the suggestion application")
+	commentApplySuggestionCmd.Flags().Int32Var(&commentSuggestionIdx, "index", 0, "Optional index of the suggestion in the comment (default 0)")
+	commentApplySuggestionCmd.Flags().Int32Var(&commentSuggestionCommentVer, "comment-version", 0, "Optional expected version of the comment")
+	commentApplySuggestionCmd.Flags().Int32Var(&commentSuggestionPrVer, "pr-version", 0, "Optional expected version of the pull request")
+	commentCmd.AddCommand(commentApplySuggestionCmd)
+
 	prCmd.AddCommand(commentCmd)
 
 	activityCmd := &cobra.Command{
@@ -1749,7 +2488,579 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	buildCmd.AddCommand(buildStatusCmd)
 	prCmd.AddCommand(buildCmd)
 
+	// pr auto-merge
+	autoMergeCmd := &cobra.Command{
+		Use:   "auto-merge",
+		Short: "Pull request auto-merge commands (Bitbucket DC 8.0+)",
+	}
+
+	autoMergeGetCmd := &cobra.Command{
+		Use:   "get <id>",
+		Short: "Get auto-merge configuration for a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			autoMerge, err := service.GetAutoMerge(cmd.Context(), repo, args[0])
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "auto_merge": autoMerge})
+			}
+
+			if !autoMerge.Enabled {
+				fmt.Fprintln(cmd.OutOrStdout(), "Auto-merge: disabled")
+				return nil
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Auto-merge: enabled (strategy=%s)\n", autoMerge.StrategyID)
+			return nil
+		},
+	}
+	autoMergeCmd.AddCommand(autoMergeGetCmd)
+
+	var autoMergeStrategy string
+	autoMergeEnableCmd := &cobra.Command{
+		Use:   "enable <id>",
+		Short: "Enable auto-merge on a pull request",
+		Example: "  # Enable auto-merge with the default strategy (no-ff)\n" +
+			"  bb pr auto-merge enable 42 --repo PROJ/repo\n\n" +
+			"  # Enable auto-merge with a specific strategy\n" +
+			"  bb pr auto-merge enable 42 --repo PROJ/repo --strategy rebase-ff-only",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, apiClient, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			if options.DryRun {
+				checker := options.permissionCheckerFor(apiClient)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				current, err := service.GetAutoMerge(cmd.Context(), repo, args[0])
+				if err != nil {
+					return err
+				}
+
+				predicted := "update"
+				reason := "auto-merge will be enabled"
+				if current.Enabled && strings.EqualFold(strings.TrimSpace(current.StrategyID), strings.TrimSpace(autoMergeStrategy)) {
+					predicted = "no-op"
+					reason = "auto-merge is already enabled with the same strategy"
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.auto-merge.enable",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "strategy": autoMergeStrategy},
+						Action:          "update",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request auto-merge"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1},
+				}
+				if predicted == "update" {
+					preview.Summary.UpdateCount = 1
+				} else {
+					preview.Summary.NoopCount = 1
+				}
+
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			autoMerge, err := service.EnableAutoMerge(cmd.Context(), repo, args[0], autoMergeStrategy)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "auto_merge": autoMerge})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Enabled auto-merge on pull request #%s (strategy=%s)\n", args[0], autoMerge.StrategyID)
+			return nil
+		},
+	}
+	autoMergeEnableCmd.Flags().StringVar(&autoMergeStrategy, "strategy", "no-ff", "Merge strategy: no-ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only")
+	autoMergeCmd.AddCommand(autoMergeEnableCmd)
+
+	autoMergeDisableCmd := &cobra.Command{
+		Use:   "disable <id>",
+		Short: "Disable auto-merge on a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, apiClient, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			if options.DryRun {
+				checker := options.permissionCheckerFor(apiClient)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				current, err := service.GetAutoMerge(cmd.Context(), repo, args[0])
+				if err != nil {
+					return err
+				}
+
+				predicted := "delete"
+				reason := "auto-merge will be disabled"
+				if !current.Enabled {
+					predicted = "no-op"
+					reason = "auto-merge is not enabled"
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.auto-merge.disable",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Action:          "delete",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request auto-merge"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1},
+				}
+				if predicted == "delete" {
+					preview.Summary.DeleteCount = 1
+				} else {
+					preview.Summary.NoopCount = 1
+				}
+
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			if err := service.DisableAutoMerge(cmd.Context(), repo, args[0]); err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": repo, "pull_request_id": args[0]})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Disabled auto-merge on pull request #%s\n", args[0])
+			return nil
+		},
+	}
+	autoMergeCmd.AddCommand(autoMergeDisableCmd)
+	prCmd.AddCommand(autoMergeCmd)
+
+	watchCmd := &cobra.Command{
+		Use:   "watch <id>",
+		Short: "Watch a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, apiClient, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(apiClient)
+			if options.DryRun {
+				checker := options.permissionCheckerFor(apiClient)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+					return err
+				}
+
+				if _, err := service.Get(cmd.Context(), repo, args[0]); err != nil {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.watch",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Action:          "update",
+						PredictedAction: "update",
+						Supported:       true,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, UpdateCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			err = service.Watch(cmd.Context(), repo, args[0])
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "watched": true})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Watching pull request #%s\n", args[0])
+			return nil
+		},
+	}
+	prCmd.AddCommand(watchCmd)
+
+	unwatchCmd := &cobra.Command{
+		Use:   "unwatch <id>",
+		Short: "Unwatch a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, apiClient, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(apiClient)
+			if options.DryRun {
+				checker := options.permissionCheckerFor(apiClient)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+					return err
+				}
+
+				if _, err := service.Get(cmd.Context(), repo, args[0]); err != nil {
+					return err
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.unwatch",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Action:          "delete",
+						PredictedAction: "delete",
+						Supported:       true,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request"},
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1, DeleteCount: 1},
+				}
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			err = service.Unwatch(cmd.Context(), repo, args[0])
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "watched": false})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Unwatching pull request #%s\n", args[0])
+			return nil
+		},
+	}
+	prCmd.AddCommand(unwatchCmd)
+
+	var rebaseVersion int
+	rebaseCmd := &cobra.Command{
+		Use:   "rebase <id>",
+		Short: "Rebase a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, apiClient, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(apiClient)
+			if options.DryRun {
+				checker := options.permissionCheckerFor(apiClient)
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+					return err
+				}
+
+				rebaseability, err := service.CanRebase(cmd.Context(), repo, args[0])
+				if err != nil {
+					return err
+				}
+
+				predicted := "update"
+				reason := "pull request will be rebased"
+				blocking := []string{}
+				if rebaseability != nil && rebaseability.Vetoes != nil && len(*rebaseability.Vetoes) > 0 {
+					predicted = "blocked"
+					reason = "rebase is vetoed"
+					for _, veto := range *rebaseability.Vetoes {
+						msg := ""
+						if veto.SummaryMessage != nil {
+							msg = *veto.SummaryMessage
+						}
+						if veto.DetailedMessage != nil {
+							if msg != "" {
+								msg += ": "
+							}
+							msg += *veto.DetailedMessage
+						}
+						if msg != "" {
+							blocking = append(blocking, msg)
+						}
+					}
+					if len(blocking) > 0 {
+						reason = strings.Join(blocking, "; ")
+					}
+				}
+
+				preview := dryRunPreview{
+					DryRun:       true,
+					PlanningMode: planningModeStateful,
+					Capability:   capabilityFull,
+					Items: []dryRunItem{{
+						Intent:          "pr.rebase",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Action:          "update",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      capabilityFull,
+						RequiredState:   []string{"pull request"},
+						BlockingReasons: blocking,
+					}},
+					Summary: dryRunSummary{Total: 1, Supported: 1},
+				}
+				if predicted == "update" {
+					preview.Summary.UpdateCount = 1
+				} else {
+					preview.Summary.UnknownCount = 1
+				}
+
+				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+			}
+
+			var version *int
+			if cmd.Flags().Changed("version") {
+				version = &rebaseVersion
+			}
+
+			result, err := service.Rebase(cmd.Context(), repo, args[0], version)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "rebase_result": result})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Rebased pull request #%s\n", args[0])
+			return nil
+		},
+	}
+	rebaseCmd.Flags().IntVar(&rebaseVersion, "version", 0, "Expected pull request version")
+	prCmd.AddCommand(rebaseCmd)
+
+	var searchFilter string
+	participantsCmd := &cobra.Command{
+		Use:   "participants",
+		Short: "Search pull request participants across a repository",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, apiClient, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(apiClient)
+			participants, err := service.SearchParticipants(cmd.Context(), repo, searchFilter)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "participants": participants})
+			}
+
+			if len(participants) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No participants found"))
+				return nil
+			}
+
+			rows := make([][]string, len(participants))
+			for i, p := range participants {
+				activeStr := "active"
+				if !p.Active {
+					activeStr = "inactive"
+				}
+				rows[i] = []string{p.Name, p.DisplayName, p.EmailAddress, activeStr}
+			}
+			style.WriteTable(cmd.OutOrStdout(), rows)
+			return nil
+		},
+	}
+	participantsCmd.Flags().StringVar(&searchFilter, "search", "", "Query filter (checks username, name, or email)")
+	_ = participantsCmd.MarkFlagRequired("search")
+	prCmd.AddCommand(participantsCmd)
+
+	var defaultReviewersSourceRepoId string
+	var defaultReviewersTargetRepoId string
+	var defaultReviewersSourceRef string
+	var defaultReviewersTargetRef string
+
+	defaultReviewersCmd := &cobra.Command{
+		Use:   "default-reviewers",
+		Short: "List default reviewers and matching conditions for repository",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolveRepositoryReference(repository, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := reviewerservice.NewService(client)
+
+			var sourceRepoIdPtr *string
+			var targetRepoIdPtr *string
+			var sourceRefPtr *string
+			var targetRefPtr *string
+
+			if defaultReviewersSourceRepoId != "" {
+				sourceRepoIdPtr = &defaultReviewersSourceRepoId
+			}
+			if defaultReviewersTargetRepoId != "" {
+				targetRepoIdPtr = &defaultReviewersTargetRepoId
+			}
+			if defaultReviewersSourceRef != "" {
+				sourceRefPtr = &defaultReviewersSourceRef
+			}
+			if defaultReviewersTargetRef != "" {
+				targetRefPtr = &defaultReviewersTargetRef
+			}
+
+			conditions, err := service.GetDefaultReviewers(cmd.Context(), repo.ProjectKey, repo.Slug, sourceRepoIdPtr, targetRepoIdPtr, sourceRefPtr, targetRefPtr)
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"default_reviewers": conditions})
+			}
+
+			printDefaultReviewers(cmd, conditions)
+			return nil
+		},
+	}
+
+	defaultReviewersCmd.Flags().StringVar(&defaultReviewersSourceRepoId, "source-repo-id", "", "The ID of the repository in which the source ref exists")
+	defaultReviewersCmd.Flags().StringVar(&defaultReviewersTargetRepoId, "target-repo-id", "", "The ID of the repository in which the target ref exists")
+	defaultReviewersCmd.Flags().StringVar(&defaultReviewersSourceRef, "source-ref", "", "The ID of the source ref (e.g. refs/heads/feature)")
+	defaultReviewersCmd.Flags().StringVar(&defaultReviewersTargetRef, "target-ref", "", "The ID of the target ref (e.g. refs/heads/master)")
+
+	prCmd.AddCommand(defaultReviewersCmd)
+
 	return prCmd
+}
+
+func printDefaultReviewers(cmd *cobra.Command, conditions []openapigenerated.RestPullRequestCondition) {
+	if len(conditions) == 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No default reviewers or conditions found"))
+		return
+	}
+
+	rows := make([][]string, len(conditions))
+	for i, c := range conditions {
+		idStr := ""
+		if c.Id != nil {
+			idStr = fmt.Sprintf("%d", *c.Id)
+		}
+
+		sourceRef := "ANY"
+		if c.SourceRefMatcher != nil && c.SourceRefMatcher.DisplayId != nil {
+			sourceRef = *c.SourceRefMatcher.DisplayId
+		}
+
+		targetRef := "ANY"
+		if c.TargetRefMatcher != nil && c.TargetRefMatcher.DisplayId != nil {
+			targetRef = *c.TargetRefMatcher.DisplayId
+		}
+
+		reqApprovals := "0"
+		if c.RequiredApprovals != nil {
+			reqApprovals = fmt.Sprintf("%d", *c.RequiredApprovals)
+		}
+
+		var reviewers []string
+		if c.Reviewers != nil {
+			for _, r := range *c.Reviewers {
+				name := ""
+				if r.DisplayName != nil {
+					name = *r.DisplayName
+				} else if r.Name != nil {
+					name = *r.Name
+				}
+				if name != "" {
+					reviewers = append(reviewers, name)
+				}
+			}
+		}
+		reviewersStr := strings.Join(reviewers, ", ")
+
+		rows[i] = []string{
+			style.Secondary.Render(idStr),
+			style.Resource.Render(sourceRef),
+			style.Resource.Render(targetRef),
+			reqApprovals,
+			reviewersStr,
+		}
+	}
+
+	style.WriteTable(cmd.OutOrStdout(), rows)
 }
 
 func newAdminCommand(options *rootOptions) *cobra.Command {
@@ -1846,19 +3157,28 @@ func taskUpdateEquivalent(task pullrequestservice.Task, text string, resolved *b
 	return true
 }
 
-func parseCLICommaList(s string) []string {
-	if s == "" {
-		return nil
+// shortCommitID returns the most human-friendly identifier for a commit,
+// preferring the abbreviated display id and falling back to a truncated hash.
+func shortCommitID(commit pullrequestservice.Commit) string {
+	if strings.TrimSpace(commit.DisplayID) != "" {
+		return commit.DisplayID
 	}
-	parts := strings.Split(s, ",")
-	result := make([]string, 0, len(parts))
-	for _, p := range parts {
-		if trimmed := strings.TrimSpace(p); trimmed != "" {
-			result = append(result, trimmed)
-		}
+	id := strings.TrimSpace(commit.ID)
+	if len(id) > 11 {
+		return id[:11]
 	}
-	if len(result) == 0 {
-		return nil
+	return id
+}
+
+// firstMessageLine returns the first line of a commit message for compact output.
+func firstMessageLine(message string) string {
+	trimmed := strings.TrimSpace(message)
+	if index := strings.IndexByte(trimmed, '\n'); index >= 0 {
+		return strings.TrimSpace(trimmed[:index])
 	}
-	return result
+	return trimmed
+}
+
+func normalizeEmoticon(e string) string {
+	return strings.Trim(e, ":")
 }

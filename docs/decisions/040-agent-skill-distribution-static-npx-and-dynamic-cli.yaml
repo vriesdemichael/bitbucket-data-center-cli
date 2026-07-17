@@ -5,7 +5,7 @@ status: accepted
 decision: >
   Distribute the bb agent skill through two complementary channels. First, package a baseline
   SKILL.md at skills/bb/SKILL.md in this repository so that
-  npx skills add vriesdemichael/bitbucket-server-cli works out of the box via the open agent
+  npx skills add vriesdemichael/bitbucket-data-center-cli works out of the box via the open agent
   skills ecosystem at skills.sh. Second, expose bb ai skill show to generate a live,
   version-aware skill tailored to the installed bb binary and authenticated Bitbucket
   instance(s). A bb ai skill install command writes the live skill to the appropriate agent
@@ -29,7 +29,7 @@ decision: >
 agent_instructions: >
   When helping a user install or update the bb skill:
   - Prefer bb ai skill install for accuracy; it always reflects the current bb binary.
-  - Recommend npx skills add vriesdemichael/bitbucket-server-cli for zero-friction first-time
+  - Recommend npx skills add vriesdemichael/bitbucket-data-center-cli for zero-friction first-time
     setup or when bb is not yet installed.
   - The standard project-scoped path is .agents/skills/bb/SKILL.md, which is picked up by
     GitHub Copilot, Cursor, Codex, Cline, Amp, and most other agents. Agent-specific paths

@@ -273,3 +273,53 @@ func testMapStatusErrors(t *testing.T) {
 		t.Fatalf("expected permanent error")
 	}
 }
+
+func TestCommitServicePaginationLimit(t *testing.T) {
+	calls := 0
+	service := newCommitTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		calls++
+		if calls == 1 {
+			if r.URL.Query().Get("start") != "1" || r.URL.Query().Get("limit") != "3" {
+				t.Errorf("expected start=1 limit=3 on call 1, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
+			}
+			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":3,"values":[{"id":"c1"},{"id":"c2"}]}`))
+			return
+		}
+		if r.URL.Query().Get("start") != "3" || r.URL.Query().Get("limit") != "1" {
+			t.Errorf("expected start=3 limit=1 on call 2, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
+		}
+		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"c3"}]}`))
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+	commits, err := service.List(context.Background(), repo, ListOptions{Start: 1, Limit: 3})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(commits) != 3 {
+		t.Errorf("expected 3 commits, got %d", len(commits))
+	}
+	if calls != 2 {
+		t.Errorf("expected 2 page requests, got %d", calls)
+	}
+}
+
+func TestCommitServicePaginationEdgeCases(t *testing.T) {
+	service := newCommitTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Query().Get("start") != "0" {
+			t.Errorf("expected start=0, got start=%s", r.URL.Query().Get("start"))
+		}
+		_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":4,"values":[{"id":"c1"},{"id":"c2"},{"id":"c3"},{"id":"c4"}]}`))
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+	commits, err := service.List(context.Background(), repo, ListOptions{Start: -1, Limit: 3})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(commits) != 3 {
+		t.Errorf("expected 3 commits, got %d", len(commits))
+	}
+}

@@ -213,8 +213,11 @@ func TestRepoCloneCommandFallsBackToStoredHTTPToken(t *testing.T) {
 	if stub.cloneCalls[0].repositoryURL != "git@bitbucket.example.com:scm/PRJ/demo.git" {
 		t.Fatalf("unexpected ssh clone url: %s", stub.cloneCalls[0].repositoryURL)
 	}
-	if stub.cloneCalls[1].repositoryURL != "https://x-token-auth:test-token@bitbucket.example.com/scm/PRJ/demo.git" {
+	if stub.cloneCalls[1].repositoryURL != "https://bitbucket.example.com/scm/PRJ/demo.git" {
 		t.Fatalf("unexpected authenticated clone url: %s", stub.cloneCalls[1].repositoryURL)
+	}
+	if stub.cloneCalls[1].options.AuthToken != "test-token" {
+		t.Fatalf("expected AuthToken to be 'test-token', got '%s'", stub.cloneCalls[1].options.AuthToken)
 	}
 	if !strings.Contains(output, "Cloned PRJ/demo into demo") {
 		t.Fatalf("unexpected output: %s", output)
@@ -335,8 +338,11 @@ func TestCloneRepositoryWithAuthFallbackUsesCanonicalHostForAliasHTTPSRetry(t *t
 	if len(stub.cloneCalls) != 2 {
 		t.Fatalf("expected two clone attempts, got %d", len(stub.cloneCalls))
 	}
-	if stub.cloneCalls[1].repositoryURL != "https://x-token-auth:stored-token@bitbucket.example.com/context/scm/PRJ/demo.git" {
+	if stub.cloneCalls[1].repositoryURL != "https://bitbucket.example.com/context/scm/PRJ/demo.git" {
 		t.Fatalf("expected canonical host https retry, got %s", stub.cloneCalls[1].repositoryURL)
+	}
+	if stub.cloneCalls[1].options.AuthToken != "stored-token" {
+		t.Fatalf("expected AuthToken to be 'stored-token', got '%s'", stub.cloneCalls[1].options.AuthToken)
 	}
 }
 
@@ -375,8 +381,11 @@ func TestCloneRepositoryWithAuthFallbackRebuildsHTTPSRetryWhenContextPathDiffers
 	if len(stub.cloneCalls) != 1 {
 		t.Fatalf("expected one https clone attempt, got %d", len(stub.cloneCalls))
 	}
-	if stub.cloneCalls[0].repositoryURL != "https://x-token-auth:stored-token@bitbucket.example.com/context/scm/PRJ/demo.git" {
+	if stub.cloneCalls[0].repositoryURL != "https://bitbucket.example.com/context/scm/PRJ/demo.git" {
 		t.Fatalf("expected rebuilt canonical context-path clone url, got %s", stub.cloneCalls[0].repositoryURL)
+	}
+	if stub.cloneCalls[0].options.AuthToken != "stored-token" {
+		t.Fatalf("expected AuthToken to be 'stored-token', got '%s'", stub.cloneCalls[0].options.AuthToken)
 	}
 }
 
@@ -405,8 +414,11 @@ func TestRepoCloneCommandHTTPSFlagSkipsSSHAndUsesTokenUsername(t *testing.T) {
 	if len(stub.cloneCalls) != 1 {
 		t.Fatalf("expected one HTTPS clone attempt, got %d", len(stub.cloneCalls))
 	}
-	if stub.cloneCalls[0].repositoryURL != "https://admin:test-token@bitbucket.example.com/scm/PRJ/demo.git" {
+	if stub.cloneCalls[0].repositoryURL != "https://bitbucket.example.com/scm/PRJ/demo.git" {
 		t.Fatalf("unexpected https clone url: %s", stub.cloneCalls[0].repositoryURL)
+	}
+	if stub.cloneCalls[0].options.AuthToken != "test-token" {
+		t.Fatalf("expected AuthToken to be 'test-token', got '%s'", stub.cloneCalls[0].options.AuthToken)
 	}
 }
 
@@ -862,8 +874,11 @@ func TestRepoCloneCommandUsesStoredConfigForOtherHost(t *testing.T) {
 	if len(stub.cloneCalls) != 2 {
 		t.Fatalf("expected two clone attempts (SSH then HTTP), got %d", len(stub.cloneCalls))
 	}
-	if !strings.Contains(stub.cloneCalls[1].repositoryURL, "stored-token") {
-		t.Fatalf("expected stored token in HTTP clone URL: %s", stub.cloneCalls[1].repositoryURL)
+	if stub.cloneCalls[1].repositoryURL != "https://otherbucket.example.com/scm/PRJ/demo.git" {
+		t.Fatalf("unexpected HTTP clone URL: %s", stub.cloneCalls[1].repositoryURL)
+	}
+	if stub.cloneCalls[1].options.AuthToken != "stored-token" {
+		t.Fatalf("expected AuthToken to be 'stored-token', got '%s'", stub.cloneCalls[1].options.AuthToken)
 	}
 }
 
@@ -949,59 +964,6 @@ func TestNewCloneLoginRequiredError(t *testing.T) {
 	}
 }
 
-func TestBuildAuthenticatedCloneURLAllModes(t *testing.T) {
-	// Token auth
-	u, err := buildAuthenticatedCloneURL("https://bitbucket.example.com/scm/PRJ/demo.git", config.AppConfig{
-		BitbucketURL:   "https://bitbucket.example.com",
-		BitbucketToken: "my-token",
-	})
-	if err != nil {
-		t.Fatalf("token auth: unexpected error: %v", err)
-	}
-	if !strings.Contains(u, "x-token-auth:my-token") {
-		t.Fatalf("token auth: expected token in URL, got: %s", u)
-	}
-
-	// Token auth with username falls back to regular basic-auth username:token form.
-	u, err = buildAuthenticatedCloneURL("https://bitbucket.example.com/scm/PRJ/demo.git", config.AppConfig{
-		BitbucketURL:      "https://bitbucket.example.com",
-		BitbucketToken:    "my-token",
-		BitbucketUsername: "admin",
-	})
-	if err != nil {
-		t.Fatalf("token auth with username: unexpected error: %v", err)
-	}
-	if !strings.Contains(u, "admin:my-token") {
-		t.Fatalf("token auth with username: expected admin token URL, got: %s", u)
-	}
-
-	// Basic auth
-	u, err = buildAuthenticatedCloneURL("https://bitbucket.example.com/scm/PRJ/demo.git", config.AppConfig{
-		BitbucketURL:      "https://bitbucket.example.com",
-		BitbucketUsername: "admin",
-		BitbucketPassword: "pass",
-	})
-	if err != nil {
-		t.Fatalf("basic auth: unexpected error: %v", err)
-	}
-	if !strings.Contains(u, "admin:pass") {
-		t.Fatalf("basic auth: expected credentials in URL, got: %s", u)
-	}
-
-	// No auth (should error)
-	_, err = buildAuthenticatedCloneURL("https://bitbucket.example.com/scm/PRJ/demo.git", config.AppConfig{
-		BitbucketURL: "https://bitbucket.example.com",
-	})
-	if err == nil {
-		t.Fatal("no auth: expected error")
-	}
-
-	// Invalid URL (no scheme)
-	_, err = buildAuthenticatedCloneURL("no-scheme-here", config.AppConfig{BitbucketToken: "token"})
-	if err == nil {
-		t.Fatal("invalid URL: expected error")
-	}
-}
 
 func TestSameCloneHostEdgeCasesAdditional(t *testing.T) {
 	// Missing scheme defaults to https and 443.
@@ -1127,8 +1089,11 @@ func TestRepoCloneCommandExplicitSSHURLFallsBackToHTTPS(t *testing.T) {
 	if len(stub.cloneCalls) != 2 {
 		t.Fatalf("expected two clone attempts, got %d", len(stub.cloneCalls))
 	}
-	if stub.cloneCalls[1].repositoryURL != "https://admin:stored-token@bitbucket.example.com/scm/PRJ/demo.git" {
+	if stub.cloneCalls[1].repositoryURL != "https://bitbucket.example.com/scm/PRJ/demo.git" {
 		t.Fatalf("unexpected fallback clone URL: %s", stub.cloneCalls[1].repositoryURL)
+	}
+	if stub.cloneCalls[1].options.AuthToken != "stored-token" {
+		t.Fatalf("expected AuthToken to be 'stored-token', got '%s'", stub.cloneCalls[1].options.AuthToken)
 	}
 }
 
@@ -1159,8 +1124,11 @@ func TestRepoCloneCommandExplicitSSHSchemeURLFallsBackToHTTPS(t *testing.T) {
 	if stub.cloneCalls[0].repositoryURL != "ssh://git@bitbucket.example.com/scm/PRJ/demo.git" {
 		t.Fatalf("unexpected initial ssh clone URL: %s", stub.cloneCalls[0].repositoryURL)
 	}
-	if stub.cloneCalls[1].repositoryURL != "https://admin:stored-token@bitbucket.example.com/scm/PRJ/demo.git" {
+	if stub.cloneCalls[1].repositoryURL != "https://bitbucket.example.com/scm/PRJ/demo.git" {
 		t.Fatalf("unexpected ssh:// fallback clone URL: %s", stub.cloneCalls[1].repositoryURL)
+	}
+	if stub.cloneCalls[1].options.AuthToken != "stored-token" {
+		t.Fatalf("expected AuthToken to be 'stored-token', got '%s'", stub.cloneCalls[1].options.AuthToken)
 	}
 }
 
@@ -1403,3 +1371,77 @@ type errorReader struct {
 func (r *errorReader) Read(p []byte) (n int, err error) {
 	return 0, r.err
 }
+
+func TestRepoCloneCommandUserNamespace(t *testing.T) {
+	originalFactory := gitBackendFactory
+	stub := &cloneBackendStub{}
+	gitBackendFactory = func() git.Backend { return stub }
+	t.Cleanup(func() { gitBackendFactory = originalFactory })
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
+	t.Setenv("BITBUCKET_PROJECT_KEY", "")
+	t.Setenv("BITBUCKET_REPO_SLUG", "")
+
+	// 1. Test cloning using tilde username format
+	output, err := executeTestCLI(t, "repo", "clone", "~userid/somerepo")
+	if err != nil {
+		t.Fatalf("repo clone with user namespace failed: %v", err)
+	}
+
+	if len(stub.cloneCalls) != 1 {
+		t.Fatalf("expected one clone call, got %d", len(stub.cloneCalls))
+	}
+
+	call := stub.cloneCalls[0]
+	if call.repositoryURL != "git@bitbucket.example.com:scm/~userid/somerepo.git" {
+		t.Fatalf("unexpected clone URL: %s", call.repositoryURL)
+	}
+	if call.options.Directory != "somerepo" {
+		t.Fatalf("unexpected clone directory: %s", call.options.Directory)
+	}
+
+	if !strings.Contains(output, "Cloned ~userid/somerepo into somerepo") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+
+	// 2. Test cloning using full URL with unescaped tilde
+	stub.cloneCalls = nil
+	_, err = executeTestCLI(t, "repo", "clone", "https://bitbucket.example.com/scm/~userid/somerepo.git")
+	if err != nil {
+		t.Fatalf("repo clone with full URL containing tilde failed: %v", err)
+	}
+	if len(stub.cloneCalls) != 1 {
+		t.Fatalf("expected one clone call, got %d", len(stub.cloneCalls))
+	}
+	if stub.cloneCalls[0].repositoryURL != "git@bitbucket.example.com:scm/~userid/somerepo.git" {
+		t.Fatalf("unexpected clone URL: %s", stub.cloneCalls[0].repositoryURL)
+	}
+
+	// 3. Test cloning using full URL with escaped tilde (%7E)
+	stub.cloneCalls = nil
+	_, err = executeTestCLI(t, "repo", "clone", "https://bitbucket.example.com/scm/%7Euserid/somerepo.git")
+	if err != nil {
+		t.Fatalf("repo clone with full URL containing escaped tilde failed: %v", err)
+	}
+	if len(stub.cloneCalls) != 1 {
+		t.Fatalf("expected one clone call, got %d", len(stub.cloneCalls))
+	}
+	if stub.cloneCalls[0].repositoryURL != "git@bitbucket.example.com:scm/~userid/somerepo.git" {
+		t.Fatalf("unexpected clone URL: %s", stub.cloneCalls[0].repositoryURL)
+	}
+
+	// 4. Test cloning using SSH URL with escaped tilde (%7E)
+	stub.cloneCalls = nil
+	_, err = executeTestCLI(t, "repo", "clone", "git@bitbucket.example.com:scm/%7Euserid/somerepo.git")
+	if err != nil {
+		t.Fatalf("repo clone with SSH URL containing escaped tilde failed: %v", err)
+	}
+	if len(stub.cloneCalls) != 1 {
+		t.Fatalf("expected one clone call, got %d", len(stub.cloneCalls))
+	}
+	if stub.cloneCalls[0].repositoryURL != "git@bitbucket.example.com:scm/~userid/somerepo.git" {
+		t.Fatalf("unexpected clone URL: %s", stub.cloneCalls[0].repositoryURL)
+	}
+}
+

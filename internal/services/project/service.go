@@ -11,6 +11,7 @@ import (
 
 type ListOptions struct {
 	Limit int
+	Start int
 	Name  string
 }
 
@@ -49,11 +50,19 @@ func (service *Service) List(ctx context.Context, options ListOptions) ([]openap
 		options.Limit = 25
 	}
 
-	start := float32(0)
-	pageLimit := float32(options.Limit)
+	if options.Start < 0 {
+		options.Start = 0
+	}
+	start := float32(options.Start)
 	results := make([]openapigenerated.RestProject, 0)
 
 	for {
+		remaining := options.Limit - len(results)
+		if remaining <= 0 {
+			break
+		}
+
+		pageLimit := float32(remaining)
 		params := &openapigenerated.GetProjectsParams{Start: &start, Limit: &pageLimit}
 		if strings.TrimSpace(options.Name) != "" {
 			name := strings.TrimSpace(options.Name)
@@ -73,6 +82,9 @@ func (service *Service) List(ctx context.Context, options ListOptions) ([]openap
 
 		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
 
+		if len(results) >= options.Limit {
+			break
+		}
 		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
 			break
 		}
@@ -83,6 +95,9 @@ func (service *Service) List(ctx context.Context, options ListOptions) ([]openap
 		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
 	}
 
+	if len(results) > options.Limit {
+		results = results[:options.Limit]
+	}
 	return results, nil
 }
 

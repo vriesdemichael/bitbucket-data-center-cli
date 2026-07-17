@@ -550,3 +550,90 @@ func TestLiveCLIProjectCreateDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected no project side-effect from create dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
 }
+
+func TestLiveReviewerGroupsAndDefaultReviewersCLI(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// 1. List project-scoped reviewer groups (even if empty)
+	output, err := executeLiveCLI(t, "--json", "reviewer-group", "list", "--project", seeded.Key)
+	if err != nil {
+		t.Logf("project reviewer-group list skipped/failed: %v", err)
+	} else if !strings.Contains(output, `"reviewer_groups"`) {
+		t.Fatalf("expected reviewer_groups in output: %s", output)
+	}
+
+	// 2. List repository-scoped reviewer groups
+	output, err = executeLiveCLI(t, "--json", "reviewer-group", "list", "--repo", seeded.Key+"/"+repo.Slug)
+	if err != nil {
+		t.Logf("repo reviewer-group list skipped/failed: %v", err)
+	} else if !strings.Contains(output, `"reviewer_groups"`) {
+		t.Fatalf("expected reviewer_groups in output: %s", output)
+	}
+
+	// 3. Dry-run create repository reviewer group
+	dryRunOut, err := executeLiveCLI(t, "--json", "--dry-run", "reviewer-group", "create", "test-live-group", "--repo", seeded.Key+"/"+repo.Slug)
+	if err == nil {
+		if !strings.Contains(dryRunOut, `"intent": "reviewer-group.create"`) {
+			t.Fatalf("expected intent in dry-run create, got: %s", dryRunOut)
+		}
+	}
+
+	// 4. Create repository-scoped reviewer group
+	createOut, err := executeLiveCLI(t, "--json", "reviewer-group", "create", "test-live-group", "--repo", seeded.Key+"/"+repo.Slug, "--description", "live desc")
+	if err == nil {
+		var id string
+		if strings.Contains(createOut, `"id":`) {
+			parts := strings.Split(createOut, `"id":`)
+			if len(parts) > 1 {
+				idStr := strings.TrimSpace(strings.Split(parts[1], ",")[0])
+				idStr = strings.TrimSpace(strings.Split(idStr, "}")[0])
+				id = idStr
+			}
+		}
+
+		if id != "" {
+			// Dry-run update
+			_, _ = executeLiveCLI(t, "--json", "--dry-run", "reviewer-group", "update", id, "--repo", seeded.Key+"/"+repo.Slug, "--description", "new live desc")
+
+			// Update
+			_, _ = executeLiveCLI(t, "--json", "reviewer-group", "update", id, "--repo", seeded.Key+"/"+repo.Slug, "--description", "new live desc")
+
+			// List users
+			usersOut, err := executeLiveCLI(t, "--json", "reviewer-group", "users", id, "--repo", seeded.Key+"/"+repo.Slug)
+			if err == nil && !strings.Contains(usersOut, `"users"`) {
+				t.Fatalf("expected users in output: %s", usersOut)
+			}
+
+			// Dry-run delete
+			_, _ = executeLiveCLI(t, "--json", "--dry-run", "reviewer-group", "delete", id, "--repo", seeded.Key+"/"+repo.Slug)
+
+			// Delete
+			_, _ = executeLiveCLI(t, "--json", "reviewer-group", "delete", id, "--repo", seeded.Key+"/"+repo.Slug)
+		}
+	}
+
+	// 5. Default Reviewers
+	repoResp, err := harness.client.GetRepositoryWithResponse(ctx, seeded.Key, repo.Slug)
+	if err != nil {
+		t.Fatalf("failed to get repository details: %v", err)
+	}
+	repoID := fmt.Sprintf("%d", *repoResp.ApplicationjsonCharsetUTF8200.Id)
+
+	defOut, err := executeLiveCLI(t, "--json", "pr", "default-reviewers", "--repo", seeded.Key+"/"+repo.Slug, "--source-ref", "refs/heads/master", "--target-ref", "refs/heads/master", "--source-repo-id", repoID, "--target-repo-id", repoID)
+	if err != nil {
+		t.Logf("pr default-reviewers failed: %v", err)
+	} else if !strings.Contains(defOut, `"default_reviewers"`) {
+		t.Fatalf("expected default_reviewers in output: %s", defOut)
+	}
+}

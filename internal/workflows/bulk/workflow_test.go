@@ -372,6 +372,124 @@ func TestNormalizePolicyAndOperations(t *testing.T) {
 			},
 			expectError: "payload is required",
 		},
+		{
+			name: "valid auto-merge",
+			policy: Policy{
+				APIVersion: APIVersion,
+				Selector:   Selector{ProjectKey: "PRJ"},
+				Operations: []OperationSpec{{
+					Type:    OperationRepoSettingsAutoMerge,
+					Enabled: boolPtr(true),
+				}},
+			},
+		},
+		{
+			name: "valid auto-decline",
+			policy: Policy{
+				APIVersion: APIVersion,
+				Selector:   Selector{ProjectKey: "PRJ"},
+				Operations: []OperationSpec{{
+					Type:            OperationRepoSettingsAutoDecline,
+					Enabled:         boolPtr(true),
+					InactivityWeeks: intPtr(4),
+				}},
+			},
+		},
+		{
+			name: "valid default-task",
+			policy: Policy{
+				APIVersion: APIVersion,
+				Selector:   Selector{ProjectKey: "PRJ"},
+				Operations: []OperationSpec{{
+					Type:        OperationRepoDefaultTaskCreate,
+					Description: stringPtr("task description"),
+				}},
+			},
+		},
+		{
+			name: "missing enabled for auto-merge",
+			policy: Policy{
+				APIVersion: APIVersion,
+				Selector:   Selector{ProjectKey: "PRJ"},
+				Operations: []OperationSpec{{
+					Type: OperationRepoSettingsAutoMerge,
+				}},
+			},
+			expectError: "enabled is required",
+		},
+		{
+			name: "missing enabled for auto-decline",
+			policy: Policy{
+				APIVersion: APIVersion,
+				Selector:   Selector{ProjectKey: "PRJ"},
+				Operations: []OperationSpec{{
+					Type: OperationRepoSettingsAutoDecline,
+				}},
+			},
+			expectError: "enabled is required",
+		},
+		{
+			name: "missing inactivityWeeks for auto-decline",
+			policy: Policy{
+				APIVersion: APIVersion,
+				Selector:   Selector{ProjectKey: "PRJ"},
+				Operations: []OperationSpec{{
+					Type:    OperationRepoSettingsAutoDecline,
+					Enabled: boolPtr(true),
+				}},
+			},
+			expectError: "inactivityWeeks is required when enabled is true",
+		},
+		{
+			name: "invalid inactivityWeeks (<= 0) for auto-decline",
+			policy: Policy{
+				APIVersion: APIVersion,
+				Selector:   Selector{ProjectKey: "PRJ"},
+				Operations: []OperationSpec{{
+					Type:            OperationRepoSettingsAutoDecline,
+					Enabled:         boolPtr(true),
+					InactivityWeeks: intPtr(0),
+				}},
+			},
+			expectError: "inactivityWeeks must be > 0",
+		},
+		{
+			name: "invalid inactivityWeeks (negative) for auto-decline",
+			policy: Policy{
+				APIVersion: APIVersion,
+				Selector:   Selector{ProjectKey: "PRJ"},
+				Operations: []OperationSpec{{
+					Type:            OperationRepoSettingsAutoDecline,
+					Enabled:         boolPtr(true),
+					InactivityWeeks: intPtr(-5),
+				}},
+			},
+			expectError: "inactivityWeeks must be > 0",
+		},
+		{
+			name: "missing description for default-task",
+			policy: Policy{
+				APIVersion: APIVersion,
+				Selector:   Selector{ProjectKey: "PRJ"},
+				Operations: []OperationSpec{{
+					Type: OperationRepoDefaultTaskCreate,
+				}},
+			},
+			expectError: "description is required",
+		},
+		{
+			name: "valid default-task with refs",
+			policy: Policy{
+				APIVersion: APIVersion,
+				Selector:   Selector{ProjectKey: "PRJ"},
+				Operations: []OperationSpec{{
+					Type:        OperationRepoDefaultTaskCreate,
+					Description: stringPtr("task description"),
+					SourceRef:   stringPtr("refs/heads/feature"),
+					TargetRef:   stringPtr("refs/heads/main"),
+				}},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -398,6 +516,10 @@ func TestNormalizePolicyAndOperations(t *testing.T) {
 }
 
 func intPtr(v int) *int {
+	return &v
+}
+
+func stringPtr(v string) *string {
 	return &v
 }
 
@@ -539,6 +661,30 @@ func TestDescribeOperation(t *testing.T) {
 		{
 			op:     OperationSpec{Type: OperationBuildRequiredCreate},
 			expect: "create required build check",
+		},
+		{
+			op:     OperationSpec{Type: OperationRepoSettingsAutoMerge, Enabled: boolPtr(true)},
+			expect: "set auto-merge enabled=true",
+		},
+		{
+			op:     OperationSpec{Type: OperationRepoSettingsAutoMerge},
+			expect: "set auto-merge settings",
+		},
+		{
+			op:     OperationSpec{Type: OperationRepoSettingsAutoDecline, Enabled: boolPtr(true), InactivityWeeks: intPtr(4)},
+			expect: "set auto-decline enabled=true inactivityWeeks=4",
+		},
+		{
+			op:     OperationSpec{Type: OperationRepoSettingsAutoDecline, Enabled: boolPtr(false)},
+			expect: "set auto-decline enabled=false",
+		},
+		{
+			op:     OperationSpec{Type: OperationRepoSettingsAutoDecline},
+			expect: "set auto-decline settings",
+		},
+		{
+			op:     OperationSpec{Type: OperationRepoDefaultTaskCreate, Description: stringPtr("my task")},
+			expect: "create default task: my task",
 		},
 		{
 			op:     OperationSpec{Type: "unknown"},
@@ -825,6 +971,12 @@ func TestCopyOperationsDeepClone(t *testing.T) {
 	count := 2
 	active := true
 	required := true
+	enabled := true
+	inactivityWeeks := 4
+	desc := "task description"
+	sourceRef := "refs/heads/feature"
+	targetRef := "refs/heads/main"
+
 	input := []OperationSpec{ {
 		Type:                     OperationRepoWebhookCreate,
 		Events:                   []string{"repo:refs_changed"},
@@ -832,6 +984,11 @@ func TestCopyOperationsDeepClone(t *testing.T) {
 		Active:                   &active,
 		RequiredAllTasksComplete: &required,
 		Count:                    &count,
+		Enabled:                  &enabled,
+		InactivityWeeks:          &inactivityWeeks,
+		Description:              &desc,
+		SourceRef:                &sourceRef,
+		TargetRef:                &targetRef,
 	}}
 
 	cloned := copyOperations(input)
@@ -847,6 +1004,11 @@ func TestCopyOperationsDeepClone(t *testing.T) {
 	*input[0].Active = false
 	*input[0].RequiredAllTasksComplete = false
 	*input[0].Count = 99
+	*input[0].Enabled = false
+	*input[0].InactivityWeeks = 10
+	*input[0].Description = "changed"
+	*input[0].SourceRef = "changed"
+	*input[0].TargetRef = "changed"
 
 	if cloned[0].Events[0] != "repo:refs_changed" {
 		t.Fatalf("events not cloned deeply: %#v", cloned[0].Events)
@@ -862,6 +1024,21 @@ func TestCopyOperationsDeepClone(t *testing.T) {
 	}
 	if cloned[0].Count == nil || *cloned[0].Count != 2 {
 		t.Fatalf("count pointer not cloned correctly: %#v", cloned[0].Count)
+	}
+	if cloned[0].Enabled == nil || !*cloned[0].Enabled {
+		t.Fatalf("enabled pointer not cloned correctly: %#v", cloned[0].Enabled)
+	}
+	if cloned[0].InactivityWeeks == nil || *cloned[0].InactivityWeeks != 4 {
+		t.Fatalf("inactivityWeeks pointer not cloned correctly: %#v", cloned[0].InactivityWeeks)
+	}
+	if cloned[0].Description == nil || *cloned[0].Description != "task description" {
+		t.Fatalf("description pointer not cloned correctly: %#v", cloned[0].Description)
+	}
+	if cloned[0].SourceRef == nil || *cloned[0].SourceRef != "refs/heads/feature" {
+		t.Fatalf("sourceRef pointer not cloned correctly: %#v", cloned[0].SourceRef)
+	}
+	if cloned[0].TargetRef == nil || *cloned[0].TargetRef != "refs/heads/main" {
+		t.Fatalf("targetRef pointer not cloned correctly: %#v", cloned[0].TargetRef)
 	}
 }
 

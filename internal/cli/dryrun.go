@@ -19,10 +19,11 @@ const (
 )
 
 type dryRunProfile struct {
-	Intent        string
-	Action        string
-	Stateful      bool
-	CapabilityMsg string
+	Intent                  string
+	Action                  string
+	Stateful                bool
+	CapabilityMsg           string
+	DryRunDoesNotAddBenefit bool
 }
 
 type dryRunItem struct {
@@ -73,9 +74,14 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"branch restriction delete": {Intent: "branch.restriction.delete", Action: "delete", Stateful: true},
 	// build
 	"build status set":      {Intent: "build.status.set", Action: "update", Stateful: true},
+	"build set":             {Intent: "build.set", Action: "update", Stateful: true},
+	"build delete":          {Intent: "build.delete", Action: "delete", Stateful: true},
 	"build required create": {Intent: "build.required.create", Action: "create", Stateful: true},
 	"build required update": {Intent: "build.required.update", Action: "update", Stateful: true},
 	"build required delete": {Intent: "build.required.delete", Action: "delete", Stateful: true},
+	// deployment
+	"deployment create":     {Intent: "deployment.create", Action: "create", Stateful: true},
+	"deployment delete":     {Intent: "deployment.delete", Action: "delete", Stateful: true},
 	// tag
 	"tag create": {Intent: "tag.create", Action: "create", Stateful: true},
 	"tag delete": {Intent: "tag.delete", Action: "delete", Stateful: true},
@@ -86,6 +92,10 @@ var dryRunProfiles = map[string]dryRunProfile{
 	// repo settings
 	"repo settings workflow webhooks create":           {Intent: "repo.webhook.create", Action: "create", Stateful: true},
 	"repo settings workflow webhooks delete":           {Intent: "repo.webhook.delete", Action: "delete", Stateful: true},
+	"repo settings auto-merge set":                     {Intent: "repo.settings.auto-merge.set", Action: "update", Stateful: true},
+	"repo settings auto-merge delete":                  {Intent: "repo.settings.auto-merge.delete", Action: "delete", Stateful: true},
+	"repo settings auto-decline set":                   {Intent: "repo.settings.auto-decline.set", Action: "update", Stateful: true},
+	"repo settings auto-decline delete":                {Intent: "repo.settings.auto-decline.delete", Action: "delete", Stateful: true},
 	"repo settings pull-requests update":               {Intent: "repo.pull-request-settings.update", Action: "update", Stateful: true},
 	"repo settings pull-requests update-approvers":     {Intent: "repo.pull-request-settings.update-approvers", Action: "update", Stateful: true},
 	"repo settings pull-requests set-strategy":         {Intent: "repo.pull-request-settings.set-strategy", Action: "update", Stateful: true},
@@ -93,6 +103,20 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"repo settings security permissions users revoke":  {Intent: "repo.permission.user.revoke", Action: "delete", Stateful: true},
 	"repo settings security permissions groups grant":  {Intent: "repo.permission.group.grant", Action: "update", Stateful: true},
 	"repo settings security permissions groups revoke": {Intent: "repo.permission.group.revoke", Action: "delete", Stateful: true},
+	// repo
+	"repo edit":                 {Intent: "repo.edit", Action: "update", Stateful: true},
+	"repo hook-script set":      {Intent: "repo.hook-script.set", Action: "update", Stateful: true},
+	"repo hook-script remove":   {Intent: "repo.hook-script.remove", Action: "delete", Stateful: true},
+	"repo label add":            {Intent: "repo.label.add", Action: "create", Stateful: true},
+	"repo label remove":         {Intent: "repo.label.remove", Action: "delete", Stateful: true},
+	"repo watch":                {Intent: "repo.watch", Action: "update", Stateful: true},
+	"repo unwatch":              {Intent: "repo.unwatch", Action: "delete", Stateful: true},
+	"repo default-task add":     {Intent: "repo.default-task.create", Action: "create", Stateful: true},
+	"repo default-task update":  {Intent: "repo.default-task.update", Action: "update", Stateful: true},
+	"repo default-task delete":  {Intent: "repo.default-task.delete", Action: "delete", Stateful: true},
+	// webhook
+	"webhook update":            {Intent: "repo.webhook.update", Action: "update", Stateful: true},
+	"webhook test":              {Intent: "repo.webhook.test", Action: "update", Stateful: true},
 	// repo admin
 	"repo admin create": {Intent: "repo.admin.create", Action: "create", Stateful: true},
 	"repo admin fork":   {Intent: "repo.admin.fork", Action: "create", Stateful: true},
@@ -102,6 +126,7 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"insights report set":        {Intent: "insights.report.set", Action: "update", Stateful: true},
 	"insights report delete":     {Intent: "insights.report.delete", Action: "delete", Stateful: true},
 	"insights annotation add":    {Intent: "insights.annotation.add", Action: "create", Stateful: true},
+	"insights annotation set":    {Intent: "insights.annotation.set", Action: "update", Stateful: true},
 	"insights annotation delete": {Intent: "insights.annotation.delete", Action: "delete", Stateful: true},
 	// pr
 	"pr create":                 {Intent: "pr.create", Action: "create", Stateful: true},
@@ -113,13 +138,27 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"pr review unapprove":       {Intent: "pr.review.unapprove", Action: "update", Stateful: true},
 	"pr review reviewer add":    {Intent: "pr.review.reviewer.add", Action: "update", Stateful: true},
 	"pr review reviewer remove": {Intent: "pr.review.reviewer.remove", Action: "delete", Stateful: true},
+	"pr review complete":        {Intent: "pr.review.complete", Action: "update", Stateful: true},
+	"pr review discard":         {Intent: "pr.review.discard", Action: "delete", Stateful: true},
 	"pr task create":            {Intent: "pr.task.create", Action: "create", Stateful: true},
 	"pr task update":            {Intent: "pr.task.update", Action: "update", Stateful: true},
 	"pr task delete":            {Intent: "pr.task.delete", Action: "delete", Stateful: true},
+	"pr comment add":            {Intent: "pr.comment.add", Action: "create", Stateful: true},
+	"pr comment react":          {Intent: "pr.comment.react", Action: "update", Stateful: true},
+	"pr comment apply-suggestion": {Intent: "pr.comment.apply-suggestion", Action: "update", Stateful: true},
+	"pr auto-merge enable":      {Intent: "pr.auto-merge.enable", Action: "update", Stateful: true},
+	"pr auto-merge disable":     {Intent: "pr.auto-merge.disable", Action: "delete", Stateful: true},
+	"pr watch":                  {Intent: "pr.watch", Action: "update", Stateful: true},
+	"pr unwatch":                {Intent: "pr.unwatch", Action: "delete", Stateful: true},
+	"pr rebase":                 {Intent: "pr.rebase", Action: "update", Stateful: true},
 	// reviewer conditions
 	"reviewer condition create": {Intent: "reviewer.condition.create", Action: "create", Stateful: true},
 	"reviewer condition update": {Intent: "reviewer.condition.update", Action: "update", Stateful: true},
 	"reviewer condition delete": {Intent: "reviewer.condition.delete", Action: "delete", Stateful: true},
+	// reviewer groups
+	"reviewer-group create": {Intent: "reviewer-group.create", Action: "create", Stateful: true},
+	"reviewer-group update": {Intent: "reviewer-group.update", Action: "update", Stateful: true},
+	"reviewer-group delete": {Intent: "reviewer-group.delete", Action: "delete", Stateful: true},
 	// hook
 	"hook enable":    {Intent: "hook.enable", Action: "update", Stateful: true},
 	"hook disable":   {Intent: "hook.disable", Action: "update", Stateful: true},
@@ -132,6 +171,35 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"project permissions users revoke":  {Intent: "project.permission.user.revoke", Action: "delete", Stateful: true},
 	"project permissions groups grant":  {Intent: "project.permission.group.grant", Action: "update", Stateful: true},
 	"project permissions groups revoke": {Intent: "project.permission.group.revoke", Action: "delete", Stateful: true},
+	"project webhook create":             {Intent: "project.webhook.create", Action: "create", Stateful: true},
+	"project webhook update":             {Intent: "project.webhook.update", Action: "update", Stateful: true},
+	"project webhook delete":             {Intent: "project.webhook.delete", Action: "delete", Stateful: true},
+	"project webhook test":               {Intent: "project.webhook.test", Action: "update", Stateful: true},
+	"project branch-restriction create": {Intent: "project.branch-restriction.create", Action: "create", Stateful: true},
+	"project branch-restriction update": {Intent: "project.branch-restriction.update", Action: "update", Stateful: true},
+	"project branch-restriction delete": {Intent: "project.branch-restriction.delete", Action: "delete", Stateful: true},
+	"project default-task add":           {Intent: "project.default-task.create", Action: "create", Stateful: true},
+	"project default-task update":        {Intent: "project.default-task.update", Action: "update", Stateful: true},
+	"project default-task delete":        {Intent: "project.default-task.delete", Action: "delete", Stateful: true},
+	// auth token
+	"auth token create": {Intent: "auth.token.create", Action: "create", Stateful: false},
+	"auth token update": {Intent: "auth.token.update", Action: "update", Stateful: false},
+	"auth token revoke": {Intent: "auth.token.revoke", Action: "delete", Stateful: false},
+	// auth gpg-key
+	"auth gpg-key add":    {Intent: "auth.gpg-key.add", Action: "create", Stateful: false},
+	"auth gpg-key remove": {Intent: "auth.gpg-key.remove", Action: "delete", Stateful: false},
+	// ssh-key
+	"ssh-key add":    {Intent: "ssh-key.add", Action: "create", Stateful: false},
+	"ssh-key remove": {Intent: "ssh-key.remove", Action: "delete", Stateful: false},
+	// repo ssh-key
+	"repo ssh-key add":    {Intent: "repo.ssh-key.add", Action: "create", Stateful: false},
+	"repo ssh-key remove": {Intent: "repo.ssh-key.remove", Action: "delete", Stateful: false},
+	// repo sync
+	"repo sync":         {Intent: "repo.sync.trigger", Action: "update", Stateful: true},
+	"repo sync enable":  {Intent: "repo.sync.enable", Action: "update", Stateful: true},
+	"repo sync disable": {Intent: "repo.sync.disable", Action: "update", Stateful: true},
+	// bulk
+	"bulk apply":        {Intent: "bulk.apply", Action: "apply", Stateful: false, DryRunDoesNotAddBenefit: true},
 }
 
 func registerGlobalDryRunInterceptors(root *cobra.Command, options *rootOptions) {
@@ -152,6 +220,10 @@ func registerGlobalDryRunInterceptors(root *cobra.Command, options *rootOptions)
 			command.RunE = func(cmd *cobra.Command, args []string) error {
 				if !options.DryRun {
 					return originalRun(cmd, args)
+				}
+
+				if profile.DryRunDoesNotAddBenefit {
+					return dryRunUnsupportedError(path)
 				}
 
 				if profile.Stateful {
@@ -191,6 +263,11 @@ func isServerMutatingPath(path string) bool {
 		return false
 	}
 	if strings.EqualFold(trimmedPath, "update") {
+		return false
+	}
+
+	// Local helper and configuration commands are not server mutating
+	if strings.HasPrefix(trimmedPath, "ai ") || strings.HasPrefix(trimmedPath, "auth alias ") {
 		return false
 	}
 

@@ -5,14 +5,19 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	commitservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/commit"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
+	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	commitservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/commit"
+	jiraservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/jira"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
 
 func newCommitCommand(options *rootOptions) *cobra.Command {
 	var repositorySelector string
 	var limit int
+	var start int
 
 	commitCmd := &cobra.Command{
 		Use:   "commit",
@@ -21,8 +26,10 @@ func newCommitCommand(options *rootOptions) *cobra.Command {
 
 	commitCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	commitCmd.PersistentFlags().IntVar(&limit, "limit", 25, "Page size for list operations")
+	commitCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var listPath string
+	var listJira string
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository commits",
@@ -40,10 +47,19 @@ func newCommitCommand(options *rootOptions) *cobra.Command {
 			// Map to commit service repo ref
 			repo := commitservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
 
-			service := commitservice.NewService(client)
-			commits, err := service.List(cmd.Context(), repo, commitservice.ListOptions{Limit: limit, Path: listPath})
-			if err != nil {
-				return err
+			var commits []openapigenerated.RestCommit
+			if strings.TrimSpace(listJira) != "" {
+				jiraService := jiraservice.NewService(httpclient.NewFromConfig(cfg))
+				commits, err = jiraService.GetIssueCommits(cmd.Context(), strings.TrimSpace(listJira), limit)
+				if err != nil {
+					return err
+				}
+			} else {
+				service := commitservice.NewService(client)
+				commits, err = service.List(cmd.Context(), repo, commitservice.ListOptions{Limit: limit, Start: start, Path: listPath})
+				if err != nil {
+					return err
+				}
 			}
 
 			if options.JSON {
@@ -65,6 +81,7 @@ func newCommitCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 	listCmd.Flags().StringVar(&listPath, "path", "", "Filter commits by file path")
+	listCmd.Flags().StringVar(&listJira, "jira", "", "List commits associated with a Jira issue key")
 	commitCmd.AddCommand(listCmd)
 
 	getCmd := &cobra.Command{
@@ -147,6 +164,50 @@ func newCommitCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 	commitCmd.AddCommand(compareCmd)
+
+	prsCmd := &cobra.Command{
+		Use:   "prs <commitId>",
+		Short: "List pull requests containing a commit",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, apiClient, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repoRef, err := resolveRepositoryReference(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+
+			repo := pullrequestservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
+			service := pullrequestservice.NewService(nil).WithAPIClient(apiClient)
+
+			prs, err := service.ListPullRequestsContainingCommit(cmd.Context(), repo, args[0])
+			if err != nil {
+				return err
+			}
+
+			if options.JSON {
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_requests": prs})
+			}
+
+			if len(prs) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No pull requests containing commit found"))
+				return nil
+			}
+
+			rows := make([][]string, len(prs))
+			for i, pr := range prs {
+				idStr := fmt.Sprintf("#%d", pr.ID)
+				rows[i] = []string{style.Secondary.Render(idStr), pr.Title, pr.State}
+			}
+			style.WriteTable(cmd.OutOrStdout(), rows)
+
+			return nil
+		},
+	}
+	commitCmd.AddCommand(prsCmd)
 
 	return commitCmd
 }

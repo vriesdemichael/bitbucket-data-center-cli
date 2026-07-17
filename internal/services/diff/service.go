@@ -2,10 +2,11 @@ package diff
 
 import (
 	"context"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
+	"fmt"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
@@ -181,6 +182,197 @@ func (service *Service) DiffCommit(ctx context.Context, input DiffCommitInput) (
 	}
 
 	return Result{Patch: body}, nil
+}
+
+func (service *Service) CompareChanges(ctx context.Context, repo RepositoryRef, from, to string, limit int) ([]openapigenerated.RestChange, error) {
+	if err := validateRepoRef(repo); err != nil {
+		return nil, err
+	}
+
+	if limit <= 0 {
+		limit = 25
+	}
+
+	start := float32(0)
+	pageLimit := float32(limit)
+	var fromParam *string
+	if from != "" {
+		f := from
+		fromParam = &f
+	}
+	var toParam *string
+	if to != "" {
+		t := to
+		toParam = &t
+	}
+
+	results := make([]openapigenerated.RestChange, 0)
+	for {
+		params := &openapigenerated.StreamChangesParams{
+			Start: &start,
+			Limit: &pageLimit,
+			From:  fromParam,
+			To:    toParam,
+		}
+		resp, err := service.client.StreamChangesWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
+		if err != nil {
+			return nil, apperrors.New(apperrors.KindTransient, "failed to stream compare changes", err)
+		}
+
+		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
+			return nil, err
+		}
+
+		if resp.ApplicationjsonCharsetUTF8200 == nil {
+			break
+		}
+
+		if resp.ApplicationjsonCharsetUTF8200.Values != nil {
+			results = append(results, *resp.ApplicationjsonCharsetUTF8200.Values...)
+		}
+
+		if resp.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *resp.ApplicationjsonCharsetUTF8200.IsLastPage {
+			break
+		}
+		if resp.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
+			break
+		}
+		start = float32(*resp.ApplicationjsonCharsetUTF8200.NextPageStart)
+	}
+
+	return results, nil
+}
+
+func (service *Service) CompareDiff(ctx context.Context, repo RepositoryRef, from, to string) (*openapigenerated.RestDiff, error) {
+	if err := validateRepoRef(repo); err != nil {
+		return nil, err
+	}
+
+	var fromParam *string
+	if from != "" {
+		f := from
+		fromParam = &f
+	}
+	var toParam *string
+	if to != "" {
+		t := to
+		toParam = &t
+	}
+
+	params := &openapigenerated.StreamDiff1Params{
+		From: fromParam,
+		To:   toParam,
+	}
+
+	resp, err := service.client.StreamDiff1WithResponse(ctx, repo.ProjectKey, repo.Slug, "", params)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to stream compare diff", err)
+	}
+
+	if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
+		return nil, err
+	}
+
+	if resp.ApplicationjsonCharsetUTF8200 == nil {
+		return nil, apperrors.New(apperrors.KindPermanent, "empty diff response from server", nil)
+	}
+
+	return resp.ApplicationjsonCharsetUTF8200, nil
+}
+
+func FormatRestDiff(diff *openapigenerated.RestDiff) string {
+	if diff == nil {
+		return ""
+	}
+
+	var sb strings.Builder
+
+	srcPath := ""
+	if diff.Source != nil && diff.Source.Components != nil {
+		srcPath = strings.Join(*diff.Source.Components, "/")
+	}
+	dstPath := ""
+	if diff.Destination != nil && diff.Destination.Components != nil {
+		dstPath = strings.Join(*diff.Destination.Components, "/")
+	}
+
+	if srcPath != "" {
+		sb.WriteString("--- a/" + srcPath + "\n")
+	} else {
+		sb.WriteString("--- /dev/null\n")
+	}
+	if dstPath != "" {
+		sb.WriteString("+++ b/" + dstPath + "\n")
+	} else {
+		sb.WriteString("+++ /dev/null\n")
+	}
+
+	if diff.Binary != nil && *diff.Binary {
+		sb.WriteString("Binary files differ\n")
+		return sb.String()
+	}
+
+	if diff.Hunks == nil {
+		return sb.String()
+	}
+
+	for _, hunk := range *diff.Hunks {
+		srcLine := int32(0)
+		if hunk.SourceLine != nil {
+			srcLine = *hunk.SourceLine
+		}
+		srcSpan := int32(0)
+		if hunk.SourceSpan != nil {
+			srcSpan = *hunk.SourceSpan
+		}
+		dstLine := int32(0)
+		if hunk.DestinationLine != nil {
+			dstLine = *hunk.DestinationLine
+		}
+		dstSpan := int32(0)
+		if hunk.DestinationSpan != nil {
+			dstSpan = *hunk.DestinationSpan
+		}
+
+		ctxText := ""
+		if hunk.Context != nil {
+			ctxText = *hunk.Context
+		}
+
+		sb.WriteString(fmt.Sprintf("@@ -%d,%d +%d,%d @@ %s\n", srcLine, srcSpan, dstLine, dstSpan, ctxText))
+
+		if hunk.Segments == nil {
+			continue
+		}
+
+		for _, segment := range *hunk.Segments {
+			prefix := " "
+			if segment.Type != nil {
+				switch *segment.Type {
+				case openapigenerated.RestDiffSegmentTypeADDED:
+					prefix = "+"
+				case openapigenerated.RestDiffSegmentTypeREMOVED:
+					prefix = "-"
+				case openapigenerated.RestDiffSegmentTypeCONTEXT:
+					prefix = " "
+				}
+			}
+
+			if segment.Lines == nil {
+				continue
+			}
+
+			for _, line := range *segment.Lines {
+				lineText := ""
+				if line.Line != nil {
+					lineText = *line.Line
+				}
+				sb.WriteString(prefix + lineText + "\n")
+			}
+		}
+	}
+
+	return sb.String()
 }
 
 func (service *Service) streamRefRawDiff(ctx context.Context, repo RepositoryRef, path, from, to string) (string, error) {

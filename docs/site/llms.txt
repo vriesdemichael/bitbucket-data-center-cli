@@ -67,6 +67,12 @@ Create a pull request:
 bb pr create --repo MYPROJ/payments --from-ref feature/release-readiness --to-ref main --title "Prepare release readiness" --description "Collect release prep changes"
 ```
 
+Create a pull request with reviewers (repeatable or comma-separated):
+
+```bash
+bb pr create --repo MYPROJ/payments --from-ref feature/release-readiness --to-ref main --title "Prepare release readiness" --reviewers alice,bob
+```
+
 Search for repositories:
 
 ```bash

@@ -696,3 +696,288 @@ func newDiffServiceWithHandler(t *testing.T, handler http.HandlerFunc) *Service 
 
 	return NewService(client)
 }
+
+func TestCompareChanges(t *testing.T) {
+	repo := RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}
+
+	t.Run("success paginated", func(t *testing.T) {
+		calls := 0
+		service := newDiffServiceWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet || r.URL.Path != "/api/latest/projects/PRJ/repos/demo/compare/changes" {
+				http.NotFound(w, r)
+				return
+			}
+			if r.URL.Query().Get("from") != "main" || r.URL.Query().Get("to") != "feat" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			calls++
+			if calls == 1 {
+				_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"contentId":"abc","path":{"components":["file1.txt"],"name":"file1.txt"}}]}`))
+			} else {
+				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"contentId":"def","path":{"components":["file2.txt"],"name":"file2.txt"}}]}`))
+			}
+		})
+
+		changes, err := service.CompareChanges(context.Background(), repo, "main", "feat", 1)
+		if err != nil {
+			t.Fatalf("expected compare changes success, got: %v", err)
+		}
+		if len(changes) != 2 {
+			t.Fatalf("expected 2 changes, got: %d", len(changes))
+		}
+	})
+
+	t.Run("invalid repository", func(t *testing.T) {
+		service := NewService(nil)
+		_, err := service.CompareChanges(context.Background(), RepositoryRef{}, "main", "feat", 1)
+		if err == nil {
+			t.Fatal("expected error for empty repository ref")
+		}
+	})
+}
+
+func TestCompareDiff(t *testing.T) {
+	repo := RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}
+
+	t.Run("success", func(t *testing.T) {
+		service := newDiffServiceWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet || r.URL.Path != "/api/latest/projects/PRJ/repos/demo/compare/diff" {
+				http.NotFound(w, r)
+				return
+			}
+			if r.URL.Query().Get("from") != "main" || r.URL.Query().Get("to") != "feat" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"binary":false,"truncated":false,"hunks":[]}`))
+		})
+
+		diff, err := service.CompareDiff(context.Background(), repo, "main", "feat")
+		if err != nil {
+			t.Fatalf("expected compare diff success, got: %v", err)
+		}
+		if diff == nil || *diff.Binary {
+			t.Fatalf("expected diff result, got: %+v", diff)
+		}
+	})
+
+	t.Run("invalid repository", func(t *testing.T) {
+		service := NewService(nil)
+		_, err := service.CompareDiff(context.Background(), RepositoryRef{}, "main", "feat")
+		if err == nil {
+			t.Fatal("expected error for empty repository ref")
+		}
+	})
+}
+
+func TestFormatRestDiff(t *testing.T) {
+	t.Run("nil diff", func(t *testing.T) {
+		if FormatRestDiff(nil) != "" {
+			t.Fatal("expected empty string for nil input")
+		}
+	})
+
+	t.Run("binary diff", func(t *testing.T) {
+		isBinary := true
+		srcComp := []string{"old.bin"}
+		dstComp := []string{"new.bin"}
+		diff := &openapigenerated.RestDiff{
+			Binary: &isBinary,
+			Source: &struct {
+				Components *[]string `json:"components,omitempty"`
+				Extension  *string   `json:"extension,omitempty"`
+				Name       *string   `json:"name,omitempty"`
+				Parent     *string   `json:"parent,omitempty"`
+			}{Components: &srcComp},
+			Destination: &struct {
+				Components *[]string `json:"components,omitempty"`
+				Extension  *string   `json:"extension,omitempty"`
+				Name       *string   `json:"name,omitempty"`
+				Parent     *string   `json:"parent,omitempty"`
+			}{Components: &dstComp},
+		}
+
+		formatted := FormatRestDiff(diff)
+		if !strings.Contains(formatted, "--- a/old.bin") ||
+			!strings.Contains(formatted, "+++ b/new.bin") ||
+			!strings.Contains(formatted, "Binary files differ") {
+			t.Fatalf("unexpected formatted binary diff:\n%s", formatted)
+		}
+	})
+
+	t.Run("text diff with hunks", func(t *testing.T) {
+		srcComp := []string{"old.txt"}
+		dstComp := []string{"new.txt"}
+		isBinary := false
+		sourceLine := int32(10)
+		sourceSpan := int32(2)
+		destLine := int32(10)
+		destSpan := int32(3)
+		hunkCtx := "hunk context header"
+
+		segTypeRemoved := openapigenerated.RestDiffSegmentTypeREMOVED
+		segTypeAdded := openapigenerated.RestDiffSegmentTypeADDED
+		segTypeContext := openapigenerated.RestDiffSegmentTypeCONTEXT
+
+		removedLineVal := "removed line"
+		addedLineVal := "added line"
+		contextLineVal := "context line"
+
+		diff := &openapigenerated.RestDiff{
+			Binary: &isBinary,
+			Source: &struct {
+				Components *[]string `json:"components,omitempty"`
+				Extension  *string   `json:"extension,omitempty"`
+				Name       *string   `json:"name,omitempty"`
+				Parent     *string   `json:"parent,omitempty"`
+			}{Components: &srcComp},
+			Destination: &struct {
+				Components *[]string `json:"components,omitempty"`
+				Extension  *string   `json:"extension,omitempty"`
+				Name       *string   `json:"name,omitempty"`
+				Parent     *string   `json:"parent,omitempty"`
+			}{Components: &dstComp},
+			Hunks: &[]openapigenerated.RestDiffHunk{
+				{
+					SourceLine:      &sourceLine,
+					SourceSpan:      &sourceSpan,
+					DestinationLine: &destLine,
+					DestinationSpan: &destSpan,
+					Context:         &hunkCtx,
+					Segments: &[]openapigenerated.RestDiffSegment{
+						{
+							Type: &segTypeContext,
+							Lines: &[]openapigenerated.RestDiffLine{
+								{Line: &contextLineVal},
+							},
+						},
+						{
+							Type: &segTypeRemoved,
+							Lines: &[]openapigenerated.RestDiffLine{
+								{Line: &removedLineVal},
+							},
+						},
+						{
+							Type: &segTypeAdded,
+							Lines: &[]openapigenerated.RestDiffLine{
+								{Line: &addedLineVal},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		formatted := FormatRestDiff(diff)
+		expected := strings.Join([]string{
+			"--- a/old.txt",
+			"+++ b/new.txt",
+			"@@ -10,2 +10,3 @@ hunk context header",
+			" context line",
+			"-removed line",
+			"+added line",
+			"",
+		}, "\n")
+		if formatted != expected {
+			t.Fatalf("formatted diff mismatch.\nExpected:\n%q\nGot:\n%q", expected, formatted)
+		}
+	})
+
+	t.Run("compare and format edge cases", func(t *testing.T) {
+		repo := RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}
+		service := newDiffServiceWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
+		})
+
+		// CompareChanges limit <= 0
+		_, err := service.CompareChanges(context.Background(), repo, "main", "feat", 0)
+		if err != nil {
+			t.Fatalf("expected compare success with limit <= 0, got %v", err)
+		}
+
+		// CompareChanges status error
+		errService := newDiffServiceWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		})
+		_, err = errService.CompareChanges(context.Background(), repo, "main", "feat", 10)
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected not found error, got %v", err)
+		}
+
+		// CompareChanges empty body
+		emptyBodyService := newDiffServiceWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{}`))
+		})
+		res, err := emptyBodyService.CompareChanges(context.Background(), repo, "main", "feat", 10)
+		if err != nil || len(res) != 0 {
+			t.Fatalf("expected empty response, got %v, err %v", res, err)
+		}
+
+		// CompareDiff status error
+		_, err = errService.CompareDiff(context.Background(), repo, "main", "feat")
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected not found error, got %v", err)
+		}
+
+		// CompareDiff empty body
+		nilBodyDiffService := newDiffServiceWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		_, err = nilBodyDiffService.CompareDiff(context.Background(), repo, "main", "feat")
+		if err == nil || !strings.Contains(err.Error(), "empty diff response") {
+			t.Fatalf("expected empty response error, got %v", err)
+		}
+
+		// FormatRestDiff nil paths and structures
+		diff := &openapigenerated.RestDiff{}
+		formatted := FormatRestDiff(diff)
+		if !strings.Contains(formatted, "--- /dev/null") || !strings.Contains(formatted, "+++ /dev/null") {
+			t.Fatalf("expected /dev/null rendering, got:\n%s", formatted)
+		}
+
+		// FormatRestDiff hunks nil/empty
+		isBinary := false
+		diffWithNilHunks := &openapigenerated.RestDiff{
+			Binary: &isBinary,
+		}
+		formatted = FormatRestDiff(diffWithNilHunks)
+		if !strings.Contains(formatted, "--- /dev/null") {
+			t.Fatalf("expected standard headers, got:\n%s", formatted)
+		}
+
+		// FormatRestDiff segment nil lines and unknown segment types
+		srcComp := []string{"path.txt"}
+		hunk := openapigenerated.RestDiffHunk{
+			Segments: &[]openapigenerated.RestDiffSegment{
+				{
+					Type: nil, // defaults to " "
+					Lines: &[]openapigenerated.RestDiffLine{
+						{Line: nil},
+					},
+				},
+			},
+		}
+		diffWithNilSegmentLines := &openapigenerated.RestDiff{
+			Binary: &isBinary,
+			Source: &struct {
+				Components *[]string `json:"components,omitempty"`
+				Extension  *string   `json:"extension,omitempty"`
+				Name       *string   `json:"name,omitempty"`
+				Parent     *string   `json:"parent,omitempty"`
+			}{Components: &srcComp},
+			Hunks: &[]openapigenerated.RestDiffHunk{hunk},
+		}
+		formatted = FormatRestDiff(diffWithNilSegmentLines)
+		if !strings.Contains(formatted, " ") {
+			t.Fatalf("expected context space rendering, got:\n%s", formatted)
+		}
+	})
+}
+

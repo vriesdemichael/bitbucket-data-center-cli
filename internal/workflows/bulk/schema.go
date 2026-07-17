@@ -89,6 +89,9 @@ func commonDefinitions() map[string]any {
 		"RepoPullRequestAllTasksOperation":  repoPullRequestAllTasksOperationDefinition(),
 		"RepoPullRequestApproversOperation": repoPullRequestApproversOperationDefinition(),
 		"BuildRequiredCreateOperation":      buildRequiredCreateOperationDefinition(),
+		"RepoSettingsAutoMergeOperation":    repoSettingsAutoMergeOperationDefinition(),
+		"RepoSettingsAutoDeclineOperation":  repoSettingsAutoDeclineOperationDefinition(),
+		"RepoDefaultTaskCreateOperation":    repoDefaultTaskCreateOperationDefinition(),
 		"RepositoryTarget":                  repositoryTargetDefinition(),
 		"ValidationResult":                  validationResultDefinition(),
 		"PlanSummary":                       planSummaryDefinition(),
@@ -155,6 +158,9 @@ func operationDefinition() map[string]any {
 		"RepoPullRequestAllTasksOperation",
 		"RepoPullRequestApproversOperation",
 		"BuildRequiredCreateOperation",
+		"RepoSettingsAutoMergeOperation",
+		"RepoSettingsAutoDeclineOperation",
+		"RepoDefaultTaskCreateOperation",
 	} {
 		refs = append(refs, refSchema(name))
 	}
@@ -400,4 +406,55 @@ func s(items ...string) []any {
 		result[i] = item
 	}
 	return result
+}
+
+func repoSettingsAutoMergeOperationDefinition() map[string]any {
+	return map[string]any{
+		"type":                 "object",
+		"additionalProperties": false,
+		"properties": map[string]any{
+			"type":    map[string]any{"const": OperationRepoSettingsAutoMerge},
+			"enabled": map[string]any{"type": "boolean"},
+		},
+		"required": s("type", "enabled"),
+	}
+}
+
+func repoSettingsAutoDeclineOperationDefinition() map[string]any {
+	return map[string]any{
+		"type":                 "object",
+		"additionalProperties": false,
+		"properties": map[string]any{
+			"type":            map[string]any{"const": OperationRepoSettingsAutoDecline},
+			"enabled":         map[string]any{"type": "boolean"},
+			"inactivityWeeks": map[string]any{"type": "integer", "minimum": 1},
+		},
+		"required": s("type", "enabled"),
+		"allOf": []any{
+			map[string]any{
+				"if": map[string]any{
+					"properties": map[string]any{
+						"enabled": map[string]any{"const": true},
+					},
+				},
+				"then": map[string]any{
+					"required": s("inactivityWeeks"),
+				},
+			},
+		},
+	}
+}
+
+func repoDefaultTaskCreateOperationDefinition() map[string]any {
+	return map[string]any{
+		"type":                 "object",
+		"additionalProperties": false,
+		"properties": map[string]any{
+			"type":        map[string]any{"const": OperationRepoDefaultTaskCreate},
+			"description": nonEmptyStringSchema(),
+			"sourceRef":   nonEmptyStringSchema(),
+			"targetRef":   nonEmptyStringSchema(),
+		},
+		"required": s("type", "description"),
+	}
 }

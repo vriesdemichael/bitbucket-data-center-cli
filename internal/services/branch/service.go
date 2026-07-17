@@ -21,6 +21,7 @@ type RepositoryRef struct {
 
 type ListOptions struct {
 	Limit      int
+	Start      int
 	OrderBy    string
 	FilterText string
 	Base       string
@@ -61,11 +62,19 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 		options.Limit = 25
 	}
 
-	start := float32(0)
-	pageLimit := float32(options.Limit)
+	if options.Start < 0 {
+		options.Start = 0
+	}
+	start := float32(options.Start)
 	results := make([]openapigenerated.RestBranch, 0)
 
 	for {
+		remaining := options.Limit - len(results)
+		if remaining <= 0 {
+			break
+		}
+
+		pageLimit := float32(remaining)
 		params := &openapigenerated.GetBranchesParams{Start: &start, Limit: &pageLimit}
 		if strings.TrimSpace(options.OrderBy) != "" {
 			orderBy, err := normalizeBranchOrderBy(options.OrderBy)
@@ -100,6 +109,9 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 
 		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
 
+		if len(results) >= options.Limit {
+			break
+		}
 		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
 			break
 		}
@@ -110,6 +122,9 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
 	}
 
+	if len(results) > options.Limit {
+		results = results[:options.Limit]
+	}
 	return results, nil
 }
 

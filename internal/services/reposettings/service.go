@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	"io"
+	"strconv"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -38,6 +39,18 @@ type WebhookCreateInput struct {
 	URL    string
 	Events []string
 	Active bool
+}
+
+type DefaultTask struct {
+	Id            *int64              `json:"id,omitempty"`
+	Description   *string             `json:"description,omitempty"`
+	SourceMatcher *DefaultTaskMatcher `json:"sourceMatcher,omitempty"`
+	TargetMatcher *DefaultTaskMatcher `json:"targetMatcher,omitempty"`
+}
+
+type DefaultTaskMatcher struct {
+	Id        *string `json:"id,omitempty"`
+	DisplayId *string `json:"displayId,omitempty"`
 }
 
 type Service struct {
@@ -490,4 +503,548 @@ func normalizeRepositoryPermission(permission string) (string, error) {
 	default:
 		return "", apperrors.New(apperrors.KindValidation, "permission must be one of REPO_READ, REPO_WRITE, REPO_ADMIN", nil)
 	}
+}
+
+func (service *Service) GetRepositoryAutoMergeSettings(ctx context.Context, repo RepositoryRef) (*openapigenerated.RestAutoMergeRestrictedSettings, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	response, err := service.client.Get5WithResponse(ctx, repo.ProjectKey, repo.Slug)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to get auto-merge settings", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	return response.ApplicationjsonCharsetUTF8200, nil
+}
+
+func (service *Service) UpdateRepositoryAutoMergeSettings(ctx context.Context, repo RepositoryRef, enabled bool) (*openapigenerated.RestAutoMergeRestrictedSettings, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	body := openapigenerated.Set1JSONRequestBody{
+		Enabled: &enabled,
+	}
+	response, err := service.client.Set1WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to update auto-merge settings", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	return response.ApplicationjsonCharsetUTF8200, nil
+}
+
+func (service *Service) DeleteRepositoryAutoMergeSettings(ctx context.Context, repo RepositoryRef) error {
+	if err := validateRepositoryRef(repo); err != nil {
+		return err
+	}
+	response, err := service.client.Delete5WithResponse(ctx, repo.ProjectKey, repo.Slug)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to delete auto-merge settings", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+func (service *Service) GetRepositoryAutoDeclineSettings(ctx context.Context, repo RepositoryRef) (*openapigenerated.RestAutoDeclineSettings, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	response, err := service.client.GetAutoDeclineSettings1WithResponse(ctx, repo.ProjectKey, repo.Slug)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to get auto-decline settings", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	return response.ApplicationjsonCharsetUTF8200, nil
+}
+
+func (service *Service) UpdateRepositoryAutoDeclineSettings(ctx context.Context, repo RepositoryRef, enabled bool, inactivityWeeks int32) (*openapigenerated.RestAutoDeclineSettings, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	body := openapigenerated.SetAutoDeclineSettings1JSONRequestBody{
+		Enabled: &enabled,
+	}
+	if enabled {
+		body.InactivityWeeks = &inactivityWeeks
+	}
+	response, err := service.client.SetAutoDeclineSettings1WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to update auto-decline settings", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	return response.ApplicationjsonCharsetUTF8200, nil
+}
+
+func (service *Service) DeleteRepositoryAutoDeclineSettings(ctx context.Context, repo RepositoryRef) error {
+	if err := validateRepositoryRef(repo); err != nil {
+		return err
+	}
+	response, err := service.client.DeleteAutoDeclineSettings1WithResponse(ctx, repo.ProjectKey, repo.Slug)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to delete auto-decline settings", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+func (service *Service) ListRepositoryLabels(ctx context.Context, repo RepositoryRef) ([]string, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	response, err := service.client.GetAllLabelsForRepositoryWithResponse(ctx, repo.ProjectKey, repo.Slug)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to list labels", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	var page struct {
+		Values []struct {
+			Name string `json:"name"`
+		} `json:"values"`
+	}
+	if len(response.Body) > 0 {
+		if err := json.Unmarshal(response.Body, &page); err != nil {
+			return nil, apperrors.New(apperrors.KindPermanent, "failed to decode labels list", err)
+		}
+	}
+	labels := make([]string, len(page.Values))
+	for i, v := range page.Values {
+		labels[i] = v.Name
+	}
+	return labels, nil
+}
+
+func (service *Service) AddRepositoryLabel(ctx context.Context, repo RepositoryRef, labelName string) error {
+	if err := validateRepositoryRef(repo); err != nil {
+		return err
+	}
+	trimmed := strings.TrimSpace(labelName)
+	if trimmed == "" {
+		return apperrors.New(apperrors.KindValidation, "label name is required", nil)
+	}
+	body := openapigenerated.AddLabelJSONRequestBody{
+		Name: &trimmed,
+	}
+	response, err := service.client.AddLabelWithResponse(ctx, repo.ProjectKey, repo.Slug, body)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to add repository label", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+func (service *Service) RemoveRepositoryLabel(ctx context.Context, repo RepositoryRef, labelName string) error {
+	if err := validateRepositoryRef(repo); err != nil {
+		return err
+	}
+	trimmed := strings.TrimSpace(labelName)
+	if trimmed == "" {
+		return apperrors.New(apperrors.KindValidation, "label name is required", nil)
+	}
+	response, err := service.client.RemoveLabelWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmed)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to remove repository label", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+func (service *Service) WatchRepository(ctx context.Context, repo RepositoryRef) error {
+	if err := validateRepositoryRef(repo); err != nil {
+		return err
+	}
+	body := openapigenerated.Watch2JSONRequestBody{}
+	response, err := service.client.Watch2WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to watch repository", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+func (service *Service) UnwatchRepository(ctx context.Context, repo RepositoryRef) error {
+	if err := validateRepositoryRef(repo); err != nil {
+		return err
+	}
+	response, err := service.client.Unwatch2WithResponse(ctx, repo.ProjectKey, repo.Slug)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to unwatch repository", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+func (service *Service) ListDefaultTasks(ctx context.Context, repo RepositoryRef) ([]DefaultTask, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	response, err := service.client.GetDefaultTasks1WithResponse(ctx, repo.ProjectKey, repo.Slug, nil)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to list default tasks", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	var page struct {
+		Values []DefaultTask `json:"values"`
+	}
+	if len(response.Body) > 0 {
+		if err := json.Unmarshal(response.Body, &page); err != nil {
+			return nil, apperrors.New(apperrors.KindPermanent, "failed to decode default tasks list", err)
+		}
+	}
+	return page.Values, nil
+}
+
+func (service *Service) AddDefaultTask(ctx context.Context, repo RepositoryRef, description string, sourceRef *string, targetRef *string) (*DefaultTask, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	trimmed := strings.TrimSpace(description)
+	if trimmed == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "description is required", nil)
+	}
+	body := openapigenerated.RestDefaultTaskRequest{
+		Description: &trimmed,
+	}
+	if sourceRef != nil && *sourceRef != "" {
+		ref := *sourceRef
+		typeId := openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId("ANY_REF_MATCHER")
+		body.SourceMatcher = &struct {
+			DisplayId *string                                                      `json:"displayId,omitempty"`
+			Id        *string                                                      `json:"id,omitempty"`
+			Type      *struct {
+				Id   *openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id,omitempty"`
+				Name *string                                                     `json:"name,omitempty"`
+			} `json:"type,omitempty"`
+		}{
+			Id:        &ref,
+			DisplayId: &ref,
+			Type: &struct {
+				Id   *openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id,omitempty"`
+				Name *string                                                     `json:"name,omitempty"`
+			}{
+				Id: &typeId,
+			},
+		}
+	}
+	if targetRef != nil && *targetRef != "" {
+		ref := *targetRef
+		typeId := openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId("ANY_REF_MATCHER")
+		body.TargetMatcher = &struct {
+			DisplayId *string                                                      `json:"displayId,omitempty"`
+			Id        *string                                                      `json:"id,omitempty"`
+			Type      *struct {
+				Id   *openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id,omitempty"`
+				Name *string                                                     `json:"name,omitempty"`
+			} `json:"type,omitempty"`
+		}{
+			Id:        &ref,
+			DisplayId: &ref,
+			Type: &struct {
+				Id   *openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id,omitempty"`
+				Name *string                                                     `json:"name,omitempty"`
+			}{
+				Id: &typeId,
+			},
+		}
+	}
+
+	response, err := service.client.AddDefaultTask1WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to add default task", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	var task DefaultTask
+	if len(response.Body) > 0 {
+		if err := json.Unmarshal(response.Body, &task); err != nil {
+			return nil, apperrors.New(apperrors.KindPermanent, "failed to decode default task response", err)
+		}
+	}
+	return &task, nil
+}
+
+func (service *Service) UpdateDefaultTask(ctx context.Context, repo RepositoryRef, taskId string, description string, sourceRef *string, targetRef *string) (*DefaultTask, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	trimmedID := strings.TrimSpace(taskId)
+	if trimmedID == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "task id is required", nil)
+	}
+	trimmed := strings.TrimSpace(description)
+	if trimmed == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "description is required", nil)
+	}
+	body := openapigenerated.RestDefaultTaskRequest{
+		Description: &trimmed,
+	}
+	if sourceRef != nil && *sourceRef != "" {
+		ref := *sourceRef
+		typeId := openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId("ANY_REF_MATCHER")
+		body.SourceMatcher = &struct {
+			DisplayId *string                                                      `json:"displayId,omitempty"`
+			Id        *string                                                      `json:"id,omitempty"`
+			Type      *struct {
+				Id   *openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id,omitempty"`
+				Name *string                                                     `json:"name,omitempty"`
+			} `json:"type,omitempty"`
+		}{
+			Id:        &ref,
+			DisplayId: &ref,
+			Type: &struct {
+				Id   *openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id,omitempty"`
+				Name *string                                                     `json:"name,omitempty"`
+			}{
+				Id: &typeId,
+			},
+		}
+	}
+	if targetRef != nil && *targetRef != "" {
+		ref := *targetRef
+		typeId := openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId("ANY_REF_MATCHER")
+		body.TargetMatcher = &struct {
+			DisplayId *string                                                      `json:"displayId,omitempty"`
+			Id        *string                                                      `json:"id,omitempty"`
+			Type      *struct {
+				Id   *openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id,omitempty"`
+				Name *string                                                     `json:"name,omitempty"`
+			} `json:"type,omitempty"`
+		}{
+			Id:        &ref,
+			DisplayId: &ref,
+			Type: &struct {
+				Id   *openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id,omitempty"`
+				Name *string                                                     `json:"name,omitempty"`
+			}{
+				Id: &typeId,
+			},
+		}
+	}
+
+	response, err := service.client.UpdateDefaultTask1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, body)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to update default task", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	var task DefaultTask
+	if len(response.Body) > 0 {
+		if err := json.Unmarshal(response.Body, &task); err != nil {
+			return nil, apperrors.New(apperrors.KindPermanent, "failed to decode default task response", err)
+		}
+	}
+	return &task, nil
+}
+
+func (service *Service) DeleteDefaultTask(ctx context.Context, repo RepositoryRef, taskId string) error {
+	if err := validateRepositoryRef(repo); err != nil {
+		return err
+	}
+	trimmedID := strings.TrimSpace(taskId)
+	if trimmedID == "" {
+		return apperrors.New(apperrors.KindValidation, "task id is required", nil)
+	}
+	response, err := service.client.DeleteDefaultTask1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID)
+	if err != nil {
+		return apperrors.New(apperrors.KindTransient, "failed to delete default task", err)
+	}
+	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+func (service *Service) GetWebhook(ctx context.Context, repo RepositoryRef, id string) (any, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	trimmedID := strings.TrimSpace(id)
+	if trimmedID == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
+	}
+	response, err := service.client.GetWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, nil)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to get webhook", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	var payload any
+	if err := json.Unmarshal(response.Body, &payload); err != nil {
+		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode webhook payload", err)
+	}
+	return payload, nil
+}
+
+func (service *Service) UpdateWebhook(ctx context.Context, repo RepositoryRef, id string, name string, url string, events []string, active *bool) (any, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	trimmedID := strings.TrimSpace(id)
+	if trimmedID == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
+	}
+
+	body := openapigenerated.UpdateWebhook1JSONRequestBody{}
+	if strings.TrimSpace(name) != "" {
+		n := strings.TrimSpace(name)
+		body.Name = &n
+	}
+	if strings.TrimSpace(url) != "" {
+		u := strings.TrimSpace(url)
+		body.Url = &u
+	}
+	if len(events) > 0 {
+		body.Events = &events
+	}
+	if active != nil {
+		body.Active = active
+	}
+
+	response, err := service.client.UpdateWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, body)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to update webhook", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	var payload any
+	if err := json.Unmarshal(response.Body, &payload); err != nil {
+		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode webhook payload", err)
+	}
+	return payload, nil
+}
+
+func (service *Service) SearchWebhooks(ctx context.Context, repo RepositoryRef, event *string) (any, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	params := &openapigenerated.SearchWebhooksParams{}
+	if event != nil && *event != "" {
+		params.Event = event
+	}
+	response, err := service.client.SearchWebhooksWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to search webhooks", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	var payload any
+	if err := json.Unmarshal(response.Body, &payload); err != nil {
+		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode webhooks search payload", err)
+	}
+	return payload, nil
+}
+
+func (service *Service) TestWebhook(ctx context.Context, repo RepositoryRef, id string) (any, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	trimmedID := strings.TrimSpace(id)
+	if trimmedID == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
+	}
+	webhookIDVal, err := strconv.ParseInt(trimmedID, 10, 32)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindValidation, "webhook id must be an integer", err)
+	}
+	webhookID32 := int32(webhookIDVal)
+
+	params := &openapigenerated.TestWebhook1Params{
+		WebhookId: &webhookID32,
+	}
+	body := openapigenerated.TestWebhook1JSONRequestBody{}
+
+	response, err := service.client.TestWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, params, body)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to test webhook", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	var payload any
+	if err := json.Unmarshal(response.Body, &payload); err != nil {
+		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode test webhook response", err)
+	}
+	return payload, nil
+}
+
+func (service *Service) GetWebhookLatestInvocation(ctx context.Context, repo RepositoryRef, id string, event *string, outcome *string) (any, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	trimmedID := strings.TrimSpace(id)
+	if trimmedID == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
+	}
+	var params *openapigenerated.GetLatestInvocation1Params
+	if (event != nil && *event != "") || (outcome != nil && *outcome != "") {
+		params = &openapigenerated.GetLatestInvocation1Params{}
+		if event != nil && *event != "" {
+			params.Event = event
+		}
+		if outcome != nil && *outcome != "" {
+			params.Outcome = outcome
+		}
+	}
+	response, err := service.client.GetLatestInvocation1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, params)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to get latest invocation", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	var payload any
+	if err := json.Unmarshal(response.Body, &payload); err != nil {
+		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode latest invocation response", err)
+	}
+	return payload, nil
+}
+
+func (service *Service) GetWebhookStatistics(ctx context.Context, repo RepositoryRef, id string) (any, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	trimmedID := strings.TrimSpace(id)
+	if trimmedID == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
+	}
+	response, err := service.client.GetStatistics1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, nil)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to get statistics", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	var payload any
+	if err := json.Unmarshal(response.Body, &payload); err != nil {
+		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode statistics response", err)
+	}
+	return payload, nil
+}
+
+func (service *Service) GetWebhookStatisticsSummary(ctx context.Context, repo RepositoryRef, id string) (any, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	trimmedID := strings.TrimSpace(id)
+	if trimmedID == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
+	}
+	response, err := service.client.GetStatisticsSummary1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindTransient, "failed to get statistics summary", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return nil, err
+	}
+	var payload any
+	if err := json.Unmarshal(response.Body, &payload); err != nil {
+		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode statistics summary response", err)
+	}
+	return payload, nil
 }

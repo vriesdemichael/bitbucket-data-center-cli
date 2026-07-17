@@ -4,10 +4,10 @@ hide:
 ---
 
 <section class="bb-hero">
-	<p class="bb-eyebrow">Bitbucket Server and Data Center</p>
-	<h1>The operational CLI for Bitbucket Server.</h1>
+	<p class="bb-eyebrow">Bitbucket Data Center</p>
+	<h1>The operational CLI for Bitbucket Data Center.</h1>
 	<p class="bb-lead">
-		<code>bb</code> gives Bitbucket Server and Data Center teams a safer command line:
+		<code>bb</code> gives Bitbucket Data Center teams a safer command line:
 		machine-readable output, dry-run planning, repository-aware ergonomics, and behavior validated against a real server.
 	</p>
 	<div class="bb-actions">

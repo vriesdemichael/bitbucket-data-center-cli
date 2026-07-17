@@ -424,6 +424,8 @@ func TestDryRunPassthroughPathCoverage(t *testing.T) {
 		"pr task create",
 		"pr task update",
 		"pr task delete",
+		"pr auto-merge enable",
+		"pr auto-merge disable",
 		"build status set",
 		"build required create",
 		"build required update",
@@ -500,4 +502,23 @@ func TestRegisterGlobalDryRunInterceptorsNotImplemented(t *testing.T) {
 	if !strings.Contains(err.Error(), "dry-run is not implemented for secret delete") {
 		t.Fatalf("expected command path in error, got: %v", err)
 	}
+}
+
+func TestAllMutatingCommandsHaveDryRunProfile(t *testing.T) {
+	root := NewRootCommand()
+	var visit func(*cobra.Command)
+	visit = func(cmd *cobra.Command) {
+		if cmd.RunE != nil {
+			path := dryRunCommandPath(cmd)
+			if isServerMutatingPath(path) {
+				if _, ok := dryRunProfiles[path]; !ok {
+					t.Errorf("Mutating command %q is not registered in dryRunProfiles map in internal/cli/dryrun.go. Every mutating command must be registered there to support --dry-run properly.", path)
+				}
+			}
+		}
+		for _, child := range cmd.Commands() {
+			visit(child)
+		}
+	}
+	visit(root)
 }

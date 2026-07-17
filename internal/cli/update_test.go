@@ -35,7 +35,7 @@ type updateCommandSignatureVerifier struct{}
 
 func (updateCommandSignatureVerifier) VerifyBlob(context.Context, []byte, []byte) (updatesigstore.Verification, error) {
 	return updatesigstore.Verification{
-		CertificateIdentity:            "https://github.com/vriesdemichael/bitbucket-server-cli/.github/workflows/release.yml@refs/heads/main",
+		CertificateIdentity:            "https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main",
 		CertificateOIDCIssuer:          updatesigstore.GitHubActionsIssuer,
 		TransparencyLogEntriesVerified: 1,
 		VerifiedTimestampCount:         1,
@@ -77,7 +77,7 @@ func TestUpdateCommandJSONDryRun(t *testing.T) {
 				},
 			},
 			RepositoryOwner: "vriesdemichael",
-			RepositoryName:  "bitbucket-server-cli",
+			RepositoryName:  "bitbucket-data-center-cli",
 			CurrentVersion:  func() string { return version },
 			ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
 			Platform:        func() (string, string) { return "linux", "amd64" },
@@ -163,7 +163,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 					},
 				},
 				RepositoryOwner: "vriesdemichael",
-				RepositoryName:  "bitbucket-server-cli",
+				RepositoryName:  "bitbucket-data-center-cli",
 				CurrentVersion:  func() string { return version },
 				ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
 				Platform:        func() (string, string) { return "linux", "amd64" },
@@ -202,8 +202,8 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 		buffer := &bytes.Buffer{}
 		command := &cobra.Command{}
 		command.SetOut(buffer)
-		writeUpdateHuman(command, updateworkflow.Result{CurrentVersion: "v1.1.0", LatestVersion: "v1.2.0", Applied: true, AssetName: "bb.tgz", InstallPath: "/tmp/bb", ChecksumAssetName: "sha256sums.txt", ChecksumVerified: true, SignatureBundleAssetName: "sha256sums.txt.sigstore.json", SignatureVerified: true, SignatureIdentity: "https://github.com/vriesdemichael/bitbucket-server-cli/.github/workflows/release.yml@refs/heads/main", ReleaseURL: "https://example.test/releases/v1.2.0"})
-		if !bytes.Contains(buffer.Bytes(), []byte("Updated bb")) || !bytes.Contains(buffer.Bytes(), []byte("checksum sha256sums.txt (verified)")) || !bytes.Contains(buffer.Bytes(), []byte("provenance sha256sums.txt.sigstore.json (verified via sigstore keyless + rekor)")) || !bytes.Contains(buffer.Bytes(), []byte("signed_by https://github.com/vriesdemichael/bitbucket-server-cli/.github/workflows/release.yml@refs/heads/main")) {
+		writeUpdateHuman(command, updateworkflow.Result{CurrentVersion: "v1.1.0", LatestVersion: "v1.2.0", Applied: true, AssetName: "bb.tgz", InstallPath: "/tmp/bb", ChecksumAssetName: "sha256sums.txt", ChecksumVerified: true, SignatureBundleAssetName: "sha256sums.txt.sigstore.json", SignatureVerified: true, SignatureIdentity: "https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main", ReleaseURL: "https://example.test/releases/v1.2.0"})
+		if !bytes.Contains(buffer.Bytes(), []byte("Updated bb")) || !bytes.Contains(buffer.Bytes(), []byte("checksum sha256sums.txt (verified)")) || !bytes.Contains(buffer.Bytes(), []byte("provenance sha256sums.txt.sigstore.json (verified via sigstore keyless + rekor)")) || !bytes.Contains(buffer.Bytes(), []byte("signed_by https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main")) {
 			t.Fatalf("unexpected human output: %s", buffer.String())
 		}
 	})
@@ -261,7 +261,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 			return updateworkflow.NewRunner(updateworkflow.Dependencies{
 				Releases:        updateCommandReleaseClient{latestErr: apperrors.New(apperrors.KindTransient, "boom", nil)},
 				RepositoryOwner: "vriesdemichael",
-				RepositoryName:  "bitbucket-server-cli",
+				RepositoryName:  "bitbucket-data-center-cli",
 				CurrentVersion:  func() string { return version },
 				ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
 			})
@@ -312,7 +312,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 			return updateworkflow.NewRunner(updateworkflow.Dependencies{
 				Releases: updateCommandReleaseClient{release: githubrelease.Release{TagName: "v1.1.0"}},
 				RepositoryOwner: "vriesdemichael",
-				RepositoryName:  "bitbucket-server-cli",
+				RepositoryName:  "bitbucket-data-center-cli",
 				CurrentVersion:  func() string { return version },
 				ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
 			})

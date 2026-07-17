@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/url"
 	"os/exec"
+	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -30,7 +32,35 @@ func TestBrowseCommandHomeAndNoBrowser(t *testing.T) {
 	}
 }
 
+func TestBrowserCommand(t *testing.T) {
+	cases := []struct {
+		goos     string
+		wantName string
+		wantArgs []string
+	}{
+		{goos: "windows", wantName: "rundll32", wantArgs: []string{"url.dll,FileProtocolHandler", "https://example.com"}},
+		{goos: "darwin", wantName: "open", wantArgs: []string{"https://example.com"}},
+		{goos: "linux", wantName: "xdg-open", wantArgs: []string{"https://example.com"}},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.goos, func(t *testing.T) {
+			name, args := browserCommand(testCase.goos, "https://example.com")
+			if name != testCase.wantName {
+				t.Fatalf("command name: got %q, want %q", name, testCase.wantName)
+			}
+			if !reflect.DeepEqual(args, testCase.wantArgs) {
+				t.Fatalf("command args: got %#v, want %#v", args, testCase.wantArgs)
+			}
+		})
+	}
+}
+
 func TestOpenInBrowser(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("stubs the launcher with sh, which is unavailable on Windows; TestBrowserCommand covers the Windows command mapping")
+	}
+
 	originalExec := browseExecCommand
 	t.Cleanup(func() { browseExecCommand = originalExec })
 

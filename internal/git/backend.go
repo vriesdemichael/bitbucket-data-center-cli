@@ -3,10 +3,13 @@ package git
 import "context"
 
 type CloneOptions struct {
-	Directory string
-	Branch    string
-	Depth     int
-	ExtraArgs []string
+	Directory    string
+	Branch       string
+	Depth        int
+	ExtraArgs    []string
+	AuthToken    string
+	AuthUsername string
+	AuthPassword string
 }
 
 type FetchOptions struct {

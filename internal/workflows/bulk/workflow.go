@@ -31,6 +31,9 @@ const (
 	OperationRepoPullRequestRequiredAllTasksComplete = "repo.pull-request-settings.required-all-tasks-complete"
 	OperationRepoPullRequestRequiredApproversCount   = "repo.pull-request-settings.required-approvers-count"
 	OperationBuildRequiredCreate                     = "build.required.create"
+	OperationRepoSettingsAutoMerge                  = "repo.settings.auto-merge"
+	OperationRepoSettingsAutoDecline                = "repo.settings.auto-decline"
+	OperationRepoDefaultTaskCreate                  = "repo.default-task.create"
 
 	resultStatusSuccess = "success"
 	resultStatusFailed  = "failed"
@@ -44,6 +47,9 @@ var supportedOperationTypes = []string{
 	OperationRepoPullRequestRequiredAllTasksComplete,
 	OperationRepoPullRequestRequiredApproversCount,
 	OperationBuildRequiredCreate,
+	OperationRepoSettingsAutoMerge,
+	OperationRepoSettingsAutoDecline,
+	OperationRepoDefaultTaskCreate,
 }
 
 type Policy struct {
@@ -70,6 +76,11 @@ type OperationSpec struct {
 	RequiredAllTasksComplete *bool          `yaml:"requiredAllTasksComplete,omitempty" json:"requiredAllTasksComplete,omitempty"`
 	Count                    *int           `yaml:"count,omitempty" json:"count,omitempty"`
 	Payload                  map[string]any `yaml:"payload,omitempty" json:"payload,omitempty"`
+	Enabled                  *bool          `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	InactivityWeeks          *int           `yaml:"inactivityWeeks,omitempty" json:"inactivityWeeks,omitempty"`
+	Description              *string        `yaml:"description,omitempty" json:"description,omitempty"`
+	SourceRef                *string        `yaml:"sourceRef,omitempty" json:"sourceRef,omitempty"`
+	TargetRef                *string        `yaml:"targetRef,omitempty" json:"targetRef,omitempty"`
 }
 
 type RepositoryTarget struct {
@@ -486,6 +497,25 @@ func DescribeOperation(operation OperationSpec) string {
 		return fmt.Sprintf("set requiredApprovers.count=%d", *operation.Count)
 	case OperationBuildRequiredCreate:
 		return "create required build check"
+	case OperationRepoSettingsAutoMerge:
+		if operation.Enabled == nil {
+			return "set auto-merge settings"
+		}
+		return fmt.Sprintf("set auto-merge enabled=%t", *operation.Enabled)
+	case OperationRepoSettingsAutoDecline:
+		if operation.Enabled == nil {
+			return "set auto-decline settings"
+		}
+		if *operation.Enabled && operation.InactivityWeeks != nil {
+			return fmt.Sprintf("set auto-decline enabled=%t inactivityWeeks=%d", *operation.Enabled, *operation.InactivityWeeks)
+		}
+		return fmt.Sprintf("set auto-decline enabled=%t", *operation.Enabled)
+	case OperationRepoDefaultTaskCreate:
+		desc := ""
+		if operation.Description != nil {
+			desc = *operation.Description
+		}
+		return fmt.Sprintf("create default task: %s", desc)
 	default:
 		return operation.Type
 	}
@@ -621,6 +651,43 @@ func normalizeOperation(operation OperationSpec) (OperationSpec, []string) {
 			break
 		}
 		normalized.Payload = payload
+	case OperationRepoSettingsAutoMerge:
+		if operation.Enabled == nil {
+			validationErrors = append(validationErrors, "enabled is required")
+		} else {
+			normalized.Enabled = boolPtr(*operation.Enabled)
+		}
+	case OperationRepoSettingsAutoDecline:
+		if operation.Enabled == nil {
+			validationErrors = append(validationErrors, "enabled is required")
+		} else {
+			normalized.Enabled = boolPtr(*operation.Enabled)
+			if *operation.Enabled {
+				if operation.InactivityWeeks == nil {
+					validationErrors = append(validationErrors, "inactivityWeeks is required when enabled is true")
+				} else if *operation.InactivityWeeks <= 0 {
+					validationErrors = append(validationErrors, "inactivityWeeks must be > 0")
+				} else {
+					val := *operation.InactivityWeeks
+					normalized.InactivityWeeks = &val
+				}
+			}
+		}
+	case OperationRepoDefaultTaskCreate:
+		if operation.Description == nil || strings.TrimSpace(*operation.Description) == "" {
+			validationErrors = append(validationErrors, "description is required")
+		} else {
+			desc := strings.TrimSpace(*operation.Description)
+			normalized.Description = &desc
+		}
+		if operation.SourceRef != nil {
+			ref := strings.TrimSpace(*operation.SourceRef)
+			normalized.SourceRef = &ref
+		}
+		if operation.TargetRef != nil {
+			ref := strings.TrimSpace(*operation.TargetRef)
+			normalized.TargetRef = &ref
+		}
 	default:
 		validationErrors = append(validationErrors, fmt.Sprintf("unsupported type %q (supported: %s)", normalized.Type, strings.Join(supportedOperationTypes, ", ")))
 	}
@@ -793,6 +860,25 @@ func copyOperations(operations []OperationSpec) []OperationSpec {
 		if operation.Count != nil {
 			value := *operation.Count
 			copyOperation.Count = &value
+		}
+		if operation.Enabled != nil {
+			copyOperation.Enabled = boolPtr(*operation.Enabled)
+		}
+		if operation.InactivityWeeks != nil {
+			val := *operation.InactivityWeeks
+			copyOperation.InactivityWeeks = &val
+		}
+		if operation.Description != nil {
+			val := *operation.Description
+			copyOperation.Description = &val
+		}
+		if operation.SourceRef != nil {
+			val := *operation.SourceRef
+			copyOperation.SourceRef = &val
+		}
+		if operation.TargetRef != nil {
+			val := *operation.TargetRef
+			copyOperation.TargetRef = &val
 		}
 		cloned = append(cloned, copyOperation)
 	}

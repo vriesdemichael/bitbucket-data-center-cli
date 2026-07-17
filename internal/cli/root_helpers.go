@@ -139,7 +139,16 @@ func parseRepositorySelector(selector string) (repositorySelector, error) {
 		return repositorySelector{}, apperrors.New(apperrors.KindValidation, "--repo must be in PROJECT/slug format", nil)
 	}
 
-	return repositorySelector{ProjectKey: strings.TrimSpace(parts[0]), Slug: strings.TrimSpace(parts[1])}, nil
+	projectKey := strings.TrimSpace(parts[0])
+	slug := strings.TrimSpace(parts[1])
+	if unescaped, err := url.PathUnescape(projectKey); err == nil {
+		projectKey = unescaped
+	}
+	if unescaped, err := url.PathUnescape(slug); err == nil {
+		slug = unescaped
+	}
+
+	return repositorySelector{ProjectKey: projectKey, Slug: slug}, nil
 }
 
 func inferRepositoryContextFromGit(cfg config.AppConfig) (*inferredRepositoryContext, error) {
@@ -449,6 +458,12 @@ func parseBitbucketPath(path string) (projectKey string, slug string, ok bool) {
 				if project == "" || repo == "" {
 					return "", "", false
 				}
+				if unescaped, err := url.PathUnescape(project); err == nil {
+					project = unescaped
+				}
+				if unescaped, err := url.PathUnescape(repo); err == nil {
+					repo = unescaped
+				}
 				return project, repo, true
 			}
 		}
@@ -459,6 +474,12 @@ func parseBitbucketPath(path string) (projectKey string, slug string, ok bool) {
 		repo := strings.TrimSuffix(strings.TrimSpace(parts[len(parts)-1]), ".git")
 		if project == "" || repo == "" {
 			return "", "", false
+		}
+		if unescaped, err := url.PathUnescape(project); err == nil {
+			project = unescaped
+		}
+		if unescaped, err := url.PathUnescape(repo); err == nil {
+			repo = unescaped
 		}
 		return project, repo, true
 	}

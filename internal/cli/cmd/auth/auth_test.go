@@ -22,8 +22,9 @@ import (
 )
 
 type fakeUsersClient struct {
-	response *openapigenerated.GetUsers2Response
-	err      error
+	response     *openapigenerated.GetUsers2Response
+	userResponse *openapigenerated.GetUserResponse
+	err          error
 }
 
 type fakeReposClient struct {
@@ -37,6 +38,13 @@ func (client *fakeUsersClient) GetUsers2WithResponse(ctx context.Context, params
 		return nil, client.err
 	}
 	return client.response, nil
+}
+
+func (client *fakeUsersClient) GetUserWithResponse(ctx context.Context, userSlug string, reqEditors ...openapigenerated.RequestEditorFn) (*openapigenerated.GetUserResponse, error) {
+	if client.err != nil {
+		return nil, client.err
+	}
+	return client.userResponse, nil
 }
 
 func (client *fakeReposClient) GetRepositoriesRecentlyAccessedWithResponse(ctx context.Context, params *openapigenerated.GetRepositoriesRecentlyAccessedParams, reqEditors ...openapigenerated.RequestEditorFn) (*openapigenerated.GetRepositoriesRecentlyAccessedResponse, error) {
@@ -668,6 +676,65 @@ func TestIdentityCommand(t *testing.T) {
 	t.Run("human summary fallback unknown", func(t *testing.T) {
 		if got := identityHumanSummary(authIdentity{}); !strings.Contains(got, "unknown") {
 			t.Fatalf("expected unknown fallback, got %q", got)
+		}
+	})
+
+	t.Run("resolves identity via X-AUSERNAME header", func(t *testing.T) {
+		displayName := "Real Authenticated User"
+		email := "realuser@example.local"
+		name := "real-user"
+		slug := "real-user"
+		id := int32(100)
+		userType := openapigenerated.RestApplicationUserTypeNORMAL
+		active := true
+
+		header := http.Header{}
+		header.Set("X-AUSERNAME", "real-user")
+
+		cmd := New(Dependencies{
+			JSONEnabled: func() bool { return false },
+			LoadConfig: func() (config.AppConfig, error) {
+				return config.AppConfig{BitbucketURL: "http://example.local:7990"}, nil
+			},
+			WriteJSON: func(writer io.Writer, payload any) error {
+				return jsonoutput.Write(writer, payload)
+			},
+			NewUsersClient: func(cfg config.AppConfig) (usersClient, error) {
+				return &fakeUsersClient{
+					response: &openapigenerated.GetUsers2Response{
+						HTTPResponse: &http.Response{
+							StatusCode: 200,
+							Header:     header,
+						},
+						ApplicationjsonCharsetUTF8200: &openapigenerated.RestApplicationUser{
+							Active: nil,
+						},
+					},
+					userResponse: &openapigenerated.GetUserResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						ApplicationjsonCharsetUTF8200: &openapigenerated.RestApplicationUser{
+							DisplayName:  &displayName,
+							EmailAddress: &email,
+							Name:         &name,
+							Slug:         &slug,
+							Id:           &id,
+							Type:         &userType,
+							Active:       &active,
+						},
+					},
+				}, nil
+			},
+		})
+
+		buffer := &bytes.Buffer{}
+		cmd.SetOut(buffer)
+		cmd.SetErr(buffer)
+		cmd.SetArgs([]string{"identity"})
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("identity command failed: %v", err)
+		}
+		if !strings.Contains(buffer.String(), "Real Authenticated User") || !strings.Contains(buffer.String(), "name=real-user") {
+			t.Fatalf("expected real user identity summary output, got: %s", buffer.String())
 		}
 	})
 }

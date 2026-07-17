@@ -477,14 +477,14 @@ func TestNewVerifierUsesExplicitProviderAndOptions(t *testing.T) {
 }
 
 func TestNewGitHubReleaseVerifier(t *testing.T) {
-	verifier := NewGitHubReleaseVerifier(" vriesdemichael ", " bitbucket-server-cli ")
+	verifier := NewGitHubReleaseVerifier(" vriesdemichael ", " bitbucket-data-center-cli ")
 	if verifier == nil {
 		t.Fatal("expected verifier")
 	}
 	if verifier.expectedIssuer != GitHubActionsIssuer {
 		t.Fatalf("expected GitHub issuer, got %q", verifier.expectedIssuer)
 	}
-	expectedSAN := "https://github.com/vriesdemichael/bitbucket-server-cli/.github/workflows/release.yml@refs/heads/main"
+	expectedSAN := "https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main"
 	if verifier.expectedSAN != expectedSAN {
 		t.Fatalf("expected SAN %q, got %q", expectedSAN, verifier.expectedSAN)
 	}

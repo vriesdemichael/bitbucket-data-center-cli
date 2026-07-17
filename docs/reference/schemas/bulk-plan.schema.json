@@ -78,6 +78,15 @@
         },
         {
           "$ref": "#/$defs/BuildRequiredCreateOperation"
+        },
+        {
+          "$ref": "#/$defs/RepoSettingsAutoMergeOperation"
+        },
+        {
+          "$ref": "#/$defs/RepoSettingsAutoDeclineOperation"
+        },
+        {
+          "$ref": "#/$defs/RepoDefaultTaskCreateOperation"
         }
       ]
     },
@@ -117,7 +126,10 @@
             "repo.webhook.create",
             "repo.pull-request-settings.required-all-tasks-complete",
             "repo.pull-request-settings.required-approvers-count",
-            "build.required.create"
+            "build.required.create",
+            "repo.settings.auto-merge",
+            "repo.settings.auto-decline",
+            "repo.default-task.create"
           ],
           "type": "string"
         }
@@ -180,6 +192,31 @@
       },
       "required": [
         "id"
+      ],
+      "type": "object"
+    },
+    "RepoDefaultTaskCreateOperation": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "sourceRef": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "targetRef": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "type": {
+          "const": "repo.default-task.create"
+        }
+      },
+      "required": [
+        "type",
+        "description"
       ],
       "type": "object"
     },
@@ -265,6 +302,58 @@
       "required": [
         "type",
         "count"
+      ],
+      "type": "object"
+    },
+    "RepoSettingsAutoDeclineOperation": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "enabled": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "inactivityWeeks"
+            ]
+          }
+        }
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "inactivityWeeks": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "type": {
+          "const": "repo.settings.auto-decline"
+        }
+      },
+      "required": [
+        "type",
+        "enabled"
+      ],
+      "type": "object"
+    },
+    "RepoSettingsAutoMergeOperation": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "type": {
+          "const": "repo.settings.auto-merge"
+        }
+      },
+      "required": [
+        "type",
+        "enabled"
       ],
       "type": "object"
     },

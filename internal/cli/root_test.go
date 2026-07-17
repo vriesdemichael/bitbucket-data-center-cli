@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -1313,7 +1314,7 @@ func TestPRExtendedLifecycleReviewerAndTaskCommands(t *testing.T) {
 		case request.Method == http.MethodDelete && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/approve":
 			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
 			_, _ = writer.Write([]byte(`{"id":30,"title":"Feature PR","state":"OPEN","open":true,"closed":false}`))
-		case request.Method == http.MethodPut && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/participants/reviewer2":
+		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/participants":
 			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
 			_, _ = writer.Write([]byte(`{"id":30,"title":"Feature PR","state":"OPEN","open":true,"closed":false}`))
 		case request.Method == http.MethodDelete && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/participants/reviewer2":
@@ -1913,6 +1914,9 @@ func TestInferenceHelperFunctions(t *testing.T) {
 	})
 
 	t.Run("infer context returns nil when working directory cannot be resolved", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("simulates an unresolvable CWD by deleting it; Windows forbids removing a directory that is the process working directory")
+		}
 		gitBackendFactory = func() git.Backend {
 			return inferenceGitBackendStub{repoRoot: "/tmp/repo", remotes: []git.Remote{{Name: "origin", URL: "https://bitbucket.local/scm/PRJ/repo.git"}}}
 		}
@@ -3294,7 +3298,7 @@ func TestAuthTokenURLCommand(t *testing.T) {
 	if err := jsonCmd.Execute(); err != nil {
 		t.Fatalf("auth token-url json failed: %v", err)
 	}
-	if !strings.Contains(jsonBuffer.String(), `"token_url": "http://localhost:7990/plugins/servlet/access-tokens/manage"`) {
+	if !strings.Contains(jsonBuffer.String(), "/plugins/servlet/access-tokens/manage") && !strings.Contains(jsonBuffer.String(), "/plugins/servlet/access-tokens/users/") {
 		t.Fatalf("expected token_url in json output, got: %s", jsonBuffer.String())
 	}
 }

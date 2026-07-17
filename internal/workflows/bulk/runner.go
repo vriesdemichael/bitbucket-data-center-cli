@@ -81,6 +81,37 @@ func (runner *ServiceRunner) Run(ctx context.Context, repo RepositoryTarget, ope
 			return nil, apperrors.New(apperrors.KindInternal, "quality service is not configured", nil)
 		}
 		return runner.quality.CreateRequiredBuildCheck(ctx, qualityRepoRef, operation.Payload)
+	case OperationRepoSettingsAutoMerge:
+		if runner.repoSettings == nil {
+			return nil, apperrors.New(apperrors.KindInternal, "repo settings service is not configured", nil)
+		}
+		if operation.Enabled == nil {
+			return nil, apperrors.New(apperrors.KindValidation, "enabled is required", nil)
+		}
+		return runner.repoSettings.UpdateRepositoryAutoMergeSettings(ctx, repoRef, *operation.Enabled)
+	case OperationRepoSettingsAutoDecline:
+		if runner.repoSettings == nil {
+			return nil, apperrors.New(apperrors.KindInternal, "repo settings service is not configured", nil)
+		}
+		if operation.Enabled == nil {
+			return nil, apperrors.New(apperrors.KindValidation, "enabled is required", nil)
+		}
+		var inactivityWeeks int32
+		if *operation.Enabled {
+			if operation.InactivityWeeks == nil {
+				return nil, apperrors.New(apperrors.KindValidation, "inactivityWeeks is required when enabled is true", nil)
+			}
+			inactivityWeeks = int32(*operation.InactivityWeeks)
+		}
+		return runner.repoSettings.UpdateRepositoryAutoDeclineSettings(ctx, repoRef, *operation.Enabled, inactivityWeeks)
+	case OperationRepoDefaultTaskCreate:
+		if runner.repoSettings == nil {
+			return nil, apperrors.New(apperrors.KindInternal, "repo settings service is not configured", nil)
+		}
+		if operation.Description == nil {
+			return nil, apperrors.New(apperrors.KindValidation, "description is required", nil)
+		}
+		return runner.repoSettings.AddDefaultTask(ctx, repoRef, *operation.Description, operation.SourceRef, operation.TargetRef)
 	default:
 		return nil, apperrors.New(apperrors.KindNotImplemented, "bulk operation type is not implemented", nil)
 	}

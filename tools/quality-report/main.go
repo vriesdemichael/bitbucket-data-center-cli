@@ -106,7 +106,17 @@ func main() {
 	minPatchLines := flag.Int("min-patch-lines", 30, "Minimum coverable patch lines required before applying percentage-based patch gate")
 	maxUncoveredSmallPatch := flag.Int("max-uncovered-small-patch", 2, "Maximum uncovered patch lines allowed when coverable patch lines are below --min-patch-lines")
 	minContract := flag.Float64("min-contract", 0.0, "Minimum required used generated operation contract coverage percentage")
+	specCoverageMode := flag.Bool("spec-coverage", false, "Compute OpenAPI spec path coverage (both transports) and exit")
+	specCoverageFile := flag.String("spec-coverage-file", "docs/quality/spec-coverage.json", "Path to spec coverage artifact")
+	openapiSpecPath := flag.String("openapi-spec", "docs/reference/atlassian/bitbucket-9.4-openapi.json", "Path to the Bitbucket OpenAPI spec")
+	generatedClientPath := flag.String("generated-client", "internal/openapi/generated/bitbucket_client.gen.go", "Path to the generated OpenAPI client")
+	servicesRoot := flag.String("services-root", "internal/services", "Root directory scanned for API usage")
 	flag.Parse()
+
+	if *specCoverageMode {
+		runSpecCoverage(*openapiSpecPath, *generatedClientPath, *servicesRoot, *specCoverageFile, *writeReport, *verifyReport)
+		return
+	}
 
 	resolvedMinGlobalCombined := *minGlobalCombined
 	if *minScoped >= 0 {
