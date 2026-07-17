@@ -175,7 +175,7 @@ func TestPullRequestLifecycleReviewAndTaskOperations(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		switch {
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/22":
-			_, _ = fmt.Fprint(w, `{"id":22,"title":"Feature","state":"OPEN","open":true,"closed":false,"version":2,"participants":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer1","displayName":"Reviewer One"}}],"fromRef":{"displayId":"feature/a"},"toRef":{"displayId":"master"}}`)
+			_, _ = fmt.Fprint(w, `{"id":22,"title":"Feature","state":"OPEN","open":true,"closed":false,"version":2,"reviewers":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer1","displayName":"Reviewer One"}}],"fromRef":{"displayId":"feature/a"},"toRef":{"displayId":"master"}}`)
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/22/merge":
 			_, _ = fmt.Fprint(w, `{"conflicted":false,"outcome":"CLEAN","vetoes":[]}`)
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests":
@@ -199,13 +199,13 @@ func TestPullRequestLifecycleReviewAndTaskOperations(t *testing.T) {
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/reopen":
 			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false}`)
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/approve":
-			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"participants":[{"role":"REVIEWER","status":"APPROVED","approved":true,"user":{"name":"reviewer1"}}]}`)
+			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"reviewers":[{"role":"REVIEWER","status":"APPROVED","approved":true,"user":{"name":"reviewer1"}}]}`)
 		case request.Method == http.MethodDelete && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/approve":
-			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"participants":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer1"}}]}`)
+			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"reviewers":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer1"}}]}`)
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/participants":
-			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"participants":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer2"}}]}`)
+			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"reviewers":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer2"}}]}`)
 		case request.Method == http.MethodDelete && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/participants/reviewer2":
-			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"participants":[]}`)
+			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"reviewers":[]}`)
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/tasks":
 			_, _ = fmt.Fprint(w, `{"isLastPage":true,"nextPageStart":0,"values":[{"id":500,"text":"Open task","state":"OPEN","resolved":false},{"id":501,"text":"Resolved task","state":"RESOLVED","resolved":true}]}`)
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/tasks":

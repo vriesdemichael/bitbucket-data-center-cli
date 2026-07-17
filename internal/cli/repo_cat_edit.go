@@ -2,10 +2,12 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	browseservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/browse"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
 
 func newRepoCatCommand(options *rootOptions) *cobra.Command {
@@ -28,9 +30,9 @@ func newRepoCatCommand(options *rootOptions) *cobra.Command {
 			}
 
 			repo := browseservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
-			service := browseservice.NewService(client)
+		service := browseservice.NewService(client, httpclient.NewFromConfig(cfg), strings.TrimRight(cfg.BitbucketURL, "/"))
 
-			content, err := service.Raw(cmd.Context(), repo, args[0], at)
+		content, err := service.Raw(cmd.Context(), repo, args[0], at)
 			if err != nil {
 				return err
 			}
@@ -78,9 +80,9 @@ func newRepoEditCommand(options *rootOptions) *cobra.Command {
 			}
 
 			repo := browseservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
-			service := browseservice.NewService(client)
+		service := browseservice.NewService(client, httpclient.NewFromConfig(cfg), strings.TrimRight(cfg.BitbucketURL, "/"))
 
-			if options.DryRun {
+		if options.DryRun {
 				checker := options.permissionCheckerFor(client)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err

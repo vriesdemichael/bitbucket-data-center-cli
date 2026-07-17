@@ -54,6 +54,8 @@ func AllSpecs() []Spec {
 		// Opening a PR is low-blast-radius and easily closed — safe by default.
 		{specCreatePullRequest().Tool, specCreatePullRequest().Handler, true},
 		{specListPRComments().Tool, specListPRComments().Handler, true},
+		{specGetPRDiff().Tool, specGetPRDiff().Handler, true},
+		{specGetFileContent().Tool, specGetFileContent().Handler, true},
 		// Adding a comment is trivially reversed — safe by default.
 		{specAddPRComment().Tool, specAddPRComment().Handler, true},
 		{specListPRTasks().Tool, specListPRTasks().Handler, true},

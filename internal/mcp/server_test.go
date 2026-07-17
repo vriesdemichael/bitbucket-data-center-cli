@@ -41,7 +41,7 @@ func testClients(t *testing.T) Clients {
 
 // TestAllSpecsReturnsExpectedCount ensures the catalog has exactly the expected number of tools.
 func TestAllSpecsReturnsExpectedCount(t *testing.T) {
-	const wantCount = 22
+	const wantCount = 24
 	specs := AllSpecs()
 	if len(specs) != wantCount {
 		t.Errorf("AllSpecs: got %d tools, want %d", len(specs), wantCount)
@@ -254,6 +254,8 @@ func TestToolNamesMatchExpected(t *testing.T) {
 		"list_pull_requests",
 		"create_pull_request",
 		"list_pr_comments",
+		"get_pr_diff",
+		"get_file_content",
 		"add_pr_comment",
 		"list_pr_tasks",
 		"submit_pr_review",
