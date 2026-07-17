@@ -3,12 +3,14 @@ package browse
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"mime/multipart"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
 
 type RepositoryRef struct {
@@ -35,11 +37,13 @@ type EditInput struct {
 }
 
 type Service struct {
-	client *openapigenerated.ClientWithResponses
+	client  *openapigenerated.ClientWithResponses
+	http    *httpclient.Client
+	baseURL string
 }
 
-func NewService(client *openapigenerated.ClientWithResponses) *Service {
-	return &Service{client: client}
+func NewService(client *openapigenerated.ClientWithResponses, http *httpclient.Client, baseURL string) *Service {
+	return &Service{client: client, http: http, baseURL: baseURL}
 }
 
 func (service *Service) Tree(ctx context.Context, repo RepositoryRef, path string, options TreeOptions) ([]string, error) {
@@ -135,23 +139,16 @@ func (service *Service) Raw(ctx context.Context, repo RepositoryRef, path string
 		return nil, apperrors.New(apperrors.KindValidation, "path is required", nil)
 	}
 
-	var atParam *string
+	// The OpenAPI generated client URL-encodes "/" in the path parameter to "%2F",
+	// but Bitbucket Server's /raw/{path} endpoint expects "/" as a real URL path
+	// separator. Use httpclient.GetRaw directly to construct the correct URL.
+	apiPath := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/raw/%s", repo.ProjectKey, repo.Slug, trimmedPath)
+	query := map[string]string{}
 	if strings.TrimSpace(at) != "" {
-		a := strings.TrimSpace(at)
-		atParam = &a
+		query["at"] = strings.TrimSpace(at)
 	}
 
-	params := &openapigenerated.StreamRawParams{At: atParam}
-	resp, err := service.client.StreamRawWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedPath, params)
-	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get raw content", err)
-	}
-
-	if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
-		return nil, err
-	}
-
-	return resp.Body, nil
+	return service.http.GetRaw(ctx, apiPath, query)
 }
 
 func (service *Service) File(ctx context.Context, repo RepositoryRef, path string, options FileOptions) ([]byte, error) {
@@ -162,6 +159,20 @@ func (service *Service) File(ctx context.Context, repo RepositoryRef, path strin
 	trimmedPath := strings.TrimSpace(path)
 	if trimmedPath == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "path is required", nil)
+	}
+
+	// Same issue as Raw: generated client URL-encodes "/" in path.
+	// Use httpclient.GetRaw for paths containing "/".
+	if strings.Contains(trimmedPath, "/") {
+		apiPath := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/browse/%s", repo.ProjectKey, repo.Slug, trimmedPath)
+		query := map[string]string{}
+		if strings.TrimSpace(options.At) != "" {
+			query["at"] = strings.TrimSpace(options.At)
+		}
+		if options.Blame {
+			query["blame"] = "true"
+		}
+		return service.http.GetRaw(ctx, apiPath, query)
 	}
 
 	var atParam *string
