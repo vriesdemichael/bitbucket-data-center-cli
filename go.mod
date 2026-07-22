@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/go-openapi/runtime v0.32.5
+	github.com/go-openapi/runtime v0.32.6
 	github.com/joho/godotenv v1.5.1
 	github.com/mark3labs/mcp-go v0.56.0
 	github.com/muesli/termenv v0.16.0
@@ -46,7 +46,7 @@ require (
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
 	github.com/go-openapi/jsonreference v1.0.0 // indirect
 	github.com/go-openapi/loads v0.25.0 // indirect
-	github.com/go-openapi/runtime/server-middleware v0.32.5 // indirect
+	github.com/go-openapi/runtime/server-middleware v0.32.6 // indirect
 	github.com/go-openapi/spec v0.22.9 // indirect
 	github.com/go-openapi/strfmt v0.27.0 // indirect
 	github.com/go-openapi/swag v0.27.3 // indirect
