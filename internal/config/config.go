@@ -18,7 +18,10 @@ import (
 )
 
 const (
-	defaultBitbucketVersionTarget = "9.4.16"
+	// No default Bitbucket version target: the supported version is whatever the
+	// container stack runs and the live suite passes against (ADR 042). Operators
+	// may still pin one for their own environment via BITBUCKET_VERSION_TARGET.
+	defaultBitbucketVersionTarget = ""
 	defaultProjectKey             = "TEST"
 	defaultRequestTimeout         = 20 * time.Second
 	defaultRetryCount             = 2

@@ -4,7 +4,7 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `41`
+- Total ADRs: `42`
 - Accepted ADRs: `40`
 
 ## ADR List
@@ -26,7 +26,7 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 015: Live test harness and deterministic seeding](015-live-test-harness-and-deterministic-seeding.md) (`development`, `accepted`)
 - [ADR 016: Test classification and execution policy](016-test-classification-and-execution-policy.md) (`development`, `accepted`)
 - [ADR 017: Undocumented behavior registry via live tests](017-undocumented-behavior-registry-via-live-tests.md) (`development`, `accepted`)
-- [ADR 018: Supported Bitbucket version policy](018-supported-bitbucket-version-policy.md) (`architecture`, `accepted`)
+- [ADR 018: Supported Bitbucket version policy](018-supported-bitbucket-version-policy.md) (`architecture`, `superseded`)
 - [ADR 019: Configuration and secret handling policy](019-configuration-and-secret-handling-policy.md) (`development`, `accepted`)
 - [ADR 020: Execgit as default Git backend](020-execgit-as-default-git-backend.md) (`architecture`, `accepted`)
 - [ADR 021: Persistent auth configuration and keyring storage](021-persistent-auth-configuration-and-keyring-storage.md) (`architecture`, `accepted`)
@@ -50,4 +50,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 039: Built-in MCP server with explicit host scoping and token capability restriction](039-built-in-mcp-server-with-host-scoping-and-token-restriction.md) (`architecture`, `accepted`)
 - [ADR 040: Agent skill distribution via static npx packaging and dynamic CLI generation](040-agent-skill-distribution-static-npx-and-dynamic-cli.md) (`development`, `accepted`)
 - [ADR 041: Host aliases and clone URL discovery for server contexts](041-host-aliases-and-clone-url-discovery-for-server-contexts.md) (`architecture`, `accepted`)
+- [ADR 042: Track the newest containerisable Bitbucket version](042-track-newest-containerisable-bitbucket-version.md) (`architecture`, `accepted`)
 

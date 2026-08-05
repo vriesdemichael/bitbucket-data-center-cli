@@ -1609,3 +1609,63 @@ func recentResponseToAll(response *openapigenerated.GetRepositoriesRecentlyAcces
 		ApplicationjsonCharsetUTF8200: response.ApplicationjsonCharsetUTF8200,
 	}
 }
+
+// TestStatusHumanOmitsVersionWhenUnpinned covers the default: the project does
+// not claim a supported Bitbucket version, so status must not report one
+// unless the operator pinned it (ADR 042).
+func TestStatusHumanOmitsVersionWhenUnpinned(t *testing.T) {
+	cmd := New(Dependencies{
+		JSONEnabled: func() bool { return false },
+		LoadConfig: func() (config.AppConfig, error) {
+			return config.AppConfig{
+				BitbucketURL: "http://bitbucket.example",
+				AuthSource:   "env/default",
+			}, nil
+		},
+	})
+
+	buffer := &bytes.Buffer{}
+	cmd.SetOut(buffer)
+	cmd.SetErr(buffer)
+	cmd.SetArgs([]string{"status"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	output := buffer.String()
+	if strings.Contains(output, "expected version") {
+		t.Errorf("status must not report a version when none is pinned, got %q", output)
+	}
+	if !strings.Contains(output, "http://bitbucket.example") {
+		t.Errorf("expected the target host in the output, got %q", output)
+	}
+}
+
+// TestStatusHumanReportsPinnedVersion covers the opposite: an operator who set
+// BITBUCKET_VERSION_TARGET still sees it.
+func TestStatusHumanReportsPinnedVersion(t *testing.T) {
+	cmd := New(Dependencies{
+		JSONEnabled: func() bool { return false },
+		LoadConfig: func() (config.AppConfig, error) {
+			return config.AppConfig{
+				BitbucketURL:           "http://bitbucket.example",
+				BitbucketVersionTarget: "10.2.1",
+				AuthSource:             "env/default",
+			}, nil
+		},
+	})
+
+	buffer := &bytes.Buffer{}
+	cmd.SetOut(buffer)
+	cmd.SetErr(buffer)
+	cmd.SetArgs([]string{"status"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	if output := buffer.String(); !strings.Contains(output, "expected version 10.2.1") {
+		t.Errorf("expected the pinned version to be reported, got %q", output)
+	}
+}
