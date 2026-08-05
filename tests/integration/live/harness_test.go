@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/execgit"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
@@ -413,7 +414,7 @@ func runGit(directory string, args ...string) error {
 		gitArgs := append([]string{"-c", "credential.helper="}, args...)
 		command := exec.Command("git", gitArgs...)
 		command.Dir = directory
-		command.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+		command.Env = append(execgit.ScopeFreeEnv(), "GIT_TERMINAL_PROMPT=0")
 		output, err := command.CombinedOutput()
 		if err == nil {
 			return nil
