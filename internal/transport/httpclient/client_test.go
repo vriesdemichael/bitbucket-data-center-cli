@@ -609,3 +609,163 @@ func TestDiagnosticsWriter(t *testing.T) {
 		t.Fatalf("expected discard writer when disabled, got %T", writer)
 	}
 }
+
+func TestGetRawReturnsBodyVerbatim(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/raw/dir/file.txt" {
+			http.NotFound(writer, request)
+			return
+		}
+		if request.URL.Query().Get("at") != "refs/heads/main" {
+			writer.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		// GetRaw must not ask for JSON: the endpoint streams file contents.
+		if request.Header.Get("Accept") != "" {
+			writer.WriteHeader(http.StatusNotAcceptable)
+			return
+		}
+		writer.Header().Set("Content-Type", "text/plain")
+		_, _ = writer.Write([]byte("line one\nline two\n"))
+	}))
+	defer server.Close()
+
+	client := NewFromConfig(config.AppConfig{BitbucketURL: server.URL})
+
+	body, err := client.GetRaw(
+		context.Background(),
+		"/rest/api/latest/projects/TEST/repos/demo/raw/dir/file.txt",
+		map[string]string{"at": "refs/heads/main"},
+	)
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if string(body) != "line one\nline two\n" {
+		t.Fatalf("expected verbatim body, got %q", string(body))
+	}
+}
+
+func TestGetRawMapsStatusErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusNotFound)
+		_, _ = writer.Write([]byte(`{"errors":[{"message":"file not found"}]}`))
+	}))
+	defer server.Close()
+
+	client := NewFromConfig(config.AppConfig{BitbucketURL: server.URL})
+
+	_, err := client.GetRaw(context.Background(), "/rest/api/latest/missing", nil)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if apperrors.ExitCode(err) != 4 {
+		t.Fatalf("expected not-found exit code 4, got %d: %v", apperrors.ExitCode(err), err)
+	}
+}
+
+func TestGetRawRetriesServerErrors(t *testing.T) {
+	var calls atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if calls.Add(1) == 1 {
+			writer.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		_, _ = writer.Write([]byte("recovered"))
+	}))
+	defer server.Close()
+
+	client := NewFromConfig(config.AppConfig{
+		BitbucketURL: server.URL,
+		RetryCount:   2,
+		RetryBackoff: time.Millisecond,
+	})
+
+	body, err := client.GetRaw(context.Background(), "/rest/api/latest/flaky", nil)
+	if err != nil {
+		t.Fatalf("expected retry to succeed, got: %v", err)
+	}
+	if string(body) != "recovered" {
+		t.Fatalf("expected recovered body, got %q", string(body))
+	}
+	if calls.Load() != 2 {
+		t.Fatalf("expected 2 attempts, got %d", calls.Load())
+	}
+}
+
+func TestGetRawTransientNetworkFailure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		hijacker, ok := writer.(http.Hijacker)
+		if !ok {
+			http.Error(writer, "hijacking unsupported", http.StatusInternalServerError)
+			return
+		}
+		connection, _, err := hijacker.Hijack()
+		if err == nil {
+			_ = connection.Close()
+		}
+	}))
+	defer server.Close()
+
+	client := NewFromConfig(config.AppConfig{BitbucketURL: server.URL})
+
+	if _, err := client.GetRaw(context.Background(), "/rest/api/latest/dropped", nil); err == nil || apperrors.ExitCode(err) != 10 {
+		t.Fatalf("expected transient exit code 10, got %v", err)
+	}
+}
+
+func TestCurrentUserSlugReadsResponseHeader(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.URL.Path != "/rest/api/latest/users" {
+			http.NotFound(writer, request)
+			return
+		}
+		writer.Header().Set("X-AUSERNAME", " alice ")
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"values":[]}`))
+	}))
+	defer server.Close()
+
+	client := NewFromConfig(config.AppConfig{BitbucketURL: server.URL})
+
+	slug, err := client.CurrentUserSlug(context.Background())
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if slug != "alice" {
+		t.Fatalf("expected trimmed slug alice, got %q", slug)
+	}
+}
+
+func TestCurrentUserSlugMissingHeader(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"values":[]}`))
+	}))
+	defer server.Close()
+
+	client := NewFromConfig(config.AppConfig{BitbucketURL: server.URL})
+
+	_, err := client.CurrentUserSlug(context.Background())
+	if err == nil {
+		t.Fatal("expected error when the header is absent")
+	}
+	if !strings.Contains(err.Error(), "X-AUSERNAME") {
+		t.Fatalf("expected the error to name the missing header, got: %v", err)
+	}
+	if apperrors.ExitCode(err) != 3 {
+		t.Fatalf("expected authentication exit code 3, got %d", apperrors.ExitCode(err))
+	}
+}
+
+func TestCurrentUserSlugPropagatesStatusErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer server.Close()
+
+	client := NewFromConfig(config.AppConfig{BitbucketURL: server.URL})
+
+	if _, err := client.CurrentUserSlug(context.Background()); err == nil || apperrors.ExitCode(err) != 3 {
+		t.Fatalf("expected authentication exit code 3, got %v", err)
+	}
+}
