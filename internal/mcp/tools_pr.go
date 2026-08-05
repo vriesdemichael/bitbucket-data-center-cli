@@ -186,6 +186,7 @@ func specAddPRComment() Spec {
 			text, _ := req.RequireString("text")
 			filePath := strings.TrimSpace(req.GetString("path", ""))
 			line := req.GetInt("line", 0)
+			lineType := strings.TrimSpace(req.GetString("line_type", ""))
 			parentID := int64(req.GetInt("parent_id", 0))
 			inline := filePath != "" || line > 0
 
@@ -201,6 +202,9 @@ func specAddPRComment() Spec {
 			if inline && parentID > 0 {
 				return mcpgo.NewToolResultError("add_pr_comment: parent_id cannot be combined with path/line; reply to a comment or anchor a new one, not both"), nil
 			}
+			if !inline && lineType != "" {
+				return mcpgo.NewToolResultError("add_pr_comment: line_type only applies to inline comments; provide path and line too"), nil
+			}
 
 			ref := pullrequestservice.RepositoryRef{ProjectKey: project, Slug: repo}
 
@@ -211,7 +215,7 @@ func specAddPRComment() Spec {
 					pullrequestservice.InlineCommentAnchor{
 						Line:     line,
 						Path:     filePath,
-						LineType: req.GetString("line_type", ""),
+						LineType: lineType,
 					},
 				)
 			} else {

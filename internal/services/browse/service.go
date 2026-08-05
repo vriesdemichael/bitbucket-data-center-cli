@@ -3,9 +3,11 @@ package browse
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"mime/multipart"
 	"net/url"
+	"strconv"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -51,82 +53,58 @@ func (service *Service) Tree(ctx context.Context, repo RepositoryRef, path strin
 		return nil, err
 	}
 
-	trimmedPath := strings.TrimSpace(path)
+	// The /files endpoint takes the directory as a trailing wildcard, so it
+	// needs the same per-segment escaping as /raw and /browse.
+	encodedPath, err := encodeOptionalFilePath(path)
+	if err != nil {
+		return nil, err
+	}
 
 	if options.Limit <= 0 {
 		options.Limit = 1000
 	}
 
-	start := float32(0)
-	pageLimit := float32(options.Limit)
-	var at *string
-	if strings.TrimSpace(options.At) != "" {
-		a := strings.TrimSpace(options.At)
-		at = &a
-	}
-
+	apiPath := repositoryAPIPath(repo, "files", encodedPath)
 	results := make([]string, 0)
+	start := 0
 
 	for {
-		var responseStatus int
-		var responseBody []byte
-		var responseValues *[]openapigenerated.FileListResource
-		var responseIsLastPage *bool
-		var responseNextPageStart *int32
-
-		if trimmedPath == "" {
-			params := &openapigenerated.StreamFilesParams{Start: &start, Limit: &pageLimit, At: at}
-			resp, err := service.client.StreamFilesWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
-			if err != nil {
-				return nil, apperrors.New(apperrors.KindTransient, "failed to stream repository files", err)
-			}
-			responseStatus = resp.StatusCode()
-			responseBody = resp.Body
-			if resp.ApplicationjsonCharsetUTF8200 != nil {
-				responseValues = resp.ApplicationjsonCharsetUTF8200.Values
-				responseIsLastPage = resp.ApplicationjsonCharsetUTF8200.IsLastPage
-				responseNextPageStart = resp.ApplicationjsonCharsetUTF8200.NextPageStart
-			}
-		} else {
-			params := &openapigenerated.StreamFiles1Params{Start: &start, Limit: &pageLimit, At: at}
-			resp, err := service.client.StreamFiles1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedPath, params)
-			if err != nil {
-				return nil, apperrors.New(apperrors.KindTransient, "failed to stream repository files", err)
-			}
-			responseStatus = resp.StatusCode()
-			responseBody = resp.Body
-			if resp.ApplicationjsonCharsetUTF8200 != nil {
-				responseValues = resp.ApplicationjsonCharsetUTF8200.Values
-				responseIsLastPage = resp.ApplicationjsonCharsetUTF8200.IsLastPage
-				responseNextPageStart = resp.ApplicationjsonCharsetUTF8200.NextPageStart
-			}
+		query := map[string]string{
+			"start": strconv.Itoa(start),
+			"limit": strconv.Itoa(options.Limit),
+		}
+		if strings.TrimSpace(options.At) != "" {
+			query["at"] = strings.TrimSpace(options.At)
 		}
 
-		if err := openapi.MapStatusError(responseStatus, responseBody); err != nil {
+		var response fileListResponse
+		if err := service.http.GetJSON(ctx, apiPath, query, &response); err != nil {
 			return nil, err
 		}
 
-		if responseValues == nil {
-			break
-		}
-
-		for _, val := range *responseValues {
-			if strVal, ok := val.(string); ok {
-				results = append(results, strVal)
+		for _, value := range response.Values {
+			if name, ok := value.(string); ok {
+				results = append(results, name)
 			}
 		}
 
-		if responseIsLastPage != nil && *responseIsLastPage {
+		if response.IsLastPage || response.NextPageStart == nil {
 			break
 		}
-		if responseNextPageStart == nil {
+		if *response.NextPageStart == start {
 			break
 		}
 
-		start = float32(*responseNextPageStart)
+		start = *response.NextPageStart
 	}
 
 	return results, nil
+}
+
+type fileListResponse struct {
+	Values        []any `json:"values"`
+	IsLastPage    bool  `json:"isLastPage"`
+	NextPageStart *int  `json:"nextPageStart"`
 }
 
 func (service *Service) Raw(ctx context.Context, repo RepositoryRef, path string, at string) ([]byte, error) {
@@ -165,7 +143,14 @@ func (service *Service) File(ctx context.Context, repo RepositoryRef, path strin
 		query["blame"] = "true"
 	}
 
-	return service.http.GetRaw(ctx, repositoryAPIPath(repo, "browse", encodedPath), query)
+	// Unlike /raw, the /browse endpoint answers with JSON, so it is requested
+	// as JSON and handed back undecoded for the caller to render.
+	var content json.RawMessage
+	if err := service.http.GetJSON(ctx, repositoryAPIPath(repo, "browse", encodedPath), query, &content); err != nil {
+		return nil, err
+	}
+
+	return content, nil
 }
 
 func (service *Service) Edit(ctx context.Context, repo RepositoryRef, path string, input EditInput) (*openapigenerated.RestCommit, error) {
@@ -236,15 +221,28 @@ func validateRepositoryRef(repo RepositoryRef) error {
 
 // repositoryAPIPath builds a REST path for a repository endpoint that takes a
 // file path as a trailing wildcard, such as /raw/{path} or /browse/{path}.
-// encodedPath must already be escaped by encodeFilePath.
+// encodedPath must already be escaped by encodeFilePath, and may be empty for
+// endpoints where the path is optional.
 func repositoryAPIPath(repo RepositoryRef, endpoint string, encodedPath string) string {
-	return fmt.Sprintf(
-		"/rest/api/latest/projects/%s/repos/%s/%s/%s",
+	base := fmt.Sprintf(
+		"/rest/api/latest/projects/%s/repos/%s/%s",
 		url.PathEscape(strings.TrimSpace(repo.ProjectKey)),
 		url.PathEscape(strings.TrimSpace(repo.Slug)),
 		endpoint,
-		encodedPath,
 	)
+	if encodedPath == "" {
+		return base
+	}
+	return base + "/" + encodedPath
+}
+
+// encodeOptionalFilePath behaves like encodeFilePath but allows an empty path,
+// for endpoints that treat it as "the repository root".
+func encodeOptionalFilePath(path string) (string, error) {
+	if strings.TrimSpace(path) == "" {
+		return "", nil
+	}
+	return encodeFilePath(path)
 }
 
 // encodeFilePath escapes each segment of a repository file path and rejoins them
