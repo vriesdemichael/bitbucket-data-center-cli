@@ -5,7 +5,8 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `018`
 - Title: `Supported Bitbucket version policy`
 - Category: `architecture`
-- Status: `accepted`
+- Status: `superseded`
+- Superseded By: `042`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/018-supported-bitbucket-version-policy.yaml`
 

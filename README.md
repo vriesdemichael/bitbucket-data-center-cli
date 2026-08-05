@@ -84,7 +84,7 @@ bb auth status
 ```
 
 ```text
-Target Bitbucket: https://bitbucket.acme.corp (expected version 9.4.16, auth=token, source=stored/default)
+Target Bitbucket: https://bitbucket.acme.corp (auth=token, source=stored/default)
 ```
 
 **Clone and browse** — no need to look up URLs:
@@ -123,7 +123,7 @@ bb --json auth status
   "version": "v2",
   "data": {
     "bitbucket_url": "https://bitbucket.acme.corp",
-    "bitbucket_version_target": "9.4.16",
+    "bitbucket_version_target": "",
     "auth_mode": "token",
     "auth_source": "stored/default"
   },
@@ -146,8 +146,16 @@ bb --json auth status
 
 ## Compatibility and contracts
 
-- Primary target: Atlassian Bitbucket Data Center `9.4.x`
-- API contract source: Atlassian Bitbucket `9.4` OpenAPI (`docs/reference/atlassian/bitbucket-9.4-openapi.json`)
+- Supported version: the newest Bitbucket Data Center release that runs in the project's
+  container stack and passes the live integration suite. There is no pinned target advertised
+  here — the version under test is the image tag in `docker/compose.yml`, which is the one place
+  it is recorded. Newer releases are adopted by bumping that image when they work; some do not
+  run in the stack, so the newest published release is not automatically the supported one.
+  Set `BITBUCKET_VERSION_TARGET` if you want to record a version for your own environment.
+- API contract source: a version-pinned Atlassian OpenAPI artifact
+  (`docs/reference/atlassian/bitbucket-9.4-openapi.json`). This fixes the endpoint and payload
+  shapes the generated client is built from — it is the provenance of the spec, not a statement
+  about which server versions work. Behavior is established by live tests, not the spec.
 - CLI identity and machine contract: `bb` / `bb.machine` `v2`
 - JSON schemas for bulk policy/plan/status published in docs and versioned with releases
 

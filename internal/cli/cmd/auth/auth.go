@@ -97,14 +97,14 @@ func New(deps Dependencies) *cobra.Command {
 				return deps.WriteJSON(cmd.OutOrStdout(), payload)
 			}
 
-			fmt.Fprintf(
-				cmd.OutOrStdout(),
-				"Target Bitbucket: %s (expected version %s, auth=%s, source=%s)\n",
-				cfg.BitbucketURL,
-				cfg.BitbucketVersionTarget,
-				cfg.AuthMode(),
-				cfg.AuthSource,
-			)
+			// The expected version is only reported when the operator pinned
+			// one; the project itself does not claim a supported version.
+			details := fmt.Sprintf("auth=%s, source=%s", cfg.AuthMode(), cfg.AuthSource)
+			if version := strings.TrimSpace(cfg.BitbucketVersionTarget); version != "" {
+				details = fmt.Sprintf("expected version %s, %s", version, details)
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Target Bitbucket: %s (%s)\n", cfg.BitbucketURL, details)
 			return nil
 		},
 	}

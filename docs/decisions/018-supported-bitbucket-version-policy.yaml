@@ -1,7 +1,8 @@
 number: 18
 title: Supported Bitbucket version policy
 category: architecture
-status: accepted
+status: superseded
+superseded_by: 42
 decision: >
   Support Atlassian Bitbucket 9.4.16 as the primary compatibility target initially.
   Additional versions may be introduced through explicit decision updates and expanded live test coverage.
