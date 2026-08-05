@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-9.4-openapi.json",
-  "covered": 226,
+  "covered": 223,
   "total": 546,
-  "coverage_percent": 41.39194139194139,
+  "coverage_percent": 40.84249084249084,
   "by_tag": [
     {
       "tag": "",
@@ -67,12 +67,12 @@
     },
     {
       "tag": "Pull Requests",
-      "covered": 59,
+      "covered": 60,
       "total": 69
     },
     {
       "tag": "Repository",
-      "covered": 67,
+      "covered": 63,
       "total": 96
     },
     {
@@ -875,6 +875,12 @@
     },
     {
       "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/browse/{path}",
+      "tag": "Repository",
+      "summary": "Get file content"
+    },
+    {
+      "method": "GET",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/changes",
       "tag": "Repository",
       "summary": "Get changes made in commit"
@@ -926,6 +932,18 @@
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/diff",
       "tag": "Repository",
       "summary": "Get raw diff for path"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/files",
+      "tag": "Repository",
+      "summary": "Get files in directory"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/files/{path}",
+      "tag": "Repository",
+      "summary": "Get files in directory"
     },
     {
       "method": "GET",
@@ -1000,12 +1018,6 @@
       "summary": "Get pull request participants"
     },
     {
-      "method": "PUT",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/participants/{userSlug}",
-      "tag": "Pull Requests",
-      "summary": "Change pull request status"
-    },
-    {
       "method": "DELETE",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/review",
       "tag": "Pull Requests",
@@ -1022,6 +1034,12 @@
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/review",
       "tag": "Pull Requests",
       "summary": "Complete pull request review"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/raw/{path}",
+      "tag": "Repository",
+      "summary": "Get raw content of a file at revision"
     },
     {
       "method": "GET",

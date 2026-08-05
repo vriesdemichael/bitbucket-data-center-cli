@@ -64,7 +64,11 @@ func (service *Service) Tree(ctx context.Context, repo RepositoryRef, path strin
 		options.Limit = 1000
 	}
 
-	apiPath := repositoryAPIPath(repo, "files", encodedPath)
+	apiPath := repositoryRootPath(repo, "files")
+	if encodedPath != "" {
+		apiPath = repositoryAPIPath(repo, "files", encodedPath)
+	}
+
 	results := make([]string, 0)
 	start := 0
 
@@ -221,19 +225,30 @@ func validateRepositoryRef(repo RepositoryRef) error {
 
 // repositoryAPIPath builds a REST path for a repository endpoint that takes a
 // file path as a trailing wildcard, such as /raw/{path} or /browse/{path}.
-// encodedPath must already be escaped by encodeFilePath, and may be empty for
-// endpoints where the path is optional.
+// encodedPath must already be escaped by encodeFilePath.
+//
+// Kept as a single fmt.Sprintf return so tools/quality-report can statically
+// resolve the endpoints reached through the raw httpclient; see
+// repositoryRootPath for the variant without a trailing path.
 func repositoryAPIPath(repo RepositoryRef, endpoint string, encodedPath string) string {
-	base := fmt.Sprintf(
+	return fmt.Sprintf(
+		"/rest/api/latest/projects/%s/repos/%s/%s/%s",
+		url.PathEscape(strings.TrimSpace(repo.ProjectKey)),
+		url.PathEscape(strings.TrimSpace(repo.Slug)),
+		endpoint,
+		encodedPath,
+	)
+}
+
+// repositoryRootPath builds the same REST path without a trailing file path,
+// for endpoints where it is optional (listing the repository root).
+func repositoryRootPath(repo RepositoryRef, endpoint string) string {
+	return fmt.Sprintf(
 		"/rest/api/latest/projects/%s/repos/%s/%s",
 		url.PathEscape(strings.TrimSpace(repo.ProjectKey)),
 		url.PathEscape(strings.TrimSpace(repo.Slug)),
 		endpoint,
 	)
-	if encodedPath == "" {
-		return base
-	}
-	return base + "/" + encodedPath
 }
 
 // encodeOptionalFilePath behaves like encodeFilePath but allows an empty path,
