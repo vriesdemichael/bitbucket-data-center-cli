@@ -230,6 +230,7 @@ func (backend *Backend) run(ctx context.Context, options runOptions) (runResult,
 	if options.cwd != "" {
 		command.Dir = options.cwd
 	}
+	command.Env = ScopeFreeEnv()
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
