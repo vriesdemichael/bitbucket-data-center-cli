@@ -311,7 +311,14 @@ func TestBrowseServiceNestedPathsKeepSeparators(t *testing.T) {
 		gotRawPath = r.URL.EscapedPath()
 		gotEscapedPath = r.URL.Path
 		gotQuery = r.URL.Query()
-		_, _ = w.Write([]byte("ok"))
+
+		// /raw streams bytes, /browse and /files answer with JSON.
+		if strings.Contains(r.URL.Path, "/raw/") {
+			_, _ = w.Write([]byte("ok"))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"lines":[{"text":"ok"}]}`))
 	})
 
 	if _, err := service.Raw(context.Background(), repo, "src/main/java/App.java", "refs/heads/main"); err != nil {
@@ -433,5 +440,69 @@ func TestRepositoryAPIPathEscapesRepositoryRef(t *testing.T) {
 	want := "/rest/api/latest/projects/a%20b/repos/c%2Fd/raw/file.txt"
 	if got != want {
 		t.Fatalf("repositoryAPIPath = %q, want %q", got, want)
+	}
+}
+
+// TestBrowseServiceTreeNestedPathKeepsSeparators covers the same encoding bug as
+// the raw and browse endpoints: /files takes the directory as a trailing
+// wildcard, so "/" must survive rather than becoming "%2F".
+func TestBrowseServiceTreeNestedPathKeepsSeparators(t *testing.T) {
+	var gotEscapedPath string
+	var gotQuery url.Values
+	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		gotEscapedPath = r.URL.EscapedPath()
+		gotQuery = r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"isLastPage":true,"values":["App.java"]}`))
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	files, err := service.Tree(context.Background(), repo, "src/main/java", TreeOptions{Limit: 10, At: "refs/heads/main"})
+	if err != nil {
+		t.Fatalf("expected tree success, got %v", err)
+	}
+	if len(files) != 1 || files[0] != "App.java" {
+		t.Fatalf("unexpected tree result %#v", files)
+	}
+
+	wantPath := "/rest/api/latest/projects/TEST/repos/demo/files/src/main/java"
+	if gotEscapedPath != wantPath {
+		t.Fatalf("expected path %q, got %q", wantPath, gotEscapedPath)
+	}
+	if strings.Contains(gotEscapedPath, "%2F") {
+		t.Fatalf("path separators must not be percent-encoded, got %q", gotEscapedPath)
+	}
+	if gotQuery.Get("at") != "refs/heads/main" || gotQuery.Get("limit") != "10" {
+		t.Fatalf("unexpected query %v", gotQuery)
+	}
+}
+
+func TestBrowseServiceTreeRejectsTraversal(t *testing.T) {
+	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("server must not be reached for a traversal path, got %s", r.URL.Path)
+	})
+
+	_, err := service.Tree(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "../secrets", TreeOptions{})
+	if err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected a validation error, got %v", err)
+	}
+}
+
+func TestBrowseServiceTreeStopsOnRepeatedNextPageStart(t *testing.T) {
+	calls := 0
+	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.Header().Set("Content-Type", "application/json")
+		// A server that keeps pointing at the same offset must not loop forever.
+		_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":0,"values":["a.txt"]}`))
+	})
+
+	files, err := service.Tree(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "", TreeOptions{})
+	if err != nil {
+		t.Fatalf("expected tree success, got %v", err)
+	}
+	if calls != 1 || len(files) != 1 {
+		t.Fatalf("expected a single page, got calls=%d files=%#v", calls, files)
 	}
 }

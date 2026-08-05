@@ -368,3 +368,20 @@ func resultText(result *mcpgo.CallToolResult) string {
 	}
 	return builder.String()
 }
+
+func TestAddPRCommentRejectsLineTypeWithoutAnchor(t *testing.T) {
+	clients := newRecordingClients(t, `{"id":1}`, func(r *http.Request, body []byte) {
+		t.Errorf("no request should be made, got %s %s", r.Method, r.URL.Path)
+	})
+
+	result := callTool(t, specAddPRComment(), clients, map[string]any{
+		"project": "TEST", "repo": "demo", "pr_id": "30", "text": "hi",
+		"line_type": "ADDED",
+	})
+	if !result.IsError {
+		t.Fatalf("expected an error result, got: %+v", result)
+	}
+	if text := resultText(result); !strings.Contains(text, "line_type only applies") {
+		t.Fatalf("expected a line_type message, got %q", text)
+	}
+}
