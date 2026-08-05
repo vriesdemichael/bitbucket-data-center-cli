@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
@@ -30,9 +29,9 @@ func newRepoCatCommand(options *rootOptions) *cobra.Command {
 			}
 
 			repo := browseservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
-		service := browseservice.NewService(client, httpclient.NewFromConfig(cfg), strings.TrimRight(cfg.BitbucketURL, "/"))
+			service := browseservice.NewService(client, httpclient.NewFromConfig(cfg))
 
-		content, err := service.Raw(cmd.Context(), repo, args[0], at)
+			content, err := service.Raw(cmd.Context(), repo, args[0], at)
 			if err != nil {
 				return err
 			}
@@ -80,9 +79,9 @@ func newRepoEditCommand(options *rootOptions) *cobra.Command {
 			}
 
 			repo := browseservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
-		service := browseservice.NewService(client, httpclient.NewFromConfig(cfg), strings.TrimRight(cfg.BitbucketURL, "/"))
+			service := browseservice.NewService(client, httpclient.NewFromConfig(cfg))
 
-		if options.DryRun {
+			if options.DryRun {
 				checker := options.permissionCheckerFor(client)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err

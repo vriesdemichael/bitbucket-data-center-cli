@@ -184,21 +184,37 @@ func specAddPRComment() Spec {
 			repo, _ := req.RequireString("repo")
 			prID, _ := req.RequireString("pr_id")
 			text, _ := req.RequireString("text")
-			filePath := req.GetString("path", "")
+			filePath := strings.TrimSpace(req.GetString("path", ""))
 			line := req.GetInt("line", 0)
+			parentID := int64(req.GetInt("parent_id", 0))
+			inline := filePath != "" || line > 0
+
+			// Reject partial or conflicting anchors rather than silently
+			// downgrading to a general comment, which would leave the comment
+			// attached to the wrong place with no indication anything was off.
+			if inline && filePath == "" {
+				return mcpgo.NewToolResultError("add_pr_comment: line requires path for an inline comment"), nil
+			}
+			if inline && line <= 0 {
+				return mcpgo.NewToolResultError("add_pr_comment: path requires a positive line for an inline comment"), nil
+			}
+			if inline && parentID > 0 {
+				return mcpgo.NewToolResultError("add_pr_comment: parent_id cannot be combined with path/line; reply to a comment or anchor a new one, not both"), nil
+			}
+
 			ref := pullrequestservice.RepositoryRef{ProjectKey: project, Slug: repo}
+
 			var comment pullrequestservice.Comment
 			var err error
-			if filePath != "" && line > 0 {
+			if inline {
 				comment, err = svc.AddInlineComment(ctx, ref, prID, text,
 					pullrequestservice.InlineCommentAnchor{
 						Line:     line,
-						Path:    filePath,
-						LineType: req.GetString("line_type", "ADDED"),
+						Path:     filePath,
+						LineType: req.GetString("line_type", ""),
 					},
 				)
 			} else {
-				parentID := int64(req.GetInt("parent_id", 0))
 				comment, err = svc.AddComment(ctx, ref, prID, text, parentID)
 			}
 			if err != nil {
@@ -414,7 +430,7 @@ func specGetFileContent() Spec {
 		mcpgo.WithString("at", mcpgo.Description("Git ref or branch to read from (e.g. refs/heads/main)")),
 	)
 	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
-		svc := browseservice.NewService(c.OpenAPI, c.HTTP, c.BaseURL)
+		svc := browseservice.NewService(c.OpenAPI, c.HTTP)
 		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
 			project, _ := req.RequireString("project")
 			repo, _ := req.RequireString("repo")

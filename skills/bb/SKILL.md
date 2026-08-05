@@ -305,17 +305,19 @@ bb ai mcp serve --tools get_pull_request,list_pr_comments,get_build_status
 | `list_required_builds` | What CI must pass before merging |
 | `get_repository_clone_info` | HTTPS and SSH clone URLs |
 | `resolve_ref` | Check branch/tag exists, get tip SHA |
-| `list_pull_requests` | Open PRs on a repo |
+| `list_pull_requests` | PRs on a repo, or your own PRs across all repos when `project`/`repo` are omitted |
 | `create_pull_request` | Open a PR (supports `draft`) |
 | `enable_auto_merge` | Auto-merge a PR once checks pass |
 | `disable_auto_merge` | Cancel auto-merge on a PR |
-| `add_pr_comment` | Post a review comment |
+| `add_pr_comment` | Post a review comment, inline on a line (`path` + `line`) or as a reply (`parent_id`) |
+| `get_pr_diff` | Unified diff of a PR |
+| `get_file_content` | Raw contents of a file at a ref |
 | `list_branches` | All branches, with optional filter |
 | `list_tags` | All tags |
 | `compare_refs` | Commits between two refs |
 | `list_commits` | Walk commit history |
 | `get_commit` | Single commit details |
-| `submit_pr_review` | Approve or unapprove a PR |
+| `submit_pr_review` | Approve, unapprove, or request changes (`needs_work`) |
 | `merge_pull_request` | Merge when ready |
 | `create_tag` | Tag a commit for release |
 | `set_build_status` | Report CI results back to Bitbucket |

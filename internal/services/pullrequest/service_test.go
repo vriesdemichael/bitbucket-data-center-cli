@@ -2,6 +2,7 @@ package pullrequest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -175,7 +176,7 @@ func TestPullRequestLifecycleReviewAndTaskOperations(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		switch {
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/22":
-			_, _ = fmt.Fprint(w, `{"id":22,"title":"Feature","state":"OPEN","open":true,"closed":false,"version":2,"reviewers":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer1","displayName":"Reviewer One"}}],"fromRef":{"displayId":"feature/a"},"toRef":{"displayId":"master"}}`)
+			_, _ = fmt.Fprint(w, `{"id":22,"title":"Feature","state":"OPEN","open":true,"closed":false,"version":2,"participants":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer1","displayName":"Reviewer One"}}],"fromRef":{"displayId":"feature/a"},"toRef":{"displayId":"master"}}`)
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/22/merge":
 			_, _ = fmt.Fprint(w, `{"conflicted":false,"outcome":"CLEAN","vetoes":[]}`)
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests":
@@ -199,13 +200,13 @@ func TestPullRequestLifecycleReviewAndTaskOperations(t *testing.T) {
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/reopen":
 			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false}`)
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/approve":
-			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"reviewers":[{"role":"REVIEWER","status":"APPROVED","approved":true,"user":{"name":"reviewer1"}}]}`)
+			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"participants":[{"role":"REVIEWER","status":"APPROVED","approved":true,"user":{"name":"reviewer1"}}]}`)
 		case request.Method == http.MethodDelete && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/approve":
-			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"reviewers":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer1"}}]}`)
+			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"participants":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer1"}}]}`)
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/participants":
-			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"reviewers":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer2"}}]}`)
+			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"participants":[{"role":"REVIEWER","status":"UNAPPROVED","approved":false,"user":{"name":"reviewer2"}}]}`)
 		case request.Method == http.MethodDelete && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/participants/reviewer2":
-			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"reviewers":[]}`)
+			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"participants":[]}`)
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/tasks":
 			_, _ = fmt.Fprint(w, `{"isLastPage":true,"nextPageStart":0,"values":[{"id":500,"text":"Open task","state":"OPEN","resolved":false},{"id":501,"text":"Resolved task","state":"RESOLVED","resolved":true}]}`)
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/tasks":
@@ -1375,3 +1376,359 @@ func TestListPullRequestsContainingCommitAndSearchParticipantsAPIErrors(t *testi
 	}
 }
 
+// newCommentTestService wires a service against a test server and captures the
+// decoded request body of the last write it received.
+func newCommentTestService(t *testing.T, handler func(w http.ResponseWriter, request *http.Request)) *Service {
+	t.Helper()
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	t.Cleanup(server.Close)
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	return NewService(httpclient.NewFromConfig(cfg))
+}
+
+func TestNeedsWorkSetsParticipantStatus(t *testing.T) {
+	var gotPath string
+	var gotMethod string
+	var gotPayload map[string]any
+
+	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
+		if request.URL.Path == "/rest/api/latest/users" {
+			w.Header().Set("X-AUSERNAME", "alice")
+			_, _ = fmt.Fprint(w, `{"values":[]}`)
+			return
+		}
+
+		gotPath = request.URL.Path
+		gotMethod = request.Method
+		body, _ := io.ReadAll(request.Body)
+		_ = json.Unmarshal(body, &gotPayload)
+
+		_, _ = fmt.Fprint(w, `{"id":42,"title":"Feature","state":"OPEN","open":true,"closed":false,"participants":[{"role":"REVIEWER","status":"NEEDS_WORK","approved":false,"user":{"name":"alice"}}]}`)
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	pr, err := service.NeedsWork(context.Background(), repo, "42")
+	if err != nil {
+		t.Fatalf("expected needs work success, got %v", err)
+	}
+
+	if gotMethod != http.MethodPut {
+		t.Fatalf("expected PUT, got %s", gotMethod)
+	}
+	wantPath := "/rest/api/latest/projects/TEST/repos/demo/pull-requests/42/participants/alice"
+	if gotPath != wantPath {
+		t.Fatalf("expected path %q, got %q", wantPath, gotPath)
+	}
+	if gotPayload["status"] != "NEEDS_WORK" {
+		t.Fatalf("expected NEEDS_WORK status payload, got %#v", gotPayload)
+	}
+	if len(pr.Reviewers) != 1 || pr.Reviewers[0].Status != "NEEDS_WORK" {
+		t.Fatalf("expected mapped NEEDS_WORK reviewer, got %#v", pr.Reviewers)
+	}
+}
+
+func TestNeedsWorkValidation(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
+		t.Errorf("server must not be reached, got %s", request.URL.Path)
+	})
+
+	if _, err := service.NeedsWork(context.Background(), RepositoryRef{}, "42"); err == nil {
+		t.Fatal("expected repository validation error")
+	}
+	if _, err := service.NeedsWork(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "not-a-number"); err == nil {
+		t.Fatal("expected pull request id validation error")
+	}
+}
+
+func TestNeedsWorkPropagatesUserLookupFailure(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
+		// No X-AUSERNAME header: the slug cannot be resolved.
+		_, _ = fmt.Fprint(w, `{"values":[]}`)
+	})
+
+	_, err := service.NeedsWork(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "42")
+	if err == nil || !strings.Contains(err.Error(), "X-AUSERNAME") {
+		t.Fatalf("expected the user lookup failure to propagate, got %v", err)
+	}
+}
+
+func TestAddCommentPlainAndReply(t *testing.T) {
+	var gotPath string
+	var gotPayload map[string]any
+
+	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
+		gotPath = request.URL.Path
+		body, _ := io.ReadAll(request.Body)
+		gotPayload = map[string]any{}
+		_ = json.Unmarshal(body, &gotPayload)
+		_, _ = fmt.Fprint(w, `{"id":900,"version":0,"text":"looks good","author":{"name":"alice","displayName":"Alice","slug":"alice"}}`)
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	comment, err := service.AddComment(context.Background(), repo, "42", "  looks good  ", 0)
+	if err != nil {
+		t.Fatalf("expected comment success, got %v", err)
+	}
+	if gotPath != "/rest/api/latest/projects/TEST/repos/demo/pull-requests/42/comments" {
+		t.Fatalf("unexpected path %q", gotPath)
+	}
+	if gotPayload["text"] != "looks good" {
+		t.Fatalf("expected trimmed text, got %#v", gotPayload["text"])
+	}
+	if _, hasParent := gotPayload["parent"]; hasParent {
+		t.Fatalf("expected no parent for a top level comment, got %#v", gotPayload)
+	}
+	if comment.ID != 900 || comment.Author.Slug != "alice" {
+		t.Fatalf("expected decoded comment, got %#v", comment)
+	}
+
+	if _, err := service.AddComment(context.Background(), repo, "42", "replying", 900); err != nil {
+		t.Fatalf("expected reply success, got %v", err)
+	}
+	parent, ok := gotPayload["parent"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected parent object on a reply, got %#v", gotPayload)
+	}
+	if id, _ := parent["id"].(float64); int64(id) != 900 {
+		t.Fatalf("expected parent id 900, got %#v", parent["id"])
+	}
+}
+
+func TestAddCommentValidation(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
+		t.Errorf("server must not be reached, got %s", request.URL.Path)
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	if _, err := service.AddComment(context.Background(), RepositoryRef{}, "42", "text", 0); err == nil {
+		t.Fatal("expected repository validation error")
+	}
+	if _, err := service.AddComment(context.Background(), repo, "nope", "text", 0); err == nil {
+		t.Fatal("expected pull request id validation error")
+	}
+	if _, err := service.AddComment(context.Background(), repo, "42", "   ", 0); err == nil {
+		t.Fatal("expected empty text validation error")
+	}
+}
+
+func TestAddInlineCommentBuildsAnchor(t *testing.T) {
+	var gotPayload map[string]any
+
+	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
+		body, _ := io.ReadAll(request.Body)
+		gotPayload = map[string]any{}
+		_ = json.Unmarshal(body, &gotPayload)
+		_, _ = fmt.Fprint(w, `{"id":901,"version":0,"text":"nit"}`)
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	if _, err := service.AddInlineComment(context.Background(), repo, "42", "nit", InlineCommentAnchor{
+		Line: 12,
+		Path: " src/main.go ",
+	}); err != nil {
+		t.Fatalf("expected inline comment success, got %v", err)
+	}
+
+	anchor, ok := gotPayload["anchor"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected an anchor object, got %#v", gotPayload)
+	}
+	if line, _ := anchor["line"].(float64); int(line) != 12 {
+		t.Fatalf("expected line 12, got %#v", anchor["line"])
+	}
+	if anchor["path"] != "src/main.go" {
+		t.Fatalf("expected trimmed path, got %#v", anchor["path"])
+	}
+	if anchor["lineType"] != "ADDED" {
+		t.Fatalf("expected ADDED to be the default lineType, got %#v", anchor["lineType"])
+	}
+	if anchor["fileType"] != "TO" {
+		t.Fatalf("expected fileType TO for an added line, got %#v", anchor["fileType"])
+	}
+	if anchor["diffType"] != "EFFECTIVE" {
+		t.Fatalf("expected diffType EFFECTIVE, got %#v", anchor["diffType"])
+	}
+}
+
+func TestAddInlineCommentRemovedLineAnchorsToOriginalFile(t *testing.T) {
+	var gotPayload map[string]any
+
+	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
+		body, _ := io.ReadAll(request.Body)
+		gotPayload = map[string]any{}
+		_ = json.Unmarshal(body, &gotPayload)
+		_, _ = fmt.Fprint(w, `{"id":902}`)
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	if _, err := service.AddInlineComment(context.Background(), repo, "42", "why drop this?", InlineCommentAnchor{
+		Line:     3,
+		Path:     "src/main.go",
+		LineType: "removed",
+	}); err != nil {
+		t.Fatalf("expected inline comment success, got %v", err)
+	}
+
+	anchor, _ := gotPayload["anchor"].(map[string]any)
+	if anchor["lineType"] != "REMOVED" {
+		t.Fatalf("expected lineType to be upper-cased to REMOVED, got %#v", anchor["lineType"])
+	}
+	if anchor["fileType"] != "FROM" {
+		t.Fatalf("expected fileType FROM for a removed line, got %#v", anchor["fileType"])
+	}
+}
+
+func TestAddInlineCommentValidation(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
+		t.Errorf("server must not be reached, got %s", request.URL.Path)
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+	valid := InlineCommentAnchor{Line: 1, Path: "a.go"}
+
+	cases := []struct {
+		name   string
+		repo   RepositoryRef
+		prID   string
+		text   string
+		anchor InlineCommentAnchor
+	}{
+		{name: "bad repository", repo: RepositoryRef{}, prID: "42", text: "t", anchor: valid},
+		{name: "bad pull request id", repo: repo, prID: "nope", text: "t", anchor: valid},
+		{name: "empty text", repo: repo, prID: "42", text: "  ", anchor: valid},
+		{name: "missing path", repo: repo, prID: "42", text: "t", anchor: InlineCommentAnchor{Line: 1, Path: "  "}},
+		{name: "zero line", repo: repo, prID: "42", text: "t", anchor: InlineCommentAnchor{Line: 0, Path: "a.go"}},
+		{name: "negative line", repo: repo, prID: "42", text: "t", anchor: InlineCommentAnchor{Line: -3, Path: "a.go"}},
+		{name: "unknown line type", repo: repo, prID: "42", text: "t", anchor: InlineCommentAnchor{Line: 1, Path: "a.go", LineType: "SIDEWAYS"}},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			_, err := service.AddInlineComment(context.Background(), testCase.repo, testCase.prID, testCase.text, testCase.anchor)
+			if err == nil {
+				t.Fatal("expected a validation error")
+			}
+			if apperrors.ExitCode(err) != 2 {
+				t.Fatalf("expected validation exit code 2, got %d: %v", apperrors.ExitCode(err), err)
+			}
+		})
+	}
+}
+
+func TestNormalizeLineType(t *testing.T) {
+	cases := []struct {
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{input: "", want: "ADDED"},
+		{input: "   ", want: "ADDED"},
+		{input: "added", want: "ADDED"},
+		{input: " Removed ", want: "REMOVED"},
+		{input: "CONTEXT", want: "CONTEXT"},
+		{input: "bogus", wantErr: true},
+	}
+
+	for _, testCase := range cases {
+		got, err := normalizeLineType(testCase.input)
+		if testCase.wantErr {
+			if err == nil {
+				t.Fatalf("expected error for %q", testCase.input)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatalf("unexpected error for %q: %v", testCase.input, err)
+		}
+		if got != testCase.want {
+			t.Fatalf("normalizeLineType(%q) = %q, want %q", testCase.input, got, testCase.want)
+		}
+	}
+}
+
+// TestMapReviewersPrefersParticipants pins the fallback behaviour: Bitbucket
+// Data Center 9.4.16 returns an empty "participants" array and populates
+// "reviewers" instead, but servers that do populate "participants" must keep
+// working from that field.
+func TestMapReviewersPrefersParticipants(t *testing.T) {
+	participant := pullRequestParticipant{
+		Role:     "REVIEWER",
+		Status:   "APPROVED",
+		Approved: true,
+		User:     &pullRequestUserIdentity{Name: "from-participants"},
+	}
+	reviewer := pullRequestParticipant{
+		Role:     "REVIEWER",
+		Status:   "UNAPPROVED",
+		Approved: false,
+		User:     &pullRequestUserIdentity{Name: "from-reviewers"},
+	}
+
+	t.Run("participants win when present", func(t *testing.T) {
+		got := mapReviewers([]pullRequestParticipant{participant}, []pullRequestParticipant{reviewer})
+		if len(got) != 1 || got[0].Name != "from-participants" {
+			t.Fatalf("expected participants to take precedence, got %#v", got)
+		}
+	})
+
+	t.Run("reviewers used when participants empty", func(t *testing.T) {
+		got := mapReviewers(nil, []pullRequestParticipant{reviewer})
+		if len(got) != 1 || got[0].Name != "from-reviewers" {
+			t.Fatalf("expected the reviewers fallback, got %#v", got)
+		}
+	})
+
+	t.Run("both empty", func(t *testing.T) {
+		if got := mapReviewers(nil, nil); got != nil {
+			t.Fatalf("expected nil, got %#v", got)
+		}
+	})
+
+	t.Run("authors filtered out", func(t *testing.T) {
+		author := pullRequestParticipant{
+			Role: "AUTHOR",
+			User: &pullRequestUserIdentity{Name: "author"},
+		}
+		if got := mapReviewers(nil, []pullRequestParticipant{author}); got != nil {
+			t.Fatalf("expected authors to be filtered out, got %#v", got)
+		}
+	})
+
+	t.Run("entries without a user skipped", func(t *testing.T) {
+		if got := mapReviewers([]pullRequestParticipant{{Role: "REVIEWER"}}, nil); got != nil {
+			t.Fatalf("expected entries without a user to be skipped, got %#v", got)
+		}
+	})
+}
+
+func TestListPullRequestsAppliesRoleFilter(t *testing.T) {
+	var gotRole string
+
+	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
+		gotRole = request.URL.Query().Get("role")
+		_, _ = fmt.Fprint(w, `{"values":[],"isLastPage":true}`)
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	if _, err := service.List(context.Background(), repo, ListOptions{Role: "reviewer", Limit: 5}); err != nil {
+		t.Fatalf("expected list success, got %v", err)
+	}
+	if gotRole != "REVIEWER" {
+		t.Fatalf("expected role to be upper-cased to REVIEWER, got %q", gotRole)
+	}
+}

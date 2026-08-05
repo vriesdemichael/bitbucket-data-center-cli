@@ -128,7 +128,6 @@ func (service *Service) WithAPIClient(apiClient *openapigenerated.ClientWithResp
 	return service
 }
 
-
 type DashboardListOptions struct {
 	State string
 	Role  string
@@ -395,9 +394,10 @@ func (service *Service) Unapprove(ctx context.Context, repository RepositoryRef,
 	return mapPullRequest(response), nil
 }
 
-// NeedsWork sets the current user's review status to NEEDS_WORK on a pull request.
-// Uses PUT .../participants/{userSlug} with {"status": "NEEDS_WORK"}.
-// The userSlug is resolved by posting a temporary comment and reading the author from the response.
+// NeedsWork sets the current user's review status to NEEDS_WORK on a pull
+// request, the equivalent of "request changes". Unlike approve and unapprove
+// there is no dedicated endpoint, so this updates the participant record
+// directly via PUT .../participants/{userSlug}.
 func (service *Service) NeedsWork(ctx context.Context, repository RepositoryRef, pullRequestID string) (PullRequest, error) {
 	if err := validateRepositoryRef(repository); err != nil {
 		return PullRequest{}, err
@@ -427,7 +427,7 @@ func (service *Service) NeedsWork(ctx context.Context, repository RepositoryRef,
 // InlineCommentAnchor specifies the file location for an inline PR comment.
 type InlineCommentAnchor struct {
 	Line     int    `json:"line"`
-	Path    string `json:"path"`
+	Path     string `json:"path"`
 	LineType string `json:"lineType"` // ADDED, REMOVED, or CONTEXT
 }
 
@@ -444,68 +444,110 @@ type Comment struct {
 }
 
 // AddComment adds a general comment to a pull request.
-// If parentID > 0, the comment is posted as a reply to that comment.
+// If parentID is greater than zero the comment is posted as a reply to it.
 func (service *Service) AddComment(ctx context.Context, repository RepositoryRef, pullRequestID string, text string, parentID int64) (Comment, error) {
 	if err := validateRepositoryRef(repository); err != nil {
 		return Comment{}, err
 	}
+
 	resolvedID, err := normalizePullRequestID(pullRequestID)
 	if err != nil {
 		return Comment{}, err
 	}
+
 	trimmedText := strings.TrimSpace(text)
 	if trimmedText == "" {
 		return Comment{}, apperrors.New(apperrors.KindValidation, "comment text is required", nil)
 	}
-	path := fmt.Sprintf("%s/%s/comments", pullRequestPath(repository), resolvedID)
+
 	payload := map[string]any{"text": trimmedText}
 	if parentID > 0 {
 		payload["parent"] = map[string]any{"id": parentID}
 	}
+
+	path := fmt.Sprintf("%s/%s/comments", pullRequestPath(repository), resolvedID)
+
 	var result Comment
 	if err := service.client.PostJSON(ctx, path, nil, payload, &result); err != nil {
 		return Comment{}, err
 	}
+
 	return result, nil
 }
 
-// AddInlineComment adds a comment on a specific line of a file in a pull request diff.
+// AddInlineComment adds a comment on a specific line of a file in a pull
+// request diff.
 func (service *Service) AddInlineComment(ctx context.Context, repository RepositoryRef, pullRequestID string, text string, anchor InlineCommentAnchor) (Comment, error) {
 	if err := validateRepositoryRef(repository); err != nil {
 		return Comment{}, err
 	}
+
 	resolvedID, err := normalizePullRequestID(pullRequestID)
 	if err != nil {
 		return Comment{}, err
 	}
+
 	trimmedText := strings.TrimSpace(text)
 	if trimmedText == "" {
 		return Comment{}, apperrors.New(apperrors.KindValidation, "comment text is required", nil)
 	}
-	if anchor.Path == "" {
+
+	trimmedPath := strings.TrimSpace(anchor.Path)
+	if trimmedPath == "" {
 		return Comment{}, apperrors.New(apperrors.KindValidation, "file path is required for inline comments", nil)
 	}
+
 	if anchor.Line <= 0 {
 		return Comment{}, apperrors.New(apperrors.KindValidation, "line must be a positive integer", nil)
 	}
-	lineType := strings.ToUpper(strings.TrimSpace(anchor.LineType))
-	if lineType == "" {
-		lineType = "ADDED"
+
+	lineType, err := normalizeLineType(anchor.LineType)
+	if err != nil {
+		return Comment{}, err
 	}
-	path := fmt.Sprintf("%s/%s/comments", pullRequestPath(repository), resolvedID)
+
+	// fileType selects which side of the diff the line number refers to:
+	// removed lines only exist in the original file, everything else is
+	// anchored against the updated one. diffType EFFECTIVE anchors the comment
+	// against the pull request diff rather than a single commit.
+	fileType := "TO"
+	if lineType == "REMOVED" {
+		fileType = "FROM"
+	}
+
 	payload := map[string]any{
 		"text": trimmedText,
 		"anchor": map[string]any{
 			"line":     anchor.Line,
-			"path":    anchor.Path,
+			"path":     trimmedPath,
 			"lineType": lineType,
+			"fileType": fileType,
+			"diffType": "EFFECTIVE",
 		},
 	}
+
+	path := fmt.Sprintf("%s/%s/comments", pullRequestPath(repository), resolvedID)
+
 	var result Comment
 	if err := service.client.PostJSON(ctx, path, nil, payload, &result); err != nil {
 		return Comment{}, err
 	}
+
 	return result, nil
+}
+
+// normalizeLineType validates the diff side an inline comment anchors to,
+// defaulting to ADDED when unset.
+func normalizeLineType(lineType string) (string, error) {
+	normalized := strings.ToUpper(strings.TrimSpace(lineType))
+	switch normalized {
+	case "":
+		return "ADDED", nil
+	case "ADDED", "REMOVED", "CONTEXT":
+		return normalized, nil
+	default:
+		return "", apperrors.New(apperrors.KindValidation, "line_type must be one of ADDED, REMOVED, or CONTEXT", nil)
+	}
 }
 
 func (service *Service) AddReviewer(ctx context.Context, repository RepositoryRef, pullRequestID string, username string) (PullRequest, error) {
@@ -1563,4 +1605,3 @@ func (service *Service) SearchParticipants(ctx context.Context, repository Repos
 	}
 	return results, nil
 }
-
