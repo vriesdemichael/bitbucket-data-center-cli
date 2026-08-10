@@ -406,7 +406,7 @@ func TestProjectDefaultTaskService(t *testing.T) {
 			if r.Method == http.MethodPost && r.URL.Path == "/rest/default-tasks/latest/projects/PRJ/tasks" {
 				var body openapigenerated.AddDefaultTaskJSONRequestBody
 				_ = json.NewDecoder(r.Body).Decode(&body)
-				if body.Description == nil || *body.Description != "task1" {
+				if body.Description != "task1" {
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
@@ -822,9 +822,3 @@ func TestProjectSettingsServiceTransientErrors(t *testing.T) {
 		t.Fatal("expected transient error")
 	}
 }
-
-
-
-
-
-

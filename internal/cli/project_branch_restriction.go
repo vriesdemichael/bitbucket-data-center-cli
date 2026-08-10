@@ -368,8 +368,8 @@ func matchesProjectRestrictionSignature(restriction openapigenerated.RestRefRest
 	currentMatcherType := ""
 	currentMatcherID := ""
 	if restriction.Matcher != nil {
-		if restriction.Matcher.Type != nil && restriction.Matcher.Type.Id != nil {
-			currentMatcherType = strings.TrimSpace(strings.ToUpper(string(*restriction.Matcher.Type.Id)))
+		if restriction.Matcher.Type != nil {
+			currentMatcherType = strings.TrimSpace(strings.ToUpper(string(restriction.Matcher.Type.Id)))
 		}
 		currentMatcherID = strings.TrimSpace(safeString(restriction.Matcher.Id))
 	}
@@ -388,8 +388,8 @@ func matchesProjectRestrictionUpdate(restriction openapigenerated.RestRefRestric
 		if matcherID != "" && safeString(restriction.Matcher.Id) != matcherID {
 			return false
 		}
-		if matcherType != "" && restriction.Matcher.Type != nil && restriction.Matcher.Type.Id != nil {
-			if !strings.EqualFold(string(*restriction.Matcher.Type.Id), matcherType) {
+		if matcherType != "" && restriction.Matcher.Type != nil {
+			if !strings.EqualFold(string(restriction.Matcher.Type.Id), matcherType) {
 				return false
 			}
 		}

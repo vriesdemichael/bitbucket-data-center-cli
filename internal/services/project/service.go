@@ -228,12 +228,8 @@ func (service *Service) ListProjectPermissionUsers(ctx context.Context, projectK
 		for _, value := range *response.ApplicationjsonCharsetUTF8200.Values {
 			entry := PermissionUser{}
 			if value.User != nil {
-				if value.User.Name != nil {
-					entry.Name = *value.User.Name
-				}
-				if value.User.DisplayName != nil {
-					entry.Display = *value.User.DisplayName
-				}
+				entry.Name = value.User.Name
+				entry.Display = value.User.DisplayName
 			}
 			if value.Permission != nil {
 				entry.Permission = string(*value.Permission)

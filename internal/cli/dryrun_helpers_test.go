@@ -35,15 +35,15 @@ func TestBranchRestrictionDryRunHelpers(t *testing.T) {
 			DisplayId *string `json:"displayId,omitempty"`
 			Id        *string `json:"id,omitempty"`
 			Type      *struct {
-				Id   *openapigenerated.RestRefRestrictionMatcherTypeId `json:"id,omitempty"`
-				Name *string                                           `json:"name,omitempty"`
+				Id   openapigenerated.RestRefRestrictionMatcherTypeId `json:"id"`
+				Name string                                           `json:"name"`
 			} `json:"type,omitempty"`
 		}{
 			Id: &matcherID,
 			Type: &struct {
-				Id   *openapigenerated.RestRefRestrictionMatcherTypeId `json:"id,omitempty"`
-				Name *string                                           `json:"name,omitempty"`
-			}{Id: &matcherType},
+				Id   openapigenerated.RestRefRestrictionMatcherTypeId `json:"id"`
+				Name string                                           `json:"name"`
+			}{Id: matcherType},
 		},
 		Users:      &[]openapigenerated.RestApplicationUser{{Name: &userA}},
 		Groups:     &[]string{groupA},
@@ -125,7 +125,7 @@ func TestReviewerAndPRDryRunHelpers(t *testing.T) {
 	conditionID := int32(11)
 	required := int32(1)
 	reviewer := "alice"
-	condition := openapigenerated.RestPullRequestCondition{Id: &conditionID, RequiredApprovals: &required, Reviewers: &[]openapigenerated.RestApplicationUser{{Name: &reviewer}}}
+	condition := openapigenerated.RestPullRequestCondition{Id: &conditionID, RequiredApprovals: &required, Reviewers: &[]openapigenerated.RestReviewerGroup{{Name: &reviewer}}}
 
 	if !reviewerConditionExists([]openapigenerated.RestPullRequestCondition{condition}, "11") {
 		t.Fatal("expected reviewer condition to exist")

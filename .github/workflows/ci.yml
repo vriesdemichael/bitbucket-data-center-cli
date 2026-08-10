@@ -76,6 +76,11 @@ jobs:
       - name: Run Go tests (targeted non-live package scope)
         run: task test:go:safe
 
+      # Generated code was never verified in CI, which is how the sanitizer's
+      # nondeterministic operationId suffixing went unnoticed.
+      - name: Verify generated models and client are current
+        run: task models:verify && task client:verify
+
       - name: Verify OpenAPI spec coverage artifact is current
         run: task quality:spec-coverage:verify
 
