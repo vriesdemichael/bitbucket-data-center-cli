@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -46,7 +47,22 @@ func sanitize(inputPath, outputPath string) error {
 	fixedOperations := 0
 	renamedOperationIDs := 0
 	seenOperationIDs := map[string]int{}
-	for rawPath, rawPathItem := range paths {
+
+	// Iterate paths in sorted order. Collision suffixes are assigned in
+	// iteration order, so ranging over the map directly made the generated
+	// client nondeterministic: the same spec produced different
+	// operationId-to-endpoint mappings on every run, silently rewiring which
+	// endpoint a suffixed method such as Get3WithResponse actually calls.
+	// Nothing caught it because models:verify and client:verify are not run by
+	// CI.
+	sortedPaths := make([]string, 0, len(paths))
+	for rawPath := range paths {
+		sortedPaths = append(sortedPaths, rawPath)
+	}
+	sort.Strings(sortedPaths)
+
+	for _, rawPath := range sortedPaths {
+		rawPathItem := paths[rawPath]
 		pathItem, ok := rawPathItem.(map[string]any)
 		if !ok {
 			continue
@@ -74,7 +90,7 @@ func sanitize(inputPath, outputPath string) error {
 			canonicalID := canonicalOperationID(operationID)
 			if seenOperationIDs[canonicalID] > 0 {
 				renamedOperationIDs++
-				operationID = fmt.Sprintf("%s_%d", operationID, seenOperationIDs[canonicalID]+1)
+				operationID = uniqueOperationID(operationID, seenOperationIDs)
 				op["operationId"] = operationID
 				canonicalID = canonicalOperationID(operationID)
 			}
@@ -116,6 +132,22 @@ func operationIDFromPath(method, path string) string {
 		normalizedPath = "root"
 	}
 	return fmt.Sprintf("%s_%s", strings.ToLower(method), normalizedPath)
+}
+
+// uniqueOperationID picks a suffixed operationId that no earlier operation has
+// claimed.
+//
+// Suffixing blindly is not enough: Bitbucket 10.2 ships an operation already
+// named "get_2", so renaming a second "get" to "get_2" produced two operations
+// with the same id and the generated client failed to compile with duplicate
+// Get2 declarations. Keep incrementing until the canonical form is free.
+func uniqueOperationID(operationID string, seen map[string]int) string {
+	for suffix := 2; ; suffix++ {
+		candidate := fmt.Sprintf("%s_%d", operationID, suffix)
+		if seen[canonicalOperationID(candidate)] == 0 {
+			return candidate
+		}
+	}
 }
 
 func canonicalOperationID(operationID string) string {

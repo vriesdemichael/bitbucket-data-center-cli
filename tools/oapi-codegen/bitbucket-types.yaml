@@ -2,3 +2,14 @@ package: generated
 output: internal/models/generated/bitbucket_types.gen.go
 generate:
   models: true
+output-options:
+  # Bitbucket 10.2 added four domain schemas that no operation references and
+  # that reference each other through required, non-nullable $refs. Go cannot
+  # size such a value cycle, so generating them fails to compile. They are
+  # unreachable from every endpoint -- the wire types are RestComment and
+  # RestPullRequest -- so excluding them loses nothing.
+  exclude-schemas:
+    - Comment
+    - CommentThread
+    - PullRequest
+    - PullRequestParticipant
