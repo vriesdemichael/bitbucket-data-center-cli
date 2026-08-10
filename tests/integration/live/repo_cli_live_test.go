@@ -126,16 +126,24 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr comment list failed: %v\noutput: %s", err, prCommentListOutput)
 	}
-	if !jsonObjectHasCommentsArray(t, prCommentListOutput) {
-		t.Fatalf("expected comments array in pr comment list output: %s", prCommentListOutput)
+	if !jsonObjectHasThreadsArray(t, prCommentListOutput) {
+		t.Fatalf("expected threads array in pr comment list output: %s", prCommentListOutput)
+	}
+
+	prCommentListFullOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--path", "repo-cli-feature.txt", "--limit", "25", "--full")
+	if err != nil {
+		t.Fatalf("pr comment list --full failed: %v\noutput: %s", err, prCommentListFullOutput)
+	}
+	if !jsonObjectHasCommentsArray(t, prCommentListFullOutput) {
+		t.Fatalf("expected --full to restore the raw comments array: %s", prCommentListFullOutput)
 	}
 
 	aggregatePRCommentListOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--limit", "25")
 	if err != nil {
 		t.Fatalf("aggregate pr comment list failed: %v\noutput: %s", err, aggregatePRCommentListOutput)
 	}
-	if !jsonObjectHasCommentsArray(t, aggregatePRCommentListOutput) {
-		t.Fatalf("expected comments array in aggregate pr comment list output: %s", aggregatePRCommentListOutput)
+	if !jsonObjectHasThreadsArray(t, aggregatePRCommentListOutput) {
+		t.Fatalf("expected threads array in aggregate pr comment list output: %s", aggregatePRCommentListOutput)
 	}
 	if !strings.Contains(aggregatePRCommentListOutput, `"source": "activities"`) {
 		t.Fatalf("expected activities source in aggregate pr comment list output: %s", aggregatePRCommentListOutput)
@@ -1439,6 +1447,20 @@ func jsonObjectHasCommentsArray(t *testing.T, output string) bool {
 
 	payload := decodeJSONMap(t, output)
 	_, ok := payload["comments"].([]any)
+	return ok
+}
+
+// jsonObjectHasThreadsArray checks the summarised thread view that
+// `bb pr comment list` emits. `bb repo comment list` still emits the raw
+// comments array, so the two helpers are not interchangeable.
+func jsonObjectHasThreadsArray(t *testing.T, output string) bool {
+	t.Helper()
+
+	payload := decodeJSONMap(t, output)
+	if _, ok := payload["summary"].(map[string]any); !ok {
+		return false
+	}
+	_, ok := payload["threads"].([]any)
 	return ok
 }
 

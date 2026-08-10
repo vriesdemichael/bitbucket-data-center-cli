@@ -90,13 +90,35 @@ bb pr update 42 --repo MYPROJ/payments --version 3 --draft
 
 ### 3. Check whether a PR is ready to merge
 
+`bb pr get` is the single call that answers "is anything waiting on me?". Its
+`review_summary` reports unresolved comment threads, open tasks and reviewers who
+requested changes; `action_required` is `true` whenever any of those is outstanding.
+
 ```bash
-# Get approval status and merge state
+# Approval status, merge state and outstanding review feedback
 bb pr get --repo MYPROJ/payments 42
+```
 
-# Check open reviewer tasks
-bb pr task list --repo MYPROJ/payments --pr 42
+```
+#42	OPEN	feature/my-work -> main	Add payment retries
+Reviewers: 2
+Open items: 3 unresolved comments, 1 open task
+Needs work: carol
+```
 
+```bash
+# Machine-readable: one field to branch on
+bb pr get --repo MYPROJ/payments 42 --json | jq .data.review_summary.action_required
+```
+
+`bb pr list` shows the same signal per pull request, so you can spot which of your
+open PRs need attention before opening any of them.
+
+```bash
+bb pr list --repo MYPROJ/payments --with-review-status
+```
+
+```bash
 # Check CI status on HEAD commit
 bb build status get <commit-sha>
 
@@ -125,13 +147,55 @@ Valid `--strategy` values: `no-ff`, `ff-only`, `rebase-no-ff`, `rebase-ff-only`,
 
 ### 5. Address review feedback
 
-```bash
-# Read inline review comments
-bb pr comment list --repo MYPROJ/payments 42 --path src/main/java/com/example/PaymentService.java
+Bitbucket models a task as a blocker comment, so `bb pr comment list` returns
+reviewer comments *and* tasks in one view, unresolved first, each with its file
+anchor, resolution state and reply count.
 
-# Post a progress note after fixing
-bb repo comment create --repo MYPROJ/payments --pr 42 "Fixed in <commit>. Please re-review."
+```bash
+# Everything still waiting on you — comments and tasks together
+bb pr comment list --repo MYPROJ/payments 42 --unresolved
 ```
+
+```
+3 unresolved, 1 open task, 5 resolved
+
+! [118] Alice A  src/main/java/com/example/PaymentService.java:42  (2 replies)
+    This should handle a null customer.
+! [131] Carol C  (task)
+    Add a regression test for the retry path.
+```
+
+```bash
+# Only the tasks that block merging
+bb pr comment list --repo MYPROJ/payments 42 --tasks-only --unresolved
+
+# Read a full thread, replies included
+bb pr comment list --repo MYPROJ/payments 42 --unresolved --with-replies
+
+# Scope to one file
+bb pr comment list --repo MYPROJ/payments 42 --path src/main/java/com/example/PaymentService.java
+```
+
+Then fix and report back:
+
+```bash
+# Post a progress note on the pull request
+bb pr comment add 42 --repo MYPROJ/payments --text "Fixed in <commit>. Please re-review."
+```
+
+Re-run the listing afterwards to confirm the thread count dropped. Note that
+reviewers resolve their own threads, so an addressed comment stays unresolved
+until they mark it — `action_required` reflects Bitbucket's state, not yours.
+
+A comment carrying a fenced ` ```suggestion ` block is flagged with
+`has_suggestion` and can be applied directly:
+
+```bash
+bb pr comment apply-suggestion --repo MYPROJ/payments 42 118
+```
+
+`--json` returns the same thread view without Bitbucket's nested pull request
+payload. Use `--full` if you need the raw Bitbucket comment objects instead.
 
 ### 6. Diagnose a CI failure
 
@@ -298,8 +362,8 @@ bb ai mcp serve --tools get_pull_request,list_pr_comments,get_build_status
 
 | Tool | Purpose |
 |---|---|
-| `get_pull_request` | PR details, approvals, merge state |
-| `list_pr_comments` | Review thread contents |
+| `get_pull_request` | PR details, approvals, merge state, and a `review_summary` with `action_required` |
+| `list_pr_comments` | Review threads — comments and tasks together, unresolved first (`state=open`, `tasks_only`) |
 | `list_pr_tasks` | Open tasks blocking merge |
 | `get_build_status` | CI status on a commit |
 | `list_required_builds` | What CI must pass before merging |

@@ -2990,7 +2990,7 @@ Available Commands:
   decline           Decline a pull request
   default-reviewers List default reviewers and matching conditions for repository
   files             List the files changed in a pull request
-  get               Get pull request details
+  get               Get pull request details, including outstanding review feedback
   jira              List Jira issues associated with a pull request
   list              List pull requests
   merge             Merge a pull request
@@ -3262,7 +3262,7 @@ Available Commands:
   add              Add a comment to a pull request
   apply-suggestion Apply a suggested change from a comment
   get              Get a pull request comment
-  list             List comments for a pull request
+  list             List comment threads for a pull request, unresolved first
   react            Add or remove a reaction on a pull request comment
 
 Global Flags:
@@ -3366,18 +3366,27 @@ Global Flags:
 
 ## `bb pr comment list`
 
-List comments for a pull request
+List comment threads for a pull request, unresolved first
 
 ```text
-List pull request comments. Without --path this uses the pull request activity timeline to return the aggregate comment view. With --path it uses the path-scoped comments endpoint. With --blocker it lists blocker comments.
+List pull request comment threads. Bitbucket models a task as a blocker comment, so this returns reviewer comments and tasks in one view, each with its resolution state, anchor and reply count.
+
+Without --path this uses the pull request activity timeline to return the aggregate comment view. With --path it uses the path-scoped comments endpoint. With --blocker it lists blocker comments.
+
+Use --unresolved to show only threads still waiting on someone. Use --full to emit the raw Bitbucket comment payload instead of the summarised thread view.
 
 Usage:
   bb pr comment list <id> [flags]
 
 Flags:
-      --blocker       List pull request blocker comments
-      --limit int     Page size for pull request comment list operations (default 25)
-      --path string   Optional file path for path-scoped pull request comment listing
+      --blocker        List pull request blocker comments
+      --full           Emit the raw Bitbucket comment payload instead of the summarised thread view
+      --limit int      Page size for pull request comment list operations (default 25)
+      --path string    Optional file path for path-scoped pull request comment listing
+      --state string   Filter threads by resolution state: open, resolved, pending, all (default "all")
+      --tasks-only     Show only threads Bitbucket tracks as tasks (blocker comments)
+      --unresolved     Show only unresolved threads (shorthand for --state open)
+      --with-replies   Include the full text of every reply instead of only the most recent one
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -3580,13 +3589,18 @@ Global Flags:
 
 ## `bb pr get`
 
-Get pull request details
+Get pull request details, including outstanding review feedback
 
 ```text
-Get pull request details
+Get pull request details. The output carries a review summary describing unresolved comment threads, open tasks and reviewers who requested changes, so outstanding feedback is visible without a separate lookup.
+
+The unresolved thread counts come from the activity timeline; pass --no-review-summary to skip that request. When the timeline is unavailable the summary falls back to the task counters Bitbucket ships with the pull request, which review_summary.counts_source reports.
 
 Usage:
   bb pr get <id> [flags]
+
+Flags:
+      --no-review-summary   Skip the activity timeline lookup used to count unresolved comment threads
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -3631,7 +3645,7 @@ Global Flags:
 List pull requests
 
 ```text
-List pull requests
+List pull requests. Each entry carries the open task and comment counters Bitbucket reports with the pull request, so pull requests with outstanding feedback stand out. Pass --with-review-status to additionally resolve unresolved comment threads per pull request, which costs one extra request each.
 
 Usage:
   bb pr list [flags]
@@ -3642,6 +3656,7 @@ Flags:
       --start int              Start offset for Bitbucket pull request list operations
       --state string           Pull request state filter: open, closed, all (default "open")
       --target-branch string   Optional target branch filter
+      --with-review-status     Resolve unresolved comment threads per pull request (one extra request per pull request)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust

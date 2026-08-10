@@ -58,6 +58,26 @@ https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/o
 | [output.branch.get-default.schema.json](schemas/output/output.branch.get-default.schema.json) | `bb branch get-default --json` |
 | [output.branch.set-default.schema.json](schemas/output/output.branch.set-default.schema.json) | `bb branch set-default --json` |
 
+### Pull request command output schemas
+
+| Schema file | Command |
+|---|---|
+| [output.pr.get.schema.json](schemas/output/output.pr.get.schema.json) | `bb pr get --json` |
+| [output.pr.comment.list.schema.json](schemas/output/output.pr.comment.list.schema.json) | `bb pr comment list --json` |
+
+`bb pr get` carries a `review_summary` describing outstanding review feedback, and
+`bb pr comment list` returns comment threads and tasks together. Two details matter when consuming
+them:
+
+- **A missing count means "not measured", not zero.** The count fields are omitted when the source
+  that would have produced them was unavailable. Check `review_summary.counts_source` before
+  treating an absent count as "nothing outstanding".
+- **`open_tasks` is a subset of `unresolved_threads`,** not a separate bucket, so the two must not
+  be added together. The same holds for `summary.open_tasks` and `summary.unresolved`.
+
+`bb pr comment list --full` emits the raw Bitbucket comment objects under `comments` instead of the
+`summary`/`threads` pair; the schema models the two as mutually exclusive.
+
 ### Bulk workflow output schemas
 
 | Schema file | Command |

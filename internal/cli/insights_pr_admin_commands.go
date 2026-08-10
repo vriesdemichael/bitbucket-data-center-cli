@@ -505,6 +505,11 @@ func newInsightsCommand(options *rootOptions) *cobra.Command {
 	return insightsCmd
 }
 
+// reviewSummaryPageSize is the activity page size used when counting unresolved
+// comment threads. The service pages until the timeline is exhausted, so this
+// only controls how many round trips that takes.
+const reviewSummaryPageSize = 100
+
 func newPRCommand(options *rootOptions) *cobra.Command {
 	var repository string
 	var state string
@@ -512,6 +517,8 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	var start int
 	var sourceBranch string
 	var targetBranch string
+	var noReviewSummary bool
+	var listWithReviewStatus bool
 
 	prCmd := &cobra.Command{
 		Use:   "pr",
@@ -522,8 +529,11 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List pull requests",
+		Long: "List pull requests. Each entry carries the open task and comment counters Bitbucket reports " +
+			"with the pull request, so pull requests with outstanding feedback stand out. Pass --with-review-status " +
+			"to additionally resolve unresolved comment threads per pull request, which costs one extra request each.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := loadConfig()
+			cfg, client, err := loadConfigAndClient()
 			if err != nil {
 				return err
 			}
@@ -545,12 +555,24 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				return err
 			}
 
+			var reviewSummaries []pullrequestservice.ReviewSummary
+			if listWithReviewStatus {
+				reviewSummaries, err = collectReviewSummaries(cmd.Context(), client, repo, pullRequests)
+				if err != nil {
+					return err
+				}
+			}
+
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), map[string]any{
+				payload := map[string]any{
 					"repository":    repo,
 					"filters":       map[string]any{"state": strings.ToLower(strings.TrimSpace(state)), "start": start, "limit": limit, "source_branch": sourceBranch, "target_branch": targetBranch},
 					"pull_requests": pullRequests,
-				})
+				}
+				if reviewSummaries != nil {
+					payload["review_summaries"] = reviewSummaries
+				}
+				return writeJSON(cmd.OutOrStdout(), payload)
 			}
 
 			if len(pullRequests) == 0 {
@@ -558,21 +580,31 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				return nil
 			}
 
-			for _, pullRequest := range pullRequests {
+			for index, pullRequest := range pullRequests {
+				indicator := formatPullRequestCounts(pullRequest)
+				if reviewSummaries != nil {
+					indicator = formatReviewStatusIndicator(reviewSummaries[index])
+				}
+				if indicator != "" {
+					indicator = "\t" + indicator
+				}
+
 				fmt.Fprintf(
 					cmd.OutOrStdout(),
-					"#%d\t%s\t%s -> %s\t%s\n",
+					"#%d\t%s\t%s -> %s\t%s%s\n",
 					pullRequest.ID,
 					pullRequest.State,
 					pullRequest.SourceBranch,
 					pullRequest.TargetBranch,
 					pullRequest.Title,
+					indicator,
 				)
 			}
 
 			return nil
 		},
 	}
+	listCmd.Flags().BoolVar(&listWithReviewStatus, "with-review-status", false, "Resolve unresolved comment threads per pull request (one extra request per pull request)")
 	listCmd.Flags().StringVar(&state, "state", "open", "Pull request state filter: open, closed, all")
 	listCmd.Flags().IntVar(&limit, "limit", 25, "Page size for Bitbucket pull request list operations")
 	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for Bitbucket pull request list operations")
@@ -582,10 +614,16 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 
 	getCmd := &cobra.Command{
 		Use:   "get <id>",
-		Short: "Get pull request details",
-		Args:  cobra.ExactArgs(1),
+		Short: "Get pull request details, including outstanding review feedback",
+		Long: "Get pull request details. The output carries a review summary describing unresolved comment " +
+			"threads, open tasks and reviewers who requested changes, so outstanding feedback is visible without " +
+			"a separate lookup.\n\n" +
+			"The unresolved thread counts come from the activity timeline; pass --no-review-summary to skip that " +
+			"request. When the timeline is unavailable the summary falls back to the task counters Bitbucket ships " +
+			"with the pull request, which review_summary.counts_source reports.",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := loadConfig()
+			cfg, client, err := loadConfigAndClient()
 			if err != nil {
 				return err
 			}
@@ -601,13 +639,29 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				return err
 			}
 
+			counts := pullrequestservice.ReviewCounts{}
+			if !noReviewSummary {
+				counts, err = resolveReviewCounts(cmd.Context(), client, repo, args[0])
+				if err != nil {
+					return err
+				}
+			}
+			reviewSummary := pullrequestservice.BuildReviewSummary(pullRequest, counts)
+
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request": pullRequest})
+				return writeJSON(cmd.OutOrStdout(), map[string]any{
+					"repository":     repo,
+					"pull_request":   pullRequest,
+					"review_summary": reviewSummary,
+				})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "#%d\t%s\t%s -> %s\t%s\n", pullRequest.ID, pullRequest.State, pullRequest.SourceBranch, pullRequest.TargetBranch, pullRequest.Title)
 			if len(pullRequest.Reviewers) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "Reviewers: %d\n", len(pullRequest.Reviewers))
+			}
+			for _, line := range formatReviewSummaryLines(reviewSummary) {
+				fmt.Fprintln(cmd.OutOrStdout(), line)
 			}
 			if pullRequest.Mergeability != nil {
 				mergeability := pullRequest.Mergeability
@@ -639,6 +693,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
+	getCmd.Flags().BoolVar(&noReviewSummary, "no-review-summary", false, "Skip the activity timeline lookup used to count unresolved comment threads")
 	prCmd.AddCommand(getCmd)
 
 	var commitsLimit, commitsStart int
@@ -1737,11 +1792,21 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	var commentPath string
 	var commentLimit int
 	var commentBlocker bool
+	var commentState string
+	var commentUnresolved bool
+	var commentTasksOnly bool
+	var commentWithReplies bool
+	var commentFull bool
 	commentListCmd := &cobra.Command{
 		Use:   "list <id>",
-		Short: "List comments for a pull request",
-		Long:  "List pull request comments. Without --path this uses the pull request activity timeline to return the aggregate comment view. With --path it uses the path-scoped comments endpoint. With --blocker it lists blocker comments.",
-		Args:  cobra.ExactArgs(1),
+		Short: "List comment threads for a pull request, unresolved first",
+		Long: "List pull request comment threads. Bitbucket models a task as a blocker comment, so this " +
+			"returns reviewer comments and tasks in one view, each with its resolution state, anchor and reply count.\n\n" +
+			"Without --path this uses the pull request activity timeline to return the aggregate comment view. " +
+			"With --path it uses the path-scoped comments endpoint. With --blocker it lists blocker comments.\n\n" +
+			"Use --unresolved to show only threads still waiting on someone. Use --full to emit the raw Bitbucket " +
+			"comment payload instead of the summarised thread view.",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := loadConfigAndClient()
 			if err != nil {
@@ -1750,13 +1815,37 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 
 			trimmedCommentPath := strings.TrimSpace(commentPath)
 
+			if commentUnresolved && cmd.Flags().Changed("state") && !strings.EqualFold(strings.TrimSpace(commentState), "open") {
+				return apperrors.New(apperrors.KindValidation, "--unresolved cannot be combined with a --state other than open", nil)
+			}
+			if commentUnresolved {
+				commentState = "open"
+			}
+			normalizedState, err := pullrequestactivityservice.NormalizeThreadState(commentState)
+			if err != nil {
+				return apperrors.New(apperrors.KindValidation, err.Error(), nil)
+			}
+
 			repo, err := resolvePullRequestRepositoryReference(repository, cfg)
 			if err != nil {
 				return err
 			}
 
+			threadOptions := pullrequestactivityservice.ThreadOptions{
+				State:         normalizedState,
+				TasksOnly:     commentTasksOnly,
+				WithReplies:   commentWithReplies,
+				BaseURL:       cfg.BitbucketURL,
+				ProjectKey:    repo.ProjectKey,
+				Slug:          repo.Slug,
+				PullRequestID: args[0],
+			}
+
 			source := "comments"
 			comments := make([]openapigenerated.RestComment, 0)
+			var threads []pullrequestactivityservice.Thread
+			var summary pullrequestactivityservice.Summary
+
 			if commentBlocker {
 				source = "blocker_comments"
 				service := commentservice.NewService(client)
@@ -1768,14 +1857,16 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				if err != nil {
 					return err
 				}
+				threads, summary = pullrequestactivityservice.ThreadsFromComments(comments, threadOptions)
 			} else if trimmedCommentPath == "" {
 				source = "activities"
 				activityService := pullrequestactivityservice.NewService(client)
-				activities, err := activityService.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0], pullrequestactivityservice.ListOptions{Limit: commentLimit})
-				if err != nil {
-					return err
+				activities, listErr := activityService.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0], pullrequestactivityservice.ListOptions{Limit: commentLimit})
+				if listErr != nil {
+					return listErr
 				}
 				comments = pullrequestactivityservice.ExtractComments(activities)
+				threads, summary = pullrequestactivityservice.ExtractThreads(activities, threadOptions)
 			} else {
 				service := commentservice.NewService(client)
 				comments, err = service.List(cmd.Context(), commentservice.Target{
@@ -1785,6 +1876,29 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				if err != nil {
 					return err
 				}
+				threads, summary = pullrequestactivityservice.ThreadsFromComments(comments, threadOptions)
+			}
+
+			if commentFull {
+				if options.JSON {
+					return writeJSON(cmd.OutOrStdout(), map[string]any{
+						"repository":      repo,
+						"pull_request_id": args[0],
+						"source":          source,
+						"path":            trimmedCommentPath,
+						"comments":        comments,
+					})
+				}
+
+				if len(comments) == 0 {
+					fmt.Fprintln(cmd.OutOrStdout(), "No comments found")
+					return nil
+				}
+				for _, comment := range comments {
+					fmt.Fprintln(cmd.OutOrStdout(), formatCommentSummary(comment))
+				}
+
+				return nil
 			}
 
 			if options.JSON {
@@ -1793,17 +1907,29 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 					"pull_request_id": args[0],
 					"source":          source,
 					"path":            trimmedCommentPath,
-					"comments":        comments,
+					"state":           normalizedState,
+					"summary":         summary,
+					"threads":         threads,
 				})
 			}
 
-			if len(comments) == 0 {
+			if summary.TotalThreads == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "No comments found")
 				return nil
 			}
 
-			for _, comment := range comments {
-				fmt.Fprintln(cmd.OutOrStdout(), formatCommentSummary(comment))
+			// The counts describe the pull request, so they are worth printing
+			// even when the active filter matched nothing.
+			fmt.Fprintln(cmd.OutOrStdout(), formatThreadCounts(summary))
+
+			if len(threads) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "No comments match the current filter")
+				return nil
+			}
+
+			fmt.Fprintln(cmd.OutOrStdout())
+			for _, thread := range threads {
+				fmt.Fprintln(cmd.OutOrStdout(), formatThread(thread))
 			}
 
 			return nil
@@ -1812,6 +1938,11 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	commentListCmd.Flags().StringVar(&commentPath, "path", "", "Optional file path for path-scoped pull request comment listing")
 	commentListCmd.Flags().IntVar(&commentLimit, "limit", 25, "Page size for pull request comment list operations")
 	commentListCmd.Flags().BoolVar(&commentBlocker, "blocker", false, "List pull request blocker comments")
+	commentListCmd.Flags().StringVar(&commentState, "state", "all", "Filter threads by resolution state: open, resolved, pending, all")
+	commentListCmd.Flags().BoolVar(&commentUnresolved, "unresolved", false, "Show only unresolved threads (shorthand for --state open)")
+	commentListCmd.Flags().BoolVar(&commentTasksOnly, "tasks-only", false, "Show only threads Bitbucket tracks as tasks (blocker comments)")
+	commentListCmd.Flags().BoolVar(&commentWithReplies, "with-replies", false, "Include the full text of every reply instead of only the most recent one")
+	commentListCmd.Flags().BoolVar(&commentFull, "full", false, "Emit the raw Bitbucket comment payload instead of the summarised thread view")
 	commentCmd.AddCommand(commentListCmd)
 
 	commentGetCmd := &cobra.Command{
