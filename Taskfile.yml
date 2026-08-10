@@ -227,6 +227,21 @@ tasks:
     cmds:
       - go run ./tools/quality-report -spec-coverage -verify-report -spec-coverage-file docs/quality/spec-coverage.json
 
+  quality:cli-live-coverage:
+    desc: Print which CLI commands the live suite proves work against a real Bitbucket
+    cmds:
+      - go run ./tools/cli-live-coverage
+
+  quality:cli-live-coverage:update:
+    desc: Update the committed CLI live coverage baseline
+    cmds:
+      - go run ./tools/cli-live-coverage -write
+
+  quality:cli-live-coverage:verify:
+    desc: Fail when a command loses live coverage, arrives without it, or is masked by a skip-on-error test (CI-safe, no live execution)
+    cmds:
+      - go run ./tools/cli-live-coverage -verify
+
   test:unit:
     desc: Run Go unit tests
     cmd: go test ./cmd/... ./internal/... ./tools/...
