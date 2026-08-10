@@ -166,15 +166,15 @@ func (service *Service) upsertRestriction(ctx context.Context, projectKey string
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *openapigenerated.RestRestrictionRequestMatcherTypeId `json:"id,omitempty"`
-			Name *string                                               `json:"name,omitempty"`
+			Id   openapigenerated.RestRestrictionRequestMatcherTypeId `json:"id"`
+			Name string                                               `json:"name"`
 		} `json:"type,omitempty"`
 	}{
 		Id: &trimmedMatcherID,
 		Type: &struct {
-			Id   *openapigenerated.RestRestrictionRequestMatcherTypeId `json:"id,omitempty"`
-			Name *string                                               `json:"name,omitempty"`
-		}{Id: &matcherType},
+			Id   openapigenerated.RestRestrictionRequestMatcherTypeId `json:"id"`
+			Name string                                               `json:"name"`
+		}{Id: matcherType},
 	}
 
 	if trimmedMatcherID != "" && input.MatcherDisplay != "" {

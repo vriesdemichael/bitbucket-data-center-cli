@@ -1540,8 +1540,8 @@ func matchesRestrictionSignature(restriction openapigenerated.RestRefRestriction
 	currentMatcherType := ""
 	currentMatcherID := ""
 	if restriction.Matcher != nil {
-		if restriction.Matcher.Type != nil && restriction.Matcher.Type.Id != nil {
-			currentMatcherType = strings.TrimSpace(strings.ToUpper(string(*restriction.Matcher.Type.Id)))
+		if restriction.Matcher.Type != nil {
+			currentMatcherType = strings.TrimSpace(strings.ToUpper(string(restriction.Matcher.Type.Id)))
 		}
 		currentMatcherID = strings.TrimSpace(safeString(restriction.Matcher.Id))
 	}

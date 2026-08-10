@@ -17,19 +17,6 @@ const (
 	ApplicationUserTypeSERVICE ApplicationUserType = "SERVICE"
 )
 
-// Defines values for CommentSeverity.
-const (
-	CommentSeverityBLOCKER CommentSeverity = "BLOCKER"
-	CommentSeverityNORMAL  CommentSeverity = "NORMAL"
-)
-
-// Defines values for CommentState.
-const (
-	CommentStateOPEN     CommentState = "OPEN"
-	CommentStatePENDING  CommentState = "PENDING"
-	CommentStateRESOLVED CommentState = "RESOLVED"
-)
-
 // Defines values for CommentThreadDiffAnchorDiffType.
 const (
 	CommentThreadDiffAnchorDiffTypeCOMMIT    CommentThreadDiffAnchorDiffType = "COMMIT"
@@ -97,6 +84,27 @@ const (
 	GENERIC IdpConfigEntityIdpType = "GENERIC"
 )
 
+// Defines values for IdpConfigEntityNameIdPolicy.
+const (
+	IdpConfigEntityNameIdPolicyEMAILADDRESS               IdpConfigEntityNameIdPolicy = "EMAIL_ADDRESS"
+	IdpConfigEntityNameIdPolicyENCRYPTED                  IdpConfigEntityNameIdPolicy = "ENCRYPTED"
+	IdpConfigEntityNameIdPolicyENTITY                     IdpConfigEntityNameIdPolicy = "ENTITY"
+	IdpConfigEntityNameIdPolicyKERBEROS                   IdpConfigEntityNameIdPolicy = "KERBEROS"
+	IdpConfigEntityNameIdPolicyNONE                       IdpConfigEntityNameIdPolicy = "NONE"
+	IdpConfigEntityNameIdPolicyPERSISTENT                 IdpConfigEntityNameIdPolicy = "PERSISTENT"
+	IdpConfigEntityNameIdPolicyTRANSIENT                  IdpConfigEntityNameIdPolicy = "TRANSIENT"
+	IdpConfigEntityNameIdPolicyUNSPECIFIED                IdpConfigEntityNameIdPolicy = "UNSPECIFIED"
+	IdpConfigEntityNameIdPolicyWINDOWSDOMAINQUALIFIEDNAME IdpConfigEntityNameIdPolicy = "WINDOWS_DOMAIN_QUALIFIED_NAME"
+	IdpConfigEntityNameIdPolicyX509SUBJECTNAME            IdpConfigEntityNameIdPolicy = "X509_SUBJECT_NAME"
+)
+
+// Defines values for IdpConfigEntitySignatureAlgorithm.
+const (
+	RSASHA256 IdpConfigEntitySignatureAlgorithm = "RSA_SHA256"
+	RSASHA384 IdpConfigEntitySignatureAlgorithm = "RSA_SHA384"
+	RSASHA512 IdpConfigEntitySignatureAlgorithm = "RSA_SHA512"
+)
+
 // Defines values for IdpConfigEntitySsoType.
 const (
 	IdpConfigEntitySsoTypeNONE IdpConfigEntitySsoType = "NONE"
@@ -126,27 +134,6 @@ const (
 const (
 	ProjectTypeNORMAL   ProjectType = "NORMAL"
 	ProjectTypePERSONAL ProjectType = "PERSONAL"
-)
-
-// Defines values for PullRequestState.
-const (
-	PullRequestStateDECLINED PullRequestState = "DECLINED"
-	PullRequestStateMERGED   PullRequestState = "MERGED"
-	PullRequestStateOPEN     PullRequestState = "OPEN"
-)
-
-// Defines values for PullRequestParticipantRole.
-const (
-	PullRequestParticipantRoleAUTHOR      PullRequestParticipantRole = "AUTHOR"
-	PullRequestParticipantRolePARTICIPANT PullRequestParticipantRole = "PARTICIPANT"
-	PullRequestParticipantRoleREVIEWER    PullRequestParticipantRole = "REVIEWER"
-)
-
-// Defines values for PullRequestParticipantStatus.
-const (
-	PullRequestParticipantStatusAPPROVED   PullRequestParticipantStatus = "APPROVED"
-	PullRequestParticipantStatusNEEDSWORK  PullRequestParticipantStatus = "NEEDS_WORK"
-	PullRequestParticipantStatusUNAPPROVED PullRequestParticipantStatus = "UNAPPROVED"
 )
 
 // Defines values for RepositoryState.
@@ -210,6 +197,26 @@ const (
 	RestAutoMergeProcessingResultAutoMergeProcessingStatusSTALE       RestAutoMergeProcessingResultAutoMergeProcessingStatus = "STALE"
 	RestAutoMergeProcessingResultAutoMergeProcessingStatusUNKNOWN     RestAutoMergeProcessingResultAutoMergeProcessingStatus = "UNKNOWN"
 	RestAutoMergeProcessingResultAutoMergeProcessingStatusVETOED      RestAutoMergeProcessingResultAutoMergeProcessingStatus = "VETOED"
+)
+
+// Defines values for RestAutoMergeProcessingResultPullRequestAuthorRole.
+const (
+	RestAutoMergeProcessingResultPullRequestAuthorRoleAUTHOR      RestAutoMergeProcessingResultPullRequestAuthorRole = "AUTHOR"
+	RestAutoMergeProcessingResultPullRequestAuthorRolePARTICIPANT RestAutoMergeProcessingResultPullRequestAuthorRole = "PARTICIPANT"
+	RestAutoMergeProcessingResultPullRequestAuthorRoleREVIEWER    RestAutoMergeProcessingResultPullRequestAuthorRole = "REVIEWER"
+)
+
+// Defines values for RestAutoMergeProcessingResultPullRequestAuthorStatus.
+const (
+	RestAutoMergeProcessingResultPullRequestAuthorStatusAPPROVED   RestAutoMergeProcessingResultPullRequestAuthorStatus = "APPROVED"
+	RestAutoMergeProcessingResultPullRequestAuthorStatusNEEDSWORK  RestAutoMergeProcessingResultPullRequestAuthorStatus = "NEEDS_WORK"
+	RestAutoMergeProcessingResultPullRequestAuthorStatusUNAPPROVED RestAutoMergeProcessingResultPullRequestAuthorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestAutoMergeProcessingResultPullRequestAuthorUserType.
+const (
+	RestAutoMergeProcessingResultPullRequestAuthorUserTypeNORMAL  RestAutoMergeProcessingResultPullRequestAuthorUserType = "NORMAL"
+	RestAutoMergeProcessingResultPullRequestAuthorUserTypeSERVICE RestAutoMergeProcessingResultPullRequestAuthorUserType = "SERVICE"
 )
 
 // Defines values for RestAutoMergeProcessingResultPullRequestFromRefRepositoryOriginProjectType.
@@ -296,9 +303,9 @@ const (
 
 // Defines values for RestAutoMergeRestrictedSettingsRestrictionState.
 const (
-	NONE                   RestAutoMergeRestrictedSettingsRestrictionState = "NONE"
-	RESTRICTEDMODIFIABLE   RestAutoMergeRestrictedSettingsRestrictionState = "RESTRICTED_MODIFIABLE"
-	RESTRICTEDUNMODIFIABLE RestAutoMergeRestrictedSettingsRestrictionState = "RESTRICTED_UNMODIFIABLE"
+	RestAutoMergeRestrictedSettingsRestrictionStateNONE                   RestAutoMergeRestrictedSettingsRestrictionState = "NONE"
+	RestAutoMergeRestrictedSettingsRestrictionStateRESTRICTEDMODIFIABLE   RestAutoMergeRestrictedSettingsRestrictionState = "RESTRICTED_MODIFIABLE"
+	RestAutoMergeRestrictedSettingsRestrictionStateRESTRICTEDUNMODIFIABLE RestAutoMergeRestrictedSettingsRestrictionState = "RESTRICTED_UNMODIFIABLE"
 )
 
 // Defines values for RestAutoMergeRestrictedSettingsScopeType.
@@ -306,6 +313,42 @@ const (
 	RestAutoMergeRestrictedSettingsScopeTypeGLOBAL     RestAutoMergeRestrictedSettingsScopeType = "GLOBAL"
 	RestAutoMergeRestrictedSettingsScopeTypePROJECT    RestAutoMergeRestrictedSettingsScopeType = "PROJECT"
 	RestAutoMergeRestrictedSettingsScopeTypeREPOSITORY RestAutoMergeRestrictedSettingsScopeType = "REPOSITORY"
+)
+
+// Defines values for RestBrokenIndexStatusRepositoryDetailsStatus.
+const (
+	RestBrokenIndexStatusRepositoryDetailsStatusBROKEN   RestBrokenIndexStatusRepositoryDetailsStatus = "BROKEN"
+	RestBrokenIndexStatusRepositoryDetailsStatusINDEXED  RestBrokenIndexStatusRepositoryDetailsStatus = "INDEXED"
+	RestBrokenIndexStatusRepositoryDetailsStatusINDEXING RestBrokenIndexStatusRepositoryDetailsStatus = "INDEXING"
+	RestBrokenIndexStatusRepositoryDetailsStatusUNKNOWN  RestBrokenIndexStatusRepositoryDetailsStatus = "UNKNOWN"
+)
+
+// Defines values for RestBrokenIndexStatusRepositoryRepositoryOriginProjectType.
+const (
+	RestBrokenIndexStatusRepositoryRepositoryOriginProjectTypeNORMAL   RestBrokenIndexStatusRepositoryRepositoryOriginProjectType = "NORMAL"
+	RestBrokenIndexStatusRepositoryRepositoryOriginProjectTypePERSONAL RestBrokenIndexStatusRepositoryRepositoryOriginProjectType = "PERSONAL"
+)
+
+// Defines values for RestBrokenIndexStatusRepositoryRepositoryOriginState.
+const (
+	RestBrokenIndexStatusRepositoryRepositoryOriginStateAVAILABLE            RestBrokenIndexStatusRepositoryRepositoryOriginState = "AVAILABLE"
+	RestBrokenIndexStatusRepositoryRepositoryOriginStateINITIALISATIONFAILED RestBrokenIndexStatusRepositoryRepositoryOriginState = "INITIALISATION_FAILED"
+	RestBrokenIndexStatusRepositoryRepositoryOriginStateINITIALISING         RestBrokenIndexStatusRepositoryRepositoryOriginState = "INITIALISING"
+	RestBrokenIndexStatusRepositoryRepositoryOriginStateOFFLINE              RestBrokenIndexStatusRepositoryRepositoryOriginState = "OFFLINE"
+)
+
+// Defines values for RestBrokenIndexStatusRepositoryRepositoryProjectType.
+const (
+	RestBrokenIndexStatusRepositoryRepositoryProjectTypeNORMAL   RestBrokenIndexStatusRepositoryRepositoryProjectType = "NORMAL"
+	RestBrokenIndexStatusRepositoryRepositoryProjectTypePERSONAL RestBrokenIndexStatusRepositoryRepositoryProjectType = "PERSONAL"
+)
+
+// Defines values for RestBrokenIndexStatusRepositoryRepositoryState.
+const (
+	RestBrokenIndexStatusRepositoryRepositoryStateAVAILABLE            RestBrokenIndexStatusRepositoryRepositoryState = "AVAILABLE"
+	RestBrokenIndexStatusRepositoryRepositoryStateINITIALISATIONFAILED RestBrokenIndexStatusRepositoryRepositoryState = "INITIALISATION_FAILED"
+	RestBrokenIndexStatusRepositoryRepositoryStateINITIALISING         RestBrokenIndexStatusRepositoryRepositoryState = "INITIALISING"
+	RestBrokenIndexStatusRepositoryRepositoryStateOFFLINE              RestBrokenIndexStatusRepositoryRepositoryState = "OFFLINE"
 )
 
 // Defines values for RestBuildStatusState.
@@ -418,6 +461,26 @@ const (
 	RestCommentAnchorMultilineMarkerStartLineTypeREMOVED RestCommentAnchorMultilineMarkerStartLineType = "REMOVED"
 )
 
+// Defines values for RestCommentAnchorPullRequestAuthorRole.
+const (
+	RestCommentAnchorPullRequestAuthorRoleAUTHOR      RestCommentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestCommentAnchorPullRequestAuthorRolePARTICIPANT RestCommentAnchorPullRequestAuthorRole = "PARTICIPANT"
+	RestCommentAnchorPullRequestAuthorRoleREVIEWER    RestCommentAnchorPullRequestAuthorRole = "REVIEWER"
+)
+
+// Defines values for RestCommentAnchorPullRequestAuthorStatus.
+const (
+	RestCommentAnchorPullRequestAuthorStatusAPPROVED   RestCommentAnchorPullRequestAuthorStatus = "APPROVED"
+	RestCommentAnchorPullRequestAuthorStatusNEEDSWORK  RestCommentAnchorPullRequestAuthorStatus = "NEEDS_WORK"
+	RestCommentAnchorPullRequestAuthorStatusUNAPPROVED RestCommentAnchorPullRequestAuthorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestCommentAnchorPullRequestAuthorUserType.
+const (
+	RestCommentAnchorPullRequestAuthorUserTypeNORMAL  RestCommentAnchorPullRequestAuthorUserType = "NORMAL"
+	RestCommentAnchorPullRequestAuthorUserTypeSERVICE RestCommentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
 // Defines values for RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType.
 const (
 	RestCommentAnchorPullRequestFromRefRepositoryOriginProjectTypeNORMAL   RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType = "NORMAL"
@@ -526,6 +589,26 @@ const (
 	RestCommentParentAnchorMultilineMarkerStartLineTypeREMOVED RestCommentParentAnchorMultilineMarkerStartLineType = "REMOVED"
 )
 
+// Defines values for RestCommentParentAnchorPullRequestAuthorRole.
+const (
+	RestCommentParentAnchorPullRequestAuthorRoleAUTHOR      RestCommentParentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestCommentParentAnchorPullRequestAuthorRolePARTICIPANT RestCommentParentAnchorPullRequestAuthorRole = "PARTICIPANT"
+	RestCommentParentAnchorPullRequestAuthorRoleREVIEWER    RestCommentParentAnchorPullRequestAuthorRole = "REVIEWER"
+)
+
+// Defines values for RestCommentParentAnchorPullRequestAuthorStatus.
+const (
+	RestCommentParentAnchorPullRequestAuthorStatusAPPROVED   RestCommentParentAnchorPullRequestAuthorStatus = "APPROVED"
+	RestCommentParentAnchorPullRequestAuthorStatusNEEDSWORK  RestCommentParentAnchorPullRequestAuthorStatus = "NEEDS_WORK"
+	RestCommentParentAnchorPullRequestAuthorStatusUNAPPROVED RestCommentParentAnchorPullRequestAuthorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestCommentParentAnchorPullRequestAuthorUserType.
+const (
+	RestCommentParentAnchorPullRequestAuthorUserTypeNORMAL  RestCommentParentAnchorPullRequestAuthorUserType = "NORMAL"
+	RestCommentParentAnchorPullRequestAuthorUserTypeSERVICE RestCommentParentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
 // Defines values for RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType.
 const (
 	RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectTypeNORMAL   RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType = "NORMAL"
@@ -629,6 +712,13 @@ const (
 const (
 	RestCommentThreadResolverTypeNORMAL  RestCommentThreadResolverType = "NORMAL"
 	RestCommentThreadResolverTypeSERVICE RestCommentThreadResolverType = "SERVICE"
+)
+
+// Defines values for RestCspSettingsStrictness.
+const (
+	DEFAULT    RestCspSettingsStrictness = "DEFAULT"
+	REPORTONLY RestCspSettingsStrictness = "REPORT_ONLY"
+	STRICT     RestCspSettingsStrictness = "STRICT"
 )
 
 // Defines values for RestDefaultReviewersRequestSourceMatcherTypeId.
@@ -768,6 +858,23 @@ const (
 	RestHookScriptConfigScriptTypePRE  RestHookScriptConfigScriptType = "PRE"
 )
 
+// Defines values for RestIndexingThreadDetailsCurrentProcessEventEventType.
+const (
+	RestIndexingThreadDetailsCurrentProcessEventEventTypeOTHER      RestIndexingThreadDetailsCurrentProcessEventEventType = "OTHER"
+	RestIndexingThreadDetailsCurrentProcessEventEventTypePROJECT    RestIndexingThreadDetailsCurrentProcessEventEventType = "PROJECT"
+	RestIndexingThreadDetailsCurrentProcessEventEventTypeREPOSITORY RestIndexingThreadDetailsCurrentProcessEventEventType = "REPOSITORY"
+	RestIndexingThreadDetailsCurrentProcessEventEventTypeUSER       RestIndexingThreadDetailsCurrentProcessEventEventType = "USER"
+)
+
+// Defines values for RestIndexingThreadDetailsStateCode.
+const (
+	RestIndexingThreadDetailsStateCodeBROKEN     RestIndexingThreadDetailsStateCode = "BROKEN"
+	RestIndexingThreadDetailsStateCodeIDLE       RestIndexingThreadDetailsStateCode = "IDLE"
+	RestIndexingThreadDetailsStateCodePROCESSING RestIndexingThreadDetailsStateCode = "PROCESSING"
+	RestIndexingThreadDetailsStateCodeSTOPPED    RestIndexingThreadDetailsStateCode = "STOPPED"
+	RestIndexingThreadDetailsStateCodeUNKNOWN    RestIndexingThreadDetailsStateCode = "UNKNOWN"
+)
+
 // Defines values for RestInsightReportResult.
 const (
 	FAIL RestInsightReportResult = "FAIL"
@@ -832,6 +939,12 @@ const (
 	RestLabelableStateINITIALISATIONFAILED RestLabelableState = "INITIALISATION_FAILED"
 	RestLabelableStateINITIALISING         RestLabelableState = "INITIALISING"
 	RestLabelableStateOFFLINE              RestLabelableState = "OFFLINE"
+)
+
+// Defines values for RestMailConfigurationAuthType.
+const (
+	RestMailConfigurationAuthTypeBASIC  RestMailConfigurationAuthType = "BASIC"
+	RestMailConfigurationAuthTypeOAUTH2 RestMailConfigurationAuthType = "OAUTH2"
 )
 
 // Defines values for RestMailConfigurationProtocol.
@@ -971,16 +1084,36 @@ const (
 
 // Defines values for RestProjectSettingsRestrictionProcessedState.
 const (
-	FAILED      RestProjectSettingsRestrictionProcessedState = "FAILED"
-	INPROGRESS  RestProjectSettingsRestrictionProcessedState = "IN_PROGRESS"
-	PROCESSED   RestProjectSettingsRestrictionProcessedState = "PROCESSED"
-	UNPROCESSED RestProjectSettingsRestrictionProcessedState = "UNPROCESSED"
+	RestProjectSettingsRestrictionProcessedStateFAILED      RestProjectSettingsRestrictionProcessedState = "FAILED"
+	RestProjectSettingsRestrictionProcessedStateINPROGRESS  RestProjectSettingsRestrictionProcessedState = "IN_PROGRESS"
+	RestProjectSettingsRestrictionProcessedStatePROCESSED   RestProjectSettingsRestrictionProcessedState = "PROCESSED"
+	RestProjectSettingsRestrictionProcessedStateUNPROCESSED RestProjectSettingsRestrictionProcessedState = "UNPROCESSED"
 )
 
 // Defines values for RestProjectSettingsRestrictionProjectType.
 const (
 	RestProjectSettingsRestrictionProjectTypeNORMAL   RestProjectSettingsRestrictionProjectType = "NORMAL"
 	RestProjectSettingsRestrictionProjectTypePERSONAL RestProjectSettingsRestrictionProjectType = "PERSONAL"
+)
+
+// Defines values for RestPullRequestAuthorRole.
+const (
+	RestPullRequestAuthorRoleAUTHOR      RestPullRequestAuthorRole = "AUTHOR"
+	RestPullRequestAuthorRolePARTICIPANT RestPullRequestAuthorRole = "PARTICIPANT"
+	RestPullRequestAuthorRoleREVIEWER    RestPullRequestAuthorRole = "REVIEWER"
+)
+
+// Defines values for RestPullRequestAuthorStatus.
+const (
+	RestPullRequestAuthorStatusAPPROVED   RestPullRequestAuthorStatus = "APPROVED"
+	RestPullRequestAuthorStatusNEEDSWORK  RestPullRequestAuthorStatus = "NEEDS_WORK"
+	RestPullRequestAuthorStatusUNAPPROVED RestPullRequestAuthorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestPullRequestAuthorUserType.
+const (
+	RestPullRequestAuthorUserTypeNORMAL  RestPullRequestAuthorUserType = "NORMAL"
+	RestPullRequestAuthorUserTypeSERVICE RestPullRequestAuthorUserType = "SERVICE"
 )
 
 // Defines values for RestPullRequestFromRefRepositoryOriginProjectType.
@@ -1067,6 +1200,8 @@ const (
 	RestPullRequestActivityActionDECLINED           RestPullRequestActivityAction = "DECLINED"
 	RestPullRequestActivityActionDELETED            RestPullRequestActivityAction = "DELETED"
 	RestPullRequestActivityActionMERGED             RestPullRequestActivityAction = "MERGED"
+	RestPullRequestActivityActionMERGEQUEUEADDED    RestPullRequestActivityAction = "MERGE_QUEUE_ADDED"
+	RestPullRequestActivityActionMERGEQUEUEEJECTED  RestPullRequestActivityAction = "MERGE_QUEUE_EJECTED"
 	RestPullRequestActivityActionOPENED             RestPullRequestActivityAction = "OPENED"
 	RestPullRequestActivityActionREOPENED           RestPullRequestActivityAction = "REOPENED"
 	RestPullRequestActivityActionRESCOPED           RestPullRequestActivityAction = "RESCOPED"
@@ -1138,9 +1273,9 @@ const (
 
 // Defines values for RestPullRequestParticipantRole.
 const (
-	AUTHOR      RestPullRequestParticipantRole = "AUTHOR"
-	PARTICIPANT RestPullRequestParticipantRole = "PARTICIPANT"
-	REVIEWER    RestPullRequestParticipantRole = "REVIEWER"
+	RestPullRequestParticipantRoleAUTHOR      RestPullRequestParticipantRole = "AUTHOR"
+	RestPullRequestParticipantRolePARTICIPANT RestPullRequestParticipantRole = "PARTICIPANT"
+	RestPullRequestParticipantRoleREVIEWER    RestPullRequestParticipantRole = "REVIEWER"
 )
 
 // Defines values for RestPullRequestParticipantStatus.
@@ -1341,6 +1476,14 @@ const (
 	RestRepositoryHookScopeTypeREPOSITORY RestRepositoryHookScopeType = "REPOSITORY"
 )
 
+// Defines values for RestRepositoryIndexingDetailsStatus.
+const (
+	RestRepositoryIndexingDetailsStatusBROKEN   RestRepositoryIndexingDetailsStatus = "BROKEN"
+	RestRepositoryIndexingDetailsStatusINDEXED  RestRepositoryIndexingDetailsStatus = "INDEXED"
+	RestRepositoryIndexingDetailsStatusINDEXING RestRepositoryIndexingDetailsStatus = "INDEXING"
+	RestRepositoryIndexingDetailsStatusUNKNOWN  RestRepositoryIndexingDetailsStatus = "UNKNOWN"
+)
+
 // Defines values for RestRepositoryMirrorEventType.
 const (
 	SYNCHRONIZATIONFAILED RestRepositoryMirrorEventType = "SYNCHRONIZATION_FAILED"
@@ -1428,13 +1571,13 @@ const (
 	RestRequiredBuildConditionRefMatcherTypeIdPATTERN       RestRequiredBuildConditionRefMatcherTypeId = "PATTERN"
 )
 
-// Defines values for RestRequiredBuildConditionSetRequestRefMatcherTypeId.
+// Defines values for RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId.
 const (
-	RestRequiredBuildConditionSetRequestRefMatcherTypeIdANYREF        RestRequiredBuildConditionSetRequestRefMatcherTypeId = "ANY_REF"
-	RestRequiredBuildConditionSetRequestRefMatcherTypeIdBRANCH        RestRequiredBuildConditionSetRequestRefMatcherTypeId = "BRANCH"
-	RestRequiredBuildConditionSetRequestRefMatcherTypeIdMODELBRANCH   RestRequiredBuildConditionSetRequestRefMatcherTypeId = "MODEL_BRANCH"
-	RestRequiredBuildConditionSetRequestRefMatcherTypeIdMODELCATEGORY RestRequiredBuildConditionSetRequestRefMatcherTypeId = "MODEL_CATEGORY"
-	RestRequiredBuildConditionSetRequestRefMatcherTypeIdPATTERN       RestRequiredBuildConditionSetRequestRefMatcherTypeId = "PATTERN"
+	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdANYREF        RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "ANY_REF"
+	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdBRANCH        RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "BRANCH"
+	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdMODELBRANCH   RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "MODEL_BRANCH"
+	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdMODELCATEGORY RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "MODEL_CATEGORY"
+	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdPATTERN       RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "PATTERN"
 )
 
 // Defines values for RestRestrictionRequestMatcherTypeId.
@@ -1462,9 +1605,9 @@ const (
 
 // Defines values for RestSecretScanningRuleScopeType.
 const (
-	GLOBAL     RestSecretScanningRuleScopeType = "GLOBAL"
-	PROJECT    RestSecretScanningRuleScopeType = "PROJECT"
-	REPOSITORY RestSecretScanningRuleScopeType = "REPOSITORY"
+	RestSecretScanningRuleScopeTypeGLOBAL     RestSecretScanningRuleScopeType = "GLOBAL"
+	RestSecretScanningRuleScopeTypePROJECT    RestSecretScanningRuleScopeType = "PROJECT"
+	RestSecretScanningRuleScopeTypeREPOSITORY RestSecretScanningRuleScopeType = "REPOSITORY"
 )
 
 // Defines values for RestSshAccessKeyPermission.
@@ -1570,6 +1713,26 @@ const (
 	RestUserReactionCommentAnchorMultilineMarkerStartLineTypeADDED   RestUserReactionCommentAnchorMultilineMarkerStartLineType = "ADDED"
 	RestUserReactionCommentAnchorMultilineMarkerStartLineTypeCONTEXT RestUserReactionCommentAnchorMultilineMarkerStartLineType = "CONTEXT"
 	RestUserReactionCommentAnchorMultilineMarkerStartLineTypeREMOVED RestUserReactionCommentAnchorMultilineMarkerStartLineType = "REMOVED"
+)
+
+// Defines values for RestUserReactionCommentAnchorPullRequestAuthorRole.
+const (
+	RestUserReactionCommentAnchorPullRequestAuthorRoleAUTHOR      RestUserReactionCommentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestUserReactionCommentAnchorPullRequestAuthorRolePARTICIPANT RestUserReactionCommentAnchorPullRequestAuthorRole = "PARTICIPANT"
+	RestUserReactionCommentAnchorPullRequestAuthorRoleREVIEWER    RestUserReactionCommentAnchorPullRequestAuthorRole = "REVIEWER"
+)
+
+// Defines values for RestUserReactionCommentAnchorPullRequestAuthorStatus.
+const (
+	RestUserReactionCommentAnchorPullRequestAuthorStatusAPPROVED   RestUserReactionCommentAnchorPullRequestAuthorStatus = "APPROVED"
+	RestUserReactionCommentAnchorPullRequestAuthorStatusNEEDSWORK  RestUserReactionCommentAnchorPullRequestAuthorStatus = "NEEDS_WORK"
+	RestUserReactionCommentAnchorPullRequestAuthorStatusUNAPPROVED RestUserReactionCommentAnchorPullRequestAuthorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestUserReactionCommentAnchorPullRequestAuthorUserType.
+const (
+	RestUserReactionCommentAnchorPullRequestAuthorUserTypeNORMAL  RestUserReactionCommentAnchorPullRequestAuthorUserType = "NORMAL"
+	RestUserReactionCommentAnchorPullRequestAuthorUserTypeSERVICE RestUserReactionCommentAnchorPullRequestAuthorUserType = "SERVICE"
 )
 
 // Defines values for RestUserReactionCommentAnchorPullRequestFromRefRepositoryOriginProjectType.
@@ -1680,6 +1843,26 @@ const (
 	RestUserReactionCommentParentAnchorMultilineMarkerStartLineTypeREMOVED RestUserReactionCommentParentAnchorMultilineMarkerStartLineType = "REMOVED"
 )
 
+// Defines values for RestUserReactionCommentParentAnchorPullRequestAuthorRole.
+const (
+	RestUserReactionCommentParentAnchorPullRequestAuthorRoleAUTHOR      RestUserReactionCommentParentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestUserReactionCommentParentAnchorPullRequestAuthorRolePARTICIPANT RestUserReactionCommentParentAnchorPullRequestAuthorRole = "PARTICIPANT"
+	RestUserReactionCommentParentAnchorPullRequestAuthorRoleREVIEWER    RestUserReactionCommentParentAnchorPullRequestAuthorRole = "REVIEWER"
+)
+
+// Defines values for RestUserReactionCommentParentAnchorPullRequestAuthorStatus.
+const (
+	RestUserReactionCommentParentAnchorPullRequestAuthorStatusAPPROVED   RestUserReactionCommentParentAnchorPullRequestAuthorStatus = "APPROVED"
+	RestUserReactionCommentParentAnchorPullRequestAuthorStatusNEEDSWORK  RestUserReactionCommentParentAnchorPullRequestAuthorStatus = "NEEDS_WORK"
+	RestUserReactionCommentParentAnchorPullRequestAuthorStatusUNAPPROVED RestUserReactionCommentParentAnchorPullRequestAuthorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestUserReactionCommentParentAnchorPullRequestAuthorUserType.
+const (
+	RestUserReactionCommentParentAnchorPullRequestAuthorUserTypeNORMAL  RestUserReactionCommentParentAnchorPullRequestAuthorUserType = "NORMAL"
+	RestUserReactionCommentParentAnchorPullRequestAuthorUserTypeSERVICE RestUserReactionCommentParentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
 // Defines values for RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType.
 const (
 	RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectTypeNORMAL   RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType = "NORMAL"
@@ -1716,9 +1899,9 @@ const (
 
 // Defines values for RestUserReactionCommentParentAnchorPullRequestState.
 const (
-	DECLINED RestUserReactionCommentParentAnchorPullRequestState = "DECLINED"
-	MERGED   RestUserReactionCommentParentAnchorPullRequestState = "MERGED"
-	OPEN     RestUserReactionCommentParentAnchorPullRequestState = "OPEN"
+	RestUserReactionCommentParentAnchorPullRequestStateDECLINED RestUserReactionCommentParentAnchorPullRequestState = "DECLINED"
+	RestUserReactionCommentParentAnchorPullRequestStateMERGED   RestUserReactionCommentParentAnchorPullRequestState = "MERGED"
+	RestUserReactionCommentParentAnchorPullRequestStateOPEN     RestUserReactionCommentParentAnchorPullRequestState = "OPEN"
 )
 
 // Defines values for RestUserReactionCommentParentAnchorPullRequestToRefRepositoryOriginProjectType.
@@ -1787,14 +1970,20 @@ const (
 
 // Defines values for RestUserReactionUserType.
 const (
-	RestUserReactionUserTypeNORMAL  RestUserReactionUserType = "NORMAL"
-	RestUserReactionUserTypeSERVICE RestUserReactionUserType = "SERVICE"
+	NORMAL  RestUserReactionUserType = "NORMAL"
+	SERVICE RestUserReactionUserType = "SERVICE"
 )
 
 // Defines values for SetBannerJSONBodyAudience.
 const (
 	SetBannerJSONBodyAudienceALL           SetBannerJSONBodyAudience = "ALL"
 	SetBannerJSONBodyAudienceAUTHENTICATED SetBannerJSONBodyAudience = "AUTHENTICATED"
+)
+
+// Defines values for SetMailConfigJSONBodyAuthType.
+const (
+	SetMailConfigJSONBodyAuthTypeBASIC  SetMailConfigJSONBodyAuthType = "BASIC"
+	SetMailConfigJSONBodyAuthTypeOAUTH2 SetMailConfigJSONBodyAuthType = "OAUTH2"
 )
 
 // Defines values for SetMailConfigJSONBodyProtocol.
@@ -2060,31 +2249,6 @@ type CaptchaDataEntity struct {
 	CaptchaImageUrl *string `json:"captchaImageUrl,omitempty"`
 }
 
-// Comment defines model for Comment.
-type Comment struct {
-	Anchor              *CommentThreadDiffAnchor `json:"anchor,omitempty"`
-	Author              *ApplicationUser         `json:"author,omitempty"`
-	Comments            *[]Comment               `json:"comments,omitempty"`
-	CreatedDate         *time.Time               `json:"createdDate,omitempty"`
-	Id                  *int64                   `json:"id,omitempty"`
-	PermittedOperations *CommentOperations       `json:"permittedOperations,omitempty"`
-	Properties          *map[string]interface{}  `json:"properties,omitempty"`
-	ResolvedDate        *time.Time               `json:"resolvedDate,omitempty"`
-	Resolver            *ApplicationUser         `json:"resolver,omitempty"`
-	Severity            *CommentSeverity         `json:"severity,omitempty"`
-	State               *CommentState            `json:"state,omitempty"`
-	Text                *string                  `json:"text,omitempty"`
-	Thread              *CommentThread           `json:"thread,omitempty"`
-	UpdatedDate         *time.Time               `json:"updatedDate,omitempty"`
-	Version             *int32                   `json:"version,omitempty"`
-}
-
-// CommentSeverity defines model for Comment.Severity.
-type CommentSeverity string
-
-// CommentState defines model for Comment.State.
-type CommentState string
-
 // CommentOperations defines model for CommentOperations.
 type CommentOperations struct {
 	Deletable      *bool `json:"deletable,omitempty"`
@@ -2092,38 +2256,24 @@ type CommentOperations struct {
 	Transitionable *bool `json:"transitionable,omitempty"`
 }
 
-// CommentThread defines model for CommentThread.
-type CommentThread struct {
-	Anchor       *CommentThreadDiffAnchor `json:"anchor,omitempty"`
-	Anchored     *bool                    `json:"anchored,omitempty"`
-	Commentable  *Commentable             `json:"commentable,omitempty"`
-	CreatedDate  *time.Time               `json:"createdDate,omitempty"`
-	Id           *int64                   `json:"id,omitempty"`
-	Resolved     *bool                    `json:"resolved,omitempty"`
-	ResolvedDate *time.Time               `json:"resolvedDate,omitempty"`
-	Resolver     *ApplicationUser         `json:"resolver,omitempty"`
-	RootComment  *Comment                 `json:"rootComment,omitempty"`
-	UpdatedDate  *time.Time               `json:"updatedDate,omitempty"`
-}
-
 // CommentThreadDiffAnchor defines model for CommentThreadDiffAnchor.
 type CommentThreadDiffAnchor struct {
-	DiffType                  *CommentThreadDiffAnchorDiffType               `json:"diffType,omitempty"`
-	FileAnchor                *bool                                          `json:"fileAnchor,omitempty"`
-	FileType                  *CommentThreadDiffAnchorFileType               `json:"fileType,omitempty"`
-	FromHash                  *string                                        `json:"fromHash,omitempty"`
-	Line                      *int32                                         `json:"line,omitempty"`
-	LineAnchor                *bool                                          `json:"lineAnchor,omitempty"`
-	LineType                  *CommentThreadDiffAnchorLineType               `json:"lineType,omitempty"`
-	MultilineAnchor           *bool                                          `json:"multilineAnchor,omitempty"`
-	MultilineDestinationRange *LineNumberRange                               `json:"multilineDestinationRange,omitempty"`
-	MultilineSourceRange      *LineNumberRange                               `json:"multilineSourceRange,omitempty"`
-	MultilineStartLine        *int32                                         `json:"multilineStartLine,omitempty"`
-	MultilineStartLineType    *CommentThreadDiffAnchorMultilineStartLineType `json:"multilineStartLineType,omitempty"`
-	Orphaned                  *bool                                          `json:"orphaned,omitempty"`
-	Path                      *string                                        `json:"path,omitempty"`
-	SrcPath                   *string                                        `json:"srcPath,omitempty"`
-	ToHash                    *string                                        `json:"toHash,omitempty"`
+	DiffType                  CommentThreadDiffAnchorDiffType               `json:"diffType"`
+	FileAnchor                *bool                                         `json:"fileAnchor,omitempty"`
+	FileType                  CommentThreadDiffAnchorFileType               `json:"fileType"`
+	FromHash                  string                                        `json:"fromHash"`
+	Line                      *int32                                        `json:"line,omitempty"`
+	LineAnchor                *bool                                         `json:"lineAnchor,omitempty"`
+	LineType                  CommentThreadDiffAnchorLineType               `json:"lineType"`
+	MultilineAnchor           *bool                                         `json:"multilineAnchor,omitempty"`
+	MultilineDestinationRange LineNumberRange                               `json:"multilineDestinationRange"`
+	MultilineSourceRange      LineNumberRange                               `json:"multilineSourceRange"`
+	MultilineStartLine        int32                                         `json:"multilineStartLine"`
+	MultilineStartLineType    CommentThreadDiffAnchorMultilineStartLineType `json:"multilineStartLineType"`
+	Orphaned                  *bool                                         `json:"orphaned,omitempty"`
+	Path                      string                                        `json:"path"`
+	SrcPath                   string                                        `json:"srcPath"`
+	ToHash                    string                                        `json:"toHash"`
 }
 
 // CommentThreadDiffAnchorDiffType defines model for CommentThreadDiffAnchor.DiffType.
@@ -2158,8 +2308,9 @@ type Credentials struct {
 
 // CredentialsCheckFailedDTO defines model for CredentialsCheckFailedDTO.
 type CredentialsCheckFailedDTO struct {
-	CaptchaRequired *bool   `json:"captchaRequired,omitempty"`
-	Message         *string `json:"message,omitempty"`
+	CaptchaRequired    *bool   `json:"captchaRequired,omitempty"`
+	ExpiredCredentials *bool   `json:"expiredCredentials,omitempty"`
+	Message            *string `json:"message,omitempty"`
 }
 
 // ElevationMethodRestDTO defines model for ElevationMethodRestDTO.
@@ -2277,13 +2428,13 @@ type ExampleJsonLastModifiedCallback struct {
 		Author *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"author,omitempty"`
 		AuthorTimestamp *int64 `json:"authorTimestamp,omitempty"`
 		Committer       *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"committer,omitempty"`
 		CommitterTimestamp *int64               `json:"committerTimestamp,omitempty"`
 		DisplayId          *string              `json:"displayId,omitempty"`
@@ -2295,13 +2446,13 @@ type ExampleJsonLastModifiedCallback struct {
 		Author *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"author,omitempty"`
 		AuthorTimestamp *int64 `json:"authorTimestamp,omitempty"`
 		Committer       *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"committer,omitempty"`
 		CommitterTimestamp *int64               `json:"committerTimestamp,omitempty"`
 		DisplayId          *string              `json:"displayId,omitempty"`
@@ -2313,13 +2464,13 @@ type ExampleJsonLastModifiedCallback struct {
 		Author *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"author,omitempty"`
 		AuthorTimestamp *int64 `json:"authorTimestamp,omitempty"`
 		Committer       *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"committer,omitempty"`
 		CommitterTimestamp *int64               `json:"committerTimestamp,omitempty"`
 		DisplayId          *string              `json:"displayId,omitempty"`
@@ -2412,34 +2563,43 @@ type GroupPickerContext struct {
 
 // IdpConfigEntity defines model for IdpConfigEntity.
 type IdpConfigEntity struct {
-	AdditionalScopes      *[]string               `json:"additional-scopes,omitempty"`
-	AuthorizationEndpoint *string                 `json:"authorization-endpoint,omitempty"`
-	ButtonText            *string                 `json:"buttonText,omitempty"`
-	Certificate           *string                 `json:"certificate,omitempty"`
-	ClientId              *string                 `json:"client-id,omitempty"`
-	ClientSecret          *string                 `json:"client-secret,omitempty"`
-	CrowdUrl              *string                 `json:"crowd-url,omitempty"`
-	DiscoveryEnabled      *bool                   `json:"discovery-enabled,omitempty"`
-	EnableRememberMe      *bool                   `json:"enable-remember-me,omitempty"`
-	Enabled               *bool                   `json:"enabled,omitempty"`
-	Id                    *int64                  `json:"id,omitempty"`
-	IdpType               *IdpConfigEntityIdpType `json:"idp-type,omitempty"`
-	IncludeCustomerLogins *bool                   `json:"include-customer-logins,omitempty"`
-	IssuerUrl             *string                 `json:"issuer-url,omitempty"`
-	JitConfiguration      *JitConfigEntity        `json:"jit-configuration,omitempty"`
-	LastUpdated           *time.Time              `json:"last-updated,omitempty"`
-	Name                  *string                 `json:"name,omitempty"`
-	SsoIssuer             *string                 `json:"sso-issuer,omitempty"`
-	SsoType               *IdpConfigEntitySsoType `json:"sso-type,omitempty"`
-	SsoUrl                *string                 `json:"sso-url,omitempty"`
-	TokenEndpoint         *string                 `json:"token-endpoint,omitempty"`
-	UserinfoEndpoint      *string                 `json:"userinfo-endpoint,omitempty"`
-	UsernameAttribute     *string                 `json:"username-attribute,omitempty"`
-	UsernameClaim         *string                 `json:"username-claim,omitempty"`
+	AdditionalScopes      *[]string                          `json:"additional-scopes,omitempty"`
+	AuthorizationEndpoint *string                            `json:"authorization-endpoint,omitempty"`
+	ButtonText            *string                            `json:"buttonText,omitempty"`
+	Certificate           *string                            `json:"certificate,omitempty"`
+	ClientId              *string                            `json:"client-id,omitempty"`
+	ClientSecret          *string                            `json:"client-secret,omitempty"`
+	CrowdUrl              *string                            `json:"crowd-url,omitempty"`
+	DiscoveryEnabled      *bool                              `json:"discovery-enabled,omitempty"`
+	EnableRememberMe      *bool                              `json:"enable-remember-me,omitempty"`
+	Enabled               *bool                              `json:"enabled,omitempty"`
+	Id                    *int64                             `json:"id,omitempty"`
+	IdpType               *IdpConfigEntityIdpType            `json:"idp-type,omitempty"`
+	IncludeCustomerLogins *bool                              `json:"include-customer-logins,omitempty"`
+	IssuerUrl             *string                            `json:"issuer-url,omitempty"`
+	JitConfiguration      *JitConfigEntity                   `json:"jit-configuration,omitempty"`
+	LastUpdated           *time.Time                         `json:"last-updated,omitempty"`
+	Name                  *string                            `json:"name,omitempty"`
+	NameIdPolicy          *IdpConfigEntityNameIdPolicy       `json:"name-id-policy,omitempty"`
+	SignAuthnrequest      *bool                              `json:"sign-authnrequest,omitempty"`
+	SignatureAlgorithm    *IdpConfigEntitySignatureAlgorithm `json:"signature-algorithm,omitempty"`
+	SsoIssuer             *string                            `json:"sso-issuer,omitempty"`
+	SsoType               *IdpConfigEntitySsoType            `json:"sso-type,omitempty"`
+	SsoUrl                *string                            `json:"sso-url,omitempty"`
+	TokenEndpoint         *string                            `json:"token-endpoint,omitempty"`
+	UserinfoEndpoint      *string                            `json:"userinfo-endpoint,omitempty"`
+	UsernameAttribute     *string                            `json:"username-attribute,omitempty"`
+	UsernameClaim         *string                            `json:"username-claim,omitempty"`
 }
 
 // IdpConfigEntityIdpType defines model for IdpConfigEntity.IdpType.
 type IdpConfigEntityIdpType string
+
+// IdpConfigEntityNameIdPolicy defines model for IdpConfigEntity.NameIdPolicy.
+type IdpConfigEntityNameIdPolicy string
+
+// IdpConfigEntitySignatureAlgorithm defines model for IdpConfigEntity.SignatureAlgorithm.
+type IdpConfigEntitySignatureAlgorithm string
 
 // IdpConfigEntitySsoType defines model for IdpConfigEntity.SsoType.
 type IdpConfigEntitySsoType string
@@ -2482,6 +2642,7 @@ type LoginOptionEntityType string
 type MethodStateDTO struct {
 	Enabled   *bool               `json:"enabled,omitempty"`
 	EnabledAt *time.Time          `json:"enabledAt,omitempty"`
+	Enforced  *bool               `json:"enforced,omitempty"`
 	Type      *MethodStateDTOType `json:"type,omitempty"`
 }
 
@@ -2499,66 +2660,24 @@ type NextLoginStepDTONextLoginStep string
 
 // Project defines model for Project.
 type Project struct {
-	Description *string      `json:"description,omitempty"`
-	Id          *int32       `json:"id,omitempty"`
-	Key         *string      `json:"key,omitempty"`
-	Name        *string      `json:"name,omitempty"`
-	Public      *bool        `json:"public,omitempty"`
-	Type        *ProjectType `json:"type,omitempty"`
+	Description *string     `json:"description,omitempty"`
+	Id          *int32      `json:"id,omitempty"`
+	Key         *string     `json:"key,omitempty"`
+	Name        *string     `json:"name,omitempty"`
+	Public      *bool       `json:"public,omitempty"`
+	Type        ProjectType `json:"type"`
 }
 
 // ProjectType defines model for Project.Type.
 type ProjectType string
 
-// PullRequest defines model for PullRequest.
-type PullRequest struct {
-	Author          *PullRequestParticipant   `json:"author,omitempty"`
-	Closed          *bool                     `json:"closed,omitempty"`
-	ClosedDate      *time.Time                `json:"closedDate,omitempty"`
-	CreatedDate     *time.Time                `json:"createdDate,omitempty"`
-	CrossRepository *bool                     `json:"crossRepository,omitempty"`
-	Description     *string                   `json:"description,omitempty"`
-	Draft           *bool                     `json:"draft,omitempty"`
-	FromRef         *PullRequestRef           `json:"fromRef,omitempty"`
-	Id              *int64                    `json:"id,omitempty"`
-	Locked          *bool                     `json:"locked,omitempty"`
-	Open            *bool                     `json:"open,omitempty"`
-	Participants    *[]PullRequestParticipant `json:"participants,omitempty"`
-	Properties      *map[string]interface{}   `json:"properties,omitempty"`
-	Reviewers       *[]PullRequestParticipant `json:"reviewers,omitempty"`
-	State           *PullRequestState         `json:"state,omitempty"`
-	Title           *string                   `json:"title,omitempty"`
-	ToRef           *PullRequestRef           `json:"toRef,omitempty"`
-	UpdatedDate     *time.Time                `json:"updatedDate,omitempty"`
-	Version         *int32                    `json:"version,omitempty"`
-}
-
-// PullRequestState defines model for PullRequest.State.
-type PullRequestState string
-
-// PullRequestParticipant defines model for PullRequestParticipant.
-type PullRequestParticipant struct {
-	Approved           *bool                         `json:"approved,omitempty"`
-	LastReviewedCommit *string                       `json:"lastReviewedCommit,omitempty"`
-	PullRequest        *PullRequest                  `json:"pullRequest,omitempty"`
-	Role               *PullRequestParticipantRole   `json:"role,omitempty"`
-	Status             *PullRequestParticipantStatus `json:"status,omitempty"`
-	User               *ApplicationUser              `json:"user,omitempty"`
-}
-
-// PullRequestParticipantRole defines model for PullRequestParticipant.Role.
-type PullRequestParticipantRole string
-
-// PullRequestParticipantStatus defines model for PullRequestParticipant.Status.
-type PullRequestParticipantStatus string
-
 // PullRequestRef defines model for PullRequestRef.
 type PullRequestRef struct {
-	DisplayId    *string     `json:"displayId,omitempty"`
-	Id           *string     `json:"id,omitempty"`
-	LatestCommit *string     `json:"latestCommit,omitempty"`
-	Repository   *Repository `json:"repository,omitempty"`
-	Type         *RefType    `json:"type,omitempty"`
+	DisplayId    string     `json:"displayId"`
+	Id           string     `json:"id"`
+	LatestCommit string     `json:"latestCommit"`
+	Repository   Repository `json:"repository"`
+	Type         RefType    `json:"type"`
 }
 
 // RefType defines model for RefType.
@@ -2566,25 +2685,25 @@ type RefType = interface{}
 
 // Repository defines model for Repository.
 type Repository struct {
-	Archived      *bool            `json:"archived,omitempty"`
-	Description   *string          `json:"description,omitempty"`
-	Fork          *bool            `json:"fork,omitempty"`
-	Forkable      *bool            `json:"forkable,omitempty"`
-	HierarchyId   *string          `json:"hierarchyId,omitempty"`
-	Id            *int32           `json:"id,omitempty"`
-	Local         *bool            `json:"local,omitempty"`
-	Name          *string          `json:"name,omitempty"`
-	Offline       *bool            `json:"offline,omitempty"`
-	Origin        *Repository      `json:"origin,omitempty"`
-	Partition     *int32           `json:"partition,omitempty"`
-	Project       *Project         `json:"project,omitempty"`
-	Public        *bool            `json:"public,omitempty"`
-	ReadOnly      *bool            `json:"readOnly,omitempty"`
-	Remote        *bool            `json:"remote,omitempty"`
-	ScmId         *string          `json:"scmId,omitempty"`
-	Slug          *string          `json:"slug,omitempty"`
-	State         *RepositoryState `json:"state,omitempty"`
-	StatusMessage *string          `json:"statusMessage,omitempty"`
+	Archived      *bool           `json:"archived,omitempty"`
+	Description   *string         `json:"description,omitempty"`
+	Fork          *bool           `json:"fork,omitempty"`
+	Forkable      *bool           `json:"forkable,omitempty"`
+	HierarchyId   string          `json:"hierarchyId"`
+	Id            *int32          `json:"id,omitempty"`
+	Local         *bool           `json:"local,omitempty"`
+	Name          string          `json:"name"`
+	Offline       *bool           `json:"offline,omitempty"`
+	Origin        *Repository     `json:"origin,omitempty"`
+	Partition     *int32          `json:"partition,omitempty"`
+	Project       Project         `json:"project"`
+	Public        *bool           `json:"public,omitempty"`
+	ReadOnly      *bool           `json:"readOnly,omitempty"`
+	Remote        *bool           `json:"remote,omitempty"`
+	ScmId         string          `json:"scmId"`
+	Slug          string          `json:"slug"`
+	State         RepositoryState `json:"state"`
+	StatusMessage string          `json:"statusMessage"`
 }
 
 // RepositoryState defines model for Repository.State.
@@ -2593,6 +2712,7 @@ type RepositoryState string
 // RepositoryHookDetails defines model for RepositoryHookDetails.
 type RepositoryHookDetails struct {
 	ConfigFormKey   *string                                 `json:"configFormKey,omitempty"`
+	ConfigFormView  *string                                 `json:"configFormView,omitempty"`
 	Description     *string                                 `json:"description,omitempty"`
 	Key             *string                                 `json:"key,omitempty"`
 	Name            *string                                 `json:"name,omitempty"`
@@ -2616,9 +2736,9 @@ type RestAccessToken struct {
 
 // RestAccessTokenRequest defines model for RestAccessTokenRequest.
 type RestAccessTokenRequest struct {
-	ExpiryDays  *int32    `json:"expiryDays,omitempty"`
-	Name        *string   `json:"name,omitempty"`
-	Permissions *[]string `json:"permissions,omitempty"`
+	ExpiryDays  *int32   `json:"expiryDays,omitempty"`
+	Name        *string  `json:"name,omitempty"`
+	Permissions []string `json:"permissions"`
 }
 
 // RestAggregateRejectCounter defines model for RestAggregateRejectCounter.
@@ -2626,15 +2746,15 @@ type RestAggregateRejectCounter struct {
 	LastRejectTime *float32 `json:"lastRejectTime,omitempty"`
 	RejectCount    *int64   `json:"rejectCount,omitempty"`
 	User           *struct {
-		Active       *bool                               `json:"active,omitempty"`
-		AvatarUrl    *string                             `json:"avatarUrl,omitempty"`
-		DisplayName  *string                             `json:"displayName,omitempty"`
-		EmailAddress *string                             `json:"emailAddress,omitempty"`
-		Id           *int32                              `json:"id,omitempty"`
-		Links        *map[string]interface{}             `json:"links,omitempty"`
-		Name         *string                             `json:"name,omitempty"`
-		Slug         *string                             `json:"slug,omitempty"`
-		Type         *RestAggregateRejectCounterUserType `json:"type,omitempty"`
+		Active       *bool                              `json:"active,omitempty"`
+		AvatarUrl    *string                            `json:"avatarUrl,omitempty"`
+		DisplayName  string                             `json:"displayName"`
+		EmailAddress *string                            `json:"emailAddress,omitempty"`
+		Id           *int32                             `json:"id,omitempty"`
+		Links        *map[string]interface{}            `json:"links,omitempty"`
+		Name         string                             `json:"name"`
+		Slug         string                             `json:"slug"`
+		Type         RestAggregateRejectCounterUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -2701,10 +2821,10 @@ type RestApplicationUserWithPermissionsType string
 
 // RestApplySuggestionRequest defines model for RestApplySuggestionRequest.
 type RestApplySuggestionRequest struct {
-	CommentVersion     *int32  `json:"commentVersion,omitempty"`
+	CommentVersion     int32   `json:"commentVersion"`
 	CommitMessage      *string `json:"commitMessage,omitempty"`
-	PullRequestVersion *int32  `json:"pullRequestVersion,omitempty"`
-	SuggestionIndex    *int32  `json:"suggestionIndex,omitempty"`
+	PullRequestVersion int32   `json:"pullRequestVersion"`
+	SuggestionIndex    int32   `json:"suggestionIndex"`
 }
 
 // RestAttachmentMetadata defines model for RestAttachmentMetadata.
@@ -2725,8 +2845,8 @@ type RestAutoDeclineSettings struct {
 	Enabled         *bool  `json:"enabled,omitempty"`
 	InactivityWeeks *int32 `json:"inactivityWeeks,omitempty"`
 	Scope           *struct {
-		ResourceId *int32                            `json:"resourceId,omitempty"`
-		Type       *RestAutoDeclineSettingsScopeType `json:"type,omitempty"`
+		ResourceId int32                            `json:"resourceId"`
+		Type       RestAutoDeclineSettingsScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 }
 
@@ -2743,6 +2863,23 @@ type RestAutoDeclineSettingsRequest struct {
 type RestAutoMergeProcessingResult struct {
 	AutoMergeProcessingStatus *RestAutoMergeProcessingResultAutoMergeProcessingStatus `json:"autoMergeProcessingStatus,omitempty"`
 	PullRequest               *struct {
+		Author *struct {
+			Approved           *bool                                                 `json:"approved,omitempty"`
+			LastReviewedCommit *string                                               `json:"lastReviewedCommit,omitempty"`
+			Role               *RestAutoMergeProcessingResultPullRequestAuthorRole   `json:"role,omitempty"`
+			Status             *RestAutoMergeProcessingResultPullRequestAuthorStatus `json:"status,omitempty"`
+			User               *struct {
+				Active       *bool                                                  `json:"active,omitempty"`
+				AvatarUrl    *string                                                `json:"avatarUrl,omitempty"`
+				DisplayName  string                                                 `json:"displayName"`
+				EmailAddress *string                                                `json:"emailAddress,omitempty"`
+				Id           *int32                                                 `json:"id,omitempty"`
+				Links        *map[string]interface{}                                `json:"links,omitempty"`
+				Name         string                                                 `json:"name"`
+				Slug         string                                                 `json:"slug"`
+				Type         RestAutoMergeProcessingResultPullRequestAuthorUserType `json:"type"`
+			} `json:"user,omitempty"`
+		} `json:"author,omitempty"`
 		Closed            *bool   `json:"closed,omitempty"`
 		ClosedDate        *int64  `json:"closedDate,omitempty"`
 		CreatedDate       *int64  `json:"createdDate,omitempty"`
@@ -2750,9 +2887,9 @@ type RestAutoMergeProcessingResult struct {
 		DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 		Draft             *bool   `json:"draft,omitempty"`
 		FromRef           *struct {
-			DisplayId    *string `json:"displayId,omitempty"`
-			Id           *string `json:"id,omitempty"`
-			LatestCommit *string `json:"latestCommit,omitempty"`
+			DisplayId    string `json:"displayId"`
+			Id           string `json:"id"`
+			LatestCommit string `json:"latestCommit"`
 			Repository   *struct {
 				Archived      *bool                   `json:"archived,omitempty"`
 				DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -2825,9 +2962,9 @@ type RestAutoMergeProcessingResult struct {
 		State           *RestAutoMergeProcessingResultPullRequestState `json:"state,omitempty"`
 		Title           *string                                        `json:"title,omitempty"`
 		ToRef           *struct {
-			DisplayId    *string `json:"displayId,omitempty"`
-			Id           *string `json:"id,omitempty"`
-			LatestCommit *string `json:"latestCommit,omitempty"`
+			DisplayId    string `json:"displayId"`
+			Id           string `json:"id"`
+			LatestCommit string `json:"latestCommit"`
 			Repository   *struct {
 				Archived      *bool                   `json:"archived,omitempty"`
 				DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -2898,6 +3035,15 @@ type RestAutoMergeProcessingResult struct {
 // RestAutoMergeProcessingResultAutoMergeProcessingStatus defines model for RestAutoMergeProcessingResult.AutoMergeProcessingStatus.
 type RestAutoMergeProcessingResultAutoMergeProcessingStatus string
 
+// RestAutoMergeProcessingResultPullRequestAuthorRole defines model for RestAutoMergeProcessingResult.PullRequest.Author.Role.
+type RestAutoMergeProcessingResultPullRequestAuthorRole string
+
+// RestAutoMergeProcessingResultPullRequestAuthorStatus defines model for RestAutoMergeProcessingResult.PullRequest.Author.Status.
+type RestAutoMergeProcessingResultPullRequestAuthorStatus string
+
+// RestAutoMergeProcessingResultPullRequestAuthorUserType defines model for RestAutoMergeProcessingResult.PullRequest.Author.User.Type.
+type RestAutoMergeProcessingResultPullRequestAuthorUserType string
+
 // RestAutoMergeProcessingResultPullRequestFromRefRepositoryOriginProjectType defines model for RestAutoMergeProcessingResult.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestAutoMergeProcessingResultPullRequestFromRefRepositoryOriginProjectType string
 
@@ -2959,8 +3105,8 @@ type RestAutoMergeRestrictedSettings struct {
 
 	// Scope The scope that these settings apply to.
 	Scope *struct {
-		ResourceId *int32                                    `json:"resourceId,omitempty"`
-		Type       *RestAutoMergeRestrictedSettingsScopeType `json:"type,omitempty"`
+		ResourceId int32                                    `json:"resourceId"`
+		Type       RestAutoMergeRestrictedSettingsScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 }
 
@@ -3032,6 +3178,107 @@ type RestBranchDeleteRequest struct {
 	// Name Name of the ref to be deleted
 	Name *string `json:"name,omitempty"`
 }
+
+// RestBrokenIndexStatusRepository defines model for RestBrokenIndexStatusRepository.
+type RestBrokenIndexStatusRepository struct {
+	// Details Details about the last index attempt for the given repository
+	Details *struct {
+		// IndexingError Additional detail about the <b>BROKEN</b> status if available, meant for informational purposes only. This nullable, free-form text field should not be used for automation; rely on status instead.
+		IndexingError *string `json:"indexingError,omitempty"`
+
+		// LastIndexedCommitId The commit hash of the last indexed commit in the repository.
+		LastIndexedCommitId *string `json:"lastIndexedCommitId,omitempty"`
+
+		// LastIndexedTimestamp The timestamp in epoch milliseconds of the last time the repository successfully was indexed
+		LastIndexedTimestamp *int64 `json:"lastIndexedTimestamp,omitempty"`
+
+		// ProjectKey The project key that the repository belongs to
+		ProjectKey string `json:"projectKey"`
+
+		// RepositorySlug The repository slug
+		RepositorySlug string `json:"repositorySlug"`
+
+		// Status The current indexing status of the repository.
+		Status RestBrokenIndexStatusRepositoryDetailsStatus `json:"status"`
+	} `json:"details,omitempty"`
+
+	// Repository The repository which has entered a broken status
+	Repository *struct {
+		Archived      *bool                   `json:"archived,omitempty"`
+		DefaultBranch *string                 `json:"defaultBranch,omitempty"`
+		Description   *string                 `json:"description,omitempty"`
+		Forkable      *bool                   `json:"forkable,omitempty"`
+		HierarchyId   *string                 `json:"hierarchyId,omitempty"`
+		Id            *int32                  `json:"id,omitempty"`
+		Links         *map[string]interface{} `json:"links,omitempty"`
+		Name          *string                 `json:"name,omitempty"`
+		Origin        *struct {
+			Archived      *bool                   `json:"archived,omitempty"`
+			DefaultBranch *string                 `json:"defaultBranch,omitempty"`
+			Description   *string                 `json:"description,omitempty"`
+			Forkable      *bool                   `json:"forkable,omitempty"`
+			HierarchyId   *string                 `json:"hierarchyId,omitempty"`
+			Id            *int32                  `json:"id,omitempty"`
+			Links         *map[string]interface{} `json:"links,omitempty"`
+			Name          *string                 `json:"name,omitempty"`
+			Partition     *int32                  `json:"partition,omitempty"`
+			Project       *struct {
+				Avatar      *string                                                     `json:"avatar,omitempty"`
+				AvatarUrl   *string                                                     `json:"avatarUrl,omitempty"`
+				Description *string                                                     `json:"description,omitempty"`
+				Id          *int32                                                      `json:"id,omitempty"`
+				Key         string                                                      `json:"key"`
+				Links       *map[string]interface{}                                     `json:"links,omitempty"`
+				Name        *string                                                     `json:"name,omitempty"`
+				Public      *bool                                                       `json:"public,omitempty"`
+				Scope       *string                                                     `json:"scope,omitempty"`
+				Type        *RestBrokenIndexStatusRepositoryRepositoryOriginProjectType `json:"type,omitempty"`
+			} `json:"project,omitempty"`
+			Public        *bool                                                 `json:"public,omitempty"`
+			RelatedLinks  *map[string]interface{}                               `json:"relatedLinks,omitempty"`
+			ScmId         *string                                               `json:"scmId,omitempty"`
+			Scope         *string                                               `json:"scope,omitempty"`
+			Slug          *string                                               `json:"slug,omitempty"`
+			State         *RestBrokenIndexStatusRepositoryRepositoryOriginState `json:"state,omitempty"`
+			StatusMessage *string                                               `json:"statusMessage,omitempty"`
+		} `json:"origin,omitempty"`
+		Partition *int32 `json:"partition,omitempty"`
+		Project   *struct {
+			Avatar      *string                                               `json:"avatar,omitempty"`
+			AvatarUrl   *string                                               `json:"avatarUrl,omitempty"`
+			Description *string                                               `json:"description,omitempty"`
+			Id          *int32                                                `json:"id,omitempty"`
+			Key         string                                                `json:"key"`
+			Links       *map[string]interface{}                               `json:"links,omitempty"`
+			Name        *string                                               `json:"name,omitempty"`
+			Public      *bool                                                 `json:"public,omitempty"`
+			Scope       *string                                               `json:"scope,omitempty"`
+			Type        *RestBrokenIndexStatusRepositoryRepositoryProjectType `json:"type,omitempty"`
+		} `json:"project,omitempty"`
+		Public        *bool                                           `json:"public,omitempty"`
+		RelatedLinks  *map[string]interface{}                         `json:"relatedLinks,omitempty"`
+		ScmId         *string                                         `json:"scmId,omitempty"`
+		Scope         *string                                         `json:"scope,omitempty"`
+		Slug          *string                                         `json:"slug,omitempty"`
+		State         *RestBrokenIndexStatusRepositoryRepositoryState `json:"state,omitempty"`
+		StatusMessage *string                                         `json:"statusMessage,omitempty"`
+	} `json:"repository,omitempty"`
+}
+
+// RestBrokenIndexStatusRepositoryDetailsStatus The current indexing status of the repository.
+type RestBrokenIndexStatusRepositoryDetailsStatus string
+
+// RestBrokenIndexStatusRepositoryRepositoryOriginProjectType defines model for RestBrokenIndexStatusRepository.Repository.Origin.Project.Type.
+type RestBrokenIndexStatusRepositoryRepositoryOriginProjectType string
+
+// RestBrokenIndexStatusRepositoryRepositoryOriginState defines model for RestBrokenIndexStatusRepository.Repository.Origin.State.
+type RestBrokenIndexStatusRepositoryRepositoryOriginState string
+
+// RestBrokenIndexStatusRepositoryRepositoryProjectType defines model for RestBrokenIndexStatusRepository.Repository.Project.Type.
+type RestBrokenIndexStatusRepositoryRepositoryProjectType string
+
+// RestBrokenIndexStatusRepositoryRepositoryState defines model for RestBrokenIndexStatusRepository.Repository.State.
+type RestBrokenIndexStatusRepositoryRepositoryState string
 
 // RestBuildCapabilities defines model for RestBuildCapabilities.
 type RestBuildCapabilities struct {
@@ -3105,8 +3352,8 @@ type RestBulkUserRateLimitSettingsUpdateRequest struct {
 		Capacity *int32 `json:"capacity,omitempty"`
 		FillRate *int32 `json:"fillRate,omitempty"`
 	} `json:"settings,omitempty"`
-	Usernames   *[]string `json:"usernames,omitempty"`
-	Whitelisted *bool     `json:"whitelisted,omitempty"`
+	Usernames   []string `json:"usernames"`
+	Whitelisted *bool    `json:"whitelisted,omitempty"`
 }
 
 // RestChange defines model for RestChange.
@@ -3256,13 +3503,13 @@ type RestChangeset struct {
 		Author *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"author,omitempty"`
 		AuthorTimestamp *int64 `json:"authorTimestamp,omitempty"`
 		Committer       *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"committer,omitempty"`
 		CommitterTimestamp *int64               `json:"committerTimestamp,omitempty"`
 		DisplayId          *string              `json:"displayId,omitempty"`
@@ -3287,14 +3534,14 @@ type RestChangesetRepositoryState string
 // RestClusterInformation defines model for RestClusterInformation.
 type RestClusterInformation struct {
 	LocalNode *struct {
-		Address *struct {
+		Address struct {
 			Address *string `json:"address,omitempty"`
 			Port    *int32  `json:"port,omitempty"`
-		} `json:"address,omitempty"`
-		BuildVersion *string `json:"buildVersion,omitempty"`
-		Id           *string `json:"id,omitempty"`
-		Local        *bool   `json:"local,omitempty"`
-		Name         *string `json:"name,omitempty"`
+		} `json:"address"`
+		BuildVersion string `json:"buildVersion"`
+		Id           string `json:"id"`
+		Local        bool   `json:"local"`
+		Name         string `json:"name"`
 	} `json:"localNode,omitempty"`
 	Nodes   *[]RestClusterNode `json:"nodes,omitempty"`
 	Running *bool              `json:"running,omitempty"`
@@ -3347,6 +3594,23 @@ type RestComment struct {
 			Parent     *string   `json:"parent,omitempty"`
 		} `json:"path,omitempty"`
 		PullRequest *struct {
+			Author *struct {
+				Approved           *bool                                     `json:"approved,omitempty"`
+				LastReviewedCommit *string                                   `json:"lastReviewedCommit,omitempty"`
+				Role               *RestCommentAnchorPullRequestAuthorRole   `json:"role,omitempty"`
+				Status             *RestCommentAnchorPullRequestAuthorStatus `json:"status,omitempty"`
+				User               *struct {
+					Active       *bool                                      `json:"active,omitempty"`
+					AvatarUrl    *string                                    `json:"avatarUrl,omitempty"`
+					DisplayName  string                                     `json:"displayName"`
+					EmailAddress *string                                    `json:"emailAddress,omitempty"`
+					Id           *int32                                     `json:"id,omitempty"`
+					Links        *map[string]interface{}                    `json:"links,omitempty"`
+					Name         string                                     `json:"name"`
+					Slug         string                                     `json:"slug"`
+					Type         RestCommentAnchorPullRequestAuthorUserType `json:"type"`
+				} `json:"user,omitempty"`
+			} `json:"author,omitempty"`
 			Closed            *bool   `json:"closed,omitempty"`
 			ClosedDate        *int64  `json:"closedDate,omitempty"`
 			CreatedDate       *int64  `json:"createdDate,omitempty"`
@@ -3354,9 +3618,9 @@ type RestComment struct {
 			DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 			Draft             *bool   `json:"draft,omitempty"`
 			FromRef           *struct {
-				DisplayId    *string `json:"displayId,omitempty"`
-				Id           *string `json:"id,omitempty"`
-				LatestCommit *string `json:"latestCommit,omitempty"`
+				DisplayId    string `json:"displayId"`
+				Id           string `json:"id"`
+				LatestCommit string `json:"latestCommit"`
 				Repository   *struct {
 					Archived      *bool                   `json:"archived,omitempty"`
 					DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -3429,9 +3693,9 @@ type RestComment struct {
 			State           *RestCommentAnchorPullRequestState `json:"state,omitempty"`
 			Title           *string                            `json:"title,omitempty"`
 			ToRef           *struct {
-				DisplayId    *string `json:"displayId,omitempty"`
-				Id           *string `json:"id,omitempty"`
-				LatestCommit *string `json:"latestCommit,omitempty"`
+				DisplayId    string `json:"displayId"`
+				Id           string `json:"id"`
+				LatestCommit string `json:"latestCommit"`
 				Repository   *struct {
 					Archived      *bool                   `json:"archived,omitempty"`
 					DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -3509,13 +3773,13 @@ type RestComment struct {
 	Author   *struct {
 		Active       *bool                   `json:"active,omitempty"`
 		AvatarUrl    *string                 `json:"avatarUrl,omitempty"`
-		DisplayName  *string                 `json:"displayName,omitempty"`
+		DisplayName  string                  `json:"displayName"`
 		EmailAddress *string                 `json:"emailAddress,omitempty"`
 		Id           *int32                  `json:"id,omitempty"`
 		Links        *map[string]interface{} `json:"links,omitempty"`
-		Name         *string                 `json:"name,omitempty"`
-		Slug         *string                 `json:"slug,omitempty"`
-		Type         *RestCommentAuthorType  `json:"type,omitempty"`
+		Name         string                  `json:"name"`
+		Slug         string                  `json:"slug"`
+		Type         RestCommentAuthorType   `json:"type"`
 	} `json:"author,omitempty"`
 	Comments    *[]RestComment `json:"comments,omitempty"`
 	CreatedDate *int64         `json:"createdDate,omitempty"`
@@ -3555,6 +3819,23 @@ type RestComment struct {
 				Parent     *string   `json:"parent,omitempty"`
 			} `json:"path,omitempty"`
 			PullRequest *struct {
+				Author *struct {
+					Approved           *bool                                           `json:"approved,omitempty"`
+					LastReviewedCommit *string                                         `json:"lastReviewedCommit,omitempty"`
+					Role               *RestCommentParentAnchorPullRequestAuthorRole   `json:"role,omitempty"`
+					Status             *RestCommentParentAnchorPullRequestAuthorStatus `json:"status,omitempty"`
+					User               *struct {
+						Active       *bool                                            `json:"active,omitempty"`
+						AvatarUrl    *string                                          `json:"avatarUrl,omitempty"`
+						DisplayName  string                                           `json:"displayName"`
+						EmailAddress *string                                          `json:"emailAddress,omitempty"`
+						Id           *int32                                           `json:"id,omitempty"`
+						Links        *map[string]interface{}                          `json:"links,omitempty"`
+						Name         string                                           `json:"name"`
+						Slug         string                                           `json:"slug"`
+						Type         RestCommentParentAnchorPullRequestAuthorUserType `json:"type"`
+					} `json:"user,omitempty"`
+				} `json:"author,omitempty"`
 				Closed            *bool   `json:"closed,omitempty"`
 				ClosedDate        *int64  `json:"closedDate,omitempty"`
 				CreatedDate       *int64  `json:"createdDate,omitempty"`
@@ -3562,9 +3843,9 @@ type RestComment struct {
 				DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 				Draft             *bool   `json:"draft,omitempty"`
 				FromRef           *struct {
-					DisplayId    *string `json:"displayId,omitempty"`
-					Id           *string `json:"id,omitempty"`
-					LatestCommit *string `json:"latestCommit,omitempty"`
+					DisplayId    string `json:"displayId"`
+					Id           string `json:"id"`
+					LatestCommit string `json:"latestCommit"`
 					Repository   *struct {
 						Archived      *bool                   `json:"archived,omitempty"`
 						DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -3637,9 +3918,9 @@ type RestComment struct {
 				State           *RestCommentParentAnchorPullRequestState `json:"state,omitempty"`
 				Title           *string                                  `json:"title,omitempty"`
 				ToRef           *struct {
-					DisplayId    *string `json:"displayId,omitempty"`
-					Id           *string `json:"id,omitempty"`
-					LatestCommit *string `json:"latestCommit,omitempty"`
+					DisplayId    string `json:"displayId"`
+					Id           string `json:"id"`
+					LatestCommit string `json:"latestCommit"`
 					Repository   *struct {
 						Archived      *bool                   `json:"archived,omitempty"`
 						DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -3715,15 +3996,15 @@ type RestComment struct {
 		} `json:"anchor,omitempty"`
 		Anchored *bool `json:"anchored,omitempty"`
 		Author   *struct {
-			Active       *bool                        `json:"active,omitempty"`
-			AvatarUrl    *string                      `json:"avatarUrl,omitempty"`
-			DisplayName  *string                      `json:"displayName,omitempty"`
-			EmailAddress *string                      `json:"emailAddress,omitempty"`
-			Id           *int32                       `json:"id,omitempty"`
-			Links        *map[string]interface{}      `json:"links,omitempty"`
-			Name         *string                      `json:"name,omitempty"`
-			Slug         *string                      `json:"slug,omitempty"`
-			Type         *RestCommentParentAuthorType `json:"type,omitempty"`
+			Active       *bool                       `json:"active,omitempty"`
+			AvatarUrl    *string                     `json:"avatarUrl,omitempty"`
+			DisplayName  string                      `json:"displayName"`
+			EmailAddress *string                     `json:"emailAddress,omitempty"`
+			Id           *int32                      `json:"id,omitempty"`
+			Links        *map[string]interface{}     `json:"links,omitempty"`
+			Name         string                      `json:"name"`
+			Slug         string                      `json:"slug"`
+			Type         RestCommentParentAuthorType `json:"type"`
 		} `json:"author,omitempty"`
 		Comments     *[]RestComment          `json:"comments,omitempty"`
 		CreatedDate  *int64                  `json:"createdDate,omitempty"`
@@ -3734,15 +4015,15 @@ type RestComment struct {
 		Reply        *bool                   `json:"reply,omitempty"`
 		ResolvedDate *int64                  `json:"resolvedDate,omitempty"`
 		Resolver     *struct {
-			Active       *bool                          `json:"active,omitempty"`
-			AvatarUrl    *string                        `json:"avatarUrl,omitempty"`
-			DisplayName  *string                        `json:"displayName,omitempty"`
-			EmailAddress *string                        `json:"emailAddress,omitempty"`
-			Id           *int32                         `json:"id,omitempty"`
-			Links        *map[string]interface{}        `json:"links,omitempty"`
-			Name         *string                        `json:"name,omitempty"`
-			Slug         *string                        `json:"slug,omitempty"`
-			Type         *RestCommentParentResolverType `json:"type,omitempty"`
+			Active       *bool                         `json:"active,omitempty"`
+			AvatarUrl    *string                       `json:"avatarUrl,omitempty"`
+			DisplayName  string                        `json:"displayName"`
+			EmailAddress *string                       `json:"emailAddress,omitempty"`
+			Id           *int32                        `json:"id,omitempty"`
+			Links        *map[string]interface{}       `json:"links,omitempty"`
+			Name         string                        `json:"name"`
+			Slug         string                        `json:"slug"`
+			Type         RestCommentParentResolverType `json:"type"`
 		} `json:"resolver,omitempty"`
 		Severity *string `json:"severity,omitempty"`
 		State    *string `json:"state,omitempty"`
@@ -3752,15 +4033,15 @@ type RestComment struct {
 		ThreadResolved     *bool  `json:"threadResolved,omitempty"`
 		ThreadResolvedDate *int64 `json:"threadResolvedDate,omitempty"`
 		ThreadResolver     *struct {
-			Active       *bool                                `json:"active,omitempty"`
-			AvatarUrl    *string                              `json:"avatarUrl,omitempty"`
-			DisplayName  *string                              `json:"displayName,omitempty"`
-			EmailAddress *string                              `json:"emailAddress,omitempty"`
-			Id           *int32                               `json:"id,omitempty"`
-			Links        *map[string]interface{}              `json:"links,omitempty"`
-			Name         *string                              `json:"name,omitempty"`
-			Slug         *string                              `json:"slug,omitempty"`
-			Type         *RestCommentParentThreadResolverType `json:"type,omitempty"`
+			Active       *bool                               `json:"active,omitempty"`
+			AvatarUrl    *string                             `json:"avatarUrl,omitempty"`
+			DisplayName  string                              `json:"displayName"`
+			EmailAddress *string                             `json:"emailAddress,omitempty"`
+			Id           *int32                              `json:"id,omitempty"`
+			Links        *map[string]interface{}             `json:"links,omitempty"`
+			Name         string                              `json:"name"`
+			Slug         string                              `json:"slug"`
+			Type         RestCommentParentThreadResolverType `json:"type"`
 		} `json:"threadResolver,omitempty"`
 		UpdatedDate *int64 `json:"updatedDate,omitempty"`
 		Version     *int32 `json:"version,omitempty"`
@@ -3770,15 +4051,15 @@ type RestComment struct {
 	Reply        *bool                   `json:"reply,omitempty"`
 	ResolvedDate *int64                  `json:"resolvedDate,omitempty"`
 	Resolver     *struct {
-		Active       *bool                    `json:"active,omitempty"`
-		AvatarUrl    *string                  `json:"avatarUrl,omitempty"`
-		DisplayName  *string                  `json:"displayName,omitempty"`
-		EmailAddress *string                  `json:"emailAddress,omitempty"`
-		Id           *int32                   `json:"id,omitempty"`
-		Links        *map[string]interface{}  `json:"links,omitempty"`
-		Name         *string                  `json:"name,omitempty"`
-		Slug         *string                  `json:"slug,omitempty"`
-		Type         *RestCommentResolverType `json:"type,omitempty"`
+		Active       *bool                   `json:"active,omitempty"`
+		AvatarUrl    *string                 `json:"avatarUrl,omitempty"`
+		DisplayName  string                  `json:"displayName"`
+		EmailAddress *string                 `json:"emailAddress,omitempty"`
+		Id           *int32                  `json:"id,omitempty"`
+		Links        *map[string]interface{} `json:"links,omitempty"`
+		Name         string                  `json:"name"`
+		Slug         string                  `json:"slug"`
+		Type         RestCommentResolverType `json:"type"`
 	} `json:"resolver,omitempty"`
 	Severity *string `json:"severity,omitempty"`
 	State    *string `json:"state,omitempty"`
@@ -3788,15 +4069,15 @@ type RestComment struct {
 	ThreadResolved     *bool  `json:"threadResolved,omitempty"`
 	ThreadResolvedDate *int64 `json:"threadResolvedDate,omitempty"`
 	ThreadResolver     *struct {
-		Active       *bool                          `json:"active,omitempty"`
-		AvatarUrl    *string                        `json:"avatarUrl,omitempty"`
-		DisplayName  *string                        `json:"displayName,omitempty"`
-		EmailAddress *string                        `json:"emailAddress,omitempty"`
-		Id           *int32                         `json:"id,omitempty"`
-		Links        *map[string]interface{}        `json:"links,omitempty"`
-		Name         *string                        `json:"name,omitempty"`
-		Slug         *string                        `json:"slug,omitempty"`
-		Type         *RestCommentThreadResolverType `json:"type,omitempty"`
+		Active       *bool                         `json:"active,omitempty"`
+		AvatarUrl    *string                       `json:"avatarUrl,omitempty"`
+		DisplayName  string                        `json:"displayName"`
+		EmailAddress *string                       `json:"emailAddress,omitempty"`
+		Id           *int32                        `json:"id,omitempty"`
+		Links        *map[string]interface{}       `json:"links,omitempty"`
+		Name         string                        `json:"name"`
+		Slug         string                        `json:"slug"`
+		Type         RestCommentThreadResolverType `json:"type"`
 	} `json:"threadResolver,omitempty"`
 	UpdatedDate *int64 `json:"updatedDate,omitempty"`
 	Version     *int32 `json:"version,omitempty"`
@@ -3813,6 +4094,15 @@ type RestCommentAnchorLineType string
 
 // RestCommentAnchorMultilineMarkerStartLineType The segment type of the start line of the multiline comment
 type RestCommentAnchorMultilineMarkerStartLineType string
+
+// RestCommentAnchorPullRequestAuthorRole defines model for RestComment.Anchor.PullRequest.Author.Role.
+type RestCommentAnchorPullRequestAuthorRole string
+
+// RestCommentAnchorPullRequestAuthorStatus defines model for RestComment.Anchor.PullRequest.Author.Status.
+type RestCommentAnchorPullRequestAuthorStatus string
+
+// RestCommentAnchorPullRequestAuthorUserType defines model for RestComment.Anchor.PullRequest.Author.User.Type.
+type RestCommentAnchorPullRequestAuthorUserType string
 
 // RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestComment.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType string
@@ -3861,6 +4151,15 @@ type RestCommentParentAnchorLineType string
 
 // RestCommentParentAnchorMultilineMarkerStartLineType The segment type of the start line of the multiline comment
 type RestCommentParentAnchorMultilineMarkerStartLineType string
+
+// RestCommentParentAnchorPullRequestAuthorRole defines model for RestComment.Parent.Anchor.PullRequest.Author.Role.
+type RestCommentParentAnchorPullRequestAuthorRole string
+
+// RestCommentParentAnchorPullRequestAuthorStatus defines model for RestComment.Parent.Anchor.PullRequest.Author.Status.
+type RestCommentParentAnchorPullRequestAuthorStatus string
+
+// RestCommentParentAnchorPullRequestAuthorUserType defines model for RestComment.Parent.Anchor.PullRequest.Author.User.Type.
+type RestCommentParentAnchorPullRequestAuthorUserType string
 
 // RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestComment.Parent.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType string
@@ -3921,13 +4220,13 @@ type RestCommit struct {
 	Author *struct {
 		AvatarUrl    *string `json:"avatarUrl,omitempty"`
 		EmailAddress *string `json:"emailAddress,omitempty"`
-		Name         *string `json:"name,omitempty"`
+		Name         string  `json:"name"`
 	} `json:"author,omitempty"`
 	AuthorTimestamp *int64 `json:"authorTimestamp,omitempty"`
 	Committer       *struct {
 		AvatarUrl    *string `json:"avatarUrl,omitempty"`
 		EmailAddress *string `json:"emailAddress,omitempty"`
-		Name         *string `json:"name,omitempty"`
+		Name         string  `json:"name"`
 	} `json:"committer,omitempty"`
 	CommitterTimestamp *int64               `json:"committerTimestamp,omitempty"`
 	DisplayId          *string              `json:"displayId,omitempty"`
@@ -3956,24 +4255,33 @@ type RestCreateTagRequest struct {
 	StartPoint *string `json:"startPoint,omitempty"`
 }
 
+// RestCspSettings defines model for RestCspSettings.
+type RestCspSettings struct {
+	Strictness *RestCspSettingsStrictness `json:"strictness,omitempty"`
+}
+
+// RestCspSettingsStrictness defines model for RestCspSettings.Strictness.
+type RestCspSettingsStrictness string
+
 // RestDefaultReviewersRequest defines model for RestDefaultReviewersRequest.
 type RestDefaultReviewersRequest struct {
 	RequiredApprovals *int32                 `json:"requiredApprovals,omitempty"`
+	ReviewerGroups    *[]RestReviewerGroup   `json:"reviewerGroups,omitempty"`
 	Reviewers         *[]RestApplicationUser `json:"reviewers,omitempty"`
 	SourceMatcher     *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestDefaultReviewersRequestSourceMatcherTypeId `json:"id,omitempty"`
-			Name *string                                         `json:"name,omitempty"`
+			Id   RestDefaultReviewersRequestSourceMatcherTypeId `json:"id"`
+			Name string                                         `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceMatcher,omitempty"`
 	TargetMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestDefaultReviewersRequestTargetMatcherTypeId `json:"id,omitempty"`
-			Name *string                                         `json:"name,omitempty"`
+			Id   RestDefaultReviewersRequestTargetMatcherTypeId `json:"id"`
+			Name string                                         `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"targetMatcher,omitempty"`
 }
@@ -3993,21 +4301,21 @@ type RestDefaultTask struct {
 
 // RestDefaultTaskRequest defines model for RestDefaultTaskRequest.
 type RestDefaultTaskRequest struct {
-	Description   *string `json:"description,omitempty"`
+	Description   string `json:"description"`
 	SourceMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestDefaultTaskRequestSourceMatcherTypeId `json:"id,omitempty"`
-			Name *string                                    `json:"name,omitempty"`
+			Id   RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
+			Name string                                    `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceMatcher,omitempty"`
 	TargetMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestDefaultTaskRequestTargetMatcherTypeId `json:"id,omitempty"`
-			Name *string                                    `json:"name,omitempty"`
+			Id   RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
+			Name string                                    `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"targetMatcher,omitempty"`
 }
@@ -4017,6 +4325,13 @@ type RestDefaultTaskRequestSourceMatcherTypeId string
 
 // RestDefaultTaskRequestTargetMatcherTypeId defines model for RestDefaultTaskRequest.TargetMatcher.Type.Id.
 type RestDefaultTaskRequestTargetMatcherTypeId string
+
+// RestDelayedSyncRepository defines model for RestDelayedSyncRepository.
+type RestDelayedSyncRepository struct {
+	ProjectKey     string `json:"projectKey"`
+	RepositoryId   string `json:"repositoryId"`
+	RepositorySlug string `json:"repositorySlug"`
+}
 
 // RestDeployment defines model for RestDeployment.
 type RestDeployment struct {
@@ -4166,6 +4481,7 @@ type RestDetailedInvocation struct {
 type RestDetailedUser struct {
 	Active                      *bool                   `json:"active,omitempty"`
 	AvatarUrl                   *string                 `json:"avatarUrl,omitempty"`
+	CreatedTimestamp            *float32                `json:"createdTimestamp,omitempty"`
 	Deletable                   *bool                   `json:"deletable,omitempty"`
 	DirectoryName               *string                 `json:"directoryName,omitempty"`
 	DisplayName                 *string                 `json:"displayName,omitempty"`
@@ -4332,8 +4648,8 @@ type RestHookScriptType string
 // RestHookScriptConfig defines model for RestHookScriptConfig.
 type RestHookScriptConfig struct {
 	Scope *struct {
-		ResourceId *int32                         `json:"resourceId,omitempty"`
-		Type       *RestHookScriptConfigScopeType `json:"type,omitempty"`
+		ResourceId int32                         `json:"resourceId"`
+		Type       RestHookScriptConfigScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 	Script *struct {
 		CreatedDate *time.Time                      `json:"createdDate,omitempty"`
@@ -4356,12 +4672,71 @@ type RestHookScriptConfigScriptType string
 
 // RestHookScriptTriggers defines model for RestHookScriptTriggers.
 type RestHookScriptTriggers struct {
-	TriggerIds *[]string `json:"triggerIds,omitempty"`
+	TriggerIds []string `json:"triggerIds"`
 }
 
 // RestImportRequest defines model for RestImportRequest.
 type RestImportRequest struct {
 	ArchivePath *string `json:"archivePath,omitempty"`
+}
+
+// RestIndexingIsRepositoryQueued defines model for RestIndexingIsRepositoryQueued.
+type RestIndexingIsRepositoryQueued struct {
+	Queued *bool `json:"queued,omitempty"`
+}
+
+// RestIndexingThreadDetails defines model for RestIndexingThreadDetails.
+type RestIndexingThreadDetails struct {
+	// CapturedAt Returns the timestamp indicating when the current thread details were captured.
+	CapturedAt int64 `json:"capturedAt"`
+
+	// CurrentProcess A snapshot of the current process being executed by the indexing worker.
+	CurrentProcess *struct {
+		// CurrentTask The current task description that the indexing worker is executing.
+		CurrentTask string `json:"currentTask"`
+
+		// Event The event that is currently being processed by the indexing worker.
+		Event *struct {
+			// EventMetadata Retrieves the metadata associated with the index event. The content of this metadata is variable and depends on the event type. It may include identifiers such as repository ID, project ID, or user ID, among other relevant details.
+			EventMetadata *map[string]interface{} `json:"eventMetadata,omitempty"`
+
+			// EventType Retrieves the type of the event, indicating the entity (such as project, repository, or user) that triggered the indexing operation.
+			EventType RestIndexingThreadDetailsCurrentProcessEventEventType `json:"eventType"`
+
+			// Retries Retrieves the count of how many times this event has been retried due to previous failures or exceptions.
+			Retries int32 `json:"retries"`
+		} `json:"event,omitempty"`
+	} `json:"currentProcess,omitempty"`
+
+	// DelayedQueueSize The number of items in the delayed queue. This queue contains retries that have been scheduled with an exponential backoff delay. The retries are for operations that previously failed in the main queue.
+	DelayedQueueSize int32 `json:"delayedQueueSize"`
+
+	// QueueSize The number of items currently in the main queue.
+	QueueSize int32 `json:"queueSize"`
+
+	// State Represents the state of an indexing thread.
+	State *struct {
+		// Code The current code representing the state of the indexing thread
+		Code RestIndexingThreadDetailsStateCode `json:"code"`
+
+		// Description Additional detail about the current state, meant for informational purposes only.
+		Description *string `json:"description,omitempty"`
+	} `json:"state,omitempty"`
+}
+
+// RestIndexingThreadDetailsCurrentProcessEventEventType Retrieves the type of the event, indicating the entity (such as project, repository, or user) that triggered the indexing operation.
+type RestIndexingThreadDetailsCurrentProcessEventEventType string
+
+// RestIndexingThreadDetailsStateCode The current code representing the state of the indexing thread
+type RestIndexingThreadDetailsStateCode string
+
+// RestIndexingWorkerRestartRequest defines model for RestIndexingWorkerRestartRequest.
+type RestIndexingWorkerRestartRequest struct {
+	// GracefulShutdown Should the indexing thread terminate immediately
+	GracefulShutdown *bool `json:"gracefulShutdown,omitempty"`
+
+	// WaitForRestart Should the response wait until the worker has been restarted
+	WaitForRestart *bool `json:"waitForRestart,omitempty"`
 }
 
 // RestInsightAnnotation defines model for RestInsightAnnotation.
@@ -4407,6 +4782,35 @@ type RestInsightReportData struct {
 // RestInvocationHistory defines model for RestInvocationHistory.
 type RestInvocationHistory = interface{}
 
+// RestJiraBackfillError defines model for RestJiraBackfillError.
+type RestJiraBackfillError struct {
+	Error      *string `json:"error,omitempty"`
+	ProjectKey *string `json:"projectKey,omitempty"`
+	RepoSlug   *string `json:"repoSlug,omitempty"`
+}
+
+// RestJiraBackfillReport defines model for RestJiraBackfillReport.
+type RestJiraBackfillReport struct {
+	Errors []RestJiraBackfillError `json:"errors"`
+}
+
+// RestJiraBackfillStatus defines model for RestJiraBackfillStatus.
+type RestJiraBackfillStatus struct {
+	// States Map of backfill state names to their counts
+	States map[string]interface{} `json:"states"`
+}
+
+// RestJiraDevInfoBackfillRequest defines model for RestJiraDevInfoBackfillRequest.
+type RestJiraDevInfoBackfillRequest struct {
+	// FromDate The starting timestamp in milliseconds for looking for backfill items, non-inclusive
+	FromDate     *int64                   `json:"fromDate,omitempty"`
+	JiraSiteIds  []int32                  `json:"jiraSiteIds"`
+	Repositories []RestRepositorySelector `json:"repositories"`
+
+	// ToDate The ending timestamp in milliseconds for looking for backfill items, non-inclusive
+	ToDate *int64 `json:"toDate,omitempty"`
+}
+
 // RestJiraIssue defines model for RestJiraIssue.
 type RestJiraIssue struct {
 	Key *string `json:"key,omitempty"`
@@ -4420,13 +4824,13 @@ type RestJob struct {
 	Initiator *struct {
 		Active       *bool                   `json:"active,omitempty"`
 		AvatarUrl    *string                 `json:"avatarUrl,omitempty"`
-		DisplayName  *string                 `json:"displayName,omitempty"`
+		DisplayName  string                  `json:"displayName"`
 		EmailAddress *string                 `json:"emailAddress,omitempty"`
 		Id           *int32                  `json:"id,omitempty"`
 		Links        *map[string]interface{} `json:"links,omitempty"`
-		Name         *string                 `json:"name,omitempty"`
-		Slug         *string                 `json:"slug,omitempty"`
-		Type         *RestJobInitiatorType   `json:"type,omitempty"`
+		Name         string                  `json:"name"`
+		Slug         string                  `json:"slug"`
+		Type         RestJobInitiatorType    `json:"type"`
 	} `json:"initiator,omitempty"`
 	NodeId   *string `json:"nodeId,omitempty"`
 	Progress *struct {
@@ -4545,17 +4949,29 @@ type RestLogLevel struct {
 	LogLevel *string `json:"logLevel,omitempty"`
 }
 
+// RestLoggingSettings defines model for RestLoggingSettings.
+type RestLoggingSettings struct {
+	DebugLoggingEnabled *bool `json:"debugLoggingEnabled,omitempty"`
+	ProfilingEnabled    *bool `json:"profilingEnabled,omitempty"`
+}
+
 // RestMailConfiguration defines model for RestMailConfiguration.
 type RestMailConfiguration struct {
-	Hostname        *string                        `json:"hostname,omitempty"`
-	Password        *string                        `json:"password,omitempty"`
-	Port            *int32                         `json:"port,omitempty"`
-	Protocol        *RestMailConfigurationProtocol `json:"protocol,omitempty"`
-	RequireStartTls *bool                          `json:"requireStartTls,omitempty"`
-	SenderAddress   *string                        `json:"senderAddress,omitempty"`
-	UseStartTls     *bool                          `json:"useStartTls,omitempty"`
-	Username        *string                        `json:"username,omitempty"`
+	AuthType         *RestMailConfigurationAuthType `json:"authType,omitempty"`
+	Hostname         *string                        `json:"hostname,omitempty"`
+	Oauth2ProviderId *string                        `json:"oauth2ProviderId,omitempty"`
+	Password         *string                        `json:"password,omitempty"`
+	Port             *int32                         `json:"port,omitempty"`
+	Protocol         *RestMailConfigurationProtocol `json:"protocol,omitempty"`
+	RequireStartTls  *bool                          `json:"requireStartTls,omitempty"`
+	SenderAddress    *string                        `json:"senderAddress,omitempty"`
+	TokenId          *string                        `json:"tokenId,omitempty"`
+	UseStartTls      *bool                          `json:"useStartTls,omitempty"`
+	Username         *string                        `json:"username,omitempty"`
 }
+
+// RestMailConfigurationAuthType defines model for RestMailConfiguration.AuthType.
+type RestMailConfigurationAuthType string
 
 // RestMailConfigurationProtocol defines model for RestMailConfiguration.Protocol.
 type RestMailConfigurationProtocol string
@@ -4572,24 +4988,19 @@ type RestMeshConnectivityReport struct {
 
 // RestMeshMigrationRequest defines model for RestMeshMigrationRequest.
 type RestMeshMigrationRequest struct {
-	All               *bool `json:"all,omitempty"`
-	MaxBytesPerSecond *struct {
-		AsLong  *int64 `json:"asLong,omitempty"`
-		Present *bool  `json:"present,omitempty"`
-	} `json:"maxBytesPerSecond,omitempty"`
-	ProjectIds    *[]int32 `json:"projectIds,omitempty"`
-	RepositoryIds *[]int32 `json:"repositoryIds,omitempty"`
+	All           *bool   `json:"all,omitempty"`
+	ProjectIds    []int32 `json:"projectIds"`
+	RepositoryIds []int32 `json:"repositoryIds"`
 }
 
 // RestMeshMigrationSummary defines model for RestMeshMigrationSummary.
 type RestMeshMigrationSummary struct {
-	EndTime      *int64                  `json:"endTime,omitempty"`
-	JobId        *int64                  `json:"jobId,omitempty"`
-	MaxBandwidth *int64                  `json:"maxBandwidth,omitempty"`
-	Progress     *int32                  `json:"progress,omitempty"`
-	Queue        *map[string]interface{} `json:"queue,omitempty"`
-	StartTime    *int64                  `json:"startTime,omitempty"`
-	State        *string                 `json:"state,omitempty"`
+	EndTime   *int64                  `json:"endTime,omitempty"`
+	JobId     *int64                  `json:"jobId,omitempty"`
+	Progress  *int32                  `json:"progress,omitempty"`
+	Queue     *map[string]interface{} `json:"queue,omitempty"`
+	StartTime *int64                  `json:"startTime,omitempty"`
+	State     *string                 `json:"state,omitempty"`
 }
 
 // RestMeshNode defines model for RestMeshNode.
@@ -4708,8 +5119,8 @@ type RestMirrorRepositorySynchronizationStatus struct {
 	ExternalRepoId  *string `json:"externalRepoId,omitempty"`
 	FailedSyncCount *int32  `json:"failedSyncCount,omitempty"`
 	Hashes          *struct {
-		Content  *string `json:"content,omitempty"`
-		Metadata *string `json:"metadata,omitempty"`
+		Content  string `json:"content"`
+		Metadata string `json:"metadata"`
 	} `json:"hashes,omitempty"`
 	InitialSyncDate *time.Time `json:"initialSyncDate,omitempty"`
 	LastSyncDate    *time.Time `json:"lastSyncDate,omitempty"`
@@ -4756,13 +5167,13 @@ type RestMirroredRepositoryStatus string
 type RestMirroredRepositoryDescriptor struct {
 	Links        *map[string]interface{} `json:"links,omitempty"`
 	MirrorServer *struct {
-		BaseUrl        *string                                                 `json:"baseUrl,omitempty"`
-		Enabled        *bool                                                   `json:"enabled,omitempty"`
-		Id             *string                                                 `json:"id,omitempty"`
-		LastSeenDate   time.Time                                               `json:"lastSeenDate"`
-		MirrorType     *RestMirroredRepositoryDescriptorMirrorServerMirrorType `json:"mirrorType,omitempty"`
-		Name           *string                                                 `json:"name,omitempty"`
-		ProductVersion *string                                                 `json:"productVersion,omitempty"`
+		BaseUrl        string                                                 `json:"baseUrl"`
+		Enabled        *bool                                                  `json:"enabled,omitempty"`
+		Id             string                                                 `json:"id"`
+		LastSeenDate   time.Time                                              `json:"lastSeenDate"`
+		MirrorType     RestMirroredRepositoryDescriptorMirrorServerMirrorType `json:"mirrorType"`
+		Name           string                                                 `json:"name"`
+		ProductVersion string                                                 `json:"productVersion"`
 	} `json:"mirrorServer,omitempty"`
 }
 
@@ -4798,9 +5209,9 @@ type RestNamedLink struct {
 // RestNodeConnectivityReport defines model for RestNodeConnectivityReport.
 type RestNodeConnectivityReport struct {
 	Node *struct {
-		Id   *string                             `json:"id,omitempty"`
-		Name *string                             `json:"name,omitempty"`
-		Type *RestNodeConnectivityReportNodeType `json:"type,omitempty"`
+		Id   string                             `json:"id"`
+		Name string                             `json:"name"`
+		Type RestNodeConnectivityReportNodeType `json:"type"`
 	} `json:"node,omitempty"`
 	Summaries *[]RestNodeConnectivitySummary `json:"summaries,omitempty"`
 }
@@ -4811,9 +5222,9 @@ type RestNodeConnectivityReportNodeType string
 // RestNodeConnectivitySummary defines model for RestNodeConnectivitySummary.
 type RestNodeConnectivitySummary struct {
 	Node *struct {
-		Id   *string                              `json:"id,omitempty"`
-		Name *string                              `json:"name,omitempty"`
-		Type *RestNodeConnectivitySummaryNodeType `json:"type,omitempty"`
+		Id   string                              `json:"id"`
+		Name string                              `json:"name"`
+		Type RestNodeConnectivitySummaryNodeType `json:"type"`
 	} `json:"node,omitempty"`
 	Summary *struct {
 		ErrorMessage  *string `json:"errorMessage,omitempty"`
@@ -4842,15 +5253,15 @@ type RestPermittedGroup struct {
 type RestPermittedUser struct {
 	Permission *RestPermittedUserPermission `json:"permission,omitempty"`
 	User       *struct {
-		Active       *bool                      `json:"active,omitempty"`
-		AvatarUrl    *string                    `json:"avatarUrl,omitempty"`
-		DisplayName  *string                    `json:"displayName,omitempty"`
-		EmailAddress *string                    `json:"emailAddress,omitempty"`
-		Id           *int32                     `json:"id,omitempty"`
-		Links        *map[string]interface{}    `json:"links,omitempty"`
-		Name         *string                    `json:"name,omitempty"`
-		Slug         *string                    `json:"slug,omitempty"`
-		Type         *RestPermittedUserUserType `json:"type,omitempty"`
+		Active       *bool                     `json:"active,omitempty"`
+		AvatarUrl    *string                   `json:"avatarUrl,omitempty"`
+		DisplayName  string                    `json:"displayName"`
+		EmailAddress *string                   `json:"emailAddress,omitempty"`
+		Id           *int32                    `json:"id,omitempty"`
+		Links        *map[string]interface{}   `json:"links,omitempty"`
+		Name         string                    `json:"name"`
+		Slug         string                    `json:"slug"`
+		Type         RestPermittedUserUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -4912,6 +5323,23 @@ type RestProjectSettingsRestrictionRequest struct {
 
 // RestPullRequest defines model for RestPullRequest.
 type RestPullRequest struct {
+	Author *struct {
+		Approved           *bool                        `json:"approved,omitempty"`
+		LastReviewedCommit *string                      `json:"lastReviewedCommit,omitempty"`
+		Role               *RestPullRequestAuthorRole   `json:"role,omitempty"`
+		Status             *RestPullRequestAuthorStatus `json:"status,omitempty"`
+		User               *struct {
+			Active       *bool                         `json:"active,omitempty"`
+			AvatarUrl    *string                       `json:"avatarUrl,omitempty"`
+			DisplayName  string                        `json:"displayName"`
+			EmailAddress *string                       `json:"emailAddress,omitempty"`
+			Id           *int32                        `json:"id,omitempty"`
+			Links        *map[string]interface{}       `json:"links,omitempty"`
+			Name         string                        `json:"name"`
+			Slug         string                        `json:"slug"`
+			Type         RestPullRequestAuthorUserType `json:"type"`
+		} `json:"user,omitempty"`
+	} `json:"author,omitempty"`
 	Closed            *bool   `json:"closed,omitempty"`
 	ClosedDate        *int64  `json:"closedDate,omitempty"`
 	CreatedDate       *int64  `json:"createdDate,omitempty"`
@@ -4919,9 +5347,9 @@ type RestPullRequest struct {
 	DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 	Draft             *bool   `json:"draft,omitempty"`
 	FromRef           *struct {
-		DisplayId    *string `json:"displayId,omitempty"`
-		Id           *string `json:"id,omitempty"`
-		LatestCommit *string `json:"latestCommit,omitempty"`
+		DisplayId    string `json:"displayId"`
+		Id           string `json:"id"`
+		LatestCommit string `json:"latestCommit"`
 		Repository   *struct {
 			Archived      *bool                   `json:"archived,omitempty"`
 			DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -4994,9 +5422,9 @@ type RestPullRequest struct {
 	State           *RestPullRequestState         `json:"state,omitempty"`
 	Title           *string                       `json:"title,omitempty"`
 	ToRef           *struct {
-		DisplayId    *string `json:"displayId,omitempty"`
-		Id           *string `json:"id,omitempty"`
-		LatestCommit *string `json:"latestCommit,omitempty"`
+		DisplayId    string `json:"displayId"`
+		Id           string `json:"id"`
+		LatestCommit string `json:"latestCommit"`
 		Repository   *struct {
 			Archived      *bool                   `json:"archived,omitempty"`
 			DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -5063,6 +5491,15 @@ type RestPullRequest struct {
 	Version     *int32 `json:"version,omitempty"`
 }
 
+// RestPullRequestAuthorRole defines model for RestPullRequest.Author.Role.
+type RestPullRequestAuthorRole string
+
+// RestPullRequestAuthorStatus defines model for RestPullRequest.Author.Status.
+type RestPullRequestAuthorStatus string
+
+// RestPullRequestAuthorUserType defines model for RestPullRequest.Author.User.Type.
+type RestPullRequestAuthorUserType string
+
 // RestPullRequestFromRefRepositoryOriginProjectType defines model for RestPullRequest.FromRef.Repository.Origin.Project.Type.
 type RestPullRequestFromRefRepositoryOriginProjectType string
 
@@ -5102,15 +5539,15 @@ type RestPullRequestActivity struct {
 	CreatedDate *int64                         `json:"createdDate,omitempty"`
 	Id          *int64                         `json:"id,omitempty"`
 	User        *struct {
-		Active       *bool                            `json:"active,omitempty"`
-		AvatarUrl    *string                          `json:"avatarUrl,omitempty"`
-		DisplayName  *string                          `json:"displayName,omitempty"`
-		EmailAddress *string                          `json:"emailAddress,omitempty"`
-		Id           *int32                           `json:"id,omitempty"`
-		Links        *map[string]interface{}          `json:"links,omitempty"`
-		Name         *string                          `json:"name,omitempty"`
-		Slug         *string                          `json:"slug,omitempty"`
-		Type         *RestPullRequestActivityUserType `json:"type,omitempty"`
+		Active       *bool                           `json:"active,omitempty"`
+		AvatarUrl    *string                         `json:"avatarUrl,omitempty"`
+		DisplayName  string                          `json:"displayName"`
+		EmailAddress *string                         `json:"emailAddress,omitempty"`
+		Id           *int32                          `json:"id,omitempty"`
+		Links        *map[string]interface{}         `json:"links,omitempty"`
+		Name         string                          `json:"name"`
+		Slug         string                          `json:"slug"`
+		Type         RestPullRequestActivityUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -5124,15 +5561,15 @@ type RestPullRequestActivityUserType string
 type RestPullRequestAssignParticipantRoleRequest struct {
 	Role *RestPullRequestAssignParticipantRoleRequestRole `json:"role,omitempty"`
 	User *struct {
-		Active       *bool                                                `json:"active,omitempty"`
-		AvatarUrl    *string                                              `json:"avatarUrl,omitempty"`
-		DisplayName  *string                                              `json:"displayName,omitempty"`
-		EmailAddress *string                                              `json:"emailAddress,omitempty"`
-		Id           *int32                                               `json:"id,omitempty"`
-		Links        *map[string]interface{}                              `json:"links,omitempty"`
-		Name         *string                                              `json:"name,omitempty"`
-		Slug         *string                                              `json:"slug,omitempty"`
-		Type         *RestPullRequestAssignParticipantRoleRequestUserType `json:"type,omitempty"`
+		Active       *bool                                               `json:"active,omitempty"`
+		AvatarUrl    *string                                             `json:"avatarUrl,omitempty"`
+		DisplayName  string                                              `json:"displayName"`
+		EmailAddress *string                                             `json:"emailAddress,omitempty"`
+		Id           *int32                                              `json:"id,omitempty"`
+		Links        *map[string]interface{}                             `json:"links,omitempty"`
+		Name         string                                              `json:"name"`
+		Slug         string                                              `json:"slug"`
+		Type         RestPullRequestAssignParticipantRoleRequestUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -5153,27 +5590,28 @@ type RestPullRequestAssignStatusRequestStatus string
 
 // RestPullRequestCondition defines model for RestPullRequestCondition.
 type RestPullRequestCondition struct {
-	Id                *int32                 `json:"id,omitempty"`
-	RequiredApprovals *int32                 `json:"requiredApprovals,omitempty"`
-	Reviewers         *[]RestApplicationUser `json:"reviewers,omitempty"`
+	Id                *int32               `json:"id,omitempty"`
+	RequiredApprovals *int32               `json:"requiredApprovals,omitempty"`
+	ReviewerGroups    *[]RestReviewerGroup `json:"reviewerGroups,omitempty"`
+	Reviewers         *[]RestReviewerGroup `json:"reviewers,omitempty"`
 	Scope             *struct {
-		ResourceId *int32                             `json:"resourceId,omitempty"`
-		Type       *RestPullRequestConditionScopeType `json:"type,omitempty"`
+		ResourceId int32                             `json:"resourceId"`
+		Type       RestPullRequestConditionScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 	SourceRefMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestPullRequestConditionSourceRefMatcherTypeId `json:"id,omitempty"`
-			Name *string                                         `json:"name,omitempty"`
+			Id   RestPullRequestConditionSourceRefMatcherTypeId `json:"id"`
+			Name string                                         `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceRefMatcher,omitempty"`
 	TargetRefMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestPullRequestConditionTargetRefMatcherTypeId `json:"id,omitempty"`
-			Name *string                                         `json:"name,omitempty"`
+			Id   RestPullRequestConditionTargetRefMatcherTypeId `json:"id"`
+			Name string                                         `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"targetRefMatcher,omitempty"`
 }
@@ -5208,8 +5646,8 @@ type RestPullRequestFinishReviewRequest struct {
 // RestPullRequestMergeConfig defines model for RestPullRequestMergeConfig.
 type RestPullRequestMergeConfig struct {
 	CommitMessageTemplate *struct {
-		Body  *string `json:"body,omitempty"`
-		Title *string `json:"title,omitempty"`
+		Body  string `json:"body"`
+		Title string `json:"title"`
 	} `json:"commitMessageTemplate,omitempty"`
 	CommitSummaries *int32 `json:"commitSummaries,omitempty"`
 	DefaultStrategy *struct {
@@ -5226,11 +5664,12 @@ type RestPullRequestMergeConfig struct {
 
 // RestPullRequestMergeRequest defines model for RestPullRequestMergeRequest.
 type RestPullRequestMergeRequest struct {
-	AutoMerge   *bool   `json:"autoMerge,omitempty"`
-	AutoSubject *string `json:"autoSubject,omitempty"`
-	Message     *string `json:"message,omitempty"`
-	StrategyId  *string `json:"strategyId,omitempty"`
-	Version     *int32  `json:"version,omitempty"`
+	AutoMerge        *bool   `json:"autoMerge,omitempty"`
+	AutoSubject      *string `json:"autoSubject,omitempty"`
+	BypassMergeQueue *bool   `json:"bypassMergeQueue,omitempty"`
+	Message          *string `json:"message,omitempty"`
+	StrategyId       *string `json:"strategyId,omitempty"`
+	Version          *int32  `json:"version,omitempty"`
 }
 
 // RestPullRequestMergeStrategy defines model for RestPullRequestMergeStrategy.
@@ -5260,15 +5699,15 @@ type RestPullRequestParticipant struct {
 	Role               *RestPullRequestParticipantRole   `json:"role,omitempty"`
 	Status             *RestPullRequestParticipantStatus `json:"status,omitempty"`
 	User               *struct {
-		Active       *bool                               `json:"active,omitempty"`
-		AvatarUrl    *string                             `json:"avatarUrl,omitempty"`
-		DisplayName  *string                             `json:"displayName,omitempty"`
-		EmailAddress *string                             `json:"emailAddress,omitempty"`
-		Id           *int32                              `json:"id,omitempty"`
-		Links        *map[string]interface{}             `json:"links,omitempty"`
-		Name         *string                             `json:"name,omitempty"`
-		Slug         *string                             `json:"slug,omitempty"`
-		Type         *RestPullRequestParticipantUserType `json:"type,omitempty"`
+		Active       *bool                              `json:"active,omitempty"`
+		AvatarUrl    *string                            `json:"avatarUrl,omitempty"`
+		DisplayName  string                             `json:"displayName"`
+		EmailAddress *string                            `json:"emailAddress,omitempty"`
+		Id           *int32                             `json:"id,omitempty"`
+		Links        *map[string]interface{}            `json:"links,omitempty"`
+		Name         string                             `json:"name"`
+		Slug         string                             `json:"slug"`
+		Type         RestPullRequestParticipantUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -5291,9 +5730,9 @@ type RestPullRequestRebaseResult struct {
 	RefChange *struct {
 		FromHash *string `json:"fromHash,omitempty"`
 		Ref      *struct {
-			DisplayId *string                                      `json:"displayId,omitempty"`
-			Id        *string                                      `json:"id,omitempty"`
-			Type      *RestPullRequestRebaseResultRefChangeRefType `json:"type,omitempty"`
+			DisplayId string                                      `json:"displayId"`
+			Id        string                                      `json:"id"`
+			Type      RestPullRequestRebaseResultRefChangeRefType `json:"type"`
 		} `json:"ref,omitempty"`
 		RefId  *string                                   `json:"refId,omitempty"`
 		ToHash *string                                   `json:"toHash,omitempty"`
@@ -5321,8 +5760,8 @@ type RestPullRequestReopenRequest struct {
 type RestPullRequestSettings struct {
 	MergeConfig *struct {
 		CommitMessageTemplate *struct {
-			Body  *string `json:"body,omitempty"`
-			Title *string `json:"title,omitempty"`
+			Body  string `json:"body"`
+			Title string `json:"title"`
 		} `json:"commitMessageTemplate,omitempty"`
 		CommitSummaries *int32 `json:"commitSummaries,omitempty"`
 		DefaultStrategy *struct {
@@ -5333,8 +5772,8 @@ type RestPullRequestSettings struct {
 			Links       *map[string]interface{} `json:"links,omitempty"`
 			Name        *string                 `json:"name,omitempty"`
 		} `json:"defaultStrategy,omitempty"`
-		Strategies *[]RestPullRequestMergeStrategy `json:"strategies,omitempty"`
-		Type       *string                         `json:"type,omitempty"`
+		Strategies []RestPullRequestMergeStrategy `json:"strategies"`
+		Type       *string                        `json:"type,omitempty"`
 	} `json:"mergeConfig,omitempty"`
 }
 
@@ -5342,16 +5781,16 @@ type RestPullRequestSettings struct {
 type RestPullRequestSuggestion struct {
 	ChangeTme *int64 `json:"changeTme,omitempty"`
 	FromRef   *struct {
-		DisplayId *string                               `json:"displayId,omitempty"`
-		Id        *string                               `json:"id,omitempty"`
-		Type      *RestPullRequestSuggestionFromRefType `json:"type,omitempty"`
+		DisplayId string                               `json:"displayId"`
+		Id        string                               `json:"id"`
+		Type      RestPullRequestSuggestionFromRefType `json:"type"`
 	} `json:"fromRef,omitempty"`
 	RefChange *struct {
 		FromHash *string `json:"fromHash,omitempty"`
 		Ref      *struct {
-			DisplayId *string                                    `json:"displayId,omitempty"`
-			Id        *string                                    `json:"id,omitempty"`
-			Type      *RestPullRequestSuggestionRefChangeRefType `json:"type,omitempty"`
+			DisplayId string                                    `json:"displayId"`
+			Id        string                                    `json:"id"`
+			Type      RestPullRequestSuggestionRefChangeRefType `json:"type"`
 		} `json:"ref,omitempty"`
 		RefId  *string                                 `json:"refId,omitempty"`
 		ToHash *string                                 `json:"toHash,omitempty"`
@@ -5418,9 +5857,9 @@ type RestPullRequestSuggestion struct {
 		StatusMessage *string                                   `json:"statusMessage,omitempty"`
 	} `json:"repository,omitempty"`
 	ToRef *struct {
-		DisplayId *string                             `json:"displayId,omitempty"`
-		Id        *string                             `json:"id,omitempty"`
-		Type      *RestPullRequestSuggestionToRefType `json:"type,omitempty"`
+		DisplayId string                             `json:"displayId"`
+		Id        string                             `json:"id"`
+		Type      RestPullRequestSuggestionToRefType `json:"type"`
 	} `json:"toRef,omitempty"`
 }
 
@@ -5470,8 +5909,8 @@ type RestRefMatcher struct {
 	DisplayId *string `json:"displayId,omitempty"`
 	Id        *string `json:"id,omitempty"`
 	Type      *struct {
-		Id   *RestRefMatcherTypeId `json:"id,omitempty"`
-		Name *string               `json:"name,omitempty"`
+		Id   RestRefMatcherTypeId `json:"id"`
+		Name string               `json:"name"`
 	} `json:"type,omitempty"`
 }
 
@@ -5487,13 +5926,13 @@ type RestRefRestriction struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestRefRestrictionMatcherTypeId `json:"id,omitempty"`
-			Name *string                          `json:"name,omitempty"`
+			Id   RestRefRestrictionMatcherTypeId `json:"id"`
+			Name string                          `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"matcher,omitempty"`
 	Scope *struct {
-		ResourceId *int32                       `json:"resourceId,omitempty"`
-		Type       *RestRefRestrictionScopeType `json:"type,omitempty"`
+		ResourceId int32                       `json:"resourceId"`
+		Type       RestRefRestrictionScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 	Type  *string                `json:"type,omitempty"`
 	Users *[]RestApplicationUser `json:"users,omitempty"`
@@ -5507,7 +5946,7 @@ type RestRefRestrictionScopeType string
 
 // RestRefSyncQueue defines model for RestRefSyncQueue.
 type RestRefSyncQueue struct {
-	Values *[]RestFarmSynchronizationRequest `json:"values,omitempty"`
+	Values []RestFarmSynchronizationRequest `json:"values"`
 }
 
 // RestRefSyncRequest defines model for RestRefSyncRequest.
@@ -5523,28 +5962,28 @@ type RestRefSyncRequestAction string
 // RestRefSyncStatus defines model for RestRefSyncStatus.
 type RestRefSyncStatus struct {
 	AheadRefs *struct {
-		DisplayId *string                          `json:"displayId,omitempty"`
-		Id        *string                          `json:"id,omitempty"`
+		DisplayId string                           `json:"displayId"`
+		Id        string                           `json:"id"`
 		State     *RestRefSyncStatusAheadRefsState `json:"state,omitempty"`
 		Tag       *bool                            `json:"tag,omitempty"`
-		Type      *RestRefSyncStatusAheadRefsType  `json:"type,omitempty"`
+		Type      RestRefSyncStatusAheadRefsType   `json:"type"`
 	} `json:"aheadRefs,omitempty"`
 	Available    *bool `json:"available,omitempty"`
 	DivergedRefs *struct {
-		DisplayId *string                             `json:"displayId,omitempty"`
-		Id        *string                             `json:"id,omitempty"`
+		DisplayId string                              `json:"displayId"`
+		Id        string                              `json:"id"`
 		State     *RestRefSyncStatusDivergedRefsState `json:"state,omitempty"`
 		Tag       *bool                               `json:"tag,omitempty"`
-		Type      *RestRefSyncStatusDivergedRefsType  `json:"type,omitempty"`
+		Type      RestRefSyncStatusDivergedRefsType   `json:"type"`
 	} `json:"divergedRefs,omitempty"`
 	Enabled      *bool    `json:"enabled,omitempty"`
 	LastSync     *float32 `json:"lastSync,omitempty"`
 	OrphanedRefs *struct {
-		DisplayId *string                             `json:"displayId,omitempty"`
-		Id        *string                             `json:"id,omitempty"`
+		DisplayId string                              `json:"displayId"`
+		Id        string                              `json:"id"`
 		State     *RestRefSyncStatusOrphanedRefsState `json:"state,omitempty"`
 		Tag       *bool                               `json:"tag,omitempty"`
-		Type      *RestRefSyncStatusOrphanedRefsType  `json:"type,omitempty"`
+		Type      RestRefSyncStatusOrphanedRefsType   `json:"type"`
 	} `json:"orphanedRefs,omitempty"`
 }
 
@@ -5661,8 +6100,8 @@ type RestRepositoryHook struct {
 	Details    *RepositoryHookDetails `json:"details,omitempty"`
 	Enabled    *bool                  `json:"enabled,omitempty"`
 	Scope      *struct {
-		ResourceId *int32                       `json:"resourceId,omitempty"`
-		Type       *RestRepositoryHookScopeType `json:"type,omitempty"`
+		ResourceId int32                       `json:"resourceId"`
+		Type       RestRepositoryHookScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 }
 
@@ -5673,6 +6112,45 @@ type RestRepositoryHookScopeType string
 type RestRepositoryHookVeto struct {
 	DetailedMessage *string `json:"detailedMessage,omitempty"`
 	SummaryMessage  *string `json:"summaryMessage,omitempty"`
+}
+
+// RestRepositoryIndexingDetails defines model for RestRepositoryIndexingDetails.
+type RestRepositoryIndexingDetails struct {
+	// IndexingError Additional detail about the <b>BROKEN</b> status if available, meant for informational purposes only. This nullable, free-form text field should not be used for automation; rely on status instead.
+	IndexingError *string `json:"indexingError,omitempty"`
+
+	// LastIndexedCommitId The commit hash of the last indexed commit in the repository.
+	LastIndexedCommitId *string `json:"lastIndexedCommitId,omitempty"`
+
+	// LastIndexedTimestamp The timestamp in epoch milliseconds of the last time the repository successfully was indexed
+	LastIndexedTimestamp *int64 `json:"lastIndexedTimestamp,omitempty"`
+
+	// ProjectKey The project key that the repository belongs to
+	ProjectKey *string `json:"projectKey,omitempty"`
+
+	// RepositorySlug The repository slug
+	RepositorySlug *string `json:"repositorySlug,omitempty"`
+
+	// Status The current indexing status of the repository.
+	Status *RestRepositoryIndexingDetailsStatus `json:"status,omitempty"`
+}
+
+// RestRepositoryIndexingDetailsStatus The current indexing status of the repository.
+type RestRepositoryIndexingDetailsStatus string
+
+// RestRepositoryIndexingQueueDetails defines model for RestRepositoryIndexingQueueDetails.
+type RestRepositoryIndexingQueueDetails struct {
+	// CapturedAt The timestamp indicating when the current queue details were captured.
+	CapturedAt *int64 `json:"capturedAt,omitempty"`
+
+	// NodeId The ID of the node associated with the indexing queue.
+	NodeId *string `json:"nodeId,omitempty"`
+
+	// Queued Indicates whether the repository is currently queued for indexing.
+	Queued *bool `json:"queued,omitempty"`
+
+	// QueuedAt Gets the time at which the repository was added to the indexing queue. If the repository is not present in the queue, this will be empty.
+	QueuedAt *int64 `json:"queuedAt,omitempty"`
 }
 
 // RestRepositoryLockOwner defines model for RestRepositoryLockOwner.
@@ -5695,9 +6173,9 @@ type RestRepositoryLockOwner struct {
 
 // RestRepositoryMirrorEvent defines model for RestRepositoryMirrorEvent.
 type RestRepositoryMirrorEvent struct {
-	MirrorRepoId   *int32                         `json:"mirrorRepoId,omitempty"`
-	Type           *RestRepositoryMirrorEventType `json:"type,omitempty"`
-	UpstreamRepoId *string                        `json:"upstreamRepoId,omitempty"`
+	MirrorRepoId   *int32                        `json:"mirrorRepoId,omitempty"`
+	Type           RestRepositoryMirrorEventType `json:"type"`
+	UpstreamRepoId string                        `json:"upstreamRepoId"`
 }
 
 // RestRepositoryMirrorEventType defines model for RestRepositoryMirrorEvent.Type.
@@ -5716,8 +6194,8 @@ type RestRepositoryPolicyPermission string
 type RestRepositoryPullRequestSettings struct {
 	MergeConfig *struct {
 		CommitMessageTemplate *struct {
-			Body  *string `json:"body,omitempty"`
-			Title *string `json:"title,omitempty"`
+			Body  string `json:"body"`
+			Title string `json:"title"`
 		} `json:"commitMessageTemplate,omitempty"`
 		CommitSummaries *int32 `json:"commitSummaries,omitempty"`
 		DefaultStrategy *struct {
@@ -5728,8 +6206,8 @@ type RestRepositoryPullRequestSettings struct {
 			Links       *map[string]interface{} `json:"links,omitempty"`
 			Name        *string                 `json:"name,omitempty"`
 		} `json:"defaultStrategy,omitempty"`
-		Strategies *[]RestPullRequestMergeStrategy `json:"strategies,omitempty"`
-		Type       *string                         `json:"type,omitempty"`
+		Strategies []RestPullRequestMergeStrategy `json:"strategies"`
+		Type       *string                        `json:"type,omitempty"`
 	} `json:"mergeConfig,omitempty"`
 	RequiredAllApprovers     *bool `json:"requiredAllApprovers,omitempty"`
 	RequiredAllTasksComplete *bool `json:"requiredAllTasksComplete,omitempty"`
@@ -5752,9 +6230,9 @@ type RestRepositoryRefChangeActivity struct {
 	RefChange   *struct {
 		FromHash *string `json:"fromHash,omitempty"`
 		Ref      *struct {
-			DisplayId *string                                          `json:"displayId,omitempty"`
-			Id        *string                                          `json:"id,omitempty"`
-			Type      *RestRepositoryRefChangeActivityRefChangeRefType `json:"type,omitempty"`
+			DisplayId string                                          `json:"displayId"`
+			Id        string                                          `json:"id"`
+			Type      RestRepositoryRefChangeActivityRefChangeRefType `json:"type"`
 		} `json:"ref,omitempty"`
 		RefId       *string                                              `json:"refId,omitempty"`
 		ToHash      *string                                              `json:"toHash,omitempty"`
@@ -5823,15 +6301,15 @@ type RestRepositoryRefChangeActivity struct {
 	} `json:"repository,omitempty"`
 	Trigger *string `json:"trigger,omitempty"`
 	User    *struct {
-		Active       *bool                                    `json:"active,omitempty"`
-		AvatarUrl    *string                                  `json:"avatarUrl,omitempty"`
-		DisplayName  *string                                  `json:"displayName,omitempty"`
-		EmailAddress *string                                  `json:"emailAddress,omitempty"`
-		Id           *int32                                   `json:"id,omitempty"`
-		Links        *map[string]interface{}                  `json:"links,omitempty"`
-		Name         *string                                  `json:"name,omitempty"`
-		Slug         *string                                  `json:"slug,omitempty"`
-		Type         *RestRepositoryRefChangeActivityUserType `json:"type,omitempty"`
+		Active       *bool                                   `json:"active,omitempty"`
+		AvatarUrl    *string                                 `json:"avatarUrl,omitempty"`
+		DisplayName  string                                  `json:"displayName"`
+		EmailAddress *string                                 `json:"emailAddress,omitempty"`
+		Id           *int32                                  `json:"id,omitempty"`
+		Links        *map[string]interface{}                 `json:"links,omitempty"`
+		Name         string                                  `json:"name"`
+		Slug         string                                  `json:"slug"`
+		Type         RestRepositoryRefChangeActivityUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -5861,8 +6339,8 @@ type RestRepositoryRefChangeActivityUserType string
 
 // RestRepositorySelector defines model for RestRepositorySelector.
 type RestRepositorySelector struct {
-	ProjectKey *string `json:"projectKey,omitempty"`
-	Slug       *string `json:"slug,omitempty"`
+	ProjectKey string `json:"projectKey"`
+	Slug       string `json:"slug"`
 }
 
 // RestRequiredBuildCondition defines model for RestRequiredBuildCondition.
@@ -5873,8 +6351,8 @@ type RestRequiredBuildCondition struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestRequiredBuildConditionExemptRefMatcherTypeId `json:"id,omitempty"`
-			Name *string                                           `json:"name,omitempty"`
+			Id   RestRequiredBuildConditionExemptRefMatcherTypeId `json:"id"`
+			Name string                                           `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"exemptRefMatcher,omitempty"`
 	Id         *int64 `json:"id,omitempty"`
@@ -5882,10 +6360,16 @@ type RestRequiredBuildCondition struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestRequiredBuildConditionRefMatcherTypeId `json:"id,omitempty"`
-			Name *string                                     `json:"name,omitempty"`
+			Id   RestRequiredBuildConditionRefMatcherTypeId `json:"id"`
+			Name string                                     `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"refMatcher,omitempty"`
+
+	// RequiredForMergeQueue Indicates whether this required build condition is enforced for merges via the merge queue.
+	RequiredForMergeQueue *bool `json:"requiredForMergeQueue,omitempty"`
+
+	// RequiredForPullRequest Indicates whether this required build condition is enforced for pull requests.
+	RequiredForPullRequest *bool `json:"requiredForPullRequest,omitempty"`
 }
 
 // RestRequiredBuildConditionExemptRefMatcherTypeId defines model for RestRequiredBuildCondition.ExemptRefMatcher.Type.Id.
@@ -5897,42 +6381,48 @@ type RestRequiredBuildConditionRefMatcherTypeId string
 // RestRequiredBuildConditionSetRequest defines model for RestRequiredBuildConditionSetRequest.
 type RestRequiredBuildConditionSetRequest struct {
 	// BuildParentKeys A non-empty list of build parent keys that require green builds for this merge check to pass
-	BuildParentKeys  []string        `json:"buildParentKeys"`
-	ExemptRefMatcher *RestRefMatcher `json:"exemptRefMatcher,omitempty"`
-	RefMatcher       struct {
+	BuildParentKeys  []string `json:"buildParentKeys"`
+	ExemptRefMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestRequiredBuildConditionSetRequestRefMatcherTypeId `json:"id,omitempty"`
-			Name *string                                               `json:"name,omitempty"`
+			Id   RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId `json:"id"`
+			Name string                                                     `json:"name"`
 		} `json:"type,omitempty"`
-	} `json:"refMatcher"`
+	} `json:"exemptRefMatcher,omitempty"`
+	RefMatcher RestRefMatcher `json:"refMatcher"`
+
+	// RequiredForMergeQueue Indicates whether this required build condition is enforced for merges via the merge queue. If not specified, defaults to true.
+	RequiredForMergeQueue *bool `json:"requiredForMergeQueue,omitempty"`
+
+	// RequiredForPullRequest Indicates whether this required build condition is enforced for pull requests. If not specified, defaults to true.
+	RequiredForPullRequest *bool `json:"requiredForPullRequest,omitempty"`
 }
 
-// RestRequiredBuildConditionSetRequestRefMatcherTypeId defines model for RestRequiredBuildConditionSetRequest.RefMatcher.Type.Id.
-type RestRequiredBuildConditionSetRequestRefMatcherTypeId string
+// RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId defines model for RestRequiredBuildConditionSetRequest.ExemptRefMatcher.Type.Id.
+type RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId string
 
 // RestRestrictionRequest defines model for RestRestrictionRequest.
 type RestRestrictionRequest struct {
-	AccessKeyIds *[]int32            `json:"accessKeyIds,omitempty"`
+	AccessKeyIds []int32             `json:"accessKeyIds"`
 	AccessKeys   *[]RestSshAccessKey `json:"accessKeys,omitempty"`
-	GroupNames   *[]string           `json:"groupNames,omitempty"`
+	GroupNames   []string            `json:"groupNames"`
 	Groups       *[]string           `json:"groups,omitempty"`
 	Id           *int32              `json:"id,omitempty"`
 	Matcher      *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestRestrictionRequestMatcherTypeId `json:"id,omitempty"`
-			Name *string                              `json:"name,omitempty"`
+			Id   RestRestrictionRequestMatcherTypeId `json:"id"`
+			Name string                              `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"matcher,omitempty"`
 	Scope *struct {
-		ResourceId *int32                           `json:"resourceId,omitempty"`
-		Type       *RestRestrictionRequestScopeType `json:"type,omitempty"`
+		ResourceId int32                           `json:"resourceId"`
+		Type       RestRestrictionRequestScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 	Type      *string                `json:"type,omitempty"`
-	UserSlugs *[]string              `json:"userSlugs,omitempty"`
+	UserSlugs []string               `json:"userSlugs"`
 	Users     *[]RestApplicationUser `json:"users,omitempty"`
 }
 
@@ -5949,8 +6439,8 @@ type RestReviewerGroup struct {
 	Id          *int64  `json:"id,omitempty"`
 	Name        *string `json:"name,omitempty"`
 	Scope       *struct {
-		ResourceId *int32                      `json:"resourceId,omitempty"`
-		Type       *RestReviewerGroupScopeType `json:"type,omitempty"`
+		ResourceId int32                      `json:"resourceId"`
+		Type       RestReviewerGroupScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 	Users *[]ApplicationUser `json:"users,omitempty"`
 }
@@ -6013,8 +6503,8 @@ type RestSecretScanningRule struct {
 
 	// Scope The scope in which this rule was configured for.
 	Scope *struct {
-		ResourceId *int32                           `json:"resourceId,omitempty"`
-		Type       *RestSecretScanningRuleScopeType `json:"type,omitempty"`
+		ResourceId int32                           `json:"resourceId"`
+		Type       RestSecretScanningRuleScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 }
 
@@ -6172,8 +6662,8 @@ type RestSshCredentials struct {
 	Algorithm *string `json:"algorithm,omitempty"`
 
 	// PublicKey The public key text in the OpenSSH format. The algorithm must be specified in case of the legacy X.509 keys
-	PublicKey string  `json:"publicKey"`
-	Username  *string `json:"username,omitempty"`
+	PublicKey string `json:"publicKey"`
+	Username  string `json:"username"`
 }
 
 // RestSshKey defines model for RestSshKey.
@@ -6273,15 +6763,15 @@ type RestUserRateLimitSettings struct {
 		FillRate *int32 `json:"fillRate,omitempty"`
 	} `json:"settings,omitempty"`
 	User *struct {
-		Active       *bool                              `json:"active,omitempty"`
-		AvatarUrl    *string                            `json:"avatarUrl,omitempty"`
-		DisplayName  *string                            `json:"displayName,omitempty"`
-		EmailAddress *string                            `json:"emailAddress,omitempty"`
-		Id           *int32                             `json:"id,omitempty"`
-		Links        *map[string]interface{}            `json:"links,omitempty"`
-		Name         *string                            `json:"name,omitempty"`
-		Slug         *string                            `json:"slug,omitempty"`
-		Type         *RestUserRateLimitSettingsUserType `json:"type,omitempty"`
+		Active       *bool                             `json:"active,omitempty"`
+		AvatarUrl    *string                           `json:"avatarUrl,omitempty"`
+		DisplayName  string                            `json:"displayName"`
+		EmailAddress *string                           `json:"emailAddress,omitempty"`
+		Id           *int32                            `json:"id,omitempty"`
+		Links        *map[string]interface{}           `json:"links,omitempty"`
+		Name         string                            `json:"name"`
+		Slug         string                            `json:"slug"`
+		Type         RestUserRateLimitSettingsUserType `json:"type"`
 	} `json:"user,omitempty"`
 	Whitelisted *bool `json:"whitelisted,omitempty"`
 }
@@ -6334,6 +6824,23 @@ type RestUserReaction struct {
 				Parent     *string   `json:"parent,omitempty"`
 			} `json:"path,omitempty"`
 			PullRequest *struct {
+				Author *struct {
+					Approved           *bool                                                 `json:"approved,omitempty"`
+					LastReviewedCommit *string                                               `json:"lastReviewedCommit,omitempty"`
+					Role               *RestUserReactionCommentAnchorPullRequestAuthorRole   `json:"role,omitempty"`
+					Status             *RestUserReactionCommentAnchorPullRequestAuthorStatus `json:"status,omitempty"`
+					User               *struct {
+						Active       *bool                                                  `json:"active,omitempty"`
+						AvatarUrl    *string                                                `json:"avatarUrl,omitempty"`
+						DisplayName  string                                                 `json:"displayName"`
+						EmailAddress *string                                                `json:"emailAddress,omitempty"`
+						Id           *int32                                                 `json:"id,omitempty"`
+						Links        *map[string]interface{}                                `json:"links,omitempty"`
+						Name         string                                                 `json:"name"`
+						Slug         string                                                 `json:"slug"`
+						Type         RestUserReactionCommentAnchorPullRequestAuthorUserType `json:"type"`
+					} `json:"user,omitempty"`
+				} `json:"author,omitempty"`
 				Closed            *bool   `json:"closed,omitempty"`
 				ClosedDate        *int64  `json:"closedDate,omitempty"`
 				CreatedDate       *int64  `json:"createdDate,omitempty"`
@@ -6341,9 +6848,9 @@ type RestUserReaction struct {
 				DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 				Draft             *bool   `json:"draft,omitempty"`
 				FromRef           *struct {
-					DisplayId    *string `json:"displayId,omitempty"`
-					Id           *string `json:"id,omitempty"`
-					LatestCommit *string `json:"latestCommit,omitempty"`
+					DisplayId    string `json:"displayId"`
+					Id           string `json:"id"`
+					LatestCommit string `json:"latestCommit"`
 					Repository   *struct {
 						Archived      *bool                   `json:"archived,omitempty"`
 						DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -6416,9 +6923,9 @@ type RestUserReaction struct {
 				State           *RestUserReactionCommentAnchorPullRequestState `json:"state,omitempty"`
 				Title           *string                                        `json:"title,omitempty"`
 				ToRef           *struct {
-					DisplayId    *string `json:"displayId,omitempty"`
-					Id           *string `json:"id,omitempty"`
-					LatestCommit *string `json:"latestCommit,omitempty"`
+					DisplayId    string `json:"displayId"`
+					Id           string `json:"id"`
+					LatestCommit string `json:"latestCommit"`
 					Repository   *struct {
 						Archived      *bool                   `json:"archived,omitempty"`
 						DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -6494,15 +7001,15 @@ type RestUserReaction struct {
 		} `json:"anchor,omitempty"`
 		Anchored *bool `json:"anchored,omitempty"`
 		Author   *struct {
-			Active       *bool                              `json:"active,omitempty"`
-			AvatarUrl    *string                            `json:"avatarUrl,omitempty"`
-			DisplayName  *string                            `json:"displayName,omitempty"`
-			EmailAddress *string                            `json:"emailAddress,omitempty"`
-			Id           *int32                             `json:"id,omitempty"`
-			Links        *map[string]interface{}            `json:"links,omitempty"`
-			Name         *string                            `json:"name,omitempty"`
-			Slug         *string                            `json:"slug,omitempty"`
-			Type         *RestUserReactionCommentAuthorType `json:"type,omitempty"`
+			Active       *bool                             `json:"active,omitempty"`
+			AvatarUrl    *string                           `json:"avatarUrl,omitempty"`
+			DisplayName  string                            `json:"displayName"`
+			EmailAddress *string                           `json:"emailAddress,omitempty"`
+			Id           *int32                            `json:"id,omitempty"`
+			Links        *map[string]interface{}           `json:"links,omitempty"`
+			Name         string                            `json:"name"`
+			Slug         string                            `json:"slug"`
+			Type         RestUserReactionCommentAuthorType `json:"type"`
 		} `json:"author,omitempty"`
 		Comments    *[]RestComment `json:"comments,omitempty"`
 		CreatedDate *int64         `json:"createdDate,omitempty"`
@@ -6542,6 +7049,23 @@ type RestUserReaction struct {
 					Parent     *string   `json:"parent,omitempty"`
 				} `json:"path,omitempty"`
 				PullRequest *struct {
+					Author *struct {
+						Approved           *bool                                                       `json:"approved,omitempty"`
+						LastReviewedCommit *string                                                     `json:"lastReviewedCommit,omitempty"`
+						Role               *RestUserReactionCommentParentAnchorPullRequestAuthorRole   `json:"role,omitempty"`
+						Status             *RestUserReactionCommentParentAnchorPullRequestAuthorStatus `json:"status,omitempty"`
+						User               *struct {
+							Active       *bool                                                        `json:"active,omitempty"`
+							AvatarUrl    *string                                                      `json:"avatarUrl,omitempty"`
+							DisplayName  string                                                       `json:"displayName"`
+							EmailAddress *string                                                      `json:"emailAddress,omitempty"`
+							Id           *int32                                                       `json:"id,omitempty"`
+							Links        *map[string]interface{}                                      `json:"links,omitempty"`
+							Name         string                                                       `json:"name"`
+							Slug         string                                                       `json:"slug"`
+							Type         RestUserReactionCommentParentAnchorPullRequestAuthorUserType `json:"type"`
+						} `json:"user,omitempty"`
+					} `json:"author,omitempty"`
 					Closed            *bool   `json:"closed,omitempty"`
 					ClosedDate        *int64  `json:"closedDate,omitempty"`
 					CreatedDate       *int64  `json:"createdDate,omitempty"`
@@ -6549,9 +7073,9 @@ type RestUserReaction struct {
 					DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 					Draft             *bool   `json:"draft,omitempty"`
 					FromRef           *struct {
-						DisplayId    *string `json:"displayId,omitempty"`
-						Id           *string `json:"id,omitempty"`
-						LatestCommit *string `json:"latestCommit,omitempty"`
+						DisplayId    string `json:"displayId"`
+						Id           string `json:"id"`
+						LatestCommit string `json:"latestCommit"`
 						Repository   *struct {
 							Archived      *bool                   `json:"archived,omitempty"`
 							DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -6624,9 +7148,9 @@ type RestUserReaction struct {
 					State           *RestUserReactionCommentParentAnchorPullRequestState `json:"state,omitempty"`
 					Title           *string                                              `json:"title,omitempty"`
 					ToRef           *struct {
-						DisplayId    *string `json:"displayId,omitempty"`
-						Id           *string `json:"id,omitempty"`
-						LatestCommit *string `json:"latestCommit,omitempty"`
+						DisplayId    string `json:"displayId"`
+						Id           string `json:"id"`
+						LatestCommit string `json:"latestCommit"`
 						Repository   *struct {
 							Archived      *bool                   `json:"archived,omitempty"`
 							DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -6702,15 +7226,15 @@ type RestUserReaction struct {
 			} `json:"anchor,omitempty"`
 			Anchored *bool `json:"anchored,omitempty"`
 			Author   *struct {
-				Active       *bool                                    `json:"active,omitempty"`
-				AvatarUrl    *string                                  `json:"avatarUrl,omitempty"`
-				DisplayName  *string                                  `json:"displayName,omitempty"`
-				EmailAddress *string                                  `json:"emailAddress,omitempty"`
-				Id           *int32                                   `json:"id,omitempty"`
-				Links        *map[string]interface{}                  `json:"links,omitempty"`
-				Name         *string                                  `json:"name,omitempty"`
-				Slug         *string                                  `json:"slug,omitempty"`
-				Type         *RestUserReactionCommentParentAuthorType `json:"type,omitempty"`
+				Active       *bool                                   `json:"active,omitempty"`
+				AvatarUrl    *string                                 `json:"avatarUrl,omitempty"`
+				DisplayName  string                                  `json:"displayName"`
+				EmailAddress *string                                 `json:"emailAddress,omitempty"`
+				Id           *int32                                  `json:"id,omitempty"`
+				Links        *map[string]interface{}                 `json:"links,omitempty"`
+				Name         string                                  `json:"name"`
+				Slug         string                                  `json:"slug"`
+				Type         RestUserReactionCommentParentAuthorType `json:"type"`
 			} `json:"author,omitempty"`
 			Comments     *[]RestComment          `json:"comments,omitempty"`
 			CreatedDate  *int64                  `json:"createdDate,omitempty"`
@@ -6721,15 +7245,15 @@ type RestUserReaction struct {
 			Reply        *bool                   `json:"reply,omitempty"`
 			ResolvedDate *int64                  `json:"resolvedDate,omitempty"`
 			Resolver     *struct {
-				Active       *bool                                      `json:"active,omitempty"`
-				AvatarUrl    *string                                    `json:"avatarUrl,omitempty"`
-				DisplayName  *string                                    `json:"displayName,omitempty"`
-				EmailAddress *string                                    `json:"emailAddress,omitempty"`
-				Id           *int32                                     `json:"id,omitempty"`
-				Links        *map[string]interface{}                    `json:"links,omitempty"`
-				Name         *string                                    `json:"name,omitempty"`
-				Slug         *string                                    `json:"slug,omitempty"`
-				Type         *RestUserReactionCommentParentResolverType `json:"type,omitempty"`
+				Active       *bool                                     `json:"active,omitempty"`
+				AvatarUrl    *string                                   `json:"avatarUrl,omitempty"`
+				DisplayName  string                                    `json:"displayName"`
+				EmailAddress *string                                   `json:"emailAddress,omitempty"`
+				Id           *int32                                    `json:"id,omitempty"`
+				Links        *map[string]interface{}                   `json:"links,omitempty"`
+				Name         string                                    `json:"name"`
+				Slug         string                                    `json:"slug"`
+				Type         RestUserReactionCommentParentResolverType `json:"type"`
 			} `json:"resolver,omitempty"`
 			Severity *string `json:"severity,omitempty"`
 			State    *string `json:"state,omitempty"`
@@ -6739,15 +7263,15 @@ type RestUserReaction struct {
 			ThreadResolved     *bool  `json:"threadResolved,omitempty"`
 			ThreadResolvedDate *int64 `json:"threadResolvedDate,omitempty"`
 			ThreadResolver     *struct {
-				Active       *bool                                            `json:"active,omitempty"`
-				AvatarUrl    *string                                          `json:"avatarUrl,omitempty"`
-				DisplayName  *string                                          `json:"displayName,omitempty"`
-				EmailAddress *string                                          `json:"emailAddress,omitempty"`
-				Id           *int32                                           `json:"id,omitempty"`
-				Links        *map[string]interface{}                          `json:"links,omitempty"`
-				Name         *string                                          `json:"name,omitempty"`
-				Slug         *string                                          `json:"slug,omitempty"`
-				Type         *RestUserReactionCommentParentThreadResolverType `json:"type,omitempty"`
+				Active       *bool                                           `json:"active,omitempty"`
+				AvatarUrl    *string                                         `json:"avatarUrl,omitempty"`
+				DisplayName  string                                          `json:"displayName"`
+				EmailAddress *string                                         `json:"emailAddress,omitempty"`
+				Id           *int32                                          `json:"id,omitempty"`
+				Links        *map[string]interface{}                         `json:"links,omitempty"`
+				Name         string                                          `json:"name"`
+				Slug         string                                          `json:"slug"`
+				Type         RestUserReactionCommentParentThreadResolverType `json:"type"`
 			} `json:"threadResolver,omitempty"`
 			UpdatedDate *int64 `json:"updatedDate,omitempty"`
 			Version     *int32 `json:"version,omitempty"`
@@ -6757,15 +7281,15 @@ type RestUserReaction struct {
 		Reply        *bool                   `json:"reply,omitempty"`
 		ResolvedDate *int64                  `json:"resolvedDate,omitempty"`
 		Resolver     *struct {
-			Active       *bool                                `json:"active,omitempty"`
-			AvatarUrl    *string                              `json:"avatarUrl,omitempty"`
-			DisplayName  *string                              `json:"displayName,omitempty"`
-			EmailAddress *string                              `json:"emailAddress,omitempty"`
-			Id           *int32                               `json:"id,omitempty"`
-			Links        *map[string]interface{}              `json:"links,omitempty"`
-			Name         *string                              `json:"name,omitempty"`
-			Slug         *string                              `json:"slug,omitempty"`
-			Type         *RestUserReactionCommentResolverType `json:"type,omitempty"`
+			Active       *bool                               `json:"active,omitempty"`
+			AvatarUrl    *string                             `json:"avatarUrl,omitempty"`
+			DisplayName  string                              `json:"displayName"`
+			EmailAddress *string                             `json:"emailAddress,omitempty"`
+			Id           *int32                              `json:"id,omitempty"`
+			Links        *map[string]interface{}             `json:"links,omitempty"`
+			Name         string                              `json:"name"`
+			Slug         string                              `json:"slug"`
+			Type         RestUserReactionCommentResolverType `json:"type"`
 		} `json:"resolver,omitempty"`
 		Severity *string `json:"severity,omitempty"`
 		State    *string `json:"state,omitempty"`
@@ -6775,15 +7299,15 @@ type RestUserReaction struct {
 		ThreadResolved     *bool  `json:"threadResolved,omitempty"`
 		ThreadResolvedDate *int64 `json:"threadResolvedDate,omitempty"`
 		ThreadResolver     *struct {
-			Active       *bool                                      `json:"active,omitempty"`
-			AvatarUrl    *string                                    `json:"avatarUrl,omitempty"`
-			DisplayName  *string                                    `json:"displayName,omitempty"`
-			EmailAddress *string                                    `json:"emailAddress,omitempty"`
-			Id           *int32                                     `json:"id,omitempty"`
-			Links        *map[string]interface{}                    `json:"links,omitempty"`
-			Name         *string                                    `json:"name,omitempty"`
-			Slug         *string                                    `json:"slug,omitempty"`
-			Type         *RestUserReactionCommentThreadResolverType `json:"type,omitempty"`
+			Active       *bool                                     `json:"active,omitempty"`
+			AvatarUrl    *string                                   `json:"avatarUrl,omitempty"`
+			DisplayName  string                                    `json:"displayName"`
+			EmailAddress *string                                   `json:"emailAddress,omitempty"`
+			Id           *int32                                    `json:"id,omitempty"`
+			Links        *map[string]interface{}                   `json:"links,omitempty"`
+			Name         string                                    `json:"name"`
+			Slug         string                                    `json:"slug"`
+			Type         RestUserReactionCommentThreadResolverType `json:"type"`
 		} `json:"threadResolver,omitempty"`
 		UpdatedDate *int64 `json:"updatedDate,omitempty"`
 		Version     *int32 `json:"version,omitempty"`
@@ -6794,15 +7318,15 @@ type RestUserReaction struct {
 		Value    *string `json:"value,omitempty"`
 	} `json:"emoticon,omitempty"`
 	User *struct {
-		Active       *bool                     `json:"active,omitempty"`
-		AvatarUrl    *string                   `json:"avatarUrl,omitempty"`
-		DisplayName  *string                   `json:"displayName,omitempty"`
-		EmailAddress *string                   `json:"emailAddress,omitempty"`
-		Id           *int32                    `json:"id,omitempty"`
-		Links        *map[string]interface{}   `json:"links,omitempty"`
-		Name         *string                   `json:"name,omitempty"`
-		Slug         *string                   `json:"slug,omitempty"`
-		Type         *RestUserReactionUserType `json:"type,omitempty"`
+		Active       *bool                    `json:"active,omitempty"`
+		AvatarUrl    *string                  `json:"avatarUrl,omitempty"`
+		DisplayName  string                   `json:"displayName"`
+		EmailAddress *string                  `json:"emailAddress,omitempty"`
+		Id           *int32                   `json:"id,omitempty"`
+		Links        *map[string]interface{}  `json:"links,omitempty"`
+		Name         string                   `json:"name"`
+		Slug         string                   `json:"slug"`
+		Type         RestUserReactionUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -6817,6 +7341,15 @@ type RestUserReactionCommentAnchorLineType string
 
 // RestUserReactionCommentAnchorMultilineMarkerStartLineType The segment type of the start line of the multiline comment
 type RestUserReactionCommentAnchorMultilineMarkerStartLineType string
+
+// RestUserReactionCommentAnchorPullRequestAuthorRole defines model for RestUserReaction.Comment.Anchor.PullRequest.Author.Role.
+type RestUserReactionCommentAnchorPullRequestAuthorRole string
+
+// RestUserReactionCommentAnchorPullRequestAuthorStatus defines model for RestUserReaction.Comment.Anchor.PullRequest.Author.Status.
+type RestUserReactionCommentAnchorPullRequestAuthorStatus string
+
+// RestUserReactionCommentAnchorPullRequestAuthorUserType defines model for RestUserReaction.Comment.Anchor.PullRequest.Author.User.Type.
+type RestUserReactionCommentAnchorPullRequestAuthorUserType string
 
 // RestUserReactionCommentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestUserReaction.Comment.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestUserReactionCommentAnchorPullRequestFromRefRepositoryOriginProjectType string
@@ -6865,6 +7398,15 @@ type RestUserReactionCommentParentAnchorLineType string
 
 // RestUserReactionCommentParentAnchorMultilineMarkerStartLineType The segment type of the start line of the multiline comment
 type RestUserReactionCommentParentAnchorMultilineMarkerStartLineType string
+
+// RestUserReactionCommentParentAnchorPullRequestAuthorRole defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Author.Role.
+type RestUserReactionCommentParentAnchorPullRequestAuthorRole string
+
+// RestUserReactionCommentParentAnchorPullRequestAuthorStatus defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Author.Status.
+type RestUserReactionCommentParentAnchorPullRequestAuthorStatus string
+
+// RestUserReactionCommentParentAnchorPullRequestAuthorUserType defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Author.User.Type.
+type RestUserReactionCommentParentAnchorPullRequestAuthorUserType string
 
 // RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType string
@@ -7156,15 +7698,21 @@ type FindUsersNotInGroupParams struct {
 
 // SetMailConfigJSONBody defines parameters for SetMailConfig.
 type SetMailConfigJSONBody struct {
-	Hostname        *string                        `json:"hostname,omitempty"`
-	Password        *string                        `json:"password,omitempty"`
-	Port            *int32                         `json:"port,omitempty"`
-	Protocol        *SetMailConfigJSONBodyProtocol `json:"protocol,omitempty"`
-	RequireStartTls *bool                          `json:"requireStartTls,omitempty"`
-	SenderAddress   *string                        `json:"senderAddress,omitempty"`
-	UseStartTls     *bool                          `json:"useStartTls,omitempty"`
-	Username        *string                        `json:"username,omitempty"`
+	AuthType         *SetMailConfigJSONBodyAuthType `json:"authType,omitempty"`
+	Hostname         *string                        `json:"hostname,omitempty"`
+	Oauth2ProviderId *string                        `json:"oauth2ProviderId,omitempty"`
+	Password         *string                        `json:"password,omitempty"`
+	Port             *int32                         `json:"port,omitempty"`
+	Protocol         *SetMailConfigJSONBodyProtocol `json:"protocol,omitempty"`
+	RequireStartTls  *bool                          `json:"requireStartTls,omitempty"`
+	SenderAddress    *string                        `json:"senderAddress,omitempty"`
+	TokenId          *string                        `json:"tokenId,omitempty"`
+	UseStartTls      *bool                          `json:"useStartTls,omitempty"`
+	Username         *string                        `json:"username,omitempty"`
 }
+
+// SetMailConfigJSONBodyAuthType defines parameters for SetMailConfig.
+type SetMailConfigJSONBodyAuthType string
 
 // SetMailConfigJSONBodyProtocol defines parameters for SetMailConfig.
 type SetMailConfigJSONBodyProtocol string
@@ -7460,6 +8008,12 @@ type GetLabelablesParams struct {
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// SetSettings2JSONBody defines parameters for SetSettings2.
+type SetSettings2JSONBody struct {
+	DebugLoggingEnabled bool `json:"debugLoggingEnabled"`
+	ProfilingEnabled    bool `json:"profilingEnabled"`
+}
+
 // PreviewParams defines parameters for Preview.
 type PreviewParams struct {
 	// HtmlEscape (Optional) true if HTML should be escaped in the input markup, false otherwise.
@@ -7507,13 +8061,9 @@ type GetImportJobMessagesParams struct {
 
 // StartMeshMigrationJSONBody defines parameters for StartMeshMigration.
 type StartMeshMigrationJSONBody struct {
-	All               *bool `json:"all,omitempty"`
-	MaxBytesPerSecond *struct {
-		AsLong  *int64 `json:"asLong,omitempty"`
-		Present *bool  `json:"present,omitempty"`
-	} `json:"maxBytesPerSecond,omitempty"`
-	ProjectIds    *[]int32 `json:"projectIds,omitempty"`
-	RepositoryIds *[]int32 `json:"repositoryIds,omitempty"`
+	All           *bool   `json:"all,omitempty"`
+	ProjectIds    []int32 `json:"projectIds"`
+	RepositoryIds []int32 `json:"repositoryIds"`
 }
 
 // SearchMeshMigrationReposParams defines parameters for SearchMeshMigrationRepos.
@@ -7743,7 +8293,7 @@ type GetArchiveParams struct {
 	// Filename A filename to include the "Content-Disposition" header
 	Filename *string `form:"filename,omitempty" json:"filename,omitempty"`
 
-	// At The commit to stream an archive of; if not supplied, an archive of the default branch is streamed
+	// At The commit hash or fully-qualified ref name (e.g. refs/tags/example) to stream an archive of; if not supplied, an archive of the default branch is streamed
 	At *string `form:"at,omitempty" json:"at,omitempty"`
 
 	// Prefix A prefix to apply to all entries in the streamed archive; if the supplied prefix does not end with a trailing /, one will be added automatically
@@ -8391,6 +8941,12 @@ type GetPageParams struct {
 
 	// Limit Number of items to return. If not passed, a page size of 25 is used.
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// Get3Params defines parameters for Get3.
+type Get3Params struct {
+	// WithProperties (optional) defaults to false, whether to return additional pull request properties
+	WithProperties *string `form:"withProperties,omitempty" json:"withProperties,omitempty"`
 }
 
 // StreamRawDiff2Params defines parameters for StreamRawDiff2.
@@ -9176,21 +9732,22 @@ type GetBuildStatusParams struct {
 // UpdatePullRequestCondition1JSONBody defines parameters for UpdatePullRequestCondition1.
 type UpdatePullRequestCondition1JSONBody struct {
 	RequiredApprovals *int32                 `json:"requiredApprovals,omitempty"`
+	ReviewerGroups    *[]RestReviewerGroup   `json:"reviewerGroups,omitempty"`
 	Reviewers         *[]RestApplicationUser `json:"reviewers,omitempty"`
 	SourceMatcher     *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *UpdatePullRequestCondition1JSONBodySourceMatcherTypeId `json:"id,omitempty"`
-			Name *string                                                 `json:"name,omitempty"`
+			Id   UpdatePullRequestCondition1JSONBodySourceMatcherTypeId `json:"id"`
+			Name string                                                 `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceMatcher,omitempty"`
 	TargetMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId `json:"id,omitempty"`
-			Name *string                                                 `json:"name,omitempty"`
+			Id   UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId `json:"id"`
+			Name string                                                 `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"targetMatcher,omitempty"`
 }
@@ -9262,6 +9819,18 @@ type GetKeysForUserParams struct {
 type AddKeyParams struct {
 	// User The name of the user to add a key for (optional; requires ADMIN permission or higher).
 	User *string `form:"user,omitempty" json:"user,omitempty"`
+}
+
+// ReindexRepositoriesJSONBody defines parameters for ReindexRepositories.
+type ReindexRepositoriesJSONBody = []RestRepositorySelector
+
+// GetBrokenIndexStatusReposParams defines parameters for GetBrokenIndexStatusRepos.
+type GetBrokenIndexStatusReposParams struct {
+	// Start Start number for the page (inclusive). If not passed, first page is assumed.
+	Start *float32 `form:"start,omitempty" json:"start,omitempty"`
+
+	// Limit Number of items to return. If not passed, a page size of 25 is used.
+	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // GetAnnotations1Params defines parameters for GetAnnotations1.
@@ -9366,6 +9935,15 @@ type GetForRepositoriesParams struct {
 
 // SetPreferredMirrorIdJSONBody defines parameters for SetPreferredMirrorId.
 type SetPreferredMirrorIdJSONBody = string
+
+// GetDelayedSyncRepositoriesParams defines parameters for GetDelayedSyncRepositories.
+type GetDelayedSyncRepositoriesParams struct {
+	// DelayThreshold Returns only those repositories that are delayed for the given duration. The minimum allowed value is the configured value for the property <code>plugin.mirroring.synchronization.interval</code>
+	DelayThreshold *string `form:"delayThreshold,omitempty" json:"delayThreshold,omitempty"`
+
+	// Limit Limit the number of delayed sync repositories returned, the maximum allowed value is 100
+	Limit *string `form:"limit,omitempty" json:"limit,omitempty"`
+}
 
 // ListMirrorsParams defines parameters for ListMirrors.
 type ListMirrorsParams struct {
@@ -9491,8 +10069,8 @@ type AddSshKeyParams struct {
 	User *RestSshKey `form:"user,omitempty" json:"user,omitempty"`
 }
 
-// GetStatus2Params defines parameters for GetStatus2.
-type GetStatus2Params struct {
+// GetStatusParams defines parameters for GetStatus.
+type GetStatusParams struct {
 	// At Retrieves the synchronization status for the specified ref within the repository, rather than for the entire repository
 	At *string `form:"at,omitempty" json:"at,omitempty"`
 }
@@ -9587,8 +10165,8 @@ type SetSenderAddressJSONRequestBody = SetSenderAddressJSONBody
 // SetMergeConfigJSONRequestBody defines body for SetMergeConfig for application/json ContentType.
 type SetMergeConfigJSONRequestBody = RestPullRequestSettings
 
-// SetSettings2JSONRequestBody defines body for SetSettings2 for application/json ContentType.
-type SetSettings2JSONRequestBody = RestRateLimitSettings
+// SetSettings3JSONRequestBody defines body for SetSettings3 for application/json ContentType.
+type SetSettings3JSONRequestBody = RestRateLimitSettings
 
 // Set2JSONRequestBody defines body for Set2 for application/json ContentType.
 type Set2JSONRequestBody = RestBulkUserRateLimitSettingsUpdateRequest
@@ -9616,6 +10194,9 @@ type RenameUserJSONRequestBody = UserRename
 
 // CreateHookScriptMultipartRequestBody defines body for CreateHookScript for multipart/form-data ContentType.
 type CreateHookScriptMultipartRequestBody = ExamplePostMultipartFormData
+
+// SetSettings2JSONRequestBody defines body for SetSettings2 for application/json ContentType.
+type SetSettings2JSONRequestBody SetSettings2JSONBody
 
 // StartExportJSONRequestBody defines body for StartExport for application/json ContentType.
 type StartExportJSONRequestBody = RestExportRequest
@@ -9833,6 +10414,9 @@ type GetMultipleBuildStatusStatsJSONRequestBody = GetMultipleBuildStatusStatsJSO
 // AddBuildStatusJSONRequestBody defines body for AddBuildStatus for application/json ContentType.
 type AddBuildStatusJSONRequestBody = RestBuildStatus
 
+// SettingsJSONRequestBody defines body for Settings for application/json ContentType.
+type SettingsJSONRequestBody = RestCspSettings
+
 // CreatePullRequestConditionJSONRequestBody defines body for CreatePullRequestCondition for application/json ContentType.
 type CreatePullRequestConditionJSONRequestBody = RestDefaultReviewersRequest
 
@@ -9866,6 +10450,12 @@ type CreateTagJSONRequestBody = RestGitTagCreateRequest
 // AddKeyJSONRequestBody defines body for AddKey for application/json ContentType.
 type AddKeyJSONRequestBody = RestGpgKey
 
+// ReindexRepositoriesJSONRequestBody defines body for ReindexRepositories for application/json ContentType.
+type ReindexRepositoriesJSONRequestBody = ReindexRepositoriesJSONBody
+
+// RestartIndexingThreadWorkerJSONRequestBody defines body for RestartIndexingThreadWorker for application/json ContentType.
+type RestartIndexingThreadWorkerJSONRequestBody = RestIndexingWorkerRestartRequest
+
 // SetACodeInsightsReportJSONRequestBody defines body for SetACodeInsightsReport for application/json ContentType.
 type SetACodeInsightsReportJSONRequestBody = RestSetInsightReportRequest
 
@@ -9874,6 +10464,9 @@ type AddAnnotationsJSONRequestBody = RestBulkAddInsightAnnotationRequest
 
 // SetAnnotationJSONRequestBody defines body for SetAnnotation for application/json ContentType.
 type SetAnnotationJSONRequestBody = RestSingleAddInsightAnnotationRequest
+
+// StartBackfillSyncJSONRequestBody defines body for StartBackfillSync for application/json ContentType.
+type StartBackfillSyncJSONRequestBody = RestJiraDevInfoBackfillRequest
 
 // CreateIssueJSONRequestBody defines body for CreateIssue for application/json ContentType.
 type CreateIssueJSONRequestBody = CreateIssueJSONBody

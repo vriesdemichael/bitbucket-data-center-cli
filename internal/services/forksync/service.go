@@ -24,7 +24,11 @@ func (s *Service) GetSyncStatus(ctx context.Context, projectKey, repoSlug string
 		return nil, apperrors.New(apperrors.KindValidation, "project key and repository slug are required", nil)
 	}
 
-	resp, err := s.client.GetStatus2WithResponse(ctx, proj, slug, nil)
+	// GetStatus, not GetStatus2: the Bitbucket 10.2 spec reorders the two
+	// colliding getStatus operations, so the fork-sync endpoint
+	// (/sync/latest/projects/{key}/repos/{slug}) is now the unsuffixed one.
+	// GetStatus2 is /tsv/latest/status.
+	resp, err := s.client.GetStatusWithResponse(ctx, proj, slug, nil)
 	if err != nil {
 		return nil, apperrors.New(apperrors.KindTransient, "failed to get fork synchronization status", err)
 	}

@@ -957,14 +957,11 @@ func commentAuthorName(comment openapigenerated.RestComment) string {
 	if comment.Author == nil {
 		return ""
 	}
-	if comment.Author.DisplayName != nil && strings.TrimSpace(*comment.Author.DisplayName) != "" {
-		return strings.TrimSpace(*comment.Author.DisplayName)
-	}
-	if comment.Author.Name != nil {
-		return strings.TrimSpace(*comment.Author.Name)
+	if displayName := strings.TrimSpace(comment.Author.DisplayName); displayName != "" {
+		return displayName
 	}
 
-	return ""
+	return strings.TrimSpace(comment.Author.Name)
 }
 
 func safeString(value *string) string {
