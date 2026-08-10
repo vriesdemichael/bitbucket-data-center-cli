@@ -2,9 +2,11 @@ package comment
 
 import (
 	"context"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
+	"encoding/json"
 	"strconv"
 	"strings"
+
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
@@ -141,6 +143,42 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 	}
 
 	return results, nil
+}
+
+// TaskCounts is the per-state tally of a pull request's blocker comments, which
+// is what Bitbucket Data Center 8+ calls tasks.
+type TaskCounts struct {
+	Open     int `json:"open"`
+	Resolved int `json:"resolved"`
+}
+
+// CountTasks returns the number of open and resolved tasks on a pull request in
+// a single request, without fetching any comment bodies. It is the cheap,
+// exact alternative to walking the activity timeline when only the task tally
+// is needed.
+func (service *Service) CountTasks(ctx context.Context, repository RepositoryRef, pullRequestID string) (TaskCounts, error) {
+	target := Target{Repository: repository, PullRequestID: pullRequestID, Blocker: true}
+	if err := validateTarget(target); err != nil {
+		return TaskCounts{}, err
+	}
+
+	count := "true"
+	response, err := service.client.GetComments1WithResponse(ctx, repository.ProjectKey, repository.Slug, pullRequestID, &openapigenerated.GetComments1Params{Count: &count})
+	if err != nil {
+		return TaskCounts{}, apperrors.New(apperrors.KindTransient, "failed to count pull request tasks", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return TaskCounts{}, err
+	}
+
+	// With count=true Bitbucket replaces the usual page with a state->count map,
+	// which the generated page model cannot represent.
+	var states map[string]int
+	if err := json.Unmarshal(response.Body, &states); err != nil {
+		return TaskCounts{}, apperrors.New(apperrors.KindInternal, "failed to decode pull request task counts", err)
+	}
+
+	return TaskCounts{Open: states["OPEN"], Resolved: states["RESOLVED"]}, nil
 }
 
 func (service *Service) Create(ctx context.Context, target Target, text string) (openapigenerated.RestComment, error) {

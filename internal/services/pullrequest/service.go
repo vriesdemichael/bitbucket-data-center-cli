@@ -46,6 +46,15 @@ type PullRequest struct {
 	UpdatedDate  int64          `json:"updated_date,omitempty"`
 	Reviewers    []Reviewer     `json:"reviewers,omitempty"`
 	Mergeability *Mergeability  `json:"mergeability,omitempty"`
+
+	// CommentCount, OpenTaskCount and ResolvedTaskCount come from the
+	// "properties" object Bitbucket returns alongside every pull request. The
+	// field is undocumented in the published OpenAPI spec, so it is decoded
+	// defensively: the counts stay nil rather than reporting a wrong zero when
+	// the server does not send them.
+	CommentCount      *int `json:"comment_count,omitempty"`
+	OpenTaskCount     *int `json:"open_task_count,omitempty"`
+	ResolvedTaskCount *int `json:"resolved_task_count,omitempty"`
 }
 
 type Mergeability struct {
@@ -965,6 +974,12 @@ func mapPullRequest(raw pullRequestValue) PullRequest {
 		}
 	}
 
+	if raw.Properties != nil {
+		pr.CommentCount = raw.Properties.CommentCount
+		pr.OpenTaskCount = raw.Properties.OpenTaskCount
+		pr.ResolvedTaskCount = raw.Properties.ResolvedTaskCount
+	}
+
 	return pr
 }
 
@@ -1325,6 +1340,16 @@ type pullRequestValue struct {
 	Reviewers    []pullRequestParticipant `json:"reviewers"`
 	FromRef      *pullRequestRef          `json:"fromRef"`
 	ToRef        *pullRequestRef          `json:"toRef"`
+	Properties   *pullRequestProperties   `json:"properties"`
+}
+
+// pullRequestProperties carries the comment and task counters Bitbucket attaches
+// to pull request payloads. They are not part of the published spec, so every
+// field is optional.
+type pullRequestProperties struct {
+	CommentCount      *int `json:"commentCount"`
+	OpenTaskCount     *int `json:"openTaskCount"`
+	ResolvedTaskCount *int `json:"resolvedTaskCount"`
 }
 
 type autoMergeValue struct {

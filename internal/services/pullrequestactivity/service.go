@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
@@ -181,14 +182,114 @@ func mapActivity(item rawActivity) (Activity, error) {
 	}
 
 	if item.Comment != nil {
+		normalized, err := normalizeCommentAnchorPaths(*item.Comment)
+		if err != nil {
+			return Activity{}, err
+		}
+
 		comment := openapigenerated.RestComment{}
-		if err := json.Unmarshal(*item.Comment, &comment); err != nil {
+		if err := json.Unmarshal(normalized, &comment); err != nil {
 			return Activity{}, err
 		}
 		mapped.Comment = &comment
 	}
 
 	return mapped, nil
+}
+
+// normalizeCommentAnchorPaths rewrites string anchor paths into the object form
+// the generated model expects.
+//
+// The activity timeline serialises an inline comment's anchor path as a plain
+// string ("src/main.go"), while the published spec — and the path-scoped
+// comments endpoint — use an object with name/parent/extension/components.
+// Without this, a single inline comment makes the whole activity page fail to
+// decode, which is why pull requests with inline review comments used to return
+// nothing at all.
+func normalizeCommentAnchorPaths(raw json.RawMessage) (json.RawMessage, error) {
+	var decoded any
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		return nil, err
+	}
+
+	comment, ok := decoded.(map[string]any)
+	if !ok {
+		return raw, nil
+	}
+	if !normalizeCommentTree(comment) {
+		return raw, nil
+	}
+
+	return json.Marshal(comment)
+}
+
+// normalizeCommentTree rewrites a comment and its replies in place, reporting
+// whether anything changed.
+func normalizeCommentTree(comment map[string]any) bool {
+	changed := false
+
+	for _, key := range []string{"anchor", "parent"} {
+		nested, ok := comment[key].(map[string]any)
+		if !ok {
+			continue
+		}
+		if key == "anchor" {
+			changed = normalizeAnchorPaths(nested) || changed
+			continue
+		}
+		changed = normalizeCommentTree(nested) || changed
+	}
+
+	replies, ok := comment["comments"].([]any)
+	if !ok {
+		return changed
+	}
+	for _, reply := range replies {
+		if nested, isMap := reply.(map[string]any); isMap {
+			changed = normalizeCommentTree(nested) || changed
+		}
+	}
+
+	return changed
+}
+
+func normalizeAnchorPaths(anchor map[string]any) bool {
+	changed := false
+
+	for _, key := range []string{"path", "srcPath"} {
+		value, ok := anchor[key].(string)
+		if !ok {
+			continue
+		}
+		anchor[key] = pathObjectFromString(value)
+		changed = true
+	}
+
+	return changed
+}
+
+// pathObjectFromString splits "a/b/c.go" into the name/parent/extension/
+// components shape Bitbucket uses elsewhere.
+func pathObjectFromString(path string) map[string]any {
+	trimmed := strings.Trim(strings.TrimSpace(path), "/")
+	if trimmed == "" {
+		return map[string]any{}
+	}
+
+	components := strings.Split(trimmed, "/")
+	name := components[len(components)-1]
+	parent := strings.Join(components[:len(components)-1], "/")
+
+	object := map[string]any{
+		"name":       name,
+		"parent":     parent,
+		"components": components,
+	}
+	if index := strings.LastIndex(name, "."); index > 0 && index < len(name)-1 {
+		object["extension"] = name[index+1:]
+	}
+
+	return object
 }
 
 func validateRepositoryRef(repository RepositoryRef) error {
@@ -213,19 +314,29 @@ func normalizePullRequestID(pullRequestID string) (string, error) {
 
 func mapActivityStatusError(statusCode int, body []byte) error {
 	if statusCode == 404 {
+		// Preserve the shared route-missing classification so callers can tell
+		// "this server has no activity endpoint" from "this pull request does
+		// not exist" and degrade only for the former.
+		if openapi.IsRouteMissing(openapi.MapStatusError(statusCode, body)) {
+			return apperrors.New(apperrors.KindNotFound, "pull request activity not found", openapi.ErrRouteMissing)
+		}
 		return apperrors.New(apperrors.KindNotFound, "pull request activity not found", nil)
 	}
-	if statusCode == 400 {
-		return apperrors.New(apperrors.KindValidation, fmt.Sprintf("pull request activity request failed with status %d", statusCode), nil)
-	}
-	if statusCode >= 500 {
-		return apperrors.New(apperrors.KindInternal, fmt.Sprintf("pull request activity request failed with status %d", statusCode), nil)
-	}
-	if len(body) > 0 {
-		return apperrors.New(apperrors.KindInternal, fmt.Sprintf("pull request activity request failed with status %d", statusCode), nil)
+	message := fmt.Sprintf("pull request activity request failed with status %d", statusCode)
+
+	switch statusCode {
+	case 400:
+		return apperrors.New(apperrors.KindValidation, message, nil)
+	case 401:
+		return apperrors.New(apperrors.KindAuthentication, message, nil)
+	case 403:
+		// Reported as authorization rather than internal so callers can treat a
+		// token that may not read the timeline as "unavailable here" instead of
+		// as a server fault.
+		return apperrors.New(apperrors.KindAuthorization, message, nil)
 	}
 
-	return apperrors.New(apperrors.KindInternal, fmt.Sprintf("pull request activity request failed with status %d", statusCode), nil)
+	return apperrors.New(apperrors.KindInternal, message, nil)
 }
 
 func safeString(value *string) string {

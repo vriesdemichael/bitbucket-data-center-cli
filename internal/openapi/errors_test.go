@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 
@@ -101,5 +102,79 @@ func TestMapStatusError(t *testing.T) {
 				t.Errorf("MapStatusError() kind = %v, want %v", appErr.Kind, tt.wantKind)
 			}
 		})
+	}
+}
+
+// The bodies below are verbatim from Bitbucket Data Center 10.2.1. If Atlassian
+// changes either format, this fails rather than silently reclassifying every
+// removed endpoint as a missing resource.
+func TestIsRouteMissingClassification(t *testing.T) {
+	const containerStatusDocument = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<status><status-code>404</status-code><message>HTTP 404 Not Found</message></status>`
+	const missingPullRequest = `{"errors":[{"context":null,` +
+		`"message":"Pull request 999999 does not exist in LT549400/lt-repo-1-9400.",` +
+		`"exceptionName":"com.atlassian.bitbucket.pull.NoSuchPullRequestException"}]}`
+	const missingRepository = `{"errors":[{"context":null,` +
+		`"message":"Repository LT549400/nope does not exist.",` +
+		`"exceptionName":"com.atlassian.bitbucket.repository.NoSuchRepositoryException"}]}`
+
+	cases := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{name: "removed endpoint", body: containerStatusDocument, want: true},
+		{name: "unknown route", body: containerStatusDocument, want: true},
+		{name: "html error page", body: "<html><body>Not Found</body></html>", want: true},
+		{name: "plain text", body: "404 page not found", want: true},
+		{name: "json without an errors array", body: `{"message":"HTTP 404 Not Found","status-code":404}`, want: true},
+		{name: "empty errors array", body: `{"errors":[]}`, want: true},
+		{name: "missing pull request", body: missingPullRequest, want: false},
+		{name: "missing repository", body: missingRepository, want: false},
+		{name: "empty body is not evidence", body: "", want: false},
+		{name: "whitespace body is not evidence", body: "   \n ", want: false},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := MapStatusError(http.StatusNotFound, []byte(testCase.body))
+			if got := IsRouteMissing(err); got != testCase.want {
+				t.Fatalf("IsRouteMissing() = %v, want %v for body %q", got, testCase.want, testCase.body)
+			}
+			if !apperrors.IsKind(err, apperrors.KindNotFound) {
+				t.Fatalf("expected a not_found error regardless of classification, got %v", err)
+			}
+		})
+	}
+}
+
+// Only 404 can mean "this route does not exist"; other statuses reached the
+// application, so their bodies must never be classified that way.
+func TestIsRouteMissingOnlyAppliesToNotFound(t *testing.T) {
+	const containerStatusDocument = `<status><status-code>500</status-code><message>HTTP 500</message></status>`
+
+	for _, status := range []int{
+		http.StatusBadRequest,
+		http.StatusUnauthorized,
+		http.StatusForbidden,
+		http.StatusConflict,
+		http.StatusInternalServerError,
+		http.StatusBadGateway,
+	} {
+		if err := MapStatusError(status, []byte(containerStatusDocument)); IsRouteMissing(err) {
+			t.Fatalf("status %d must not be classified as a missing route", status)
+		}
+	}
+}
+
+func TestIsRouteMissingIgnoresUnrelatedErrors(t *testing.T) {
+	if IsRouteMissing(nil) {
+		t.Fatal("nil must not be classified as a missing route")
+	}
+	if IsRouteMissing(apperrors.New(apperrors.KindNotFound, "plain not found", nil)) {
+		t.Fatal("a plain not-found error must not be classified as a missing route")
+	}
+	if IsRouteMissing(errors.New("boom")) {
+		t.Fatal("an unrelated error must not be classified as a missing route")
 	}
 }

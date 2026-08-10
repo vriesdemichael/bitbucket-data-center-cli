@@ -103,17 +103,44 @@ func (h *liveHarness) seedProjectWithRepositories(ctx context.Context, repositor
 		return seededProject{}, fmt.Errorf("commits per repository must be >= 1")
 	}
 
-	suffix := strconv.FormatInt(time.Now().UnixNano(), 10)
-	projectKey := strings.ToUpper("LT" + suffix[len(suffix)-6:])
-	projectName := "Live Test " + suffix
+	// The project key is derived from the clock, so it can collide with a key
+	// still held by a project an earlier test deleted — Bitbucket removes
+	// projects asynchronously, so the key outlives the delete call. A collision
+	// is answered with 409 and is not a fault in the test being run, so retry
+	// with a fresh key rather than failing an unrelated assertion.
+	const seedAttempts = 5
 
-	createProjectBody := openapigenerated.CreateProjectJSONRequestBody{Key: &projectKey, Name: &projectName}
-	createProjectResponse, err := h.client.CreateProjectWithResponse(ctx, createProjectBody)
-	if err != nil {
-		return seededProject{}, fmt.Errorf("create project call failed: %w", err)
+	var suffix string
+	var projectKey string
+	var lastStatus int
+
+	for attempt := 0; attempt < seedAttempts; attempt++ {
+		suffix = strconv.FormatInt(time.Now().UnixNano(), 10)
+		projectKey = strings.ToUpper("LT" + suffix[len(suffix)-6:])
+		projectName := "Live Test " + suffix
+
+		createProjectBody := openapigenerated.CreateProjectJSONRequestBody{Key: &projectKey, Name: &projectName}
+		createProjectResponse, err := h.client.CreateProjectWithResponse(ctx, createProjectBody)
+		if err != nil {
+			return seededProject{}, fmt.Errorf("create project call failed: %w", err)
+		}
+
+		lastStatus = createProjectResponse.StatusCode()
+		if lastStatus >= 200 && lastStatus < 300 {
+			break
+		}
+		if lastStatus != http.StatusConflict {
+			return seededProject{}, fmt.Errorf("create project %s returned status %d", projectKey, lastStatus)
+		}
+
+		if ctx.Err() != nil {
+			return seededProject{}, ctx.Err()
+		}
+		time.Sleep(150 * time.Millisecond)
 	}
-	if createProjectResponse.StatusCode() < 200 || createProjectResponse.StatusCode() >= 300 {
-		return seededProject{}, fmt.Errorf("create project returned status %d", createProjectResponse.StatusCode())
+
+	if lastStatus < 200 || lastStatus >= 300 {
+		return seededProject{}, fmt.Errorf("create project failed after %d attempts, last key %s returned status %d", seedAttempts, projectKey, lastStatus)
 	}
 
 	seeded := seededProject{Key: projectKey, Repos: make([]seededRepository, 0, repositoryCount)}
