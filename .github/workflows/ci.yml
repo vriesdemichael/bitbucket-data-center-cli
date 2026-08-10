@@ -79,6 +79,11 @@ jobs:
       - name: Verify OpenAPI spec coverage artifact is current
         run: task quality:spec-coverage:verify
 
+      # Catches commands that no live test proves work, including ones whose only
+      # live test skips itself when the call fails.
+      - name: Verify CLI live coverage has not regressed
+        run: task quality:cli-live-coverage:verify
+
   docs-site:
     name: Docs Site
     runs-on: ubuntu-latest
