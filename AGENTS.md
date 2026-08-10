@@ -34,6 +34,33 @@
    git push --no-verify --force-with-lease
    ```
 
+### Tests must not reconfigure the repository they run in
+
+`internal/git/gittest` snapshots the repository-scoped git configuration before a package's tests and
+compares it afterwards. `TestMain` in `internal/git/execgit`, `internal/cli` and
+`tests/integration/live` fails the package when anything changed, naming the exact keys.
+
+This is not hypothetical. `Backend.Clone` persists `http.extraHeader` into the repository it clones
+into so later fetches carry authentication. A test that pointed it at the working copy instead of a
+temporary directory wrote this into the project's own `.git/config`:
+
+```
+http.extraheader    = Authorization: Basic <base64 of dummy-user:dummy-password>
+user.name           = Test User
+user.email          = test@example.local
+remote.upstream.url = https://example.local/scm/PRJ/upstream.git
+```
+
+An unscoped `http.extraHeader` is attached to every HTTP request git makes, and an explicit
+`Authorization` header beats any credential helper, so every push to GitHub sent
+`dummy-user:dummy-password` and was rejected with *"Password authentication is not supported for Git
+operations"* — a message that reads like a bad token and sends you hunting in the wrong place. The
+identity override meanwhile authored real commits as `Test User <test@example.local>`.
+
+**Any test that shells out to git must operate on a directory it created**, normally `t.TempDir()`.
+If the guard fires, look for a git invocation missing `-C` or a helper defaulting to the current
+directory. It reports rather than repairs; undo damage with `git config --local --unset <key>`.
+
 ### CLI live coverage artifact
 
 `docs/quality/cli-live-coverage.json` records which CLI commands the live suite actually proves work
