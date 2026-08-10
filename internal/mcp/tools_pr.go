@@ -7,7 +7,6 @@ import (
 
 	mcpgo "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	browseservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/browse"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
 	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
@@ -17,13 +16,18 @@ import (
 
 func specGetPullRequest() Spec {
 	tool := mcpgo.NewTool("get_pull_request",
-		mcpgo.WithDescription("Get pull request details including title, state, reviewer approvals, and merge status."),
+		mcpgo.WithDescription("Get pull request details including title, state, reviewer approvals, and merge status. "+
+			"The review_summary field reports unresolved comment threads, open tasks and reviewers who requested changes; "+
+			"action_required is true when the pull request is waiting on the author."),
 		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key (e.g. MYPROJECT)")),
 		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
 		mcpgo.WithString("id", mcpgo.Required(), mcpgo.Description("Pull request ID")),
+		mcpgo.WithBoolean("skip_review_summary", mcpgo.Description("Skip the activity timeline lookup used to count unresolved comment threads")),
 	)
 	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
 		svc := pullrequestservice.NewService(c.HTTP)
+		activitySvc := pullrequestactivityservice.NewService(c.OpenAPI)
+		commentSvc := commentservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
 			project, _ := req.RequireString("project")
 			repo, _ := req.RequireString("repo")
@@ -32,7 +36,30 @@ func specGetPullRequest() Spec {
 			if err != nil {
 				return mcpgo.NewToolResultErrorFromErr("get_pull_request failed", err), nil
 			}
-			return resultJSON(pr)
+
+			counts := pullrequestservice.ReviewCounts{}
+			if !req.GetBool("skip_review_summary", false) {
+				threads, summaryErr := activitySvc.TrySummarize(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: project, Slug: repo}, id, 100)
+				if summaryErr != nil {
+					return mcpgo.NewToolResultErrorFromErr("get_pull_request failed", summaryErr), nil
+				}
+				switch {
+				case threads != nil:
+					counts.Threads = threads
+				default:
+					// Bitbucket 10.x omits the task counters on this endpoint,
+					// so fall back to the exact blocker-comment tally rather
+					// than reporting nothing.
+					if tasks, taskErr := commentSvc.CountTasks(ctx, commentservice.RepositoryRef{ProjectKey: project, Slug: repo}, id); taskErr == nil {
+						counts.Tasks = &pullrequestservice.TaskCounts{Open: tasks.Open, Resolved: tasks.Resolved}
+					}
+				}
+			}
+
+			return resultJSON(map[string]any{
+				"pull_request":   pr,
+				"review_summary": pullrequestservice.BuildReviewSummary(pr, counts),
+			})
 		}
 	}}
 }
@@ -126,11 +153,17 @@ func specCreatePullRequest() Spec {
 
 func specListPRComments() Spec {
 	tool := mcpgo.NewTool("list_pr_comments",
-		mcpgo.WithDescription("List comments on a pull request. Without path this returns the aggregate pull request comment view derived from activities."),
+		mcpgo.WithDescription("List review comment threads on a pull request, unresolved first. Bitbucket models a task "+
+			"as a blocker comment, so this returns reviewer comments and tasks together, each with its resolution state, "+
+			"file anchor and reply count. Use state=open to see only what is still waiting on the author. Without path "+
+			"this returns the aggregate pull request comment view derived from activities."),
 		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
 		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
 		mcpgo.WithString("pr_id", mcpgo.Required(), mcpgo.Description("Pull request ID")),
 		mcpgo.WithString("path", mcpgo.Description("Optional file path to restrict comments to a single diff path")),
+		mcpgo.WithString("state", mcpgo.Description("Filter threads by resolution state: open, resolved, pending, or all (default)")),
+		mcpgo.WithBoolean("tasks_only", mcpgo.Description("Return only threads Bitbucket tracks as tasks (blocker comments)")),
+		mcpgo.WithBoolean("with_replies", mcpgo.Description("Include the full text of every reply instead of only the most recent one")),
 		mcpgo.WithNumber("limit", mcpgo.Description("Maximum number of results (default 25)")),
 	)
 	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
@@ -142,25 +175,43 @@ func specListPRComments() Spec {
 			prID, _ := req.RequireString("pr_id")
 			path := req.GetString("path", "")
 			limit := req.GetInt("limit", 25)
-			var comments []openapigenerated.RestComment
-			var err error
+
+			state, err := pullrequestactivityservice.NormalizeThreadState(req.GetString("state", "all"))
+			if err != nil {
+				return mcpgo.NewToolResultErrorFromErr("list_pr_comments failed", err), nil
+			}
+
+			threadOptions := pullrequestactivityservice.ThreadOptions{
+				State:         state,
+				TasksOnly:     req.GetBool("tasks_only", false),
+				WithReplies:   req.GetBool("with_replies", false),
+				BaseURL:       c.BaseURL,
+				ProjectKey:    project,
+				Slug:          repo,
+				PullRequestID: prID,
+			}
+
+			var threads []pullrequestactivityservice.Thread
+			var summary pullrequestactivityservice.Summary
 			if path == "" {
 				activities, listErr := activitySvc.List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: project, Slug: repo}, prID, pullrequestactivityservice.ListOptions{Limit: limit})
 				if listErr != nil {
 					return mcpgo.NewToolResultErrorFromErr("list_pr_comments failed", listErr), nil
 				}
-				comments = pullrequestactivityservice.ExtractComments(activities)
+				threads, summary = pullrequestactivityservice.ExtractThreads(activities, threadOptions)
 			} else {
 				target := commentservice.Target{
 					Repository:    commentservice.RepositoryRef{ProjectKey: project, Slug: repo},
 					PullRequestID: prID,
 				}
-				comments, err = commentSvc.List(ctx, target, path, limit)
+				comments, listErr := commentSvc.List(ctx, target, path, limit)
+				if listErr != nil {
+					return mcpgo.NewToolResultErrorFromErr("list_pr_comments failed", listErr), nil
+				}
+				threads, summary = pullrequestactivityservice.ThreadsFromComments(comments, threadOptions)
 			}
-			if err != nil {
-				return mcpgo.NewToolResultErrorFromErr("list_pr_comments failed", err), nil
-			}
-			return resultJSON(comments)
+
+			return resultJSON(map[string]any{"summary": summary, "threads": threads})
 		}
 	}}
 }
@@ -231,7 +282,8 @@ func specAddPRComment() Spec {
 
 func specListPRTasks() Spec {
 	tool := mcpgo.NewTool("list_pr_tasks",
-		mcpgo.WithDescription("List tasks on a pull request. Open tasks block merging."),
+		mcpgo.WithDescription("List tasks on a pull request. Open tasks block merging. For tasks together with the "+
+			"review comment threads they belong to, use list_pr_comments with tasks_only or state=open instead."),
 		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
 		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
 		mcpgo.WithString("pr_id", mcpgo.Required(), mcpgo.Description("Pull request ID")),

@@ -41,6 +41,11 @@ func Schemas() map[string]map[string]any {
 		all[k] = v
 	}
 
+	// Pull request command group schemas
+	for k, v := range pullRequestSchemas() {
+		all[k] = v
+	}
+
 	for k, v := range updateSchemas() {
 		all[k] = v
 	}

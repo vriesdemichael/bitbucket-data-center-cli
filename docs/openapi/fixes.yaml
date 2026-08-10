@@ -115,3 +115,66 @@ fixes:
       commands:
         - go test ./internal/services/pullrequestactivity ./internal/cli ./internal/mcp
         - go test -tags=live ./tests/integration/live -run TestLiveCLIRepoListAndComments -count=1
+
+  - id: OPENAPI-007
+    area: pull-request-activities-anchor-path
+    description: Accept string anchor paths on pull request activity comments, which the spec models as an object.
+    reference:
+      type: endpoint
+      value: /api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/activities
+      upstream_issue: >
+        The activity timeline serialises an inline comment's anchor.path (and anchor.srcPath) as a plain
+        string, while RestComment.Anchor.Path is an object with name/parent/extension/components. Verified
+        against Bitbucket Data Center 10.2.1. A single inline comment therefore made the whole activity page
+        fail to decode, so pull requests carrying inline review comments returned no comments at all.
+    change:
+      files:
+        - internal/services/pullrequestactivity/service.go
+        - internal/services/pullrequestactivity/threads_test.go
+        - tests/integration/live/pr_review_visibility_live_test.go
+      detail: >
+        Before unmarshalling a comment into the generated model, string anchor paths are rewritten into the
+        documented object shape (name, parent, extension, components), recursively across replies and parent
+        comments. Payloads already using the object form are left untouched.
+    verification:
+      commands:
+        - go test ./internal/services/pullrequestactivity -run 'AnchorPaths|PathObject' -count=1
+        - go test -tags=live ./tests/integration/live -run TestLivePullRequestReviewVisibility -count=1
+
+  - id: OPENAPI-008
+    area: not-found-route-vs-resource
+    description: Distinguish a retired endpoint from a missing resource, which the spec models identically as 404.
+    reference:
+      type: generation
+      value: 404 response semantics across all Bitbucket endpoints
+      upstream_issue: >
+        The OpenAPI spec declares a single 404 response per operation, but Bitbucket answers two
+        different situations with it. A resource that does not exist returns the Bitbucket error
+        envelope, which always carries an "errors" array
+        ({"errors":[{...,"exceptionName":"...NoSuchPullRequestException"}]}). A route the application
+        never registered never reaches that layer, so the servlet container answers with a status
+        document instead ({"message":"HTTP 404 Not Found","status-code":404,"sub-code":-1}). That
+        document is content-negotiated: clients sending Accept application/json receive the JSON form
+        above, while clients that do not receive the XML equivalent
+        (<status><status-code>404</status-code>...</status>). The detection therefore keys on the
+        absence of the "errors" array rather than on the content type, so both forms are covered.
+        Without the distinction a client reports a plain "not found" for a call that could never
+        succeed, which is how the retired pull request task endpoint went unnoticed after Bitbucket
+        8.0 removed it.
+    change:
+      files:
+        - internal/openapi/errors.go
+        - internal/openapi/errors_test.go
+        - internal/services/pullrequestactivity/service.go
+        - tests/integration/live/pr_review_visibility_live_test.go
+      detail: >
+        MapStatusError inspects the body of a 404 and attaches ErrRouteMissing as the cause when the
+        payload is not a Bitbucket error envelope. Callers use openapi.IsRouteMissing to degrade only
+        for features the server does not expose, and to report everything else. Verified against
+        Bitbucket Data Center 10.2.1 for retired endpoints, unknown routes, missing pull requests and
+        missing repositories.
+    verification:
+      commands:
+        - go test ./internal/openapi -run IsRouteMissing -count=1
+        - go test ./internal/services/pullrequestactivity -run TrySummarize -count=1
+        - go test -tags=live ./tests/integration/live -run TestLiveRouteMissingClassification -count=1

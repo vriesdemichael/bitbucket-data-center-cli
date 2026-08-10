@@ -693,3 +693,53 @@ func TestServiceCreatePendingComment(t *testing.T) {
 	}
 }
 
+
+func TestCountTasks(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method != http.MethodGet || r.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/blocker-comments" {
+			http.NotFound(w, r)
+			return
+		}
+		if r.URL.Query().Get("count") != "true" {
+			t.Errorf("expected count=true, got query %q", r.URL.RawQuery)
+		}
+		// With count=true Bitbucket returns a state->count map instead of a page.
+		_, _ = w.Write([]byte(`{"OPEN":3,"RESOLVED":7}`))
+	})
+
+	counts, err := service.CountTasks(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12")
+	if err != nil {
+		t.Fatalf("count tasks: %v", err)
+	}
+	if counts.Open != 3 || counts.Resolved != 7 {
+		t.Fatalf("expected 3 open / 7 resolved, got %#v", counts)
+	}
+}
+
+// A pull request with no tasks returns an empty map, which must read as zero
+// rather than as an error.
+func TestCountTasksWithNoTasks(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	})
+
+	counts, err := service.CountTasks(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12")
+	if err != nil {
+		t.Fatalf("count tasks: %v", err)
+	}
+	if counts.Open != 0 || counts.Resolved != 0 {
+		t.Fatalf("expected zero counts, got %#v", counts)
+	}
+}
+
+func TestCountTasksValidatesTarget(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	})
+
+	if _, err := service.CountTasks(context.Background(), RepositoryRef{ProjectKey: "", Slug: "demo"}, "12"); err == nil {
+		t.Fatalf("expected a validation error for a missing project key")
+	}
+}
