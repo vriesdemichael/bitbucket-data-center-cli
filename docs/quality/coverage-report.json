@@ -1,40 +1,40 @@
 {
   "version": 2,
   "coverage": {
-    "unit_raw_percent": 26.7031050540283,
-    "unit_scoped_percent": 89.50003090043879,
-    "live_raw_percent": 19.9137311286844,
-    "live_scoped_percent": 38.76031519513557,
-    "combined_raw_percent": 35.26133155935921,
-    "combined_scoped_percent": 90.760768802917,
-    "patch_percent": 50,
+    "unit_raw_percent": 27.655427791853437,
+    "unit_scoped_percent": 89.81608237604904,
+    "live_raw_percent": 19.937660633236725,
+    "live_scoped_percent": 39.00412457409289,
+    "combined_raw_percent": 35.839194911500506,
+    "combined_scoped_percent": 91.04219986905542,
+    "patch_percent": 92.6441351888668,
     "unit_statements": {
-      "covered": 14852,
-      "total": 55619
+      "covered": 15609,
+      "total": 56441
     },
     "live_statements": {
-      "covered": 10803,
-      "total": 54249
+      "covered": 10938,
+      "total": 54861
     },
     "combined_statements": {
-      "covered": 19612,
-      "total": 55619
+      "covered": 20228,
+      "total": 56441
     },
     "unit_scoped_statements": {
-      "covered": 14482,
-      "total": 16181
+      "covered": 15090,
+      "total": 16801
     },
     "live_scoped_statements": {
-      "covered": 6247,
-      "total": 16117
+      "covered": 6525,
+      "total": 16729
     },
     "combined_scoped_statements": {
-      "covered": 14686,
-      "total": 16181
+      "covered": 15296,
+      "total": 16801
     },
     "patch_lines": {
-      "covered": 1,
-      "total": 2
+      "covered": 466,
+      "total": 503
     },
     "scope": {
       "include_prefixes": [
@@ -48,7 +48,7 @@
     }
   },
   "generated_contracts": {
-    "coverage_percent": 19.71153846153846,
+    "coverage_percent": 20,
     "used_operations": [
       "AddAnnotationsWithResponse",
       "AddBuildStatusWithResponse",
@@ -80,6 +80,7 @@
       "CreateTagForRepositoryWithResponse",
       "CreateWebhook1WithResponse",
       "CreateWebhookWithResponse",
+      "CurrentUserSlug",
       "Delete1WithResponse",
       "Delete5WithResponse",
       "Delete6WithResponse",
@@ -146,7 +147,6 @@
       "GetCommitWithResponse",
       "GetCommitsWithResponse",
       "GetConfigurations1WithResponse",
-      "GetContent1WithResponse",
       "GetDefaultBranch2WithResponse",
       "GetDefaultTasks1WithResponse",
       "GetDefaultTasksWithResponse",
@@ -225,13 +225,10 @@
       "StreamChangesWithResponse",
       "StreamCommitsWithResponse",
       "StreamDiff1WithResponse",
-      "StreamFiles1WithResponse",
-      "StreamFilesWithResponse",
       "StreamPatch1WithResponse",
       "StreamPatchWithResponse",
       "StreamRawDiff1WithResponse",
       "StreamRawDiff2WithResponse",
-      "StreamRawWithResponse",
       "SynchronizeWithResponse",
       "TestWebhook1WithResponse",
       "TestWebhookWithResponse",
@@ -326,6 +323,7 @@
       "CreatePullRequestConditionWithResponse",
       "CreateRepositoryWithResponse",
       "CreateWebhookWithResponse",
+      "CurrentUserSlug",
       "Delete1WithResponse",
       "Delete5WithResponse",
       "Delete6WithResponse",
@@ -376,7 +374,6 @@
       "GetCommitWithResponse",
       "GetCommitsWithResponse",
       "GetConfigurations1WithResponse",
-      "GetContent1WithResponse",
       "GetDefaultBranch2WithResponse",
       "GetDefaultTasks1WithResponse",
       "GetDefaultTasksWithResponse",
@@ -445,9 +442,6 @@
       "StreamChangesWithResponse",
       "StreamCommitsWithResponse",
       "StreamDiff1WithResponse",
-      "StreamFiles1WithResponse",
-      "StreamFilesWithResponse",
-      "StreamRawWithResponse",
       "SynchronizeWithResponse",
       "TestWebhook1WithResponse",
       "TestWebhookWithResponse",
