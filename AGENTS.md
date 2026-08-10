@@ -34,6 +34,31 @@
    git push --no-verify --force-with-lease
    ```
 
+### CLI live coverage artifact
+
+`docs/quality/cli-live-coverage.json` records which CLI commands the live suite actually proves work
+against a real Bitbucket. CI verifies it via `task quality:cli-live-coverage:verify` (CI-safe, no live
+infra needed — it is static analysis of the Cobra tree and the live test sources).
+
+It fails when:
+
+- a command that used to be covered loses its live coverage,
+- a new command arrives with no live test invoking it, or
+- a command becomes **masked** — its only live coverage comes from a test that calls `t.Skip` when the
+  call fails, so the suite passes whether or not the command works.
+
+That last case is the one that matters. `bb pr task *` called an endpoint Atlassian removed in
+Bitbucket 8.0, and the live tests hid it behind
+`if strings.Contains(err.Error(), "not_found") { t.Skipf(...) }` — CI stayed green for years. A skipped
+test is not a passing test. Fix the command or the test; do not add a skip.
+
+When you add a command, add a live test that runs it and asserts, then:
+
+```bash
+task quality:cli-live-coverage:update
+git add docs/quality/cli-live-coverage.json
+```
+
 ### OpenAPI spec coverage artifact
 
 `docs/quality/spec-coverage.json` is a separate committed artifact that does **not** depend on coverage profiles or live tests. If you change the OpenAPI spec, the generated client, or how `internal/services` calls the API, regenerate it and commit the result:
