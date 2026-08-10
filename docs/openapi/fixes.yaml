@@ -1,6 +1,6 @@
 version: 1
 updated_at: "2026-04-08"
-source_openapi: docs/reference/atlassian/bitbucket-9.4-openapi.json
+source_openapi: docs/reference/atlassian/bitbucket-10.2-openapi.json
 fixes:
   - id: OPENAPI-001
     area: spec-path-parameters
@@ -178,3 +178,55 @@ fixes:
         - go test ./internal/openapi -run IsRouteMissing -count=1
         - go test ./internal/services/pullrequestactivity -run TrySummarize -count=1
         - go test -tags=live ./tests/integration/live -run TestLiveRouteMissingClassification -count=1
+
+  - id: OPENAPI-009
+    area: spec-operationid-nondeterminism
+    description: Make operationId collision suffixes deterministic so the generated client is reproducible.
+    reference:
+      type: generation
+      value: tools/openapi-sanitize operationId suffixing
+      upstream_issue: >
+        Bitbucket reuses operationIds across unrelated endpoints (six "get", two "getStatus", and so on),
+        so the sanitizer suffixes collisions. It assigned those suffixes while ranging over the spec's
+        paths map, and Go randomises map iteration, so the same spec produced a different
+        operationId-to-endpoint mapping on every run. Whether Get3WithResponse called
+        /basicauth/latest/config or a pull request endpoint was decided by chance at generation time.
+        Nothing caught it because models:verify and client:verify are not run by CI.
+    change:
+      files:
+        - tools/openapi-sanitize/main.go
+        - tools/openapi-sanitize/main_test.go
+      detail: >
+        Paths are sorted before assignment, making the mapping a pure function of the spec. Collision
+        suffixing also now keeps incrementing until the canonical id is free, because Bitbucket 10.2
+        ships an operation already named "get_2" and blind suffixing produced duplicate Go declarations.
+    verification:
+      commands:
+        - go test ./tools/openapi-sanitize -count=1
+        - task client:verify
+        - task models:verify
+
+  - id: OPENAPI-010
+    area: unreachable-recursive-schemas
+    description: Exclude Bitbucket 10.2 domain schemas that Go cannot express and no operation uses.
+    reference:
+      type: generation
+      value: components.schemas Comment, CommentThread, PullRequest, PullRequestParticipant
+      upstream_issue: >
+        Bitbucket 10.2 added four schemas that reference each other through required, non-nullable
+        $refs (Comment.thread <-> CommentThread.rootComment, PullRequest.author <->
+        PullRequestParticipant.pullRequest). Go cannot size such a value cycle, so generation produced
+        code that would not compile. No path operation references any of them; the wire types remain
+        RestComment and RestPullRequest.
+    change:
+      files:
+        - tools/oapi-codegen/bitbucket-types.yaml
+        - tools/oapi-codegen/bitbucket-client.yaml
+      detail: >
+        Both codegen configurations exclude the four schemas. If a future spec makes them reachable
+        from an operation, generation will fail loudly rather than silently omitting a used type.
+    verification:
+      commands:
+        - task models:generate
+        - task client:generate
+        - go build ./...

@@ -205,7 +205,7 @@ func (s *Service) Create(ctx context.Context, scope ScopeType, target string, na
 		Name: &trimmedName,
 	}
 	if len(permissions) > 0 {
-		body.Permissions = &permissions
+		body.Permissions = permissions
 	}
 	if expiryDays > 0 {
 		exp32 := int32(expiryDays)
@@ -279,7 +279,7 @@ func (s *Service) Update(ctx context.Context, scope ScopeType, target string, id
 		body.Name = &trimmedName
 	}
 	if len(permissions) > 0 {
-		body.Permissions = &permissions
+		body.Permissions = permissions
 	}
 
 	switch scope {

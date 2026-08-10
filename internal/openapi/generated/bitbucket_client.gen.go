@@ -24,19 +24,6 @@ const (
 	ApplicationUserTypeSERVICE ApplicationUserType = "SERVICE"
 )
 
-// Defines values for CommentSeverity.
-const (
-	CommentSeverityBLOCKER CommentSeverity = "BLOCKER"
-	CommentSeverityNORMAL  CommentSeverity = "NORMAL"
-)
-
-// Defines values for CommentState.
-const (
-	CommentStateOPEN     CommentState = "OPEN"
-	CommentStatePENDING  CommentState = "PENDING"
-	CommentStateRESOLVED CommentState = "RESOLVED"
-)
-
 // Defines values for CommentThreadDiffAnchorDiffType.
 const (
 	CommentThreadDiffAnchorDiffTypeCOMMIT    CommentThreadDiffAnchorDiffType = "COMMIT"
@@ -104,6 +91,27 @@ const (
 	GENERIC IdpConfigEntityIdpType = "GENERIC"
 )
 
+// Defines values for IdpConfigEntityNameIdPolicy.
+const (
+	IdpConfigEntityNameIdPolicyEMAILADDRESS               IdpConfigEntityNameIdPolicy = "EMAIL_ADDRESS"
+	IdpConfigEntityNameIdPolicyENCRYPTED                  IdpConfigEntityNameIdPolicy = "ENCRYPTED"
+	IdpConfigEntityNameIdPolicyENTITY                     IdpConfigEntityNameIdPolicy = "ENTITY"
+	IdpConfigEntityNameIdPolicyKERBEROS                   IdpConfigEntityNameIdPolicy = "KERBEROS"
+	IdpConfigEntityNameIdPolicyNONE                       IdpConfigEntityNameIdPolicy = "NONE"
+	IdpConfigEntityNameIdPolicyPERSISTENT                 IdpConfigEntityNameIdPolicy = "PERSISTENT"
+	IdpConfigEntityNameIdPolicyTRANSIENT                  IdpConfigEntityNameIdPolicy = "TRANSIENT"
+	IdpConfigEntityNameIdPolicyUNSPECIFIED                IdpConfigEntityNameIdPolicy = "UNSPECIFIED"
+	IdpConfigEntityNameIdPolicyWINDOWSDOMAINQUALIFIEDNAME IdpConfigEntityNameIdPolicy = "WINDOWS_DOMAIN_QUALIFIED_NAME"
+	IdpConfigEntityNameIdPolicyX509SUBJECTNAME            IdpConfigEntityNameIdPolicy = "X509_SUBJECT_NAME"
+)
+
+// Defines values for IdpConfigEntitySignatureAlgorithm.
+const (
+	RSASHA256 IdpConfigEntitySignatureAlgorithm = "RSA_SHA256"
+	RSASHA384 IdpConfigEntitySignatureAlgorithm = "RSA_SHA384"
+	RSASHA512 IdpConfigEntitySignatureAlgorithm = "RSA_SHA512"
+)
+
 // Defines values for IdpConfigEntitySsoType.
 const (
 	IdpConfigEntitySsoTypeNONE IdpConfigEntitySsoType = "NONE"
@@ -133,27 +141,6 @@ const (
 const (
 	ProjectTypeNORMAL   ProjectType = "NORMAL"
 	ProjectTypePERSONAL ProjectType = "PERSONAL"
-)
-
-// Defines values for PullRequestState.
-const (
-	PullRequestStateDECLINED PullRequestState = "DECLINED"
-	PullRequestStateMERGED   PullRequestState = "MERGED"
-	PullRequestStateOPEN     PullRequestState = "OPEN"
-)
-
-// Defines values for PullRequestParticipantRole.
-const (
-	PullRequestParticipantRoleAUTHOR      PullRequestParticipantRole = "AUTHOR"
-	PullRequestParticipantRolePARTICIPANT PullRequestParticipantRole = "PARTICIPANT"
-	PullRequestParticipantRoleREVIEWER    PullRequestParticipantRole = "REVIEWER"
-)
-
-// Defines values for PullRequestParticipantStatus.
-const (
-	PullRequestParticipantStatusAPPROVED   PullRequestParticipantStatus = "APPROVED"
-	PullRequestParticipantStatusNEEDSWORK  PullRequestParticipantStatus = "NEEDS_WORK"
-	PullRequestParticipantStatusUNAPPROVED PullRequestParticipantStatus = "UNAPPROVED"
 )
 
 // Defines values for RepositoryState.
@@ -217,6 +204,26 @@ const (
 	RestAutoMergeProcessingResultAutoMergeProcessingStatusSTALE       RestAutoMergeProcessingResultAutoMergeProcessingStatus = "STALE"
 	RestAutoMergeProcessingResultAutoMergeProcessingStatusUNKNOWN     RestAutoMergeProcessingResultAutoMergeProcessingStatus = "UNKNOWN"
 	RestAutoMergeProcessingResultAutoMergeProcessingStatusVETOED      RestAutoMergeProcessingResultAutoMergeProcessingStatus = "VETOED"
+)
+
+// Defines values for RestAutoMergeProcessingResultPullRequestAuthorRole.
+const (
+	RestAutoMergeProcessingResultPullRequestAuthorRoleAUTHOR      RestAutoMergeProcessingResultPullRequestAuthorRole = "AUTHOR"
+	RestAutoMergeProcessingResultPullRequestAuthorRolePARTICIPANT RestAutoMergeProcessingResultPullRequestAuthorRole = "PARTICIPANT"
+	RestAutoMergeProcessingResultPullRequestAuthorRoleREVIEWER    RestAutoMergeProcessingResultPullRequestAuthorRole = "REVIEWER"
+)
+
+// Defines values for RestAutoMergeProcessingResultPullRequestAuthorStatus.
+const (
+	RestAutoMergeProcessingResultPullRequestAuthorStatusAPPROVED   RestAutoMergeProcessingResultPullRequestAuthorStatus = "APPROVED"
+	RestAutoMergeProcessingResultPullRequestAuthorStatusNEEDSWORK  RestAutoMergeProcessingResultPullRequestAuthorStatus = "NEEDS_WORK"
+	RestAutoMergeProcessingResultPullRequestAuthorStatusUNAPPROVED RestAutoMergeProcessingResultPullRequestAuthorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestAutoMergeProcessingResultPullRequestAuthorUserType.
+const (
+	RestAutoMergeProcessingResultPullRequestAuthorUserTypeNORMAL  RestAutoMergeProcessingResultPullRequestAuthorUserType = "NORMAL"
+	RestAutoMergeProcessingResultPullRequestAuthorUserTypeSERVICE RestAutoMergeProcessingResultPullRequestAuthorUserType = "SERVICE"
 )
 
 // Defines values for RestAutoMergeProcessingResultPullRequestFromRefRepositoryOriginProjectType.
@@ -303,9 +310,9 @@ const (
 
 // Defines values for RestAutoMergeRestrictedSettingsRestrictionState.
 const (
-	NONE                   RestAutoMergeRestrictedSettingsRestrictionState = "NONE"
-	RESTRICTEDMODIFIABLE   RestAutoMergeRestrictedSettingsRestrictionState = "RESTRICTED_MODIFIABLE"
-	RESTRICTEDUNMODIFIABLE RestAutoMergeRestrictedSettingsRestrictionState = "RESTRICTED_UNMODIFIABLE"
+	RestAutoMergeRestrictedSettingsRestrictionStateNONE                   RestAutoMergeRestrictedSettingsRestrictionState = "NONE"
+	RestAutoMergeRestrictedSettingsRestrictionStateRESTRICTEDMODIFIABLE   RestAutoMergeRestrictedSettingsRestrictionState = "RESTRICTED_MODIFIABLE"
+	RestAutoMergeRestrictedSettingsRestrictionStateRESTRICTEDUNMODIFIABLE RestAutoMergeRestrictedSettingsRestrictionState = "RESTRICTED_UNMODIFIABLE"
 )
 
 // Defines values for RestAutoMergeRestrictedSettingsScopeType.
@@ -313,6 +320,42 @@ const (
 	RestAutoMergeRestrictedSettingsScopeTypeGLOBAL     RestAutoMergeRestrictedSettingsScopeType = "GLOBAL"
 	RestAutoMergeRestrictedSettingsScopeTypePROJECT    RestAutoMergeRestrictedSettingsScopeType = "PROJECT"
 	RestAutoMergeRestrictedSettingsScopeTypeREPOSITORY RestAutoMergeRestrictedSettingsScopeType = "REPOSITORY"
+)
+
+// Defines values for RestBrokenIndexStatusRepositoryDetailsStatus.
+const (
+	RestBrokenIndexStatusRepositoryDetailsStatusBROKEN   RestBrokenIndexStatusRepositoryDetailsStatus = "BROKEN"
+	RestBrokenIndexStatusRepositoryDetailsStatusINDEXED  RestBrokenIndexStatusRepositoryDetailsStatus = "INDEXED"
+	RestBrokenIndexStatusRepositoryDetailsStatusINDEXING RestBrokenIndexStatusRepositoryDetailsStatus = "INDEXING"
+	RestBrokenIndexStatusRepositoryDetailsStatusUNKNOWN  RestBrokenIndexStatusRepositoryDetailsStatus = "UNKNOWN"
+)
+
+// Defines values for RestBrokenIndexStatusRepositoryRepositoryOriginProjectType.
+const (
+	RestBrokenIndexStatusRepositoryRepositoryOriginProjectTypeNORMAL   RestBrokenIndexStatusRepositoryRepositoryOriginProjectType = "NORMAL"
+	RestBrokenIndexStatusRepositoryRepositoryOriginProjectTypePERSONAL RestBrokenIndexStatusRepositoryRepositoryOriginProjectType = "PERSONAL"
+)
+
+// Defines values for RestBrokenIndexStatusRepositoryRepositoryOriginState.
+const (
+	RestBrokenIndexStatusRepositoryRepositoryOriginStateAVAILABLE            RestBrokenIndexStatusRepositoryRepositoryOriginState = "AVAILABLE"
+	RestBrokenIndexStatusRepositoryRepositoryOriginStateINITIALISATIONFAILED RestBrokenIndexStatusRepositoryRepositoryOriginState = "INITIALISATION_FAILED"
+	RestBrokenIndexStatusRepositoryRepositoryOriginStateINITIALISING         RestBrokenIndexStatusRepositoryRepositoryOriginState = "INITIALISING"
+	RestBrokenIndexStatusRepositoryRepositoryOriginStateOFFLINE              RestBrokenIndexStatusRepositoryRepositoryOriginState = "OFFLINE"
+)
+
+// Defines values for RestBrokenIndexStatusRepositoryRepositoryProjectType.
+const (
+	RestBrokenIndexStatusRepositoryRepositoryProjectTypeNORMAL   RestBrokenIndexStatusRepositoryRepositoryProjectType = "NORMAL"
+	RestBrokenIndexStatusRepositoryRepositoryProjectTypePERSONAL RestBrokenIndexStatusRepositoryRepositoryProjectType = "PERSONAL"
+)
+
+// Defines values for RestBrokenIndexStatusRepositoryRepositoryState.
+const (
+	RestBrokenIndexStatusRepositoryRepositoryStateAVAILABLE            RestBrokenIndexStatusRepositoryRepositoryState = "AVAILABLE"
+	RestBrokenIndexStatusRepositoryRepositoryStateINITIALISATIONFAILED RestBrokenIndexStatusRepositoryRepositoryState = "INITIALISATION_FAILED"
+	RestBrokenIndexStatusRepositoryRepositoryStateINITIALISING         RestBrokenIndexStatusRepositoryRepositoryState = "INITIALISING"
+	RestBrokenIndexStatusRepositoryRepositoryStateOFFLINE              RestBrokenIndexStatusRepositoryRepositoryState = "OFFLINE"
 )
 
 // Defines values for RestBuildStatusState.
@@ -425,6 +468,26 @@ const (
 	RestCommentAnchorMultilineMarkerStartLineTypeREMOVED RestCommentAnchorMultilineMarkerStartLineType = "REMOVED"
 )
 
+// Defines values for RestCommentAnchorPullRequestAuthorRole.
+const (
+	RestCommentAnchorPullRequestAuthorRoleAUTHOR      RestCommentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestCommentAnchorPullRequestAuthorRolePARTICIPANT RestCommentAnchorPullRequestAuthorRole = "PARTICIPANT"
+	RestCommentAnchorPullRequestAuthorRoleREVIEWER    RestCommentAnchorPullRequestAuthorRole = "REVIEWER"
+)
+
+// Defines values for RestCommentAnchorPullRequestAuthorStatus.
+const (
+	RestCommentAnchorPullRequestAuthorStatusAPPROVED   RestCommentAnchorPullRequestAuthorStatus = "APPROVED"
+	RestCommentAnchorPullRequestAuthorStatusNEEDSWORK  RestCommentAnchorPullRequestAuthorStatus = "NEEDS_WORK"
+	RestCommentAnchorPullRequestAuthorStatusUNAPPROVED RestCommentAnchorPullRequestAuthorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestCommentAnchorPullRequestAuthorUserType.
+const (
+	RestCommentAnchorPullRequestAuthorUserTypeNORMAL  RestCommentAnchorPullRequestAuthorUserType = "NORMAL"
+	RestCommentAnchorPullRequestAuthorUserTypeSERVICE RestCommentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
 // Defines values for RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType.
 const (
 	RestCommentAnchorPullRequestFromRefRepositoryOriginProjectTypeNORMAL   RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType = "NORMAL"
@@ -533,6 +596,26 @@ const (
 	RestCommentParentAnchorMultilineMarkerStartLineTypeREMOVED RestCommentParentAnchorMultilineMarkerStartLineType = "REMOVED"
 )
 
+// Defines values for RestCommentParentAnchorPullRequestAuthorRole.
+const (
+	RestCommentParentAnchorPullRequestAuthorRoleAUTHOR      RestCommentParentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestCommentParentAnchorPullRequestAuthorRolePARTICIPANT RestCommentParentAnchorPullRequestAuthorRole = "PARTICIPANT"
+	RestCommentParentAnchorPullRequestAuthorRoleREVIEWER    RestCommentParentAnchorPullRequestAuthorRole = "REVIEWER"
+)
+
+// Defines values for RestCommentParentAnchorPullRequestAuthorStatus.
+const (
+	RestCommentParentAnchorPullRequestAuthorStatusAPPROVED   RestCommentParentAnchorPullRequestAuthorStatus = "APPROVED"
+	RestCommentParentAnchorPullRequestAuthorStatusNEEDSWORK  RestCommentParentAnchorPullRequestAuthorStatus = "NEEDS_WORK"
+	RestCommentParentAnchorPullRequestAuthorStatusUNAPPROVED RestCommentParentAnchorPullRequestAuthorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestCommentParentAnchorPullRequestAuthorUserType.
+const (
+	RestCommentParentAnchorPullRequestAuthorUserTypeNORMAL  RestCommentParentAnchorPullRequestAuthorUserType = "NORMAL"
+	RestCommentParentAnchorPullRequestAuthorUserTypeSERVICE RestCommentParentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
 // Defines values for RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType.
 const (
 	RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectTypeNORMAL   RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType = "NORMAL"
@@ -636,6 +719,13 @@ const (
 const (
 	RestCommentThreadResolverTypeNORMAL  RestCommentThreadResolverType = "NORMAL"
 	RestCommentThreadResolverTypeSERVICE RestCommentThreadResolverType = "SERVICE"
+)
+
+// Defines values for RestCspSettingsStrictness.
+const (
+	DEFAULT    RestCspSettingsStrictness = "DEFAULT"
+	REPORTONLY RestCspSettingsStrictness = "REPORT_ONLY"
+	STRICT     RestCspSettingsStrictness = "STRICT"
 )
 
 // Defines values for RestDefaultReviewersRequestSourceMatcherTypeId.
@@ -775,6 +865,23 @@ const (
 	RestHookScriptConfigScriptTypePRE  RestHookScriptConfigScriptType = "PRE"
 )
 
+// Defines values for RestIndexingThreadDetailsCurrentProcessEventEventType.
+const (
+	RestIndexingThreadDetailsCurrentProcessEventEventTypeOTHER      RestIndexingThreadDetailsCurrentProcessEventEventType = "OTHER"
+	RestIndexingThreadDetailsCurrentProcessEventEventTypePROJECT    RestIndexingThreadDetailsCurrentProcessEventEventType = "PROJECT"
+	RestIndexingThreadDetailsCurrentProcessEventEventTypeREPOSITORY RestIndexingThreadDetailsCurrentProcessEventEventType = "REPOSITORY"
+	RestIndexingThreadDetailsCurrentProcessEventEventTypeUSER       RestIndexingThreadDetailsCurrentProcessEventEventType = "USER"
+)
+
+// Defines values for RestIndexingThreadDetailsStateCode.
+const (
+	RestIndexingThreadDetailsStateCodeBROKEN     RestIndexingThreadDetailsStateCode = "BROKEN"
+	RestIndexingThreadDetailsStateCodeIDLE       RestIndexingThreadDetailsStateCode = "IDLE"
+	RestIndexingThreadDetailsStateCodePROCESSING RestIndexingThreadDetailsStateCode = "PROCESSING"
+	RestIndexingThreadDetailsStateCodeSTOPPED    RestIndexingThreadDetailsStateCode = "STOPPED"
+	RestIndexingThreadDetailsStateCodeUNKNOWN    RestIndexingThreadDetailsStateCode = "UNKNOWN"
+)
+
 // Defines values for RestInsightReportResult.
 const (
 	FAIL RestInsightReportResult = "FAIL"
@@ -839,6 +946,12 @@ const (
 	RestLabelableStateINITIALISATIONFAILED RestLabelableState = "INITIALISATION_FAILED"
 	RestLabelableStateINITIALISING         RestLabelableState = "INITIALISING"
 	RestLabelableStateOFFLINE              RestLabelableState = "OFFLINE"
+)
+
+// Defines values for RestMailConfigurationAuthType.
+const (
+	RestMailConfigurationAuthTypeBASIC  RestMailConfigurationAuthType = "BASIC"
+	RestMailConfigurationAuthTypeOAUTH2 RestMailConfigurationAuthType = "OAUTH2"
 )
 
 // Defines values for RestMailConfigurationProtocol.
@@ -978,16 +1091,36 @@ const (
 
 // Defines values for RestProjectSettingsRestrictionProcessedState.
 const (
-	FAILED      RestProjectSettingsRestrictionProcessedState = "FAILED"
-	INPROGRESS  RestProjectSettingsRestrictionProcessedState = "IN_PROGRESS"
-	PROCESSED   RestProjectSettingsRestrictionProcessedState = "PROCESSED"
-	UNPROCESSED RestProjectSettingsRestrictionProcessedState = "UNPROCESSED"
+	RestProjectSettingsRestrictionProcessedStateFAILED      RestProjectSettingsRestrictionProcessedState = "FAILED"
+	RestProjectSettingsRestrictionProcessedStateINPROGRESS  RestProjectSettingsRestrictionProcessedState = "IN_PROGRESS"
+	RestProjectSettingsRestrictionProcessedStatePROCESSED   RestProjectSettingsRestrictionProcessedState = "PROCESSED"
+	RestProjectSettingsRestrictionProcessedStateUNPROCESSED RestProjectSettingsRestrictionProcessedState = "UNPROCESSED"
 )
 
 // Defines values for RestProjectSettingsRestrictionProjectType.
 const (
 	RestProjectSettingsRestrictionProjectTypeNORMAL   RestProjectSettingsRestrictionProjectType = "NORMAL"
 	RestProjectSettingsRestrictionProjectTypePERSONAL RestProjectSettingsRestrictionProjectType = "PERSONAL"
+)
+
+// Defines values for RestPullRequestAuthorRole.
+const (
+	RestPullRequestAuthorRoleAUTHOR      RestPullRequestAuthorRole = "AUTHOR"
+	RestPullRequestAuthorRolePARTICIPANT RestPullRequestAuthorRole = "PARTICIPANT"
+	RestPullRequestAuthorRoleREVIEWER    RestPullRequestAuthorRole = "REVIEWER"
+)
+
+// Defines values for RestPullRequestAuthorStatus.
+const (
+	RestPullRequestAuthorStatusAPPROVED   RestPullRequestAuthorStatus = "APPROVED"
+	RestPullRequestAuthorStatusNEEDSWORK  RestPullRequestAuthorStatus = "NEEDS_WORK"
+	RestPullRequestAuthorStatusUNAPPROVED RestPullRequestAuthorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestPullRequestAuthorUserType.
+const (
+	RestPullRequestAuthorUserTypeNORMAL  RestPullRequestAuthorUserType = "NORMAL"
+	RestPullRequestAuthorUserTypeSERVICE RestPullRequestAuthorUserType = "SERVICE"
 )
 
 // Defines values for RestPullRequestFromRefRepositoryOriginProjectType.
@@ -1074,6 +1207,8 @@ const (
 	RestPullRequestActivityActionDECLINED           RestPullRequestActivityAction = "DECLINED"
 	RestPullRequestActivityActionDELETED            RestPullRequestActivityAction = "DELETED"
 	RestPullRequestActivityActionMERGED             RestPullRequestActivityAction = "MERGED"
+	RestPullRequestActivityActionMERGEQUEUEADDED    RestPullRequestActivityAction = "MERGE_QUEUE_ADDED"
+	RestPullRequestActivityActionMERGEQUEUEEJECTED  RestPullRequestActivityAction = "MERGE_QUEUE_EJECTED"
 	RestPullRequestActivityActionOPENED             RestPullRequestActivityAction = "OPENED"
 	RestPullRequestActivityActionREOPENED           RestPullRequestActivityAction = "REOPENED"
 	RestPullRequestActivityActionRESCOPED           RestPullRequestActivityAction = "RESCOPED"
@@ -1145,9 +1280,9 @@ const (
 
 // Defines values for RestPullRequestParticipantRole.
 const (
-	AUTHOR      RestPullRequestParticipantRole = "AUTHOR"
-	PARTICIPANT RestPullRequestParticipantRole = "PARTICIPANT"
-	REVIEWER    RestPullRequestParticipantRole = "REVIEWER"
+	RestPullRequestParticipantRoleAUTHOR      RestPullRequestParticipantRole = "AUTHOR"
+	RestPullRequestParticipantRolePARTICIPANT RestPullRequestParticipantRole = "PARTICIPANT"
+	RestPullRequestParticipantRoleREVIEWER    RestPullRequestParticipantRole = "REVIEWER"
 )
 
 // Defines values for RestPullRequestParticipantStatus.
@@ -1348,6 +1483,14 @@ const (
 	RestRepositoryHookScopeTypeREPOSITORY RestRepositoryHookScopeType = "REPOSITORY"
 )
 
+// Defines values for RestRepositoryIndexingDetailsStatus.
+const (
+	RestRepositoryIndexingDetailsStatusBROKEN   RestRepositoryIndexingDetailsStatus = "BROKEN"
+	RestRepositoryIndexingDetailsStatusINDEXED  RestRepositoryIndexingDetailsStatus = "INDEXED"
+	RestRepositoryIndexingDetailsStatusINDEXING RestRepositoryIndexingDetailsStatus = "INDEXING"
+	RestRepositoryIndexingDetailsStatusUNKNOWN  RestRepositoryIndexingDetailsStatus = "UNKNOWN"
+)
+
 // Defines values for RestRepositoryMirrorEventType.
 const (
 	SYNCHRONIZATIONFAILED RestRepositoryMirrorEventType = "SYNCHRONIZATION_FAILED"
@@ -1435,13 +1578,13 @@ const (
 	RestRequiredBuildConditionRefMatcherTypeIdPATTERN       RestRequiredBuildConditionRefMatcherTypeId = "PATTERN"
 )
 
-// Defines values for RestRequiredBuildConditionSetRequestRefMatcherTypeId.
+// Defines values for RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId.
 const (
-	RestRequiredBuildConditionSetRequestRefMatcherTypeIdANYREF        RestRequiredBuildConditionSetRequestRefMatcherTypeId = "ANY_REF"
-	RestRequiredBuildConditionSetRequestRefMatcherTypeIdBRANCH        RestRequiredBuildConditionSetRequestRefMatcherTypeId = "BRANCH"
-	RestRequiredBuildConditionSetRequestRefMatcherTypeIdMODELBRANCH   RestRequiredBuildConditionSetRequestRefMatcherTypeId = "MODEL_BRANCH"
-	RestRequiredBuildConditionSetRequestRefMatcherTypeIdMODELCATEGORY RestRequiredBuildConditionSetRequestRefMatcherTypeId = "MODEL_CATEGORY"
-	RestRequiredBuildConditionSetRequestRefMatcherTypeIdPATTERN       RestRequiredBuildConditionSetRequestRefMatcherTypeId = "PATTERN"
+	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdANYREF        RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "ANY_REF"
+	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdBRANCH        RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "BRANCH"
+	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdMODELBRANCH   RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "MODEL_BRANCH"
+	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdMODELCATEGORY RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "MODEL_CATEGORY"
+	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdPATTERN       RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "PATTERN"
 )
 
 // Defines values for RestRestrictionRequestMatcherTypeId.
@@ -1469,9 +1612,9 @@ const (
 
 // Defines values for RestSecretScanningRuleScopeType.
 const (
-	GLOBAL     RestSecretScanningRuleScopeType = "GLOBAL"
-	PROJECT    RestSecretScanningRuleScopeType = "PROJECT"
-	REPOSITORY RestSecretScanningRuleScopeType = "REPOSITORY"
+	RestSecretScanningRuleScopeTypeGLOBAL     RestSecretScanningRuleScopeType = "GLOBAL"
+	RestSecretScanningRuleScopeTypePROJECT    RestSecretScanningRuleScopeType = "PROJECT"
+	RestSecretScanningRuleScopeTypeREPOSITORY RestSecretScanningRuleScopeType = "REPOSITORY"
 )
 
 // Defines values for RestSshAccessKeyPermission.
@@ -1577,6 +1720,26 @@ const (
 	RestUserReactionCommentAnchorMultilineMarkerStartLineTypeADDED   RestUserReactionCommentAnchorMultilineMarkerStartLineType = "ADDED"
 	RestUserReactionCommentAnchorMultilineMarkerStartLineTypeCONTEXT RestUserReactionCommentAnchorMultilineMarkerStartLineType = "CONTEXT"
 	RestUserReactionCommentAnchorMultilineMarkerStartLineTypeREMOVED RestUserReactionCommentAnchorMultilineMarkerStartLineType = "REMOVED"
+)
+
+// Defines values for RestUserReactionCommentAnchorPullRequestAuthorRole.
+const (
+	RestUserReactionCommentAnchorPullRequestAuthorRoleAUTHOR      RestUserReactionCommentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestUserReactionCommentAnchorPullRequestAuthorRolePARTICIPANT RestUserReactionCommentAnchorPullRequestAuthorRole = "PARTICIPANT"
+	RestUserReactionCommentAnchorPullRequestAuthorRoleREVIEWER    RestUserReactionCommentAnchorPullRequestAuthorRole = "REVIEWER"
+)
+
+// Defines values for RestUserReactionCommentAnchorPullRequestAuthorStatus.
+const (
+	RestUserReactionCommentAnchorPullRequestAuthorStatusAPPROVED   RestUserReactionCommentAnchorPullRequestAuthorStatus = "APPROVED"
+	RestUserReactionCommentAnchorPullRequestAuthorStatusNEEDSWORK  RestUserReactionCommentAnchorPullRequestAuthorStatus = "NEEDS_WORK"
+	RestUserReactionCommentAnchorPullRequestAuthorStatusUNAPPROVED RestUserReactionCommentAnchorPullRequestAuthorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestUserReactionCommentAnchorPullRequestAuthorUserType.
+const (
+	RestUserReactionCommentAnchorPullRequestAuthorUserTypeNORMAL  RestUserReactionCommentAnchorPullRequestAuthorUserType = "NORMAL"
+	RestUserReactionCommentAnchorPullRequestAuthorUserTypeSERVICE RestUserReactionCommentAnchorPullRequestAuthorUserType = "SERVICE"
 )
 
 // Defines values for RestUserReactionCommentAnchorPullRequestFromRefRepositoryOriginProjectType.
@@ -1687,6 +1850,26 @@ const (
 	RestUserReactionCommentParentAnchorMultilineMarkerStartLineTypeREMOVED RestUserReactionCommentParentAnchorMultilineMarkerStartLineType = "REMOVED"
 )
 
+// Defines values for RestUserReactionCommentParentAnchorPullRequestAuthorRole.
+const (
+	RestUserReactionCommentParentAnchorPullRequestAuthorRoleAUTHOR      RestUserReactionCommentParentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestUserReactionCommentParentAnchorPullRequestAuthorRolePARTICIPANT RestUserReactionCommentParentAnchorPullRequestAuthorRole = "PARTICIPANT"
+	RestUserReactionCommentParentAnchorPullRequestAuthorRoleREVIEWER    RestUserReactionCommentParentAnchorPullRequestAuthorRole = "REVIEWER"
+)
+
+// Defines values for RestUserReactionCommentParentAnchorPullRequestAuthorStatus.
+const (
+	RestUserReactionCommentParentAnchorPullRequestAuthorStatusAPPROVED   RestUserReactionCommentParentAnchorPullRequestAuthorStatus = "APPROVED"
+	RestUserReactionCommentParentAnchorPullRequestAuthorStatusNEEDSWORK  RestUserReactionCommentParentAnchorPullRequestAuthorStatus = "NEEDS_WORK"
+	RestUserReactionCommentParentAnchorPullRequestAuthorStatusUNAPPROVED RestUserReactionCommentParentAnchorPullRequestAuthorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestUserReactionCommentParentAnchorPullRequestAuthorUserType.
+const (
+	RestUserReactionCommentParentAnchorPullRequestAuthorUserTypeNORMAL  RestUserReactionCommentParentAnchorPullRequestAuthorUserType = "NORMAL"
+	RestUserReactionCommentParentAnchorPullRequestAuthorUserTypeSERVICE RestUserReactionCommentParentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
 // Defines values for RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType.
 const (
 	RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectTypeNORMAL   RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType = "NORMAL"
@@ -1723,9 +1906,9 @@ const (
 
 // Defines values for RestUserReactionCommentParentAnchorPullRequestState.
 const (
-	DECLINED RestUserReactionCommentParentAnchorPullRequestState = "DECLINED"
-	MERGED   RestUserReactionCommentParentAnchorPullRequestState = "MERGED"
-	OPEN     RestUserReactionCommentParentAnchorPullRequestState = "OPEN"
+	RestUserReactionCommentParentAnchorPullRequestStateDECLINED RestUserReactionCommentParentAnchorPullRequestState = "DECLINED"
+	RestUserReactionCommentParentAnchorPullRequestStateMERGED   RestUserReactionCommentParentAnchorPullRequestState = "MERGED"
+	RestUserReactionCommentParentAnchorPullRequestStateOPEN     RestUserReactionCommentParentAnchorPullRequestState = "OPEN"
 )
 
 // Defines values for RestUserReactionCommentParentAnchorPullRequestToRefRepositoryOriginProjectType.
@@ -1794,14 +1977,20 @@ const (
 
 // Defines values for RestUserReactionUserType.
 const (
-	RestUserReactionUserTypeNORMAL  RestUserReactionUserType = "NORMAL"
-	RestUserReactionUserTypeSERVICE RestUserReactionUserType = "SERVICE"
+	NORMAL  RestUserReactionUserType = "NORMAL"
+	SERVICE RestUserReactionUserType = "SERVICE"
 )
 
 // Defines values for SetBannerJSONBodyAudience.
 const (
 	SetBannerJSONBodyAudienceALL           SetBannerJSONBodyAudience = "ALL"
 	SetBannerJSONBodyAudienceAUTHENTICATED SetBannerJSONBodyAudience = "AUTHENTICATED"
+)
+
+// Defines values for SetMailConfigJSONBodyAuthType.
+const (
+	SetMailConfigJSONBodyAuthTypeBASIC  SetMailConfigJSONBodyAuthType = "BASIC"
+	SetMailConfigJSONBodyAuthTypeOAUTH2 SetMailConfigJSONBodyAuthType = "OAUTH2"
 )
 
 // Defines values for SetMailConfigJSONBodyProtocol.
@@ -2067,31 +2256,6 @@ type CaptchaDataEntity struct {
 	CaptchaImageUrl *string `json:"captchaImageUrl,omitempty"`
 }
 
-// Comment defines model for Comment.
-type Comment struct {
-	Anchor              *CommentThreadDiffAnchor `json:"anchor,omitempty"`
-	Author              *ApplicationUser         `json:"author,omitempty"`
-	Comments            *[]Comment               `json:"comments,omitempty"`
-	CreatedDate         *time.Time               `json:"createdDate,omitempty"`
-	Id                  *int64                   `json:"id,omitempty"`
-	PermittedOperations *CommentOperations       `json:"permittedOperations,omitempty"`
-	Properties          *map[string]interface{}  `json:"properties,omitempty"`
-	ResolvedDate        *time.Time               `json:"resolvedDate,omitempty"`
-	Resolver            *ApplicationUser         `json:"resolver,omitempty"`
-	Severity            *CommentSeverity         `json:"severity,omitempty"`
-	State               *CommentState            `json:"state,omitempty"`
-	Text                *string                  `json:"text,omitempty"`
-	Thread              *CommentThread           `json:"thread,omitempty"`
-	UpdatedDate         *time.Time               `json:"updatedDate,omitempty"`
-	Version             *int32                   `json:"version,omitempty"`
-}
-
-// CommentSeverity defines model for Comment.Severity.
-type CommentSeverity string
-
-// CommentState defines model for Comment.State.
-type CommentState string
-
 // CommentOperations defines model for CommentOperations.
 type CommentOperations struct {
 	Deletable      *bool `json:"deletable,omitempty"`
@@ -2099,38 +2263,24 @@ type CommentOperations struct {
 	Transitionable *bool `json:"transitionable,omitempty"`
 }
 
-// CommentThread defines model for CommentThread.
-type CommentThread struct {
-	Anchor       *CommentThreadDiffAnchor `json:"anchor,omitempty"`
-	Anchored     *bool                    `json:"anchored,omitempty"`
-	Commentable  *Commentable             `json:"commentable,omitempty"`
-	CreatedDate  *time.Time               `json:"createdDate,omitempty"`
-	Id           *int64                   `json:"id,omitempty"`
-	Resolved     *bool                    `json:"resolved,omitempty"`
-	ResolvedDate *time.Time               `json:"resolvedDate,omitempty"`
-	Resolver     *ApplicationUser         `json:"resolver,omitempty"`
-	RootComment  *Comment                 `json:"rootComment,omitempty"`
-	UpdatedDate  *time.Time               `json:"updatedDate,omitempty"`
-}
-
 // CommentThreadDiffAnchor defines model for CommentThreadDiffAnchor.
 type CommentThreadDiffAnchor struct {
-	DiffType                  *CommentThreadDiffAnchorDiffType               `json:"diffType,omitempty"`
-	FileAnchor                *bool                                          `json:"fileAnchor,omitempty"`
-	FileType                  *CommentThreadDiffAnchorFileType               `json:"fileType,omitempty"`
-	FromHash                  *string                                        `json:"fromHash,omitempty"`
-	Line                      *int32                                         `json:"line,omitempty"`
-	LineAnchor                *bool                                          `json:"lineAnchor,omitempty"`
-	LineType                  *CommentThreadDiffAnchorLineType               `json:"lineType,omitempty"`
-	MultilineAnchor           *bool                                          `json:"multilineAnchor,omitempty"`
-	MultilineDestinationRange *LineNumberRange                               `json:"multilineDestinationRange,omitempty"`
-	MultilineSourceRange      *LineNumberRange                               `json:"multilineSourceRange,omitempty"`
-	MultilineStartLine        *int32                                         `json:"multilineStartLine,omitempty"`
-	MultilineStartLineType    *CommentThreadDiffAnchorMultilineStartLineType `json:"multilineStartLineType,omitempty"`
-	Orphaned                  *bool                                          `json:"orphaned,omitempty"`
-	Path                      *string                                        `json:"path,omitempty"`
-	SrcPath                   *string                                        `json:"srcPath,omitempty"`
-	ToHash                    *string                                        `json:"toHash,omitempty"`
+	DiffType                  CommentThreadDiffAnchorDiffType               `json:"diffType"`
+	FileAnchor                *bool                                         `json:"fileAnchor,omitempty"`
+	FileType                  CommentThreadDiffAnchorFileType               `json:"fileType"`
+	FromHash                  string                                        `json:"fromHash"`
+	Line                      *int32                                        `json:"line,omitempty"`
+	LineAnchor                *bool                                         `json:"lineAnchor,omitempty"`
+	LineType                  CommentThreadDiffAnchorLineType               `json:"lineType"`
+	MultilineAnchor           *bool                                         `json:"multilineAnchor,omitempty"`
+	MultilineDestinationRange LineNumberRange                               `json:"multilineDestinationRange"`
+	MultilineSourceRange      LineNumberRange                               `json:"multilineSourceRange"`
+	MultilineStartLine        int32                                         `json:"multilineStartLine"`
+	MultilineStartLineType    CommentThreadDiffAnchorMultilineStartLineType `json:"multilineStartLineType"`
+	Orphaned                  *bool                                         `json:"orphaned,omitempty"`
+	Path                      string                                        `json:"path"`
+	SrcPath                   string                                        `json:"srcPath"`
+	ToHash                    string                                        `json:"toHash"`
 }
 
 // CommentThreadDiffAnchorDiffType defines model for CommentThreadDiffAnchor.DiffType.
@@ -2165,8 +2315,9 @@ type Credentials struct {
 
 // CredentialsCheckFailedDTO defines model for CredentialsCheckFailedDTO.
 type CredentialsCheckFailedDTO struct {
-	CaptchaRequired *bool   `json:"captchaRequired,omitempty"`
-	Message         *string `json:"message,omitempty"`
+	CaptchaRequired    *bool   `json:"captchaRequired,omitempty"`
+	ExpiredCredentials *bool   `json:"expiredCredentials,omitempty"`
+	Message            *string `json:"message,omitempty"`
 }
 
 // ElevationMethodRestDTO defines model for ElevationMethodRestDTO.
@@ -2284,13 +2435,13 @@ type ExampleJsonLastModifiedCallback struct {
 		Author *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"author,omitempty"`
 		AuthorTimestamp *int64 `json:"authorTimestamp,omitempty"`
 		Committer       *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"committer,omitempty"`
 		CommitterTimestamp *int64               `json:"committerTimestamp,omitempty"`
 		DisplayId          *string              `json:"displayId,omitempty"`
@@ -2302,13 +2453,13 @@ type ExampleJsonLastModifiedCallback struct {
 		Author *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"author,omitempty"`
 		AuthorTimestamp *int64 `json:"authorTimestamp,omitempty"`
 		Committer       *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"committer,omitempty"`
 		CommitterTimestamp *int64               `json:"committerTimestamp,omitempty"`
 		DisplayId          *string              `json:"displayId,omitempty"`
@@ -2320,13 +2471,13 @@ type ExampleJsonLastModifiedCallback struct {
 		Author *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"author,omitempty"`
 		AuthorTimestamp *int64 `json:"authorTimestamp,omitempty"`
 		Committer       *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"committer,omitempty"`
 		CommitterTimestamp *int64               `json:"committerTimestamp,omitempty"`
 		DisplayId          *string              `json:"displayId,omitempty"`
@@ -2419,34 +2570,43 @@ type GroupPickerContext struct {
 
 // IdpConfigEntity defines model for IdpConfigEntity.
 type IdpConfigEntity struct {
-	AdditionalScopes      *[]string               `json:"additional-scopes,omitempty"`
-	AuthorizationEndpoint *string                 `json:"authorization-endpoint,omitempty"`
-	ButtonText            *string                 `json:"buttonText,omitempty"`
-	Certificate           *string                 `json:"certificate,omitempty"`
-	ClientId              *string                 `json:"client-id,omitempty"`
-	ClientSecret          *string                 `json:"client-secret,omitempty"`
-	CrowdUrl              *string                 `json:"crowd-url,omitempty"`
-	DiscoveryEnabled      *bool                   `json:"discovery-enabled,omitempty"`
-	EnableRememberMe      *bool                   `json:"enable-remember-me,omitempty"`
-	Enabled               *bool                   `json:"enabled,omitempty"`
-	Id                    *int64                  `json:"id,omitempty"`
-	IdpType               *IdpConfigEntityIdpType `json:"idp-type,omitempty"`
-	IncludeCustomerLogins *bool                   `json:"include-customer-logins,omitempty"`
-	IssuerUrl             *string                 `json:"issuer-url,omitempty"`
-	JitConfiguration      *JitConfigEntity        `json:"jit-configuration,omitempty"`
-	LastUpdated           *time.Time              `json:"last-updated,omitempty"`
-	Name                  *string                 `json:"name,omitempty"`
-	SsoIssuer             *string                 `json:"sso-issuer,omitempty"`
-	SsoType               *IdpConfigEntitySsoType `json:"sso-type,omitempty"`
-	SsoUrl                *string                 `json:"sso-url,omitempty"`
-	TokenEndpoint         *string                 `json:"token-endpoint,omitempty"`
-	UserinfoEndpoint      *string                 `json:"userinfo-endpoint,omitempty"`
-	UsernameAttribute     *string                 `json:"username-attribute,omitempty"`
-	UsernameClaim         *string                 `json:"username-claim,omitempty"`
+	AdditionalScopes      *[]string                          `json:"additional-scopes,omitempty"`
+	AuthorizationEndpoint *string                            `json:"authorization-endpoint,omitempty"`
+	ButtonText            *string                            `json:"buttonText,omitempty"`
+	Certificate           *string                            `json:"certificate,omitempty"`
+	ClientId              *string                            `json:"client-id,omitempty"`
+	ClientSecret          *string                            `json:"client-secret,omitempty"`
+	CrowdUrl              *string                            `json:"crowd-url,omitempty"`
+	DiscoveryEnabled      *bool                              `json:"discovery-enabled,omitempty"`
+	EnableRememberMe      *bool                              `json:"enable-remember-me,omitempty"`
+	Enabled               *bool                              `json:"enabled,omitempty"`
+	Id                    *int64                             `json:"id,omitempty"`
+	IdpType               *IdpConfigEntityIdpType            `json:"idp-type,omitempty"`
+	IncludeCustomerLogins *bool                              `json:"include-customer-logins,omitempty"`
+	IssuerUrl             *string                            `json:"issuer-url,omitempty"`
+	JitConfiguration      *JitConfigEntity                   `json:"jit-configuration,omitempty"`
+	LastUpdated           *time.Time                         `json:"last-updated,omitempty"`
+	Name                  *string                            `json:"name,omitempty"`
+	NameIdPolicy          *IdpConfigEntityNameIdPolicy       `json:"name-id-policy,omitempty"`
+	SignAuthnrequest      *bool                              `json:"sign-authnrequest,omitempty"`
+	SignatureAlgorithm    *IdpConfigEntitySignatureAlgorithm `json:"signature-algorithm,omitempty"`
+	SsoIssuer             *string                            `json:"sso-issuer,omitempty"`
+	SsoType               *IdpConfigEntitySsoType            `json:"sso-type,omitempty"`
+	SsoUrl                *string                            `json:"sso-url,omitempty"`
+	TokenEndpoint         *string                            `json:"token-endpoint,omitempty"`
+	UserinfoEndpoint      *string                            `json:"userinfo-endpoint,omitempty"`
+	UsernameAttribute     *string                            `json:"username-attribute,omitempty"`
+	UsernameClaim         *string                            `json:"username-claim,omitempty"`
 }
 
 // IdpConfigEntityIdpType defines model for IdpConfigEntity.IdpType.
 type IdpConfigEntityIdpType string
+
+// IdpConfigEntityNameIdPolicy defines model for IdpConfigEntity.NameIdPolicy.
+type IdpConfigEntityNameIdPolicy string
+
+// IdpConfigEntitySignatureAlgorithm defines model for IdpConfigEntity.SignatureAlgorithm.
+type IdpConfigEntitySignatureAlgorithm string
 
 // IdpConfigEntitySsoType defines model for IdpConfigEntity.SsoType.
 type IdpConfigEntitySsoType string
@@ -2489,6 +2649,7 @@ type LoginOptionEntityType string
 type MethodStateDTO struct {
 	Enabled   *bool               `json:"enabled,omitempty"`
 	EnabledAt *time.Time          `json:"enabledAt,omitempty"`
+	Enforced  *bool               `json:"enforced,omitempty"`
 	Type      *MethodStateDTOType `json:"type,omitempty"`
 }
 
@@ -2506,66 +2667,24 @@ type NextLoginStepDTONextLoginStep string
 
 // Project defines model for Project.
 type Project struct {
-	Description *string      `json:"description,omitempty"`
-	Id          *int32       `json:"id,omitempty"`
-	Key         *string      `json:"key,omitempty"`
-	Name        *string      `json:"name,omitempty"`
-	Public      *bool        `json:"public,omitempty"`
-	Type        *ProjectType `json:"type,omitempty"`
+	Description *string     `json:"description,omitempty"`
+	Id          *int32      `json:"id,omitempty"`
+	Key         *string     `json:"key,omitempty"`
+	Name        *string     `json:"name,omitempty"`
+	Public      *bool       `json:"public,omitempty"`
+	Type        ProjectType `json:"type"`
 }
 
 // ProjectType defines model for Project.Type.
 type ProjectType string
 
-// PullRequest defines model for PullRequest.
-type PullRequest struct {
-	Author          *PullRequestParticipant   `json:"author,omitempty"`
-	Closed          *bool                     `json:"closed,omitempty"`
-	ClosedDate      *time.Time                `json:"closedDate,omitempty"`
-	CreatedDate     *time.Time                `json:"createdDate,omitempty"`
-	CrossRepository *bool                     `json:"crossRepository,omitempty"`
-	Description     *string                   `json:"description,omitempty"`
-	Draft           *bool                     `json:"draft,omitempty"`
-	FromRef         *PullRequestRef           `json:"fromRef,omitempty"`
-	Id              *int64                    `json:"id,omitempty"`
-	Locked          *bool                     `json:"locked,omitempty"`
-	Open            *bool                     `json:"open,omitempty"`
-	Participants    *[]PullRequestParticipant `json:"participants,omitempty"`
-	Properties      *map[string]interface{}   `json:"properties,omitempty"`
-	Reviewers       *[]PullRequestParticipant `json:"reviewers,omitempty"`
-	State           *PullRequestState         `json:"state,omitempty"`
-	Title           *string                   `json:"title,omitempty"`
-	ToRef           *PullRequestRef           `json:"toRef,omitempty"`
-	UpdatedDate     *time.Time                `json:"updatedDate,omitempty"`
-	Version         *int32                    `json:"version,omitempty"`
-}
-
-// PullRequestState defines model for PullRequest.State.
-type PullRequestState string
-
-// PullRequestParticipant defines model for PullRequestParticipant.
-type PullRequestParticipant struct {
-	Approved           *bool                         `json:"approved,omitempty"`
-	LastReviewedCommit *string                       `json:"lastReviewedCommit,omitempty"`
-	PullRequest        *PullRequest                  `json:"pullRequest,omitempty"`
-	Role               *PullRequestParticipantRole   `json:"role,omitempty"`
-	Status             *PullRequestParticipantStatus `json:"status,omitempty"`
-	User               *ApplicationUser              `json:"user,omitempty"`
-}
-
-// PullRequestParticipantRole defines model for PullRequestParticipant.Role.
-type PullRequestParticipantRole string
-
-// PullRequestParticipantStatus defines model for PullRequestParticipant.Status.
-type PullRequestParticipantStatus string
-
 // PullRequestRef defines model for PullRequestRef.
 type PullRequestRef struct {
-	DisplayId    *string     `json:"displayId,omitempty"`
-	Id           *string     `json:"id,omitempty"`
-	LatestCommit *string     `json:"latestCommit,omitempty"`
-	Repository   *Repository `json:"repository,omitempty"`
-	Type         *RefType    `json:"type,omitempty"`
+	DisplayId    string     `json:"displayId"`
+	Id           string     `json:"id"`
+	LatestCommit string     `json:"latestCommit"`
+	Repository   Repository `json:"repository"`
+	Type         RefType    `json:"type"`
 }
 
 // RefType defines model for RefType.
@@ -2573,25 +2692,25 @@ type RefType = interface{}
 
 // Repository defines model for Repository.
 type Repository struct {
-	Archived      *bool            `json:"archived,omitempty"`
-	Description   *string          `json:"description,omitempty"`
-	Fork          *bool            `json:"fork,omitempty"`
-	Forkable      *bool            `json:"forkable,omitempty"`
-	HierarchyId   *string          `json:"hierarchyId,omitempty"`
-	Id            *int32           `json:"id,omitempty"`
-	Local         *bool            `json:"local,omitempty"`
-	Name          *string          `json:"name,omitempty"`
-	Offline       *bool            `json:"offline,omitempty"`
-	Origin        *Repository      `json:"origin,omitempty"`
-	Partition     *int32           `json:"partition,omitempty"`
-	Project       *Project         `json:"project,omitempty"`
-	Public        *bool            `json:"public,omitempty"`
-	ReadOnly      *bool            `json:"readOnly,omitempty"`
-	Remote        *bool            `json:"remote,omitempty"`
-	ScmId         *string          `json:"scmId,omitempty"`
-	Slug          *string          `json:"slug,omitempty"`
-	State         *RepositoryState `json:"state,omitempty"`
-	StatusMessage *string          `json:"statusMessage,omitempty"`
+	Archived      *bool           `json:"archived,omitempty"`
+	Description   *string         `json:"description,omitempty"`
+	Fork          *bool           `json:"fork,omitempty"`
+	Forkable      *bool           `json:"forkable,omitempty"`
+	HierarchyId   string          `json:"hierarchyId"`
+	Id            *int32          `json:"id,omitempty"`
+	Local         *bool           `json:"local,omitempty"`
+	Name          string          `json:"name"`
+	Offline       *bool           `json:"offline,omitempty"`
+	Origin        *Repository     `json:"origin,omitempty"`
+	Partition     *int32          `json:"partition,omitempty"`
+	Project       Project         `json:"project"`
+	Public        *bool           `json:"public,omitempty"`
+	ReadOnly      *bool           `json:"readOnly,omitempty"`
+	Remote        *bool           `json:"remote,omitempty"`
+	ScmId         string          `json:"scmId"`
+	Slug          string          `json:"slug"`
+	State         RepositoryState `json:"state"`
+	StatusMessage string          `json:"statusMessage"`
 }
 
 // RepositoryState defines model for Repository.State.
@@ -2600,6 +2719,7 @@ type RepositoryState string
 // RepositoryHookDetails defines model for RepositoryHookDetails.
 type RepositoryHookDetails struct {
 	ConfigFormKey   *string                                 `json:"configFormKey,omitempty"`
+	ConfigFormView  *string                                 `json:"configFormView,omitempty"`
 	Description     *string                                 `json:"description,omitempty"`
 	Key             *string                                 `json:"key,omitempty"`
 	Name            *string                                 `json:"name,omitempty"`
@@ -2623,9 +2743,9 @@ type RestAccessToken struct {
 
 // RestAccessTokenRequest defines model for RestAccessTokenRequest.
 type RestAccessTokenRequest struct {
-	ExpiryDays  *int32    `json:"expiryDays,omitempty"`
-	Name        *string   `json:"name,omitempty"`
-	Permissions *[]string `json:"permissions,omitempty"`
+	ExpiryDays  *int32   `json:"expiryDays,omitempty"`
+	Name        *string  `json:"name,omitempty"`
+	Permissions []string `json:"permissions"`
 }
 
 // RestAggregateRejectCounter defines model for RestAggregateRejectCounter.
@@ -2633,15 +2753,15 @@ type RestAggregateRejectCounter struct {
 	LastRejectTime *float32 `json:"lastRejectTime,omitempty"`
 	RejectCount    *int64   `json:"rejectCount,omitempty"`
 	User           *struct {
-		Active       *bool                               `json:"active,omitempty"`
-		AvatarUrl    *string                             `json:"avatarUrl,omitempty"`
-		DisplayName  *string                             `json:"displayName,omitempty"`
-		EmailAddress *string                             `json:"emailAddress,omitempty"`
-		Id           *int32                              `json:"id,omitempty"`
-		Links        *map[string]interface{}             `json:"links,omitempty"`
-		Name         *string                             `json:"name,omitempty"`
-		Slug         *string                             `json:"slug,omitempty"`
-		Type         *RestAggregateRejectCounterUserType `json:"type,omitempty"`
+		Active       *bool                              `json:"active,omitempty"`
+		AvatarUrl    *string                            `json:"avatarUrl,omitempty"`
+		DisplayName  string                             `json:"displayName"`
+		EmailAddress *string                            `json:"emailAddress,omitempty"`
+		Id           *int32                             `json:"id,omitempty"`
+		Links        *map[string]interface{}            `json:"links,omitempty"`
+		Name         string                             `json:"name"`
+		Slug         string                             `json:"slug"`
+		Type         RestAggregateRejectCounterUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -2708,10 +2828,10 @@ type RestApplicationUserWithPermissionsType string
 
 // RestApplySuggestionRequest defines model for RestApplySuggestionRequest.
 type RestApplySuggestionRequest struct {
-	CommentVersion     *int32  `json:"commentVersion,omitempty"`
+	CommentVersion     int32   `json:"commentVersion"`
 	CommitMessage      *string `json:"commitMessage,omitempty"`
-	PullRequestVersion *int32  `json:"pullRequestVersion,omitempty"`
-	SuggestionIndex    *int32  `json:"suggestionIndex,omitempty"`
+	PullRequestVersion int32   `json:"pullRequestVersion"`
+	SuggestionIndex    int32   `json:"suggestionIndex"`
 }
 
 // RestAttachmentMetadata defines model for RestAttachmentMetadata.
@@ -2732,8 +2852,8 @@ type RestAutoDeclineSettings struct {
 	Enabled         *bool  `json:"enabled,omitempty"`
 	InactivityWeeks *int32 `json:"inactivityWeeks,omitempty"`
 	Scope           *struct {
-		ResourceId *int32                            `json:"resourceId,omitempty"`
-		Type       *RestAutoDeclineSettingsScopeType `json:"type,omitempty"`
+		ResourceId int32                            `json:"resourceId"`
+		Type       RestAutoDeclineSettingsScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 }
 
@@ -2750,6 +2870,23 @@ type RestAutoDeclineSettingsRequest struct {
 type RestAutoMergeProcessingResult struct {
 	AutoMergeProcessingStatus *RestAutoMergeProcessingResultAutoMergeProcessingStatus `json:"autoMergeProcessingStatus,omitempty"`
 	PullRequest               *struct {
+		Author *struct {
+			Approved           *bool                                                 `json:"approved,omitempty"`
+			LastReviewedCommit *string                                               `json:"lastReviewedCommit,omitempty"`
+			Role               *RestAutoMergeProcessingResultPullRequestAuthorRole   `json:"role,omitempty"`
+			Status             *RestAutoMergeProcessingResultPullRequestAuthorStatus `json:"status,omitempty"`
+			User               *struct {
+				Active       *bool                                                  `json:"active,omitempty"`
+				AvatarUrl    *string                                                `json:"avatarUrl,omitempty"`
+				DisplayName  string                                                 `json:"displayName"`
+				EmailAddress *string                                                `json:"emailAddress,omitempty"`
+				Id           *int32                                                 `json:"id,omitempty"`
+				Links        *map[string]interface{}                                `json:"links,omitempty"`
+				Name         string                                                 `json:"name"`
+				Slug         string                                                 `json:"slug"`
+				Type         RestAutoMergeProcessingResultPullRequestAuthorUserType `json:"type"`
+			} `json:"user,omitempty"`
+		} `json:"author,omitempty"`
 		Closed            *bool   `json:"closed,omitempty"`
 		ClosedDate        *int64  `json:"closedDate,omitempty"`
 		CreatedDate       *int64  `json:"createdDate,omitempty"`
@@ -2757,9 +2894,9 @@ type RestAutoMergeProcessingResult struct {
 		DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 		Draft             *bool   `json:"draft,omitempty"`
 		FromRef           *struct {
-			DisplayId    *string `json:"displayId,omitempty"`
-			Id           *string `json:"id,omitempty"`
-			LatestCommit *string `json:"latestCommit,omitempty"`
+			DisplayId    string `json:"displayId"`
+			Id           string `json:"id"`
+			LatestCommit string `json:"latestCommit"`
 			Repository   *struct {
 				Archived      *bool                   `json:"archived,omitempty"`
 				DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -2832,9 +2969,9 @@ type RestAutoMergeProcessingResult struct {
 		State           *RestAutoMergeProcessingResultPullRequestState `json:"state,omitempty"`
 		Title           *string                                        `json:"title,omitempty"`
 		ToRef           *struct {
-			DisplayId    *string `json:"displayId,omitempty"`
-			Id           *string `json:"id,omitempty"`
-			LatestCommit *string `json:"latestCommit,omitempty"`
+			DisplayId    string `json:"displayId"`
+			Id           string `json:"id"`
+			LatestCommit string `json:"latestCommit"`
 			Repository   *struct {
 				Archived      *bool                   `json:"archived,omitempty"`
 				DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -2905,6 +3042,15 @@ type RestAutoMergeProcessingResult struct {
 // RestAutoMergeProcessingResultAutoMergeProcessingStatus defines model for RestAutoMergeProcessingResult.AutoMergeProcessingStatus.
 type RestAutoMergeProcessingResultAutoMergeProcessingStatus string
 
+// RestAutoMergeProcessingResultPullRequestAuthorRole defines model for RestAutoMergeProcessingResult.PullRequest.Author.Role.
+type RestAutoMergeProcessingResultPullRequestAuthorRole string
+
+// RestAutoMergeProcessingResultPullRequestAuthorStatus defines model for RestAutoMergeProcessingResult.PullRequest.Author.Status.
+type RestAutoMergeProcessingResultPullRequestAuthorStatus string
+
+// RestAutoMergeProcessingResultPullRequestAuthorUserType defines model for RestAutoMergeProcessingResult.PullRequest.Author.User.Type.
+type RestAutoMergeProcessingResultPullRequestAuthorUserType string
+
 // RestAutoMergeProcessingResultPullRequestFromRefRepositoryOriginProjectType defines model for RestAutoMergeProcessingResult.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestAutoMergeProcessingResultPullRequestFromRefRepositoryOriginProjectType string
 
@@ -2966,8 +3112,8 @@ type RestAutoMergeRestrictedSettings struct {
 
 	// Scope The scope that these settings apply to.
 	Scope *struct {
-		ResourceId *int32                                    `json:"resourceId,omitempty"`
-		Type       *RestAutoMergeRestrictedSettingsScopeType `json:"type,omitempty"`
+		ResourceId int32                                    `json:"resourceId"`
+		Type       RestAutoMergeRestrictedSettingsScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 }
 
@@ -3039,6 +3185,107 @@ type RestBranchDeleteRequest struct {
 	// Name Name of the ref to be deleted
 	Name *string `json:"name,omitempty"`
 }
+
+// RestBrokenIndexStatusRepository defines model for RestBrokenIndexStatusRepository.
+type RestBrokenIndexStatusRepository struct {
+	// Details Details about the last index attempt for the given repository
+	Details *struct {
+		// IndexingError Additional detail about the <b>BROKEN</b> status if available, meant for informational purposes only. This nullable, free-form text field should not be used for automation; rely on status instead.
+		IndexingError *string `json:"indexingError,omitempty"`
+
+		// LastIndexedCommitId The commit hash of the last indexed commit in the repository.
+		LastIndexedCommitId *string `json:"lastIndexedCommitId,omitempty"`
+
+		// LastIndexedTimestamp The timestamp in epoch milliseconds of the last time the repository successfully was indexed
+		LastIndexedTimestamp *int64 `json:"lastIndexedTimestamp,omitempty"`
+
+		// ProjectKey The project key that the repository belongs to
+		ProjectKey string `json:"projectKey"`
+
+		// RepositorySlug The repository slug
+		RepositorySlug string `json:"repositorySlug"`
+
+		// Status The current indexing status of the repository.
+		Status RestBrokenIndexStatusRepositoryDetailsStatus `json:"status"`
+	} `json:"details,omitempty"`
+
+	// Repository The repository which has entered a broken status
+	Repository *struct {
+		Archived      *bool                   `json:"archived,omitempty"`
+		DefaultBranch *string                 `json:"defaultBranch,omitempty"`
+		Description   *string                 `json:"description,omitempty"`
+		Forkable      *bool                   `json:"forkable,omitempty"`
+		HierarchyId   *string                 `json:"hierarchyId,omitempty"`
+		Id            *int32                  `json:"id,omitempty"`
+		Links         *map[string]interface{} `json:"links,omitempty"`
+		Name          *string                 `json:"name,omitempty"`
+		Origin        *struct {
+			Archived      *bool                   `json:"archived,omitempty"`
+			DefaultBranch *string                 `json:"defaultBranch,omitempty"`
+			Description   *string                 `json:"description,omitempty"`
+			Forkable      *bool                   `json:"forkable,omitempty"`
+			HierarchyId   *string                 `json:"hierarchyId,omitempty"`
+			Id            *int32                  `json:"id,omitempty"`
+			Links         *map[string]interface{} `json:"links,omitempty"`
+			Name          *string                 `json:"name,omitempty"`
+			Partition     *int32                  `json:"partition,omitempty"`
+			Project       *struct {
+				Avatar      *string                                                     `json:"avatar,omitempty"`
+				AvatarUrl   *string                                                     `json:"avatarUrl,omitempty"`
+				Description *string                                                     `json:"description,omitempty"`
+				Id          *int32                                                      `json:"id,omitempty"`
+				Key         string                                                      `json:"key"`
+				Links       *map[string]interface{}                                     `json:"links,omitempty"`
+				Name        *string                                                     `json:"name,omitempty"`
+				Public      *bool                                                       `json:"public,omitempty"`
+				Scope       *string                                                     `json:"scope,omitempty"`
+				Type        *RestBrokenIndexStatusRepositoryRepositoryOriginProjectType `json:"type,omitempty"`
+			} `json:"project,omitempty"`
+			Public        *bool                                                 `json:"public,omitempty"`
+			RelatedLinks  *map[string]interface{}                               `json:"relatedLinks,omitempty"`
+			ScmId         *string                                               `json:"scmId,omitempty"`
+			Scope         *string                                               `json:"scope,omitempty"`
+			Slug          *string                                               `json:"slug,omitempty"`
+			State         *RestBrokenIndexStatusRepositoryRepositoryOriginState `json:"state,omitempty"`
+			StatusMessage *string                                               `json:"statusMessage,omitempty"`
+		} `json:"origin,omitempty"`
+		Partition *int32 `json:"partition,omitempty"`
+		Project   *struct {
+			Avatar      *string                                               `json:"avatar,omitempty"`
+			AvatarUrl   *string                                               `json:"avatarUrl,omitempty"`
+			Description *string                                               `json:"description,omitempty"`
+			Id          *int32                                                `json:"id,omitempty"`
+			Key         string                                                `json:"key"`
+			Links       *map[string]interface{}                               `json:"links,omitempty"`
+			Name        *string                                               `json:"name,omitempty"`
+			Public      *bool                                                 `json:"public,omitempty"`
+			Scope       *string                                               `json:"scope,omitempty"`
+			Type        *RestBrokenIndexStatusRepositoryRepositoryProjectType `json:"type,omitempty"`
+		} `json:"project,omitempty"`
+		Public        *bool                                           `json:"public,omitempty"`
+		RelatedLinks  *map[string]interface{}                         `json:"relatedLinks,omitempty"`
+		ScmId         *string                                         `json:"scmId,omitempty"`
+		Scope         *string                                         `json:"scope,omitempty"`
+		Slug          *string                                         `json:"slug,omitempty"`
+		State         *RestBrokenIndexStatusRepositoryRepositoryState `json:"state,omitempty"`
+		StatusMessage *string                                         `json:"statusMessage,omitempty"`
+	} `json:"repository,omitempty"`
+}
+
+// RestBrokenIndexStatusRepositoryDetailsStatus The current indexing status of the repository.
+type RestBrokenIndexStatusRepositoryDetailsStatus string
+
+// RestBrokenIndexStatusRepositoryRepositoryOriginProjectType defines model for RestBrokenIndexStatusRepository.Repository.Origin.Project.Type.
+type RestBrokenIndexStatusRepositoryRepositoryOriginProjectType string
+
+// RestBrokenIndexStatusRepositoryRepositoryOriginState defines model for RestBrokenIndexStatusRepository.Repository.Origin.State.
+type RestBrokenIndexStatusRepositoryRepositoryOriginState string
+
+// RestBrokenIndexStatusRepositoryRepositoryProjectType defines model for RestBrokenIndexStatusRepository.Repository.Project.Type.
+type RestBrokenIndexStatusRepositoryRepositoryProjectType string
+
+// RestBrokenIndexStatusRepositoryRepositoryState defines model for RestBrokenIndexStatusRepository.Repository.State.
+type RestBrokenIndexStatusRepositoryRepositoryState string
 
 // RestBuildCapabilities defines model for RestBuildCapabilities.
 type RestBuildCapabilities struct {
@@ -3112,8 +3359,8 @@ type RestBulkUserRateLimitSettingsUpdateRequest struct {
 		Capacity *int32 `json:"capacity,omitempty"`
 		FillRate *int32 `json:"fillRate,omitempty"`
 	} `json:"settings,omitempty"`
-	Usernames   *[]string `json:"usernames,omitempty"`
-	Whitelisted *bool     `json:"whitelisted,omitempty"`
+	Usernames   []string `json:"usernames"`
+	Whitelisted *bool    `json:"whitelisted,omitempty"`
 }
 
 // RestChange defines model for RestChange.
@@ -3263,13 +3510,13 @@ type RestChangeset struct {
 		Author *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"author,omitempty"`
 		AuthorTimestamp *int64 `json:"authorTimestamp,omitempty"`
 		Committer       *struct {
 			AvatarUrl    *string `json:"avatarUrl,omitempty"`
 			EmailAddress *string `json:"emailAddress,omitempty"`
-			Name         *string `json:"name,omitempty"`
+			Name         string  `json:"name"`
 		} `json:"committer,omitempty"`
 		CommitterTimestamp *int64               `json:"committerTimestamp,omitempty"`
 		DisplayId          *string              `json:"displayId,omitempty"`
@@ -3294,14 +3541,14 @@ type RestChangesetRepositoryState string
 // RestClusterInformation defines model for RestClusterInformation.
 type RestClusterInformation struct {
 	LocalNode *struct {
-		Address *struct {
+		Address struct {
 			Address *string `json:"address,omitempty"`
 			Port    *int32  `json:"port,omitempty"`
-		} `json:"address,omitempty"`
-		BuildVersion *string `json:"buildVersion,omitempty"`
-		Id           *string `json:"id,omitempty"`
-		Local        *bool   `json:"local,omitempty"`
-		Name         *string `json:"name,omitempty"`
+		} `json:"address"`
+		BuildVersion string `json:"buildVersion"`
+		Id           string `json:"id"`
+		Local        bool   `json:"local"`
+		Name         string `json:"name"`
 	} `json:"localNode,omitempty"`
 	Nodes   *[]RestClusterNode `json:"nodes,omitempty"`
 	Running *bool              `json:"running,omitempty"`
@@ -3354,6 +3601,23 @@ type RestComment struct {
 			Parent     *string   `json:"parent,omitempty"`
 		} `json:"path,omitempty"`
 		PullRequest *struct {
+			Author *struct {
+				Approved           *bool                                     `json:"approved,omitempty"`
+				LastReviewedCommit *string                                   `json:"lastReviewedCommit,omitempty"`
+				Role               *RestCommentAnchorPullRequestAuthorRole   `json:"role,omitempty"`
+				Status             *RestCommentAnchorPullRequestAuthorStatus `json:"status,omitempty"`
+				User               *struct {
+					Active       *bool                                      `json:"active,omitempty"`
+					AvatarUrl    *string                                    `json:"avatarUrl,omitempty"`
+					DisplayName  string                                     `json:"displayName"`
+					EmailAddress *string                                    `json:"emailAddress,omitempty"`
+					Id           *int32                                     `json:"id,omitempty"`
+					Links        *map[string]interface{}                    `json:"links,omitempty"`
+					Name         string                                     `json:"name"`
+					Slug         string                                     `json:"slug"`
+					Type         RestCommentAnchorPullRequestAuthorUserType `json:"type"`
+				} `json:"user,omitempty"`
+			} `json:"author,omitempty"`
 			Closed            *bool   `json:"closed,omitempty"`
 			ClosedDate        *int64  `json:"closedDate,omitempty"`
 			CreatedDate       *int64  `json:"createdDate,omitempty"`
@@ -3361,9 +3625,9 @@ type RestComment struct {
 			DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 			Draft             *bool   `json:"draft,omitempty"`
 			FromRef           *struct {
-				DisplayId    *string `json:"displayId,omitempty"`
-				Id           *string `json:"id,omitempty"`
-				LatestCommit *string `json:"latestCommit,omitempty"`
+				DisplayId    string `json:"displayId"`
+				Id           string `json:"id"`
+				LatestCommit string `json:"latestCommit"`
 				Repository   *struct {
 					Archived      *bool                   `json:"archived,omitempty"`
 					DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -3436,9 +3700,9 @@ type RestComment struct {
 			State           *RestCommentAnchorPullRequestState `json:"state,omitempty"`
 			Title           *string                            `json:"title,omitempty"`
 			ToRef           *struct {
-				DisplayId    *string `json:"displayId,omitempty"`
-				Id           *string `json:"id,omitempty"`
-				LatestCommit *string `json:"latestCommit,omitempty"`
+				DisplayId    string `json:"displayId"`
+				Id           string `json:"id"`
+				LatestCommit string `json:"latestCommit"`
 				Repository   *struct {
 					Archived      *bool                   `json:"archived,omitempty"`
 					DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -3516,13 +3780,13 @@ type RestComment struct {
 	Author   *struct {
 		Active       *bool                   `json:"active,omitempty"`
 		AvatarUrl    *string                 `json:"avatarUrl,omitempty"`
-		DisplayName  *string                 `json:"displayName,omitempty"`
+		DisplayName  string                  `json:"displayName"`
 		EmailAddress *string                 `json:"emailAddress,omitempty"`
 		Id           *int32                  `json:"id,omitempty"`
 		Links        *map[string]interface{} `json:"links,omitempty"`
-		Name         *string                 `json:"name,omitempty"`
-		Slug         *string                 `json:"slug,omitempty"`
-		Type         *RestCommentAuthorType  `json:"type,omitempty"`
+		Name         string                  `json:"name"`
+		Slug         string                  `json:"slug"`
+		Type         RestCommentAuthorType   `json:"type"`
 	} `json:"author,omitempty"`
 	Comments    *[]RestComment `json:"comments,omitempty"`
 	CreatedDate *int64         `json:"createdDate,omitempty"`
@@ -3562,6 +3826,23 @@ type RestComment struct {
 				Parent     *string   `json:"parent,omitempty"`
 			} `json:"path,omitempty"`
 			PullRequest *struct {
+				Author *struct {
+					Approved           *bool                                           `json:"approved,omitempty"`
+					LastReviewedCommit *string                                         `json:"lastReviewedCommit,omitempty"`
+					Role               *RestCommentParentAnchorPullRequestAuthorRole   `json:"role,omitempty"`
+					Status             *RestCommentParentAnchorPullRequestAuthorStatus `json:"status,omitempty"`
+					User               *struct {
+						Active       *bool                                            `json:"active,omitempty"`
+						AvatarUrl    *string                                          `json:"avatarUrl,omitempty"`
+						DisplayName  string                                           `json:"displayName"`
+						EmailAddress *string                                          `json:"emailAddress,omitempty"`
+						Id           *int32                                           `json:"id,omitempty"`
+						Links        *map[string]interface{}                          `json:"links,omitempty"`
+						Name         string                                           `json:"name"`
+						Slug         string                                           `json:"slug"`
+						Type         RestCommentParentAnchorPullRequestAuthorUserType `json:"type"`
+					} `json:"user,omitempty"`
+				} `json:"author,omitempty"`
 				Closed            *bool   `json:"closed,omitempty"`
 				ClosedDate        *int64  `json:"closedDate,omitempty"`
 				CreatedDate       *int64  `json:"createdDate,omitempty"`
@@ -3569,9 +3850,9 @@ type RestComment struct {
 				DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 				Draft             *bool   `json:"draft,omitempty"`
 				FromRef           *struct {
-					DisplayId    *string `json:"displayId,omitempty"`
-					Id           *string `json:"id,omitempty"`
-					LatestCommit *string `json:"latestCommit,omitempty"`
+					DisplayId    string `json:"displayId"`
+					Id           string `json:"id"`
+					LatestCommit string `json:"latestCommit"`
 					Repository   *struct {
 						Archived      *bool                   `json:"archived,omitempty"`
 						DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -3644,9 +3925,9 @@ type RestComment struct {
 				State           *RestCommentParentAnchorPullRequestState `json:"state,omitempty"`
 				Title           *string                                  `json:"title,omitempty"`
 				ToRef           *struct {
-					DisplayId    *string `json:"displayId,omitempty"`
-					Id           *string `json:"id,omitempty"`
-					LatestCommit *string `json:"latestCommit,omitempty"`
+					DisplayId    string `json:"displayId"`
+					Id           string `json:"id"`
+					LatestCommit string `json:"latestCommit"`
 					Repository   *struct {
 						Archived      *bool                   `json:"archived,omitempty"`
 						DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -3722,15 +4003,15 @@ type RestComment struct {
 		} `json:"anchor,omitempty"`
 		Anchored *bool `json:"anchored,omitempty"`
 		Author   *struct {
-			Active       *bool                        `json:"active,omitempty"`
-			AvatarUrl    *string                      `json:"avatarUrl,omitempty"`
-			DisplayName  *string                      `json:"displayName,omitempty"`
-			EmailAddress *string                      `json:"emailAddress,omitempty"`
-			Id           *int32                       `json:"id,omitempty"`
-			Links        *map[string]interface{}      `json:"links,omitempty"`
-			Name         *string                      `json:"name,omitempty"`
-			Slug         *string                      `json:"slug,omitempty"`
-			Type         *RestCommentParentAuthorType `json:"type,omitempty"`
+			Active       *bool                       `json:"active,omitempty"`
+			AvatarUrl    *string                     `json:"avatarUrl,omitempty"`
+			DisplayName  string                      `json:"displayName"`
+			EmailAddress *string                     `json:"emailAddress,omitempty"`
+			Id           *int32                      `json:"id,omitempty"`
+			Links        *map[string]interface{}     `json:"links,omitempty"`
+			Name         string                      `json:"name"`
+			Slug         string                      `json:"slug"`
+			Type         RestCommentParentAuthorType `json:"type"`
 		} `json:"author,omitempty"`
 		Comments     *[]RestComment          `json:"comments,omitempty"`
 		CreatedDate  *int64                  `json:"createdDate,omitempty"`
@@ -3741,15 +4022,15 @@ type RestComment struct {
 		Reply        *bool                   `json:"reply,omitempty"`
 		ResolvedDate *int64                  `json:"resolvedDate,omitempty"`
 		Resolver     *struct {
-			Active       *bool                          `json:"active,omitempty"`
-			AvatarUrl    *string                        `json:"avatarUrl,omitempty"`
-			DisplayName  *string                        `json:"displayName,omitempty"`
-			EmailAddress *string                        `json:"emailAddress,omitempty"`
-			Id           *int32                         `json:"id,omitempty"`
-			Links        *map[string]interface{}        `json:"links,omitempty"`
-			Name         *string                        `json:"name,omitempty"`
-			Slug         *string                        `json:"slug,omitempty"`
-			Type         *RestCommentParentResolverType `json:"type,omitempty"`
+			Active       *bool                         `json:"active,omitempty"`
+			AvatarUrl    *string                       `json:"avatarUrl,omitempty"`
+			DisplayName  string                        `json:"displayName"`
+			EmailAddress *string                       `json:"emailAddress,omitempty"`
+			Id           *int32                        `json:"id,omitempty"`
+			Links        *map[string]interface{}       `json:"links,omitempty"`
+			Name         string                        `json:"name"`
+			Slug         string                        `json:"slug"`
+			Type         RestCommentParentResolverType `json:"type"`
 		} `json:"resolver,omitempty"`
 		Severity *string `json:"severity,omitempty"`
 		State    *string `json:"state,omitempty"`
@@ -3759,15 +4040,15 @@ type RestComment struct {
 		ThreadResolved     *bool  `json:"threadResolved,omitempty"`
 		ThreadResolvedDate *int64 `json:"threadResolvedDate,omitempty"`
 		ThreadResolver     *struct {
-			Active       *bool                                `json:"active,omitempty"`
-			AvatarUrl    *string                              `json:"avatarUrl,omitempty"`
-			DisplayName  *string                              `json:"displayName,omitempty"`
-			EmailAddress *string                              `json:"emailAddress,omitempty"`
-			Id           *int32                               `json:"id,omitempty"`
-			Links        *map[string]interface{}              `json:"links,omitempty"`
-			Name         *string                              `json:"name,omitempty"`
-			Slug         *string                              `json:"slug,omitempty"`
-			Type         *RestCommentParentThreadResolverType `json:"type,omitempty"`
+			Active       *bool                               `json:"active,omitempty"`
+			AvatarUrl    *string                             `json:"avatarUrl,omitempty"`
+			DisplayName  string                              `json:"displayName"`
+			EmailAddress *string                             `json:"emailAddress,omitempty"`
+			Id           *int32                              `json:"id,omitempty"`
+			Links        *map[string]interface{}             `json:"links,omitempty"`
+			Name         string                              `json:"name"`
+			Slug         string                              `json:"slug"`
+			Type         RestCommentParentThreadResolverType `json:"type"`
 		} `json:"threadResolver,omitempty"`
 		UpdatedDate *int64 `json:"updatedDate,omitempty"`
 		Version     *int32 `json:"version,omitempty"`
@@ -3777,15 +4058,15 @@ type RestComment struct {
 	Reply        *bool                   `json:"reply,omitempty"`
 	ResolvedDate *int64                  `json:"resolvedDate,omitempty"`
 	Resolver     *struct {
-		Active       *bool                    `json:"active,omitempty"`
-		AvatarUrl    *string                  `json:"avatarUrl,omitempty"`
-		DisplayName  *string                  `json:"displayName,omitempty"`
-		EmailAddress *string                  `json:"emailAddress,omitempty"`
-		Id           *int32                   `json:"id,omitempty"`
-		Links        *map[string]interface{}  `json:"links,omitempty"`
-		Name         *string                  `json:"name,omitempty"`
-		Slug         *string                  `json:"slug,omitempty"`
-		Type         *RestCommentResolverType `json:"type,omitempty"`
+		Active       *bool                   `json:"active,omitempty"`
+		AvatarUrl    *string                 `json:"avatarUrl,omitempty"`
+		DisplayName  string                  `json:"displayName"`
+		EmailAddress *string                 `json:"emailAddress,omitempty"`
+		Id           *int32                  `json:"id,omitempty"`
+		Links        *map[string]interface{} `json:"links,omitempty"`
+		Name         string                  `json:"name"`
+		Slug         string                  `json:"slug"`
+		Type         RestCommentResolverType `json:"type"`
 	} `json:"resolver,omitempty"`
 	Severity *string `json:"severity,omitempty"`
 	State    *string `json:"state,omitempty"`
@@ -3795,15 +4076,15 @@ type RestComment struct {
 	ThreadResolved     *bool  `json:"threadResolved,omitempty"`
 	ThreadResolvedDate *int64 `json:"threadResolvedDate,omitempty"`
 	ThreadResolver     *struct {
-		Active       *bool                          `json:"active,omitempty"`
-		AvatarUrl    *string                        `json:"avatarUrl,omitempty"`
-		DisplayName  *string                        `json:"displayName,omitempty"`
-		EmailAddress *string                        `json:"emailAddress,omitempty"`
-		Id           *int32                         `json:"id,omitempty"`
-		Links        *map[string]interface{}        `json:"links,omitempty"`
-		Name         *string                        `json:"name,omitempty"`
-		Slug         *string                        `json:"slug,omitempty"`
-		Type         *RestCommentThreadResolverType `json:"type,omitempty"`
+		Active       *bool                         `json:"active,omitempty"`
+		AvatarUrl    *string                       `json:"avatarUrl,omitempty"`
+		DisplayName  string                        `json:"displayName"`
+		EmailAddress *string                       `json:"emailAddress,omitempty"`
+		Id           *int32                        `json:"id,omitempty"`
+		Links        *map[string]interface{}       `json:"links,omitempty"`
+		Name         string                        `json:"name"`
+		Slug         string                        `json:"slug"`
+		Type         RestCommentThreadResolverType `json:"type"`
 	} `json:"threadResolver,omitempty"`
 	UpdatedDate *int64 `json:"updatedDate,omitempty"`
 	Version     *int32 `json:"version,omitempty"`
@@ -3820,6 +4101,15 @@ type RestCommentAnchorLineType string
 
 // RestCommentAnchorMultilineMarkerStartLineType The segment type of the start line of the multiline comment
 type RestCommentAnchorMultilineMarkerStartLineType string
+
+// RestCommentAnchorPullRequestAuthorRole defines model for RestComment.Anchor.PullRequest.Author.Role.
+type RestCommentAnchorPullRequestAuthorRole string
+
+// RestCommentAnchorPullRequestAuthorStatus defines model for RestComment.Anchor.PullRequest.Author.Status.
+type RestCommentAnchorPullRequestAuthorStatus string
+
+// RestCommentAnchorPullRequestAuthorUserType defines model for RestComment.Anchor.PullRequest.Author.User.Type.
+type RestCommentAnchorPullRequestAuthorUserType string
 
 // RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestComment.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType string
@@ -3868,6 +4158,15 @@ type RestCommentParentAnchorLineType string
 
 // RestCommentParentAnchorMultilineMarkerStartLineType The segment type of the start line of the multiline comment
 type RestCommentParentAnchorMultilineMarkerStartLineType string
+
+// RestCommentParentAnchorPullRequestAuthorRole defines model for RestComment.Parent.Anchor.PullRequest.Author.Role.
+type RestCommentParentAnchorPullRequestAuthorRole string
+
+// RestCommentParentAnchorPullRequestAuthorStatus defines model for RestComment.Parent.Anchor.PullRequest.Author.Status.
+type RestCommentParentAnchorPullRequestAuthorStatus string
+
+// RestCommentParentAnchorPullRequestAuthorUserType defines model for RestComment.Parent.Anchor.PullRequest.Author.User.Type.
+type RestCommentParentAnchorPullRequestAuthorUserType string
 
 // RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestComment.Parent.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType string
@@ -3928,13 +4227,13 @@ type RestCommit struct {
 	Author *struct {
 		AvatarUrl    *string `json:"avatarUrl,omitempty"`
 		EmailAddress *string `json:"emailAddress,omitempty"`
-		Name         *string `json:"name,omitempty"`
+		Name         string  `json:"name"`
 	} `json:"author,omitempty"`
 	AuthorTimestamp *int64 `json:"authorTimestamp,omitempty"`
 	Committer       *struct {
 		AvatarUrl    *string `json:"avatarUrl,omitempty"`
 		EmailAddress *string `json:"emailAddress,omitempty"`
-		Name         *string `json:"name,omitempty"`
+		Name         string  `json:"name"`
 	} `json:"committer,omitempty"`
 	CommitterTimestamp *int64               `json:"committerTimestamp,omitempty"`
 	DisplayId          *string              `json:"displayId,omitempty"`
@@ -3963,24 +4262,33 @@ type RestCreateTagRequest struct {
 	StartPoint *string `json:"startPoint,omitempty"`
 }
 
+// RestCspSettings defines model for RestCspSettings.
+type RestCspSettings struct {
+	Strictness *RestCspSettingsStrictness `json:"strictness,omitempty"`
+}
+
+// RestCspSettingsStrictness defines model for RestCspSettings.Strictness.
+type RestCspSettingsStrictness string
+
 // RestDefaultReviewersRequest defines model for RestDefaultReviewersRequest.
 type RestDefaultReviewersRequest struct {
 	RequiredApprovals *int32                 `json:"requiredApprovals,omitempty"`
+	ReviewerGroups    *[]RestReviewerGroup   `json:"reviewerGroups,omitempty"`
 	Reviewers         *[]RestApplicationUser `json:"reviewers,omitempty"`
 	SourceMatcher     *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestDefaultReviewersRequestSourceMatcherTypeId `json:"id,omitempty"`
-			Name *string                                         `json:"name,omitempty"`
+			Id   RestDefaultReviewersRequestSourceMatcherTypeId `json:"id"`
+			Name string                                         `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceMatcher,omitempty"`
 	TargetMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestDefaultReviewersRequestTargetMatcherTypeId `json:"id,omitempty"`
-			Name *string                                         `json:"name,omitempty"`
+			Id   RestDefaultReviewersRequestTargetMatcherTypeId `json:"id"`
+			Name string                                         `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"targetMatcher,omitempty"`
 }
@@ -4000,21 +4308,21 @@ type RestDefaultTask struct {
 
 // RestDefaultTaskRequest defines model for RestDefaultTaskRequest.
 type RestDefaultTaskRequest struct {
-	Description   *string `json:"description,omitempty"`
+	Description   string `json:"description"`
 	SourceMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestDefaultTaskRequestSourceMatcherTypeId `json:"id,omitempty"`
-			Name *string                                    `json:"name,omitempty"`
+			Id   RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
+			Name string                                    `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceMatcher,omitempty"`
 	TargetMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestDefaultTaskRequestTargetMatcherTypeId `json:"id,omitempty"`
-			Name *string                                    `json:"name,omitempty"`
+			Id   RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
+			Name string                                    `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"targetMatcher,omitempty"`
 }
@@ -4024,6 +4332,13 @@ type RestDefaultTaskRequestSourceMatcherTypeId string
 
 // RestDefaultTaskRequestTargetMatcherTypeId defines model for RestDefaultTaskRequest.TargetMatcher.Type.Id.
 type RestDefaultTaskRequestTargetMatcherTypeId string
+
+// RestDelayedSyncRepository defines model for RestDelayedSyncRepository.
+type RestDelayedSyncRepository struct {
+	ProjectKey     string `json:"projectKey"`
+	RepositoryId   string `json:"repositoryId"`
+	RepositorySlug string `json:"repositorySlug"`
+}
 
 // RestDeployment defines model for RestDeployment.
 type RestDeployment struct {
@@ -4173,6 +4488,7 @@ type RestDetailedInvocation struct {
 type RestDetailedUser struct {
 	Active                      *bool                   `json:"active,omitempty"`
 	AvatarUrl                   *string                 `json:"avatarUrl,omitempty"`
+	CreatedTimestamp            *float32                `json:"createdTimestamp,omitempty"`
 	Deletable                   *bool                   `json:"deletable,omitempty"`
 	DirectoryName               *string                 `json:"directoryName,omitempty"`
 	DisplayName                 *string                 `json:"displayName,omitempty"`
@@ -4339,8 +4655,8 @@ type RestHookScriptType string
 // RestHookScriptConfig defines model for RestHookScriptConfig.
 type RestHookScriptConfig struct {
 	Scope *struct {
-		ResourceId *int32                         `json:"resourceId,omitempty"`
-		Type       *RestHookScriptConfigScopeType `json:"type,omitempty"`
+		ResourceId int32                         `json:"resourceId"`
+		Type       RestHookScriptConfigScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 	Script *struct {
 		CreatedDate *time.Time                      `json:"createdDate,omitempty"`
@@ -4363,12 +4679,71 @@ type RestHookScriptConfigScriptType string
 
 // RestHookScriptTriggers defines model for RestHookScriptTriggers.
 type RestHookScriptTriggers struct {
-	TriggerIds *[]string `json:"triggerIds,omitempty"`
+	TriggerIds []string `json:"triggerIds"`
 }
 
 // RestImportRequest defines model for RestImportRequest.
 type RestImportRequest struct {
 	ArchivePath *string `json:"archivePath,omitempty"`
+}
+
+// RestIndexingIsRepositoryQueued defines model for RestIndexingIsRepositoryQueued.
+type RestIndexingIsRepositoryQueued struct {
+	Queued *bool `json:"queued,omitempty"`
+}
+
+// RestIndexingThreadDetails defines model for RestIndexingThreadDetails.
+type RestIndexingThreadDetails struct {
+	// CapturedAt Returns the timestamp indicating when the current thread details were captured.
+	CapturedAt int64 `json:"capturedAt"`
+
+	// CurrentProcess A snapshot of the current process being executed by the indexing worker.
+	CurrentProcess *struct {
+		// CurrentTask The current task description that the indexing worker is executing.
+		CurrentTask string `json:"currentTask"`
+
+		// Event The event that is currently being processed by the indexing worker.
+		Event *struct {
+			// EventMetadata Retrieves the metadata associated with the index event. The content of this metadata is variable and depends on the event type. It may include identifiers such as repository ID, project ID, or user ID, among other relevant details.
+			EventMetadata *map[string]interface{} `json:"eventMetadata,omitempty"`
+
+			// EventType Retrieves the type of the event, indicating the entity (such as project, repository, or user) that triggered the indexing operation.
+			EventType RestIndexingThreadDetailsCurrentProcessEventEventType `json:"eventType"`
+
+			// Retries Retrieves the count of how many times this event has been retried due to previous failures or exceptions.
+			Retries int32 `json:"retries"`
+		} `json:"event,omitempty"`
+	} `json:"currentProcess,omitempty"`
+
+	// DelayedQueueSize The number of items in the delayed queue. This queue contains retries that have been scheduled with an exponential backoff delay. The retries are for operations that previously failed in the main queue.
+	DelayedQueueSize int32 `json:"delayedQueueSize"`
+
+	// QueueSize The number of items currently in the main queue.
+	QueueSize int32 `json:"queueSize"`
+
+	// State Represents the state of an indexing thread.
+	State *struct {
+		// Code The current code representing the state of the indexing thread
+		Code RestIndexingThreadDetailsStateCode `json:"code"`
+
+		// Description Additional detail about the current state, meant for informational purposes only.
+		Description *string `json:"description,omitempty"`
+	} `json:"state,omitempty"`
+}
+
+// RestIndexingThreadDetailsCurrentProcessEventEventType Retrieves the type of the event, indicating the entity (such as project, repository, or user) that triggered the indexing operation.
+type RestIndexingThreadDetailsCurrentProcessEventEventType string
+
+// RestIndexingThreadDetailsStateCode The current code representing the state of the indexing thread
+type RestIndexingThreadDetailsStateCode string
+
+// RestIndexingWorkerRestartRequest defines model for RestIndexingWorkerRestartRequest.
+type RestIndexingWorkerRestartRequest struct {
+	// GracefulShutdown Should the indexing thread terminate immediately
+	GracefulShutdown *bool `json:"gracefulShutdown,omitempty"`
+
+	// WaitForRestart Should the response wait until the worker has been restarted
+	WaitForRestart *bool `json:"waitForRestart,omitempty"`
 }
 
 // RestInsightAnnotation defines model for RestInsightAnnotation.
@@ -4414,6 +4789,35 @@ type RestInsightReportData struct {
 // RestInvocationHistory defines model for RestInvocationHistory.
 type RestInvocationHistory = interface{}
 
+// RestJiraBackfillError defines model for RestJiraBackfillError.
+type RestJiraBackfillError struct {
+	Error      *string `json:"error,omitempty"`
+	ProjectKey *string `json:"projectKey,omitempty"`
+	RepoSlug   *string `json:"repoSlug,omitempty"`
+}
+
+// RestJiraBackfillReport defines model for RestJiraBackfillReport.
+type RestJiraBackfillReport struct {
+	Errors []RestJiraBackfillError `json:"errors"`
+}
+
+// RestJiraBackfillStatus defines model for RestJiraBackfillStatus.
+type RestJiraBackfillStatus struct {
+	// States Map of backfill state names to their counts
+	States map[string]interface{} `json:"states"`
+}
+
+// RestJiraDevInfoBackfillRequest defines model for RestJiraDevInfoBackfillRequest.
+type RestJiraDevInfoBackfillRequest struct {
+	// FromDate The starting timestamp in milliseconds for looking for backfill items, non-inclusive
+	FromDate     *int64                   `json:"fromDate,omitempty"`
+	JiraSiteIds  []int32                  `json:"jiraSiteIds"`
+	Repositories []RestRepositorySelector `json:"repositories"`
+
+	// ToDate The ending timestamp in milliseconds for looking for backfill items, non-inclusive
+	ToDate *int64 `json:"toDate,omitempty"`
+}
+
 // RestJiraIssue defines model for RestJiraIssue.
 type RestJiraIssue struct {
 	Key *string `json:"key,omitempty"`
@@ -4427,13 +4831,13 @@ type RestJob struct {
 	Initiator *struct {
 		Active       *bool                   `json:"active,omitempty"`
 		AvatarUrl    *string                 `json:"avatarUrl,omitempty"`
-		DisplayName  *string                 `json:"displayName,omitempty"`
+		DisplayName  string                  `json:"displayName"`
 		EmailAddress *string                 `json:"emailAddress,omitempty"`
 		Id           *int32                  `json:"id,omitempty"`
 		Links        *map[string]interface{} `json:"links,omitempty"`
-		Name         *string                 `json:"name,omitempty"`
-		Slug         *string                 `json:"slug,omitempty"`
-		Type         *RestJobInitiatorType   `json:"type,omitempty"`
+		Name         string                  `json:"name"`
+		Slug         string                  `json:"slug"`
+		Type         RestJobInitiatorType    `json:"type"`
 	} `json:"initiator,omitempty"`
 	NodeId   *string `json:"nodeId,omitempty"`
 	Progress *struct {
@@ -4552,17 +4956,29 @@ type RestLogLevel struct {
 	LogLevel *string `json:"logLevel,omitempty"`
 }
 
+// RestLoggingSettings defines model for RestLoggingSettings.
+type RestLoggingSettings struct {
+	DebugLoggingEnabled *bool `json:"debugLoggingEnabled,omitempty"`
+	ProfilingEnabled    *bool `json:"profilingEnabled,omitempty"`
+}
+
 // RestMailConfiguration defines model for RestMailConfiguration.
 type RestMailConfiguration struct {
-	Hostname        *string                        `json:"hostname,omitempty"`
-	Password        *string                        `json:"password,omitempty"`
-	Port            *int32                         `json:"port,omitempty"`
-	Protocol        *RestMailConfigurationProtocol `json:"protocol,omitempty"`
-	RequireStartTls *bool                          `json:"requireStartTls,omitempty"`
-	SenderAddress   *string                        `json:"senderAddress,omitempty"`
-	UseStartTls     *bool                          `json:"useStartTls,omitempty"`
-	Username        *string                        `json:"username,omitempty"`
+	AuthType         *RestMailConfigurationAuthType `json:"authType,omitempty"`
+	Hostname         *string                        `json:"hostname,omitempty"`
+	Oauth2ProviderId *string                        `json:"oauth2ProviderId,omitempty"`
+	Password         *string                        `json:"password,omitempty"`
+	Port             *int32                         `json:"port,omitempty"`
+	Protocol         *RestMailConfigurationProtocol `json:"protocol,omitempty"`
+	RequireStartTls  *bool                          `json:"requireStartTls,omitempty"`
+	SenderAddress    *string                        `json:"senderAddress,omitempty"`
+	TokenId          *string                        `json:"tokenId,omitempty"`
+	UseStartTls      *bool                          `json:"useStartTls,omitempty"`
+	Username         *string                        `json:"username,omitempty"`
 }
+
+// RestMailConfigurationAuthType defines model for RestMailConfiguration.AuthType.
+type RestMailConfigurationAuthType string
 
 // RestMailConfigurationProtocol defines model for RestMailConfiguration.Protocol.
 type RestMailConfigurationProtocol string
@@ -4579,24 +4995,19 @@ type RestMeshConnectivityReport struct {
 
 // RestMeshMigrationRequest defines model for RestMeshMigrationRequest.
 type RestMeshMigrationRequest struct {
-	All               *bool `json:"all,omitempty"`
-	MaxBytesPerSecond *struct {
-		AsLong  *int64 `json:"asLong,omitempty"`
-		Present *bool  `json:"present,omitempty"`
-	} `json:"maxBytesPerSecond,omitempty"`
-	ProjectIds    *[]int32 `json:"projectIds,omitempty"`
-	RepositoryIds *[]int32 `json:"repositoryIds,omitempty"`
+	All           *bool   `json:"all,omitempty"`
+	ProjectIds    []int32 `json:"projectIds"`
+	RepositoryIds []int32 `json:"repositoryIds"`
 }
 
 // RestMeshMigrationSummary defines model for RestMeshMigrationSummary.
 type RestMeshMigrationSummary struct {
-	EndTime      *int64                  `json:"endTime,omitempty"`
-	JobId        *int64                  `json:"jobId,omitempty"`
-	MaxBandwidth *int64                  `json:"maxBandwidth,omitempty"`
-	Progress     *int32                  `json:"progress,omitempty"`
-	Queue        *map[string]interface{} `json:"queue,omitempty"`
-	StartTime    *int64                  `json:"startTime,omitempty"`
-	State        *string                 `json:"state,omitempty"`
+	EndTime   *int64                  `json:"endTime,omitempty"`
+	JobId     *int64                  `json:"jobId,omitempty"`
+	Progress  *int32                  `json:"progress,omitempty"`
+	Queue     *map[string]interface{} `json:"queue,omitempty"`
+	StartTime *int64                  `json:"startTime,omitempty"`
+	State     *string                 `json:"state,omitempty"`
 }
 
 // RestMeshNode defines model for RestMeshNode.
@@ -4715,8 +5126,8 @@ type RestMirrorRepositorySynchronizationStatus struct {
 	ExternalRepoId  *string `json:"externalRepoId,omitempty"`
 	FailedSyncCount *int32  `json:"failedSyncCount,omitempty"`
 	Hashes          *struct {
-		Content  *string `json:"content,omitempty"`
-		Metadata *string `json:"metadata,omitempty"`
+		Content  string `json:"content"`
+		Metadata string `json:"metadata"`
 	} `json:"hashes,omitempty"`
 	InitialSyncDate *time.Time `json:"initialSyncDate,omitempty"`
 	LastSyncDate    *time.Time `json:"lastSyncDate,omitempty"`
@@ -4763,13 +5174,13 @@ type RestMirroredRepositoryStatus string
 type RestMirroredRepositoryDescriptor struct {
 	Links        *map[string]interface{} `json:"links,omitempty"`
 	MirrorServer *struct {
-		BaseUrl        *string                                                 `json:"baseUrl,omitempty"`
-		Enabled        *bool                                                   `json:"enabled,omitempty"`
-		Id             *string                                                 `json:"id,omitempty"`
-		LastSeenDate   time.Time                                               `json:"lastSeenDate"`
-		MirrorType     *RestMirroredRepositoryDescriptorMirrorServerMirrorType `json:"mirrorType,omitempty"`
-		Name           *string                                                 `json:"name,omitempty"`
-		ProductVersion *string                                                 `json:"productVersion,omitempty"`
+		BaseUrl        string                                                 `json:"baseUrl"`
+		Enabled        *bool                                                  `json:"enabled,omitempty"`
+		Id             string                                                 `json:"id"`
+		LastSeenDate   time.Time                                              `json:"lastSeenDate"`
+		MirrorType     RestMirroredRepositoryDescriptorMirrorServerMirrorType `json:"mirrorType"`
+		Name           string                                                 `json:"name"`
+		ProductVersion string                                                 `json:"productVersion"`
 	} `json:"mirrorServer,omitempty"`
 }
 
@@ -4805,9 +5216,9 @@ type RestNamedLink struct {
 // RestNodeConnectivityReport defines model for RestNodeConnectivityReport.
 type RestNodeConnectivityReport struct {
 	Node *struct {
-		Id   *string                             `json:"id,omitempty"`
-		Name *string                             `json:"name,omitempty"`
-		Type *RestNodeConnectivityReportNodeType `json:"type,omitempty"`
+		Id   string                             `json:"id"`
+		Name string                             `json:"name"`
+		Type RestNodeConnectivityReportNodeType `json:"type"`
 	} `json:"node,omitempty"`
 	Summaries *[]RestNodeConnectivitySummary `json:"summaries,omitempty"`
 }
@@ -4818,9 +5229,9 @@ type RestNodeConnectivityReportNodeType string
 // RestNodeConnectivitySummary defines model for RestNodeConnectivitySummary.
 type RestNodeConnectivitySummary struct {
 	Node *struct {
-		Id   *string                              `json:"id,omitempty"`
-		Name *string                              `json:"name,omitempty"`
-		Type *RestNodeConnectivitySummaryNodeType `json:"type,omitempty"`
+		Id   string                              `json:"id"`
+		Name string                              `json:"name"`
+		Type RestNodeConnectivitySummaryNodeType `json:"type"`
 	} `json:"node,omitempty"`
 	Summary *struct {
 		ErrorMessage  *string `json:"errorMessage,omitempty"`
@@ -4849,15 +5260,15 @@ type RestPermittedGroup struct {
 type RestPermittedUser struct {
 	Permission *RestPermittedUserPermission `json:"permission,omitempty"`
 	User       *struct {
-		Active       *bool                      `json:"active,omitempty"`
-		AvatarUrl    *string                    `json:"avatarUrl,omitempty"`
-		DisplayName  *string                    `json:"displayName,omitempty"`
-		EmailAddress *string                    `json:"emailAddress,omitempty"`
-		Id           *int32                     `json:"id,omitempty"`
-		Links        *map[string]interface{}    `json:"links,omitempty"`
-		Name         *string                    `json:"name,omitempty"`
-		Slug         *string                    `json:"slug,omitempty"`
-		Type         *RestPermittedUserUserType `json:"type,omitempty"`
+		Active       *bool                     `json:"active,omitempty"`
+		AvatarUrl    *string                   `json:"avatarUrl,omitempty"`
+		DisplayName  string                    `json:"displayName"`
+		EmailAddress *string                   `json:"emailAddress,omitempty"`
+		Id           *int32                    `json:"id,omitempty"`
+		Links        *map[string]interface{}   `json:"links,omitempty"`
+		Name         string                    `json:"name"`
+		Slug         string                    `json:"slug"`
+		Type         RestPermittedUserUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -4919,6 +5330,23 @@ type RestProjectSettingsRestrictionRequest struct {
 
 // RestPullRequest defines model for RestPullRequest.
 type RestPullRequest struct {
+	Author *struct {
+		Approved           *bool                        `json:"approved,omitempty"`
+		LastReviewedCommit *string                      `json:"lastReviewedCommit,omitempty"`
+		Role               *RestPullRequestAuthorRole   `json:"role,omitempty"`
+		Status             *RestPullRequestAuthorStatus `json:"status,omitempty"`
+		User               *struct {
+			Active       *bool                         `json:"active,omitempty"`
+			AvatarUrl    *string                       `json:"avatarUrl,omitempty"`
+			DisplayName  string                        `json:"displayName"`
+			EmailAddress *string                       `json:"emailAddress,omitempty"`
+			Id           *int32                        `json:"id,omitempty"`
+			Links        *map[string]interface{}       `json:"links,omitempty"`
+			Name         string                        `json:"name"`
+			Slug         string                        `json:"slug"`
+			Type         RestPullRequestAuthorUserType `json:"type"`
+		} `json:"user,omitempty"`
+	} `json:"author,omitempty"`
 	Closed            *bool   `json:"closed,omitempty"`
 	ClosedDate        *int64  `json:"closedDate,omitempty"`
 	CreatedDate       *int64  `json:"createdDate,omitempty"`
@@ -4926,9 +5354,9 @@ type RestPullRequest struct {
 	DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 	Draft             *bool   `json:"draft,omitempty"`
 	FromRef           *struct {
-		DisplayId    *string `json:"displayId,omitempty"`
-		Id           *string `json:"id,omitempty"`
-		LatestCommit *string `json:"latestCommit,omitempty"`
+		DisplayId    string `json:"displayId"`
+		Id           string `json:"id"`
+		LatestCommit string `json:"latestCommit"`
 		Repository   *struct {
 			Archived      *bool                   `json:"archived,omitempty"`
 			DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -5001,9 +5429,9 @@ type RestPullRequest struct {
 	State           *RestPullRequestState         `json:"state,omitempty"`
 	Title           *string                       `json:"title,omitempty"`
 	ToRef           *struct {
-		DisplayId    *string `json:"displayId,omitempty"`
-		Id           *string `json:"id,omitempty"`
-		LatestCommit *string `json:"latestCommit,omitempty"`
+		DisplayId    string `json:"displayId"`
+		Id           string `json:"id"`
+		LatestCommit string `json:"latestCommit"`
 		Repository   *struct {
 			Archived      *bool                   `json:"archived,omitempty"`
 			DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -5070,6 +5498,15 @@ type RestPullRequest struct {
 	Version     *int32 `json:"version,omitempty"`
 }
 
+// RestPullRequestAuthorRole defines model for RestPullRequest.Author.Role.
+type RestPullRequestAuthorRole string
+
+// RestPullRequestAuthorStatus defines model for RestPullRequest.Author.Status.
+type RestPullRequestAuthorStatus string
+
+// RestPullRequestAuthorUserType defines model for RestPullRequest.Author.User.Type.
+type RestPullRequestAuthorUserType string
+
 // RestPullRequestFromRefRepositoryOriginProjectType defines model for RestPullRequest.FromRef.Repository.Origin.Project.Type.
 type RestPullRequestFromRefRepositoryOriginProjectType string
 
@@ -5109,15 +5546,15 @@ type RestPullRequestActivity struct {
 	CreatedDate *int64                         `json:"createdDate,omitempty"`
 	Id          *int64                         `json:"id,omitempty"`
 	User        *struct {
-		Active       *bool                            `json:"active,omitempty"`
-		AvatarUrl    *string                          `json:"avatarUrl,omitempty"`
-		DisplayName  *string                          `json:"displayName,omitempty"`
-		EmailAddress *string                          `json:"emailAddress,omitempty"`
-		Id           *int32                           `json:"id,omitempty"`
-		Links        *map[string]interface{}          `json:"links,omitempty"`
-		Name         *string                          `json:"name,omitempty"`
-		Slug         *string                          `json:"slug,omitempty"`
-		Type         *RestPullRequestActivityUserType `json:"type,omitempty"`
+		Active       *bool                           `json:"active,omitempty"`
+		AvatarUrl    *string                         `json:"avatarUrl,omitempty"`
+		DisplayName  string                          `json:"displayName"`
+		EmailAddress *string                         `json:"emailAddress,omitempty"`
+		Id           *int32                          `json:"id,omitempty"`
+		Links        *map[string]interface{}         `json:"links,omitempty"`
+		Name         string                          `json:"name"`
+		Slug         string                          `json:"slug"`
+		Type         RestPullRequestActivityUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -5131,15 +5568,15 @@ type RestPullRequestActivityUserType string
 type RestPullRequestAssignParticipantRoleRequest struct {
 	Role *RestPullRequestAssignParticipantRoleRequestRole `json:"role,omitempty"`
 	User *struct {
-		Active       *bool                                                `json:"active,omitempty"`
-		AvatarUrl    *string                                              `json:"avatarUrl,omitempty"`
-		DisplayName  *string                                              `json:"displayName,omitempty"`
-		EmailAddress *string                                              `json:"emailAddress,omitempty"`
-		Id           *int32                                               `json:"id,omitempty"`
-		Links        *map[string]interface{}                              `json:"links,omitempty"`
-		Name         *string                                              `json:"name,omitempty"`
-		Slug         *string                                              `json:"slug,omitempty"`
-		Type         *RestPullRequestAssignParticipantRoleRequestUserType `json:"type,omitempty"`
+		Active       *bool                                               `json:"active,omitempty"`
+		AvatarUrl    *string                                             `json:"avatarUrl,omitempty"`
+		DisplayName  string                                              `json:"displayName"`
+		EmailAddress *string                                             `json:"emailAddress,omitempty"`
+		Id           *int32                                              `json:"id,omitempty"`
+		Links        *map[string]interface{}                             `json:"links,omitempty"`
+		Name         string                                              `json:"name"`
+		Slug         string                                              `json:"slug"`
+		Type         RestPullRequestAssignParticipantRoleRequestUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -5160,27 +5597,28 @@ type RestPullRequestAssignStatusRequestStatus string
 
 // RestPullRequestCondition defines model for RestPullRequestCondition.
 type RestPullRequestCondition struct {
-	Id                *int32                 `json:"id,omitempty"`
-	RequiredApprovals *int32                 `json:"requiredApprovals,omitempty"`
-	Reviewers         *[]RestApplicationUser `json:"reviewers,omitempty"`
+	Id                *int32               `json:"id,omitempty"`
+	RequiredApprovals *int32               `json:"requiredApprovals,omitempty"`
+	ReviewerGroups    *[]RestReviewerGroup `json:"reviewerGroups,omitempty"`
+	Reviewers         *[]RestReviewerGroup `json:"reviewers,omitempty"`
 	Scope             *struct {
-		ResourceId *int32                             `json:"resourceId,omitempty"`
-		Type       *RestPullRequestConditionScopeType `json:"type,omitempty"`
+		ResourceId int32                             `json:"resourceId"`
+		Type       RestPullRequestConditionScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 	SourceRefMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestPullRequestConditionSourceRefMatcherTypeId `json:"id,omitempty"`
-			Name *string                                         `json:"name,omitempty"`
+			Id   RestPullRequestConditionSourceRefMatcherTypeId `json:"id"`
+			Name string                                         `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceRefMatcher,omitempty"`
 	TargetRefMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestPullRequestConditionTargetRefMatcherTypeId `json:"id,omitempty"`
-			Name *string                                         `json:"name,omitempty"`
+			Id   RestPullRequestConditionTargetRefMatcherTypeId `json:"id"`
+			Name string                                         `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"targetRefMatcher,omitempty"`
 }
@@ -5215,8 +5653,8 @@ type RestPullRequestFinishReviewRequest struct {
 // RestPullRequestMergeConfig defines model for RestPullRequestMergeConfig.
 type RestPullRequestMergeConfig struct {
 	CommitMessageTemplate *struct {
-		Body  *string `json:"body,omitempty"`
-		Title *string `json:"title,omitempty"`
+		Body  string `json:"body"`
+		Title string `json:"title"`
 	} `json:"commitMessageTemplate,omitempty"`
 	CommitSummaries *int32 `json:"commitSummaries,omitempty"`
 	DefaultStrategy *struct {
@@ -5233,11 +5671,12 @@ type RestPullRequestMergeConfig struct {
 
 // RestPullRequestMergeRequest defines model for RestPullRequestMergeRequest.
 type RestPullRequestMergeRequest struct {
-	AutoMerge   *bool   `json:"autoMerge,omitempty"`
-	AutoSubject *string `json:"autoSubject,omitempty"`
-	Message     *string `json:"message,omitempty"`
-	StrategyId  *string `json:"strategyId,omitempty"`
-	Version     *int32  `json:"version,omitempty"`
+	AutoMerge        *bool   `json:"autoMerge,omitempty"`
+	AutoSubject      *string `json:"autoSubject,omitempty"`
+	BypassMergeQueue *bool   `json:"bypassMergeQueue,omitempty"`
+	Message          *string `json:"message,omitempty"`
+	StrategyId       *string `json:"strategyId,omitempty"`
+	Version          *int32  `json:"version,omitempty"`
 }
 
 // RestPullRequestMergeStrategy defines model for RestPullRequestMergeStrategy.
@@ -5267,15 +5706,15 @@ type RestPullRequestParticipant struct {
 	Role               *RestPullRequestParticipantRole   `json:"role,omitempty"`
 	Status             *RestPullRequestParticipantStatus `json:"status,omitempty"`
 	User               *struct {
-		Active       *bool                               `json:"active,omitempty"`
-		AvatarUrl    *string                             `json:"avatarUrl,omitempty"`
-		DisplayName  *string                             `json:"displayName,omitempty"`
-		EmailAddress *string                             `json:"emailAddress,omitempty"`
-		Id           *int32                              `json:"id,omitempty"`
-		Links        *map[string]interface{}             `json:"links,omitempty"`
-		Name         *string                             `json:"name,omitempty"`
-		Slug         *string                             `json:"slug,omitempty"`
-		Type         *RestPullRequestParticipantUserType `json:"type,omitempty"`
+		Active       *bool                              `json:"active,omitempty"`
+		AvatarUrl    *string                            `json:"avatarUrl,omitempty"`
+		DisplayName  string                             `json:"displayName"`
+		EmailAddress *string                            `json:"emailAddress,omitempty"`
+		Id           *int32                             `json:"id,omitempty"`
+		Links        *map[string]interface{}            `json:"links,omitempty"`
+		Name         string                             `json:"name"`
+		Slug         string                             `json:"slug"`
+		Type         RestPullRequestParticipantUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -5298,9 +5737,9 @@ type RestPullRequestRebaseResult struct {
 	RefChange *struct {
 		FromHash *string `json:"fromHash,omitempty"`
 		Ref      *struct {
-			DisplayId *string                                      `json:"displayId,omitempty"`
-			Id        *string                                      `json:"id,omitempty"`
-			Type      *RestPullRequestRebaseResultRefChangeRefType `json:"type,omitempty"`
+			DisplayId string                                      `json:"displayId"`
+			Id        string                                      `json:"id"`
+			Type      RestPullRequestRebaseResultRefChangeRefType `json:"type"`
 		} `json:"ref,omitempty"`
 		RefId  *string                                   `json:"refId,omitempty"`
 		ToHash *string                                   `json:"toHash,omitempty"`
@@ -5328,8 +5767,8 @@ type RestPullRequestReopenRequest struct {
 type RestPullRequestSettings struct {
 	MergeConfig *struct {
 		CommitMessageTemplate *struct {
-			Body  *string `json:"body,omitempty"`
-			Title *string `json:"title,omitempty"`
+			Body  string `json:"body"`
+			Title string `json:"title"`
 		} `json:"commitMessageTemplate,omitempty"`
 		CommitSummaries *int32 `json:"commitSummaries,omitempty"`
 		DefaultStrategy *struct {
@@ -5340,8 +5779,8 @@ type RestPullRequestSettings struct {
 			Links       *map[string]interface{} `json:"links,omitempty"`
 			Name        *string                 `json:"name,omitempty"`
 		} `json:"defaultStrategy,omitempty"`
-		Strategies *[]RestPullRequestMergeStrategy `json:"strategies,omitempty"`
-		Type       *string                         `json:"type,omitempty"`
+		Strategies []RestPullRequestMergeStrategy `json:"strategies"`
+		Type       *string                        `json:"type,omitempty"`
 	} `json:"mergeConfig,omitempty"`
 }
 
@@ -5349,16 +5788,16 @@ type RestPullRequestSettings struct {
 type RestPullRequestSuggestion struct {
 	ChangeTme *int64 `json:"changeTme,omitempty"`
 	FromRef   *struct {
-		DisplayId *string                               `json:"displayId,omitempty"`
-		Id        *string                               `json:"id,omitempty"`
-		Type      *RestPullRequestSuggestionFromRefType `json:"type,omitempty"`
+		DisplayId string                               `json:"displayId"`
+		Id        string                               `json:"id"`
+		Type      RestPullRequestSuggestionFromRefType `json:"type"`
 	} `json:"fromRef,omitempty"`
 	RefChange *struct {
 		FromHash *string `json:"fromHash,omitempty"`
 		Ref      *struct {
-			DisplayId *string                                    `json:"displayId,omitempty"`
-			Id        *string                                    `json:"id,omitempty"`
-			Type      *RestPullRequestSuggestionRefChangeRefType `json:"type,omitempty"`
+			DisplayId string                                    `json:"displayId"`
+			Id        string                                    `json:"id"`
+			Type      RestPullRequestSuggestionRefChangeRefType `json:"type"`
 		} `json:"ref,omitempty"`
 		RefId  *string                                 `json:"refId,omitempty"`
 		ToHash *string                                 `json:"toHash,omitempty"`
@@ -5425,9 +5864,9 @@ type RestPullRequestSuggestion struct {
 		StatusMessage *string                                   `json:"statusMessage,omitempty"`
 	} `json:"repository,omitempty"`
 	ToRef *struct {
-		DisplayId *string                             `json:"displayId,omitempty"`
-		Id        *string                             `json:"id,omitempty"`
-		Type      *RestPullRequestSuggestionToRefType `json:"type,omitempty"`
+		DisplayId string                             `json:"displayId"`
+		Id        string                             `json:"id"`
+		Type      RestPullRequestSuggestionToRefType `json:"type"`
 	} `json:"toRef,omitempty"`
 }
 
@@ -5477,8 +5916,8 @@ type RestRefMatcher struct {
 	DisplayId *string `json:"displayId,omitempty"`
 	Id        *string `json:"id,omitempty"`
 	Type      *struct {
-		Id   *RestRefMatcherTypeId `json:"id,omitempty"`
-		Name *string               `json:"name,omitempty"`
+		Id   RestRefMatcherTypeId `json:"id"`
+		Name string               `json:"name"`
 	} `json:"type,omitempty"`
 }
 
@@ -5494,13 +5933,13 @@ type RestRefRestriction struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestRefRestrictionMatcherTypeId `json:"id,omitempty"`
-			Name *string                          `json:"name,omitempty"`
+			Id   RestRefRestrictionMatcherTypeId `json:"id"`
+			Name string                          `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"matcher,omitempty"`
 	Scope *struct {
-		ResourceId *int32                       `json:"resourceId,omitempty"`
-		Type       *RestRefRestrictionScopeType `json:"type,omitempty"`
+		ResourceId int32                       `json:"resourceId"`
+		Type       RestRefRestrictionScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 	Type  *string                `json:"type,omitempty"`
 	Users *[]RestApplicationUser `json:"users,omitempty"`
@@ -5514,7 +5953,7 @@ type RestRefRestrictionScopeType string
 
 // RestRefSyncQueue defines model for RestRefSyncQueue.
 type RestRefSyncQueue struct {
-	Values *[]RestFarmSynchronizationRequest `json:"values,omitempty"`
+	Values []RestFarmSynchronizationRequest `json:"values"`
 }
 
 // RestRefSyncRequest defines model for RestRefSyncRequest.
@@ -5530,28 +5969,28 @@ type RestRefSyncRequestAction string
 // RestRefSyncStatus defines model for RestRefSyncStatus.
 type RestRefSyncStatus struct {
 	AheadRefs *struct {
-		DisplayId *string                          `json:"displayId,omitempty"`
-		Id        *string                          `json:"id,omitempty"`
+		DisplayId string                           `json:"displayId"`
+		Id        string                           `json:"id"`
 		State     *RestRefSyncStatusAheadRefsState `json:"state,omitempty"`
 		Tag       *bool                            `json:"tag,omitempty"`
-		Type      *RestRefSyncStatusAheadRefsType  `json:"type,omitempty"`
+		Type      RestRefSyncStatusAheadRefsType   `json:"type"`
 	} `json:"aheadRefs,omitempty"`
 	Available    *bool `json:"available,omitempty"`
 	DivergedRefs *struct {
-		DisplayId *string                             `json:"displayId,omitempty"`
-		Id        *string                             `json:"id,omitempty"`
+		DisplayId string                              `json:"displayId"`
+		Id        string                              `json:"id"`
 		State     *RestRefSyncStatusDivergedRefsState `json:"state,omitempty"`
 		Tag       *bool                               `json:"tag,omitempty"`
-		Type      *RestRefSyncStatusDivergedRefsType  `json:"type,omitempty"`
+		Type      RestRefSyncStatusDivergedRefsType   `json:"type"`
 	} `json:"divergedRefs,omitempty"`
 	Enabled      *bool    `json:"enabled,omitempty"`
 	LastSync     *float32 `json:"lastSync,omitempty"`
 	OrphanedRefs *struct {
-		DisplayId *string                             `json:"displayId,omitempty"`
-		Id        *string                             `json:"id,omitempty"`
+		DisplayId string                              `json:"displayId"`
+		Id        string                              `json:"id"`
 		State     *RestRefSyncStatusOrphanedRefsState `json:"state,omitempty"`
 		Tag       *bool                               `json:"tag,omitempty"`
-		Type      *RestRefSyncStatusOrphanedRefsType  `json:"type,omitempty"`
+		Type      RestRefSyncStatusOrphanedRefsType   `json:"type"`
 	} `json:"orphanedRefs,omitempty"`
 }
 
@@ -5668,8 +6107,8 @@ type RestRepositoryHook struct {
 	Details    *RepositoryHookDetails `json:"details,omitempty"`
 	Enabled    *bool                  `json:"enabled,omitempty"`
 	Scope      *struct {
-		ResourceId *int32                       `json:"resourceId,omitempty"`
-		Type       *RestRepositoryHookScopeType `json:"type,omitempty"`
+		ResourceId int32                       `json:"resourceId"`
+		Type       RestRepositoryHookScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 }
 
@@ -5680,6 +6119,45 @@ type RestRepositoryHookScopeType string
 type RestRepositoryHookVeto struct {
 	DetailedMessage *string `json:"detailedMessage,omitempty"`
 	SummaryMessage  *string `json:"summaryMessage,omitempty"`
+}
+
+// RestRepositoryIndexingDetails defines model for RestRepositoryIndexingDetails.
+type RestRepositoryIndexingDetails struct {
+	// IndexingError Additional detail about the <b>BROKEN</b> status if available, meant for informational purposes only. This nullable, free-form text field should not be used for automation; rely on status instead.
+	IndexingError *string `json:"indexingError,omitempty"`
+
+	// LastIndexedCommitId The commit hash of the last indexed commit in the repository.
+	LastIndexedCommitId *string `json:"lastIndexedCommitId,omitempty"`
+
+	// LastIndexedTimestamp The timestamp in epoch milliseconds of the last time the repository successfully was indexed
+	LastIndexedTimestamp *int64 `json:"lastIndexedTimestamp,omitempty"`
+
+	// ProjectKey The project key that the repository belongs to
+	ProjectKey *string `json:"projectKey,omitempty"`
+
+	// RepositorySlug The repository slug
+	RepositorySlug *string `json:"repositorySlug,omitempty"`
+
+	// Status The current indexing status of the repository.
+	Status *RestRepositoryIndexingDetailsStatus `json:"status,omitempty"`
+}
+
+// RestRepositoryIndexingDetailsStatus The current indexing status of the repository.
+type RestRepositoryIndexingDetailsStatus string
+
+// RestRepositoryIndexingQueueDetails defines model for RestRepositoryIndexingQueueDetails.
+type RestRepositoryIndexingQueueDetails struct {
+	// CapturedAt The timestamp indicating when the current queue details were captured.
+	CapturedAt *int64 `json:"capturedAt,omitempty"`
+
+	// NodeId The ID of the node associated with the indexing queue.
+	NodeId *string `json:"nodeId,omitempty"`
+
+	// Queued Indicates whether the repository is currently queued for indexing.
+	Queued *bool `json:"queued,omitempty"`
+
+	// QueuedAt Gets the time at which the repository was added to the indexing queue. If the repository is not present in the queue, this will be empty.
+	QueuedAt *int64 `json:"queuedAt,omitempty"`
 }
 
 // RestRepositoryLockOwner defines model for RestRepositoryLockOwner.
@@ -5702,9 +6180,9 @@ type RestRepositoryLockOwner struct {
 
 // RestRepositoryMirrorEvent defines model for RestRepositoryMirrorEvent.
 type RestRepositoryMirrorEvent struct {
-	MirrorRepoId   *int32                         `json:"mirrorRepoId,omitempty"`
-	Type           *RestRepositoryMirrorEventType `json:"type,omitempty"`
-	UpstreamRepoId *string                        `json:"upstreamRepoId,omitempty"`
+	MirrorRepoId   *int32                        `json:"mirrorRepoId,omitempty"`
+	Type           RestRepositoryMirrorEventType `json:"type"`
+	UpstreamRepoId string                        `json:"upstreamRepoId"`
 }
 
 // RestRepositoryMirrorEventType defines model for RestRepositoryMirrorEvent.Type.
@@ -5723,8 +6201,8 @@ type RestRepositoryPolicyPermission string
 type RestRepositoryPullRequestSettings struct {
 	MergeConfig *struct {
 		CommitMessageTemplate *struct {
-			Body  *string `json:"body,omitempty"`
-			Title *string `json:"title,omitempty"`
+			Body  string `json:"body"`
+			Title string `json:"title"`
 		} `json:"commitMessageTemplate,omitempty"`
 		CommitSummaries *int32 `json:"commitSummaries,omitempty"`
 		DefaultStrategy *struct {
@@ -5735,8 +6213,8 @@ type RestRepositoryPullRequestSettings struct {
 			Links       *map[string]interface{} `json:"links,omitempty"`
 			Name        *string                 `json:"name,omitempty"`
 		} `json:"defaultStrategy,omitempty"`
-		Strategies *[]RestPullRequestMergeStrategy `json:"strategies,omitempty"`
-		Type       *string                         `json:"type,omitempty"`
+		Strategies []RestPullRequestMergeStrategy `json:"strategies"`
+		Type       *string                        `json:"type,omitempty"`
 	} `json:"mergeConfig,omitempty"`
 	RequiredAllApprovers     *bool `json:"requiredAllApprovers,omitempty"`
 	RequiredAllTasksComplete *bool `json:"requiredAllTasksComplete,omitempty"`
@@ -5759,9 +6237,9 @@ type RestRepositoryRefChangeActivity struct {
 	RefChange   *struct {
 		FromHash *string `json:"fromHash,omitempty"`
 		Ref      *struct {
-			DisplayId *string                                          `json:"displayId,omitempty"`
-			Id        *string                                          `json:"id,omitempty"`
-			Type      *RestRepositoryRefChangeActivityRefChangeRefType `json:"type,omitempty"`
+			DisplayId string                                          `json:"displayId"`
+			Id        string                                          `json:"id"`
+			Type      RestRepositoryRefChangeActivityRefChangeRefType `json:"type"`
 		} `json:"ref,omitempty"`
 		RefId       *string                                              `json:"refId,omitempty"`
 		ToHash      *string                                              `json:"toHash,omitempty"`
@@ -5830,15 +6308,15 @@ type RestRepositoryRefChangeActivity struct {
 	} `json:"repository,omitempty"`
 	Trigger *string `json:"trigger,omitempty"`
 	User    *struct {
-		Active       *bool                                    `json:"active,omitempty"`
-		AvatarUrl    *string                                  `json:"avatarUrl,omitempty"`
-		DisplayName  *string                                  `json:"displayName,omitempty"`
-		EmailAddress *string                                  `json:"emailAddress,omitempty"`
-		Id           *int32                                   `json:"id,omitempty"`
-		Links        *map[string]interface{}                  `json:"links,omitempty"`
-		Name         *string                                  `json:"name,omitempty"`
-		Slug         *string                                  `json:"slug,omitempty"`
-		Type         *RestRepositoryRefChangeActivityUserType `json:"type,omitempty"`
+		Active       *bool                                   `json:"active,omitempty"`
+		AvatarUrl    *string                                 `json:"avatarUrl,omitempty"`
+		DisplayName  string                                  `json:"displayName"`
+		EmailAddress *string                                 `json:"emailAddress,omitempty"`
+		Id           *int32                                  `json:"id,omitempty"`
+		Links        *map[string]interface{}                 `json:"links,omitempty"`
+		Name         string                                  `json:"name"`
+		Slug         string                                  `json:"slug"`
+		Type         RestRepositoryRefChangeActivityUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -5868,8 +6346,8 @@ type RestRepositoryRefChangeActivityUserType string
 
 // RestRepositorySelector defines model for RestRepositorySelector.
 type RestRepositorySelector struct {
-	ProjectKey *string `json:"projectKey,omitempty"`
-	Slug       *string `json:"slug,omitempty"`
+	ProjectKey string `json:"projectKey"`
+	Slug       string `json:"slug"`
 }
 
 // RestRequiredBuildCondition defines model for RestRequiredBuildCondition.
@@ -5880,8 +6358,8 @@ type RestRequiredBuildCondition struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestRequiredBuildConditionExemptRefMatcherTypeId `json:"id,omitempty"`
-			Name *string                                           `json:"name,omitempty"`
+			Id   RestRequiredBuildConditionExemptRefMatcherTypeId `json:"id"`
+			Name string                                           `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"exemptRefMatcher,omitempty"`
 	Id         *int64 `json:"id,omitempty"`
@@ -5889,10 +6367,16 @@ type RestRequiredBuildCondition struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestRequiredBuildConditionRefMatcherTypeId `json:"id,omitempty"`
-			Name *string                                     `json:"name,omitempty"`
+			Id   RestRequiredBuildConditionRefMatcherTypeId `json:"id"`
+			Name string                                     `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"refMatcher,omitempty"`
+
+	// RequiredForMergeQueue Indicates whether this required build condition is enforced for merges via the merge queue.
+	RequiredForMergeQueue *bool `json:"requiredForMergeQueue,omitempty"`
+
+	// RequiredForPullRequest Indicates whether this required build condition is enforced for pull requests.
+	RequiredForPullRequest *bool `json:"requiredForPullRequest,omitempty"`
 }
 
 // RestRequiredBuildConditionExemptRefMatcherTypeId defines model for RestRequiredBuildCondition.ExemptRefMatcher.Type.Id.
@@ -5904,42 +6388,48 @@ type RestRequiredBuildConditionRefMatcherTypeId string
 // RestRequiredBuildConditionSetRequest defines model for RestRequiredBuildConditionSetRequest.
 type RestRequiredBuildConditionSetRequest struct {
 	// BuildParentKeys A non-empty list of build parent keys that require green builds for this merge check to pass
-	BuildParentKeys  []string        `json:"buildParentKeys"`
-	ExemptRefMatcher *RestRefMatcher `json:"exemptRefMatcher,omitempty"`
-	RefMatcher       struct {
+	BuildParentKeys  []string `json:"buildParentKeys"`
+	ExemptRefMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestRequiredBuildConditionSetRequestRefMatcherTypeId `json:"id,omitempty"`
-			Name *string                                               `json:"name,omitempty"`
+			Id   RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId `json:"id"`
+			Name string                                                     `json:"name"`
 		} `json:"type,omitempty"`
-	} `json:"refMatcher"`
+	} `json:"exemptRefMatcher,omitempty"`
+	RefMatcher RestRefMatcher `json:"refMatcher"`
+
+	// RequiredForMergeQueue Indicates whether this required build condition is enforced for merges via the merge queue. If not specified, defaults to true.
+	RequiredForMergeQueue *bool `json:"requiredForMergeQueue,omitempty"`
+
+	// RequiredForPullRequest Indicates whether this required build condition is enforced for pull requests. If not specified, defaults to true.
+	RequiredForPullRequest *bool `json:"requiredForPullRequest,omitempty"`
 }
 
-// RestRequiredBuildConditionSetRequestRefMatcherTypeId defines model for RestRequiredBuildConditionSetRequest.RefMatcher.Type.Id.
-type RestRequiredBuildConditionSetRequestRefMatcherTypeId string
+// RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId defines model for RestRequiredBuildConditionSetRequest.ExemptRefMatcher.Type.Id.
+type RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId string
 
 // RestRestrictionRequest defines model for RestRestrictionRequest.
 type RestRestrictionRequest struct {
-	AccessKeyIds *[]int32            `json:"accessKeyIds,omitempty"`
+	AccessKeyIds []int32             `json:"accessKeyIds"`
 	AccessKeys   *[]RestSshAccessKey `json:"accessKeys,omitempty"`
-	GroupNames   *[]string           `json:"groupNames,omitempty"`
+	GroupNames   []string            `json:"groupNames"`
 	Groups       *[]string           `json:"groups,omitempty"`
 	Id           *int32              `json:"id,omitempty"`
 	Matcher      *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *RestRestrictionRequestMatcherTypeId `json:"id,omitempty"`
-			Name *string                              `json:"name,omitempty"`
+			Id   RestRestrictionRequestMatcherTypeId `json:"id"`
+			Name string                              `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"matcher,omitempty"`
 	Scope *struct {
-		ResourceId *int32                           `json:"resourceId,omitempty"`
-		Type       *RestRestrictionRequestScopeType `json:"type,omitempty"`
+		ResourceId int32                           `json:"resourceId"`
+		Type       RestRestrictionRequestScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 	Type      *string                `json:"type,omitempty"`
-	UserSlugs *[]string              `json:"userSlugs,omitempty"`
+	UserSlugs []string               `json:"userSlugs"`
 	Users     *[]RestApplicationUser `json:"users,omitempty"`
 }
 
@@ -5956,8 +6446,8 @@ type RestReviewerGroup struct {
 	Id          *int64  `json:"id,omitempty"`
 	Name        *string `json:"name,omitempty"`
 	Scope       *struct {
-		ResourceId *int32                      `json:"resourceId,omitempty"`
-		Type       *RestReviewerGroupScopeType `json:"type,omitempty"`
+		ResourceId int32                      `json:"resourceId"`
+		Type       RestReviewerGroupScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 	Users *[]ApplicationUser `json:"users,omitempty"`
 }
@@ -6020,8 +6510,8 @@ type RestSecretScanningRule struct {
 
 	// Scope The scope in which this rule was configured for.
 	Scope *struct {
-		ResourceId *int32                           `json:"resourceId,omitempty"`
-		Type       *RestSecretScanningRuleScopeType `json:"type,omitempty"`
+		ResourceId int32                           `json:"resourceId"`
+		Type       RestSecretScanningRuleScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 }
 
@@ -6179,8 +6669,8 @@ type RestSshCredentials struct {
 	Algorithm *string `json:"algorithm,omitempty"`
 
 	// PublicKey The public key text in the OpenSSH format. The algorithm must be specified in case of the legacy X.509 keys
-	PublicKey string  `json:"publicKey"`
-	Username  *string `json:"username,omitempty"`
+	PublicKey string `json:"publicKey"`
+	Username  string `json:"username"`
 }
 
 // RestSshKey defines model for RestSshKey.
@@ -6280,15 +6770,15 @@ type RestUserRateLimitSettings struct {
 		FillRate *int32 `json:"fillRate,omitempty"`
 	} `json:"settings,omitempty"`
 	User *struct {
-		Active       *bool                              `json:"active,omitempty"`
-		AvatarUrl    *string                            `json:"avatarUrl,omitempty"`
-		DisplayName  *string                            `json:"displayName,omitempty"`
-		EmailAddress *string                            `json:"emailAddress,omitempty"`
-		Id           *int32                             `json:"id,omitempty"`
-		Links        *map[string]interface{}            `json:"links,omitempty"`
-		Name         *string                            `json:"name,omitempty"`
-		Slug         *string                            `json:"slug,omitempty"`
-		Type         *RestUserRateLimitSettingsUserType `json:"type,omitempty"`
+		Active       *bool                             `json:"active,omitempty"`
+		AvatarUrl    *string                           `json:"avatarUrl,omitempty"`
+		DisplayName  string                            `json:"displayName"`
+		EmailAddress *string                           `json:"emailAddress,omitempty"`
+		Id           *int32                            `json:"id,omitempty"`
+		Links        *map[string]interface{}           `json:"links,omitempty"`
+		Name         string                            `json:"name"`
+		Slug         string                            `json:"slug"`
+		Type         RestUserRateLimitSettingsUserType `json:"type"`
 	} `json:"user,omitempty"`
 	Whitelisted *bool `json:"whitelisted,omitempty"`
 }
@@ -6341,6 +6831,23 @@ type RestUserReaction struct {
 				Parent     *string   `json:"parent,omitempty"`
 			} `json:"path,omitempty"`
 			PullRequest *struct {
+				Author *struct {
+					Approved           *bool                                                 `json:"approved,omitempty"`
+					LastReviewedCommit *string                                               `json:"lastReviewedCommit,omitempty"`
+					Role               *RestUserReactionCommentAnchorPullRequestAuthorRole   `json:"role,omitempty"`
+					Status             *RestUserReactionCommentAnchorPullRequestAuthorStatus `json:"status,omitempty"`
+					User               *struct {
+						Active       *bool                                                  `json:"active,omitempty"`
+						AvatarUrl    *string                                                `json:"avatarUrl,omitempty"`
+						DisplayName  string                                                 `json:"displayName"`
+						EmailAddress *string                                                `json:"emailAddress,omitempty"`
+						Id           *int32                                                 `json:"id,omitempty"`
+						Links        *map[string]interface{}                                `json:"links,omitempty"`
+						Name         string                                                 `json:"name"`
+						Slug         string                                                 `json:"slug"`
+						Type         RestUserReactionCommentAnchorPullRequestAuthorUserType `json:"type"`
+					} `json:"user,omitempty"`
+				} `json:"author,omitempty"`
 				Closed            *bool   `json:"closed,omitempty"`
 				ClosedDate        *int64  `json:"closedDate,omitempty"`
 				CreatedDate       *int64  `json:"createdDate,omitempty"`
@@ -6348,9 +6855,9 @@ type RestUserReaction struct {
 				DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 				Draft             *bool   `json:"draft,omitempty"`
 				FromRef           *struct {
-					DisplayId    *string `json:"displayId,omitempty"`
-					Id           *string `json:"id,omitempty"`
-					LatestCommit *string `json:"latestCommit,omitempty"`
+					DisplayId    string `json:"displayId"`
+					Id           string `json:"id"`
+					LatestCommit string `json:"latestCommit"`
 					Repository   *struct {
 						Archived      *bool                   `json:"archived,omitempty"`
 						DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -6423,9 +6930,9 @@ type RestUserReaction struct {
 				State           *RestUserReactionCommentAnchorPullRequestState `json:"state,omitempty"`
 				Title           *string                                        `json:"title,omitempty"`
 				ToRef           *struct {
-					DisplayId    *string `json:"displayId,omitempty"`
-					Id           *string `json:"id,omitempty"`
-					LatestCommit *string `json:"latestCommit,omitempty"`
+					DisplayId    string `json:"displayId"`
+					Id           string `json:"id"`
+					LatestCommit string `json:"latestCommit"`
 					Repository   *struct {
 						Archived      *bool                   `json:"archived,omitempty"`
 						DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -6501,15 +7008,15 @@ type RestUserReaction struct {
 		} `json:"anchor,omitempty"`
 		Anchored *bool `json:"anchored,omitempty"`
 		Author   *struct {
-			Active       *bool                              `json:"active,omitempty"`
-			AvatarUrl    *string                            `json:"avatarUrl,omitempty"`
-			DisplayName  *string                            `json:"displayName,omitempty"`
-			EmailAddress *string                            `json:"emailAddress,omitempty"`
-			Id           *int32                             `json:"id,omitempty"`
-			Links        *map[string]interface{}            `json:"links,omitempty"`
-			Name         *string                            `json:"name,omitempty"`
-			Slug         *string                            `json:"slug,omitempty"`
-			Type         *RestUserReactionCommentAuthorType `json:"type,omitempty"`
+			Active       *bool                             `json:"active,omitempty"`
+			AvatarUrl    *string                           `json:"avatarUrl,omitempty"`
+			DisplayName  string                            `json:"displayName"`
+			EmailAddress *string                           `json:"emailAddress,omitempty"`
+			Id           *int32                            `json:"id,omitempty"`
+			Links        *map[string]interface{}           `json:"links,omitempty"`
+			Name         string                            `json:"name"`
+			Slug         string                            `json:"slug"`
+			Type         RestUserReactionCommentAuthorType `json:"type"`
 		} `json:"author,omitempty"`
 		Comments    *[]RestComment `json:"comments,omitempty"`
 		CreatedDate *int64         `json:"createdDate,omitempty"`
@@ -6549,6 +7056,23 @@ type RestUserReaction struct {
 					Parent     *string   `json:"parent,omitempty"`
 				} `json:"path,omitempty"`
 				PullRequest *struct {
+					Author *struct {
+						Approved           *bool                                                       `json:"approved,omitempty"`
+						LastReviewedCommit *string                                                     `json:"lastReviewedCommit,omitempty"`
+						Role               *RestUserReactionCommentParentAnchorPullRequestAuthorRole   `json:"role,omitempty"`
+						Status             *RestUserReactionCommentParentAnchorPullRequestAuthorStatus `json:"status,omitempty"`
+						User               *struct {
+							Active       *bool                                                        `json:"active,omitempty"`
+							AvatarUrl    *string                                                      `json:"avatarUrl,omitempty"`
+							DisplayName  string                                                       `json:"displayName"`
+							EmailAddress *string                                                      `json:"emailAddress,omitempty"`
+							Id           *int32                                                       `json:"id,omitempty"`
+							Links        *map[string]interface{}                                      `json:"links,omitempty"`
+							Name         string                                                       `json:"name"`
+							Slug         string                                                       `json:"slug"`
+							Type         RestUserReactionCommentParentAnchorPullRequestAuthorUserType `json:"type"`
+						} `json:"user,omitempty"`
+					} `json:"author,omitempty"`
 					Closed            *bool   `json:"closed,omitempty"`
 					ClosedDate        *int64  `json:"closedDate,omitempty"`
 					CreatedDate       *int64  `json:"createdDate,omitempty"`
@@ -6556,9 +7080,9 @@ type RestUserReaction struct {
 					DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 					Draft             *bool   `json:"draft,omitempty"`
 					FromRef           *struct {
-						DisplayId    *string `json:"displayId,omitempty"`
-						Id           *string `json:"id,omitempty"`
-						LatestCommit *string `json:"latestCommit,omitempty"`
+						DisplayId    string `json:"displayId"`
+						Id           string `json:"id"`
+						LatestCommit string `json:"latestCommit"`
 						Repository   *struct {
 							Archived      *bool                   `json:"archived,omitempty"`
 							DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -6631,9 +7155,9 @@ type RestUserReaction struct {
 					State           *RestUserReactionCommentParentAnchorPullRequestState `json:"state,omitempty"`
 					Title           *string                                              `json:"title,omitempty"`
 					ToRef           *struct {
-						DisplayId    *string `json:"displayId,omitempty"`
-						Id           *string `json:"id,omitempty"`
-						LatestCommit *string `json:"latestCommit,omitempty"`
+						DisplayId    string `json:"displayId"`
+						Id           string `json:"id"`
+						LatestCommit string `json:"latestCommit"`
 						Repository   *struct {
 							Archived      *bool                   `json:"archived,omitempty"`
 							DefaultBranch *string                 `json:"defaultBranch,omitempty"`
@@ -6709,15 +7233,15 @@ type RestUserReaction struct {
 			} `json:"anchor,omitempty"`
 			Anchored *bool `json:"anchored,omitempty"`
 			Author   *struct {
-				Active       *bool                                    `json:"active,omitempty"`
-				AvatarUrl    *string                                  `json:"avatarUrl,omitempty"`
-				DisplayName  *string                                  `json:"displayName,omitempty"`
-				EmailAddress *string                                  `json:"emailAddress,omitempty"`
-				Id           *int32                                   `json:"id,omitempty"`
-				Links        *map[string]interface{}                  `json:"links,omitempty"`
-				Name         *string                                  `json:"name,omitempty"`
-				Slug         *string                                  `json:"slug,omitempty"`
-				Type         *RestUserReactionCommentParentAuthorType `json:"type,omitempty"`
+				Active       *bool                                   `json:"active,omitempty"`
+				AvatarUrl    *string                                 `json:"avatarUrl,omitempty"`
+				DisplayName  string                                  `json:"displayName"`
+				EmailAddress *string                                 `json:"emailAddress,omitempty"`
+				Id           *int32                                  `json:"id,omitempty"`
+				Links        *map[string]interface{}                 `json:"links,omitempty"`
+				Name         string                                  `json:"name"`
+				Slug         string                                  `json:"slug"`
+				Type         RestUserReactionCommentParentAuthorType `json:"type"`
 			} `json:"author,omitempty"`
 			Comments     *[]RestComment          `json:"comments,omitempty"`
 			CreatedDate  *int64                  `json:"createdDate,omitempty"`
@@ -6728,15 +7252,15 @@ type RestUserReaction struct {
 			Reply        *bool                   `json:"reply,omitempty"`
 			ResolvedDate *int64                  `json:"resolvedDate,omitempty"`
 			Resolver     *struct {
-				Active       *bool                                      `json:"active,omitempty"`
-				AvatarUrl    *string                                    `json:"avatarUrl,omitempty"`
-				DisplayName  *string                                    `json:"displayName,omitempty"`
-				EmailAddress *string                                    `json:"emailAddress,omitempty"`
-				Id           *int32                                     `json:"id,omitempty"`
-				Links        *map[string]interface{}                    `json:"links,omitempty"`
-				Name         *string                                    `json:"name,omitempty"`
-				Slug         *string                                    `json:"slug,omitempty"`
-				Type         *RestUserReactionCommentParentResolverType `json:"type,omitempty"`
+				Active       *bool                                     `json:"active,omitempty"`
+				AvatarUrl    *string                                   `json:"avatarUrl,omitempty"`
+				DisplayName  string                                    `json:"displayName"`
+				EmailAddress *string                                   `json:"emailAddress,omitempty"`
+				Id           *int32                                    `json:"id,omitempty"`
+				Links        *map[string]interface{}                   `json:"links,omitempty"`
+				Name         string                                    `json:"name"`
+				Slug         string                                    `json:"slug"`
+				Type         RestUserReactionCommentParentResolverType `json:"type"`
 			} `json:"resolver,omitempty"`
 			Severity *string `json:"severity,omitempty"`
 			State    *string `json:"state,omitempty"`
@@ -6746,15 +7270,15 @@ type RestUserReaction struct {
 			ThreadResolved     *bool  `json:"threadResolved,omitempty"`
 			ThreadResolvedDate *int64 `json:"threadResolvedDate,omitempty"`
 			ThreadResolver     *struct {
-				Active       *bool                                            `json:"active,omitempty"`
-				AvatarUrl    *string                                          `json:"avatarUrl,omitempty"`
-				DisplayName  *string                                          `json:"displayName,omitempty"`
-				EmailAddress *string                                          `json:"emailAddress,omitempty"`
-				Id           *int32                                           `json:"id,omitempty"`
-				Links        *map[string]interface{}                          `json:"links,omitempty"`
-				Name         *string                                          `json:"name,omitempty"`
-				Slug         *string                                          `json:"slug,omitempty"`
-				Type         *RestUserReactionCommentParentThreadResolverType `json:"type,omitempty"`
+				Active       *bool                                           `json:"active,omitempty"`
+				AvatarUrl    *string                                         `json:"avatarUrl,omitempty"`
+				DisplayName  string                                          `json:"displayName"`
+				EmailAddress *string                                         `json:"emailAddress,omitempty"`
+				Id           *int32                                          `json:"id,omitempty"`
+				Links        *map[string]interface{}                         `json:"links,omitempty"`
+				Name         string                                          `json:"name"`
+				Slug         string                                          `json:"slug"`
+				Type         RestUserReactionCommentParentThreadResolverType `json:"type"`
 			} `json:"threadResolver,omitempty"`
 			UpdatedDate *int64 `json:"updatedDate,omitempty"`
 			Version     *int32 `json:"version,omitempty"`
@@ -6764,15 +7288,15 @@ type RestUserReaction struct {
 		Reply        *bool                   `json:"reply,omitempty"`
 		ResolvedDate *int64                  `json:"resolvedDate,omitempty"`
 		Resolver     *struct {
-			Active       *bool                                `json:"active,omitempty"`
-			AvatarUrl    *string                              `json:"avatarUrl,omitempty"`
-			DisplayName  *string                              `json:"displayName,omitempty"`
-			EmailAddress *string                              `json:"emailAddress,omitempty"`
-			Id           *int32                               `json:"id,omitempty"`
-			Links        *map[string]interface{}              `json:"links,omitempty"`
-			Name         *string                              `json:"name,omitempty"`
-			Slug         *string                              `json:"slug,omitempty"`
-			Type         *RestUserReactionCommentResolverType `json:"type,omitempty"`
+			Active       *bool                               `json:"active,omitempty"`
+			AvatarUrl    *string                             `json:"avatarUrl,omitempty"`
+			DisplayName  string                              `json:"displayName"`
+			EmailAddress *string                             `json:"emailAddress,omitempty"`
+			Id           *int32                              `json:"id,omitempty"`
+			Links        *map[string]interface{}             `json:"links,omitempty"`
+			Name         string                              `json:"name"`
+			Slug         string                              `json:"slug"`
+			Type         RestUserReactionCommentResolverType `json:"type"`
 		} `json:"resolver,omitempty"`
 		Severity *string `json:"severity,omitempty"`
 		State    *string `json:"state,omitempty"`
@@ -6782,15 +7306,15 @@ type RestUserReaction struct {
 		ThreadResolved     *bool  `json:"threadResolved,omitempty"`
 		ThreadResolvedDate *int64 `json:"threadResolvedDate,omitempty"`
 		ThreadResolver     *struct {
-			Active       *bool                                      `json:"active,omitempty"`
-			AvatarUrl    *string                                    `json:"avatarUrl,omitempty"`
-			DisplayName  *string                                    `json:"displayName,omitempty"`
-			EmailAddress *string                                    `json:"emailAddress,omitempty"`
-			Id           *int32                                     `json:"id,omitempty"`
-			Links        *map[string]interface{}                    `json:"links,omitempty"`
-			Name         *string                                    `json:"name,omitempty"`
-			Slug         *string                                    `json:"slug,omitempty"`
-			Type         *RestUserReactionCommentThreadResolverType `json:"type,omitempty"`
+			Active       *bool                                     `json:"active,omitempty"`
+			AvatarUrl    *string                                   `json:"avatarUrl,omitempty"`
+			DisplayName  string                                    `json:"displayName"`
+			EmailAddress *string                                   `json:"emailAddress,omitempty"`
+			Id           *int32                                    `json:"id,omitempty"`
+			Links        *map[string]interface{}                   `json:"links,omitempty"`
+			Name         string                                    `json:"name"`
+			Slug         string                                    `json:"slug"`
+			Type         RestUserReactionCommentThreadResolverType `json:"type"`
 		} `json:"threadResolver,omitempty"`
 		UpdatedDate *int64 `json:"updatedDate,omitempty"`
 		Version     *int32 `json:"version,omitempty"`
@@ -6801,15 +7325,15 @@ type RestUserReaction struct {
 		Value    *string `json:"value,omitempty"`
 	} `json:"emoticon,omitempty"`
 	User *struct {
-		Active       *bool                     `json:"active,omitempty"`
-		AvatarUrl    *string                   `json:"avatarUrl,omitempty"`
-		DisplayName  *string                   `json:"displayName,omitempty"`
-		EmailAddress *string                   `json:"emailAddress,omitempty"`
-		Id           *int32                    `json:"id,omitempty"`
-		Links        *map[string]interface{}   `json:"links,omitempty"`
-		Name         *string                   `json:"name,omitempty"`
-		Slug         *string                   `json:"slug,omitempty"`
-		Type         *RestUserReactionUserType `json:"type,omitempty"`
+		Active       *bool                    `json:"active,omitempty"`
+		AvatarUrl    *string                  `json:"avatarUrl,omitempty"`
+		DisplayName  string                   `json:"displayName"`
+		EmailAddress *string                  `json:"emailAddress,omitempty"`
+		Id           *int32                   `json:"id,omitempty"`
+		Links        *map[string]interface{}  `json:"links,omitempty"`
+		Name         string                   `json:"name"`
+		Slug         string                   `json:"slug"`
+		Type         RestUserReactionUserType `json:"type"`
 	} `json:"user,omitempty"`
 }
 
@@ -6824,6 +7348,15 @@ type RestUserReactionCommentAnchorLineType string
 
 // RestUserReactionCommentAnchorMultilineMarkerStartLineType The segment type of the start line of the multiline comment
 type RestUserReactionCommentAnchorMultilineMarkerStartLineType string
+
+// RestUserReactionCommentAnchorPullRequestAuthorRole defines model for RestUserReaction.Comment.Anchor.PullRequest.Author.Role.
+type RestUserReactionCommentAnchorPullRequestAuthorRole string
+
+// RestUserReactionCommentAnchorPullRequestAuthorStatus defines model for RestUserReaction.Comment.Anchor.PullRequest.Author.Status.
+type RestUserReactionCommentAnchorPullRequestAuthorStatus string
+
+// RestUserReactionCommentAnchorPullRequestAuthorUserType defines model for RestUserReaction.Comment.Anchor.PullRequest.Author.User.Type.
+type RestUserReactionCommentAnchorPullRequestAuthorUserType string
 
 // RestUserReactionCommentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestUserReaction.Comment.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestUserReactionCommentAnchorPullRequestFromRefRepositoryOriginProjectType string
@@ -6872,6 +7405,15 @@ type RestUserReactionCommentParentAnchorLineType string
 
 // RestUserReactionCommentParentAnchorMultilineMarkerStartLineType The segment type of the start line of the multiline comment
 type RestUserReactionCommentParentAnchorMultilineMarkerStartLineType string
+
+// RestUserReactionCommentParentAnchorPullRequestAuthorRole defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Author.Role.
+type RestUserReactionCommentParentAnchorPullRequestAuthorRole string
+
+// RestUserReactionCommentParentAnchorPullRequestAuthorStatus defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Author.Status.
+type RestUserReactionCommentParentAnchorPullRequestAuthorStatus string
+
+// RestUserReactionCommentParentAnchorPullRequestAuthorUserType defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Author.User.Type.
+type RestUserReactionCommentParentAnchorPullRequestAuthorUserType string
 
 // RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType string
@@ -7163,15 +7705,21 @@ type FindUsersNotInGroupParams struct {
 
 // SetMailConfigJSONBody defines parameters for SetMailConfig.
 type SetMailConfigJSONBody struct {
-	Hostname        *string                        `json:"hostname,omitempty"`
-	Password        *string                        `json:"password,omitempty"`
-	Port            *int32                         `json:"port,omitempty"`
-	Protocol        *SetMailConfigJSONBodyProtocol `json:"protocol,omitempty"`
-	RequireStartTls *bool                          `json:"requireStartTls,omitempty"`
-	SenderAddress   *string                        `json:"senderAddress,omitempty"`
-	UseStartTls     *bool                          `json:"useStartTls,omitempty"`
-	Username        *string                        `json:"username,omitempty"`
+	AuthType         *SetMailConfigJSONBodyAuthType `json:"authType,omitempty"`
+	Hostname         *string                        `json:"hostname,omitempty"`
+	Oauth2ProviderId *string                        `json:"oauth2ProviderId,omitempty"`
+	Password         *string                        `json:"password,omitempty"`
+	Port             *int32                         `json:"port,omitempty"`
+	Protocol         *SetMailConfigJSONBodyProtocol `json:"protocol,omitempty"`
+	RequireStartTls  *bool                          `json:"requireStartTls,omitempty"`
+	SenderAddress    *string                        `json:"senderAddress,omitempty"`
+	TokenId          *string                        `json:"tokenId,omitempty"`
+	UseStartTls      *bool                          `json:"useStartTls,omitempty"`
+	Username         *string                        `json:"username,omitempty"`
 }
+
+// SetMailConfigJSONBodyAuthType defines parameters for SetMailConfig.
+type SetMailConfigJSONBodyAuthType string
 
 // SetMailConfigJSONBodyProtocol defines parameters for SetMailConfig.
 type SetMailConfigJSONBodyProtocol string
@@ -7467,6 +8015,12 @@ type GetLabelablesParams struct {
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// SetSettings2JSONBody defines parameters for SetSettings2.
+type SetSettings2JSONBody struct {
+	DebugLoggingEnabled bool `json:"debugLoggingEnabled"`
+	ProfilingEnabled    bool `json:"profilingEnabled"`
+}
+
 // PreviewParams defines parameters for Preview.
 type PreviewParams struct {
 	// HtmlEscape (Optional) true if HTML should be escaped in the input markup, false otherwise.
@@ -7514,13 +8068,9 @@ type GetImportJobMessagesParams struct {
 
 // StartMeshMigrationJSONBody defines parameters for StartMeshMigration.
 type StartMeshMigrationJSONBody struct {
-	All               *bool `json:"all,omitempty"`
-	MaxBytesPerSecond *struct {
-		AsLong  *int64 `json:"asLong,omitempty"`
-		Present *bool  `json:"present,omitempty"`
-	} `json:"maxBytesPerSecond,omitempty"`
-	ProjectIds    *[]int32 `json:"projectIds,omitempty"`
-	RepositoryIds *[]int32 `json:"repositoryIds,omitempty"`
+	All           *bool   `json:"all,omitempty"`
+	ProjectIds    []int32 `json:"projectIds"`
+	RepositoryIds []int32 `json:"repositoryIds"`
 }
 
 // SearchMeshMigrationReposParams defines parameters for SearchMeshMigrationRepos.
@@ -7750,7 +8300,7 @@ type GetArchiveParams struct {
 	// Filename A filename to include the "Content-Disposition" header
 	Filename *string `form:"filename,omitempty" json:"filename,omitempty"`
 
-	// At The commit to stream an archive of; if not supplied, an archive of the default branch is streamed
+	// At The commit hash or fully-qualified ref name (e.g. refs/tags/example) to stream an archive of; if not supplied, an archive of the default branch is streamed
 	At *string `form:"at,omitempty" json:"at,omitempty"`
 
 	// Prefix A prefix to apply to all entries in the streamed archive; if the supplied prefix does not end with a trailing /, one will be added automatically
@@ -8398,6 +8948,12 @@ type GetPageParams struct {
 
 	// Limit Number of items to return. If not passed, a page size of 25 is used.
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// Get3Params defines parameters for Get3.
+type Get3Params struct {
+	// WithProperties (optional) defaults to false, whether to return additional pull request properties
+	WithProperties *string `form:"withProperties,omitempty" json:"withProperties,omitempty"`
 }
 
 // StreamRawDiff2Params defines parameters for StreamRawDiff2.
@@ -9183,21 +9739,22 @@ type GetBuildStatusParams struct {
 // UpdatePullRequestCondition1JSONBody defines parameters for UpdatePullRequestCondition1.
 type UpdatePullRequestCondition1JSONBody struct {
 	RequiredApprovals *int32                 `json:"requiredApprovals,omitempty"`
+	ReviewerGroups    *[]RestReviewerGroup   `json:"reviewerGroups,omitempty"`
 	Reviewers         *[]RestApplicationUser `json:"reviewers,omitempty"`
 	SourceMatcher     *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *UpdatePullRequestCondition1JSONBodySourceMatcherTypeId `json:"id,omitempty"`
-			Name *string                                                 `json:"name,omitempty"`
+			Id   UpdatePullRequestCondition1JSONBodySourceMatcherTypeId `json:"id"`
+			Name string                                                 `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceMatcher,omitempty"`
 	TargetMatcher *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   *UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId `json:"id,omitempty"`
-			Name *string                                                 `json:"name,omitempty"`
+			Id   UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId `json:"id"`
+			Name string                                                 `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"targetMatcher,omitempty"`
 }
@@ -9269,6 +9826,18 @@ type GetKeysForUserParams struct {
 type AddKeyParams struct {
 	// User The name of the user to add a key for (optional; requires ADMIN permission or higher).
 	User *string `form:"user,omitempty" json:"user,omitempty"`
+}
+
+// ReindexRepositoriesJSONBody defines parameters for ReindexRepositories.
+type ReindexRepositoriesJSONBody = []RestRepositorySelector
+
+// GetBrokenIndexStatusReposParams defines parameters for GetBrokenIndexStatusRepos.
+type GetBrokenIndexStatusReposParams struct {
+	// Start Start number for the page (inclusive). If not passed, first page is assumed.
+	Start *float32 `form:"start,omitempty" json:"start,omitempty"`
+
+	// Limit Number of items to return. If not passed, a page size of 25 is used.
+	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // GetAnnotations1Params defines parameters for GetAnnotations1.
@@ -9373,6 +9942,15 @@ type GetForRepositoriesParams struct {
 
 // SetPreferredMirrorIdJSONBody defines parameters for SetPreferredMirrorId.
 type SetPreferredMirrorIdJSONBody = string
+
+// GetDelayedSyncRepositoriesParams defines parameters for GetDelayedSyncRepositories.
+type GetDelayedSyncRepositoriesParams struct {
+	// DelayThreshold Returns only those repositories that are delayed for the given duration. The minimum allowed value is the configured value for the property <code>plugin.mirroring.synchronization.interval</code>
+	DelayThreshold *string `form:"delayThreshold,omitempty" json:"delayThreshold,omitempty"`
+
+	// Limit Limit the number of delayed sync repositories returned, the maximum allowed value is 100
+	Limit *string `form:"limit,omitempty" json:"limit,omitempty"`
+}
 
 // ListMirrorsParams defines parameters for ListMirrors.
 type ListMirrorsParams struct {
@@ -9498,8 +10076,8 @@ type AddSshKeyParams struct {
 	User *RestSshKey `form:"user,omitempty" json:"user,omitempty"`
 }
 
-// GetStatus2Params defines parameters for GetStatus2.
-type GetStatus2Params struct {
+// GetStatusParams defines parameters for GetStatus.
+type GetStatusParams struct {
 	// At Retrieves the synchronization status for the specified ref within the repository, rather than for the entire repository
 	At *string `form:"at,omitempty" json:"at,omitempty"`
 }
@@ -9594,8 +10172,8 @@ type SetSenderAddressJSONRequestBody = SetSenderAddressJSONBody
 // SetMergeConfigJSONRequestBody defines body for SetMergeConfig for application/json ContentType.
 type SetMergeConfigJSONRequestBody = RestPullRequestSettings
 
-// SetSettings2JSONRequestBody defines body for SetSettings2 for application/json ContentType.
-type SetSettings2JSONRequestBody = RestRateLimitSettings
+// SetSettings3JSONRequestBody defines body for SetSettings3 for application/json ContentType.
+type SetSettings3JSONRequestBody = RestRateLimitSettings
 
 // Set2JSONRequestBody defines body for Set2 for application/json ContentType.
 type Set2JSONRequestBody = RestBulkUserRateLimitSettingsUpdateRequest
@@ -9623,6 +10201,9 @@ type RenameUserJSONRequestBody = UserRename
 
 // CreateHookScriptMultipartRequestBody defines body for CreateHookScript for multipart/form-data ContentType.
 type CreateHookScriptMultipartRequestBody = ExamplePostMultipartFormData
+
+// SetSettings2JSONRequestBody defines body for SetSettings2 for application/json ContentType.
+type SetSettings2JSONRequestBody SetSettings2JSONBody
 
 // StartExportJSONRequestBody defines body for StartExport for application/json ContentType.
 type StartExportJSONRequestBody = RestExportRequest
@@ -9840,6 +10421,9 @@ type GetMultipleBuildStatusStatsJSONRequestBody = GetMultipleBuildStatusStatsJSO
 // AddBuildStatusJSONRequestBody defines body for AddBuildStatus for application/json ContentType.
 type AddBuildStatusJSONRequestBody = RestBuildStatus
 
+// SettingsJSONRequestBody defines body for Settings for application/json ContentType.
+type SettingsJSONRequestBody = RestCspSettings
+
 // CreatePullRequestConditionJSONRequestBody defines body for CreatePullRequestCondition for application/json ContentType.
 type CreatePullRequestConditionJSONRequestBody = RestDefaultReviewersRequest
 
@@ -9873,6 +10457,12 @@ type CreateTagJSONRequestBody = RestGitTagCreateRequest
 // AddKeyJSONRequestBody defines body for AddKey for application/json ContentType.
 type AddKeyJSONRequestBody = RestGpgKey
 
+// ReindexRepositoriesJSONRequestBody defines body for ReindexRepositories for application/json ContentType.
+type ReindexRepositoriesJSONRequestBody = ReindexRepositoriesJSONBody
+
+// RestartIndexingThreadWorkerJSONRequestBody defines body for RestartIndexingThreadWorker for application/json ContentType.
+type RestartIndexingThreadWorkerJSONRequestBody = RestIndexingWorkerRestartRequest
+
 // SetACodeInsightsReportJSONRequestBody defines body for SetACodeInsightsReport for application/json ContentType.
 type SetACodeInsightsReportJSONRequestBody = RestSetInsightReportRequest
 
@@ -9881,6 +10471,9 @@ type AddAnnotationsJSONRequestBody = RestBulkAddInsightAnnotationRequest
 
 // SetAnnotationJSONRequestBody defines body for SetAnnotation for application/json ContentType.
 type SetAnnotationJSONRequestBody = RestSingleAddInsightAnnotationRequest
+
+// StartBackfillSyncJSONRequestBody defines body for StartBackfillSync for application/json ContentType.
+type StartBackfillSyncJSONRequestBody = RestJiraDevInfoBackfillRequest
 
 // CreateIssueJSONRequestBody defines body for CreateIssue for application/json ContentType.
 type CreateIssueJSONRequestBody = CreateIssueJSONBody
@@ -9897,8 +10490,8 @@ type RevokeManyJSONRequestBody RevokeManyJSONBody
 // SetPreferredMirrorIdJSONRequestBody defines body for SetPreferredMirrorId for application/json ContentType.
 type SetPreferredMirrorIdJSONRequestBody = SetPreferredMirrorIdJSONBody
 
-// Authenticate2JSONRequestBody defines body for Authenticate2 for application/json ContentType.
-type Authenticate2JSONRequestBody = RestAuthenticationRequest
+// AuthenticateJSONRequestBody defines body for Authenticate for application/json ContentType.
+type AuthenticateJSONRequestBody = RestAuthenticationRequest
 
 // UpgradeJSONRequestBody defines body for Upgrade for application/json ContentType.
 type UpgradeJSONRequestBody = RestMirrorUpgradeRequest
@@ -9933,8 +10526,8 @@ type SetEnabledJSONRequestBody = RestRefSyncStatus
 // SynchronizeJSONRequestBody defines body for Synchronize for application/json ContentType.
 type SynchronizeJSONRequestBody = RestRefSyncRequest
 
-// AuthenticateJSONRequestBody defines body for Authenticate for application/json ContentType.
-type AuthenticateJSONRequestBody = AuthenticationEntity
+// Authenticate2JSONRequestBody defines body for Authenticate2 for application/json ContentType.
+type Authenticate2JSONRequestBody = AuthenticationEntity
 
 // AuthenticateWithRecoveryCodeJSONRequestBody defines body for AuthenticateWithRecoveryCode for application/json ContentType.
 type AuthenticateWithRecoveryCodeJSONRequestBody = TotpRecoveryCodeAuthenticationDTO
@@ -10281,8 +10874,8 @@ type ClientInterface interface {
 
 	RemoveUserFromGroup(ctx context.Context, body RemoveUserFromGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get22 request
-	Get22(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get2 request
+	Get2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateLicenseWithBody request with any body
 	UpdateLicenseWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -10346,13 +10939,13 @@ type ClientInterface interface {
 	// GetHistory request
 	GetHistory(ctx context.Context, params *GetHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetSettings2 request
-	GetSettings2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetSettings3 request
+	GetSettings3(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetSettings2WithBody request with any body
-	SetSettings2WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// SetSettings3WithBody request with any body
+	SetSettings3WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	SetSettings2(ctx context.Context, body SetSettings2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SetSettings3(ctx context.Context, body SetSettings3JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAllRateLimitSettings request
 	GetAllRateLimitSettings(ctx context.Context, params *GetAllRateLimitSettingsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -10492,6 +11085,14 @@ type ClientInterface interface {
 
 	// SetRootLevel request
 	SetRootLevel(ctx context.Context, levelName string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSettings2 request
+	GetSettings2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetSettings2WithBody request with any body
+	SetSettings2WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetSettings2(ctx context.Context, body SetSettings2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PreviewWithBody request with any body
 	PreviewWithBody(ctx context.Context, params *PreviewParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -10890,7 +11491,7 @@ type ClientInterface interface {
 	Delete3(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, body Delete3JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Get3 request
-	Get3(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	Get3(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, params *Get3Params, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateWithBody request with any body
 	UpdateWithBody(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11477,6 +12078,12 @@ type ClientInterface interface {
 	// GetLoginOptions request
 	GetLoginOptions(ctx context.Context, params *GetLoginOptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetSamlCertificate request
+	GetSamlCertificate(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RegenerateCertificate request
+	RegenerateCertificate(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetConfig request
 	GetConfig(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -11485,8 +12092,8 @@ type ClientInterface interface {
 
 	UpdateConfig(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get2 request
-	Get2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get8 request
+	Get8(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PutWithBody request with any body
 	PutWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11561,6 +12168,11 @@ type ClientInterface interface {
 
 	// React1 request
 	React1(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, commentId string, emoticon string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SettingsWithBody request with any body
+	SettingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	Settings(ctx context.Context, body SettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreatePullRequestConditionWithBody request with any body
 	CreatePullRequestConditionWithBody(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11665,6 +12277,31 @@ type ClientInterface interface {
 	// DeleteKey request
 	DeleteKey(ctx context.Context, fingerprintOrId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetDetails request
+	GetDetails(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetQueueDetails request
+	GetQueueDetails(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// IndexingQueuedStatus request
+	IndexingQueuedStatus(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReindexRepositoriesWithBody request with any body
+	ReindexRepositoriesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReindexRepositories(ctx context.Context, body ReindexRepositoriesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RestartIndexingThreadWorkerWithBody request with any body
+	RestartIndexingThreadWorkerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RestartIndexingThreadWorker(ctx context.Context, body RestartIndexingThreadWorkerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetBrokenIndexStatusRepos request
+	GetBrokenIndexStatusRepos(ctx context.Context, params *GetBrokenIndexStatusReposParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetIndexingThreadSnapshot request
+	GetIndexingThreadSnapshot(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetAnnotations1 request
 	GetAnnotations1(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetAnnotations1Params, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -11697,6 +12334,20 @@ type ClientInterface interface {
 	SetAnnotationWithBody(ctx context.Context, projectKey string, repositorySlug string, commitId string, key string, externalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	SetAnnotation(ctx context.Context, projectKey string, repositorySlug string, commitId string, key string, externalId string, body SetAnnotationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StopBackfillSync request
+	StopBackfillSync(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartBackfillSyncWithBody request with any body
+	StartBackfillSyncWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	StartBackfillSync(ctx context.Context, body StartBackfillSyncJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetBackfillSyncReport request
+	GetBackfillSyncReport(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetBackfillSyncStatus request
+	GetBackfillSyncStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateIssueWithBody request with any body
 	CreateIssueWithBody(ctx context.Context, commentId string, params *CreateIssueParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11771,13 +12422,16 @@ type ClientInterface interface {
 	// AnalyticsSettings request
 	AnalyticsSettings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Authenticate2WithBody request with any body
-	Authenticate2WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// AuthenticateWithBody request with any body
+	AuthenticateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	Authenticate2(ctx context.Context, body Authenticate2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	Authenticate(ctx context.Context, body AuthenticateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetFarmNodes request
 	GetFarmNodes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDelayedSyncRepositories request
+	GetDelayedSyncRepositories(ctx context.Context, params *GetDelayedSyncRepositoriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetMirroredRepository request
 	GetMirroredRepository(ctx context.Context, externalRepositoryId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11838,9 +12492,6 @@ type ClientInterface interface {
 
 	// Reject request
 	Reject(ctx context.Context, mirroringRequestId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetOutOfSyncRepositories request
-	GetOutOfSyncRepositories(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetRepositoryLockOwner request
 	GetRepositoryLockOwner(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11927,6 +12578,15 @@ type ClientInterface interface {
 	// GetPageOfRequiredBuildsMergeChecks request
 	GetPageOfRequiredBuildsMergeChecks(ctx context.Context, projectKey string, repositorySlug string, params *GetPageOfRequiredBuildsMergeChecksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteInactiveKeys request
+	DeleteInactiveKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetInactiveKeys request
+	GetInactiveKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RotateKey request
+	RotateKey(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteSshKeys request
 	DeleteSshKeys(ctx context.Context, params *DeleteSshKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -11947,8 +12607,8 @@ type ClientInterface interface {
 	// SshSettings request
 	SshSettings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetStatus2 request
-	GetStatus2(ctx context.Context, projectKey string, repositorySlug string, params *GetStatus2Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetStatus request
+	GetStatus(ctx context.Context, projectKey string, repositorySlug string, params *GetStatusParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SetEnabledWithBody request with any body
 	SetEnabledWithBody(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11960,10 +12620,10 @@ type ClientInterface interface {
 
 	Synchronize(ctx context.Context, projectKey string, repositorySlug string, body SynchronizeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AuthenticateWithBody request with any body
-	AuthenticateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Authenticate2WithBody request with any body
+	Authenticate2WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	Authenticate(ctx context.Context, body AuthenticateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	Authenticate2(ctx context.Context, body Authenticate2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetCaptchaData request
 	GetCaptchaData(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11999,8 +12659,8 @@ type ClientInterface interface {
 	// GetSsoManagementStatus request
 	GetSsoManagementStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetStatus request
-	GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetStatus2 request
+	GetStatus2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CompleteEnforcedEnrollmentWithBody request with any body
 	CompleteEnforcedEnrollmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -12712,8 +13372,8 @@ func (c *Client) RemoveUserFromGroup(ctx context.Context, body RemoveUserFromGro
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get22(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet22Request(c.Server)
+func (c *Client) Get2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet2Request(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -12988,8 +13648,8 @@ func (c *Client) GetHistory(ctx context.Context, params *GetHistoryParams, reqEd
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetSettings2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetSettings2Request(c.Server)
+func (c *Client) GetSettings3(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSettings3Request(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -13000,8 +13660,8 @@ func (c *Client) GetSettings2(ctx context.Context, reqEditors ...RequestEditorFn
 	return c.Client.Do(req)
 }
 
-func (c *Client) SetSettings2WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetSettings2RequestWithBody(c.Server, contentType, body)
+func (c *Client) SetSettings3WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetSettings3RequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13012,8 +13672,8 @@ func (c *Client) SetSettings2WithBody(ctx context.Context, contentType string, b
 	return c.Client.Do(req)
 }
 
-func (c *Client) SetSettings2(ctx context.Context, body SetSettings2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetSettings2Request(c.Server, body)
+func (c *Client) SetSettings3(ctx context.Context, body SetSettings3JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetSettings3Request(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13602,6 +14262,42 @@ func (c *Client) GetRootLevel(ctx context.Context, reqEditors ...RequestEditorFn
 
 func (c *Client) SetRootLevel(ctx context.Context, levelName string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetRootLevelRequest(c.Server, levelName)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSettings2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSettings2Request(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetSettings2WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetSettings2RequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetSettings2(ctx context.Context, body SetSettings2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetSettings2Request(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15280,8 +15976,8 @@ func (c *Client) Delete3(ctx context.Context, projectKey string, repositorySlug 
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get3(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet3Request(c.Server, projectKey, repositorySlug, pullRequestId)
+func (c *Client) Get3(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, params *Get3Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet3Request(c.Server, projectKey, repositorySlug, pullRequestId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17788,6 +18484,30 @@ func (c *Client) GetLoginOptions(ctx context.Context, params *GetLoginOptionsPar
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetSamlCertificate(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSamlCertificateRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RegenerateCertificate(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRegenerateCertificateRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetConfig(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetConfigRequest(c.Server)
 	if err != nil {
@@ -17824,8 +18544,8 @@ func (c *Client) UpdateConfig(ctx context.Context, body UpdateConfigJSONRequestB
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet2Request(c.Server)
+func (c *Client) Get8(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet8Request(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -18150,6 +18870,30 @@ func (c *Client) UnReact1(ctx context.Context, projectKey string, repositorySlug
 
 func (c *Client) React1(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, commentId string, emoticon string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReact1Request(c.Server, projectKey, repositorySlug, pullRequestId, commentId, emoticon)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SettingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSettingsRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) Settings(ctx context.Context, body SettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSettingsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18616,6 +19360,114 @@ func (c *Client) DeleteKey(ctx context.Context, fingerprintOrId string, reqEdito
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetDetails(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDetailsRequest(c.Server, projectKey, repositorySlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetQueueDetails(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetQueueDetailsRequest(c.Server, projectKey, repositorySlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) IndexingQueuedStatus(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewIndexingQueuedStatusRequest(c.Server, projectKey, repositorySlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReindexRepositoriesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReindexRepositoriesRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReindexRepositories(ctx context.Context, body ReindexRepositoriesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReindexRepositoriesRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RestartIndexingThreadWorkerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRestartIndexingThreadWorkerRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RestartIndexingThreadWorker(ctx context.Context, body RestartIndexingThreadWorkerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRestartIndexingThreadWorkerRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetBrokenIndexStatusRepos(ctx context.Context, params *GetBrokenIndexStatusReposParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBrokenIndexStatusReposRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetIndexingThreadSnapshot(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetIndexingThreadSnapshotRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetAnnotations1(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetAnnotations1Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAnnotations1Request(c.Server, projectKey, repositorySlug, commitId, params)
 	if err != nil {
@@ -18750,6 +19602,66 @@ func (c *Client) SetAnnotationWithBody(ctx context.Context, projectKey string, r
 
 func (c *Client) SetAnnotation(ctx context.Context, projectKey string, repositorySlug string, commitId string, key string, externalId string, body SetAnnotationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetAnnotationRequest(c.Server, projectKey, repositorySlug, commitId, key, externalId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StopBackfillSync(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStopBackfillSyncRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StartBackfillSyncWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartBackfillSyncRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StartBackfillSync(ctx context.Context, body StartBackfillSyncJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartBackfillSyncRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetBackfillSyncReport(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBackfillSyncReportRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetBackfillSyncStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBackfillSyncStatusRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -19072,8 +19984,8 @@ func (c *Client) AnalyticsSettings(ctx context.Context, reqEditors ...RequestEdi
 	return c.Client.Do(req)
 }
 
-func (c *Client) Authenticate2WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAuthenticate2RequestWithBody(c.Server, contentType, body)
+func (c *Client) AuthenticateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAuthenticateRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19084,8 +19996,8 @@ func (c *Client) Authenticate2WithBody(ctx context.Context, contentType string, 
 	return c.Client.Do(req)
 }
 
-func (c *Client) Authenticate2(ctx context.Context, body Authenticate2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAuthenticate2Request(c.Server, body)
+func (c *Client) Authenticate(ctx context.Context, body AuthenticateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAuthenticateRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19098,6 +20010,18 @@ func (c *Client) Authenticate2(ctx context.Context, body Authenticate2JSONReques
 
 func (c *Client) GetFarmNodes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetFarmNodesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDelayedSyncRepositories(ctx context.Context, params *GetDelayedSyncRepositoriesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDelayedSyncRepositoriesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -19350,18 +20274,6 @@ func (c *Client) Accept(ctx context.Context, mirroringRequestId string, reqEdito
 
 func (c *Client) Reject(ctx context.Context, mirroringRequestId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRejectRequest(c.Server, mirroringRequestId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetOutOfSyncRepositories(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetOutOfSyncRepositoriesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -19732,6 +20644,42 @@ func (c *Client) GetPageOfRequiredBuildsMergeChecks(ctx context.Context, project
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeleteInactiveKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteInactiveKeysRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetInactiveKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetInactiveKeysRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RotateKey(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRotateKeyRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) DeleteSshKeys(ctx context.Context, params *DeleteSshKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteSshKeysRequest(c.Server, params)
 	if err != nil {
@@ -19816,8 +20764,8 @@ func (c *Client) SshSettings(ctx context.Context, reqEditors ...RequestEditorFn)
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetStatus2(ctx context.Context, projectKey string, repositorySlug string, params *GetStatus2Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetStatus2Request(c.Server, projectKey, repositorySlug, params)
+func (c *Client) GetStatus(ctx context.Context, projectKey string, repositorySlug string, params *GetStatusParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetStatusRequest(c.Server, projectKey, repositorySlug, params)
 	if err != nil {
 		return nil, err
 	}
@@ -19876,8 +20824,8 @@ func (c *Client) Synchronize(ctx context.Context, projectKey string, repositoryS
 	return c.Client.Do(req)
 }
 
-func (c *Client) AuthenticateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAuthenticateRequestWithBody(c.Server, contentType, body)
+func (c *Client) Authenticate2WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAuthenticate2RequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -19888,8 +20836,8 @@ func (c *Client) AuthenticateWithBody(ctx context.Context, contentType string, b
 	return c.Client.Do(req)
 }
 
-func (c *Client) Authenticate(ctx context.Context, body AuthenticateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAuthenticateRequest(c.Server, body)
+func (c *Client) Authenticate2(ctx context.Context, body Authenticate2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAuthenticate2Request(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -20056,8 +21004,8 @@ func (c *Client) GetSsoManagementStatus(ctx context.Context, reqEditors ...Reque
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetStatusRequest(c.Server)
+func (c *Client) GetStatus2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetStatus2Request(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -22141,8 +23089,8 @@ func NewRemoveUserFromGroupRequestWithBody(server string, contentType string, bo
 	return req, nil
 }
 
-// NewGet22Request generates requests for Get22
-func NewGet22Request(server string) (*http.Request, error) {
+// NewGet2Request generates requests for Get2
+func NewGet2Request(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -23086,8 +24034,8 @@ func NewGetHistoryRequest(server string, params *GetHistoryParams) (*http.Reques
 	return req, nil
 }
 
-// NewGetSettings2Request generates requests for GetSettings2
-func NewGetSettings2Request(server string) (*http.Request, error) {
+// NewGetSettings3Request generates requests for GetSettings3
+func NewGetSettings3Request(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -23113,19 +24061,19 @@ func NewGetSettings2Request(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewSetSettings2Request calls the generic SetSettings2 builder with application/json body
-func NewSetSettings2Request(server string, body SetSettings2JSONRequestBody) (*http.Request, error) {
+// NewSetSettings3Request calls the generic SetSettings3 builder with application/json body
+func NewSetSettings3Request(server string, body SetSettings3JSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewSetSettings2RequestWithBody(server, "application/json", bodyReader)
+	return NewSetSettings3RequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewSetSettings2RequestWithBody generates requests for SetSettings2 with any type of body
-func NewSetSettings2RequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewSetSettings3RequestWithBody generates requests for SetSettings3 with any type of body
+func NewSetSettings3RequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -25296,6 +26244,73 @@ func NewSetRootLevelRequest(server string, levelName string) (*http.Request, err
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewGetSettings2Request generates requests for GetSettings2
+func NewGetSettings2Request(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/latest/logs/settings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSetSettings2Request calls the generic SetSettings2 builder with application/json body
+func NewSetSettings2Request(server string, body SetSettings2JSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetSettings2RequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSetSettings2RequestWithBody generates requests for SetSettings2 with any type of body
+func NewSetSettings2RequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/latest/logs/settings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -34388,7 +35403,7 @@ func NewDelete3RequestWithBody(server string, projectKey string, repositorySlug 
 }
 
 // NewGet3Request generates requests for Get3
-func NewGet3Request(server string, projectKey string, repositorySlug string, pullRequestId string) (*http.Request, error) {
+func NewGet3Request(server string, projectKey string, repositorySlug string, pullRequestId string, params *Get3Params) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -34425,6 +35440,28 @@ func NewGet3Request(server string, projectKey string, repositorySlug string, pul
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.WithProperties != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "withProperties", runtime.ParamLocationQuery, *params.WithProperties); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -44884,6 +45921,60 @@ func NewGetLoginOptionsRequest(server string, params *GetLoginOptionsParams) (*h
 	return req, nil
 }
 
+// NewGetSamlCertificateRequest generates requests for GetSamlCertificate
+func NewGetSamlCertificateRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/authconfig/latest/saml/certificate")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRegenerateCertificateRequest generates requests for RegenerateCertificate
+func NewRegenerateCertificateRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/authconfig/latest/saml/certificate/reset")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetConfigRequest generates requests for GetConfig
 func NewGetConfigRequest(server string) (*http.Request, error) {
 	var err error
@@ -44951,8 +46042,8 @@ func NewUpdateConfigRequestWithBody(server string, contentType string, body io.R
 	return req, nil
 }
 
-// NewGet2Request generates requests for Get2
-func NewGet2Request(server string) (*http.Request, error) {
+// NewGet8Request generates requests for Get8
+func NewGet8Request(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -46215,6 +47306,46 @@ func NewReact1Request(server string, projectKey string, repositorySlug string, p
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewSettingsRequest calls the generic Settings builder with application/json body
+func NewSettingsRequest(server string, body SettingsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSettingsRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSettingsRequestWithBody generates requests for Settings with any type of body
+func NewSettingsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/csp/latest/settings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -47710,6 +48841,301 @@ func NewDeleteKeyRequest(server string, fingerprintOrId string) (*http.Request, 
 	return req, nil
 }
 
+// NewGetDetailsRequest generates requests for GetDetails
+func NewGetDetailsRequest(server string, projectKey string, repositorySlug string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "projectKey", runtime.ParamLocationPath, projectKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repositorySlug", runtime.ParamLocationPath, repositorySlug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/indexing/latest/projects/%s/repos/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetQueueDetailsRequest generates requests for GetQueueDetails
+func NewGetQueueDetailsRequest(server string, projectKey string, repositorySlug string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "projectKey", runtime.ParamLocationPath, projectKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repositorySlug", runtime.ParamLocationPath, repositorySlug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/indexing/latest/projects/%s/repos/%s/indexing-queue-details", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewIndexingQueuedStatusRequest generates requests for IndexingQueuedStatus
+func NewIndexingQueuedStatusRequest(server string, projectKey string, repositorySlug string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "projectKey", runtime.ParamLocationPath, projectKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repositorySlug", runtime.ParamLocationPath, repositorySlug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/indexing/latest/projects/%s/repos/%s/indexing-queued-status", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReindexRepositoriesRequest calls the generic ReindexRepositories builder with application/json body
+func NewReindexRepositoriesRequest(server string, body ReindexRepositoriesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReindexRepositoriesRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewReindexRepositoriesRequestWithBody generates requests for ReindexRepositories with any type of body
+func NewReindexRepositoriesRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/indexing/latest/reindex")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRestartIndexingThreadWorkerRequest calls the generic RestartIndexingThreadWorker builder with application/json body
+func NewRestartIndexingThreadWorkerRequest(server string, body RestartIndexingThreadWorkerJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRestartIndexingThreadWorkerRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewRestartIndexingThreadWorkerRequestWithBody generates requests for RestartIndexingThreadWorker with any type of body
+func NewRestartIndexingThreadWorkerRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/indexing/latest/restart")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetBrokenIndexStatusReposRequest generates requests for GetBrokenIndexStatusRepos
+func NewGetBrokenIndexStatusReposRequest(server string, params *GetBrokenIndexStatusReposParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/indexing/latest/support-info/broken-index-status-repos")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Start != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "start", runtime.ParamLocationQuery, *params.Start); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetIndexingThreadSnapshotRequest generates requests for GetIndexingThreadSnapshot
+func NewGetIndexingThreadSnapshotRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/indexing/latest/support-info/indexing-thread-snapshot")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetAnnotations1Request generates requests for GetAnnotations1
 func NewGetAnnotations1Request(server string, projectKey string, repositorySlug string, commitId string, params *GetAnnotations1Params) (*http.Request, error) {
 	var err error
@@ -48379,6 +49805,127 @@ func NewSetAnnotationRequestWithBody(server string, projectKey string, repositor
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewStopBackfillSyncRequest generates requests for StopBackfillSync
+func NewStopBackfillSyncRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/jira-dev/latest/devinfo-backfill")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewStartBackfillSyncRequest calls the generic StartBackfillSync builder with application/json body
+func NewStartBackfillSyncRequest(server string, body StartBackfillSyncJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewStartBackfillSyncRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewStartBackfillSyncRequestWithBody generates requests for StartBackfillSync with any type of body
+func NewStartBackfillSyncRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/jira-dev/latest/devinfo-backfill")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetBackfillSyncReportRequest generates requests for GetBackfillSyncReport
+func NewGetBackfillSyncReportRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/jira-dev/latest/devinfo-backfill/report")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetBackfillSyncStatusRequest generates requests for GetBackfillSyncStatus
+func NewGetBackfillSyncStatusRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/jira-dev/latest/devinfo-backfill/status")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -49509,19 +51056,19 @@ func NewAnalyticsSettingsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewAuthenticate2Request calls the generic Authenticate2 builder with application/json body
-func NewAuthenticate2Request(server string, body Authenticate2JSONRequestBody) (*http.Request, error) {
+// NewAuthenticateRequest calls the generic Authenticate builder with application/json body
+func NewAuthenticateRequest(server string, body AuthenticateJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewAuthenticate2RequestWithBody(server, "application/json", bodyReader)
+	return NewAuthenticateRequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewAuthenticate2RequestWithBody generates requests for Authenticate2 with any type of body
-func NewAuthenticate2RequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewAuthenticateRequestWithBody generates requests for Authenticate with any type of body
+func NewAuthenticateRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -49566,6 +51113,71 @@ func NewGetFarmNodesRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetDelayedSyncRepositoriesRequest generates requests for GetDelayedSyncRepositories
+func NewGetDelayedSyncRepositoriesRequest(server string, params *GetDelayedSyncRepositoriesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/mirroring/latest/mirrorRepos/delayed-sync")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.DelayThreshold != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "delayThreshold", runtime.ParamLocationQuery, *params.DelayThreshold); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -50397,33 +52009,6 @@ func NewRejectRequest(server string, mirroringRequestId string) (*http.Request, 
 	}
 
 	req, err := http.NewRequest("POST", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetOutOfSyncRepositoriesRequest generates requests for GetOutOfSyncRepositories
-func NewGetOutOfSyncRepositoriesRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/mirroring/latest/supportInfo/out-of-sync-repos/content")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -51363,6 +52948,87 @@ func NewGetPageOfRequiredBuildsMergeChecksRequest(server string, projectKey stri
 	return req, nil
 }
 
+// NewDeleteInactiveKeysRequest generates requests for DeleteInactiveKeys
+func NewDeleteInactiveKeysRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/secrets/1.0/keys/inactive")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetInactiveKeysRequest generates requests for GetInactiveKeys
+func NewGetInactiveKeysRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/secrets/1.0/keys/inactive")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRotateKeyRequest generates requests for RotateKey
+func NewRotateKeyRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/secrets/1.0/keys/rotate")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewDeleteSshKeysRequest generates requests for DeleteSshKeys
 func NewDeleteSshKeysRequest(server string, params *DeleteSshKeysParams) (*http.Request, error) {
 	var err error
@@ -51676,8 +53342,8 @@ func NewSshSettingsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewGetStatus2Request generates requests for GetStatus2
-func NewGetStatus2Request(server string, projectKey string, repositorySlug string, params *GetStatus2Params) (*http.Request, error) {
+// NewGetStatusRequest generates requests for GetStatus
+func NewGetStatusRequest(server string, projectKey string, repositorySlug string, params *GetStatusParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -51847,19 +53513,19 @@ func NewSynchronizeRequestWithBody(server string, projectKey string, repositoryS
 	return req, nil
 }
 
-// NewAuthenticateRequest calls the generic Authenticate builder with application/json body
-func NewAuthenticateRequest(server string, body AuthenticateJSONRequestBody) (*http.Request, error) {
+// NewAuthenticate2Request calls the generic Authenticate2 builder with application/json body
+func NewAuthenticate2Request(server string, body Authenticate2JSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewAuthenticateRequestWithBody(server, "application/json", bodyReader)
+	return NewAuthenticate2RequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewAuthenticateRequestWithBody generates requests for Authenticate with any type of body
-func NewAuthenticateRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewAuthenticate2RequestWithBody generates requests for Authenticate2 with any type of body
+func NewAuthenticate2RequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -52256,8 +53922,8 @@ func NewGetSsoManagementStatusRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewGetStatusRequest generates requests for GetStatus
-func NewGetStatusRequest(server string) (*http.Request, error) {
+// NewGetStatus2Request generates requests for GetStatus2
+func NewGetStatus2Request(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -52795,8 +54461,8 @@ type ClientWithResponsesInterface interface {
 
 	RemoveUserFromGroupWithResponse(ctx context.Context, body RemoveUserFromGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*RemoveUserFromGroupResponse, error)
 
-	// Get22WithResponse request
-	Get22WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get22Response, error)
+	// Get2WithResponse request
+	Get2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get2Response, error)
 
 	// UpdateLicenseWithBodyWithResponse request with any body
 	UpdateLicenseWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateLicenseResponse, error)
@@ -52860,13 +54526,13 @@ type ClientWithResponsesInterface interface {
 	// GetHistoryWithResponse request
 	GetHistoryWithResponse(ctx context.Context, params *GetHistoryParams, reqEditors ...RequestEditorFn) (*GetHistoryResponse, error)
 
-	// GetSettings2WithResponse request
-	GetSettings2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSettings2Response, error)
+	// GetSettings3WithResponse request
+	GetSettings3WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSettings3Response, error)
 
-	// SetSettings2WithBodyWithResponse request with any body
-	SetSettings2WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetSettings2Response, error)
+	// SetSettings3WithBodyWithResponse request with any body
+	SetSettings3WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetSettings3Response, error)
 
-	SetSettings2WithResponse(ctx context.Context, body SetSettings2JSONRequestBody, reqEditors ...RequestEditorFn) (*SetSettings2Response, error)
+	SetSettings3WithResponse(ctx context.Context, body SetSettings3JSONRequestBody, reqEditors ...RequestEditorFn) (*SetSettings3Response, error)
 
 	// GetAllRateLimitSettingsWithResponse request
 	GetAllRateLimitSettingsWithResponse(ctx context.Context, params *GetAllRateLimitSettingsParams, reqEditors ...RequestEditorFn) (*GetAllRateLimitSettingsResponse, error)
@@ -53006,6 +54672,14 @@ type ClientWithResponsesInterface interface {
 
 	// SetRootLevelWithResponse request
 	SetRootLevelWithResponse(ctx context.Context, levelName string, reqEditors ...RequestEditorFn) (*SetRootLevelResponse, error)
+
+	// GetSettings2WithResponse request
+	GetSettings2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSettings2Response, error)
+
+	// SetSettings2WithBodyWithResponse request with any body
+	SetSettings2WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetSettings2Response, error)
+
+	SetSettings2WithResponse(ctx context.Context, body SetSettings2JSONRequestBody, reqEditors ...RequestEditorFn) (*SetSettings2Response, error)
 
 	// PreviewWithBodyWithResponse request with any body
 	PreviewWithBodyWithResponse(ctx context.Context, params *PreviewParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewResponse, error)
@@ -53404,7 +55078,7 @@ type ClientWithResponsesInterface interface {
 	Delete3WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, body Delete3JSONRequestBody, reqEditors ...RequestEditorFn) (*Delete3Response, error)
 
 	// Get3WithResponse request
-	Get3WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, reqEditors ...RequestEditorFn) (*Get3Response, error)
+	Get3WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, params *Get3Params, reqEditors ...RequestEditorFn) (*Get3Response, error)
 
 	// UpdateWithBodyWithResponse request with any body
 	UpdateWithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateResponse, error)
@@ -53991,6 +55665,12 @@ type ClientWithResponsesInterface interface {
 	// GetLoginOptionsWithResponse request
 	GetLoginOptionsWithResponse(ctx context.Context, params *GetLoginOptionsParams, reqEditors ...RequestEditorFn) (*GetLoginOptionsResponse, error)
 
+	// GetSamlCertificateWithResponse request
+	GetSamlCertificateWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSamlCertificateResponse, error)
+
+	// RegenerateCertificateWithResponse request
+	RegenerateCertificateWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RegenerateCertificateResponse, error)
+
 	// GetConfigWithResponse request
 	GetConfigWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetConfigResponse, error)
 
@@ -53999,8 +55679,8 @@ type ClientWithResponsesInterface interface {
 
 	UpdateConfigWithResponse(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateConfigResponse, error)
 
-	// Get2WithResponse request
-	Get2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get2Response, error)
+	// Get8WithResponse request
+	Get8WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get8Response, error)
 
 	// PutWithBodyWithResponse request with any body
 	PutWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutResponse, error)
@@ -54075,6 +55755,11 @@ type ClientWithResponsesInterface interface {
 
 	// React1WithResponse request
 	React1WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, commentId string, emoticon string, reqEditors ...RequestEditorFn) (*React1Response, error)
+
+	// SettingsWithBodyWithResponse request with any body
+	SettingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SettingsResponse, error)
+
+	SettingsWithResponse(ctx context.Context, body SettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*SettingsResponse, error)
 
 	// CreatePullRequestConditionWithBodyWithResponse request with any body
 	CreatePullRequestConditionWithBodyWithResponse(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePullRequestConditionResponse, error)
@@ -54179,6 +55864,31 @@ type ClientWithResponsesInterface interface {
 	// DeleteKeyWithResponse request
 	DeleteKeyWithResponse(ctx context.Context, fingerprintOrId string, reqEditors ...RequestEditorFn) (*DeleteKeyResponse, error)
 
+	// GetDetailsWithResponse request
+	GetDetailsWithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*GetDetailsResponse, error)
+
+	// GetQueueDetailsWithResponse request
+	GetQueueDetailsWithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*GetQueueDetailsResponse, error)
+
+	// IndexingQueuedStatusWithResponse request
+	IndexingQueuedStatusWithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*IndexingQueuedStatusResponse, error)
+
+	// ReindexRepositoriesWithBodyWithResponse request with any body
+	ReindexRepositoriesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReindexRepositoriesResponse, error)
+
+	ReindexRepositoriesWithResponse(ctx context.Context, body ReindexRepositoriesJSONRequestBody, reqEditors ...RequestEditorFn) (*ReindexRepositoriesResponse, error)
+
+	// RestartIndexingThreadWorkerWithBodyWithResponse request with any body
+	RestartIndexingThreadWorkerWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RestartIndexingThreadWorkerResponse, error)
+
+	RestartIndexingThreadWorkerWithResponse(ctx context.Context, body RestartIndexingThreadWorkerJSONRequestBody, reqEditors ...RequestEditorFn) (*RestartIndexingThreadWorkerResponse, error)
+
+	// GetBrokenIndexStatusReposWithResponse request
+	GetBrokenIndexStatusReposWithResponse(ctx context.Context, params *GetBrokenIndexStatusReposParams, reqEditors ...RequestEditorFn) (*GetBrokenIndexStatusReposResponse, error)
+
+	// GetIndexingThreadSnapshotWithResponse request
+	GetIndexingThreadSnapshotWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetIndexingThreadSnapshotResponse, error)
+
 	// GetAnnotations1WithResponse request
 	GetAnnotations1WithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetAnnotations1Params, reqEditors ...RequestEditorFn) (*GetAnnotations1Response, error)
 
@@ -54211,6 +55921,20 @@ type ClientWithResponsesInterface interface {
 	SetAnnotationWithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, key string, externalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAnnotationResponse, error)
 
 	SetAnnotationWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, key string, externalId string, body SetAnnotationJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAnnotationResponse, error)
+
+	// StopBackfillSyncWithResponse request
+	StopBackfillSyncWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*StopBackfillSyncResponse, error)
+
+	// StartBackfillSyncWithBodyWithResponse request with any body
+	StartBackfillSyncWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartBackfillSyncResponse, error)
+
+	StartBackfillSyncWithResponse(ctx context.Context, body StartBackfillSyncJSONRequestBody, reqEditors ...RequestEditorFn) (*StartBackfillSyncResponse, error)
+
+	// GetBackfillSyncReportWithResponse request
+	GetBackfillSyncReportWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBackfillSyncReportResponse, error)
+
+	// GetBackfillSyncStatusWithResponse request
+	GetBackfillSyncStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBackfillSyncStatusResponse, error)
 
 	// CreateIssueWithBodyWithResponse request with any body
 	CreateIssueWithBodyWithResponse(ctx context.Context, commentId string, params *CreateIssueParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIssueResponse, error)
@@ -54285,13 +56009,16 @@ type ClientWithResponsesInterface interface {
 	// AnalyticsSettingsWithResponse request
 	AnalyticsSettingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*AnalyticsSettingsResponse, error)
 
-	// Authenticate2WithBodyWithResponse request with any body
-	Authenticate2WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Authenticate2Response, error)
+	// AuthenticateWithBodyWithResponse request with any body
+	AuthenticateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AuthenticateResponse, error)
 
-	Authenticate2WithResponse(ctx context.Context, body Authenticate2JSONRequestBody, reqEditors ...RequestEditorFn) (*Authenticate2Response, error)
+	AuthenticateWithResponse(ctx context.Context, body AuthenticateJSONRequestBody, reqEditors ...RequestEditorFn) (*AuthenticateResponse, error)
 
 	// GetFarmNodesWithResponse request
 	GetFarmNodesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFarmNodesResponse, error)
+
+	// GetDelayedSyncRepositoriesWithResponse request
+	GetDelayedSyncRepositoriesWithResponse(ctx context.Context, params *GetDelayedSyncRepositoriesParams, reqEditors ...RequestEditorFn) (*GetDelayedSyncRepositoriesResponse, error)
 
 	// GetMirroredRepositoryWithResponse request
 	GetMirroredRepositoryWithResponse(ctx context.Context, externalRepositoryId string, reqEditors ...RequestEditorFn) (*GetMirroredRepositoryResponse, error)
@@ -54352,9 +56079,6 @@ type ClientWithResponsesInterface interface {
 
 	// RejectWithResponse request
 	RejectWithResponse(ctx context.Context, mirroringRequestId string, reqEditors ...RequestEditorFn) (*RejectResponse, error)
-
-	// GetOutOfSyncRepositoriesWithResponse request
-	GetOutOfSyncRepositoriesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOutOfSyncRepositoriesResponse, error)
 
 	// GetRepositoryLockOwnerWithResponse request
 	GetRepositoryLockOwnerWithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*GetRepositoryLockOwnerResponse, error)
@@ -54441,6 +56165,15 @@ type ClientWithResponsesInterface interface {
 	// GetPageOfRequiredBuildsMergeChecksWithResponse request
 	GetPageOfRequiredBuildsMergeChecksWithResponse(ctx context.Context, projectKey string, repositorySlug string, params *GetPageOfRequiredBuildsMergeChecksParams, reqEditors ...RequestEditorFn) (*GetPageOfRequiredBuildsMergeChecksResponse, error)
 
+	// DeleteInactiveKeysWithResponse request
+	DeleteInactiveKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteInactiveKeysResponse, error)
+
+	// GetInactiveKeysWithResponse request
+	GetInactiveKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetInactiveKeysResponse, error)
+
+	// RotateKeyWithResponse request
+	RotateKeyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RotateKeyResponse, error)
+
 	// DeleteSshKeysWithResponse request
 	DeleteSshKeysWithResponse(ctx context.Context, params *DeleteSshKeysParams, reqEditors ...RequestEditorFn) (*DeleteSshKeysResponse, error)
 
@@ -54461,8 +56194,8 @@ type ClientWithResponsesInterface interface {
 	// SshSettingsWithResponse request
 	SshSettingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*SshSettingsResponse, error)
 
-	// GetStatus2WithResponse request
-	GetStatus2WithResponse(ctx context.Context, projectKey string, repositorySlug string, params *GetStatus2Params, reqEditors ...RequestEditorFn) (*GetStatus2Response, error)
+	// GetStatusWithResponse request
+	GetStatusWithResponse(ctx context.Context, projectKey string, repositorySlug string, params *GetStatusParams, reqEditors ...RequestEditorFn) (*GetStatusResponse, error)
 
 	// SetEnabledWithBodyWithResponse request with any body
 	SetEnabledWithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetEnabledResponse, error)
@@ -54474,10 +56207,10 @@ type ClientWithResponsesInterface interface {
 
 	SynchronizeWithResponse(ctx context.Context, projectKey string, repositorySlug string, body SynchronizeJSONRequestBody, reqEditors ...RequestEditorFn) (*SynchronizeResponse, error)
 
-	// AuthenticateWithBodyWithResponse request with any body
-	AuthenticateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AuthenticateResponse, error)
+	// Authenticate2WithBodyWithResponse request with any body
+	Authenticate2WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Authenticate2Response, error)
 
-	AuthenticateWithResponse(ctx context.Context, body AuthenticateJSONRequestBody, reqEditors ...RequestEditorFn) (*AuthenticateResponse, error)
+	Authenticate2WithResponse(ctx context.Context, body Authenticate2JSONRequestBody, reqEditors ...RequestEditorFn) (*Authenticate2Response, error)
 
 	// GetCaptchaDataWithResponse request
 	GetCaptchaDataWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCaptchaDataResponse, error)
@@ -54513,8 +56246,8 @@ type ClientWithResponsesInterface interface {
 	// GetSsoManagementStatusWithResponse request
 	GetSsoManagementStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSsoManagementStatusResponse, error)
 
-	// GetStatusWithResponse request
-	GetStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatusResponse, error)
+	// GetStatus2WithResponse request
+	GetStatus2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatus2Response, error)
 
 	// CompleteEnforcedEnrollmentWithBodyWithResponse request with any body
 	CompleteEnforcedEnrollmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteEnforcedEnrollmentResponse, error)
@@ -55726,7 +57459,7 @@ func (r RemoveUserFromGroupResponse) StatusCode() int {
 	return 0
 }
 
-type Get22Response struct {
+type Get2Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestBitbucketLicense
@@ -55739,7 +57472,7 @@ type Get22Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Get22Response) Status() string {
+func (r Get2Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -55747,7 +57480,7 @@ func (r Get22Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get22Response) StatusCode() int {
+func (r Get2Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -56297,7 +58030,7 @@ func (r GetHistoryResponse) StatusCode() int {
 	return 0
 }
 
-type GetSettings2Response struct {
+type GetSettings3Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestRateLimitSettings
@@ -56307,7 +58040,7 @@ type GetSettings2Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetSettings2Response) Status() string {
+func (r GetSettings3Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -56315,14 +58048,14 @@ func (r GetSettings2Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetSettings2Response) StatusCode() int {
+func (r GetSettings3Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type SetSettings2Response struct {
+type SetSettings3Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestRateLimitSettings
@@ -56335,7 +58068,7 @@ type SetSettings2Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r SetSettings2Response) Status() string {
+func (r SetSettings3Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -56343,7 +58076,7 @@ func (r SetSettings2Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r SetSettings2Response) StatusCode() int {
+func (r SetSettings3Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -57545,6 +59278,59 @@ func (r SetRootLevelResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r SetRootLevelResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetSettings2Response struct {
+	Body                          []byte
+	HTTPResponse                  *http.Response
+	ApplicationjsonCharsetUTF8200 *RestLoggingSettings
+	JSON401                       *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSettings2Response) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSettings2Response) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SetSettings2Response struct {
+	Body                          []byte
+	HTTPResponse                  *http.Response
+	ApplicationjsonCharsetUTF8200 *RestLoggingSettings
+	JSON400                       *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON401 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r SetSettings2Response) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetSettings2Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -66206,6 +67992,48 @@ func (r GetLoginOptionsResponse) StatusCode() int {
 	return 0
 }
 
+type GetSamlCertificateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSamlCertificateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSamlCertificateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RegenerateCertificateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r RegenerateCertificateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RegenerateCertificateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetConfigResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -66251,14 +68079,14 @@ func (r UpdateConfigResponse) StatusCode() int {
 	return 0
 }
 
-type Get2Response struct {
+type Get8Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *BasicAuthConfigEntity
 }
 
 // Status returns HTTPResponse.Status
-func (r Get2Response) Status() string {
+func (r Get8Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -66266,7 +68094,7 @@ func (r Get2Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get2Response) StatusCode() int {
+func (r Get8Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -66822,6 +68650,30 @@ func (r React1Response) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r React1Response) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r SettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SettingsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -67573,6 +69425,202 @@ func (r DeleteKeyResponse) StatusCode() int {
 	return 0
 }
 
+type GetDetailsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RestRepositoryIndexingDetails
+	JSON401      *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON404 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDetailsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDetailsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetQueueDetailsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RestRepositoryIndexingQueueDetails
+	JSON401      *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON404 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetQueueDetailsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetQueueDetailsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type IndexingQueuedStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RestIndexingIsRepositoryQueued
+	JSON401      *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON404 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r IndexingQueuedStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r IndexingQueuedStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ReindexRepositoriesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON401 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON409 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r ReindexRepositoriesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReindexRepositoriesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RestartIndexingThreadWorkerResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r RestartIndexingThreadWorkerResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RestartIndexingThreadWorkerResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetBrokenIndexStatusReposResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		IsLastPage    *bool                              `json:"isLastPage,omitempty"`
+		Limit         *float32                           `json:"limit,omitempty"`
+		NextPageStart *int32                             `json:"nextPageStart,omitempty"`
+		Size          *float32                           `json:"size,omitempty"`
+		Start         *int32                             `json:"start,omitempty"`
+		Values        *[]RestBrokenIndexStatusRepository `json:"values,omitempty"`
+	}
+	JSON400 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON401 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBrokenIndexStatusReposResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBrokenIndexStatusReposResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetIndexingThreadSnapshotResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]RestIndexingThreadDetails
+	JSON401      *RestErrors
+}
+
+// Status returns HTTPResponse.Status
+func (r GetIndexingThreadSnapshotResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetIndexingThreadSnapshotResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetAnnotations1Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
@@ -67822,6 +69870,122 @@ func (r SetAnnotationResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r SetAnnotationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type StopBackfillSyncResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON409 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r StopBackfillSyncResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StopBackfillSyncResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type StartBackfillSyncResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON401 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON404 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON409 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r StartBackfillSyncResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StartBackfillSyncResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetBackfillSyncReportResponse struct {
+	Body                          []byte
+	HTTPResponse                  *http.Response
+	ApplicationjsonCharsetUTF8200 *RestJiraBackfillReport
+	JSON401                       *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON409 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBackfillSyncReportResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBackfillSyncReportResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetBackfillSyncStatusResponse struct {
+	Body                          []byte
+	HTTPResponse                  *http.Response
+	ApplicationjsonCharsetUTF8200 *RestJiraBackfillStatus
+	JSON401                       *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON409 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBackfillSyncStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBackfillSyncStatusResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -68388,7 +70552,7 @@ func (r AnalyticsSettingsResponse) StatusCode() int {
 	return 0
 }
 
-type Authenticate2Response struct {
+type AuthenticateResponse struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestApplicationUserWithPermissions
@@ -68401,7 +70565,7 @@ type Authenticate2Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Authenticate2Response) Status() string {
+func (r AuthenticateResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -68409,7 +70573,7 @@ func (r Authenticate2Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Authenticate2Response) StatusCode() int {
+func (r AuthenticateResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -68433,6 +70597,29 @@ func (r GetFarmNodesResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetFarmNodesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetDelayedSyncRepositoriesResponse struct {
+	Body                          []byte
+	HTTPResponse                  *http.Response
+	ApplicationjsonCharsetUTF8200 *[]RestDelayedSyncRepository
+	ApplicationjsonCharsetUTF8401 *RestErrors
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDelayedSyncRepositoriesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDelayedSyncRepositoriesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -68889,30 +71076,6 @@ func (r RejectResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r RejectResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetOutOfSyncRepositoriesResponse struct {
-	Body                          []byte
-	HTTPResponse                  *http.Response
-	ApplicationjsonCharsetUTF8200 *string
-	ApplicationjsonCharsetUTF8401 *RestErrors
-	ApplicationjsonCharsetUTF8409 *RestErrors
-}
-
-// Status returns HTTPResponse.Status
-func (r GetOutOfSyncRepositoriesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetOutOfSyncRepositoriesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -69588,6 +71751,69 @@ func (r GetPageOfRequiredBuildsMergeChecksResponse) StatusCode() int {
 	return 0
 }
 
+type DeleteInactiveKeysResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteInactiveKeysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteInactiveKeysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetInactiveKeysResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r GetInactiveKeysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetInactiveKeysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RotateKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r RotateKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RotateKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type DeleteSshKeysResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -69761,7 +71987,7 @@ func (r SshSettingsResponse) StatusCode() int {
 	return 0
 }
 
-type GetStatus2Response struct {
+type GetStatusResponse struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestRefSyncStatus
@@ -69774,7 +72000,7 @@ type GetStatus2Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetStatus2Response) Status() string {
+func (r GetStatusResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -69782,7 +72008,7 @@ func (r GetStatus2Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetStatus2Response) StatusCode() int {
+func (r GetStatusResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -69857,7 +72083,7 @@ func (r SynchronizeResponse) StatusCode() int {
 	return 0
 }
 
-type AuthenticateResponse struct {
+type Authenticate2Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *AuthenticationResponse
@@ -69866,7 +72092,7 @@ type AuthenticateResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r AuthenticateResponse) Status() string {
+func (r Authenticate2Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -69874,7 +72100,7 @@ func (r AuthenticateResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r AuthenticateResponse) StatusCode() int {
+func (r Authenticate2Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -70062,14 +72288,14 @@ func (r GetSsoManagementStatusResponse) StatusCode() int {
 	return 0
 }
 
-type GetStatusResponse struct {
+type GetStatus2Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *StatusDTO
 }
 
 // Status returns HTTPResponse.Status
-func (r GetStatusResponse) Status() string {
+func (r GetStatus2Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -70077,7 +72303,7 @@ func (r GetStatusResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetStatusResponse) StatusCode() int {
+func (r GetStatus2Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -70788,13 +73014,13 @@ func (c *ClientWithResponses) RemoveUserFromGroupWithResponse(ctx context.Contex
 	return ParseRemoveUserFromGroupResponse(rsp)
 }
 
-// Get22WithResponse request returning *Get22Response
-func (c *ClientWithResponses) Get22WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get22Response, error) {
-	rsp, err := c.Get22(ctx, reqEditors...)
+// Get2WithResponse request returning *Get2Response
+func (c *ClientWithResponses) Get2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get2Response, error) {
+	rsp, err := c.Get2(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet22Response(rsp)
+	return ParseGet2Response(rsp)
 }
 
 // UpdateLicenseWithBodyWithResponse request with arbitrary body returning *UpdateLicenseResponse
@@ -70991,30 +73217,30 @@ func (c *ClientWithResponses) GetHistoryWithResponse(ctx context.Context, params
 	return ParseGetHistoryResponse(rsp)
 }
 
-// GetSettings2WithResponse request returning *GetSettings2Response
-func (c *ClientWithResponses) GetSettings2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSettings2Response, error) {
-	rsp, err := c.GetSettings2(ctx, reqEditors...)
+// GetSettings3WithResponse request returning *GetSettings3Response
+func (c *ClientWithResponses) GetSettings3WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSettings3Response, error) {
+	rsp, err := c.GetSettings3(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetSettings2Response(rsp)
+	return ParseGetSettings3Response(rsp)
 }
 
-// SetSettings2WithBodyWithResponse request with arbitrary body returning *SetSettings2Response
-func (c *ClientWithResponses) SetSettings2WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetSettings2Response, error) {
-	rsp, err := c.SetSettings2WithBody(ctx, contentType, body, reqEditors...)
+// SetSettings3WithBodyWithResponse request with arbitrary body returning *SetSettings3Response
+func (c *ClientWithResponses) SetSettings3WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetSettings3Response, error) {
+	rsp, err := c.SetSettings3WithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSetSettings2Response(rsp)
+	return ParseSetSettings3Response(rsp)
 }
 
-func (c *ClientWithResponses) SetSettings2WithResponse(ctx context.Context, body SetSettings2JSONRequestBody, reqEditors ...RequestEditorFn) (*SetSettings2Response, error) {
-	rsp, err := c.SetSettings2(ctx, body, reqEditors...)
+func (c *ClientWithResponses) SetSettings3WithResponse(ctx context.Context, body SetSettings3JSONRequestBody, reqEditors ...RequestEditorFn) (*SetSettings3Response, error) {
+	rsp, err := c.SetSettings3(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSetSettings2Response(rsp)
+	return ParseSetSettings3Response(rsp)
 }
 
 // GetAllRateLimitSettingsWithResponse request returning *GetAllRateLimitSettingsResponse
@@ -71448,6 +73674,32 @@ func (c *ClientWithResponses) SetRootLevelWithResponse(ctx context.Context, leve
 		return nil, err
 	}
 	return ParseSetRootLevelResponse(rsp)
+}
+
+// GetSettings2WithResponse request returning *GetSettings2Response
+func (c *ClientWithResponses) GetSettings2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSettings2Response, error) {
+	rsp, err := c.GetSettings2(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSettings2Response(rsp)
+}
+
+// SetSettings2WithBodyWithResponse request with arbitrary body returning *SetSettings2Response
+func (c *ClientWithResponses) SetSettings2WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetSettings2Response, error) {
+	rsp, err := c.SetSettings2WithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetSettings2Response(rsp)
+}
+
+func (c *ClientWithResponses) SetSettings2WithResponse(ctx context.Context, body SetSettings2JSONRequestBody, reqEditors ...RequestEditorFn) (*SetSettings2Response, error) {
+	rsp, err := c.SetSettings2(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetSettings2Response(rsp)
 }
 
 // PreviewWithBodyWithResponse request with arbitrary body returning *PreviewResponse
@@ -72681,8 +74933,8 @@ func (c *ClientWithResponses) Delete3WithResponse(ctx context.Context, projectKe
 }
 
 // Get3WithResponse request returning *Get3Response
-func (c *ClientWithResponses) Get3WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, reqEditors ...RequestEditorFn) (*Get3Response, error) {
-	rsp, err := c.Get3(ctx, projectKey, repositorySlug, pullRequestId, reqEditors...)
+func (c *ClientWithResponses) Get3WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, params *Get3Params, reqEditors ...RequestEditorFn) (*Get3Response, error) {
+	rsp, err := c.Get3(ctx, projectKey, repositorySlug, pullRequestId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -74522,6 +76774,24 @@ func (c *ClientWithResponses) GetLoginOptionsWithResponse(ctx context.Context, p
 	return ParseGetLoginOptionsResponse(rsp)
 }
 
+// GetSamlCertificateWithResponse request returning *GetSamlCertificateResponse
+func (c *ClientWithResponses) GetSamlCertificateWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSamlCertificateResponse, error) {
+	rsp, err := c.GetSamlCertificate(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSamlCertificateResponse(rsp)
+}
+
+// RegenerateCertificateWithResponse request returning *RegenerateCertificateResponse
+func (c *ClientWithResponses) RegenerateCertificateWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RegenerateCertificateResponse, error) {
+	rsp, err := c.RegenerateCertificate(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRegenerateCertificateResponse(rsp)
+}
+
 // GetConfigWithResponse request returning *GetConfigResponse
 func (c *ClientWithResponses) GetConfigWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetConfigResponse, error) {
 	rsp, err := c.GetConfig(ctx, reqEditors...)
@@ -74548,13 +76818,13 @@ func (c *ClientWithResponses) UpdateConfigWithResponse(ctx context.Context, body
 	return ParseUpdateConfigResponse(rsp)
 }
 
-// Get2WithResponse request returning *Get2Response
-func (c *ClientWithResponses) Get2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get2Response, error) {
-	rsp, err := c.Get2(ctx, reqEditors...)
+// Get8WithResponse request returning *Get8Response
+func (c *ClientWithResponses) Get8WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get8Response, error) {
+	rsp, err := c.Get8(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet2Response(rsp)
+	return ParseGet8Response(rsp)
 }
 
 // PutWithBodyWithResponse request with arbitrary body returning *PutResponse
@@ -74791,6 +77061,23 @@ func (c *ClientWithResponses) React1WithResponse(ctx context.Context, projectKey
 		return nil, err
 	}
 	return ParseReact1Response(rsp)
+}
+
+// SettingsWithBodyWithResponse request with arbitrary body returning *SettingsResponse
+func (c *ClientWithResponses) SettingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SettingsResponse, error) {
+	rsp, err := c.SettingsWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSettingsResponse(rsp)
+}
+
+func (c *ClientWithResponses) SettingsWithResponse(ctx context.Context, body SettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*SettingsResponse, error) {
+	rsp, err := c.Settings(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSettingsResponse(rsp)
 }
 
 // CreatePullRequestConditionWithBodyWithResponse request with arbitrary body returning *CreatePullRequestConditionResponse
@@ -75124,6 +77411,85 @@ func (c *ClientWithResponses) DeleteKeyWithResponse(ctx context.Context, fingerp
 	return ParseDeleteKeyResponse(rsp)
 }
 
+// GetDetailsWithResponse request returning *GetDetailsResponse
+func (c *ClientWithResponses) GetDetailsWithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*GetDetailsResponse, error) {
+	rsp, err := c.GetDetails(ctx, projectKey, repositorySlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDetailsResponse(rsp)
+}
+
+// GetQueueDetailsWithResponse request returning *GetQueueDetailsResponse
+func (c *ClientWithResponses) GetQueueDetailsWithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*GetQueueDetailsResponse, error) {
+	rsp, err := c.GetQueueDetails(ctx, projectKey, repositorySlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetQueueDetailsResponse(rsp)
+}
+
+// IndexingQueuedStatusWithResponse request returning *IndexingQueuedStatusResponse
+func (c *ClientWithResponses) IndexingQueuedStatusWithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*IndexingQueuedStatusResponse, error) {
+	rsp, err := c.IndexingQueuedStatus(ctx, projectKey, repositorySlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseIndexingQueuedStatusResponse(rsp)
+}
+
+// ReindexRepositoriesWithBodyWithResponse request with arbitrary body returning *ReindexRepositoriesResponse
+func (c *ClientWithResponses) ReindexRepositoriesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReindexRepositoriesResponse, error) {
+	rsp, err := c.ReindexRepositoriesWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReindexRepositoriesResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReindexRepositoriesWithResponse(ctx context.Context, body ReindexRepositoriesJSONRequestBody, reqEditors ...RequestEditorFn) (*ReindexRepositoriesResponse, error) {
+	rsp, err := c.ReindexRepositories(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReindexRepositoriesResponse(rsp)
+}
+
+// RestartIndexingThreadWorkerWithBodyWithResponse request with arbitrary body returning *RestartIndexingThreadWorkerResponse
+func (c *ClientWithResponses) RestartIndexingThreadWorkerWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RestartIndexingThreadWorkerResponse, error) {
+	rsp, err := c.RestartIndexingThreadWorkerWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRestartIndexingThreadWorkerResponse(rsp)
+}
+
+func (c *ClientWithResponses) RestartIndexingThreadWorkerWithResponse(ctx context.Context, body RestartIndexingThreadWorkerJSONRequestBody, reqEditors ...RequestEditorFn) (*RestartIndexingThreadWorkerResponse, error) {
+	rsp, err := c.RestartIndexingThreadWorker(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRestartIndexingThreadWorkerResponse(rsp)
+}
+
+// GetBrokenIndexStatusReposWithResponse request returning *GetBrokenIndexStatusReposResponse
+func (c *ClientWithResponses) GetBrokenIndexStatusReposWithResponse(ctx context.Context, params *GetBrokenIndexStatusReposParams, reqEditors ...RequestEditorFn) (*GetBrokenIndexStatusReposResponse, error) {
+	rsp, err := c.GetBrokenIndexStatusRepos(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBrokenIndexStatusReposResponse(rsp)
+}
+
+// GetIndexingThreadSnapshotWithResponse request returning *GetIndexingThreadSnapshotResponse
+func (c *ClientWithResponses) GetIndexingThreadSnapshotWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetIndexingThreadSnapshotResponse, error) {
+	rsp, err := c.GetIndexingThreadSnapshot(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetIndexingThreadSnapshotResponse(rsp)
+}
+
 // GetAnnotations1WithResponse request returning *GetAnnotations1Response
 func (c *ClientWithResponses) GetAnnotations1WithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetAnnotations1Params, reqEditors ...RequestEditorFn) (*GetAnnotations1Response, error) {
 	rsp, err := c.GetAnnotations1(ctx, projectKey, repositorySlug, commitId, params, reqEditors...)
@@ -75227,6 +77593,50 @@ func (c *ClientWithResponses) SetAnnotationWithResponse(ctx context.Context, pro
 		return nil, err
 	}
 	return ParseSetAnnotationResponse(rsp)
+}
+
+// StopBackfillSyncWithResponse request returning *StopBackfillSyncResponse
+func (c *ClientWithResponses) StopBackfillSyncWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*StopBackfillSyncResponse, error) {
+	rsp, err := c.StopBackfillSync(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStopBackfillSyncResponse(rsp)
+}
+
+// StartBackfillSyncWithBodyWithResponse request with arbitrary body returning *StartBackfillSyncResponse
+func (c *ClientWithResponses) StartBackfillSyncWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartBackfillSyncResponse, error) {
+	rsp, err := c.StartBackfillSyncWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartBackfillSyncResponse(rsp)
+}
+
+func (c *ClientWithResponses) StartBackfillSyncWithResponse(ctx context.Context, body StartBackfillSyncJSONRequestBody, reqEditors ...RequestEditorFn) (*StartBackfillSyncResponse, error) {
+	rsp, err := c.StartBackfillSync(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartBackfillSyncResponse(rsp)
+}
+
+// GetBackfillSyncReportWithResponse request returning *GetBackfillSyncReportResponse
+func (c *ClientWithResponses) GetBackfillSyncReportWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBackfillSyncReportResponse, error) {
+	rsp, err := c.GetBackfillSyncReport(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBackfillSyncReportResponse(rsp)
+}
+
+// GetBackfillSyncStatusWithResponse request returning *GetBackfillSyncStatusResponse
+func (c *ClientWithResponses) GetBackfillSyncStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBackfillSyncStatusResponse, error) {
+	rsp, err := c.GetBackfillSyncStatus(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBackfillSyncStatusResponse(rsp)
 }
 
 // CreateIssueWithBodyWithResponse request with arbitrary body returning *CreateIssueResponse
@@ -75458,21 +77868,21 @@ func (c *ClientWithResponses) AnalyticsSettingsWithResponse(ctx context.Context,
 	return ParseAnalyticsSettingsResponse(rsp)
 }
 
-// Authenticate2WithBodyWithResponse request with arbitrary body returning *Authenticate2Response
-func (c *ClientWithResponses) Authenticate2WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Authenticate2Response, error) {
-	rsp, err := c.Authenticate2WithBody(ctx, contentType, body, reqEditors...)
+// AuthenticateWithBodyWithResponse request with arbitrary body returning *AuthenticateResponse
+func (c *ClientWithResponses) AuthenticateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AuthenticateResponse, error) {
+	rsp, err := c.AuthenticateWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseAuthenticate2Response(rsp)
+	return ParseAuthenticateResponse(rsp)
 }
 
-func (c *ClientWithResponses) Authenticate2WithResponse(ctx context.Context, body Authenticate2JSONRequestBody, reqEditors ...RequestEditorFn) (*Authenticate2Response, error) {
-	rsp, err := c.Authenticate2(ctx, body, reqEditors...)
+func (c *ClientWithResponses) AuthenticateWithResponse(ctx context.Context, body AuthenticateJSONRequestBody, reqEditors ...RequestEditorFn) (*AuthenticateResponse, error) {
+	rsp, err := c.Authenticate(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseAuthenticate2Response(rsp)
+	return ParseAuthenticateResponse(rsp)
 }
 
 // GetFarmNodesWithResponse request returning *GetFarmNodesResponse
@@ -75482,6 +77892,15 @@ func (c *ClientWithResponses) GetFarmNodesWithResponse(ctx context.Context, reqE
 		return nil, err
 	}
 	return ParseGetFarmNodesResponse(rsp)
+}
+
+// GetDelayedSyncRepositoriesWithResponse request returning *GetDelayedSyncRepositoriesResponse
+func (c *ClientWithResponses) GetDelayedSyncRepositoriesWithResponse(ctx context.Context, params *GetDelayedSyncRepositoriesParams, reqEditors ...RequestEditorFn) (*GetDelayedSyncRepositoriesResponse, error) {
+	rsp, err := c.GetDelayedSyncRepositories(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDelayedSyncRepositoriesResponse(rsp)
 }
 
 // GetMirroredRepositoryWithResponse request returning *GetMirroredRepositoryResponse
@@ -75668,15 +78087,6 @@ func (c *ClientWithResponses) RejectWithResponse(ctx context.Context, mirroringR
 		return nil, err
 	}
 	return ParseRejectResponse(rsp)
-}
-
-// GetOutOfSyncRepositoriesWithResponse request returning *GetOutOfSyncRepositoriesResponse
-func (c *ClientWithResponses) GetOutOfSyncRepositoriesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOutOfSyncRepositoriesResponse, error) {
-	rsp, err := c.GetOutOfSyncRepositories(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetOutOfSyncRepositoriesResponse(rsp)
 }
 
 // GetRepositoryLockOwnerWithResponse request returning *GetRepositoryLockOwnerResponse
@@ -75944,6 +78354,33 @@ func (c *ClientWithResponses) GetPageOfRequiredBuildsMergeChecksWithResponse(ctx
 	return ParseGetPageOfRequiredBuildsMergeChecksResponse(rsp)
 }
 
+// DeleteInactiveKeysWithResponse request returning *DeleteInactiveKeysResponse
+func (c *ClientWithResponses) DeleteInactiveKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteInactiveKeysResponse, error) {
+	rsp, err := c.DeleteInactiveKeys(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteInactiveKeysResponse(rsp)
+}
+
+// GetInactiveKeysWithResponse request returning *GetInactiveKeysResponse
+func (c *ClientWithResponses) GetInactiveKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetInactiveKeysResponse, error) {
+	rsp, err := c.GetInactiveKeys(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetInactiveKeysResponse(rsp)
+}
+
+// RotateKeyWithResponse request returning *RotateKeyResponse
+func (c *ClientWithResponses) RotateKeyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RotateKeyResponse, error) {
+	rsp, err := c.RotateKey(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRotateKeyResponse(rsp)
+}
+
 // DeleteSshKeysWithResponse request returning *DeleteSshKeysResponse
 func (c *ClientWithResponses) DeleteSshKeysWithResponse(ctx context.Context, params *DeleteSshKeysParams, reqEditors ...RequestEditorFn) (*DeleteSshKeysResponse, error) {
 	rsp, err := c.DeleteSshKeys(ctx, params, reqEditors...)
@@ -76006,13 +78443,13 @@ func (c *ClientWithResponses) SshSettingsWithResponse(ctx context.Context, reqEd
 	return ParseSshSettingsResponse(rsp)
 }
 
-// GetStatus2WithResponse request returning *GetStatus2Response
-func (c *ClientWithResponses) GetStatus2WithResponse(ctx context.Context, projectKey string, repositorySlug string, params *GetStatus2Params, reqEditors ...RequestEditorFn) (*GetStatus2Response, error) {
-	rsp, err := c.GetStatus2(ctx, projectKey, repositorySlug, params, reqEditors...)
+// GetStatusWithResponse request returning *GetStatusResponse
+func (c *ClientWithResponses) GetStatusWithResponse(ctx context.Context, projectKey string, repositorySlug string, params *GetStatusParams, reqEditors ...RequestEditorFn) (*GetStatusResponse, error) {
+	rsp, err := c.GetStatus(ctx, projectKey, repositorySlug, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetStatus2Response(rsp)
+	return ParseGetStatusResponse(rsp)
 }
 
 // SetEnabledWithBodyWithResponse request with arbitrary body returning *SetEnabledResponse
@@ -76049,21 +78486,21 @@ func (c *ClientWithResponses) SynchronizeWithResponse(ctx context.Context, proje
 	return ParseSynchronizeResponse(rsp)
 }
 
-// AuthenticateWithBodyWithResponse request with arbitrary body returning *AuthenticateResponse
-func (c *ClientWithResponses) AuthenticateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AuthenticateResponse, error) {
-	rsp, err := c.AuthenticateWithBody(ctx, contentType, body, reqEditors...)
+// Authenticate2WithBodyWithResponse request with arbitrary body returning *Authenticate2Response
+func (c *ClientWithResponses) Authenticate2WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Authenticate2Response, error) {
+	rsp, err := c.Authenticate2WithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseAuthenticateResponse(rsp)
+	return ParseAuthenticate2Response(rsp)
 }
 
-func (c *ClientWithResponses) AuthenticateWithResponse(ctx context.Context, body AuthenticateJSONRequestBody, reqEditors ...RequestEditorFn) (*AuthenticateResponse, error) {
-	rsp, err := c.Authenticate(ctx, body, reqEditors...)
+func (c *ClientWithResponses) Authenticate2WithResponse(ctx context.Context, body Authenticate2JSONRequestBody, reqEditors ...RequestEditorFn) (*Authenticate2Response, error) {
+	rsp, err := c.Authenticate2(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseAuthenticateResponse(rsp)
+	return ParseAuthenticate2Response(rsp)
 }
 
 // GetCaptchaDataWithResponse request returning *GetCaptchaDataResponse
@@ -76178,13 +78615,13 @@ func (c *ClientWithResponses) GetSsoManagementStatusWithResponse(ctx context.Con
 	return ParseGetSsoManagementStatusResponse(rsp)
 }
 
-// GetStatusWithResponse request returning *GetStatusResponse
-func (c *ClientWithResponses) GetStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatusResponse, error) {
-	rsp, err := c.GetStatus(ctx, reqEditors...)
+// GetStatus2WithResponse request returning *GetStatus2Response
+func (c *ClientWithResponses) GetStatus2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatus2Response, error) {
+	rsp, err := c.GetStatus2(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetStatusResponse(rsp)
+	return ParseGetStatus2Response(rsp)
 }
 
 // CompleteEnforcedEnrollmentWithBodyWithResponse request with arbitrary body returning *CompleteEnforcedEnrollmentResponse
@@ -78005,15 +80442,15 @@ func ParseRemoveUserFromGroupResponse(rsp *http.Response) (*RemoveUserFromGroupR
 	return response, nil
 }
 
-// ParseGet22Response parses an HTTP response from a Get22WithResponse call
-func ParseGet22Response(rsp *http.Response) (*Get22Response, error) {
+// ParseGet2Response parses an HTTP response from a Get2WithResponse call
+func ParseGet2Response(rsp *http.Response) (*Get2Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get22Response{
+	response := &Get2Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -78856,15 +81293,15 @@ func ParseGetHistoryResponse(rsp *http.Response) (*GetHistoryResponse, error) {
 	return response, nil
 }
 
-// ParseGetSettings2Response parses an HTTP response from a GetSettings2WithResponse call
-func ParseGetSettings2Response(rsp *http.Response) (*GetSettings2Response, error) {
+// ParseGetSettings3Response parses an HTTP response from a GetSettings3WithResponse call
+func ParseGetSettings3Response(rsp *http.Response) (*GetSettings3Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetSettings2Response{
+	response := &GetSettings3Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -78891,15 +81328,15 @@ func ParseGetSettings2Response(rsp *http.Response) (*GetSettings2Response, error
 	return response, nil
 }
 
-// ParseSetSettings2Response parses an HTTP response from a SetSettings2WithResponse call
-func ParseSetSettings2Response(rsp *http.Response) (*SetSettings2Response, error) {
+// ParseSetSettings3Response parses an HTTP response from a SetSettings3WithResponse call
+func ParseSetSettings3Response(rsp *http.Response) (*SetSettings3Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &SetSettings2Response{
+	response := &SetSettings3Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -80679,6 +83116,85 @@ func ParseSetRootLevelResponse(rsp *http.Response) (*SetRootLevelResponse, error
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSettings2Response parses an HTTP response from a GetSettings2WithResponse call
+func ParseGetSettings2Response(rsp *http.Response) (*GetSettings2Response, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSettings2Response{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RestLoggingSettings
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationjsonCharsetUTF8200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetSettings2Response parses an HTTP response from a SetSettings2WithResponse call
+func ParseSetSettings2Response(rsp *http.Response) (*SetSettings2Response, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetSettings2Response{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RestLoggingSettings
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationjsonCharsetUTF8200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest struct {
 			Errors *[]RestErrorMessage `json:"errors,omitempty"`
@@ -94022,6 +96538,38 @@ func ParseGetLoginOptionsResponse(rsp *http.Response) (*GetLoginOptionsResponse,
 	return response, nil
 }
 
+// ParseGetSamlCertificateResponse parses an HTTP response from a GetSamlCertificateWithResponse call
+func ParseGetSamlCertificateResponse(rsp *http.Response) (*GetSamlCertificateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSamlCertificateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseRegenerateCertificateResponse parses an HTTP response from a RegenerateCertificateWithResponse call
+func ParseRegenerateCertificateResponse(rsp *http.Response) (*RegenerateCertificateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RegenerateCertificateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
 // ParseGetConfigResponse parses an HTTP response from a GetConfigWithResponse call
 func ParseGetConfigResponse(rsp *http.Response) (*GetConfigResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -94081,15 +96629,15 @@ func ParseUpdateConfigResponse(rsp *http.Response) (*UpdateConfigResponse, error
 	return response, nil
 }
 
-// ParseGet2Response parses an HTTP response from a Get2WithResponse call
-func ParseGet2Response(rsp *http.Response) (*Get2Response, error) {
+// ParseGet8Response parses an HTTP response from a Get8WithResponse call
+func ParseGet8Response(rsp *http.Response) (*Get8Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get2Response{
+	response := &Get8Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -94880,6 +97428,34 @@ func ParseReact1Response(rsp *http.Response) (*React1Response, error) {
 			return nil, err
 		}
 		response.ApplicationjsonCharsetUTF8200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSettingsResponse parses an HTTP response from a SettingsWithResponse call
+func ParseSettingsResponse(rsp *http.Response) (*SettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	}
 
@@ -95967,6 +98543,296 @@ func ParseDeleteKeyResponse(rsp *http.Response) (*DeleteKeyResponse, error) {
 	return response, nil
 }
 
+// ParseGetDetailsResponse parses an HTTP response from a GetDetailsWithResponse call
+func ParseGetDetailsResponse(rsp *http.Response) (*GetDetailsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDetailsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RestRepositoryIndexingDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetQueueDetailsResponse parses an HTTP response from a GetQueueDetailsWithResponse call
+func ParseGetQueueDetailsResponse(rsp *http.Response) (*GetQueueDetailsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetQueueDetailsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RestRepositoryIndexingQueueDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseIndexingQueuedStatusResponse parses an HTTP response from a IndexingQueuedStatusWithResponse call
+func ParseIndexingQueuedStatusResponse(rsp *http.Response) (*IndexingQueuedStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &IndexingQueuedStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RestIndexingIsRepositoryQueued
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReindexRepositoriesResponse parses an HTTP response from a ReindexRepositoriesWithResponse call
+func ParseReindexRepositoriesResponse(rsp *http.Response) (*ReindexRepositoriesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReindexRepositoriesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRestartIndexingThreadWorkerResponse parses an HTTP response from a RestartIndexingThreadWorkerWithResponse call
+func ParseRestartIndexingThreadWorkerResponse(rsp *http.Response) (*RestartIndexingThreadWorkerResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RestartIndexingThreadWorkerResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetBrokenIndexStatusReposResponse parses an HTTP response from a GetBrokenIndexStatusReposWithResponse call
+func ParseGetBrokenIndexStatusReposResponse(rsp *http.Response) (*GetBrokenIndexStatusReposResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBrokenIndexStatusReposResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			IsLastPage    *bool                              `json:"isLastPage,omitempty"`
+			Limit         *float32                           `json:"limit,omitempty"`
+			NextPageStart *int32                             `json:"nextPageStart,omitempty"`
+			Size          *float32                           `json:"size,omitempty"`
+			Start         *int32                             `json:"start,omitempty"`
+			Values        *[]RestBrokenIndexStatusRepository `json:"values,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetIndexingThreadSnapshotResponse parses an HTTP response from a GetIndexingThreadSnapshotWithResponse call
+func ParseGetIndexingThreadSnapshotResponse(rsp *http.Response) (*GetIndexingThreadSnapshotResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetIndexingThreadSnapshotResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []RestIndexingThreadDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest RestErrors
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetAnnotations1Response parses an HTTP response from a GetAnnotations1WithResponse call
 func ParseGetAnnotations1Response(rsp *http.Response) (*GetAnnotations1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -96336,6 +99202,186 @@ func ParseSetAnnotationResponse(rsp *http.Response) (*SetAnnotationResponse, err
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStopBackfillSyncResponse parses an HTTP response from a StopBackfillSyncWithResponse call
+func ParseStopBackfillSyncResponse(rsp *http.Response) (*StopBackfillSyncResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StopBackfillSyncResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStartBackfillSyncResponse parses an HTTP response from a StartBackfillSyncWithResponse call
+func ParseStartBackfillSyncResponse(rsp *http.Response) (*StartBackfillSyncResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StartBackfillSyncResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetBackfillSyncReportResponse parses an HTTP response from a GetBackfillSyncReportWithResponse call
+func ParseGetBackfillSyncReportResponse(rsp *http.Response) (*GetBackfillSyncReportResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBackfillSyncReportResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RestJiraBackfillReport
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationjsonCharsetUTF8200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetBackfillSyncStatusResponse parses an HTTP response from a GetBackfillSyncStatusWithResponse call
+func ParseGetBackfillSyncStatusResponse(rsp *http.Response) (*GetBackfillSyncStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBackfillSyncStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RestJiraBackfillStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationjsonCharsetUTF8200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -97109,15 +100155,15 @@ func ParseAnalyticsSettingsResponse(rsp *http.Response) (*AnalyticsSettingsRespo
 	return response, nil
 }
 
-// ParseAuthenticate2Response parses an HTTP response from a Authenticate2WithResponse call
-func ParseAuthenticate2Response(rsp *http.Response) (*Authenticate2Response, error) {
+// ParseAuthenticateResponse parses an HTTP response from a AuthenticateWithResponse call
+func ParseAuthenticateResponse(rsp *http.Response) (*AuthenticateResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Authenticate2Response{
+	response := &AuthenticateResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -97180,6 +100226,39 @@ func ParseGetFarmNodesResponse(rsp *http.Response) (*GetFarmNodesResponse, error
 			return nil, err
 		}
 		response.ApplicationjsonCharsetUTF8404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDelayedSyncRepositoriesResponse parses an HTTP response from a GetDelayedSyncRepositoriesWithResponse call
+func ParseGetDelayedSyncRepositoriesResponse(rsp *http.Response) (*GetDelayedSyncRepositoriesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDelayedSyncRepositoriesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []RestDelayedSyncRepository
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationjsonCharsetUTF8200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest RestErrors
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationjsonCharsetUTF8401 = &dest
 
 	}
 
@@ -97771,46 +100850,6 @@ func ParseRejectResponse(rsp *http.Response) (*RejectResponse, error) {
 			return nil, err
 		}
 		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetOutOfSyncRepositoriesResponse parses an HTTP response from a GetOutOfSyncRepositoriesWithResponse call
-func ParseGetOutOfSyncRepositoriesResponse(rsp *http.Response) (*GetOutOfSyncRepositoriesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetOutOfSyncRepositoriesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest string
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.ApplicationjsonCharsetUTF8200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest RestErrors
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.ApplicationjsonCharsetUTF8401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest RestErrors
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.ApplicationjsonCharsetUTF8409 = &dest
 
 	}
 
@@ -98772,6 +101811,54 @@ func ParseGetPageOfRequiredBuildsMergeChecksResponse(rsp *http.Response) (*GetPa
 	return response, nil
 }
 
+// ParseDeleteInactiveKeysResponse parses an HTTP response from a DeleteInactiveKeysWithResponse call
+func ParseDeleteInactiveKeysResponse(rsp *http.Response) (*DeleteInactiveKeysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteInactiveKeysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetInactiveKeysResponse parses an HTTP response from a GetInactiveKeysWithResponse call
+func ParseGetInactiveKeysResponse(rsp *http.Response) (*GetInactiveKeysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetInactiveKeysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseRotateKeyResponse parses an HTTP response from a RotateKeyWithResponse call
+func ParseRotateKeyResponse(rsp *http.Response) (*RotateKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RotateKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
 // ParseDeleteSshKeysResponse parses an HTTP response from a DeleteSshKeysWithResponse call
 func ParseDeleteSshKeysResponse(rsp *http.Response) (*DeleteSshKeysResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -99029,15 +102116,15 @@ func ParseSshSettingsResponse(rsp *http.Response) (*SshSettingsResponse, error) 
 	return response, nil
 }
 
-// ParseGetStatus2Response parses an HTTP response from a GetStatus2WithResponse call
-func ParseGetStatus2Response(rsp *http.Response) (*GetStatus2Response, error) {
+// ParseGetStatusResponse parses an HTTP response from a GetStatusWithResponse call
+func ParseGetStatusResponse(rsp *http.Response) (*GetStatusResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetStatus2Response{
+	response := &GetStatusResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -99197,15 +102284,15 @@ func ParseSynchronizeResponse(rsp *http.Response) (*SynchronizeResponse, error) 
 	return response, nil
 }
 
-// ParseAuthenticateResponse parses an HTTP response from a AuthenticateWithResponse call
-func ParseAuthenticateResponse(rsp *http.Response) (*AuthenticateResponse, error) {
+// ParseAuthenticate2Response parses an HTTP response from a Authenticate2WithResponse call
+func ParseAuthenticate2Response(rsp *http.Response) (*Authenticate2Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &AuthenticateResponse{
+	response := &Authenticate2Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -99480,15 +102567,15 @@ func ParseGetSsoManagementStatusResponse(rsp *http.Response) (*GetSsoManagementS
 	return response, nil
 }
 
-// ParseGetStatusResponse parses an HTTP response from a GetStatusWithResponse call
-func ParseGetStatusResponse(rsp *http.Response) (*GetStatusResponse, error) {
+// ParseGetStatus2Response parses an HTTP response from a GetStatus2WithResponse call
+func ParseGetStatus2Response(rsp *http.Response) (*GetStatus2Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetStatusResponse{
+	response := &GetStatus2Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

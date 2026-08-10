@@ -329,7 +329,7 @@ func (service *Service) SetHookScript(ctx context.Context, projectKey, repoSlug,
 	}
 
 	body := openapigenerated.RestHookScriptTriggers{
-		TriggerIds: &triggerIds,
+		TriggerIds: triggerIds,
 	}
 
 	response, err := service.client.SetConfiguration1WithResponse(ctx, projectKey, repoSlug, scriptId, body)

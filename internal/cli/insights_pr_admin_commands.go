@@ -2180,13 +2180,13 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				req.CommitMessage = &commentSuggestionMsg
 			}
 			if cmd.Flags().Changed("index") {
-				req.SuggestionIndex = &commentSuggestionIdx
+				req.SuggestionIndex = commentSuggestionIdx
 			}
 			if cmd.Flags().Changed("comment-version") {
-				req.CommentVersion = &commentSuggestionCommentVer
+				req.CommentVersion = commentSuggestionCommentVer
 			}
 			if cmd.Flags().Changed("pr-version") {
-				req.PullRequestVersion = &commentSuggestionPrVer
+				req.PullRequestVersion = commentSuggestionPrVer
 			}
 
 			if options.DryRun {
@@ -3169,10 +3169,10 @@ func printDefaultReviewers(cmd *cobra.Command, conditions []openapigenerated.Res
 		var reviewers []string
 		if c.Reviewers != nil {
 			for _, r := range *c.Reviewers {
+				// RestReviewerGroup dropped displayName in Bitbucket 10.2, so
+				// name is the only label the API still returns.
 				name := ""
-				if r.DisplayName != nil {
-					name = *r.DisplayName
-				} else if r.Name != nil {
+				if r.Name != nil {
 					name = *r.Name
 				}
 				if name != "" {

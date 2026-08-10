@@ -91,12 +91,8 @@ func (service *Service) ListRepositoryPermissionUsers(ctx context.Context, repo 
 		for _, value := range *response.ApplicationjsonCharsetUTF8200.Values {
 			entry := PermissionUser{}
 			if value.User != nil {
-				if value.User.Name != nil {
-					entry.Name = *value.User.Name
-				}
-				if value.User.DisplayName != nil {
-					entry.Display = *value.User.DisplayName
-				}
+				entry.Name = value.User.Name
+				entry.Display = value.User.DisplayName
 			}
 			if value.Permission != nil {
 				entry.Permission = string(*value.Permission)
@@ -707,26 +703,26 @@ func (service *Service) AddDefaultTask(ctx context.Context, repo RepositoryRef, 
 		return nil, apperrors.New(apperrors.KindValidation, "description is required", nil)
 	}
 	body := openapigenerated.RestDefaultTaskRequest{
-		Description: &trimmed,
+		Description: trimmed,
 	}
 	if sourceRef != nil && *sourceRef != "" {
 		ref := *sourceRef
 		typeId := openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId("ANY_REF_MATCHER")
 		body.SourceMatcher = &struct {
-			DisplayId *string                                                      `json:"displayId,omitempty"`
-			Id        *string                                                      `json:"id,omitempty"`
+			DisplayId *string `json:"displayId,omitempty"`
+			Id        *string `json:"id,omitempty"`
 			Type      *struct {
-				Id   *openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id,omitempty"`
-				Name *string                                                     `json:"name,omitempty"`
+				Id   openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
+				Name string                                                     `json:"name"`
 			} `json:"type,omitempty"`
 		}{
 			Id:        &ref,
 			DisplayId: &ref,
 			Type: &struct {
-				Id   *openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id,omitempty"`
-				Name *string                                                     `json:"name,omitempty"`
+				Id   openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
+				Name string                                                     `json:"name"`
 			}{
-				Id: &typeId,
+				Id: typeId,
 			},
 		}
 	}
@@ -734,20 +730,20 @@ func (service *Service) AddDefaultTask(ctx context.Context, repo RepositoryRef, 
 		ref := *targetRef
 		typeId := openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId("ANY_REF_MATCHER")
 		body.TargetMatcher = &struct {
-			DisplayId *string                                                      `json:"displayId,omitempty"`
-			Id        *string                                                      `json:"id,omitempty"`
+			DisplayId *string `json:"displayId,omitempty"`
+			Id        *string `json:"id,omitempty"`
 			Type      *struct {
-				Id   *openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id,omitempty"`
-				Name *string                                                     `json:"name,omitempty"`
+				Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
+				Name string                                                     `json:"name"`
 			} `json:"type,omitempty"`
 		}{
 			Id:        &ref,
 			DisplayId: &ref,
 			Type: &struct {
-				Id   *openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id,omitempty"`
-				Name *string                                                     `json:"name,omitempty"`
+				Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
+				Name string                                                     `json:"name"`
 			}{
-				Id: &typeId,
+				Id: typeId,
 			},
 		}
 	}
@@ -781,26 +777,26 @@ func (service *Service) UpdateDefaultTask(ctx context.Context, repo RepositoryRe
 		return nil, apperrors.New(apperrors.KindValidation, "description is required", nil)
 	}
 	body := openapigenerated.RestDefaultTaskRequest{
-		Description: &trimmed,
+		Description: trimmed,
 	}
 	if sourceRef != nil && *sourceRef != "" {
 		ref := *sourceRef
 		typeId := openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId("ANY_REF_MATCHER")
 		body.SourceMatcher = &struct {
-			DisplayId *string                                                      `json:"displayId,omitempty"`
-			Id        *string                                                      `json:"id,omitempty"`
+			DisplayId *string `json:"displayId,omitempty"`
+			Id        *string `json:"id,omitempty"`
 			Type      *struct {
-				Id   *openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id,omitempty"`
-				Name *string                                                     `json:"name,omitempty"`
+				Id   openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
+				Name string                                                     `json:"name"`
 			} `json:"type,omitempty"`
 		}{
 			Id:        &ref,
 			DisplayId: &ref,
 			Type: &struct {
-				Id   *openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id,omitempty"`
-				Name *string                                                     `json:"name,omitempty"`
+				Id   openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
+				Name string                                                     `json:"name"`
 			}{
-				Id: &typeId,
+				Id: typeId,
 			},
 		}
 	}
@@ -808,20 +804,20 @@ func (service *Service) UpdateDefaultTask(ctx context.Context, repo RepositoryRe
 		ref := *targetRef
 		typeId := openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId("ANY_REF_MATCHER")
 		body.TargetMatcher = &struct {
-			DisplayId *string                                                      `json:"displayId,omitempty"`
-			Id        *string                                                      `json:"id,omitempty"`
+			DisplayId *string `json:"displayId,omitempty"`
+			Id        *string `json:"id,omitempty"`
 			Type      *struct {
-				Id   *openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id,omitempty"`
-				Name *string                                                     `json:"name,omitempty"`
+				Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
+				Name string                                                     `json:"name"`
 			} `json:"type,omitempty"`
 		}{
 			Id:        &ref,
 			DisplayId: &ref,
 			Type: &struct {
-				Id   *openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id,omitempty"`
-				Name *string                                                     `json:"name,omitempty"`
+				Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
+				Name string                                                     `json:"name"`
 			}{
-				Id: &typeId,
+				Id: typeId,
 			},
 		}
 	}

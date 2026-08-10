@@ -108,7 +108,7 @@ func main() {
 	minContract := flag.Float64("min-contract", 0.0, "Minimum required used generated operation contract coverage percentage")
 	specCoverageMode := flag.Bool("spec-coverage", false, "Compute OpenAPI spec path coverage (both transports) and exit")
 	specCoverageFile := flag.String("spec-coverage-file", "docs/quality/spec-coverage.json", "Path to spec coverage artifact")
-	openapiSpecPath := flag.String("openapi-spec", "docs/reference/atlassian/bitbucket-9.4-openapi.json", "Path to the Bitbucket OpenAPI spec")
+	openapiSpecPath := flag.String("openapi-spec", "docs/reference/atlassian/bitbucket-10.2-openapi.json", "Path to the Bitbucket OpenAPI spec")
 	generatedClientPath := flag.String("generated-client", "internal/openapi/generated/bitbucket_client.gen.go", "Path to the generated OpenAPI client")
 	servicesRoot := flag.String("services-root", "internal/services", "Root directory scanned for API usage")
 	flag.Parse()

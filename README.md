@@ -153,7 +153,7 @@ bb --json auth status
   run in the stack, so the newest published release is not automatically the supported one.
   Set `BITBUCKET_VERSION_TARGET` if you want to record a version for your own environment.
 - API contract source: a version-pinned Atlassian OpenAPI artifact
-  (`docs/reference/atlassian/bitbucket-9.4-openapi.json`). This fixes the endpoint and payload
+  (`docs/reference/atlassian/bitbucket-10.2-openapi.json`). This fixes the endpoint and payload
   shapes the generated client is built from — it is the provenance of the spec, not a statement
   about which server versions work. Behavior is established by live tests, not the spec.
 - CLI identity and machine contract: `bb` / `bb.machine` `v2`

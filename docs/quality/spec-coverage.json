@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "spec": "docs/reference/atlassian/bitbucket-9.4-openapi.json",
+  "spec": "docs/reference/atlassian/bitbucket-10.2-openapi.json",
   "covered": 223,
-  "total": 546,
-  "coverage_percent": 40.84249084249084,
+  "total": 565,
+  "coverage_percent": 39.469026548672566,
   "by_tag": [
     {
       "tag": "",
@@ -26,6 +26,11 @@
       "total": 2
     },
     {
+      "tag": "Content Security Policy",
+      "covered": 0,
+      "total": 1
+    },
+    {
       "tag": "Dashboard",
       "covered": 1,
       "total": 2
@@ -38,7 +43,7 @@
     {
       "tag": "Jira Integration",
       "covered": 2,
-      "total": 4
+      "total": 8
     },
     {
       "tag": "Markup",
@@ -76,14 +81,24 @@
       "total": 96
     },
     {
+      "tag": "SAML certificate configuration",
+      "covered": 0,
+      "total": 2
+    },
+    {
+      "tag": "Search",
+      "covered": 0,
+      "total": 7
+    },
+    {
       "tag": "Security",
       "covered": 4,
-      "total": 42
+      "total": 45
     },
     {
       "tag": "System Maintenance",
       "covered": 0,
-      "total": 79
+      "total": 81
     }
   ],
   "gaps": [
@@ -614,6 +629,18 @@
       "path": "/api/latest/logs/rootLogger/{levelName}",
       "tag": "System Maintenance",
       "summary": "Set root log level"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/logs/settings",
+      "tag": "System Maintenance",
+      "summary": "Get debug logging and profiling"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/logs/settings",
+      "tag": "System Maintenance",
+      "summary": "Set debug logging and profiling"
     },
     {
       "method": "POST",
@@ -1499,6 +1526,16 @@
     },
     {
       "method": "GET",
+      "path": "/authconfig/latest/saml/certificate",
+      "tag": "SAML certificate configuration"
+    },
+    {
+      "method": "POST",
+      "path": "/authconfig/latest/saml/certificate/reset",
+      "tag": "SAML certificate configuration"
+    },
+    {
+      "method": "GET",
       "path": "/authconfig/latest/sso",
       "tag": "Authentication",
       "summary": "Get SSO configuration"
@@ -1546,6 +1583,12 @@
       "summary": "React to a comment"
     },
     {
+      "method": "PUT",
+      "path": "/csp/latest/settings",
+      "tag": "Content Security Policy",
+      "summary": "Change CSP strictness setting"
+    },
+    {
       "method": "DELETE",
       "path": "/default-tasks/latest/projects/{projectKey}/repos/{repositorySlug}/tasks",
       "tag": "Repository",
@@ -1562,6 +1605,72 @@
       "path": "/git/latest/projects/{projectKey}/repos/{repositorySlug}/tags",
       "tag": "Repository",
       "summary": "Create tag"
+    },
+    {
+      "method": "GET",
+      "path": "/indexing/latest/projects/{projectKey}/repos/{repositorySlug}",
+      "tag": "Search",
+      "summary": "Get repository search indexing details."
+    },
+    {
+      "method": "GET",
+      "path": "/indexing/latest/projects/{projectKey}/repos/{repositorySlug}/indexing-queue-details",
+      "tag": "Search",
+      "summary": "Retrieve detailed queue information for a repository"
+    },
+    {
+      "method": "GET",
+      "path": "/indexing/latest/projects/{projectKey}/repos/{repositorySlug}/indexing-queued-status",
+      "tag": "Search",
+      "summary": "Checks if a repository has been queued for indexing."
+    },
+    {
+      "method": "POST",
+      "path": "/indexing/latest/reindex",
+      "tag": "Search",
+      "summary": "Re-indexes the search index of the provided list of repositories"
+    },
+    {
+      "method": "POST",
+      "path": "/indexing/latest/restart",
+      "tag": "Search",
+      "summary": "Restarts the search indexing worker thread"
+    },
+    {
+      "method": "GET",
+      "path": "/indexing/latest/support-info/broken-index-status-repos",
+      "tag": "Search",
+      "summary": "Retrieve a paged list of repositories which have exceeded the configured maximum indexing retries."
+    },
+    {
+      "method": "GET",
+      "path": "/indexing/latest/support-info/indexing-thread-snapshot",
+      "tag": "Search",
+      "summary": "Retrieve a snapshot of the indexing thread details."
+    },
+    {
+      "method": "DELETE",
+      "path": "/jira-dev/latest/devinfo-backfill",
+      "tag": "Jira Integration",
+      "summary": "Stop a Jira development information backfill sync"
+    },
+    {
+      "method": "POST",
+      "path": "/jira-dev/latest/devinfo-backfill",
+      "tag": "Jira Integration",
+      "summary": "Start a Jira development information backfill sync"
+    },
+    {
+      "method": "GET",
+      "path": "/jira-dev/latest/devinfo-backfill/report",
+      "tag": "Jira Integration",
+      "summary": "Get repository backfill tasks that failed and their associated errors"
+    },
+    {
+      "method": "GET",
+      "path": "/jira-dev/latest/devinfo-backfill/status",
+      "tag": "Jira Integration",
+      "summary": "Get Jira development information backfill status"
     },
     {
       "method": "POST",
@@ -1652,6 +1761,12 @@
       "path": "/mirroring/latest/farmNodes",
       "tag": "Mirroring (Mirror)",
       "summary": "Get farm nodes"
+    },
+    {
+      "method": "GET",
+      "path": "/mirroring/latest/mirrorRepos/delayed-sync",
+      "tag": "Mirroring (Mirror)",
+      "summary": "Get delayed sync repositories"
     },
     {
       "method": "GET",
@@ -1760,12 +1875,6 @@
       "path": "/mirroring/latest/requests/{mirroringRequestId}/reject",
       "tag": "Mirroring (Upstream)",
       "summary": "Reject a mirroring request"
-    },
-    {
-      "method": "GET",
-      "path": "/mirroring/latest/supportInfo/out-of-sync-repos/content",
-      "tag": "Mirroring (Mirror)",
-      "summary": "Get out-of-sync repositories"
     },
     {
       "method": "GET",
@@ -1892,6 +2001,24 @@
       "path": "/policies/latest/admin/repos/delete",
       "tag": "System Maintenance",
       "summary": "Update the repository delete policy"
+    },
+    {
+      "method": "DELETE",
+      "path": "/secrets/1.0/keys/inactive",
+      "tag": "Security",
+      "summary": "Delete inactive AES key(s)"
+    },
+    {
+      "method": "GET",
+      "path": "/secrets/1.0/keys/inactive",
+      "tag": "Security",
+      "summary": "Retrieve inactive AES key(s)"
+    },
+    {
+      "method": "POST",
+      "path": "/secrets/1.0/keys/rotate",
+      "tag": "Security",
+      "summary": "Rotate the current AES key"
     },
     {
       "method": "DELETE",

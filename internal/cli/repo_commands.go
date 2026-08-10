@@ -1428,10 +1428,10 @@ func commentOwnedByUser(comment openapigenerated.RestComment, username string) b
 	if trimmed == "" || comment.Author == nil {
 		return false
 	}
-	if comment.Author.Name != nil && strings.EqualFold(strings.TrimSpace(*comment.Author.Name), trimmed) {
+	if strings.EqualFold(strings.TrimSpace(comment.Author.Name), trimmed) {
 		return true
 	}
-	if comment.Author.Slug != nil && strings.EqualFold(strings.TrimSpace(*comment.Author.Slug), trimmed) {
+	if strings.EqualFold(strings.TrimSpace(comment.Author.Slug), trimmed) {
 		return true
 	}
 	return false
