@@ -33,5 +33,5 @@ COPY --from=faketime-builder \
     /tmp/libfaketime-0.9.12/src/libfaketime.so.1 \
     /usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
 
-RUN sed -i 's/^build\.timestamp=.*/build.timestamp=20260309T000000,000+0000/' /opt/atlassian/bitbucket/app/WEB-INF/classes/build.properties && \
-    sed -i 's/^build\.commit\.timestamp=.*/build.commit.timestamp=1773014400000/' /opt/atlassian/bitbucket/app/WEB-INF/classes/build.properties
+RUN sed -i 's/^build\.timestamp\s*=.*/build.timestamp = 20260309T000000,000+0000/' /opt/atlassian/bitbucket/app/WEB-INF/classes/build.properties && \
+    sed -i 's/^build\.commit\.timestamp\s*=.*/build.commit.timestamp = 1773014400000/' /opt/atlassian/bitbucket/app/WEB-INF/classes/build.properties
