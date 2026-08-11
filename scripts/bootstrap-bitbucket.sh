@@ -186,6 +186,24 @@ authenticate_admin_session() {
   fi
 }
 
+authenticate_websudo() {
+  local http_code atl_token websudo_html
+
+  log "Authenticating WebSudo session..."
+  websudo_html=$(curl -sf -b "$COOKIE_JAR" -c "$COOKIE_JAR" "${BASE_URL}/admin/websudo" 2>/dev/null || curl -sf -b "$COOKIE_JAR" -c "$COOKIE_JAR" "${BASE_URL}/websudo" 2>/dev/null || true)
+  atl_token=$(extract_html_input_value "$websudo_html" "atl_token" 2>/dev/null || true)
+
+  http_code=$(
+    curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" \
+      -o "$RESPONSE_BODY" -w "%{http_code}" \
+      -X POST "${BASE_URL}/admin/websudo" \
+      --data-urlencode "password=${ADMIN_PASSWORD}" \
+      --data-urlencode "authenticate=Confirm" \
+      ${atl_token:+--data-urlencode "atl_token=${atl_token}"}
+  )
+  log "WebSudo POST HTTP status: ${http_code}"
+}
+
 enable_basic_auth() {
   local http_code
 
@@ -193,13 +211,26 @@ enable_basic_auth() {
 
   log "Enabling basic authentication for bootstrap-driven admin API calls..."
   http_code=$(
-    curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" \
+    curl -s -u "${ADMIN_USERNAME}:${ADMIN_PASSWORD}" \
       -o "$RESPONSE_BODY" -w "%{http_code}" \
       -X PUT "${BASE_URL}/rest/basicauth/latest/config" \
       -H 'Accept: application/json' \
       -H 'Content-Type: application/json' \
       -d '{"block-requests":false,"allowed-paths":[],"allowed-users":[],"show-warning-message":false}'
   )
+
+  if [ "$http_code" != "204" ]; then
+    authenticate_websudo
+    http_code=$(
+      curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" \
+        -o "$RESPONSE_BODY" -w "%{http_code}" \
+        -X PUT "${BASE_URL}/rest/basicauth/latest/config" \
+        -H 'Accept: application/json' \
+        -H 'Content-Type: application/json' \
+        -d '{"block-requests":false,"allowed-paths":[],"allowed-users":[],"show-warning-message":false}'
+    )
+  fi
+
   if [ "$http_code" != "204" ]; then
     log "Failed to enable basic authentication. HTTP status: ${http_code}. Response body:"
     cat "$RESPONSE_BODY" >&2
