@@ -26,9 +26,11 @@ RUN set -eu; \
     rm -rf /var/lib/apt/lists/*
 
 # Stage 2: final image — only the compiled .so is added, no build tooling.
-FROM atlassian/bitbucket:10.2.1
+FROM atlassian/bitbucket:10.3.0
 
 RUN mkdir -p /usr/lib/x86_64-linux-gnu/faketime
 COPY --from=faketime-builder \
     /tmp/libfaketime-0.9.12/src/libfaketime.so.1 \
     /usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
+
+RUN sed -i 's/^build\.timestamp=.*/build.timestamp=2026-03-09/' /opt/atlassian/bitbucket/app/WEB-INF/classes/build.properties
