@@ -26,7 +26,7 @@ RUN set -eu; \
     rm -rf /var/lib/apt/lists/*
 
 # Stage 2: final image — only the compiled .so is added, no build tooling.
-FROM atlassian/bitbucket:10.3.0
+FROM atlassian/bitbucket:10.4.2
 
 RUN mkdir -p /usr/lib/x86_64-linux-gnu/faketime
 COPY --from=faketime-builder \
