@@ -27,8 +27,8 @@ ADMIN_USERNAME="${2:-admin}"
 ADMIN_PASSWORD="${3:-admin}"
 ADMIN_EMAIL="admin@example.com"
 ADMIN_DISPLAY_NAME="Admin"
-COOKIE_JAR="$(mktemp /tmp/bb_bootstrap_cookies.XXXXXX)"
-RESPONSE_BODY="$(mktemp /tmp/bb_bootstrap_response.XXXXXX)"
+COOKIE_JAR="$(mktemp ./bb_bootstrap_cookies.XXXXXX 2>/dev/null || mktemp /tmp/bb_bootstrap_cookies.XXXXXX)"
+RESPONSE_BODY="$(mktemp ./bb_bootstrap_response.XXXXXX 2>/dev/null || mktemp /tmp/bb_bootstrap_response.XXXXXX)"
 trap 'rm -f "$COOKIE_JAR" "$RESPONSE_BODY"' EXIT
 
 MAX_WAIT_SECONDS=300
@@ -42,6 +42,7 @@ import re, sys
 html = sys.argv[1]
 name = re.escape(sys.argv[2])
 patterns = [
+    rf\"xsrfTokenValue['\\\"]?\s*:\s*['\\\"]?([a-f0-9]+)\",
     rf\"name=['\\\"]{name}['\\\"][^>]*value=['\\\"]([^'\\\"]*)\",
     rf\"value=['\\\"]([^'\\\"]*)['\\\"][^>]*name=['\\\"]{name}['\\\"]\",
 ]
@@ -190,15 +191,15 @@ authenticate_websudo() {
   local http_code atl_token websudo_html
 
   log "Authenticating WebSudo session..."
-  websudo_html=$(curl -sf -b "$COOKIE_JAR" -c "$COOKIE_JAR" "${BASE_URL}/admin/websudo" 2>/dev/null || curl -sf -b "$COOKIE_JAR" -c "$COOKIE_JAR" "${BASE_URL}/websudo" 2>/dev/null || true)
+  websudo_html=$(curl -sf -b "$COOKIE_JAR" -c "$COOKIE_JAR" "${BASE_URL}/websudo" 2>/dev/null || true)
   atl_token=$(extract_html_input_value "$websudo_html" "atl_token" 2>/dev/null || true)
 
   http_code=$(
     curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" \
       -o "$RESPONSE_BODY" -w "%{http_code}" \
-      -X POST "${BASE_URL}/admin/websudo" \
-      --data-urlencode "password=${ADMIN_PASSWORD}" \
-      --data-urlencode "authenticate=Confirm" \
+      -X POST "${BASE_URL}/websudo" \
+      --data-urlencode "j_username=${ADMIN_USERNAME}" \
+      --data-urlencode "j_password=${ADMIN_PASSWORD}" \
       ${atl_token:+--data-urlencode "atl_token=${atl_token}"}
   )
   log "WebSudo POST HTTP status: ${http_code}"
@@ -208,29 +209,17 @@ enable_basic_auth() {
   local http_code
 
   authenticate_admin_session
+  authenticate_websudo
 
   log "Enabling basic authentication for bootstrap-driven admin API calls..."
   http_code=$(
-    curl -s -u "${ADMIN_USERNAME}:${ADMIN_PASSWORD}" \
+    curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" \
       -o "$RESPONSE_BODY" -w "%{http_code}" \
       -X PUT "${BASE_URL}/rest/basicauth/latest/config" \
       -H 'Accept: application/json' \
       -H 'Content-Type: application/json' \
       -d '{"block-requests":false,"allowed-paths":[],"allowed-users":[],"show-warning-message":false}'
   )
-
-  if [ "$http_code" != "204" ]; then
-    authenticate_websudo
-    http_code=$(
-      curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" \
-        -o "$RESPONSE_BODY" -w "%{http_code}" \
-        -X PUT "${BASE_URL}/rest/basicauth/latest/config" \
-        -H 'Accept: application/json' \
-        -H 'Content-Type: application/json' \
-        -d '{"block-requests":false,"allowed-paths":[],"allowed-users":[],"show-warning-message":false}'
-    )
-  fi
-
   if [ "$http_code" != "204" ]; then
     log "Failed to enable basic authentication. HTTP status: ${http_code}. Response body:"
     cat "$RESPONSE_BODY" >&2
