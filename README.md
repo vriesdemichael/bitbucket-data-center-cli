@@ -1,6 +1,6 @@
 # Bitbucket Data Center CLI (`bb`)
 
-[![codecov](https://codecov.io/gh/vriesdemichael/bitbucket-data-center-cli/branch/main/graph/badge.svg?flag=combined_scoped)](https://codecov.io/gh/vriesdemichael/bitbucket-data-center-cli?flag=combined_scoped)
+[![codecov](https://codecov.io/gh/vriesdemichael/bitbucket-data-center-cli/branch/main/graph/badge.svg)](https://codecov.io/gh/vriesdemichael/bitbucket-data-center-cli)
 
 `bb` is a production-focused CLI for automating Bitbucket Data Center workflows (targeting recent versions of Bitbucket for Data Center).
 It combines scriptable machine output, safe dry-run planning, and high-coverage live-behavior

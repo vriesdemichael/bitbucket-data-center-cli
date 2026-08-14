@@ -230,11 +230,49 @@ jobs:
         uses: codecov/codecov-action@v7
         with:
           token: ${{ env.CODECOV_TOKEN }}
+          # Pin the destination to the current repository name.  Without it the
+          # upload was routed to the pre-rename slug (bitbucket-server-cli) and
+          # silently discarded during processing.
+          slug: ${{ github.repository }}
           files: .tmp/coverage.combined.scoped.out
           flags: combined_scoped
           fail_ci_if_error: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      # fail_ci_if_error only covers the uploader's own exit code.  Processing is
+      # asynchronous, so "queued for processing" kept CI green for two months
+      # while Codecov dropped every report after the repository rename.  Poll
+      # until the commit actually lands.
+      - name: Verify Codecov processed the upload
+        if: env.CODECOV_TOKEN != ''
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -uo pipefail
+
+          api="https://api.codecov.io/api/v2/github/${GITHUB_REPOSITORY_OWNER}/repos/${GITHUB_REPOSITORY#*/}/commits/${COMMIT_SHA}"
+          deadline=$(( SECONDS + 300 ))
+
+          while (( SECONDS < deadline )); do
+            state=$(curl -fsS "$api" 2>/dev/null | jq -r '.state // empty')
+            if [ "$state" = "complete" ]; then
+              echo "Codecov processed ${COMMIT_SHA}."
+              exit 0
+            fi
+            sleep 15
+          done
+
+          echo "Codecov never processed ${COMMIT_SHA} after 5 minutes." >&2
+          echo "Checked: ${api}" >&2
+          echo "The upload was accepted but dropped during processing." >&2
+
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            exit 1
+          fi
+
+          echo "::warning::Codecov did not process this commit; not failing a pull request build."
 
       - name: Stop Bitbucket stack
         if: always()
