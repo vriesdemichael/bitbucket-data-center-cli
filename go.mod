@@ -6,7 +6,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/go-openapi/runtime v0.33.0
 	github.com/joho/godotenv v1.5.1
-	github.com/mark3labs/mcp-go v0.57.0
+	github.com/mark3labs/mcp-go v0.58.0
 	github.com/muesli/termenv v0.16.0
 	github.com/oapi-codegen/runtime v1.6.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
@@ -29,7 +29,7 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
-	github.com/charmbracelet/x/ansi v0.11.7 // indirect
+	github.com/charmbracelet/x/ansi v0.11.8 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
@@ -97,12 +97,12 @@ require (
 	go.opentelemetry.io/otel/metric v1.45.0 // indirect
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.54.0 // indirect
+	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/mod v0.39.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/grpc v1.83.0 // indirect
