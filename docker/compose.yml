@@ -1,43 +1,73 @@
 name: bitbucket-server-cli
 
-services:
-  postgres:
-    image: postgres:17
-    container_name: bb-postgres
-    environment:
-      POSTGRES_DB: bitbucket
-      POSTGRES_USER: bitbucket
-      POSTGRES_PASSWORD: bitbucket
-    ports:
-      - "5432:5432"
-    volumes:
-      - bb-postgres-data:/var/lib/postgresql/data
+# Local Bitbucket Data Center instance for the live integration suite.
+#
+# The instance is provisioned and licensed by the Atlassian Plugin SDK, which
+# issues a development licence itself. No BITBUCKET_LICENSE_KEY, no .env file
+# and no Atlassian account are required, so this stack runs identically on a
+# fork, in a contributor's environment, and in CI.
+#
+# The licence is valid for 3 hours and is reissued on every start. A full live
+# suite run takes ~5 minutes, so this only matters for long local sessions:
+# `task stack:restart` issues a fresh one.
+#
+# The SDK provides the instance's database (embedded), so there is no separate
+# Postgres service. The live suite exercises the REST API, where behaviour is
+# equivalent; anything that needs to characterise Postgres-specific behaviour
+# should say so explicitly rather than relying on this stack.
 
+services:
   bitbucket:
     build:
-      context: ./custom-bitbucket
-    image: atlassian/bitbucket:10.4.2-faketime
+      context: ./harness
+    # Deliberately unversioned: the product version is pinned once, in the base
+    # image tag in harness/Dockerfile. A version here would be a second constant
+    # to keep in sync.
+    image: bitbucket-cli-harness:local
     container_name: bb-bitbucket
-    depends_on:
-      - postgres
-    env_file:
-      - ../.env
-    environment:
-      LD_PRELOAD: /usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
-      FAKETIME: "@2026-03-01 00:00:00"
-      JDBC_DRIVER: org.postgresql.Driver
-      JDBC_URL: jdbc:postgresql://postgres:5432/bitbucket
-      JDBC_USER: bitbucket
-      JDBC_PASSWORD: bitbucket
-      JVM_MINIMUM_MEMORY: 1g
-      JVM_MAXIMUM_MEMORY: 2g
-      BITBUCKET_LICENSE_KEY: ${BITBUCKET_LICENSE_KEY}
+    # atlas-run treats stdin EOF as a shutdown request. Without both of these
+    # the container starts Bitbucket, immediately stops it, and exits 0.
+    stdin_open: true
+    tty: true
     ports:
-      - "7990:7990"
-      - "7999:7999"
+      # Host ports are overridable so a second instance (for example a different
+      # Bitbucket version) can run alongside this one without editing the file.
+      - "${BITBUCKET_HOST_PORT:-7990}:7990"
+      - "${BITBUCKET_SSH_HOST_PORT:-7999}:7999"
     volumes:
-      - bb-bitbucket-data:/var/atlassian/application-data/bitbucket
+      # Maven cache: the product artifacts are ~800MB. Keeping them in a named
+      # volume makes restarts fast and avoids re-downloading on every run.
+      - bb-maven-cache:/root/.m2
+    healthcheck:
+      # Two conditions, both necessary:
+      #
+      #   1. /status reports RUNNING — the instance is serving. (Basic auth is
+      #      still disabled at this point; scripts/bootstrap-bitbucket.sh enables
+      #      it after this gate passes.)
+      #
+      #   2. The SDK licence has not aged out. It is valid for 3 hours from
+      #      process start, and `docker compose up -d` reuses a running container
+      #      rather than recreating it — so without this the stack would happily
+      #      serve an expired licence while still reporting RUNNING, and the live
+      #      suite would fail in ways that look like product bugs. Going unhealthy
+      #      at 2h45m makes `task stack:up` (which passes --wait) fail loudly with
+      #      an instance that needs `task stack:restart`.
+      #
+      # $$ escapes compose's own variable interpolation.
+      test:
+        - CMD-SHELL
+        - >-
+          curl -sf http://localhost:7990/status | grep -q RUNNING &&
+          [ $$(( $$(date +%s) - $$(cat /tmp/licence-issued-at) )) -lt 9900 ]
+      interval: 10s
+      timeout: 5s
+      # Failures during start_period do not count toward retries, so the grace
+      # for a cold start (first run downloads ~800MB before Bitbucket serves)
+      # lives there rather than in a large retry count. A large retry count would
+      # also delay the licence-expiry check above by the same amount — at
+      # retries: 60 it took ten minutes to report unhealthy.
+      retries: 3
+      start_period: 600s
 
 volumes:
-  bb-postgres-data:
-  bb-bitbucket-data:
+  bb-maven-cache:
