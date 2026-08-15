@@ -1,0 +1,243 @@
+# Contributing
+
+Thanks for considering a contribution.
+
+This project validates command behaviour against a **real Bitbucket Data Center
+instance** rather than against mocks. That instance is provisioned and licensed
+automatically, so you can run the full test suite locally with no Atlassian
+licence and no repository secrets — the same suite that runs on your pull
+request.
+
+## Prerequisites
+
+| Tool | Why |
+|---|---|
+| **Go** (see `go.mod`, currently 1.26) | building and testing |
+| **[Task](https://taskfile.dev)** | every workflow in this repo is a `task` target |
+| **Docker** | runs the local Bitbucket instance for live tests |
+| **Bash** + **curl** + **python3** | `scripts/bootstrap-bitbucket.sh` needs all three |
+| **~6GB disk, ~4GB RAM** | the Bitbucket instance is a real JVM application |
+
+Install Task with:
+
+```bash
+go install github.com/go-task/task/v3/cmd/task@latest
+```
+
+Install the git hooks with:
+
+```bash
+lefthook install
+```
+
+**`python3` is a real requirement, not an optional extra.**
+`scripts/bootstrap-bitbucket.sh` uses it to parse tokens out of Bitbucket's
+setup pages, and the script is how basic authentication gets enabled — without
+it the live suite cannot authenticate. On Windows `python3` is not present by
+default and the failure is unhelpful, so install it or work from WSL. (Removing
+this dependency is tracked in
+[#346](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/346).)
+
+On Windows, run the shell scripts from Git Bash or WSL. If a script fails
+immediately with `$'\r': command not found`, it has CRLF line endings from the
+checkout — run it through `tr -d '\r'` or set `core.autocrlf=input`.
+
+## First run
+
+```bash
+git clone https://github.com/vriesdemichael/bitbucket-data-center-cli
+cd bitbucket-data-center-cli
+go build ./cmd/bb
+task test:unit
+```
+
+Unit tests need no network and no Bitbucket instance. If they pass, you have a
+working environment.
+
+## Running the live suite
+
+This is the gate that matters, and it is the one most changes need.
+
+```bash
+task stack:up
+```
+
+First run downloads roughly 800MB of Bitbucket artifacts and takes a few
+minutes. Subsequent starts reuse a cached volume.
+
+```bash
+bash scripts/bootstrap-bitbucket.sh http://localhost:7990 admin admin
+```
+
+Bitbucket 10 disables basic authentication by default even once it reports
+`RUNNING`; this enables it. Then:
+
+```bash
+BITBUCKET_URL=http://localhost:7990 ADMIN_USER=admin ADMIN_PASSWORD=admin task test:live
+```
+
+A full run takes about five minutes. `task stack:down` when you are finished.
+
+**The instance's licence lasts three hours.** It is issued by the Atlassian
+Plugin SDK on each start and reissued on restart. If the stack has been up
+longer than that, `task stack:up` reports the container unhealthy and fails —
+run `task stack:restart` and bootstrap again. See
+[`docker/README.md`](docker/README.md).
+
+## Making a change
+
+**Branch from `main`.** `main` requires a pull request; direct pushes are
+rejected.
+
+**Use [Conventional Commits](https://www.conventionalcommits.org/).** The commit
+type determines whether merging your PR publishes a release, so it is worth
+getting right:
+
+| Type | Effect on release |
+|---|---|
+| `feat` | minor version |
+| `fix`, `perf`, `revert` | patch version |
+| any type with `!`, or a `BREAKING CHANGE:` footer | major version |
+| `ci`, `chore`, `docs`, `style`, `refactor`, `test`, `build` | **no release** |
+
+Non-releasing commits are not second-class — they simply ship with the next
+`feat` or `fix` rather than publishing a version of their own. Reserve `!` for
+changes that actually break the CLI contract: a removed or renamed command or
+flag, a changed exit code, or a change to the `bb.machine` JSON envelope.
+
+**Keep history linear.** Rebase onto `main`; never merge `main` into your
+branch. CI enforces this.
+
+```bash
+git fetch origin && git rebase origin/main
+```
+
+**Add a live test for new commands.** A command with no live test — or one whose
+only live test skips when the call fails — is treated as uncovered and fails CI.
+This is deliberate: `bb pr task *` called an endpoint Atlassian removed in
+Bitbucket 8.0 and CI stayed green for years because the test skipped on error. A
+skipped test is not a passing test.
+
+```bash
+task quality:cli-live-coverage:update
+git add docs/quality/cli-live-coverage.json
+```
+
+**Regenerate committed artifacts you affect.** The command reference, ADR pages,
+and JSON schemas are generated and verified in CI:
+
+```bash
+task docs:generate
+```
+
+## Before opening a pull request
+
+```bash
+gofmt -l ./cmd ./internal ./tools   # expect no output
+task test:unit
+task docs:validate
+```
+
+### What the git hooks actually do
+
+Both hooks are heavier than most projects', and neither is hung when it appears
+to stall. [lefthook](https://github.com/evilmartians/lefthook) runs them; they
+install with `lefthook install`.
+
+**`pre-commit` — roughly 3 minutes.** Runs `task test:go:safe`, which is the
+whole non-live Go test suite across `./cmd/...`, `./internal/...` and
+`./tools/...`. Not a fast subset of tests related to your change: all of them,
+on every commit. `internal/cli` alone accounts for most of it. Amending several
+times in a row pays this each time.
+
+**`pre-push` — roughly 8 minutes.** Runs `task docs:validate`, then
+`task quality:coverage:origin-main`, which runs the unit suite with coverage,
+**the full live suite**, and then the combined and patch coverage gates against
+`origin/main`. It therefore needs the Bitbucket stack up and `BITBUCKET_URL`
+set, or it fails.
+
+```bash
+task stack:up
+BITBUCKET_URL=http://localhost:7990 ADMIN_USER=admin ADMIN_PASSWORD=admin git push
+```
+
+Do not bypass hooks with `--no-verify` except in the coverage-artifact rebase
+flow described in [`AGENTS.md`](AGENTS.md).
+
+### What is not enforced, and is still expected
+
+Some conventions this project relies on have no hook or CI check behind them.
+They are still expected, and a reviewer will ask:
+
+- **`gofmt`.** There is no formatting check in the hooks or in CI, and no
+  golangci-lint configuration. The tree is nevertheless gofmt-clean, so please
+  keep it that way: run `gofmt -l ./cmd ./internal ./tools` and expect no
+  output. On Windows this command lists nearly every file — that is a CRLF
+  artifact of the checkout, not real formatting drift. Check with
+  `gofmt -d <file>`: if every line appears both removed and added identically,
+  it is line endings.
+- **Conventional Commit subjects.** No `commit-msg` hook validates them, so
+  nothing stops a malformed subject locally. The release workflow parses commit
+  subjects to decide whether to publish, so a wrong type has a real effect —
+  see the table above.
+
+## What CI checks
+
+| Job | What it does |
+|---|---|
+| Linear History | rejects merge commits on the branch |
+| ADR Validation | validates `docs/decisions/*.yaml` |
+| Unit Tests | non-live tests, plus verification that generated artifacts are current |
+| Docs Site | builds the MkDocs site |
+| Live Integration Tests | starts Bitbucket, runs the live suite, enforces coverage thresholds |
+
+Live tests **run on pull requests from forks**. If they fail on your PR, the
+failure is real — please do not assume it is infrastructure.
+
+## Things that will bite you
+
+Collected from actually doing this, not hypothetical:
+
+- **Coverage artifacts conflict on every rebase.** `docs/quality/*` is
+  regenerated and committed, so it changes on both your branch and `main`. Do
+  not hand-resolve; finish the rebase, regenerate once, amend. Full procedure in
+  [`AGENTS.md`](AGENTS.md).
+- **Line endings on Windows.** The repo has no `.gitattributes` and
+  `core.autocrlf` is typically on, so Go tools that write LF make every
+  generated file look modified. Check `git diff --numstat` — files showing
+  `0 0` are line-ending noise and normalise away on commit. Shell scripts may
+  need `tr -d '\r'` before running in a Linux container.
+- **Tests that shell out to `git` must use `t.TempDir()`.** A guard fails the
+  package if a test mutates the repository's own git config. This is not
+  hypothetical — it once wrote an `http.extraHeader` credential into the
+  project's `.git/config` and broke pushes to GitHub.
+- **New mutating commands must be registered** in `dryRunProfiles`
+  (`internal/cli/dryrun.go`) or `TestAllMutatingCommandsHaveDryRunProfile`
+  fails.
+- **Use `-count=1`** when testing config loading or environment variables; Go's
+  test cache will otherwise mask state pollution.
+
+## Where the deeper detail lives
+
+- [`AGENTS.md`](AGENTS.md) — repository-specific mechanics and gotchas. Written
+  for AI agents, but the content applies to anyone.
+- [`docs/decisions/`](docs/decisions/) — architecture decision records. If you
+  want to know *why* something works the way it does, it is usually there.
+  Relevant here: ADR-005 (coverage policy), ADR-006 (conventional commits),
+  ADR-016 (test classification), ADR-025 (git discipline), ADR-026 (PR
+  readiness), ADR-033 (release automation), ADR-043 (the test instance).
+- [`docker/README.md`](docker/README.md) — the local Bitbucket stack.
+
+## Reporting bugs
+
+Open an issue. Include `bb --version`, the exact command, and `--json` output if
+relevant. For unexpected behaviour, `--log-level debug --log-format jsonl` gives
+a diagnostic trace worth attaching.
+
+For security vulnerabilities, see [`SECURITY.md`](SECURITY.md) — please do not
+open a public issue.
+
+## Code of conduct
+
+Participation is covered by the [Code of Conduct](CODE_OF_CONDUCT.md). In short:
+argue about the code as much as you like, not about the person.
