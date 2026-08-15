@@ -44,24 +44,88 @@ jobs:
             const isCurrentHead = pr.head?.sha === run.head_sha;
             const isOpen = pr.state === 'open';
             const isDraft = Boolean(pr.draft);
-            const shouldMerge = isDependabot && isCurrentHead && isOpen && !isDraft;
 
-            core.setOutput('should_merge', shouldMerge ? 'true' : 'false');
             core.setOutput('number', String(pr.number));
 
             if (!isDependabot) {
               core.notice(`PR #${pr.number} is authored by ${pr.user?.login || 'unknown'}, not Dependabot.`);
+              core.setOutput('should_merge', 'false');
               return;
             }
 
             if (!isCurrentHead) {
               core.notice(`PR #${pr.number} has moved past workflow run head ${run.head_sha}; skipping stale run.`);
+              core.setOutput('should_merge', 'false');
               return;
             }
 
             if (!isOpen || isDraft) {
               core.notice(`PR #${pr.number} is not mergeable by automation in its current state.`);
+              core.setOutput('should_merge', 'false');
+              return;
             }
+
+            // Green CI is necessary but not sufficient.  Dependabot records what
+            // it changed in a trailer on the head commit:
+            //
+            //   updated-dependencies:
+            //   - dependency-name: github.com/spf13/cobra
+            //     dependency-type: direct:production
+            //     update-type: version-update:semver-minor
+            //
+            // Grouped updates repeat that block per dependency, so take the
+            // most significant update type across all of them.
+            const { data: commit } = await github.rest.repos.getCommit({
+              ...context.repo,
+              ref: run.head_sha,
+            });
+            const message = commit.commit?.message || '';
+
+            const updateTypes = [...message.matchAll(/update-type:\s*version-update:semver-(\w+)/g)]
+              .map((m) => m[1].toLowerCase());
+            const dependencyNames = [...message.matchAll(/dependency-name:\s*(\S+)/g)]
+              .map((m) => m[1]);
+
+            // Fail closed.  If the trailer is missing or unparseable we cannot
+            // tell a patch from a major, and merging unread is the wrong default.
+            if (updateTypes.length === 0) {
+              core.notice(
+                `PR #${pr.number}: no parseable update-type in the head commit; leaving it for review.`
+              );
+              core.setOutput('should_merge', 'false');
+              return;
+            }
+
+            // Major bumps are where dependency semantics change silently.  CI here
+            // is strong, but "the suite passed" is not the same as "the behaviour
+            // is the same", and this project has a single maintainer to absorb a
+            // regression that lands unread.
+            if (updateTypes.includes('major')) {
+              core.notice(
+                `PR #${pr.number}: major update (${dependencyNames.join(', ')}); leaving it for review.`
+              );
+              core.setOutput('should_merge', 'false');
+              return;
+            }
+
+            // The Bitbucket base image is not an ordinary dependency: its tag is
+            // the single place the supported product version is recorded
+            // (ADR-042), so bumping it changes a user-facing claim and usually
+            // needs docs and README attention.  A green suite is the evidence
+            // that a version is adoptable, not the decision to adopt it.
+            const productImage = dependencyNames.find((name) => /atlassian\/bitbucket/i.test(name));
+            if (productImage) {
+              core.notice(
+                `PR #${pr.number}: bumps the Bitbucket product image (${productImage}), which changes the supported version; leaving it for review.`
+              );
+              core.setOutput('should_merge', 'false');
+              return;
+            }
+
+            core.notice(
+              `PR #${pr.number}: ${updateTypes.join('/')} update of ${dependencyNames.join(', ')}; eligible for auto-merge.`
+            );
+            core.setOutput('should_merge', 'true');
 
       - name: Approve Dependabot pull request
         if: steps.pr.outputs.should_merge == 'true'
