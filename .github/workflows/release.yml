@@ -83,6 +83,15 @@ jobs:
 
           conventional_pattern = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]+)\))?(?P<bang>!)?: (?P<description>.+)$")
 
+          # Only user-visible change releases.  Previously every valid
+          # Conventional Commit type cut a patch release, which produced 95
+          # releases in the first six months — a rate that adopters running
+          # binaries through change approval cannot consume, and which left the
+          # version number carrying no signal about whether anything changed for
+          # them.  ci/chore/docs/style/refactor/test/build now accumulate and
+          # ship with the next feat or fix.
+          RELEASING_PATCH_TYPES = {"fix", "perf", "revert"}
+
           bump_level = 0
           found_conventional = False
           for record in records:
@@ -104,8 +113,10 @@ jobs:
                   bump_level = max(bump_level, 3)
               elif commit_type == "feat":
                   bump_level = max(bump_level, 2)
-              else:
+              elif commit_type in RELEASING_PATCH_TYPES:
                   bump_level = max(bump_level, 1)
+              # Every other Conventional Commit type is deliberately
+              # non-releasing.  See RELEASING_PATCH_TYPES above.
 
           if not found_conventional or bump_level == 0:
               write_output("should_release", "false")
