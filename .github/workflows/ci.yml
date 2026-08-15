@@ -130,10 +130,10 @@ jobs:
   live-tests:
     name: Live Integration Tests
     runs-on: ubuntu-latest
-    # Skip for fork pull requests where the BITBUCKET_LICENSE_KEY secret is
-    # unavailable.  ci-complete accepts both success and skipped results.
-    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
-    timeout-minutes: 30
+    # Runs on fork pull requests too.  The Bitbucket instance is provisioned and
+    # licensed by the Atlassian Plugin SDK (docker/harness), so no repository
+    # secret is involved and there is nothing that a fork cannot obtain.
+    timeout-minutes: 40
     env:
       BITBUCKET_URL: http://localhost:7990
       ADMIN_USER: admin
@@ -153,17 +153,10 @@ jobs:
       - name: Setup Task
         run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
-      - name: Create .env file (required by docker/compose.yml env_file directive)
-        run: touch .env
-
       - name: Start Bitbucket stack
-        env:
-          BITBUCKET_LICENSE_KEY: ${{ secrets.BITBUCKET_LICENSE_KEY }}
-        run: docker compose -f docker/compose.yml up -d
+        run: docker compose -f docker/compose.yml up -d --wait
 
-      - name: Bootstrap Bitbucket (wait for ready + create admin user)
-        env:
-          BITBUCKET_LICENSE_KEY: ${{ secrets.BITBUCKET_LICENSE_KEY }}
+      - name: Bootstrap Bitbucket (enable basic auth for admin API calls)
         run: bash scripts/bootstrap-bitbucket.sh "$BITBUCKET_URL" "$ADMIN_USER" "$ADMIN_PASSWORD"
 
       - name: Run unit tests with coverage
@@ -274,6 +267,10 @@ jobs:
 
           echo "::warning::Codecov did not process this commit; not failing a pull request build."
 
+      - name: Dump Bitbucket logs on failure
+        if: failure()
+        run: docker compose -f docker/compose.yml logs --no-color --tail 400 bitbucket
+
       - name: Stop Bitbucket stack
         if: always()
         run: docker compose -f docker/compose.yml down
@@ -301,4 +298,7 @@ jobs:
           [[ "$ADR_VALIDATION_RESULT" == "success" ]]
           [[ "$UNIT_TESTS_RESULT" == "success" ]]
           [[ "$DOCS_SITE_RESULT" == "success" ]]
-          [[ "$LIVE_TESTS_RESULT" == "success" || "$LIVE_TESTS_RESULT" == "skipped" ]]
+          # Live tests no longer skip on forks: the Bitbucket instance is
+          # SDK-licensed and needs no repository secret, so "skipped" would now
+          # mean the primary correctness gate silently did not run.
+          [[ "$LIVE_TESTS_RESULT" == "success" ]]

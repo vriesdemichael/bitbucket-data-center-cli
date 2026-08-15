@@ -148,9 +148,10 @@ bb --json auth status
 
 - Supported version: the newest Bitbucket Data Center release that runs in the project's
   container stack and passes the live integration suite. There is no pinned target advertised
-  here — the version under test is the image tag in `docker/compose.yml`, which is the one place
-  it is recorded. Newer releases are adopted by bumping that image when they work; some do not
-  run in the stack, so the newest published release is not automatically the supported one.
+  here — the version under test is the base image tag in `docker/harness/Dockerfile`, which is
+  the one place it is recorded. Newer releases are adopted by bumping that tag when they work;
+  some do not run in the stack, so the newest published release is not automatically the
+  supported one.
   Set `BITBUCKET_VERSION_TARGET` if you want to record a version for your own environment.
 - API contract source: a version-pinned Atlassian OpenAPI artifact
   (`docs/reference/atlassian/bitbucket-10.2-openapi.json`). This fixes the endpoint and payload

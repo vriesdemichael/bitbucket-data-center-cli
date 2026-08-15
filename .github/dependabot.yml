@@ -57,7 +57,7 @@ updates:
       include: "scope"
 
   - package-ecosystem: "docker"
-    directory: "/docker/custom-bitbucket"
+    directory: "/docker/harness"
     schedule:
       interval: "daily"
       time: "06:00"

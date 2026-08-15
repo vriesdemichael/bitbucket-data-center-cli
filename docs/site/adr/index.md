@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `42`
-- Accepted ADRs: `40`
+- Total ADRs: `43`
+- Accepted ADRs: `41`
 
 ## ADR List
 
@@ -51,4 +51,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 040: Agent skill distribution via static npx packaging and dynamic CLI generation](040-agent-skill-distribution-static-npx-and-dynamic-cli.md) (`development`, `accepted`)
 - [ADR 041: Host aliases and clone URL discovery for server contexts](041-host-aliases-and-clone-url-discovery-for-server-contexts.md) (`architecture`, `accepted`)
 - [ADR 042: Track the newest containerisable Bitbucket version](042-track-newest-containerisable-bitbucket-version.md) (`architecture`, `accepted`)
+- [ADR 043: Provision the live test instance with the Atlassian Plugin SDK](043-sdk-provisioned-licensed-test-instance.md) (`architecture`, `accepted`)
 

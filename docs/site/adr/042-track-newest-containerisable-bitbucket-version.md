@@ -12,11 +12,11 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 
 ## Decision
 
-Target the newest Bitbucket Data Center version that runs in this project's container stack and passes the live integration suite, rather than a version pinned in advance. A release that cannot run in the stack, or that runs but fails the suite, is not a target however recent it is. The version under test is recorded only in the stack definition, in docker/compose.yml and docker/custom-bitbucket/Dockerfile. No other surface states a supported version.
+Target the newest Bitbucket Data Center version that runs in this project's container stack and passes the live integration suite, rather than a version pinned in advance. A release that cannot run in the stack, or that runs but fails the suite, is not a target however recent it is. The version under test is recorded in exactly one place, the base image tag in docker/harness/Dockerfile. No other surface states a supported version.
 
 ## Agent Instructions
 
-Do not state or assume a specific supported Bitbucket version in code, CLI output, or documentation, and do not reintroduce a default version target in configuration. To find the version under test, read the image tag in docker/compose.yml. To move to a newer release, bump the image there and in docker/custom-bitbucket/Dockerfile and let the live suite decide whether it holds; do not assume the newest published release is usable. Where behavior differs between versions, record the version it was observed on next to the workaround and cover it with a live test.
+Do not state or assume a specific supported Bitbucket version in code, CLI output, or documentation, and do not reintroduce a default version target in configuration. To find the version under test, read the base image tag in docker/harness/Dockerfile. To move to a newer release, bump that tag and let the live suite decide whether it holds; do not assume the newest published release is usable. The harness derives the JVM, git and provisioned product version from that one tag, so there is nothing else to change alongside it. Where behavior differs between versions, record the version it was observed on next to the workaround and cover it with a live test.
 
 ## Rationale
 

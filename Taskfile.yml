@@ -269,21 +269,21 @@ tasks:
     cmd: go test -tags=live -timeout 20m ./tests/integration/live
 
   stack:up:
-    desc: Start local Bitbucket + Postgres stack
-    cmd: docker compose -f docker/compose.yml up -d
+    desc: Start local SDK-licensed Bitbucket stack (no licence key required)
+    cmd: docker compose -f docker/compose.yml up -d --wait
 
   stack:down:
-    desc: Stop local Bitbucket + Postgres stack
+    desc: Stop local Bitbucket stack
     cmd: docker compose -f docker/compose.yml down
 
   stack:reset:
     desc: Tear down stack and delete all data volumes (full clean restart)
     cmds:
-      - docker compose -f docker/compose.yml down --volumes
+      - docker compose -f docker/compose.yml down --volumes --remove-orphans
       - task: stack:up
 
   stack:restart:
-    desc: Restart local Bitbucket + Postgres stack
+    desc: Restart local Bitbucket stack (also issues a fresh 3h SDK licence)
     cmds:
       - task: stack:down
       - task: stack:up
