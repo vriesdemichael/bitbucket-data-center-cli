@@ -4,7 +4,7 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `44`
+- Total ADRs: `45`
 - Accepted ADRs: `42`
 
 ## ADR List
@@ -38,7 +38,7 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 027: Atlassian 9.4 docs as API reference source](027-atlassian-94-docs-as-api-reference-source.md) (`architecture`, `accepted`)
 - [ADR 028: OpenAPI fix registry and parity enforcement](028-openapi-fix-registry-and-parity-policy.md) (`development`, `accepted`)
 - [ADR 029: Network Isolation during Unit Testing](029-network-isolation-during-unit-testing.md) (`development`, `accepted`)
-- [ADR 030: Linear rebase workflow with generated coverage artifacts](030-linear-rebase-workflow-with-generated-coverage-artifacts.md) (`development`, `accepted`)
+- [ADR 030: Linear rebase workflow with generated coverage artifacts](030-linear-rebase-workflow-with-generated-coverage-artifacts.md) (`development`, `superseded`)
 - [ADR 031: Top-level search command tree for discovery](031-top-level-search-command.md) (`architecture`, `accepted`)
 - [ADR 032: Refactor CLI root into command packages](032-cli-root-modularization-into-command-packages.md) (`architecture`, `accepted`)
 - [ADR 033: Automated Conventional Commit release on main](033-automated-conventional-commit-release-on-main.md) (`development`, `accepted`)
@@ -53,4 +53,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 042: Track the newest containerisable Bitbucket version](042-track-newest-containerisable-bitbucket-version.md) (`architecture`, `accepted`)
 - [ADR 043: Provision the live test instance with the Atlassian Plugin SDK](043-sdk-provisioned-licensed-test-instance.md) (`architecture`, `accepted`)
 - [ADR 044: Supply git credentials through a credential helper rather than persisting them](044-git-credential-helper-instead-of-persisted-credentials.md) (`architecture`, `accepted`)
+- [ADR 045: Compute coverage measurements, commit only verifiable baselines](045-coverage-measurements-are-computed-not-committed.md) (`development`, `accepted`)
 

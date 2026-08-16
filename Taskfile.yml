@@ -155,25 +155,24 @@ tasks:
         echo "Branch is linear (no merge commits in origin/main..HEAD)."
 
   quality:check:
-    desc: Run core quality checks
+    desc: Run core quality checks that need no Bitbucket instance
     deps:
       - quality:git:ensure-linear
-      - quality:validate-decisions
-      - quality:coverage:report:verify
+      - quality:verify
 
-  pr:linearize:
-    desc: Rebase branch on origin/main and refresh committed coverage report artifact
+  pr:rebase:
+    desc: Rebase the current branch onto origin/main
     cmds:
       - git fetch origin --prune
       - git rebase origin/main
-      - task: quality:coverage:report:update
-      - git add docs/quality/coverage-report.json
-      - |
-        if git diff --cached --quiet -- docs/quality/coverage-report.json; then
-          echo "coverage report unchanged"
-        else
-          git commit -m "docs(quality): refresh committed coverage report after linear rebase"
-        fi
+
+  quality:verify:
+    desc: Run every quality gate that needs no Bitbucket instance (fast; matches what CI checks before the live job)
+    cmds:
+      - task: quality:validate-decisions
+      - task: quality:spec-coverage:verify
+      - task: quality:cli-live-coverage:verify
+      - task: docs:verify-generated
 
   quality:coverage:
     desc: Run combined (unit + live) global + patch coverage checks and generated-operation coverage metric
@@ -191,26 +190,15 @@ tasks:
       - task: test:live:coverage
       - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref origin/main -manifest docs/quality/generated-operation-contracts.json -min-global-combined {{.COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.COVERAGE_MIN_PATCH}} -min-patch-lines {{.COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.COVERAGE_MIN_CONTRACT}}
 
-  quality:coverage:report:update:
-    desc: Update committed combined coverage report artifact
+  quality:coverage:replay:
+    desc: Re-run the coverage gates against the profiles already in .tmp/ (seconds; no tests, no live infra)
+    preconditions:
+      - sh: test -f .tmp/coverage.unit.out
+        msg: ".tmp/coverage.unit.out is missing — run `task test:unit:coverage` first"
+      - sh: test -f .tmp/coverage.live.out
+        msg: ".tmp/coverage.live.out is missing — run `task test:live:coverage` first (needs the stack up)"
     cmds:
-      - git fetch origin main
-      - task: test:unit:coverage
-      - task: test:live:coverage
-      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref {{.COVERAGE_BASE_REF}} -manifest docs/quality/generated-operation-contracts.json -report-file docs/quality/coverage-report.json -raw-coverprofile-file docs/quality/coverage.combined.raw.out -scoped-coverprofile-file docs/quality/coverage.combined.scoped.out -write-report -write-coverprofiles -min-global-combined {{.COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.COVERAGE_MIN_PATCH}} -min-patch-lines {{.COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.COVERAGE_MIN_CONTRACT}}
-
-  quality:coverage:report:verify:
-    desc: Verify committed coverage report artifact is current (local recompute, requires live infra)
-    cmds:
-      - git fetch origin main
-      - task: test:unit:coverage
-      - task: test:live:coverage
-      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref {{.COVERAGE_BASE_REF}} -manifest docs/quality/generated-operation-contracts.json -report-file docs/quality/coverage-report.json -raw-coverprofile-file docs/quality/coverage.combined.raw.out -scoped-coverprofile-file docs/quality/coverage.combined.scoped.out -verify-report -verify-coverprofiles -min-global-combined {{.COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.COVERAGE_MIN_PATCH}} -min-patch-lines {{.COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.COVERAGE_MIN_CONTRACT}}
-
-  quality:coverage:report:verify:committed:
-    desc: Verify committed coverage report artifact thresholds (CI-safe, no live execution)
-    cmds:
-      - go run ./tools/quality-report -report-file docs/quality/coverage-report.json -raw-coverprofile-file docs/quality/coverage.combined.raw.out -scoped-coverprofile-file docs/quality/coverage.combined.scoped.out -verify-committed -min-global-combined {{.COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.COVERAGE_MIN_PATCH}} -min-patch-lines {{.COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.COVERAGE_MIN_CONTRACT}}
+      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref origin/main -manifest docs/quality/generated-operation-contracts.json -min-global-combined {{.COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.COVERAGE_MIN_PATCH}} -min-patch-lines {{.COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.COVERAGE_MIN_CONTRACT}}
 
   quality:spec-coverage:
     desc: Print OpenAPI spec path coverage across both transports (generated client + raw httpclient)

@@ -18,3 +18,11 @@ __pycache__/
 cmd/bb/rsrc_windows_*.syso
 # Local build artifacts
 bb.exe
+
+# Coverage measurements are computed per run, never committed. CI recomputes
+# them on every pull request and publishes them to Codecov and as workflow
+# artifacts; committing them produced a rebase conflict on every branch for data
+# nothing consumed. See ADR-045.
+/coverage.out
+/docs/quality/coverage-report.json
+/docs/quality/coverage.combined.*.out
