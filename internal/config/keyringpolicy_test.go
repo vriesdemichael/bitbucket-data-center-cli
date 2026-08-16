@@ -474,3 +474,73 @@ func TestBasicAuthCredentialsAreReadFromTheKeyring(t *testing.T) {
 		t.Fatal("a keyring-sourced password must not report insecure storage")
 	}
 }
+
+// TestAmbientAuthEnvironmentDoesNotSuppressThePlaintextReport guards the hole
+// that reached CI: AuthSource was relabelled "env" whenever any auth variable
+// was set, and that relabelling used to clear UsedInsecureStorage.
+//
+// A CI runner with ADMIN_USER exported would then use the plaintext token from
+// the config file while reporting "environment", suppressing both the warning
+// and the BB_REQUIRE_KEYRING check.
+func TestAmbientAuthEnvironmentDoesNotSuppressThePlaintextReport(t *testing.T) {
+	clearAuthEnvironment(t)
+	host := "https://ambient-env.example.invalid"
+	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
+	t.Setenv("BITBUCKET_URL", host)
+	// Set, but supplying no token — the credential in use still comes from the
+	// plaintext file.
+	t.Setenv("ADMIN_USER", "admin")
+
+	cfg, err := LoadFromEnv()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if cfg.BitbucketToken != "plaintext-token" {
+		t.Fatalf("expected the plaintext token in use, got %q", cfg.BitbucketToken)
+	}
+	if !cfg.UsedInsecureStorage {
+		t.Fatal("an unrelated auth environment variable must not clear the plaintext report")
+	}
+	if got := cfg.CredentialStorage(); got != "config-file-plaintext" {
+		t.Fatalf("expected config-file-plaintext, got %q", got)
+	}
+}
+
+func TestAmbientAuthEnvironmentDoesNotBypassTheKeyringPolicy(t *testing.T) {
+	clearAuthEnvironment(t)
+	host := "https://ambient-bypass.example.invalid"
+	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
+	t.Setenv("BITBUCKET_URL", host)
+	t.Setenv("ADMIN_USER", "admin")
+	t.Setenv("BB_REQUIRE_KEYRING", "1")
+
+	// The policy must still refuse: the secret genuinely came off disk.
+	if _, err := LoadFromEnv(); err == nil {
+		t.Fatal("expected the policy to hold despite an ambient auth variable")
+	}
+}
+
+func TestEnvironmentSuppliedTokenIsNotReportedAsPlaintext(t *testing.T) {
+	clearAuthEnvironment(t)
+	host := "https://env-token.example.invalid"
+	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
+	t.Setenv("BITBUCKET_URL", host)
+	// This one really does supply the credential, so the file entry is unused.
+	t.Setenv("BITBUCKET_TOKEN", "token-from-environment")
+
+	cfg, err := LoadFromEnv()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if cfg.BitbucketToken != "token-from-environment" {
+		t.Fatalf("expected the environment token, got %q", cfg.BitbucketToken)
+	}
+	if cfg.UsedInsecureStorage {
+		t.Fatal("an unused file entry must not be reported as in use")
+	}
+	if got := cfg.CredentialStorage(); got != "environment" {
+		t.Fatalf("expected environment, got %q", got)
+	}
+}

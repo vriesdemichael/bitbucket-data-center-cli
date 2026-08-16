@@ -387,9 +387,8 @@ func TestAuthStatusNamesPlaintextStorage(t *testing.T) {
 	}
 
 	t.Setenv("BB_CONFIG_PATH", configPath)
-	t.Setenv("BB_REQUIRE_KEYRING", "")
 	t.Setenv("BITBUCKET_URL", host)
-	t.Setenv("BITBUCKET_TOKEN", "")
+	clearAuthEnvironment(t)
 
 	stdout := &bytes.Buffer{}
 	cmd := New(Dependencies{
@@ -411,5 +410,22 @@ func TestAuthStatusNamesPlaintextStorage(t *testing.T) {
 	// Naming the file is what makes the report actionable for an auditor.
 	if !strings.Contains(output, configPath) {
 		t.Fatalf("expected the config path named, got %q", output)
+	}
+}
+
+// clearAuthEnvironment removes every variable LoadFromEnv treats as an auth
+// source.
+//
+// ADMIN_USER and ADMIN_PASSWORD are set on the CI runner for the live suite and
+// leak into the unit run, which is how the ambient-environment bug this guards
+// against reached CI in the first place.
+func clearAuthEnvironment(t *testing.T) {
+	t.Helper()
+
+	for _, key := range []string{
+		"BITBUCKET_TOKEN", "BITBUCKET_USERNAME", "BITBUCKET_USER", "BITBUCKET_PASSWORD",
+		"ADMIN_USER", "ADMIN_PASSWORD", "BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG",
+	} {
+		t.Setenv(key, "")
 	}
 }

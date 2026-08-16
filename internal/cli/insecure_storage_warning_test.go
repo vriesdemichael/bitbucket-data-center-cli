@@ -64,7 +64,13 @@ func TestLoadConfigWarnsOncePerProcessAboutPlaintextStorage(t *testing.T) {
 	host := "https://warn-once.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writeInsecureConfig(t, host))
 	t.Setenv("BITBUCKET_URL", host)
-	for _, key := range []string{"BITBUCKET_TOKEN", "BITBUCKET_USERNAME", "BITBUCKET_PASSWORD", "BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG"} {
+	// ADMIN_USER and ADMIN_PASSWORD are set on the CI runner for the live suite
+	// and leak into the unit run, so every auth variable has to be cleared for
+	// this to test what it claims to.
+	for _, key := range []string{
+		"BITBUCKET_TOKEN", "BITBUCKET_USERNAME", "BITBUCKET_USER", "BITBUCKET_PASSWORD",
+		"ADMIN_USER", "ADMIN_PASSWORD", "BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG",
+	} {
 		t.Setenv(key, "")
 	}
 
