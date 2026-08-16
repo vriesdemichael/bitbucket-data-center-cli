@@ -86,6 +86,20 @@ identity override meanwhile authored real commits as `Test User <test@example.lo
 If the guard fires, look for a git invocation missing `-C` or a helper defaulting to the current
 directory. It reports rather than repairs; undo damage with `git config --local --unset <key>`.
 
+### Documented commands are parsed, not just written
+
+`task docs:lint` parses every `bb ...` line in a ```` ```bash ```` block against the real Cobra
+command tree. It runs inside `task quality:verify`, so the pre-push hook and CI both cover it.
+
+Write examples in shell-tagged blocks. An untagged or `text`-tagged block is invisible to the
+linter — that avoids the check rather than passing it. When an example is meant to be invalid, mark
+the block with `<!-- docs-lint: expect-invalid -->`, which inverts the check so the block also fails
+if the command later becomes valid. Do not add an unconditional ignore.
+
+If the linter flags something you believe is correct, suspect a trailing carriage return before
+suspecting the documentation: on a CRLF checkout `\r` ends up inside the last token and pflag
+reports it as an unknown flag, with nothing visible in the message to say so. See ADR-048.
+
 ### CLI live coverage artifact
 
 `docs/quality/cli-live-coverage.json` records which CLI commands the live suite actually proves work

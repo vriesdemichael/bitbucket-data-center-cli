@@ -44,8 +44,9 @@ The human-readable line still goes to stderr, exactly as it does without `--json
 
 This applies to usage errors too — an unknown flag or command produces an envelope, not just a bare string:
 
+<!-- docs-lint: expect-invalid -->
 ```bash
-bb --json repo view --nonexistent-flag
+bb --json repo list --nonexistent-flag
 ```
 
 The published schema is
@@ -95,7 +96,7 @@ Command failures use deterministic exit codes by error kind.
 Example failure behavior:
 
 ```bash
-bb repo view --repo BADFORMAT
+bb tag list --repo BADFORMAT
 echo $?
 ```
 
@@ -111,8 +112,9 @@ Under `--json`, the same failure additionally produces the envelope shown above 
 An unknown flag, unknown command, bad flag value or wrong argument count is the caller's mistake,
 and reports `validation` with exit code `2` — the same as any other input the CLI rejects:
 
+<!-- docs-lint: expect-invalid -->
 ```bash
-bb --json repo view --nonexistent-flag
+bb --json repo list --nonexistent-flag
 ```
 
 ```json

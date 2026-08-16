@@ -172,7 +172,13 @@ tasks:
       - task: quality:validate-decisions
       - task: quality:spec-coverage:verify
       - task: quality:cli-live-coverage:verify
+      - task: docs:lint
       - task: docs:verify-generated
+
+  docs:lint:
+    desc: Validate every documented bb invocation against the real Cobra command tree
+    cmds:
+      - go run ./tools/docs-lint
 
   quality:coverage:
     desc: Run combined (unit + live) global + patch coverage checks and generated-operation coverage metric

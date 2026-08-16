@@ -216,7 +216,7 @@ bb build status get <commit-sha>
 bb commit get --repo MYPROJ/payments <commit-sha>
 
 # Compare against the previous green commit
-bb commit compare --repo MYPROJ/payments --from <green-sha> --to <failing-sha>
+bb commit compare <green-sha> <failing-sha> --repo MYPROJ/payments
 ```
 
 ### 7. Release tagging
@@ -226,7 +226,7 @@ bb commit compare --repo MYPROJ/payments --from <green-sha> --to <failing-sha>
 bb tag list --repo MYPROJ/payments
 
 # Create a new release tag
-bb tag create --repo MYPROJ/payments v1.2.3 main
+bb tag create v1.2.3 --repo MYPROJ/payments --start-point main
 ```
 
 ### 8. File browse/edit, comparison and archives
