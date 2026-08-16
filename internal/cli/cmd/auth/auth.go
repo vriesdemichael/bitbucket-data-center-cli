@@ -32,6 +32,10 @@ type Dependencies struct {
 	WriteJSON      func(io.Writer, any) error
 	NewUsersClient func(config.AppConfig) (usersClient, error)
 	NewReposClient func(config.AppConfig) (repositoriesClient, error)
+	// ConfigureGitCredentialHelper writes the git configuration that points git
+	// at bb for credentials. Injected so setup-git can be tested without
+	// mutating the developer's real git configuration.
+	ConfigureGitCredentialHelper func(ctx context.Context, key, value string, global, force bool) error
 }
 
 func New(deps Dependencies) *cobra.Command {
@@ -57,6 +61,10 @@ func New(deps Dependencies) *cobra.Command {
 		deps.NewReposClient = func(cfg config.AppConfig) (repositoriesClient, error) {
 			return openapi.NewClientWithResponsesFromConfig(cfg)
 		}
+	}
+
+	if deps.ConfigureGitCredentialHelper == nil {
+		deps.ConfigureGitCredentialHelper = defaultConfigureGitCredentialHelper
 	}
 
 	authCmd := &cobra.Command{
@@ -463,6 +471,8 @@ func New(deps Dependencies) *cobra.Command {
 
 	authCmd.AddCommand(newTokenCommand(deps))
 	authCmd.AddCommand(newGpgKeyCommand(deps))
+	authCmd.AddCommand(newGitCredentialCommand())
+	authCmd.AddCommand(newSetupGitCommand(deps))
 
 	return authCmd
 }

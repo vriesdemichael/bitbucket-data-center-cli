@@ -63,6 +63,7 @@ nav:
       - Repository Discovery and Server Switching: advanced/repository-discovery-and-server-switching.md
       - Bulk Operations: advanced/bulk-operations.md
       - Dry-Run Planning: advanced/dry-run-planning.md
+      - Git Authentication: advanced/git-authentication.md
       - Machine Mode and Diagnostics: advanced/machine-mode-diagnostics.md
   - AI and llms.txt: ai-and-llms.md
   - ADR Records: adr/index.md

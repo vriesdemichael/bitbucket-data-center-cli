@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"net/url"
 	"os/exec"
 	"regexp"
 	"sort"
@@ -56,6 +58,19 @@ func (backend *Backend) Clone(ctx context.Context, repositoryURL string, options
 		return apperrors.New(apperrors.KindValidation, "clone directory cannot be empty", nil)
 	}
 
+	// Credentials are supplied for the duration of this one command only, and
+	// are never written into the resulting repository.
+	//
+	// This previously set http.extraHeader both on the clone invocation and
+	// persistently in the new repository's .git/config. That put a live token
+	// on disk in plaintext, and because an unscoped extraHeader is attached to
+	// every HTTP request git makes from that repository, adding any unrelated
+	// HTTP remote caused the Bitbucket token to be sent to that host too.
+	//
+	// A credential helper cannot be used here because it would have to be
+	// configured before the repository exists. Instead the header is passed
+	// with -c so it lives only in this process's argv, and the persistent
+	// credential path is set up afterwards by `bb auth setup-git`.
 	var headerVal string
 	if options.AuthToken != "" {
 		headerVal = fmt.Sprintf("Authorization: Bearer %s", options.AuthToken)
@@ -66,7 +81,14 @@ func (backend *Backend) Clone(ctx context.Context, repositoryURL string, options
 
 	var args []string
 	if headerVal != "" {
-		args = append(args, "-c", fmt.Sprintf("http.extraHeader=%s", headerVal))
+		// Scope the header to the host being cloned from. An unscoped
+		// http.extraHeader applies to every host git contacts, including any
+		// redirect target.
+		if scope := httpConfigScope(repositoryURL); scope != "" {
+			args = append(args, "-c", fmt.Sprintf("http.%s.extraHeader=%s", scope, headerVal))
+		} else {
+			args = append(args, "-c", fmt.Sprintf("http.extraHeader=%s", headerVal))
+		}
 	}
 	args = append(args, "clone")
 	if options.Branch != "" {
@@ -80,21 +102,22 @@ func (backend *Backend) Clone(ctx context.Context, repositoryURL string, options
 	}
 	args = append(args, repositoryURL, options.Directory)
 
-	_, err := backend.run(ctx, runOptions{args: args})
-	if err != nil {
+	if _, err := backend.run(ctx, runOptions{args: args}); err != nil {
 		return err
 	}
 
-	if headerVal != "" {
-		_, err = backend.run(ctx, runOptions{
-			args: []string{"-C", options.Directory, "config", "http.extraHeader", headerVal},
-		})
-		if err != nil {
-			return fmt.Errorf("failed to configure local http.extraHeader: %w", err)
-		}
+	return nil
+}
+
+// httpConfigScope returns the scheme://host[:port]/ prefix git uses to scope
+// http.* configuration, or an empty string when the URL cannot be parsed.
+func httpConfigScope(repositoryURL string) string {
+	parsed, err := url.Parse(strings.TrimSpace(repositoryURL))
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return ""
 	}
 
-	return nil
+	return parsed.Scheme + "://" + parsed.Host + "/"
 }
 
 func (backend *Backend) Fetch(ctx context.Context, repositoryDirectory string, options git.FetchOptions) error {
@@ -213,6 +236,93 @@ type runOptions struct {
 type runResult struct {
 	stdout string
 	stderr string
+}
+
+// configArgs builds the leading arguments for a git config invocation.
+// Local-scope operations are addressed with -C so they cannot fall through to
+// whichever repository the process happens to be standing in.
+func configArgs(options git.ConfigOptions) ([]string, error) {
+	if strings.TrimSpace(options.Key) == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "git config key cannot be empty", nil)
+	}
+
+	switch options.Scope {
+	case git.ConfigScopeGlobal:
+		return []string{"config", "--global"}, nil
+	case git.ConfigScopeLocal, "":
+		directory := strings.TrimSpace(options.Directory)
+		if directory == "" {
+			return nil, apperrors.New(apperrors.KindValidation, "git config directory cannot be empty for local scope", nil)
+		}
+		return []string{"-C", directory, "config", "--local"}, nil
+	default:
+		return nil, apperrors.New(
+			apperrors.KindValidation,
+			fmt.Sprintf("unsupported git config scope %q", string(options.Scope)),
+			nil,
+		)
+	}
+}
+
+func (backend *Backend) GetConfig(ctx context.Context, options git.ConfigOptions) (string, error) {
+	args, err := configArgs(options)
+	if err != nil {
+		return "", err
+	}
+
+	// --get-all rather than --get: credential.<url>.helper is multi-valued, and
+	// --get exits 2 when several values are present.
+	result, err := backend.run(ctx, runOptions{args: append(args, "--get-all", options.Key)})
+	if err != nil {
+		// git exits 1 when the key is simply absent. That is a normal answer to
+		// "is this configured", not a failure, so report it as an empty value.
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 && strings.TrimSpace(result.stderr) == "" {
+			return "", nil
+		}
+		return "", err
+	}
+
+	// Report the effective value, which for a multi-valued key is the last one.
+	lines := strings.Split(strings.TrimSpace(result.stdout), "\n")
+	return strings.TrimSpace(lines[len(lines)-1]), nil
+}
+
+func (backend *Backend) SetConfig(ctx context.Context, options git.ConfigOptions) error {
+	args, err := configArgs(options)
+	if err != nil {
+		return err
+	}
+
+	// --replace-all so a plain set is deterministic on a multi-valued key, and
+	// --add when the caller is deliberately appending.
+	mode := "--replace-all"
+	if options.Append {
+		mode = "--add"
+	}
+
+	_, err = backend.run(ctx, runOptions{args: append(args, mode, options.Key, options.Value)})
+	return err
+}
+
+func (backend *Backend) UnsetConfig(ctx context.Context, options git.ConfigOptions) error {
+	args, err := configArgs(options)
+	if err != nil {
+		return err
+	}
+
+	result, err := backend.run(ctx, runOptions{args: append(args, "--unset-all", options.Key)})
+	if err != nil {
+		// Exit code 5 means the key was not set. Remediation runs
+		// unconditionally, so "already clean" must not be an error.
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 5 && strings.TrimSpace(result.stderr) == "" {
+			return nil
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (backend *Backend) run(ctx context.Context, options runOptions) (runResult, error) {

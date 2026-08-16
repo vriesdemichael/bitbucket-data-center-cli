@@ -89,6 +89,12 @@ Runtime precedence order:
 
 Supported day-to-day authentication modes are token and basic auth.
 
+That precedence governs how `bb` authenticates to the Bitbucket API. Plain `git`
+authenticates separately: it does not read `bb`'s configuration, so `git push`
+and `git pull` inside a clone need `bb auth setup-git` once per host. Credentials
+are never written into a repository — see
+[Git Authentication](advanced/git-authentication.md).
+
 ## Quick examples
 
 ```bash

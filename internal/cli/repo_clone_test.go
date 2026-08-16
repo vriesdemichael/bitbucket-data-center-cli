@@ -78,6 +78,18 @@ func (stub *cloneBackendStub) ListRemotes(context.Context, string) ([]git.Remote
 	return nil, nil
 }
 
+func (stub *cloneBackendStub) GetConfig(context.Context, git.ConfigOptions) (string, error) {
+	return "", nil
+}
+
+func (stub *cloneBackendStub) SetConfig(context.Context, git.ConfigOptions) error {
+	return nil
+}
+
+func (stub *cloneBackendStub) UnsetConfig(context.Context, git.ConfigOptions) error {
+	return nil
+}
+
 func TestRepoCloneCommandClonesWithDefaults(t *testing.T) {
 	originalFactory := gitBackendFactory
 	stub := &cloneBackendStub{}
