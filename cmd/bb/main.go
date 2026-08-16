@@ -32,7 +32,7 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 		stderr = io.Discard
 	}
 
-	if err := rootCmd.Execute(); err != nil {
+	if err := cli.ClassifyUsageError(rootCmd.Execute()); err != nil {
 		emitCommandFailureDiagnostic(err, stderr)
 
 		// Under --json, stdout is a machine contract, and a failure that leaves
