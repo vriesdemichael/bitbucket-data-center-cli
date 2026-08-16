@@ -122,7 +122,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 				}
 				created := ""
 				if t.CreatedDate != nil {
-					created = t.CreatedDate.Format(time.RFC3339)
+					created = formatEpochMillis(t.CreatedDate)
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%-12s %-30s %-25s\n", id, name, created)
 			}
@@ -171,7 +171,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 			}
 			created := ""
 			if t.CreatedDate != nil {
-				created = t.CreatedDate.Format(time.RFC3339)
+				created = formatEpochMillis(t.CreatedDate)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "ID:           %s\n", id)
 			fmt.Fprintf(cmd.OutOrStdout(), "Name:         %s\n", name)
@@ -315,4 +315,20 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 	tokenCmd.AddCommand(revokeCmd)
 
 	return tokenCmd
+}
+
+// formatEpochMillis renders a Bitbucket epoch-milliseconds timestamp in the
+// RFC 3339 form these commands have always printed.
+//
+// Atlassian's spec declares RestAccessToken.createdDate as string/date-time
+// while the server sends a number, so the generated field is *int64 (see
+// OPENAPI-011 in docs/openapi/fixes.yaml). Decoding it as time.Time failed
+// outright, which is why token creation returned
+// "Time.UnmarshalJSON: input is not a JSON string".
+func formatEpochMillis(millis *int64) string {
+	if millis == nil {
+		return ""
+	}
+
+	return time.UnixMilli(*millis).UTC().Format(time.RFC3339)
 }

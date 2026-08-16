@@ -112,6 +112,8 @@ func sanitize(inputPath, outputPath string) error {
 		}
 	}
 
+	fixedSchemaFields := fixEpochMillisFields(spec)
+
 	output, err := json.MarshalIndent(spec, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal sanitized spec: %w", err)
@@ -121,8 +123,82 @@ func sanitize(inputPath, outputPath string) error {
 		return fmt.Errorf("write output: %w", err)
 	}
 
-	fmt.Printf("sanitized OpenAPI spec; fixed operations=%d renamed operationIds=%d\n", fixedOperations, renamedOperationIDs)
+	fmt.Printf(
+		"sanitized OpenAPI spec; fixed operations=%d renamed operationIds=%d fixed schema fields=%d\n",
+		fixedOperations, renamedOperationIDs, fixedSchemaFields,
+	)
 	return nil
+}
+
+// epochMillisSchemaFields lists schema properties that Atlassian's spec declares
+// as string/date-time but which the server actually returns as epoch
+// milliseconds.
+//
+// The mismatch is not cosmetic: oapi-codegen emits *time.Time for a date-time
+// field, and time.Time.UnmarshalJSON only accepts an RFC 3339 string, so every
+// response carrying the field fails to decode with
+// "Time.UnmarshalJSON: input is not a JSON string". For RestAccessToken this
+// made `bb auth token create` fail outright against a real server even though
+// the request succeeded.
+//
+// Every other createdDate in the spec is already declared as an integer, so
+// these entries are upstream inconsistencies rather than a deliberate encoding.
+// Only schemas whose encoding has been confirmed against a running Bitbucket
+// are listed. Roughly twenty other schemas declare string/date-time fields with
+// the same suspect shape, but each needs verifying against a real response
+// before being rewritten — see the follow-up issue referenced in
+// docs/openapi/fixes.yaml.
+// epochMillisFieldNames lists property names that Bitbucket always encodes as
+// epoch milliseconds, applied wherever they appear in the spec.
+//
+// Scope is a field name rather than a schema path for two reasons. The spec
+// declares createdDate as an integer in 16 places and as string/date-time in 11
+// — the date-time declarations are the inconsistency, not a distinct encoding.
+// And the same object shape appears inline in several request and response
+// bodies, which oapi-codegen emits as anonymous structs; rewriting only some of
+// them makes otherwise-identical shapes incompatible and the generated code
+// stops compiling.
+//
+// Only names whose encoding has been observed against a running Bitbucket are
+// listed. Other date fields in the spec (expiryDate, lastSeenDate,
+// lockAcquireTime and similar) are left alone until someone confirms what the
+// server actually sends for them.
+var epochMillisFieldNames = map[string]struct{}{
+	"createdDate": {},
+}
+
+// fixEpochMillisFields rewrites the listed properties to integer/int64 so the
+// generated models match what the server sends.
+func fixEpochMillisFields(node any) int {
+	fixed := 0
+
+	switch typed := node.(type) {
+	case map[string]any:
+		for key, value := range typed {
+			property, isObject := value.(map[string]any)
+			if isObject {
+				if _, targeted := epochMillisFieldNames[key]; targeted {
+					// Only rewrite the shape this fix targets. If Atlassian
+					// corrects the spec upstream, leave their declaration alone
+					// rather than forcing it back to the workaround.
+					if property["type"] == "string" && property["format"] == "date-time" {
+						property["type"] = "integer"
+						property["format"] = "int64"
+						property["description"] = "Epoch milliseconds. Upstream spec declares string/date-time; the server returns a number."
+						fixed++
+					}
+				}
+			}
+
+			fixed += fixEpochMillisFields(value)
+		}
+	case []any:
+		for _, item := range typed {
+			fixed += fixEpochMillisFields(item)
+		}
+	}
+
+	return fixed
 }
 
 func operationIDFromPath(method, path string) string {

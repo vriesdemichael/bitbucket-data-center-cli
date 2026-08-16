@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -170,16 +169,16 @@ func (s *Service) AddProjectKey(ctx context.Context, projectKey string, label st
 	body := openapigenerated.RestSshAccessKey{
 		Permission: &permVal,
 		Key: &struct {
-			AlgorithmType     *string    `json:"algorithmType,omitempty"`
-			BitLength         *int32     `json:"bitLength,omitempty"`
-			CreatedDate       *time.Time `json:"createdDate,omitempty"`
-			ExpiryDays        *int32     `json:"expiryDays,omitempty"`
-			Fingerprint       *string    `json:"fingerprint,omitempty"`
-			Id                *int32     `json:"id,omitempty"`
-			Label             *string    `json:"label,omitempty"`
-			LastAuthenticated *string    `json:"lastAuthenticated,omitempty"`
-			Text              *string    `json:"text,omitempty"`
-			Warning           *string    `json:"warning,omitempty"`
+			AlgorithmType     *string `json:"algorithmType,omitempty"`
+			BitLength         *int32  `json:"bitLength,omitempty"`
+			CreatedDate       *int64  `json:"createdDate,omitempty"`
+			ExpiryDays        *int32  `json:"expiryDays,omitempty"`
+			Fingerprint       *string `json:"fingerprint,omitempty"`
+			Id                *int32  `json:"id,omitempty"`
+			Label             *string `json:"label,omitempty"`
+			LastAuthenticated *string `json:"lastAuthenticated,omitempty"`
+			Text              *string `json:"text,omitempty"`
+			Warning           *string `json:"warning,omitempty"`
 		}{
 			Text: &trimmedKey,
 		},
@@ -291,16 +290,16 @@ func (s *Service) AddRepoKey(ctx context.Context, projectKey string, repoSlug st
 	body := openapigenerated.RestSshAccessKey{
 		Permission: &permVal,
 		Key: &struct {
-			AlgorithmType     *string    `json:"algorithmType,omitempty"`
-			BitLength         *int32     `json:"bitLength,omitempty"`
-			CreatedDate       *time.Time `json:"createdDate,omitempty"`
-			ExpiryDays        *int32     `json:"expiryDays,omitempty"`
-			Fingerprint       *string    `json:"fingerprint,omitempty"`
-			Id                *int32     `json:"id,omitempty"`
-			Label             *string    `json:"label,omitempty"`
-			LastAuthenticated *string    `json:"lastAuthenticated,omitempty"`
-			Text              *string    `json:"text,omitempty"`
-			Warning           *string    `json:"warning,omitempty"`
+			AlgorithmType     *string `json:"algorithmType,omitempty"`
+			BitLength         *int32  `json:"bitLength,omitempty"`
+			CreatedDate       *int64  `json:"createdDate,omitempty"`
+			ExpiryDays        *int32  `json:"expiryDays,omitempty"`
+			Fingerprint       *string `json:"fingerprint,omitempty"`
+			Id                *int32  `json:"id,omitempty"`
+			Label             *string `json:"label,omitempty"`
+			LastAuthenticated *string `json:"lastAuthenticated,omitempty"`
+			Text              *string `json:"text,omitempty"`
+			Warning           *string `json:"warning,omitempty"`
 		}{
 			Text: &trimmedKey,
 		},

@@ -2,7 +2,6 @@ package cli
 
 import (
 	"testing"
-	"time"
 
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
@@ -17,16 +16,16 @@ func TestBranchRestrictionDryRunHelpers(t *testing.T) {
 	keyID := int32(7)
 	accessKey := openapigenerated.RestSshAccessKey{}
 	accessKey.Key = &struct {
-		AlgorithmType     *string    `json:"algorithmType,omitempty"`
-		BitLength         *int32     `json:"bitLength,omitempty"`
-		CreatedDate       *time.Time `json:"createdDate,omitempty"`
-		ExpiryDays        *int32     `json:"expiryDays,omitempty"`
-		Fingerprint       *string    `json:"fingerprint,omitempty"`
-		Id                *int32     `json:"id,omitempty"`
-		Label             *string    `json:"label,omitempty"`
-		LastAuthenticated *string    `json:"lastAuthenticated,omitempty"`
-		Text              *string    `json:"text,omitempty"`
-		Warning           *string    `json:"warning,omitempty"`
+		AlgorithmType     *string `json:"algorithmType,omitempty"`
+		BitLength         *int32  `json:"bitLength,omitempty"`
+		CreatedDate       *int64  `json:"createdDate,omitempty"`
+		ExpiryDays        *int32  `json:"expiryDays,omitempty"`
+		Fingerprint       *string `json:"fingerprint,omitempty"`
+		Id                *int32  `json:"id,omitempty"`
+		Label             *string `json:"label,omitempty"`
+		LastAuthenticated *string `json:"lastAuthenticated,omitempty"`
+		Text              *string `json:"text,omitempty"`
+		Warning           *string `json:"warning,omitempty"`
 	}{Id: &keyID}
 
 	restriction := openapigenerated.RestRefRestriction{
