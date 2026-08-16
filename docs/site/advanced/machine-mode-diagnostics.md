@@ -84,7 +84,7 @@ fi
 
 Command failures use deterministic exit codes by error kind.
 
-- `validation` -> exit code `2`
+- `validation` -> exit code `2` (includes unknown flags and commands)
 - `authentication` or `authorization` -> exit code `3`
 - `not_found` -> exit code `4`
 - `conflict` -> exit code `5`
@@ -106,7 +106,27 @@ validation: --repo must be in PROJECT/slug format
 
 Under `--json`, the same failure additionally produces the envelope shown above on stdout.
 
-!!! note "Usage errors report `internal`"
-    An unknown flag or unknown command is reported by Cobra rather than the CLI's own taxonomy, so
-    it currently arrives as `kind: "internal"` with exit code `1` rather than `validation` / `2`.
-    Branch on the presence of `error` rather than on `kind` if you need to catch those.
+### Malformed invocations
+
+An unknown flag, unknown command, bad flag value or wrong argument count is the caller's mistake,
+and reports `validation` with exit code `2` — the same as any other input the CLI rejects:
+
+```bash
+bb --json repo view --nonexistent-flag
+```
+
+```json
+{
+  "version": "v2",
+  "error": {
+    "kind": "validation",
+    "message": "unknown flag: --nonexistent-flag",
+    "exit_code": 2
+  },
+  "meta": { "contract": "bb.machine" }
+}
+```
+
+This matters for automation: `internal` means *the CLI broke*, and a caller that retries or
+escalates on it would do the wrong thing with its own typo. Genuine failures — a refused
+connection, an unexpected server response — still report `internal` and exit `1`.

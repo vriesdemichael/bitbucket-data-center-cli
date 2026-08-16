@@ -305,16 +305,28 @@ func TestExecuteRootCommandEmitsEnvelopeWhenFlagParsingFails(t *testing.T) {
 
 	stdout := &bytes.Buffer{}
 	exitCode := executeRootCommand(cmd, []string{"--bogus", "--json"}, stdout, &bytes.Buffer{})
-	if exitCode == 0 {
-		t.Fatal("expected a non-zero exit for an unknown flag")
+
+	// An unknown flag is the caller's mistake, so it reports validation and
+	// exit 2 rather than falling through to internal and exit 1.
+	if exitCode != 2 {
+		t.Fatalf("expected exit code 2 for an unknown flag, got %d", exitCode)
 	}
 
-	var envelope map[string]any
+	var envelope struct {
+		Error struct {
+			Kind     string `json:"kind"`
+			Message  string `json:"message"`
+			ExitCode int    `json:"exit_code"`
+		} `json:"error"`
+	}
 	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
 		t.Fatalf("expected parseable stdout, got %q (%v)", stdout.String(), err)
 	}
-	if _, present := envelope["error"]; !present {
-		t.Fatalf("expected an error envelope, got %v", envelope)
+	if envelope.Error.Kind != "validation" || envelope.Error.ExitCode != 2 {
+		t.Fatalf("expected validation/2, got %+v", envelope.Error)
+	}
+	if !strings.Contains(envelope.Error.Message, "unknown flag") {
+		t.Fatalf("expected the parser message preserved, got %q", envelope.Error.Message)
 	}
 }
 

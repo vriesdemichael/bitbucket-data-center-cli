@@ -54,6 +54,11 @@ Uncovered changed lines (108):
 Fix the gap by adding tests. Lowering `COVERAGE_MIN_PATCH` in
 `.github/coverage-thresholds.env` is not the remedy, and a reviewer will treat it as one to justify.
 
+**`git add` new files before measuring.** The gate diffs against the merge base with `git diff`,
+which does not see untracked files — a new `.go` file is simply absent from the patch, so a local
+run reports a healthy percentage over the lines it can see and CI, where everything is committed,
+reports a lower one. If the changed-line count looks too small for the change, that is why.
+
 ### Tests must not reconfigure the repository they run in
 
 `internal/git/gittest` snapshots the repository-scoped git configuration before a package's tests and

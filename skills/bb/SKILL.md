@@ -408,9 +408,9 @@ Check for `error` before reading `data`. `kind` is one of `authentication`,
 `not_implemented`, `internal` — so you can tell "fix your invocation" from "retry later"
 without parsing the message. `exit_code` matches the process exit status.
 
-Unknown flags and unknown commands currently report `kind: "internal"` because they come
-from the argument parser rather than the CLI's own classification; treat a failure whose
-message starts with `unknown flag` or `unknown command` as your own mistake to correct.
+A malformed invocation — unknown flag, unknown command, bad flag value, wrong number of
+arguments — reports `validation` / exit `2`. Treat that as your own mistake to correct, not
+something to retry. `internal` / exit `1` means the CLI or the server genuinely failed.
 
 ## Error Reporting
 
