@@ -8,7 +8,6 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
@@ -444,16 +443,16 @@ func (service *Service) upsertRestriction(ctx context.Context, repo RepositoryRe
 		for _, kid := range input.AccessKeyIDs {
 			kidCopy := kid
 			keys = append(keys, openapigenerated.RestSshAccessKey{Key: &struct {
-				AlgorithmType     *string    "json:\"algorithmType,omitempty\""
-				BitLength         *int32     "json:\"bitLength,omitempty\""
-				CreatedDate       *time.Time "json:\"createdDate,omitempty\""
-				ExpiryDays        *int32     "json:\"expiryDays,omitempty\""
-				Fingerprint       *string    "json:\"fingerprint,omitempty\""
-				Id                *int32     "json:\"id,omitempty\""
-				Label             *string    "json:\"label,omitempty\""
-				LastAuthenticated *string    "json:\"lastAuthenticated,omitempty\""
-				Text              *string    "json:\"text,omitempty\""
-				Warning           *string    "json:\"warning,omitempty\""
+				AlgorithmType     *string "json:\"algorithmType,omitempty\""
+				BitLength         *int32  "json:\"bitLength,omitempty\""
+				CreatedDate       *int64  "json:\"createdDate,omitempty\""
+				ExpiryDays        *int32  "json:\"expiryDays,omitempty\""
+				Fingerprint       *string "json:\"fingerprint,omitempty\""
+				Id                *int32  "json:\"id,omitempty\""
+				Label             *string "json:\"label,omitempty\""
+				LastAuthenticated *string "json:\"lastAuthenticated,omitempty\""
+				Text              *string "json:\"text,omitempty\""
+				Warning           *string "json:\"warning,omitempty\""
 			}{Id: &kidCopy}})
 		}
 		if len(keys) > 0 {
@@ -678,16 +677,16 @@ func mapRestrictionInput(input RestrictionUpsertInput) (openapigenerated.RestRes
 		for _, kid := range input.AccessKeyIDs {
 			kidCopy := kid
 			keys = append(keys, openapigenerated.RestSshAccessKey{Key: &struct {
-				AlgorithmType     *string    "json:\"algorithmType,omitempty\""
-				BitLength         *int32     "json:\"bitLength,omitempty\""
-				CreatedDate       *time.Time "json:\"createdDate,omitempty\""
-				ExpiryDays        *int32     "json:\"expiryDays,omitempty\""
-				Fingerprint       *string    "json:\"fingerprint,omitempty\""
-				Id                *int32     "json:\"id,omitempty\""
-				Label             *string    "json:\"label,omitempty\""
-				LastAuthenticated *string    "json:\"lastAuthenticated,omitempty\""
-				Text              *string    "json:\"text,omitempty\""
-				Warning           *string    "json:\"warning,omitempty\""
+				AlgorithmType     *string "json:\"algorithmType,omitempty\""
+				BitLength         *int32  "json:\"bitLength,omitempty\""
+				CreatedDate       *int64  "json:\"createdDate,omitempty\""
+				ExpiryDays        *int32  "json:\"expiryDays,omitempty\""
+				Fingerprint       *string "json:\"fingerprint,omitempty\""
+				Id                *int32  "json:\"id,omitempty\""
+				Label             *string "json:\"label,omitempty\""
+				LastAuthenticated *string "json:\"lastAuthenticated,omitempty\""
+				Text              *string "json:\"text,omitempty\""
+				Warning           *string "json:\"warning,omitempty\""
 			}{Id: &kidCopy}})
 		}
 		if len(keys) > 0 {

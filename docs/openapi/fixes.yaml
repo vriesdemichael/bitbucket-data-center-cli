@@ -1,5 +1,5 @@
 version: 1
-updated_at: "2026-04-08"
+updated_at: "2026-08-16"
 source_openapi: docs/reference/atlassian/bitbucket-10.2-openapi.json
 fixes:
   - id: OPENAPI-001
@@ -230,3 +230,70 @@ fixes:
         - task models:generate
         - task client:generate
         - go build ./...
+
+  - id: OPENAPI-011
+    area: spec-schema-field-types
+    description: >
+      Correct createdDate fields that the spec declares as string/date-time but the server returns
+      as epoch milliseconds.
+    reference:
+      type: schema
+      value: every createdDate property declared as string/date-time, spec-wide
+      upstream_issue: >
+        Bitbucket encodes createdDate as epoch milliseconds, but the spec declares it
+        {"type": "string", "format": "date-time"} in 11 places while declaring it as an integer in
+        16 others. oapi-codegen emits *time.Time for a date-time field, and time.Time.UnmarshalJSON
+        accepts only an RFC 3339 string, so every response carrying one of those 11 fields failed to
+        decode with "Time.UnmarshalJSON: input is not a JSON string".
+
+        Three user-facing commands were broken by this and none of them were caught by the live
+        suite, because each fails only when the collection is non-empty and the seeded fixtures
+        leave them empty:
+          - bb auth token create   (RestRawAccessToken.createdDate)
+          - bb ssh-key list        (RestSshKey.createdDate)
+          - bb repo ssh-key list   (RestSshAccessKey.key.createdDate, nested in an inline object)
+
+        bb auth token create was the worst of the three: the request succeeded and the token was
+        created on the server, but the response decode failed, so the user saw an error, never saw
+        the token secret, and left a live token behind.
+
+        Confirmed still present upstream in the 10.4 spec
+        (https://dac-static.atlassian.com/server/bitbucket/10.4.swagger.v3.json), so this is not
+        resolved by vendoring a newer artifact.
+    change:
+      files:
+        - tools/openapi-sanitize/main.go
+        - internal/cli/cmd/auth/token.go
+        - internal/services/sshkey/service.go
+        - internal/services/branch/service.go
+        - internal/services/project/restriction.go
+      detail: >
+        The sanitizer rewrites every createdDate property declared as string/date-time to
+        integer/int64 before generation, walking the whole document rather than a list of named
+        schemas.
+
+        Scoping by field name rather than by schema is deliberate. The same object shape appears
+        inline in several request and response bodies, and oapi-codegen emits those as anonymous
+        structs: rewriting only some occurrences leaves otherwise-identical shapes incompatible and
+        the generated code stops compiling. Field-name scope also matches the encoding Bitbucket
+        actually uses, which is why 16 of the 27 declarations were already integers.
+
+        The rewrite is guarded on the broken shape, so if Atlassian corrects the spec their
+        declaration is left untouched rather than forced back to this workaround.
+
+        Hand-written anonymous struct literals in the services mirrored the previous generated
+        shape and were updated to match. internal/cli/cmd/auth/token.go renders the value through
+        formatEpochMillis, preserving the RFC 3339 output these commands have always printed.
+
+        Only createdDate is rewritten. Other date fields in the spec (expiryDate, lastSeenDate,
+        lockAcquireTime, initialSyncDate, lastSyncDate, last-updated, enabledAt) remain *time.Time
+        because their encoding has not been observed against a running server, and rewriting an
+        unverified field would introduce the mirror-image defect.
+    verification:
+      commands:
+        - task models:generate
+        - task client:generate
+        - go build ./...
+        - bb auth token create "verify" --permission REPO_READ
+        - bb ssh-key list
+        - bb repo ssh-key list --repo PROJECT/repo

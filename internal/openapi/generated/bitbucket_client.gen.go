@@ -2736,9 +2736,10 @@ type RepositoryHookDetailsType string
 
 // RestAccessToken defines model for RestAccessToken.
 type RestAccessToken struct {
-	CreatedDate *time.Time `json:"createdDate,omitempty"`
-	Id          *string    `json:"id,omitempty"`
-	Name        *string    `json:"name,omitempty"`
+	// CreatedDate Epoch milliseconds. Upstream spec declares string/date-time; the server returns a number.
+	CreatedDate *int64  `json:"createdDate,omitempty"`
+	Id          *string `json:"id,omitempty"`
+	Name        *string `json:"name,omitempty"`
 }
 
 // RestAccessTokenRequest defines model for RestAccessTokenRequest.
@@ -4639,7 +4640,8 @@ type RestGpgSubKey struct {
 
 // RestHookScript defines model for RestHookScript.
 type RestHookScript struct {
-	CreatedDate *time.Time          `json:"createdDate,omitempty"`
+	// CreatedDate Epoch milliseconds. Upstream spec declares string/date-time; the server returns a number.
+	CreatedDate *int64              `json:"createdDate,omitempty"`
 	Description *string             `json:"description,omitempty"`
 	Id          *int64              `json:"id,omitempty"`
 	Name        *string             `json:"name,omitempty"`
@@ -4659,7 +4661,8 @@ type RestHookScriptConfig struct {
 		Type       RestHookScriptConfigScopeType `json:"type"`
 	} `json:"scope,omitempty"`
 	Script *struct {
-		CreatedDate *time.Time                      `json:"createdDate,omitempty"`
+		// CreatedDate Epoch milliseconds. Upstream spec declares string/date-time; the server returns a number.
+		CreatedDate *int64                          `json:"createdDate,omitempty"`
 		Description *string                         `json:"description,omitempty"`
 		Id          *int64                          `json:"id,omitempty"`
 		Name        *string                         `json:"name,omitempty"`
@@ -4858,7 +4861,8 @@ type RestJobState string
 
 // RestJobMessage defines model for RestJobMessage.
 type RestJobMessage struct {
-	CreatedDate *time.Time              `json:"createdDate,omitempty"`
+	// CreatedDate Epoch milliseconds. Upstream spec declares string/date-time; the server returns a number.
+	CreatedDate *int64                  `json:"createdDate,omitempty"`
 	Id          *string                 `json:"id,omitempty"`
 	Severity    *RestJobMessageSeverity `json:"severity,omitempty"`
 	Subject     *string                 `json:"subject,omitempty"`
@@ -5905,10 +5909,11 @@ type RestRateLimitSettings struct {
 
 // RestRawAccessToken defines model for RestRawAccessToken.
 type RestRawAccessToken struct {
-	CreatedDate *time.Time `json:"createdDate,omitempty"`
-	Id          *string    `json:"id,omitempty"`
-	Name        *string    `json:"name,omitempty"`
-	Token       *string    `json:"token,omitempty"`
+	// CreatedDate Epoch milliseconds. Upstream spec declares string/date-time; the server returns a number.
+	CreatedDate *int64  `json:"createdDate,omitempty"`
+	Id          *string `json:"id,omitempty"`
+	Name        *string `json:"name,omitempty"`
+	Token       *string `json:"token,omitempty"`
 }
 
 // RestRefMatcher defines model for RestRefMatcher.
@@ -6557,15 +6562,17 @@ type RestSingleAddInsightAnnotationRequest struct {
 // RestSshAccessKey defines model for RestSshAccessKey.
 type RestSshAccessKey struct {
 	Key *struct {
-		AlgorithmType     *string    `json:"algorithmType,omitempty"`
-		BitLength         *int32     `json:"bitLength,omitempty"`
-		CreatedDate       *time.Time `json:"createdDate,omitempty"`
-		ExpiryDays        *int32     `json:"expiryDays,omitempty"`
-		Fingerprint       *string    `json:"fingerprint,omitempty"`
-		Id                *int32     `json:"id,omitempty"`
-		Label             *string    `json:"label,omitempty"`
-		LastAuthenticated *string    `json:"lastAuthenticated,omitempty"`
-		Text              *string    `json:"text,omitempty"`
+		AlgorithmType *string `json:"algorithmType,omitempty"`
+		BitLength     *int32  `json:"bitLength,omitempty"`
+
+		// CreatedDate Epoch milliseconds. Upstream spec declares string/date-time; the server returns a number.
+		CreatedDate       *int64  `json:"createdDate,omitempty"`
+		ExpiryDays        *int32  `json:"expiryDays,omitempty"`
+		Fingerprint       *string `json:"fingerprint,omitempty"`
+		Id                *int32  `json:"id,omitempty"`
+		Label             *string `json:"label,omitempty"`
+		LastAuthenticated *string `json:"lastAuthenticated,omitempty"`
+		Text              *string `json:"text,omitempty"`
 
 		// Warning Contains a warning about the key, for example that it's deprecated
 		Warning *string `json:"warning,omitempty"`
@@ -6675,15 +6682,17 @@ type RestSshCredentials struct {
 
 // RestSshKey defines model for RestSshKey.
 type RestSshKey struct {
-	AlgorithmType     *string    `json:"algorithmType,omitempty"`
-	BitLength         *int32     `json:"bitLength,omitempty"`
-	CreatedDate       *time.Time `json:"createdDate,omitempty"`
-	ExpiryDays        *int32     `json:"expiryDays,omitempty"`
-	Fingerprint       *string    `json:"fingerprint,omitempty"`
-	Id                *int32     `json:"id,omitempty"`
-	Label             *string    `json:"label,omitempty"`
-	LastAuthenticated *string    `json:"lastAuthenticated,omitempty"`
-	Text              *string    `json:"text,omitempty"`
+	AlgorithmType *string `json:"algorithmType,omitempty"`
+	BitLength     *int32  `json:"bitLength,omitempty"`
+
+	// CreatedDate Epoch milliseconds. Upstream spec declares string/date-time; the server returns a number.
+	CreatedDate       *int64  `json:"createdDate,omitempty"`
+	ExpiryDays        *int32  `json:"expiryDays,omitempty"`
+	Fingerprint       *string `json:"fingerprint,omitempty"`
+	Id                *int32  `json:"id,omitempty"`
+	Label             *string `json:"label,omitempty"`
+	LastAuthenticated *string `json:"lastAuthenticated,omitempty"`
+	Text              *string `json:"text,omitempty"`
 
 	// Warning Contains a warning about the key, for example that it's deprecated
 	Warning *string `json:"warning,omitempty"`
@@ -10056,15 +10065,17 @@ type GetSshKeysParams struct {
 
 // AddSshKeyJSONBody defines parameters for AddSshKey.
 type AddSshKeyJSONBody struct {
-	AlgorithmType     *string    `json:"algorithmType,omitempty"`
-	BitLength         *int32     `json:"bitLength,omitempty"`
-	CreatedDate       *time.Time `json:"createdDate,omitempty"`
-	ExpiryDays        *int32     `json:"expiryDays,omitempty"`
-	Fingerprint       *string    `json:"fingerprint,omitempty"`
-	Id                *int32     `json:"id,omitempty"`
-	Label             *string    `json:"label,omitempty"`
-	LastAuthenticated *string    `json:"lastAuthenticated,omitempty"`
-	Text              *string    `json:"text,omitempty"`
+	AlgorithmType *string `json:"algorithmType,omitempty"`
+	BitLength     *int32  `json:"bitLength,omitempty"`
+
+	// CreatedDate Epoch milliseconds. Upstream spec declares string/date-time; the server returns a number.
+	CreatedDate       *int64  `json:"createdDate,omitempty"`
+	ExpiryDays        *int32  `json:"expiryDays,omitempty"`
+	Fingerprint       *string `json:"fingerprint,omitempty"`
+	Id                *int32  `json:"id,omitempty"`
+	Label             *string `json:"label,omitempty"`
+	LastAuthenticated *string `json:"lastAuthenticated,omitempty"`
+	Text              *string `json:"text,omitempty"`
 
 	// Warning Contains a warning about the key, for example that it's deprecated
 	Warning *string `json:"warning,omitempty"`
