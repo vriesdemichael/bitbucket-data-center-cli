@@ -175,26 +175,36 @@ func LoadFromEnv() (AppConfig, error) {
 	if os.Getenv("BB_DISABLE_STORED_CONFIG") != "1" {
 		stored, foundStored := resolveStoredCredentials(storedConfig, config.BitbucketURL)
 		if foundStored {
+			adoptedStoredSecret := false
+
 			if config.BitbucketUsername == "" && stored.BitbucketUsername != "" {
 				config.BitbucketUsername = stored.BitbucketUsername
 			}
 			if config.BitbucketToken == "" && stored.BitbucketToken != "" {
 				config.BitbucketToken = stored.BitbucketToken
+				adoptedStoredSecret = true
 			}
 			if config.BitbucketPassword == "" && stored.BitbucketPassword != "" {
 				config.BitbucketPassword = stored.BitbucketPassword
+				adoptedStoredSecret = true
 			}
 			if config.BitbucketToken != "" || (config.BitbucketUsername != "" && config.BitbucketPassword != "") {
 				config.AuthSource = "stored"
-				config.UsedInsecureStorage = stored.UsedInsecureStorage
 			}
+
+			// Tracks the secret actually in use, not the label on AuthSource.
+			// Deciding this from AuthSource would let any unrelated auth
+			// environment variable — ADMIN_USER on a CI runner, say — relabel the
+			// source as "env" and silently suppress both the warning and the
+			// BB_REQUIRE_KEYRING check for a credential that really did come
+			// from the plaintext file.
+			config.UsedInsecureStorage = adoptedStoredSecret && stored.UsedInsecureStorage
 		}
 
+		// AuthSource is a coarse label: it says the environment supplied
+		// something, not that the environment supplied the credential in use.
 		if os.Getenv("BITBUCKET_TOKEN") != "" || os.Getenv("BITBUCKET_USERNAME") != "" || os.Getenv("BITBUCKET_USER") != "" || os.Getenv("BITBUCKET_PASSWORD") != "" || os.Getenv("ADMIN_USER") != "" || os.Getenv("ADMIN_PASSWORD") != "" {
 			config.AuthSource = "env"
-			// Environment credentials never touch the config file, so they are
-			// not the plaintext fallback this flag reports.
-			config.UsedInsecureStorage = false
 		}
 	}
 
@@ -931,11 +941,14 @@ func (config AppConfig) CredentialStorage() string {
 		return "none"
 	}
 
+	// Plaintext wins over the AuthSource label. AuthSource only records that the
+	// environment supplied something; if a secret was genuinely adopted from the
+	// config file, saying "environment" would hide the exposure being reported.
 	switch {
-	case config.AuthSource == "env" || config.AuthSource == "env/default":
-		return "environment"
 	case config.UsedInsecureStorage:
 		return "config-file-plaintext"
+	case config.AuthSource == "env" || config.AuthSource == "env/default":
+		return "environment"
 	default:
 		return "keyring"
 	}
