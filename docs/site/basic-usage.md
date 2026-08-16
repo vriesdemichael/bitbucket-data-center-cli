@@ -101,9 +101,9 @@ are never written into a repository — see
 bb --json auth status
 bb repo clone TEST/my-repo
 bb browse --repo TEST/my-repo src/main.go
-bb search repos --name demo --limit 20
+bb search repos demo --limit 20
 bb tag list --repo TEST/my-repo --limit 50
-bb --dry-run project create --key DEMO --name "Demo Project"
+bb --dry-run project create DEMO --name "Demo Project"
 ```
 
 Example human output (`bb auth status`):

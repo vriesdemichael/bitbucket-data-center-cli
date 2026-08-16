@@ -130,6 +130,20 @@ and JSON schemas are generated and verified in CI:
 task docs:generate
 ```
 
+**Documented commands must actually work.** Every `bb ...` line in a ```` ```bash ````
+block is parsed against the real command tree, so an example using a flag that
+does not exist fails the build:
+
+```bash
+task docs:lint
+```
+
+Write examples in shell-tagged blocks so they are checked — an untagged block is
+invisible to the linter, which avoids the check rather than passing it. If an
+example is *meant* to be invalid, mark the block with
+`<!-- docs-lint: expect-invalid -->`; that inverts the check, so it also fails if
+the command later becomes valid.
+
 ## Before opening a pull request
 
 ```bash
@@ -221,7 +235,7 @@ They are still expected, and a reviewer will ask:
 |---|---|
 | Linear History | rejects merge commits on the branch |
 | ADR Validation | validates `docs/decisions/*.yaml` |
-| Unit Tests | non-live tests, plus verification that generated artifacts are current |
+| Unit Tests | non-live tests, verification that generated artifacts are current, and that every documented `bb ...` invocation parses |
 | Docs Site | builds the MkDocs site |
 | Live Integration Tests | starts Bitbucket, runs the live suite, enforces coverage thresholds |
 

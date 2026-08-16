@@ -23,8 +23,8 @@ Bulk workflows follow the same planning intent but with dedicated commands:
 ## Practical examples
 
 ```bash
-bb --dry-run --json project create --key DEMO --name "Demo"
-bb --dry-run repo settings security permissions users grant --repo TEST/my-repo --username ci-bot --permission REPO_WRITE
+bb --dry-run --json project create DEMO --name "Demo"
+bb --dry-run repo settings security permissions users grant ci-bot REPO_WRITE --repo TEST/my-repo
 ```
 
 If you need broad multi-repo planning, switch to bulk workflows documented in [Bulk Operations](bulk-operations.md).
