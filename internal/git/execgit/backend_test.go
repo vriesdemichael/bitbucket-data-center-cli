@@ -377,7 +377,15 @@ func TestRedact(t *testing.T) {
 	}
 }
 
-func TestCloneAuthenticationOptionsAndLocalConfigPersistence(t *testing.T) {
+// These two tests previously asserted the opposite: that Clone persisted the
+// credential into the new repository's .git/config. That behaviour was the
+// vulnerability — a live token written to disk in plaintext, and, because an
+// unscoped http.extraHeader is attached to every HTTP request git makes from
+// that repository, sent to any other HTTP remote the user later added.
+//
+// They now assert the credential is absent, which is the property that matters.
+
+func TestCloneDoesNotPersistTokenIntoRepositoryConfig(t *testing.T) {
 	backend := New()
 	backend.Timeout = 5 * time.Second
 
@@ -389,7 +397,6 @@ func TestCloneAuthenticationOptionsAndLocalConfigPersistence(t *testing.T) {
 		t.Fatalf("failed to initialize bare repository: %v", err)
 	}
 
-	// Clone with a dummy AuthToken
 	err := backend.Clone(context.Background(), remoteDir, git.CloneOptions{
 		Directory: cloneDir,
 		AuthToken: "dummy-secret-token",
@@ -398,20 +405,21 @@ func TestCloneAuthenticationOptionsAndLocalConfigPersistence(t *testing.T) {
 		t.Fatalf("expected clone to succeed, got: %v", err)
 	}
 
-	// Verify that the local configuration http.extraHeader is persisted directly in .git/config file
 	configContent, err := os.ReadFile(filepath.Join(cloneDir, ".git", "config"))
 	if err != nil {
 		t.Fatalf("failed to read local .git/config: %v", err)
 	}
 
 	contentStr := string(configContent)
-	expectedConfig := "extraHeader = Authorization: Bearer dummy-secret-token"
-	if !strings.Contains(contentStr, expectedConfig) {
-		t.Fatalf("expected config file to contain %q, but got:\n%s", expectedConfig, contentStr)
+	if strings.Contains(contentStr, "dummy-secret-token") {
+		t.Fatalf("clone leaked the token into .git/config:\n%s", contentStr)
+	}
+	if strings.Contains(contentStr, "extraHeader") {
+		t.Fatalf("clone persisted an extraHeader into .git/config:\n%s", contentStr)
 	}
 }
 
-func TestCloneBasicAuthenticationOptionsAndLocalConfigPersistence(t *testing.T) {
+func TestCloneDoesNotPersistBasicCredentialsIntoRepositoryConfig(t *testing.T) {
 	backend := New()
 	backend.Timeout = 5 * time.Second
 
@@ -423,7 +431,6 @@ func TestCloneBasicAuthenticationOptionsAndLocalConfigPersistence(t *testing.T) 
 		t.Fatalf("failed to initialize bare repository: %v", err)
 	}
 
-	// Clone with AuthUsername and AuthPassword
 	err := backend.Clone(context.Background(), remoteDir, git.CloneOptions{
 		Directory:    cloneDir,
 		AuthUsername: "dummy-user",
@@ -433,16 +440,37 @@ func TestCloneBasicAuthenticationOptionsAndLocalConfigPersistence(t *testing.T) 
 		t.Fatalf("expected clone to succeed, got: %v", err)
 	}
 
-	// Verify that the local configuration http.extraHeader is persisted directly in .git/config file
 	configContent, err := os.ReadFile(filepath.Join(cloneDir, ".git", "config"))
 	if err != nil {
 		t.Fatalf("failed to read local .git/config: %v", err)
 	}
 
 	contentStr := string(configContent)
-	expectedConfig := "extraHeader = Authorization: Basic " + base64.StdEncoding.EncodeToString([]byte("dummy-user:dummy-password"))
-	if !strings.Contains(contentStr, expectedConfig) {
-		t.Fatalf("expected config file to contain %q, but got:\n%s", expectedConfig, contentStr)
+	encoded := base64.StdEncoding.EncodeToString([]byte("dummy-user:dummy-password"))
+	if strings.Contains(contentStr, encoded) || strings.Contains(contentStr, "dummy-password") {
+		t.Fatalf("clone leaked basic credentials into .git/config:\n%s", contentStr)
+	}
+	if strings.Contains(contentStr, "extraHeader") {
+		t.Fatalf("clone persisted an extraHeader into .git/config:\n%s", contentStr)
+	}
+}
+
+// The header supplied for the duration of the clone must be scoped to the host
+// being cloned from, so it is never offered to a redirect target.
+func TestCloneScopesAuthHeaderToTheRemoteHost(t *testing.T) {
+	scope := httpConfigScope("https://bitbucket.example.com/scm/PROJ/repo.git")
+	if scope != "https://bitbucket.example.com/" {
+		t.Fatalf("expected host-scoped config prefix, got %q", scope)
+	}
+
+	if got := httpConfigScope("https://bitbucket.example.com:7990/scm/PROJ/repo.git"); got != "https://bitbucket.example.com:7990/" {
+		t.Fatalf("expected port to be preserved in scope, got %q", got)
+	}
+
+	// A path that git cannot resolve to a host falls back to an unscoped
+	// header rather than silently dropping authentication.
+	if got := httpConfigScope("/local/path/repo.git"); got != "" {
+		t.Fatalf("expected empty scope for a non-URL remote, got %q", got)
 	}
 }
 

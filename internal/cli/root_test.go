@@ -66,6 +66,18 @@ func (stub inferenceGitBackendStub) ListRemotes(context.Context, string) ([]git.
 	return stub.remotes, nil
 }
 
+func (stub inferenceGitBackendStub) GetConfig(context.Context, git.ConfigOptions) (string, error) {
+	return "", nil
+}
+
+func (stub inferenceGitBackendStub) SetConfig(context.Context, git.ConfigOptions) error {
+	return nil
+}
+
+func (stub inferenceGitBackendStub) UnsetConfig(context.Context, git.ConfigOptions) error {
+	return nil
+}
+
 func init() {
 	// Block external network access during tests by default
 	os.Setenv("BB_BLOCK_EXTERNAL_NETWORK", "1")

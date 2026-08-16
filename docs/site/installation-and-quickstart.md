@@ -95,6 +95,26 @@ bb auth alias discover --host https://bitbucket.acme.corp
 bb auth alias add --host https://bitbucket.acme.corp git.acme.corp:7999
 ```
 
+## Let git authenticate too
+
+`bb auth login` authenticates `bb` itself. Plain `git` — `git push`, `git pull`
+and `git fetch` inside a clone — does not go through `bb`, so it needs telling
+where to get credentials:
+
+```bash
+bb auth setup-git
+```
+
+Git now asks `bb` for a credential whenever it contacts your Bitbucket host,
+using what you just stored. No token is written into any repository, and
+revoking one takes effect immediately.
+
+Run this once; it applies to every clone of that host. If you clone over SSH you
+do not need it — SSH authenticates with your key.
+
+See [Git Authentication](advanced/git-authentication.md) for how it works and how
+to clean up clones made by older versions of `bb`.
+
 ## First useful commands
 
 ```bash

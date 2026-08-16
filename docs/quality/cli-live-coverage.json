@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "runnable_commands": 225,
-    "covered_commands": 120,
-    "covered_percent": 53.333333333333336,
+    "runnable_commands": 227,
+    "covered_commands": 121,
+    "covered_percent": 53.30396475770925,
     "masked_commands": 4,
-    "uncovered_commands": 101
+    "uncovered_commands": 102
   },
   "covered": [
     "admin health",
@@ -95,6 +95,7 @@
     "repo browse history",
     "repo browse raw",
     "repo browse tree",
+    "repo clone",
     "repo comment create",
     "repo comment delete",
     "repo comment list",
@@ -145,11 +146,13 @@
     "auth alias discover",
     "auth alias list",
     "auth alias remove",
+    "auth git-credential",
     "auth gpg-key add",
     "auth gpg-key clear",
     "auth gpg-key list",
     "auth gpg-key remove",
     "auth identity",
+    "auth setup-git",
     "auth token create",
     "auth token get",
     "auth token list",
@@ -197,7 +200,6 @@
     "project webhook update",
     "repo archive",
     "repo cat",
-    "repo clone",
     "repo compare",
     "repo default-task add",
     "repo default-task delete",

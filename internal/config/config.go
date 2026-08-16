@@ -637,30 +637,48 @@ func ConfigPath() (string, error) {
 	return filepath.Join(baseDir, "bb", "config.yaml"), nil
 }
 
+// matchStoredHost finds the stored profile that genuinely corresponds to
+// runtimeURL: an exact host match, a configured alias of that host, or the same
+// host under the other scheme. It never guesses.
+//
+// This is deliberately separate from the default-host fallback below. Callers
+// that hand credentials to another program must be able to ask "do I have
+// credentials for *this* host" and get a truthful no.
+func matchStoredHost(stored StoredConfig, runtimeURL string) (string, StoredProfile, bool) {
+	key := hostKey(runtimeURL)
+	if profile, ok := stored.Hosts[key]; ok {
+		return key, profile, true
+	}
+
+	if matched, found, _ := resolveStoredHostAlias(stored, runtimeURL); found {
+		aliasKey := hostKey(matched.Host)
+		if profile, ok := stored.Hosts[aliasKey]; ok {
+			return aliasKey, profile, true
+		}
+	}
+
+	// Cross-scheme fallback: try alternate scheme (http↔https) for same host.
+	// This lets tokens configured for https://host match http://host and vice versa.
+	if altKey := hostKeyAltScheme(runtimeURL); altKey != key {
+		if profile, ok := stored.Hosts[altKey]; ok {
+			return altKey, profile, true
+		}
+	}
+
+	return "", StoredProfile{}, false
+}
+
 func resolveStoredCredentials(stored StoredConfig, runtimeURL string) (AppConfig, bool) {
-	if stored.Hosts == nil || len(stored.Hosts) == 0 {
+	if len(stored.Hosts) == 0 {
 		return AppConfig{}, false
 	}
 
-	key := hostKey(runtimeURL)
-	profile, ok := stored.Hosts[key]
+	key, profile, ok := matchStoredHost(stored, runtimeURL)
 	if !ok {
-		if matched, found, _ := resolveStoredHostAlias(stored, runtimeURL); found {
-			profile, ok = stored.Hosts[hostKey(matched.Host)]
-			key = hostKey(matched.Host)
-		}
-	}
-	if !ok {
-		// Cross-scheme fallback: try alternate scheme (http↔https) for same host.
-		// This lets tokens configured for https://host match http://host and vice versa.
-		if altKey := hostKeyAltScheme(runtimeURL); altKey != key {
-			if p, found := stored.Hosts[altKey]; found {
-				profile, ok = p, true
-				key = altKey
-			}
-		}
-	}
-	if !ok {
+		// No host matched, so fall back to the configured default. This is what
+		// makes `bb pr list` work against the active server without repeating
+		// --host, and it is why callers that pass credentials to other programs
+		// must use resolveStoredCredentialsStrict instead.
 		if stored.DefaultHost == "" {
 			return AppConfig{}, false
 		}
@@ -671,6 +689,25 @@ func resolveStoredCredentials(stored StoredConfig, runtimeURL string) (AppConfig
 		key = stored.DefaultHost
 	}
 
+	return credentialsForStoredHost(stored, key, profile), true
+}
+
+// resolveStoredCredentialsStrict resolves credentials only for a host that is
+// actually configured, with no default-host fallback.
+func resolveStoredCredentialsStrict(stored StoredConfig, runtimeURL string) (AppConfig, bool) {
+	if len(stored.Hosts) == 0 {
+		return AppConfig{}, false
+	}
+
+	key, profile, ok := matchStoredHost(stored, runtimeURL)
+	if !ok {
+		return AppConfig{}, false
+	}
+
+	return credentialsForStoredHost(stored, key, profile), true
+}
+
+func credentialsForStoredHost(stored StoredConfig, key string, profile StoredProfile) AppConfig {
 	resolved := AppConfig{BitbucketURL: normalizeURL(profile.URL), BitbucketUsername: profile.Username}
 
 	if token, err := keyring.Get(keyringServiceName, key+":token"); err == nil && strings.TrimSpace(token) != "" {
@@ -691,7 +728,7 @@ func resolveStoredCredentials(stored StoredConfig, runtimeURL string) (AppConfig
 		}
 	}
 
-	return resolved, true
+	return resolved
 }
 
 func LoadStoredAuthForHost(runtimeURL string) (AppConfig, bool, error) {
@@ -701,6 +738,24 @@ func LoadStoredAuthForHost(runtimeURL string) (AppConfig, bool, error) {
 	}
 
 	resolved, ok := resolveStoredCredentials(stored, runtimeURL)
+	return resolved, ok, nil
+}
+
+// LoadStoredAuthForHostStrict resolves credentials for exactly the given host,
+// with no fallback to the configured default.
+//
+// Use this whenever the credentials are about to be handed to another program.
+// LoadStoredAuthForHost answers "which server should bb talk to", and will
+// happily return the default server's credentials for a host it has never seen
+// — correct for bb's own commands, and a credential leak for anything that
+// passes the result outward.
+func LoadStoredAuthForHostStrict(runtimeURL string) (AppConfig, bool, error) {
+	stored, err := LoadStoredConfig()
+	if err != nil {
+		return AppConfig{}, false, err
+	}
+
+	resolved, ok := resolveStoredCredentialsStrict(stored, runtimeURL)
 	return resolved, ok, nil
 }
 

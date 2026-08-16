@@ -206,3 +206,57 @@ func TestSanitizeInjectsMissingPathParameters(t *testing.T) {
 		}
 	}
 }
+
+func TestFixEpochMillisFieldsRewritesNestedAndArrayShapes(t *testing.T) {
+	// createdDate appears inline inside request and response bodies as well as
+	// in named schemas, so the walk has to reach through nested objects and
+	// arrays. Missing one occurrence leaves otherwise-identical anonymous
+	// structs incompatible and generation stops compiling.
+	spec := map[string]any{
+		"components": map[string]any{
+			"schemas": map[string]any{
+				"Outer": map[string]any{
+					"properties": map[string]any{
+						"createdDate": map[string]any{"type": "string", "format": "date-time"},
+						"nested": map[string]any{
+							"properties": map[string]any{
+								"createdDate": map[string]any{"type": "string", "format": "date-time"},
+							},
+						},
+					},
+				},
+			},
+		},
+		"paths": []any{
+			map[string]any{
+				"createdDate": map[string]any{"type": "string", "format": "date-time"},
+			},
+		},
+	}
+
+	if fixed := fixEpochMillisFields(spec); fixed != 3 {
+		t.Fatalf("expected 3 rewrites across nested and array shapes, got %d", fixed)
+	}
+}
+
+func TestFixEpochMillisFieldsLeavesCorrectDeclarationsAlone(t *testing.T) {
+	// The rewrite is guarded on the broken shape so an upstream correction is
+	// respected rather than forced back to the workaround.
+	spec := map[string]any{
+		"createdDate": map[string]any{"type": "integer", "format": "int64"},
+		"other": map[string]any{
+			"expiryDate": map[string]any{"type": "string", "format": "date-time"},
+		},
+	}
+
+	if fixed := fixEpochMillisFields(spec); fixed != 0 {
+		t.Fatalf("expected no rewrites, got %d", fixed)
+	}
+
+	// expiryDate must be untouched: its encoding has not been verified.
+	other := spec["other"].(map[string]any)
+	expiry := other["expiryDate"].(map[string]any)
+	if expiry["type"] != "string" {
+		t.Fatalf("expiryDate was rewritten despite being out of scope: %v", expiry)
+	}
+}
