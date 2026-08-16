@@ -79,13 +79,19 @@ install -m 0755 bb /usr/local/bin/bb
 **Authenticate** — store a token for your Bitbucket instance:
 
 ```bash
-bb auth login --host https://bitbucket.acme.corp --token "$BB_TOKEN"
+printf '%s' "$BB_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
 bb auth status
 ```
 
 ```text
-Target Bitbucket: https://bitbucket.acme.corp (auth=token, source=stored/default)
+Target Bitbucket: https://bitbucket.acme.corp (auth=token, source=stored)
+Credential storage: keyring
 ```
+
+`--token-stdin` keeps the token out of the process list and your shell history.
+The token is stored in your OS keyring; where none is available bb falls back to
+the config file in plaintext and says so — pass `--require-keyring` to fail
+instead.
 
 **Clone and browse** — no need to look up URLs:
 

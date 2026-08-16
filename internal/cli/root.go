@@ -136,10 +136,21 @@ func loadConfig() (config.AppConfig, error) {
 		})
 	}
 
+	// Warned on use, not only at login. A warning that fires once when the
+	// credential is stored is invisible to whoever inherits the machine, and
+	// plaintext storage is a standing condition rather than a one-off event.
+	if cfg.UsedInsecureStorage {
+		insecureStorageWarningOnce.Do(func() {
+			fmt.Fprintln(os.Stderr, style.Warning.Render("Warning: credentials for this host are stored in plaintext because no OS keyring was available; run 'bb auth status' for details, or set BB_REQUIRE_KEYRING=1 to refuse plaintext storage"))
+		})
+	}
+
 	return cfg, nil
 }
 
 var insecureTLSWarningOnce sync.Once
+
+var insecureStorageWarningOnce sync.Once
 
 func applyRuntimeFlagOverrides(cmd *cobra.Command) error {
 	if cmd == nil {

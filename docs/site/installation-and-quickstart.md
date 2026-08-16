@@ -81,9 +81,40 @@ gh attestation verify bb_${VERSION#v}_linux_amd64.tar.gz --repo vriesdemichael/b
 
 ```bash
 bb auth token-url --host https://bitbucket.acme.corp
-bb auth login https://bitbucket.acme.corp --token "$BB_TOKEN"
+printf '%s' "$BB_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
 bb auth status
 ```
+
+!!! warning "Do not pass secrets as flag values"
+    `--token <value>` puts the token in the process argument list, where any local user can read it
+    via `ps` or `/proc/<pid>/cmdline`, where Windows shows it in Task Manager details, and where
+    process-auditing and EDR tooling records it. Your shell also keeps it in history. `--token-stdin`
+    and `--password-stdin` avoid all of that. The flag forms still work and warn on stderr.
+
+### Where credentials are stored
+
+`bb auth login` stores the secret in your operating system's keyring — Credential Manager on
+Windows, Keychain on macOS, Secret Service on Linux.
+
+Where no keyring is available — headless servers, most containers, WSL without `gnome-keyring` —
+bb falls back to writing the secret in plaintext into its config file (`0600`, in a `0700`
+directory) and warns on stderr. `bb auth status` reports which is in use:
+
+```bash
+bb auth status
+```
+
+```text
+Target Bitbucket: https://bitbucket.acme.corp (auth=token, source=stored)
+Credential storage: keyring
+```
+
+To refuse the plaintext fallback, pass `--require-keyring` at login, or set `BB_REQUIRE_KEYRING=1`
+to enforce it fleet-wide. With the policy on, bb fails rather than degrading — including on later
+commands, if the config file already holds a plaintext credential from before the policy was set.
+
+In CI and containers, prefer supplying `BITBUCKET_TOKEN` per invocation instead of logging in at
+all. An environment variable never touches the config file and satisfies `BB_REQUIRE_KEYRING`.
 
 If your Bitbucket instance uses a different SSH clone host than its web/API URL, `bb auth login`
 will try to discover aliases automatically from the first accessible repository clone links.
