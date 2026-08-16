@@ -1,0 +1,31 @@
+# ADR 045: Compute coverage measurements, commit only verifiable baselines
+
+This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
+
+- Number: `045`
+- Title: `Compute coverage measurements, commit only verifiable baselines`
+- Category: `development`
+- Status: `accepted`
+- Supersedes: `030`
+- Provenance: `guided-ai`
+- Source: `docs/decisions/045-coverage-measurements-are-computed-not-committed.yaml`
+
+## Decision
+
+Separate quality artifacts into measurements and baselines, and treat them differently. Measurements are the output of running the suite: coverage profiles and the combined coverage report. They are recomputed by CI on every pull request, published to Codecov and as workflow artifacts, and never committed. Baselines are assertions about what must remain true: which CLI commands the live suite proves work, which OpenAPI operations are exercised, and the generated-operation manifest. They stay committed because they are small, readable in a diff, and verifiable by static analysis without a Bitbucket instance. Because measurements now live only in .tmp/ and on CI, keep them locally actionable: the coverage gate prints the uncovered changed lines when patch coverage fails, and `task quality:coverage:replay` re-applies every threshold against the profiles already on disk without re-running any tests.
+
+## Agent Instructions
+
+Do not commit coverage profiles or coverage reports. docs/quality/coverage-report.json, docs/quality/coverage.combined.raw.out, docs/quality/coverage.combined.scoped.out and the repository-root coverage.out are gitignored; write coverage output to .tmp/ instead. Do commit docs/quality/cli-live-coverage.json, docs/quality/spec-coverage.json and docs/quality/generated-operation-contracts.json, and regenerate them when a change affects them. A diff in those files is the point: it is how a reviewer sees that a command lost live coverage. Do not reintroduce a rebase procedure for refreshing committed coverage. Rebase with `task pr:rebase` or plain `git rebase origin/main`; there is nothing to regenerate afterwards. Keep the coverage gate authoritative in CI. When adding a check, put it in quality:verify if it needs no Bitbucket instance, and in the live-tests job if it does. Do not add a live-dependent check to a git hook: it makes every push cost a full suite run and cannot pass for a contributor who has not started the stack. When patch coverage fails, do not re-run the suite to find out where. The failure output names the uncovered changed lines, and `task quality:coverage:replay` re-checks every threshold against the profiles in .tmp/ in seconds. Add tests to close the gap; do not lower COVERAGE_MIN_PATCH.
+
+## Rationale
+
+The committed coverage artifacts were introduced when the live suite required a licensed Bitbucket that CI could not provide. A developer's machine was the only place combined coverage could be produced, so the result was committed to make it visible at all. ADR-043 removed that constraint: CI provisions its own licensed instance and runs the live suite on every pull request, including from forks. The premise the artifacts rested on no longer holds. What remained was cost without benefit. The three coverage artifacts totalled about 5.7MB, changed on essentially every branch, and conflicted on every rebase — which is why ADR-030, a section of AGENTS.md, and a dedicated pr:linearize task existed to manage the conflicts. Nothing consumed them: CI computed coverage fresh into .tmp/ and uploaded to Codecov from there, and no workflow step ever verified the committed copies. The rebase procedure was maintaining data no gate read. Baselines are a different kind of artifact and are kept. cli-live-coverage.json exists so that a command silently losing live coverage fails the build, which has already caught a real regression: `bb pr task *` called an endpoint removed in Bitbucket 8.0 while its live test skipped on error, and CI stayed green for years. That value comes from the file being committed and diffable, and the check runs as static analysis with no live infrastructure.
+
+## Rejected Alternatives
+
+- `Keep committing the coverage report but verify it in CI`: Would make the artifact meaningful but not cheaper. It would still change on nearly every branch and conflict on every rebase, and a verification step would turn each conflict into a failing build rather than a silent diff. Codecov already stores the history this would provide.
+- `Commit only the small coverage-report.json and drop the two profiles`: Removes most of the bytes but none of the conflicts: the report changes whenever any line's coverage changes, which is the common case. The conflict rate, not the file size, is what the procedure existed to manage.
+- `Stop committing the baselines as well`: cli-live-coverage.json and spec-coverage.json are contracts rather than measurements. They are verifiable without a Bitbucket instance, so they gate cheaply on every pull request, and a change in them is exactly what a reviewer should see. Removing them would drop a check that has caught a real regression.
+- `Let the gate report only a percentage and rely on Codecov's annotations for detail`: Moving the live gate out of the pre-push hook made CI the default place a patch-coverage failure is discovered, and a bare percentage there is close to unactionable: it says you are short without saying where, and the profile that would tell you sits on a runner. Codecov's pull-request annotations cover the reviewer's view but arrive after a full run and are not available to someone iterating locally or offline. The tool already knows the uncovered lines at the moment it computes the number, so printing them costs nothing.
+- `Keep the full coverage gate in the pre-push hook`: It duplicates what CI now runs on every pull request, at roughly eight minutes per push, and it cannot pass for a contributor who has not started the local stack. The fast checks that need no Bitbucket instance stay in the hook; the live gate is CI's job.

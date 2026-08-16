@@ -1,38 +1,58 @@
 # Agent Instructions — bitbucket-server-cli
 
-## Quality Coverage Artifacts
+## Quality artifacts
 
-`docs/quality/coverage-report.json`, `docs/quality/coverage.combined.raw.out`, and `docs/quality/coverage.combined.scoped.out` are regenerated committed artifacts.
+Coverage **measurements** are never committed. Coverage profiles and the combined report are written
+to `.tmp/`, and CI recomputes them on every pull request, publishing them to Codecov and as workflow
+artifacts. `coverage.out`, `docs/quality/coverage-report.json` and
+`docs/quality/coverage.combined.*.out` are gitignored.
 
-**The conflict rule:** these files are almost always modified on both a feature branch and on `main` (because other PRs also update them after merging). They will conflict on every rebase.
+Rebasing therefore needs nothing special:
 
-### When rebasing onto origin/main
+```bash
+task pr:rebase          # or: git rebase origin/main
+```
 
-1. Run `git rebase origin/main` (use `--strategy-option=theirs` to auto-resolve conflicts in favour of the branch version, or resolve manually).
-2. After the rebase succeeds, **always regenerate** the quality artifacts — do not keep the pre-rebase version, because the patch baseline (`origin/main`) has changed:
-   ```bash
-   go test -covermode=count -coverprofile=.tmp/coverage.unit.out \
-       ./cmd/... ./internal/... ./tools/... -count=1
-   go test -tags=live -covermode=count \
-       -coverpkg=./cmd/...,./internal/...,./tools/... \
-       -coverprofile=.tmp/coverage.live.out \
-       ./tests/integration/live -timeout 300s
-   go run ./tools/quality-report \
-       -coverprofile .tmp/coverage.unit.out \
-       -live-coverprofile .tmp/coverage.live.out \
-       -base-ref origin/main \
-       -manifest docs/quality/generated-operation-contracts.json \
-       -report-file docs/quality/coverage-report.json \
-       -raw-coverprofile-file docs/quality/coverage.combined.raw.out \
-       -scoped-coverprofile-file docs/quality/coverage.combined.scoped.out \
-       -write-report -write-coverprofiles
-   ```
-3. Stage the regenerated files and **amend the existing quality commit** (rather than adding a new one):
-   ```bash
-   git add docs/quality/
-   git commit --no-verify --amend --no-edit
-   git push --no-verify --force-with-lease
-   ```
+Earlier versions of this file described a procedure for regenerating and amending committed coverage
+artifacts after every rebase. That is gone. The artifacts existed because the live suite needed a
+licensed Bitbucket that CI could not provide, so a developer's machine was the only place combined
+coverage could be produced. CI now provisions its own instance (ADR-043), and the committed copies
+turned out to be ~5.7MB that conflicted on every rebase and that no gate ever read. See ADR-045.
+
+Coverage **baselines** are still committed, because they are contracts rather than measurements:
+
+| File | Asserts | Regenerate with |
+|---|---|---|
+| `docs/quality/cli-live-coverage.json` | which CLI commands the live suite proves work | `task quality:cli-live-coverage:update` |
+| `docs/quality/spec-coverage.json` | which OpenAPI operations are exercised | `task quality:spec-coverage:update` |
+| `docs/quality/generated-operation-contracts.json` | the generated-operation manifest | — |
+
+These are small, readable in a diff, and verified by static analysis with no Bitbucket instance. A
+diff in them is the point: it is how a reviewer sees that a command lost live coverage.
+
+Run `task quality:verify` for every gate that needs no Bitbucket instance, and
+`task quality:coverage:origin-main` for the full coverage gate when you want it locally. The latter
+needs the stack up and takes about eight minutes; CI runs it on every pull request regardless.
+
+### Iterating on patch coverage
+
+**Do not re-run the suite to re-check the number.** `task quality:coverage:replay` re-applies every
+threshold against the profiles already in `.tmp/` and finishes in seconds. The loop when patch
+coverage fails is: add tests → `task test:unit:coverage` (~1 min) → replay. Only a change that
+alters behaviour the live suite exercises needs `task test:live:coverage` again.
+
+A failing patch gate prints the uncovered locations, so there is no need to read a profile by hand:
+
+```
+FAIL: patch coverage 72.63% is below required 85.00% (394 coverable lines >= 30)
+
+Uncovered changed lines (108):
+  internal/cli/cmd/auth/gitcredential.go:52-53,68-70,128-130
+  internal/config/config.go:754-756
+```
+
+Fix the gap by adding tests. Lowering `COVERAGE_MIN_PATCH` in
+`.github/coverage-thresholds.env` is not the remedy, and a reviewer will treat it as one to justify.
 
 ### Tests must not reconfigure the repository they run in
 

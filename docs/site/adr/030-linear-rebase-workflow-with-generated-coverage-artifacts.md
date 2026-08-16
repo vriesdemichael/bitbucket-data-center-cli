@@ -5,7 +5,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `030`
 - Title: `Linear rebase workflow with generated coverage artifacts`
 - Category: `development`
-- Status: `accepted`
+- Status: `superseded`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/030-linear-rebase-workflow-with-generated-coverage-artifacts.yaml`
 

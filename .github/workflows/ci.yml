@@ -218,6 +218,23 @@ jobs:
             -max-uncovered-small-patch "$COVERAGE_MAX_UNCOVERED_SMALL_PATCH" \
             -min-contract "$COVERAGE_MIN_CONTRACT"
 
+      # Coverage profiles are published here rather than committed. They used to
+      # live in docs/quality/ because CI could not run the live suite, so a
+      # developer's machine was the only place they could be produced; that cost
+      # a rebase conflict on every branch for ~5.7MB of data nothing read. CI now
+      # recomputes them every run, so the artifact is the copy worth keeping.
+      - name: Upload coverage profiles
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-profiles
+          path: |
+            .tmp/coverage.unit.out
+            .tmp/coverage.live.out
+            .tmp/coverage.combined.scoped.out
+          retention-days: 14
+          if-no-files-found: warn
+
       - name: Upload combined scoped coverage to Codecov
         if: env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v7

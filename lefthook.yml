@@ -4,10 +4,26 @@ pre-commit:
     safe-go-tests:
       run: task test:go:safe
 
+# The live coverage gate deliberately does not run here.
+#
+# It used to, because the live suite needed a licensed Bitbucket that CI could
+# not provide, so a developer's machine was the only place the gate could run.
+# CI now provisions its own instance and runs the same gate on every pull
+# request, including from forks (ADR-043), so running it again before every push
+# duplicated CI at roughly eight minutes per attempt and made a quick fix
+# expensive.
+#
+# What remains is the set of checks that are fast, need no Bitbucket instance,
+# and catch the mistakes that are annoying to discover in CI: stale generated
+# artifacts, an invalid ADR, a command that lost live coverage, and a docs build
+# that does not compile.
+#
+# Run `task quality:coverage:origin-main` yourself when you want the full gate
+# locally, for instance before a large change.
 pre-push:
   parallel: false
   commands:
     01-docs-validate:
       run: task docs:validate
-    02-coverage:
-      run: task quality:coverage:origin-main
+    02-quality-verify:
+      run: task quality:verify

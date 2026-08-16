@@ -150,19 +150,53 @@ whole non-live Go test suite across `./cmd/...`, `./internal/...` and
 on every commit. `internal/cli` alone accounts for most of it. Amending several
 times in a row pays this each time.
 
-**`pre-push` — roughly 8 minutes.** Runs `task docs:validate`, then
-`task quality:coverage:origin-main`, which runs the unit suite with coverage,
-**the full live suite**, and then the combined and patch coverage gates against
-`origin/main`. It therefore needs the Bitbucket stack up and `BITBUCKET_URL`
-set, or it fails.
+**`pre-push` — well under a minute.** Runs `task docs:validate` and
+`task quality:verify`: ADR validation, the OpenAPI spec-coverage and CLI
+live-coverage baselines, and a check that generated docs are current. All of it
+is static analysis, so it needs no Bitbucket instance and works on a fresh
+clone.
+
+The full coverage gate deliberately does **not** run here. CI runs it on every
+pull request, including from forks, so running it again before every push
+duplicated CI at roughly eight minutes per attempt. Run it yourself when you
+want it — before a large change, for instance:
 
 ```bash
 task stack:up
-BITBUCKET_URL=http://localhost:7990 ADMIN_USER=admin ADMIN_PASSWORD=admin git push
+BITBUCKET_URL=http://localhost:7990 ADMIN_USER=admin ADMIN_PASSWORD=admin task quality:coverage:origin-main
 ```
 
-Do not bypass hooks with `--no-verify` except in the coverage-artifact rebase
-flow described in [`AGENTS.md`](AGENTS.md).
+Do not bypass hooks with `--no-verify`.
+
+### Chasing a patch-coverage failure locally
+
+Patch coverage is the gate contributors hit most: at least 85% of the lines your
+branch changes must be covered. When it fails, the report names the lines:
+
+```
+FAIL: patch coverage 72.63% is below required 85.00% (394 coverable lines >= 30)
+
+Uncovered changed lines (108):
+  internal/cli/cmd/auth/gitcredential.go:52-53,68-70,128-130
+  internal/config/config.go:754-756
+```
+
+You do **not** need to re-run the suite to iterate on this. The gate reads the
+coverage profiles left in `.tmp/`, so once you have run it once, re-evaluating
+against your latest commits takes seconds:
+
+```bash
+task quality:coverage:replay
+```
+
+That recomputes the diff against `origin/main` and re-applies every threshold
+using the profiles already on disk. Add tests, `go test` them, then re-run
+`task test:unit:coverage` (about a minute) and replay — only a change that
+alters *live* behaviour needs `task test:live:coverage` again.
+
+Doing this locally is worth the setup. On CI the same loop costs a full
+live-suite run per attempt, and the profile stays on a runner you cannot
+inspect.
 
 ### What is not enforced, and is still expected
 
@@ -198,10 +232,12 @@ failure is real — please do not assume it is infrastructure.
 
 Collected from actually doing this, not hypothetical:
 
-- **Coverage artifacts conflict on every rebase.** `docs/quality/*` is
-  regenerated and committed, so it changes on both your branch and `main`. Do
-  not hand-resolve; finish the rebase, regenerate once, amend. Full procedure in
-  [`AGENTS.md`](AGENTS.md).
+- **Tests that shell out to `git` must scope their environment.** Git exports
+  `GIT_DIR` to every hook it runs, and git honours it over `-C` — so a raw
+  `exec.Command("git", "-C", tmpdir, "init")` running under `pre-commit`
+  reinitialises *this* repository instead. Use `execgit.ScopeFreeEnv()`, which
+  strips git's repository-scoping variables. A `TestMain` guard fails any
+  package whose tests change this repository's git configuration.
 - **Line endings on Windows.** The repo has no `.gitattributes` and
   `core.autocrlf` is typically on, so Go tools that write LF make every
   generated file look modified. Check `git diff --numstat` — files showing

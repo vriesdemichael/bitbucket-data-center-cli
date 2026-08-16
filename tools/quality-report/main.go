@@ -10,6 +10,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -37,6 +38,16 @@ type patchCoverage struct {
 	coverableLines int
 	coveredLines   int
 	percent        float64
+	// uncovered lists the changed lines that are coverable but not covered.
+	// The gate reports a percentage, which tells you that you are short without
+	// telling you where; recomputing coverage to find out costs a full live
+	// suite run, so the locations are kept when they are already known.
+	uncovered []uncoveredLine
+}
+
+type uncoveredLine struct {
+	file string
+	line int
 }
 
 type operationManifest struct {
@@ -97,7 +108,6 @@ func main() {
 	scopedCoverProfilePath := flag.String("scoped-coverprofile-file", "", "Path to committed combined scoped coverprofile artifact")
 	writeReport := flag.Bool("write-report", false, "Write report file")
 	verifyReport := flag.Bool("verify-report", false, "Verify report file matches generated output (recomputed from coverage profiles)")
-	verifyCommitted := flag.Bool("verify-committed", false, "Verify committed report file against thresholds without recomputing coverage")
 	writeCoverProfiles := flag.Bool("write-coverprofiles", false, "Write committed raw/scoped coverprofile artifacts when paths are provided")
 	verifyCoverProfiles := flag.Bool("verify-coverprofiles", false, "Verify committed raw/scoped coverprofile artifacts match recomputed output when paths are provided")
 	minGlobalCombined := flag.Float64("min-global-combined", 85.0, "Minimum required global combined coverage percentage")
@@ -121,41 +131,6 @@ func main() {
 	resolvedMinGlobalCombined := *minGlobalCombined
 	if *minScoped >= 0 {
 		resolvedMinGlobalCombined = *minScoped
-	}
-
-	if *verifyCommitted {
-		reportData, err := readCommittedReport(*reportPath)
-		if err != nil {
-			fail("failed to read committed report: %v", err)
-		}
-
-		if *rawCoverProfilePath != "" || *scopedCoverProfilePath != "" {
-			modulePath, err := readModulePath("go.mod")
-			if err != nil {
-				fail("failed to read module path: %v", err)
-			}
-			if *rawCoverProfilePath != "" {
-				if _, err := parseCoverageProfile(*rawCoverProfilePath, modulePath); err != nil {
-					fail("failed to parse committed raw coverprofile: %v", err)
-				}
-			}
-			if *scopedCoverProfilePath != "" {
-				if _, err := parseCoverageProfile(*scopedCoverProfilePath, modulePath); err != nil {
-					fail("failed to parse committed scoped coverprofile: %v", err)
-				}
-			}
-		}
-
-		printCoverageSummary(reportData)
-		enforceThresholds(reportData, resolvedMinGlobalCombined, *minPatch, *minPatchLines, *maxUncoveredSmallPatch, *minContract)
-		fmt.Printf("Verified committed report: %s\n", *reportPath)
-		if *rawCoverProfilePath != "" {
-			fmt.Printf("Verified committed raw coverprofile: %s\n", *rawCoverProfilePath)
-		}
-		if *scopedCoverProfilePath != "" {
-			fmt.Printf("Verified committed scoped coverprofile: %s\n", *scopedCoverProfilePath)
-		}
-		return
 	}
 
 	modulePath, err := readModulePath("go.mod")
@@ -307,7 +282,7 @@ func main() {
 		}
 	}
 
-	enforceThresholds(reportData, resolvedMinGlobalCombined, *minPatch, *minPatchLines, *maxUncoveredSmallPatch, *minContract)
+	enforceThresholds(reportData, patch, resolvedMinGlobalCombined, *minPatch, *minPatchLines, *maxUncoveredSmallPatch, *minContract)
 }
 
 func printCoverageSummary(reportData report) {
@@ -317,7 +292,7 @@ func printCoverageSummary(reportData report) {
 	fmt.Printf("Combined scoped coverage: %.2f%% (%d/%d statements)\n", reportData.Coverage.CombinedScopedPercent, reportData.Coverage.CombinedScopedStatements.Covered, reportData.Coverage.CombinedScopedStatements.Total)
 }
 
-func enforceThresholds(reportData report, minGlobalCombined, minPatch float64, minPatchLines int, maxUncoveredSmallPatch int, minContract float64) {
+func enforceThresholds(reportData report, patch patchCoverage, minGlobalCombined, minPatch float64, minPatchLines int, maxUncoveredSmallPatch int, minContract float64) {
 	var failed bool
 	globalCombinedPercent := reportData.Coverage.CombinedScopedPercent
 	if globalCombinedPercent < minGlobalCombined {
@@ -341,6 +316,11 @@ func enforceThresholds(reportData report, minGlobalCombined, minPatch float64, m
 		failed = true
 	}
 	if failed {
+		// Print the locations on failure without being asked. The percentage
+		// alone sends you to recompute coverage to find the gap, which is a full
+		// live suite run — and on CI the profile is left on a machine you cannot
+		// inspect.
+		reportUncoveredPatchLines(os.Stdout, patch)
 		os.Exit(1)
 	}
 }
@@ -712,15 +692,70 @@ func calculatePatchCoverage(changed map[string]map[int]struct{}, profile coverag
 			result.coverableLines++
 			if covered {
 				result.coveredLines++
+			} else {
+				result.uncovered = append(result.uncovered, uncoveredLine{file: filePath, line: line})
 			}
 		}
 	}
+
+	// Map iteration order is random, so sort for a stable, readable list.
+	sort.Slice(result.uncovered, func(left, right int) bool {
+		if result.uncovered[left].file == result.uncovered[right].file {
+			return result.uncovered[left].line < result.uncovered[right].line
+		}
+		return result.uncovered[left].file < result.uncovered[right].file
+	})
+
 	if result.coverableLines == 0 {
 		result.percent = 100.0
 		return result
 	}
 	result.percent = percent(result.coveredLines, result.coverableLines)
 	return result
+}
+
+// reportUncoveredPatchLines prints the changed lines that lack coverage,
+// grouped by file and collapsed into ranges.
+//
+// Without this the gate reports only a percentage, so finding the gap means
+// recomputing coverage by hand — and on CI that is a full live suite run per
+// attempt, with the profile left on a machine you cannot inspect.
+func reportUncoveredPatchLines(writer io.Writer, patch patchCoverage) {
+	if len(patch.uncovered) == 0 {
+		fmt.Fprintln(writer, "No uncovered changed lines.")
+		return
+	}
+
+	fmt.Fprintf(writer, "\nUncovered changed lines (%d):\n", len(patch.uncovered))
+
+	index := 0
+	for index < len(patch.uncovered) {
+		file := patch.uncovered[index].file
+		end := index
+		for end < len(patch.uncovered) && patch.uncovered[end].file == file {
+			end++
+		}
+
+		ranges := []string{}
+		for cursor := index; cursor < end; {
+			start := patch.uncovered[cursor].line
+			last := start
+			for cursor+1 < end && patch.uncovered[cursor+1].line == last+1 {
+				cursor++
+				last = patch.uncovered[cursor].line
+			}
+			cursor++
+
+			if start == last {
+				ranges = append(ranges, strconv.Itoa(start))
+			} else {
+				ranges = append(ranges, fmt.Sprintf("%d-%d", start, last))
+			}
+		}
+
+		fmt.Fprintf(writer, "  %s:%s\n", file, strings.Join(ranges, ","))
+		index = end
+	}
 }
 
 func discoverUsedGeneratedOperations(root string) ([]string, error) {
