@@ -395,6 +395,23 @@ bb pr get --repo MYPROJ/payments 42 --json
 bb tag list --repo MYPROJ/payments --json
 ```
 
+Success and failure both produce a `bb.machine` v2 envelope on stdout. Which key is
+present tells you which happened:
+
+```json
+{ "version": "v2", "data": { }, "meta": { "contract": "bb.machine" } }
+{ "version": "v2", "error": { "kind": "not_found", "message": "…", "exit_code": 4 }, "meta": { "contract": "bb.machine" } }
+```
+
+Check for `error` before reading `data`. `kind` is one of `authentication`,
+`authorization`, `validation`, `not_found`, `conflict`, `transient`, `permanent`,
+`not_implemented`, `internal` — so you can tell "fix your invocation" from "retry later"
+without parsing the message. `exit_code` matches the process exit status.
+
+Unknown flags and unknown commands currently report `kind: "internal"` because they come
+from the argument parser rather than the CLI's own classification; treat a failure whose
+message starts with `unknown flag` or `unknown command` as your own mistake to correct.
+
 ## Error Reporting
 
 If `bb` behaves unexpectedly, create an issue:

@@ -20,7 +20,7 @@ func TestExecuteRootCommandWithoutDiagnostics(t *testing.T) {
 	}}
 
 	buffer := &bytes.Buffer{}
-	exitCode := executeRootCommand(cmd, buffer)
+	exitCode := executeRootCommand(cmd, nil, nil, buffer)
 	if exitCode != 2 {
 		t.Fatalf("expected exit code 2, got %d", exitCode)
 	}
@@ -40,7 +40,7 @@ func TestExecuteRootCommandWithDiagnosticsJSONL(t *testing.T) {
 	}}
 
 	buffer := &bytes.Buffer{}
-	exitCode := executeRootCommand(cmd, buffer)
+	exitCode := executeRootCommand(cmd, nil, nil, buffer)
 	if exitCode != 2 {
 		t.Fatalf("expected exit code 2, got %d", exitCode)
 	}
@@ -79,7 +79,7 @@ func TestKindFallbackForPlainErrors(t *testing.T) {
 	}}
 
 	buffer := &bytes.Buffer{}
-	exitCode := executeRootCommand(cmd, buffer)
+	exitCode := executeRootCommand(cmd, nil, nil, buffer)
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
 	}
@@ -104,7 +104,7 @@ func TestExecuteRootCommandSuccess(t *testing.T) {
 	}}
 
 	buffer := &bytes.Buffer{}
-	exitCode := executeRootCommand(cmd, buffer)
+	exitCode := executeRootCommand(cmd, nil, nil, buffer)
 	if exitCode != 0 {
 		t.Fatalf("expected exit code 0, got %d", exitCode)
 	}
@@ -156,4 +156,225 @@ func TestLoggerFromEnvironmentBranches(t *testing.T) {
 			t.Fatal("expected logger to be disabled for invalid format")
 		}
 	})
+}
+
+// newJSONRootCommand builds a root command carrying the same persistent --json
+// flag the real root has, so the flag-lookup path is exercised rather than only
+// the raw-argument fallback.
+func newJSONRootCommand(t *testing.T, runErr error) *cobra.Command {
+	t.Helper()
+
+	cmd := &cobra.Command{
+		Use:           "test",
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		RunE: func(command *cobra.Command, args []string) error {
+			return runErr
+		},
+	}
+	cmd.PersistentFlags().Bool("json", false, "Output as JSON")
+
+	return cmd
+}
+
+func TestExecuteRootCommandEmitsErrorEnvelopeUnderJSON(t *testing.T) {
+	t.Setenv("BB_LOG_LEVEL", "")
+	t.Setenv("BB_LOG_FORMAT", "")
+
+	cmd := newJSONRootCommand(t, apperrors.New(apperrors.KindNotFound, "repository does not exist", nil))
+	cmd.SetArgs([]string{"--json"})
+
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	exitCode := executeRootCommand(cmd, []string{"--json"}, stdout, stderr)
+
+	if exitCode != 4 {
+		t.Fatalf("expected exit code 4, got %d", exitCode)
+	}
+
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("expected parseable stdout, got %q (%v)", stdout.String(), err)
+	}
+
+	if envelope["version"] != "v2" {
+		t.Fatalf("expected version v2, got %v", envelope["version"])
+	}
+	if _, present := envelope["data"]; present {
+		t.Fatal("expected no data key on the failure envelope")
+	}
+
+	meta, ok := envelope["meta"].(map[string]any)
+	if !ok || meta["contract"] != "bb.machine" {
+		t.Fatalf("expected bb.machine meta contract, got %v", envelope["meta"])
+	}
+
+	payload, ok := envelope["error"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected error object, got %T", envelope["error"])
+	}
+	if payload["kind"] != "not_found" {
+		t.Fatalf("expected kind not_found, got %v", payload["kind"])
+	}
+	if payload["message"] != "repository does not exist" {
+		t.Fatalf("expected message without kind prefix, got %v", payload["message"])
+	}
+	if payload["exit_code"] != float64(4) {
+		t.Fatalf("expected exit_code 4, got %v", payload["exit_code"])
+	}
+
+	// The human-readable line stays on stderr regardless of --json.
+	if !strings.Contains(stderr.String(), "not_found: repository does not exist") {
+		t.Fatalf("expected human error on stderr, got %q", stderr.String())
+	}
+}
+
+func TestExecuteRootCommandEveryKindRoundTrips(t *testing.T) {
+	t.Setenv("BB_LOG_LEVEL", "")
+	t.Setenv("BB_LOG_FORMAT", "")
+
+	for _, kind := range apperrors.Kinds() {
+		t.Run(string(kind), func(t *testing.T) {
+			runErr := apperrors.New(kind, "boom", nil)
+
+			cmd := newJSONRootCommand(t, runErr)
+			cmd.SetArgs([]string{"--json"})
+
+			stdout := &bytes.Buffer{}
+			exitCode := executeRootCommand(cmd, []string{"--json"}, stdout, &bytes.Buffer{})
+
+			var envelope struct {
+				Error struct {
+					Kind     string `json:"kind"`
+					Message  string `json:"message"`
+					ExitCode int    `json:"exit_code"`
+				} `json:"error"`
+			}
+			if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+				t.Fatalf("expected parseable stdout, got %q (%v)", stdout.String(), err)
+			}
+
+			if envelope.Error.Kind != string(kind) {
+				t.Fatalf("expected kind %q, got %q", kind, envelope.Error.Kind)
+			}
+			if envelope.Error.Message != "boom" {
+				t.Fatalf("expected message boom, got %q", envelope.Error.Message)
+			}
+			// The envelope's exit_code must agree with the process exit status,
+			// or a script branching on the payload disagrees with $?.
+			if envelope.Error.ExitCode != exitCode {
+				t.Fatalf("envelope exit_code %d disagrees with process exit %d", envelope.Error.ExitCode, exitCode)
+			}
+			if exitCode != apperrors.ExitCode(runErr) {
+				t.Fatalf("expected exit %d, got %d", apperrors.ExitCode(runErr), exitCode)
+			}
+		})
+	}
+}
+
+func TestExecuteRootCommandLeavesStdoutEmptyWithoutJSON(t *testing.T) {
+	t.Setenv("BB_LOG_LEVEL", "")
+	t.Setenv("BB_LOG_FORMAT", "")
+
+	cmd := newJSONRootCommand(t, apperrors.New(apperrors.KindValidation, "invalid input", nil))
+	cmd.SetArgs(nil)
+
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	if exitCode := executeRootCommand(cmd, nil, stdout, stderr); exitCode != 2 {
+		t.Fatalf("expected exit code 2, got %d", exitCode)
+	}
+
+	if stdout.String() != "" {
+		t.Fatalf("expected empty stdout without --json, got %q", stdout.String())
+	}
+	if strings.TrimSpace(stderr.String()) != "validation: invalid input" {
+		t.Fatalf("expected plain stderr error, got %q", stderr.String())
+	}
+}
+
+func TestExecuteRootCommandEmitsEnvelopeWhenFlagParsingFails(t *testing.T) {
+	t.Setenv("BB_LOG_LEVEL", "")
+	t.Setenv("BB_LOG_FORMAT", "")
+
+	// pflag never reaches --json here, so only the raw arguments reveal that a
+	// machine contract was requested — and an unknown flag is precisely when a
+	// script needs a parseable answer.
+	cmd := newJSONRootCommand(t, nil)
+	cmd.SetArgs([]string{"--bogus", "--json"})
+
+	stdout := &bytes.Buffer{}
+	exitCode := executeRootCommand(cmd, []string{"--bogus", "--json"}, stdout, &bytes.Buffer{})
+	if exitCode == 0 {
+		t.Fatal("expected a non-zero exit for an unknown flag")
+	}
+
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("expected parseable stdout, got %q (%v)", stdout.String(), err)
+	}
+	if _, present := envelope["error"]; !present {
+		t.Fatalf("expected an error envelope, got %v", envelope)
+	}
+}
+
+func TestArgsRequestJSON(t *testing.T) {
+	testCases := []struct {
+		name     string
+		args     []string
+		expected bool
+	}{
+		{name: "absent", args: []string{"auth", "status"}, expected: false},
+		{name: "bare flag", args: []string{"--json", "auth"}, expected: true},
+		{name: "explicit true", args: []string{"--json=true"}, expected: true},
+		{name: "explicit false", args: []string{"--json=false"}, expected: false},
+		{name: "last occurrence wins", args: []string{"--json", "--json=false"}, expected: false},
+		{name: "re-enabled", args: []string{"--json=false", "--json"}, expected: true},
+		{name: "after the separator is positional", args: []string{"--", "--json"}, expected: false},
+		// Known false positive: a flag value of literally --json reads as a
+		// request. It costs an unwanted envelope on stdout on the error path
+		// only, and the parsed flag wins whenever parsing succeeded.
+		{name: "flag value that looks like the flag", args: []string{"--message", "--json"}, expected: true},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := argsRequestJSON(testCase.args); got != testCase.expected {
+				t.Fatalf("argsRequestJSON(%v) = %v, want %v", testCase.args, got, testCase.expected)
+			}
+		})
+	}
+}
+
+// unwritableStdout stands in for a closed or full stdout — a broken pipe when
+// the consumer exits early, for instance.
+type unwritableStdout struct{}
+
+func (unwritableStdout) Write([]byte) (int, error) {
+	return 0, errors.New("stdout is closed")
+}
+
+func TestExecuteRootCommandReportsEnvelopeWriteFailure(t *testing.T) {
+	t.Setenv("BB_LOG_LEVEL", "")
+	t.Setenv("BB_LOG_FORMAT", "")
+
+	cmd := newJSONRootCommand(t, apperrors.New(apperrors.KindTransient, "upstream unavailable", nil))
+	cmd.SetArgs([]string{"--json"})
+
+	stderr := &bytes.Buffer{}
+	exitCode := executeRootCommand(cmd, []string{"--json"}, unwritableStdout{}, stderr)
+
+	// A failure to write the envelope must not change the exit code the
+	// taxonomy dictates; the process still failed for the original reason.
+	if exitCode != 10 {
+		t.Fatalf("expected exit code 10, got %d", exitCode)
+	}
+
+	output := stderr.String()
+	if !strings.Contains(output, "failed to write JSON error output") {
+		t.Fatalf("expected the write failure reported on stderr, got %q", output)
+	}
+	if !strings.Contains(output, "transient: upstream unavailable") {
+		t.Fatalf("expected the original error still reported, got %q", output)
+	}
 }

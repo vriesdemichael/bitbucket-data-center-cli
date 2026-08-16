@@ -2,6 +2,7 @@ package errors
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -76,5 +77,75 @@ func TestKindOf(t *testing.T) {
 
 	if got := KindOf(errors.New("plain")); got != KindInternal {
 		t.Fatalf("expected internal kind for plain error, got %q", got)
+	}
+}
+
+func TestKindsCoversEveryDeclaredKind(t *testing.T) {
+	kinds := Kinds()
+
+	seen := map[Kind]bool{}
+	for _, kind := range kinds {
+		if kind == "" {
+			t.Fatal("Kinds() contains an empty kind")
+		}
+		if seen[kind] {
+			t.Fatalf("Kinds() lists %q twice", kind)
+		}
+		seen[kind] = true
+	}
+
+	// Every kind must map to an exit code the contract documents. A kind added
+	// without a case in ExitCode silently becomes exit 1.
+	for _, kind := range kinds {
+		if code := ExitCode(New(kind, "boom", nil)); code < 1 {
+			t.Fatalf("kind %q maps to invalid exit code %d", kind, code)
+		}
+	}
+
+	for _, kind := range []Kind{
+		KindAuthentication, KindAuthorization, KindValidation, KindNotFound,
+		KindConflict, KindTransient, KindPermanent, KindNotImplemented, KindInternal,
+	} {
+		if !seen[kind] {
+			t.Fatalf("declared kind %q is missing from Kinds()", kind)
+		}
+	}
+}
+
+func TestMessageOf(t *testing.T) {
+	testCases := []struct {
+		name     string
+		err      error
+		expected string
+	}{
+		{name: "nil", err: nil, expected: ""},
+		{
+			name:     "strips the kind prefix",
+			err:      New(KindValidation, "bad input", nil),
+			expected: "bad input",
+		},
+		{
+			name:     "keeps the cause",
+			err:      New(KindConflict, "already exists", errors.New("409")),
+			expected: "already exists (409)",
+		},
+		{
+			name:     "plain errors pass through",
+			err:      errors.New("something broke"),
+			expected: "something broke",
+		},
+		{
+			name:     "wrapping context is preserved",
+			err:      fmt.Errorf("loading config: %w", New(KindNotFound, "missing file", nil)),
+			expected: "loading config: not_found: missing file",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := MessageOf(testCase.err); got != testCase.expected {
+				t.Fatalf("MessageOf() = %q, want %q", got, testCase.expected)
+			}
+		})
 	}
 }

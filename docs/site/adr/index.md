@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `45`
-- Accepted ADRs: `42`
+- Total ADRs: `46`
+- Accepted ADRs: `43`
 
 ## ADR List
 
@@ -54,4 +54,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 043: Provision the live test instance with the Atlassian Plugin SDK](043-sdk-provisioned-licensed-test-instance.md) (`architecture`, `accepted`)
 - [ADR 044: Supply git credentials through a credential helper rather than persisting them](044-git-credential-helper-instead-of-persisted-credentials.md) (`architecture`, `accepted`)
 - [ADR 045: Compute coverage measurements, commit only verifiable baselines](045-coverage-measurements-are-computed-not-committed.md) (`development`, `accepted`)
+- [ADR 046: Emit a JSON error envelope on the failure path](046-json-error-envelope-on-the-failure-path.md) (`architecture`, `accepted`)
 
