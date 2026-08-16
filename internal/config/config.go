@@ -47,6 +47,10 @@ type AppConfig struct {
 	LogFormat              string
 	DiagnosticsEnabled     bool
 	AuthSource             string
+	// UsedInsecureStorage reports that a credential in use was read from the
+	// plaintext config fallback rather than the OS keyring. It is set only when
+	// such a credential is actually used, not merely present in the file.
+	UsedInsecureStorage bool
 }
 
 type StoredConfig struct {
@@ -74,6 +78,9 @@ type LoginInput struct {
 	Password   string
 	Token      string
 	SetDefault bool
+	// RequireKeyring fails the login when the OS keyring cannot store the
+	// secret, instead of falling back to plaintext in the config file.
+	RequireKeyring bool
 }
 
 type LoginResult struct {
@@ -179,11 +186,32 @@ func LoadFromEnv() (AppConfig, error) {
 			}
 			if config.BitbucketToken != "" || (config.BitbucketUsername != "" && config.BitbucketPassword != "") {
 				config.AuthSource = "stored"
+				config.UsedInsecureStorage = stored.UsedInsecureStorage
 			}
 		}
 
 		if os.Getenv("BITBUCKET_TOKEN") != "" || os.Getenv("BITBUCKET_USERNAME") != "" || os.Getenv("BITBUCKET_USER") != "" || os.Getenv("BITBUCKET_PASSWORD") != "" || os.Getenv("ADMIN_USER") != "" || os.Getenv("ADMIN_PASSWORD") != "" {
 			config.AuthSource = "env"
+			// Environment credentials never touch the config file, so they are
+			// not the plaintext fallback this flag reports.
+			config.UsedInsecureStorage = false
+		}
+	}
+
+	// Enforcing only at login would let a config written before the policy was
+	// set keep serving plaintext credentials indefinitely, which is exactly what
+	// an operator mandating keyring storage is trying to prevent.
+	if config.UsedInsecureStorage {
+		requireKeyring, err := RequireKeyring()
+		if err != nil {
+			return AppConfig{}, err
+		}
+		if requireKeyring {
+			return AppConfig{}, apperrors.New(
+				apperrors.KindPermanent,
+				"stored credentials for this host are held in the plaintext config fallback and keyring-backed storage is required; run 'bb auth login <host>' again with a working keyring, or supply BITBUCKET_TOKEN instead",
+				nil,
+			)
 		}
 	}
 
@@ -305,19 +333,30 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 		result.AuthMode = "basic"
 	}
 
+	requireKeyring, err := requireKeyringPolicy(input.RequireKeyring)
+	if err != nil {
+		return LoginResult{}, err
+	}
+
 	insecure := StoredSecret{}
 	if hasToken {
-		if err := keyring.Set(keyringServiceName, key+":token", strings.TrimSpace(input.Token)); err != nil {
+		if keyringErr := keyringSet(keyringServiceName, key+":token", strings.TrimSpace(input.Token)); keyringErr != nil {
+			if requireKeyring {
+				return LoginResult{}, keyringUnavailableError(keyringErr)
+			}
 			insecure.Token = strings.TrimSpace(input.Token)
 			result.UsedInsecureStorage = true
 		}
-		_ = keyring.Delete(keyringServiceName, key+":password")
+		_ = keyringDelete(keyringServiceName, key+":password")
 	} else {
-		if err := keyring.Set(keyringServiceName, key+":password", strings.TrimSpace(input.Password)); err != nil {
+		if keyringErr := keyringSet(keyringServiceName, key+":password", strings.TrimSpace(input.Password)); keyringErr != nil {
+			if requireKeyring {
+				return LoginResult{}, keyringUnavailableError(keyringErr)
+			}
 			insecure.Password = strings.TrimSpace(input.Password)
 			result.UsedInsecureStorage = true
 		}
-		_ = keyring.Delete(keyringServiceName, key+":token")
+		_ = keyringDelete(keyringServiceName, key+":token")
 	}
 
 	if insecure.Token != "" || insecure.Password != "" {
@@ -505,8 +544,8 @@ func Logout(host string) error {
 	}
 
 	key := hostKey(hostURL)
-	_ = keyring.Delete(keyringServiceName, key+":token")
-	_ = keyring.Delete(keyringServiceName, key+":password")
+	_ = keyringDelete(keyringServiceName, key+":token")
+	_ = keyringDelete(keyringServiceName, key+":password")
 
 	delete(stored.Hosts, key)
 	delete(stored.InsecureSecrets, key)
@@ -710,25 +749,71 @@ func resolveStoredCredentialsStrict(stored StoredConfig, runtimeURL string) (App
 func credentialsForStoredHost(stored StoredConfig, key string, profile StoredProfile) AppConfig {
 	resolved := AppConfig{BitbucketURL: normalizeURL(profile.URL), BitbucketUsername: profile.Username}
 
-	if token, err := keyring.Get(keyringServiceName, key+":token"); err == nil && strings.TrimSpace(token) != "" {
+	if token, err := keyringGet(keyringServiceName, key+":token"); err == nil && strings.TrimSpace(token) != "" {
 		resolved.BitbucketToken = token
 	}
-	if password, err := keyring.Get(keyringServiceName, key+":password"); err == nil && strings.TrimSpace(password) != "" {
+	if password, err := keyringGet(keyringServiceName, key+":password"); err == nil && strings.TrimSpace(password) != "" {
 		resolved.BitbucketPassword = password
 	}
 
 	if resolved.BitbucketToken == "" || resolved.BitbucketPassword == "" {
 		if insecure, ok := stored.InsecureSecrets[key]; ok {
-			if resolved.BitbucketToken == "" {
+			// Flag only when a plaintext secret is actually adopted. A stale
+			// entry left beside a working keyring must not make every command
+			// report insecure storage.
+			if resolved.BitbucketToken == "" && strings.TrimSpace(insecure.Token) != "" {
 				resolved.BitbucketToken = insecure.Token
+				resolved.UsedInsecureStorage = true
 			}
-			if resolved.BitbucketPassword == "" {
+			if resolved.BitbucketPassword == "" && strings.TrimSpace(insecure.Password) != "" {
 				resolved.BitbucketPassword = insecure.Password
+				resolved.UsedInsecureStorage = true
 			}
 		}
 	}
 
 	return resolved
+}
+
+// The keyring surface is indirected so tests can exercise the
+// keyring-unavailable path — the whole point of the fallback and of
+// BB_REQUIRE_KEYRING — without depending on the machine they run on.
+//
+// go-keyring ships a mock, but it swaps a package-level provider with no way to
+// restore the real one, which would make the behaviour of every later test in
+// the binary depend on ordering. These are swapped and restored per test
+// instead.
+var (
+	keyringSet    = keyring.Set
+	keyringGet    = keyring.Get
+	keyringDelete = keyring.Delete
+)
+
+// RequireKeyring reports whether the operator has mandated keyring-backed
+// credential storage via BB_REQUIRE_KEYRING.
+func RequireKeyring() (bool, error) {
+	return requireKeyringPolicy(false)
+}
+
+func requireKeyringPolicy(requestedByFlag bool) (bool, error) {
+	fromEnv, err := envBoolOrDefault("BB_REQUIRE_KEYRING", false)
+	if err != nil {
+		return false, apperrors.New(apperrors.KindValidation, "BB_REQUIRE_KEYRING must be a boolean", err)
+	}
+
+	return requestedByFlag || fromEnv, nil
+}
+
+// keyringUnavailableError reports a mandated keyring that could not be used.
+//
+// Classified permanent rather than transient: retrying the same command on the
+// same host changes nothing, and a caller should surface it rather than loop.
+func keyringUnavailableError(cause error) error {
+	return apperrors.New(
+		apperrors.KindPermanent,
+		"OS keyring is unavailable and keyring-backed storage is required; unset BB_REQUIRE_KEYRING or drop --require-keyring to allow the plaintext config fallback, or supply credentials through BITBUCKET_TOKEN instead of storing them",
+		cause,
+	)
 }
 
 func LoadStoredAuthForHost(runtimeURL string) (AppConfig, bool, error) {
@@ -837,6 +922,23 @@ func (config AppConfig) AuthMode() string {
 	}
 
 	return "none"
+}
+
+// CredentialStorage names where the credential in use is held, so an operator
+// auditing a machine can see it without grepping the config file.
+func (config AppConfig) CredentialStorage() string {
+	if config.AuthMode() == "none" {
+		return "none"
+	}
+
+	switch {
+	case config.AuthSource == "env" || config.AuthSource == "env/default":
+		return "environment"
+	case config.UsedInsecureStorage:
+		return "config-file-plaintext"
+	default:
+		return "keyring"
+	}
 }
 
 func envOrDefault(key string, fallback string) string {

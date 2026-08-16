@@ -96,11 +96,15 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if isJSON() {
-				payload := map[string]string{
+				payload := map[string]any{
 					"bitbucket_url":            cfg.BitbucketURL,
 					"bitbucket_version_target": cfg.BitbucketVersionTarget,
 					"auth_mode":                cfg.AuthMode(),
 					"auth_source":              cfg.AuthSource,
+					// Reported here as well as at login, so an operator auditing
+					// an existing machine can see how its credentials are held
+					// without having to grep the config file.
+					"credential_storage": cfg.CredentialStorage(),
 				}
 				return deps.WriteJSON(cmd.OutOrStdout(), payload)
 			}
@@ -113,6 +117,11 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Target Bitbucket: %s (%s)\n", cfg.BitbucketURL, details)
+
+			// status is where an operator comes for detail, so it names the file
+			// rather than repeating the generic warning loadConfig already put on
+			// stderr for every command.
+			fmt.Fprintf(cmd.OutOrStdout(), "Credential storage: %s\n", describeCredentialStorage(cfg))
 			return nil
 		},
 	}
@@ -120,23 +129,54 @@ func New(deps Dependencies) *cobra.Command {
 	authCmd.AddCommand(statusCmd)
 
 	var loginToken string
+	var loginTokenStdin bool
 	var loginUsername string
 	var loginPassword string
+	var loginPasswordStdin bool
 	var loginSetDefault bool
 	var loginDiscoverAliases bool
+	var loginRequireKeyring bool
 	loginCmd := &cobra.Command{
 		Use:   "login <host>",
 		Short: "Store credentials for a Bitbucket host",
-		Args:  cobra.ExactArgs(1),
+		Long: `Store credentials for a Bitbucket host.
+
+Prefer the stdin forms. A secret passed as a flag value appears in the process
+argument list, where any local user can read it through ps or /proc, and where
+the shell records it in history:
+
+  printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
+
+Credentials are stored in the OS keyring. Where no keyring is available — headless
+servers, most containers, WSL without gnome-keyring — bb falls back to the config
+file in plaintext and says so. Pass --require-keyring (or set BB_REQUIRE_KEYRING=1)
+to fail instead of falling back.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resolvedHost := strings.TrimSpace(args[0])
+
+			if loginTokenStdin && loginPasswordStdin {
+				return apperrors.New(apperrors.KindValidation, "--token-stdin and --password-stdin cannot both be used: stdin carries one secret", nil)
+			}
+
+			token, err := resolveLoginSecret(loginToken, loginTokenStdin, cmd.InOrStdin(), "--token", "--token-stdin")
+			if err != nil {
+				return err
+			}
+			password, err := resolveLoginSecret(loginPassword, loginPasswordStdin, cmd.InOrStdin(), "--password", "--password-stdin")
+			if err != nil {
+				return err
+			}
+
+			warnAboutSecretsOnTheCommandLine(cmd)
+
 			aliases := []string(nil)
 			if loginDiscoverAliases {
 				probeCfg := config.AppConfig{
 					BitbucketURL:      resolvedHost,
-					BitbucketToken:    strings.TrimSpace(loginToken),
+					BitbucketToken:    token,
 					BitbucketUsername: strings.TrimSpace(loginUsername),
-					BitbucketPassword: strings.TrimSpace(loginPassword),
+					BitbucketPassword: password,
 				}
 				discoveredAliases, err := discoverAliases(cmd.Context(), probeCfg, deps.NewReposClient)
 				if err == nil {
@@ -145,15 +185,23 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			result, err := config.SaveLogin(config.LoginInput{
-				Host:       resolvedHost,
-				Aliases:    aliases,
-				Username:   loginUsername,
-				Password:   loginPassword,
-				Token:      loginToken,
-				SetDefault: loginSetDefault,
+				Host:           resolvedHost,
+				Aliases:        aliases,
+				Username:       loginUsername,
+				Password:       password,
+				Token:          token,
+				SetDefault:     loginSetDefault,
+				RequireKeyring: loginRequireKeyring,
 			})
 			if err != nil {
 				return err
+			}
+
+			// The warning goes to stderr in both modes: under --json stdout is a
+			// machine contract, and prose there would make the envelope
+			// unparseable.
+			if result.UsedInsecureStorage {
+				reportInsecureStorage(cmd.ErrOrStderr(), result.Host)
 			}
 
 			if isJSON() {
@@ -170,17 +218,17 @@ func New(deps Dependencies) *cobra.Command {
 			if len(result.Aliases) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "Discovered aliases: %s\n", strings.Join(result.Aliases, ", "))
 			}
-			if result.UsedInsecureStorage {
-				fmt.Fprintln(cmd.OutOrStdout(), "Warning: keyring unavailable, credentials stored in config fallback")
-			}
 			return nil
 		},
 	}
-	loginCmd.Flags().StringVar(&loginToken, "token", "", "Access token")
+	loginCmd.Flags().StringVar(&loginToken, "token", "", "Access token (visible in the process list; prefer --token-stdin)")
+	loginCmd.Flags().BoolVar(&loginTokenStdin, "token-stdin", false, "Read the access token from stdin")
 	loginCmd.Flags().StringVar(&loginUsername, "username", "", "Username for basic auth")
-	loginCmd.Flags().StringVar(&loginPassword, "password", "", "Password for basic auth")
+	loginCmd.Flags().StringVar(&loginPassword, "password", "", "Password for basic auth (visible in the process list; prefer --password-stdin)")
+	loginCmd.Flags().BoolVar(&loginPasswordStdin, "password-stdin", false, "Read the basic-auth password from stdin")
 	loginCmd.Flags().BoolVar(&loginSetDefault, "set-default", true, "Set host as default target")
 	loginCmd.Flags().BoolVar(&loginDiscoverAliases, "discover-aliases", true, "Discover host aliases from the first accessible repository clone links")
+	loginCmd.Flags().BoolVar(&loginRequireKeyring, "require-keyring", false, "Fail if the OS keyring is unavailable instead of storing credentials in plaintext")
 	authCmd.AddCommand(loginCmd)
 
 	var identityHost string

@@ -943,7 +943,10 @@ func TestAuthAliasCommandsAndDiscovery(t *testing.T) {
 
 	loginOut := &bytes.Buffer{}
 	cmd.SetOut(loginOut)
-	cmd.SetErr(loginOut)
+	// Captured separately: stdout is a machine contract under --json, and
+	// --token now warns on stderr. Sharing one buffer would make the envelope
+	// unparseable here and hide that contamination elsewhere.
+	cmd.SetErr(&bytes.Buffer{})
 	cmd.SetArgs([]string{"login", "https://bitbucket.company.org", "--token", "tok"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("login with discovery failed: %v", err)
@@ -1053,7 +1056,7 @@ func TestAuthJSONOutputsUseEmptyAliasArrays(t *testing.T) {
 
 	loginOut := &bytes.Buffer{}
 	cmd.SetOut(loginOut)
-	cmd.SetErr(loginOut)
+	cmd.SetErr(&bytes.Buffer{})
 	cmd.SetArgs([]string{"login", "https://empty-array.company.org", "--token", "tok", "--discover-aliases=false"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("login failed: %v", err)
@@ -1501,7 +1504,7 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 
 		loginOut := &bytes.Buffer{}
 		cmd.SetOut(loginOut)
-		cmd.SetErr(loginOut)
+		cmd.SetErr(&bytes.Buffer{})
 		cmd.SetArgs([]string{"login", "https://human.company.org", "--token", "tok"})
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("human login failed: %v", err)

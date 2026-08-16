@@ -28,12 +28,22 @@ bb ai skill install --global # user scope:    ~/.agents/skills/bb/SKILL.md
 Before using `bb`, authenticate against your Bitbucket instance:
 
 ```bash
-bb auth login https://bitbucket.example.com --token <your-pat>
+printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
 bb auth status
 ```
 
+**Never pass a token as a flag value.** `--token <value>` puts the credential in the
+process argument list, readable by any local user through `ps` or `/proc`, and into
+shell history. Use `--token-stdin`, or set `BITBUCKET_TOKEN` in the environment and
+skip `bb auth login` entirely — that is usually the better choice in CI and containers,
+since it never writes the credential to disk.
+
 Agents cannot complete OAuth flows. Always use a Personal Access Token (PAT).
 Create one at: `bb auth token-url`
+
+`bb auth status` reports `Credential storage:` as `keyring`, `environment`, or
+`config-file-plaintext`. The last means no OS keyring was available and the token is on
+disk in the config file; say so if you are reporting on the environment's security posture.
 
 ## Discovering Commands
 

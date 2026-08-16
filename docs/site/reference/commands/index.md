@@ -754,16 +754,30 @@ Global Flags:
 Store credentials for a Bitbucket host
 
 ```text
-Store credentials for a Bitbucket host
+Store credentials for a Bitbucket host.
+
+Prefer the stdin forms. A secret passed as a flag value appears in the process
+argument list, where any local user can read it through ps or /proc, and where
+the shell records it in history:
+
+  printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
+
+Credentials are stored in the OS keyring. Where no keyring is available — headless
+servers, most containers, WSL without gnome-keyring — bb falls back to the config
+file in plaintext and says so. Pass --require-keyring (or set BB_REQUIRE_KEYRING=1)
+to fail instead of falling back.
 
 Usage:
   bb auth login <host> [flags]
 
 Flags:
       --discover-aliases   Discover host aliases from the first accessible repository clone links (default true)
-      --password string    Password for basic auth
+      --password string    Password for basic auth (visible in the process list; prefer --password-stdin)
+      --password-stdin     Read the basic-auth password from stdin
+      --require-keyring    Fail if the OS keyring is unavailable instead of storing credentials in plaintext
       --set-default        Set host as default target (default true)
-      --token string       Access token
+      --token string       Access token (visible in the process list; prefer --token-stdin)
+      --token-stdin        Read the access token from stdin
       --username string    Username for basic auth
 
 Global Flags:
