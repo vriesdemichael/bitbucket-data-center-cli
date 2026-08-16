@@ -89,6 +89,12 @@ jobs:
       - name: Verify CLI live coverage has not regressed
         run: task quality:cli-live-coverage:verify
 
+      # Catches documented commands that do not parse against the real command
+      # tree. Six had accumulated by v2.0.2, including the README quickstart and
+      # the agent skill, which agents emit verbatim.
+      - name: Verify documented bb invocations are valid
+        run: task docs:lint
+
   docs-site:
     name: Docs Site
     runs-on: ubuntu-latest
