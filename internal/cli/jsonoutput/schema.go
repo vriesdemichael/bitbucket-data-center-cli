@@ -1,5 +1,11 @@
 package jsonoutput
 
+import (
+	"sort"
+
+	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+)
+
 const jsonSchemaVersion = "https://json-schema.org/draft/2020-12/schema"
 
 // SchemaBaseURL is the base URL under which output schemas are published.
@@ -22,6 +28,66 @@ func EnvelopeSchemaFor(schemaFileName, title, description string, dataSchema map
 			"meta":    metaSchema(),
 		},
 		"required": []any{"version", "data", "meta"},
+	}
+}
+
+// ErrorEnvelopeSchema describes the envelope written to stdout when any command
+// fails under --json.
+//
+// It is published once rather than per command: the failure shape does not vary
+// by command, and a consumer that validates against it can handle an error from
+// a command it has never seen.
+func ErrorEnvelopeSchema(schemaFileName string) map[string]any {
+	kinds := make([]any, 0, len(apperrors.Kinds()))
+	exitCodes := map[int]struct{}{}
+	for _, kind := range apperrors.Kinds() {
+		kinds = append(kinds, string(kind))
+		exitCodes[apperrors.ExitCode(apperrors.New(kind, "", nil))] = struct{}{}
+	}
+
+	codes := make([]int, 0, len(exitCodes))
+	for code := range exitCodes {
+		codes = append(codes, code)
+	}
+	sort.Ints(codes)
+
+	codeValues := make([]any, 0, len(codes))
+	for _, code := range codes {
+		codeValues = append(codeValues, code)
+	}
+
+	return map[string]any{
+		"$schema":              jsonSchemaVersion,
+		"$id":                  SchemaBaseURL + schemaFileName,
+		"title":                "bb command failure",
+		"description":          "Emitted on stdout by any bb command that fails while --json is set. The presence of error rather than data marks the run as failed; exit_code matches the process exit status.",
+		"type":                 "object",
+		"additionalProperties": false,
+		"properties": map[string]any{
+			"version": map[string]any{"const": ContractVersion},
+			"error": map[string]any{
+				"type":                 "object",
+				"additionalProperties": false,
+				"properties": map[string]any{
+					"kind": map[string]any{
+						"description": "Error classification from the ADR-011 taxonomy.",
+						"enum":        kinds,
+					},
+					"message": map[string]any{
+						"type":        "string",
+						"description": "Human-readable failure description, without the kind prefix shown on stderr.",
+					},
+					"exit_code": map[string]any{
+						"description": "Process exit status, determined by kind.",
+						"type":        "integer",
+						"enum":        codeValues,
+					},
+				},
+				"required": []any{"kind", "message", "exit_code"},
+			},
+			"meta": metaSchema(),
+		},
+		"required": []any{"version", "error", "meta"},
 	}
 }
 

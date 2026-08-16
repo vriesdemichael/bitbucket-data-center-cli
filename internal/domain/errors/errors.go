@@ -3,6 +3,7 @@ package errors
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type Kind string
@@ -64,6 +65,44 @@ func KindOf(err error) Kind {
 	}
 
 	return KindInternal
+}
+
+// Kinds returns every kind in the taxonomy, in declaration order.
+//
+// The JSON error envelope schema enumerates these, so a kind added here without
+// a schema update would publish a contract the CLI can violate. A test asserts
+// the two stay in step.
+func Kinds() []Kind {
+	return []Kind{
+		KindAuthentication,
+		KindAuthorization,
+		KindValidation,
+		KindNotFound,
+		KindConflict,
+		KindTransient,
+		KindPermanent,
+		KindNotImplemented,
+		KindInternal,
+	}
+}
+
+// MessageOf returns the human-readable message with the leading kind prefix
+// that Error() adds removed.
+//
+// Machine consumers get the kind as its own field, so repeating it inside the
+// message is noise. The prefix is only stripped when it is literally at the
+// front, which leaves wrapped errors carrying extra context intact.
+func MessageOf(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	message := err.Error()
+	if kind := KindOf(err); kind != "" {
+		message = strings.TrimPrefix(message, string(kind)+": ")
+	}
+
+	return message
 }
 
 func ExitCode(err error) int {

@@ -8,6 +8,7 @@ package outputschemas
 
 import (
 	authschemas "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/auth"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	bulkworkflow "github.com/vriesdemichael/bitbucket-server-cli/internal/workflows/bulk"
 )
 
@@ -55,5 +56,12 @@ func Schemas() map[string]map[string]any {
 		all[k] = v
 	}
 
+	// Failure envelope — one schema for every command, since the shape of a
+	// failure does not vary by command.
+	all[ErrorSchemaFileName] = jsonoutput.ErrorEnvelopeSchema(ErrorSchemaFileName)
+
 	return all
 }
+
+// ErrorSchemaFileName is the published name of the failure envelope schema.
+const ErrorSchemaFileName = "output.error.schema.json"

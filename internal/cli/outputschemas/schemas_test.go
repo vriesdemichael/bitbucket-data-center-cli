@@ -38,10 +38,27 @@ func TestSchemasReturnNonEmpty(t *testing.T) {
 			continue
 		}
 
-		for _, field := range []string{"version", "data", "meta"} {
+		for _, field := range []string{"version", "meta"} {
 			if _, ok := props[field]; !ok {
 				t.Errorf("schema %s missing envelope property %q", name, field)
 			}
+		}
+
+		// A bb.machine envelope carries data or error, never both: which key is
+		// present is how a consumer tells success from failure, so a schema
+		// permitting both would make the distinction meaningless.
+		_, hasData := props["data"]
+		_, hasError := props["error"]
+
+		switch {
+		case hasData && hasError:
+			t.Errorf("schema %s declares both data and error", name)
+		case !hasData && !hasError:
+			t.Errorf("schema %s declares neither data nor error", name)
+		}
+
+		if name == outputschemas.ErrorSchemaFileName && !hasError {
+			t.Errorf("schema %s is the failure envelope but declares data", name)
 		}
 	}
 }
