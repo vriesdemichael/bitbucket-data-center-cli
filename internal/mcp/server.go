@@ -35,9 +35,24 @@ func ClientsFromConfig(cfg config.AppConfig) (Clients, error) {
 
 // Spec pairs a tool definition with a handler factory so that metadata
 // can be listed without a live Bitbucket connection.
-// Safe marks tools whose side-effects are low-blast-radius and easily reversed
-// (e.g. opening a PR, adding a comment). Unsafe tools (e.g. merge_pull_request)
-// require opt-in via --yolo / --allow-writes.
+//
+// Safe decides whether a tool is exposed without --yolo / --allow-writes. Set
+// it false when either of two things is true:
+//
+//  1. The effect is irreversible or hard to undo — merging, or enabling
+//     auto-merge, which causes a merge later.
+//  2. The effect influences merge gating — reporting a build status, or
+//     submitting a review. Both are reversible, and both can unblock a merge
+//     the gate exists to hold, so an agent doing them takes part in a control
+//     it is meant to be subject to.
+//
+// The second reason is easy to miss. Reversibility alone once let review
+// submission through as "like commenting", when APPROVED is precisely the input
+// a required-reviewer check consumes.
+//
+// Creating things is generally safe even where this package offers no way to
+// undo it: opening a pull request or tagging a commit changes no branch and
+// gates nothing. Judge by consequence, not by whether a delete tool exists.
 type Spec struct {
 	Tool    mcpgo.Tool
 	Handler func(Clients) server.ToolHandlerFunc
@@ -51,16 +66,28 @@ func AllSpecs() []Spec {
 		// Reading PR state is always safe.
 		{specGetPullRequest().Tool, specGetPullRequest().Handler, true},
 		{specListPullRequests().Tool, specListPullRequests().Handler, true},
-		// Opening a PR is low-blast-radius and easily closed — safe by default.
+		// Opening a PR has low consequence: it changes no branch and blocks
+		// nothing. Not "easily reversed" — pr decline has no tool here — but it
+		// does not need to be.
 		{specCreatePullRequest().Tool, specCreatePullRequest().Handler, true},
+		// Editing title, description or draft state affects only the request.
+		{specUpdatePullRequest().Tool, specUpdatePullRequest().Handler, true},
 		{specListPRComments().Tool, specListPRComments().Handler, true},
 		{specGetPRDiff().Tool, specGetPRDiff().Handler, true},
 		{specGetFileContent().Tool, specGetFileContent().Handler, true},
 		// Adding a comment is trivially reversed — safe by default.
 		{specAddPRComment().Tool, specAddPRComment().Handler, true},
 		{specListPRTasks().Tool, specListPRTasks().Handler, true},
-		// Submitting a review is like commenting and can be dismissed — safe by default.
-		{specSubmitPRReview().Tool, specSubmitPRReview().Handler, true},
+		// Submitting a review influences merge gating: APPROVED is the input a
+		// merge check consumes, so an agent that can approve takes part in the
+		// review it is subject to. Gated for the same reason as set_build_status,
+		// not because it is irreversible.
+		//
+		// Gating the whole tool rather than only its APPROVED path: the server
+		// filters by tool, not by argument, so splitting would mean threading the
+		// yolo setting into every handler. NEEDS_WORK is the conservative outcome
+		// and loses least by being withheld.
+		{specSubmitPRReview().Tool, specSubmitPRReview().Handler, false},
 		// Merging is irreversible and affects the target branch — requires --yolo.
 		{specMergePullRequest().Tool, specMergePullRequest().Handler, false},
 		// Enabling auto-merge can trigger an irreversible merge — requires --yolo.
@@ -75,7 +102,8 @@ func AllSpecs() []Spec {
 		{specResolveRef().Tool, specResolveRef().Handler, true},
 		// Tag group
 		{specListTags().Tool, specListTags().Handler, true},
-		// Creating a tag is a low-risk marker operation — safe by default.
+		// Creating a tag marks a commit and gates nothing. Note tag delete has no
+		// tool here, so this is low-consequence rather than easily reversed.
 		{specCreateTag().Tool, specCreateTag().Handler, true},
 		// Build / quality group
 		{specGetBuildStatus().Tool, specGetBuildStatus().Handler, true},

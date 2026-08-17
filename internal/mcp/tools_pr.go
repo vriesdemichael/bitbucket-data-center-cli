@@ -500,3 +500,58 @@ func specGetFileContent() Spec {
 		}
 	}}
 }
+
+// specUpdatePullRequest completes the draft workflow the agent skill documents:
+// open a pull request as a draft, then mark it ready for review. Without this
+// the second half of that workflow was reachable only from the CLI.
+//
+// Bitbucket requires the current version for optimistic locking, which is why
+// version is required rather than looked up here: fetching it inside the tool
+// would reintroduce the lost-update the version exists to prevent.
+func specUpdatePullRequest() Spec {
+	tool := mcpgo.NewTool("update_pull_request",
+		mcpgo.WithDescription("Update a pull request's title, description, or draft state. Use draft=false to mark a "+
+			"draft pull request ready for review. Requires the current version from get_pull_request for optimistic "+
+			"locking; a stale version is rejected rather than overwriting someone else's edit."),
+		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
+		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
+		mcpgo.WithString("pr_id", mcpgo.Required(), mcpgo.Description("Pull request ID")),
+		mcpgo.WithNumber("version", mcpgo.Required(), mcpgo.Description("Current pull request version, from get_pull_request")),
+		mcpgo.WithString("title", mcpgo.Description("New title; omit to leave unchanged")),
+		mcpgo.WithString("description", mcpgo.Description("New description; omit to leave unchanged")),
+		mcpgo.WithBoolean("draft", mcpgo.Description("Set or clear the draft flag; omit to leave unchanged (Bitbucket DC 8.0+)")),
+	)
+	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
+		svc := pullrequestservice.NewService(c.HTTP)
+		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
+			project, _ := req.RequireString("project")
+			repo, _ := req.RequireString("repo")
+			prID, _ := req.RequireString("pr_id")
+
+			input := pullrequestservice.UpdateInput{
+				Title:       req.GetString("title", ""),
+				Description: req.GetString("description", ""),
+				Version:     int(req.GetFloat("version", 0)),
+			}
+
+			// Draft is a pointer so that "leave unchanged" is distinguishable
+			// from "set to false", which is the difference between not touching
+			// a draft and publishing it.
+			if _, ok := req.GetArguments()["draft"]; ok {
+				draft := req.GetBool("draft", false)
+				input.Draft = &draft
+			}
+
+			pr, err := svc.Update(ctx,
+				pullrequestservice.RepositoryRef{ProjectKey: project, Slug: repo},
+				prID,
+				input,
+			)
+			if err != nil {
+				return mcpgo.NewToolResultErrorFromErr("update_pull_request failed", err), nil
+			}
+
+			return resultJSON(pr)
+		}
+	}}
+}
