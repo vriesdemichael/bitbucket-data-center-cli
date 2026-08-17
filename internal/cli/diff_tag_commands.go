@@ -185,7 +185,7 @@ func newTagCommand(options *rootOptions) *cobra.Command {
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), tags)
+				return writeJSONList(cmd.OutOrStdout(), tags, paging.LimitReached(listPaging, len(tags)))
 			}
 
 			if len(tags) == 0 {

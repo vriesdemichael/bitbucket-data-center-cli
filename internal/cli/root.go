@@ -240,3 +240,9 @@ func newAPIClientFromConfig(cfg config.AppConfig) (*openapigenerated.ClientWithR
 func writeJSON(writer io.Writer, payload any) error {
 	return jsonoutput.Write(writer, payload)
 }
+
+// writeJSONList is writeJSON for a bounded result set, recording in the
+// envelope meta whether the result came back at --limit.
+func writeJSONList(writer io.Writer, payload any, limitReached bool) error {
+	return jsonoutput.WriteList(writer, payload, limitReached)
+}

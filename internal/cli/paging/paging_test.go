@@ -170,3 +170,28 @@ func TestRegisteredFlagWording(t *testing.T) {
 		t.Fatalf("unexpected --all usage %q", allFlag.Usage)
 	}
 }
+
+func TestLimitReached(t *testing.T) {
+	testCases := []struct {
+		name     string
+		options  Options
+		count    int
+		expected bool
+	}{
+		{name: "under the limit", options: Options{limit: 25}, count: 10, expected: false},
+		{name: "at the limit", options: Options{limit: 25}, count: 25, expected: true},
+		{name: "over the limit", options: Options{limit: 25}, count: 26, expected: true},
+		{name: "empty", options: Options{limit: 25}, count: 0, expected: false},
+		{name: "default applies when unset", options: Options{}, count: DefaultLimit, expected: true},
+		// --all has no cap to reach, so it can never be at one.
+		{name: "all never reports", options: Options{all: true}, count: 1_000_000, expected: false},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := LimitReached(testCase.options, testCase.count); got != testCase.expected {
+				t.Fatalf("LimitReached(%d) = %v, want %v", testCase.count, got, testCase.expected)
+			}
+		})
+	}
+}

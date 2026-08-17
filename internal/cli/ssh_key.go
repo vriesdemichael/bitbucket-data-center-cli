@@ -36,7 +36,7 @@ func newSshKeyCommand(options *rootOptions) *cobra.Command {
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), keys)
+				return writeJSONList(cmd.OutOrStdout(), keys, paging.LimitReached(listPaging, len(keys)))
 			}
 
 			if len(keys) == 0 {
@@ -176,7 +176,7 @@ func newRepoSshKeyCommand(options *rootOptions) *cobra.Command {
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), keys)
+				return writeJSONList(cmd.OutOrStdout(), keys, paging.LimitReached(listPaging, len(keys)))
 			}
 
 			if len(keys) == 0 {
