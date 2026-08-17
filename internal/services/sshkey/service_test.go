@@ -275,7 +275,14 @@ func TestSshKeyServiceTransientErrors(t *testing.T) {
 }
 
 func TestSshKeyServiceNetworkErrors(t *testing.T) {
-	client, err := openapigenerated.NewClientWithResponses("http://invalid.local/rest")
+	// Closed loopback port, not an unresolvable hostname: see the note on
+	// TestTokenServiceNetworkErrors. A DNS lookup per call made this 25
+	// seconds, and left the failure mode at the mercy of the resolver.
+	closed := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	baseURL := closed.URL
+	closed.Close()
+
+	client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 	if err != nil {
 		t.Fatalf("create client: %v", err)
 	}

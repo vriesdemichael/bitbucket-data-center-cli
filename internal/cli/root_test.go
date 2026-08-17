@@ -90,6 +90,23 @@ func (stub inferenceGitBackendStub) UnsetConfig(context.Context, git.ConfigOptio
 func init() {
 	// Block external network access during tests by default
 	os.Setenv("BB_BLOCK_EXTERNAL_NETWORK", "1")
+
+	// Shorten the retry backoff. Deliberately not BB_RETRY_COUNT=0: the retry
+	// loop still runs the same number of attempts down the same paths, so
+	// nothing about the mechanism goes untested here — only the sleeping goes
+	// away.
+	//
+	// It is worth this much: the error-path tests in this package point the
+	// client at an httptest server that returns 5xx or refuses the connection,
+	// so every one of them pays the full backoff for a retry that cannot
+	// possibly help against localhost. That was 60% of the package's runtime
+	// and bought no assertion.
+	//
+	// The retry mechanism itself is covered where it lives, in
+	// internal/transport/httpclient, by tests that set client.retries directly
+	// and assert attempt counts, Retry-After handling and cancellation during
+	// backoff. Those are unaffected by this.
+	os.Setenv("BB_RETRY_BACKOFF", "1ms")
 }
 
 func TestAuthStatusSmoke(t *testing.T) {
@@ -435,6 +452,14 @@ func TestRootTransportFlagsOverrideEnvironment(t *testing.T) {
 }
 
 func TestApplyRuntimeFlagOverridesBranches(t *testing.T) {
+	// applyRuntimeFlagOverrides writes these with os.Setenv, so without
+	// registering them here they would leak into every test that runs after
+	// this one — including BB_RETRY_BACKOFF, which this package deliberately
+	// shortens in init() and which this test would otherwise leave at 500ms.
+	for _, key := range []string{"BB_INSECURE_SKIP_VERIFY", "BB_REQUEST_TIMEOUT", "BB_RETRY_COUNT", "BB_RETRY_BACKOFF"} {
+		t.Setenv(key, os.Getenv(key))
+	}
+
 	if err := applyRuntimeFlagOverrides(nil); err != nil {
 		t.Fatalf("expected nil command to be a no-op, got: %v", err)
 	}

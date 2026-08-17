@@ -310,7 +310,18 @@ func TestTokenServiceTransientErrors(t *testing.T) {
 }
 
 func TestTokenServiceNetworkErrors(t *testing.T) {
-	client, err := openapigenerated.NewClientWithResponses("http://invalid.local/rest")
+	// A closed loopback port rather than an unresolvable hostname. This test
+	// makes fifteen calls, and each one against a bogus host waits out a DNS
+	// lookup — 40 seconds for the test, most of the package's runtime. It was
+	// also the wrong failure: whether a name fails to resolve depends on the
+	// resolver, and a network with wildcard DNS would resolve it and change
+	// what this test exercises. Connection refused on loopback is immediate
+	// and the same everywhere.
+	closed := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	baseURL := closed.URL
+	closed.Close()
+
+	client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 	if err != nil {
 		t.Fatalf("create client: %v", err)
 	}

@@ -98,7 +98,9 @@ func TestHookService(t *testing.T) {
 }
 
 func TestHookServiceNetworkErrors(t *testing.T) {
-	client, _ := openapigenerated.NewClientWithResponses("http://invalid-url-that-does-not-exist.local")
+	// Closed loopback port, not an unresolvable hostname: see the note on
+	// TestTokenServiceNetworkErrors.
+	client, _ := openapigenerated.NewClientWithResponses(closedLoopbackURL(t))
 	service := NewService(client)
 	ctx := context.Background()
 
@@ -249,7 +251,7 @@ func TestHookServiceScripts(t *testing.T) {
 	})
 
 	t.Run("transient errors", func(t *testing.T) {
-		badClient, _ := openapigenerated.NewClientWithResponses("http://invalid-url-that-does-not-exist.local")
+		badClient, _ := openapigenerated.NewClientWithResponses(closedLoopbackURL(t))
 		badService := NewService(badClient)
 
 		if _, err := badService.ListHookScripts(ctx, "PRJ", "demo", 100); err == nil {
@@ -396,4 +398,21 @@ func TestHookServiceProjectPaginationLimit(t *testing.T) {
 	if calls != 2 {
 		t.Errorf("expected 2 page requests, got %d", calls)
 	}
+}
+
+// closedLoopbackURL returns an address that refuses connections immediately.
+//
+// It exists so a test that wants a transport failure gets one deterministically.
+// The obvious alternative — a hostname that does not resolve — costs a DNS
+// timeout per call and puts the failure mode at the mercy of the resolver: a
+// network with wildcard DNS resolves it and the test quietly starts exercising
+// something else.
+func closedLoopbackURL(t *testing.T) string {
+	t.Helper()
+
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	url := server.URL
+	server.Close()
+
+	return url
 }
