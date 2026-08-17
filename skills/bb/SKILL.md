@@ -393,11 +393,14 @@ bb ai mcp tools
 
 The `EXPOSURE` column is the part that matters when planning:
 
-- `SAFE` — exposed by default. Side-effects are low-blast-radius and easily
-  reversed: opening a pull request, adding a comment, submitting a review.
+- `SAFE` — exposed by default. Low consequence: reading anything, opening or
+  updating a pull request, adding a comment, creating a tag.
 - `YOLO` — **withheld** unless the server was started with
-  `bb ai mcp serve --yolo` (or `--allow-writes`). These are the irreversible
-  operations, such as merging.
+  `bb ai mcp serve --yolo` (or `--allow-writes`). Two kinds of operation are
+  withheld: those that are irreversible (merging, enabling auto-merge), and
+  those that influence merge gating (reporting a build status, submitting a
+  review). Approving a pull request is gated for that second reason — it is the
+  input a required-reviewer check consumes.
 
 Do not plan around a `YOLO` tool without checking it is available first. If it
 is not exposed, calling it fails with an unknown-tool error *after* you have

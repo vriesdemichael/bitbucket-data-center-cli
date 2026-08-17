@@ -34,6 +34,7 @@ var mcpToCLI = map[string]string{
 	// `pr review approve`: the tool submits any of the three outcomes, and only
 	// complete takes all of them.
 	"submit_pr_review":     "pr review complete",
+	"update_pull_request":  "pr update",
 	"merge_pull_request":   "pr merge",
 	"enable_auto_merge":    "pr auto-merge enable",
 	"disable_auto_merge":   "pr auto-merge disable",

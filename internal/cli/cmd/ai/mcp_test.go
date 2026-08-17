@@ -263,6 +263,7 @@ func TestMCPToolsCountMatchesAllSpecs(t *testing.T) {
 // unnoticed.
 var gatedToolNames = []string{
 	"merge_pull_request",
+	"submit_pr_review",
 	"enable_auto_merge",
 	"set_build_status",
 }
