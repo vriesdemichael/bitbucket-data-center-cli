@@ -26,6 +26,9 @@ var cobraUsageErrorMarkers = []string{
 	"arg(s), received",
 	"arg(s), only received",
 	"invalid argument",
+	// Flag-group violations from MarkFlagsMutuallyExclusive and friends, e.g.
+	// "if any flags in the group [all listPaging.ServiceLimit()] are set none of the others can be".
+	"flags in the group",
 }
 
 // ClassifyUsageError maps an error caused by a malformed invocation onto the

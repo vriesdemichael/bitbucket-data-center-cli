@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"os"
 	"strings"
 
@@ -17,7 +18,7 @@ func newSshKeyCommand(options *rootOptions) *cobra.Command {
 		Short: "Manage personal SSH keys",
 	}
 
-	var limit int
+	var listPaging paging.Options
 	var start int
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -29,7 +30,7 @@ func newSshKeyCommand(options *rootOptions) *cobra.Command {
 			}
 			svc := sshkey.NewService(client)
 
-			keys, err := svc.ListUserKeys(cmd.Context(), limit, start)
+			keys, err := svc.ListUserKeys(cmd.Context(), listPaging.ServiceLimit(), start)
 			if err != nil {
 				return err
 			}
@@ -62,7 +63,7 @@ func newSshKeyCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	listCmd.Flags().IntVar(&limit, "limit", 25, "Maximum number of SSH keys to list")
+	listPaging.Register(listCmd, 25)
 	listCmd.Flags().IntVar(&start, "start", 0, "Start index for SSH keys listing")
 	sshCmd.AddCommand(listCmd)
 
@@ -143,7 +144,7 @@ func newRepoSshKeyCommand(options *rootOptions) *cobra.Command {
 
 	var projectFlag string
 	var repoFlag string
-	var limit int
+	var listPaging paging.Options
 
 	// Define flags on the group command so they apply to all subcommands
 	repoSshCmd.PersistentFlags().StringVar(&projectFlag, "project", "", "Project key for project-level SSH keys")
@@ -166,9 +167,9 @@ func newRepoSshKeyCommand(options *rootOptions) *cobra.Command {
 
 			var keys []openapigenerated.RestSshAccessKey
 			if isProj {
-				keys, err = svc.ListProjectKeys(cmd.Context(), proj, limit)
+				keys, err = svc.ListProjectKeys(cmd.Context(), proj, listPaging.ServiceLimit())
 			} else {
-				keys, err = svc.ListRepoKeys(cmd.Context(), proj, repo, limit)
+				keys, err = svc.ListRepoKeys(cmd.Context(), proj, repo, listPaging.ServiceLimit())
 			}
 			if err != nil {
 				return err
@@ -208,7 +209,7 @@ func newRepoSshKeyCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	listCmd.Flags().IntVar(&limit, "limit", 25, "Maximum number of SSH access keys to list")
+	listPaging.Register(listCmd, 25)
 	repoSshCmd.AddCommand(listCmd)
 
 	var labelFlag string

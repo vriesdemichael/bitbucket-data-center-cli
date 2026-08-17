@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"slices"
 	"strings"
 
@@ -12,7 +13,7 @@ import (
 )
 
 func newProjectCommand(options *rootOptions) *cobra.Command {
-	var limit int
+	var listPaging paging.Options
 	var start int
 
 	projectCmd := &cobra.Command{
@@ -20,7 +21,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 		Short: "Project administration commands",
 	}
 
-	projectCmd.PersistentFlags().IntVar(&limit, "limit", 25, "Page size for list operations")
+	listPaging.RegisterPersistent(projectCmd, 25)
 	projectCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var listName string
@@ -35,7 +36,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			projects, err := service.List(cmd.Context(), projectservice.ListOptions{
-				Limit: limit,
+				Limit: listPaging.ServiceLimit(),
 				Start: start,
 				Name:  listName,
 			})
@@ -320,7 +321,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 	}
 	projectCmd.AddCommand(deleteCmd)
 
-	var projectPermissionsLimit int
+	var projectPermissionsPaging paging.Options
 	permissionsCmd := &cobra.Command{Use: "permissions", Short: "Project permissions"}
 
 	permissionsUsersCmd := &cobra.Command{Use: "users", Short: "User permissions"}
@@ -335,7 +336,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := projectservice.NewService(client)
-			users, err := service.ListProjectPermissionUsers(cmd.Context(), args[0], projectPermissionsLimit)
+			users, err := service.ListProjectPermissionUsers(cmd.Context(), args[0], projectPermissionsPaging.ServiceLimit())
 			if err != nil {
 				return err
 			}
@@ -360,7 +361,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	permissionsUsersListCmd.Flags().IntVar(&projectPermissionsLimit, "limit", 100, "Page size for listing permission users")
+	projectPermissionsPaging.Register(permissionsUsersListCmd, 100)
 
 	permissionsUsersGrantCmd := &cobra.Command{
 		Use:   "grant <key> <username> <permission>",
@@ -380,7 +381,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
-				users, err := service.ListProjectPermissionUsers(cmd.Context(), args[0], projectPermissionsLimit)
+				users, err := service.ListProjectPermissionUsers(cmd.Context(), args[0], projectPermissionsPaging.ServiceLimit())
 				if err != nil {
 					return err
 				}
@@ -459,7 +460,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
-				users, err := service.ListProjectPermissionUsers(cmd.Context(), args[0], projectPermissionsLimit)
+				users, err := service.ListProjectPermissionUsers(cmd.Context(), args[0], projectPermissionsPaging.ServiceLimit())
 				if err != nil {
 					return err
 				}
@@ -530,7 +531,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := projectservice.NewService(client)
-			groups, err := service.ListProjectPermissionGroups(cmd.Context(), args[0], projectPermissionsLimit)
+			groups, err := service.ListProjectPermissionGroups(cmd.Context(), args[0], projectPermissionsPaging.ServiceLimit())
 			if err != nil {
 				return err
 			}
@@ -551,7 +552,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	permissionsGroupsListCmd.Flags().IntVar(&projectPermissionsLimit, "limit", 100, "Page size for listing permission groups")
+	projectPermissionsPaging.Register(permissionsGroupsListCmd, 100)
 
 	permissionsGroupsGrantCmd := &cobra.Command{
 		Use:   "grant <key> <group> <permission>",
@@ -571,7 +572,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
-				groups, err := service.ListProjectPermissionGroups(cmd.Context(), args[0], projectPermissionsLimit)
+				groups, err := service.ListProjectPermissionGroups(cmd.Context(), args[0], projectPermissionsPaging.ServiceLimit())
 				if err != nil {
 					return err
 				}
@@ -650,7 +651,7 @@ func newProjectCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
-				groups, err := service.ListProjectPermissionGroups(cmd.Context(), args[0], projectPermissionsLimit)
+				groups, err := service.ListProjectPermissionGroups(cmd.Context(), args[0], projectPermissionsPaging.ServiceLimit())
 				if err != nil {
 					return err
 				}

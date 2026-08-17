@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -147,7 +148,7 @@ func newDiffCommand(options *rootOptions) *cobra.Command {
 
 func newTagCommand(options *rootOptions) *cobra.Command {
 	var repositorySelector string
-	var limit int
+	var listPaging paging.Options
 	var start int
 	var orderBy string
 	var filterText string
@@ -158,7 +159,7 @@ func newTagCommand(options *rootOptions) *cobra.Command {
 	}
 
 	tagCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
-	tagCmd.PersistentFlags().IntVar(&limit, "limit", 25, "Page size for list operations")
+	listPaging.RegisterPersistent(tagCmd, 25)
 	tagCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 	tagCmd.PersistentFlags().StringVar(&orderBy, "order-by", "", "Tag ordering: ALPHABETICAL or MODIFICATION")
 	tagCmd.PersistentFlags().StringVar(&filterText, "filter", "", "Filter text for tag names")
@@ -178,7 +179,7 @@ func newTagCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := tagservice.NewService(client)
-			tags, err := service.List(cmd.Context(), repo, tagservice.ListOptions{Limit: limit, Start: start, OrderBy: orderBy, FilterText: filterText})
+			tags, err := service.List(cmd.Context(), repo, tagservice.ListOptions{Limit: listPaging.ServiceLimit(), Start: start, OrderBy: orderBy, FilterText: filterText})
 			if err != nil {
 				return err
 			}

@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"strconv"
 	"strings"
 
@@ -21,7 +22,7 @@ import (
 
 func newInsightsCommand(options *rootOptions) *cobra.Command {
 	var repositorySelector string
-	var reportLimit int
+	var reportPaging paging.Options
 
 	insightsCmd := &cobra.Command{
 		Use:   "insights",
@@ -33,7 +34,7 @@ func newInsightsCommand(options *rootOptions) *cobra.Command {
 		Use:   "report",
 		Short: "Code Insights report commands",
 	}
-	reportCmd.PersistentFlags().IntVar(&reportLimit, "limit", 25, "Page size for list operations")
+	reportPaging.RegisterPersistent(reportCmd, 25)
 
 	var reportBody string
 	setReportCmd := &cobra.Command{
@@ -199,7 +200,7 @@ func newInsightsCommand(options *rootOptions) *cobra.Command {
 				return err
 			}
 
-			reports, err := service.ListReports(cmd.Context(), repo, args[0], reportLimit)
+			reports, err := service.ListReports(cmd.Context(), repo, args[0], reportPaging.ServiceLimit())
 			if err != nil {
 				return err
 			}
@@ -513,7 +514,7 @@ const reviewSummaryPageSize = 100
 func newPRCommand(options *rootOptions) *cobra.Command {
 	var repository string
 	var state string
-	var limit int
+	var listPaging paging.Options
 	var start int
 	var sourceBranch string
 	var targetBranch string
@@ -547,7 +548,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			pullRequests, err := service.List(cmd.Context(), repo, pullrequestservice.ListOptions{
 				State:        state,
-				Limit:        limit,
+				Limit:        listPaging.ServiceLimit(),
 				Start:        start,
 				SourceBranch: sourceBranch,
 				TargetBranch: targetBranch,
@@ -567,7 +568,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			if options.JSON {
 				payload := map[string]any{
 					"repository":    repo,
-					"filters":       map[string]any{"state": strings.ToLower(strings.TrimSpace(state)), "start": start, "limit": limit, "source_branch": sourceBranch, "target_branch": targetBranch},
+					"filters":       map[string]any{"state": strings.ToLower(strings.TrimSpace(state)), "start": start, "limit": listPaging.ServiceLimit(), "source_branch": sourceBranch, "target_branch": targetBranch},
 					"pull_requests": pullRequests,
 				}
 				if reviewSummaries != nil {
@@ -607,7 +608,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	}
 	listCmd.Flags().BoolVar(&listWithReviewStatus, "with-review-status", false, "Resolve unresolved comment threads per pull request (walks each activity timeline; slower)")
 	listCmd.Flags().StringVar(&state, "state", "open", "Pull request state filter: open, closed, all")
-	listCmd.Flags().IntVar(&limit, "limit", 25, "Page size for Bitbucket pull request list operations")
+	listPaging.Register(listCmd, 25)
 	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for Bitbucket pull request list operations")
 	listCmd.Flags().StringVar(&sourceBranch, "source-branch", "", "Optional source branch filter")
 	listCmd.Flags().StringVar(&targetBranch, "target-branch", "", "Optional target branch filter")
@@ -698,7 +699,8 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	getCmd.Flags().BoolVar(&noReviewSummary, "no-review-summary", false, "Skip the activity timeline lookup used to count unresolved comment threads")
 	prCmd.AddCommand(getCmd)
 
-	var commitsLimit, commitsStart int
+	var commitsPaging paging.Options
+	var commitsStart int
 	commitsCmd := &cobra.Command{
 		Use:   "commits <id>",
 		Short: "List the commits in a pull request",
@@ -714,7 +716,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
-			commits, err := service.ListCommits(cmd.Context(), repo, args[0], pullrequestservice.PageOptions{Limit: commitsLimit, Start: commitsStart})
+			commits, err := service.ListCommits(cmd.Context(), repo, args[0], pullrequestservice.PageOptions{Limit: commitsPaging.ServiceLimit(), Start: commitsStart})
 			if err != nil {
 				return err
 			}
@@ -733,11 +735,12 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	commitsCmd.Flags().IntVar(&commitsLimit, "limit", 25, "Page size for the pull request commit listing")
+	commitsPaging.Register(commitsCmd, 25)
 	commitsCmd.Flags().IntVar(&commitsStart, "start", 0, "Start offset for the pull request commit listing")
 	prCmd.AddCommand(commitsCmd)
 
-	var filesLimit, filesStart int
+	var filesPaging paging.Options
+	var filesStart int
 	filesCmd := &cobra.Command{
 		Use:     "files <id>",
 		Aliases: []string{"changes"},
@@ -754,7 +757,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
-			changes, err := service.ListChanges(cmd.Context(), repo, args[0], pullrequestservice.PageOptions{Limit: filesLimit, Start: filesStart})
+			changes, err := service.ListChanges(cmd.Context(), repo, args[0], pullrequestservice.PageOptions{Limit: filesPaging.ServiceLimit(), Start: filesStart})
 			if err != nil {
 				return err
 			}
@@ -781,7 +784,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	filesCmd.Flags().IntVar(&filesLimit, "limit", 25, "Page size for the pull request change listing")
+	filesPaging.Register(filesCmd, 25)
 	filesCmd.Flags().IntVar(&filesStart, "start", 0, "Start offset for the pull request change listing")
 	prCmd.AddCommand(filesCmd)
 
@@ -1792,7 +1795,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	commentCmd := &cobra.Command{Use: "comment", Short: "Pull request comment commands"}
 
 	var commentPath string
-	var commentLimit int
+	var commentPaging paging.Options
 	var commentBlocker bool
 	var commentState string
 	var commentUnresolved bool
@@ -1855,7 +1858,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 					Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
 					PullRequestID: args[0],
 					Blocker:       true,
-				}, "", commentLimit)
+				}, "", commentPaging.ServiceLimit())
 				if err != nil {
 					return err
 				}
@@ -1863,7 +1866,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			} else if trimmedCommentPath == "" {
 				source = "activities"
 				activityService := pullrequestactivityservice.NewService(client)
-				activities, listErr := activityService.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0], pullrequestactivityservice.ListOptions{Limit: commentLimit})
+				activities, listErr := activityService.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0], pullrequestactivityservice.ListOptions{Limit: commentPaging.ServiceLimit()})
 				if listErr != nil {
 					return listErr
 				}
@@ -1874,7 +1877,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				comments, err = service.List(cmd.Context(), commentservice.Target{
 					Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
 					PullRequestID: args[0],
-				}, trimmedCommentPath, commentLimit)
+				}, trimmedCommentPath, commentPaging.ServiceLimit())
 				if err != nil {
 					return err
 				}
@@ -1938,7 +1941,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 	commentListCmd.Flags().StringVar(&commentPath, "path", "", "Optional file path for path-scoped pull request comment listing")
-	commentListCmd.Flags().IntVar(&commentLimit, "limit", 25, "Page size for pull request comment list operations")
+	commentPaging.Register(commentListCmd, 25)
 	commentListCmd.Flags().BoolVar(&commentBlocker, "blocker", false, "List pull request blocker comments")
 	commentListCmd.Flags().StringVar(&commentState, "state", "all", "Filter threads by resolution state: open, resolved, pending, all")
 	commentListCmd.Flags().BoolVar(&commentUnresolved, "unresolved", false, "Show only unresolved threads (shorthand for --state open)")
@@ -2244,7 +2247,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 		Long:  "Pull request activity commands. This is an explicit exception to the stable versioned API and is intended only for AI ingestion and debugging.",
 	}
 
-	var activityLimit int
+	var activityPaging paging.Options
 	activityListCmd := &cobra.Command{
 		Use:   "list <id>",
 		Short: "List raw pull request activity items",
@@ -2262,7 +2265,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := pullrequestactivityservice.NewService(client)
-			activities, err := service.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0], pullrequestactivityservice.ListOptions{Limit: activityLimit})
+			activities, err := service.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0], pullrequestactivityservice.ListOptions{Limit: activityPaging.ServiceLimit()})
 			if err != nil {
 				return err
 			}
@@ -2283,14 +2286,14 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	activityListCmd.Flags().IntVar(&activityLimit, "limit", 25, "Page size for pull request activity list operations")
+	activityPaging.Register(activityListCmd, 25)
 	activityCmd.AddCommand(activityListCmd)
 	prCmd.AddCommand(activityCmd)
 
 	taskCmd := &cobra.Command{Use: "task", Short: "Pull request task commands"}
 
 	var taskState string
-	var taskLimit int
+	var taskPaging paging.Options
 	var taskStart int
 	taskListCmd := &cobra.Command{
 		Use:   "list <id>",
@@ -2307,7 +2310,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
-			tasks, err := service.ListTasks(cmd.Context(), repo, args[0], pullrequestservice.TaskListOptions{State: taskState, Limit: taskLimit, Start: taskStart})
+			tasks, err := service.ListTasks(cmd.Context(), repo, args[0], pullrequestservice.TaskListOptions{State: taskState, Limit: taskPaging.ServiceLimit(), Start: taskStart})
 			if err != nil {
 				return err
 			}
@@ -2329,7 +2332,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 	taskListCmd.Flags().StringVar(&taskState, "state", "open", "Task state filter: open, resolved, all")
-	taskListCmd.Flags().IntVar(&taskLimit, "limit", 25, "Page size for task list operations")
+	taskPaging.Register(taskListCmd, 25)
 	taskListCmd.Flags().IntVar(&taskStart, "start", 0, "Start offset for task list operations")
 	taskCmd.AddCommand(taskListCmd)
 
@@ -2570,12 +2573,12 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	prCmd.AddCommand(taskCmd)
 
 	// pr build
-	var buildLimit int
+	var buildPaging paging.Options
 	buildCmd := &cobra.Command{
 		Use:   "build",
 		Short: "Pull request build status commands",
 	}
-	buildCmd.PersistentFlags().IntVar(&buildLimit, "limit", 25, "Page size for build status results")
+	buildPaging.RegisterPersistent(buildCmd, 25)
 
 	buildStatusCmd := &cobra.Command{
 		Use:   "status <id>",
@@ -2593,7 +2596,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
-			statuses, err := service.GetBuildStatuses(cmd.Context(), repo, args[0], buildLimit)
+			statuses, err := service.GetBuildStatuses(cmd.Context(), repo, args[0], buildPaging.ServiceLimit())
 			if err != nil {
 				return err
 			}

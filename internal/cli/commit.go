@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -16,7 +17,7 @@ import (
 
 func newCommitCommand(options *rootOptions) *cobra.Command {
 	var repositorySelector string
-	var limit int
+	var listPaging paging.Options
 	var start int
 
 	commitCmd := &cobra.Command{
@@ -25,7 +26,7 @@ func newCommitCommand(options *rootOptions) *cobra.Command {
 	}
 
 	commitCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
-	commitCmd.PersistentFlags().IntVar(&limit, "limit", 25, "Page size for list operations")
+	listPaging.RegisterPersistent(commitCmd, 25)
 	commitCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var listPath string
@@ -50,13 +51,13 @@ func newCommitCommand(options *rootOptions) *cobra.Command {
 			var commits []openapigenerated.RestCommit
 			if strings.TrimSpace(listJira) != "" {
 				jiraService := jiraservice.NewService(httpclient.NewFromConfig(cfg))
-				commits, err = jiraService.GetIssueCommits(cmd.Context(), strings.TrimSpace(listJira), limit)
+				commits, err = jiraService.GetIssueCommits(cmd.Context(), strings.TrimSpace(listJira), listPaging.ServiceLimit())
 				if err != nil {
 					return err
 				}
 			} else {
 				service := commitservice.NewService(client)
-				commits, err = service.List(cmd.Context(), repo, commitservice.ListOptions{Limit: limit, Start: start, Path: listPath})
+				commits, err = service.List(cmd.Context(), repo, commitservice.ListOptions{Limit: listPaging.ServiceLimit(), Start: start, Path: listPath})
 				if err != nil {
 					return err
 				}
@@ -139,7 +140,7 @@ func newCommitCommand(options *rootOptions) *cobra.Command {
 			commits, err := service.Compare(cmd.Context(), repo, commitservice.CompareOptions{
 				From:  args[0],
 				To:    args[1],
-				Limit: limit,
+				Limit: listPaging.ServiceLimit(),
 			})
 			if err != nil {
 				return err

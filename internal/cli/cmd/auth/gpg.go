@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"os"
 	"strings"
 	"time"
@@ -26,7 +27,7 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 		return deps.JSONEnabled()
 	}
 
-	var limit int
+	var listPaging paging.Options
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List personal GPG keys",
@@ -41,7 +42,7 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 			}
 			svc := gpgkey.NewService(client)
 
-			keys, err := svc.ListGpgKeys(cmd.Context(), limit)
+			keys, err := svc.ListGpgKeys(cmd.Context(), listPaging.ServiceLimit())
 			if err != nil {
 				return err
 			}
@@ -80,7 +81,7 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	listCmd.Flags().IntVar(&limit, "limit", 25, "Maximum number of GPG keys to list")
+	listPaging.Register(listCmd, 25)
 	gpgCmd.AddCommand(listCmd)
 
 	addCmd := &cobra.Command{

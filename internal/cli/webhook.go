@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -210,7 +211,7 @@ func newWebhookCommand(options *rootOptions) *cobra.Command {
 	}
 	statsCmd.Flags().BoolVar(&summary, "summary", false, "Get statistics summary instead of detailed stats")
 
-	var listLimit int
+	var listPaging paging.Options
 	var listStart int
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -255,7 +256,7 @@ func newWebhookCommand(options *rootOptions) *cobra.Command {
 			if listStart >= len(webhooks) {
 				webhooks = []WebhookModel{}
 			} else {
-				end := listStart + listLimit
+				end := listStart + listPaging.ServiceLimit()
 				if end > len(webhooks) {
 					end = len(webhooks)
 				}
@@ -292,7 +293,7 @@ func newWebhookCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	listCmd.Flags().IntVar(&listLimit, "limit", 25, "Maximum number of webhooks to list")
+	listPaging.Register(listCmd, 25)
 	listCmd.Flags().IntVar(&listStart, "start", 0, "Start index for webhooks listing")
 
 	webhookCmd.AddCommand(getCmd)
