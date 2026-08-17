@@ -409,16 +409,21 @@ func newRepoPermissionSubjectCommand(options *rootOptions, repositorySelector *s
 		Short: strings.ToUpper(subject.noun[:1]) + subject.noun[1:] + " permissions",
 	}
 
+	shallow := "bb repo permissions"
+
 	listCommand := newRepoPermissionListCommand(options, repositorySelector, resolver)
 	listCommand.Short = fmt.Sprintf("List %ss with repository permissions", subject.noun)
+	listCommand.Long = fmt.Sprintf("List %ss with repository permissions.\n\n%s", subject.noun, alsoAvailableAs(shallow+" list", subject.noun))
 
 	grantCommand := newRepoPermissionGrantCommand(options, repositorySelector, resolver)
 	grantCommand.Use = fmt.Sprintf("grant <%s> <permission>", subject.argPlaceholder())
 	grantCommand.Short = fmt.Sprintf("Grant a repository permission to a %s", subject.noun)
+	grantCommand.Long = fmt.Sprintf("Grant a repository permission to a %s.\n\n%s", subject.noun, alsoAvailableAs(shallow+" grant", subject.noun))
 
 	revokeCommand := newRepoPermissionRevokeCommand(options, repositorySelector, resolver)
 	revokeCommand.Use = fmt.Sprintf("revoke <%s>", subject.argPlaceholder())
 	revokeCommand.Short = fmt.Sprintf("Revoke a repository permission from a %s", subject.noun)
+	revokeCommand.Long = fmt.Sprintf("Revoke a repository permission from a %s.\n\n%s", subject.noun, alsoAvailableAs(shallow+" revoke", subject.noun))
 
 	group.AddCommand(listCommand)
 	group.AddCommand(grantCommand)

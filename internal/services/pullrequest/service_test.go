@@ -1882,3 +1882,52 @@ func TestListTrimsAnOvershootingPage(t *testing.T) {
 		t.Fatalf("expected %d results after trimming an oversized page, got %d", requested, len(results))
 	}
 }
+
+// TestListDashboardParticipantStatus pins the query parameter that makes
+// "requesting your review" mean it.
+//
+// role=REVIEWER alone returns every pull request you are a reviewer on,
+// including the ones you already answered. participantStatus is what narrows
+// it, and it has to reach the wire uppercased and trimmed — the API matches on
+// the literal enum names.
+func TestListDashboardParticipantStatus(t *testing.T) {
+	var received []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		if request.URL.Path != "/rest/api/1.0/dashboard/pull-requests" {
+			http.NotFound(w, request)
+			return
+		}
+
+		received = append(received, request.URL.Query().Get("participantStatus"))
+		_, _ = fmt.Fprint(w, `{"values":[],"isLastPage":true}`)
+	}))
+	defer server.Close()
+
+	cfg := config.AppConfig{BitbucketURL: server.URL}
+	service := NewService(httpclient.NewFromConfig(cfg))
+
+	cases := []struct {
+		option   string
+		expected string
+	}{
+		{option: "UNAPPROVED", expected: "UNAPPROVED"},
+		{option: "  unapproved,needs_work  ", expected: "UNAPPROVED,NEEDS_WORK"},
+		{option: "", expected: ""},
+		{option: "   ", expected: ""},
+	}
+
+	for _, testCase := range cases {
+		received = nil
+		if _, err := service.ListDashboard(context.Background(), DashboardListOptions{
+			State:             "open",
+			Role:              "reviewer",
+			ParticipantStatus: testCase.option,
+			Limit:             10,
+		}); err != nil {
+			t.Fatalf("list dashboard with participant status %q failed: %v", testCase.option, err)
+		}
+		if len(received) != 1 || received[0] != testCase.expected {
+			t.Fatalf("participant status %q: expected %q on the wire, got %v", testCase.option, testCase.expected, received)
+		}
+	}
+}

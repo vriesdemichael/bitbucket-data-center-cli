@@ -82,6 +82,71 @@ func TestLiveRepoPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 	}
 }
 
+// TestLiveProjectPermissionShallowAliasesMatchDeepPaths is the project-tree
+// twin of the test above.
+func TestLiveProjectPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	deepUserList, err := executeLiveCLI(t, "--json", "project", "permissions", "users", "list", seeded.Key, "--limit", "100")
+	if err != nil {
+		t.Fatalf("deep project users list failed: %v\noutput: %s", err, deepUserList)
+	}
+	shallowUserList, err := executeLiveCLI(t, "--json", "project", "permissions", "list", seeded.Key, "--limit", "100")
+	if err != nil {
+		t.Fatalf("shallow project permissions list failed: %v\noutput: %s", err, shallowUserList)
+	}
+	if deepUserList != shallowUserList {
+		t.Fatalf("project permissions list diverged\ndeep:    %s\nshallow: %s", deepUserList, shallowUserList)
+	}
+
+	deepGroupList, err := executeLiveCLI(t, "--json", "project", "permissions", "groups", "list", seeded.Key, "--limit", "100")
+	if err != nil {
+		t.Fatalf("deep project groups list failed: %v\noutput: %s", err, deepGroupList)
+	}
+	shallowGroupList, err := executeLiveCLI(t, "--json", "project", "permissions", "list", "--group", seeded.Key, "--limit", "100")
+	if err != nil {
+		t.Fatalf("shallow project permissions list --group failed: %v\noutput: %s", err, shallowGroupList)
+	}
+	if deepGroupList != shallowGroupList {
+		t.Fatalf("project permissions list --group diverged\ndeep:    %s\nshallow: %s", deepGroupList, shallowGroupList)
+	}
+
+	deepGrant, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "users", "grant", seeded.Key, "alias-parity-user", "PROJECT_WRITE")
+	if err != nil {
+		t.Fatalf("deep project users grant dry-run failed: %v\noutput: %s", err, deepGrant)
+	}
+	shallowGrant, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "grant", seeded.Key, "alias-parity-user", "PROJECT_WRITE")
+	if err != nil {
+		t.Fatalf("shallow project permissions grant dry-run failed: %v\noutput: %s", err, shallowGrant)
+	}
+	if deepGrant != shallowGrant {
+		t.Fatalf("project permissions grant diverged\ndeep:    %s\nshallow: %s", deepGrant, shallowGrant)
+	}
+
+	deepRevoke, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "groups", "revoke", seeded.Key, "alias-parity-group")
+	if err != nil {
+		t.Fatalf("deep project groups revoke dry-run failed: %v\noutput: %s", err, deepRevoke)
+	}
+	shallowRevoke, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "revoke", "--group", seeded.Key, "alias-parity-group")
+	if err != nil {
+		t.Fatalf("shallow project permissions revoke --group dry-run failed: %v\noutput: %s", err, shallowRevoke)
+	}
+	if deepRevoke != shallowRevoke {
+		t.Fatalf("project permissions revoke --group diverged\ndeep:    %s\nshallow: %s", deepRevoke, shallowRevoke)
+	}
+}
+
 // TestLivePullRequestStatus exercises bb pr status against a real Bitbucket.
 //
 // The two dashboard sections are cross-repository and always answerable. The

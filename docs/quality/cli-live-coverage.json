@@ -1,9 +1,9 @@
 {
   "version": 1,
   "summary": {
-    "runnable_commands": 232,
-    "covered_commands": 126,
-    "covered_percent": 54.310344827586206,
+    "runnable_commands": 235,
+    "covered_commands": 129,
+    "covered_percent": 54.8936170212766,
     "masked_commands": 4,
     "uncovered_commands": 102
   },
@@ -78,9 +78,12 @@
     "project delete",
     "project get",
     "project list",
+    "project permissions grant",
     "project permissions groups grant",
     "project permissions groups list",
     "project permissions groups revoke",
+    "project permissions list",
+    "project permissions revoke",
     "project permissions show",
     "project permissions users grant",
     "project permissions users list",

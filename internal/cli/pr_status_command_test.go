@@ -26,10 +26,19 @@ func newPullRequestStatusServer(t *testing.T) *httptest.Server {
 			case "AUTHOR":
 				_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[{"id":11,"title":"Mine","state":"OPEN","open":true,"toRef":{"repository":{"slug":"demo","project":{"key":"PRJ"}}}}]}`))
 			case "REVIEWER":
-				_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[
-					{"id":21,"title":"Needs my review","state":"OPEN","open":true,"reviewers":[{"user":{"name":"me"},"approved":false,"status":"UNAPPROVED"}]},
-					{"id":22,"title":"Already approved by me","state":"OPEN","open":true,"reviewers":[{"user":{"name":"me"},"approved":true,"status":"APPROVED"}]}
-				]}`))
+				// The fixture narrows the way Bitbucket does, so a command that
+				// forgets to ask for participantStatus gets the superset back and
+				// the assertions below catch it.
+				switch request.URL.Query().Get("participantStatus") {
+				case "UNAPPROVED":
+					_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[{"id":21,"title":"Waiting on me","state":"OPEN","open":true}]}`))
+				default:
+					_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[
+						{"id":21,"title":"Waiting on me","state":"OPEN","open":true},
+						{"id":22,"title":"Approved by me","state":"OPEN","open":true},
+						{"id":23,"title":"Marked needs work by me","state":"OPEN","open":true}
+					]}`))
+				}
 			default:
 				_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[]}`))
 			}
@@ -154,11 +163,14 @@ func TestPullRequestStatusReportsAllThreeSections(t *testing.T) {
 	}
 }
 
-// TestPullRequestStatusDropsReviewsYouAlreadyApproved is the assertion behind
-// the section's name: role=REVIEWER means "you are a reviewer", not "your
-// review is outstanding", so without the filter the section keeps showing
-// finished work.
-func TestPullRequestStatusDropsReviewsYouAlreadyApproved(t *testing.T) {
+// TestPullRequestStatusAsksOnlyForReviewsNotYetGiven is the assertion behind
+// the section's name.
+//
+// role=REVIEWER alone means "you are a reviewer", which keeps listing pull
+// requests you already approved or already sent back as needs-work. The
+// narrowing is participantStatus=UNAPPROVED, and it has to be asked for: the
+// dashboard's default is every status.
+func TestPullRequestStatusAsksOnlyForReviewsNotYetGiven(t *testing.T) {
 	server := newPullRequestStatusServer(t)
 	configurePullRequestStatusEnv(t, server.URL, "me")
 	withGitBackend(t, inferenceGitBackendStub{repoRoot: "/repo", branch: "feature/x"})
@@ -168,30 +180,34 @@ func TestPullRequestStatusDropsReviewsYouAlreadyApproved(t *testing.T) {
 	reviewing := statusSection(t, payload, "requesting_your_review")
 	ids := statusPullRequestIDs(t, reviewing)
 	if len(ids) != 1 || ids[0] != 21 {
-		t.Fatalf("expected only the unapproved pull request, got: %v", ids)
+		t.Fatalf("expected only the pull request still waiting on me, got: %v", ids)
 	}
 	if reviewing["note"] != nil {
-		t.Fatalf("expected no note when the filter could be applied, got: %v", reviewing["note"])
+		t.Fatalf("expected no note on a section the server narrowed, got: %v", reviewing["note"])
 	}
 }
 
-// TestPullRequestStatusSaysWhenItCannotFilterReviews covers the fallback: with
-// no username there is nothing to match reviewers against, and returning a
-// silent superset would misreport what the section contains.
-func TestPullRequestStatusSaysWhenItCannotFilterReviews(t *testing.T) {
-	server := newPullRequestStatusServer(t)
-	configurePullRequestStatusEnv(t, server.URL, "")
+// TestPullRequestStatusDoesNotNarrowTheAuthoredSection guards the other half of
+// the same query: participantStatus is meaningless for pull requests you wrote,
+// and applying it there would hide your own open work.
+func TestPullRequestStatusDoesNotNarrowTheAuthoredSection(t *testing.T) {
+	var authorParticipantStatus string
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+		if request.URL.Path == "/rest/api/1.0/dashboard/pull-requests" && request.URL.Query().Get("role") == "AUTHOR" {
+			authorParticipantStatus = request.URL.Query().Get("participantStatus")
+		}
+		_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[]}`))
+	}))
+	t.Cleanup(server.Close)
+
+	configurePullRequestStatusEnv(t, server.URL, "me")
 	withGitBackend(t, inferenceGitBackendStub{repoRoot: "/repo", branch: "feature/x"})
 
-	payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
+	executePullRequestStatus(t, "--json", "pr", "status")
 
-	reviewing := statusSection(t, payload, "requesting_your_review")
-	if ids := statusPullRequestIDs(t, reviewing); len(ids) != 2 {
-		t.Fatalf("expected the unfiltered set, got: %v", ids)
-	}
-	note, _ := reviewing["note"].(string)
-	if !strings.Contains(note, "no username configured") {
-		t.Fatalf("expected a note explaining the unfiltered set, got: %q", note)
+	if authorParticipantStatus != "" {
+		t.Fatalf("expected no participantStatus on the author query, got %q", authorParticipantStatus)
 	}
 }
 
@@ -282,9 +298,11 @@ func TestPullRequestStatusHumanOutput(t *testing.T) {
 		}
 	}
 
-	// The approved one is filtered out of the section, so it must not appear.
-	if strings.Contains(output, "#22") {
-		t.Fatalf("expected the approved pull request to be filtered out, got:\n%s", output)
+	// The ones already responded to are outside participantStatus=UNAPPROVED.
+	for _, unexpected := range []string{"#22", "#23"} {
+		if strings.Contains(output, unexpected) {
+			t.Fatalf("expected %s to be outside the review section, got:\n%s", unexpected, output)
+		}
 	}
 }
 

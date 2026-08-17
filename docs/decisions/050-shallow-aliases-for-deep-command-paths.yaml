@@ -5,8 +5,12 @@ status: accepted
 decision: >
   Where a frequently-used command sits more than three levels deep, or is spelled differently from
   the well-known gh form, register it a second time under the shorter or more familiar name. The
-  original path stays canonical: it is what the generated command reference documents, what
-  cli-live-coverage measures as the primary invocation, and what the alias's help text points at.
+  original path stays canonical: it is the one the docs recommend, and the one that names its
+  subject in the path rather than in a flag.
+  Both spellings appear in the generated command reference, because it walks the command tree.
+  Each one's help text must name the other, so the cross-reference works from either end. An alias
+  that points at its canonical path while the canonical page says nothing leaves a reader who
+  arrived the recommended way unable to discover the shorter name at all.
   Build the alias from a shared constructor, never by copying the body and never by adding the same
   *cobra.Command value to two parents. A constructor gives each registration its own flag variables
   and lets it resolve --repo from the tree it actually sits in; a shared value silently couples the
@@ -18,9 +22,11 @@ decision: >
   not lose it. bb repo permissions grant takes --group where the deep path had a groups segment.
 agent_instructions: >
   Prefer the canonical deep path when generating documentation, examples or scripts: it names its
-  subject unambiguously and it is what the reference documents. Either spelling is correct to run.
+  subject unambiguously, so a dropped flag cannot silently change which principal it acts on.
+  Either spelling is correct to run.
   When adding an alias, extract a constructor that both registrations call. Do not register one
   *cobra.Command under two parents, and do not copy the RunE.
+  Set the cross-reference on both commands in the same change, not just on the alias.
   Add the equality assertion in the same change. An alias without one is a duplicate waiting to
   drift.
   Do not add an alias speculatively. The bar is a command an agent or a person reaches for often

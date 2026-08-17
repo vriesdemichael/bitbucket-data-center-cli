@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
@@ -17,10 +16,10 @@ import (
 // prStatusSection is one of the three lists bb pr status prints.
 //
 // Note carries why a section is empty when the reason is not "nothing
-// matched" — no git repository, a detached HEAD, no repository context, no
-// known username. Without it a section that found nothing and a section that
-// could not be computed at all look identical, which is exactly the ambiguity
-// an agent would resolve by guessing.
+// matched" — no git repository, a detached HEAD, no repository context.
+// Without it a section that found nothing and a section that could not be
+// computed at all look identical, which is exactly the ambiguity an agent
+// would resolve by guessing.
 type prStatusSection struct {
 	PullRequests []pullrequestservice.PullRequest `json:"pull_requests"`
 	Note         string                           `json:"note,omitempty"`
@@ -79,15 +78,21 @@ func newPullRequestStatusCommand(options *rootOptions, repositorySelector *strin
 			}
 			payload.CreatedByYou = prStatusSection{PullRequests: created}
 
+			// participantStatus=UNAPPROVED is the whole of "requesting your
+			// review": role=REVIEWER alone means "you are a reviewer", which
+			// keeps listing work you have already finished. NEEDS_WORK is
+			// excluded for the same reason APPROVED is — you have responded, and
+			// the pull request is waiting on its author, not on you.
 			reviewing, err := service.ListDashboard(cmd.Context(), pullrequestservice.DashboardListOptions{
-				State: "open",
-				Role:  "reviewer",
-				Limit: listPaging.ServiceLimit(),
+				State:             "open",
+				Role:              "reviewer",
+				ParticipantStatus: "UNAPPROVED",
+				Limit:             listPaging.ServiceLimit(),
 			})
 			if err != nil {
 				return err
 			}
-			payload.RequestingYourReview = filterReviewsStillWanted(reviewing, cfg.BitbucketUsername)
+			payload.RequestingYourReview = prStatusSection{PullRequests: reviewing}
 
 			if options.JSON {
 				return writeJSON(cmd.OutOrStdout(), payload)
@@ -101,34 +106,6 @@ func newPullRequestStatusCommand(options *rootOptions, repositorySelector *strin
 	listPaging.Register(command, paging.DefaultLimit)
 
 	return command
-}
-
-// filterReviewsStillWanted drops the pull requests the caller has already
-// approved.
-//
-// role=REVIEWER means "you are a reviewer", not "your review is outstanding",
-// so without this the section keeps showing work that is finished. The filter
-// needs a username to match against; when none is configured the section is
-// returned unfiltered with a note saying so, because silently showing a
-// superset is worse than saying which set this is.
-func filterReviewsStillWanted(pullRequests []pullrequestservice.PullRequest, username string) prStatusSection {
-	trimmedUsername := strings.TrimSpace(username)
-	if trimmedUsername == "" {
-		return prStatusSection{
-			PullRequests: pullRequests,
-			Note:         "includes pull requests you already approved: no username configured to filter by (set BITBUCKET_USERNAME)",
-		}
-	}
-
-	outstanding := make([]pullrequestservice.PullRequest, 0, len(pullRequests))
-	for _, pullRequest := range pullRequests {
-		if reviewerApprovedByUser(pullRequest.Reviewers, trimmedUsername) {
-			continue
-		}
-		outstanding = append(outstanding, pullRequest)
-	}
-
-	return prStatusSection{PullRequests: outstanding}
 }
 
 // collectCurrentBranchPullRequests answers "is there a pull request for what I

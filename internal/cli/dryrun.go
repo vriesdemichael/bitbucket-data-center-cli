@@ -177,6 +177,9 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"project permissions users revoke":  {Intent: "project.permission.user.revoke", Action: "delete", Stateful: true},
 	"project permissions groups grant":  {Intent: "project.permission.group.grant", Action: "update", Stateful: true},
 	"project permissions groups revoke": {Intent: "project.permission.group.revoke", Action: "delete", Stateful: true},
+	// Shallow aliases of the four above; see the note on the repo pair.
+	"project permissions grant":         {Intent: "project.permission.user.grant", Action: "update", Stateful: true},
+	"project permissions revoke":        {Intent: "project.permission.user.revoke", Action: "delete", Stateful: true},
 	"project webhook create":            {Intent: "project.webhook.create", Action: "create", Stateful: true},
 	"project webhook update":            {Intent: "project.webhook.update", Action: "update", Stateful: true},
 	"project webhook delete":            {Intent: "project.webhook.delete", Action: "delete", Stateful: true},
