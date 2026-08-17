@@ -16,22 +16,19 @@ description: Interact with Bitbucket Data Center from an AI agent. Covers pull r
 ## Installation
 
 ```bash
-# No bb installed yet — fetches the current published skill:
-npx skills add vriesdemichael/bitbucket-data-center-cli
-
-# bb already installed — writes the copy that shipped inside your binary:
+# From the bb binary — no network access required:
 bb ai skill install          # project scope: .agents/skills/bb/SKILL.md
 bb ai skill install --global # user scope:    ~/.agents/skills/bb/SKILL.md
+bb ai skill show             # same content, to stdout
 
-# Same content, to stdout:
-bb ai skill show
+# From the internet, if you do not have bb yet:
+npx skills add vriesdemichael/bitbucket-data-center-cli
 ```
 
-**If you already have `bb`, prefer `bb ai skill install`.** The skill is embedded
-in the binary at build time, so that copy cannot describe a newer `bb` than the
-one you are running. The npx copy tracks the repository and may be ahead of an
-older installation. Neither is derived from your binary's command tree — for
-that, ask `bb --help` or `bb ai mcp tools` directly.
+The skill is embedded in the binary at build time, so `bb ai skill install` works
+in an air-gapped or network-restricted environment and always matches the `bb`
+you are running. Neither copy is derived from your binary's command tree — for
+that, ask `bb --help` or `bb ai mcp tools`.
 
 ## Authentication
 
