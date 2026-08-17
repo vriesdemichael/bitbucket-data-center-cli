@@ -48,7 +48,9 @@ Host and auth source precedence remains:
 
 ## Ambiguity and fallback behavior
 
-- If multiple remotes map to different repositories, discovery fails with a validation error and asks you to pass `--repo` and/or choose a server.
+- If several remotes map to different repositories and one of them is `origin`, `origin` wins. A fork or a mirror alongside `origin` is ordinary — `bb pr checkout` adds one itself — and git's own convention is that `origin` is the repository the clone belongs to.
+- An `upstream` remote is the exception. It conventionally outranks `origin`, so a repository with both is genuinely ambiguous: discovery fails with a validation error and asks you to pass `--repo` and/or choose a server.
+- If several remotes map to different repositories and none is `origin`, discovery fails the same way.
 - If you are outside a git repository, discovery is skipped.
 - If remotes do not match authenticated server hosts, discovery is skipped.
 

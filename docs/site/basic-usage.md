@@ -70,11 +70,39 @@ waiting on their author, not on you.
 The current-branch section needs a git checkout with a Bitbucket remote. Outside one, it
 reports why in a `note` and the other two sections still answer.
 
+## `bb pr checkout`
+
+Checks out a pull request's source branch in the repository you are standing in, so you can
+run it, review it, and push fixes back.
+
+```bash
+bb pr checkout 42
+bb pr checkout 42 --branch review-42
+bb pr checkout 42 --detach
+```
+
+Pull requests from a **fork** work too, and are the reason to use this rather than a manual
+`git fetch`. `bb` fetches from the fork, adding a remote for it if you do not have one, and
+sets the branch upstream so a later plain `git push` goes back to the fork branch the pull
+request is built from. The local branch is prefixed with the fork owner (`jdoe/fix-login`)
+so it cannot collide with a branch of the same name of your own.
+
+Running it again on the same pull request fast-forwards the branch you already have. If the
+branch has diverged from the pull request, that fails rather than merging or discarding
+anything.
+
+A working tree with uncommitted changes to tracked files is refused; pass `--force` to
+discard them. Untracked files are ignored, so build output does not get in the way.
+
+Authentication uses whatever git is already configured to use for the host. If fetching
+prompts for credentials, run `bb auth setup-git` once.
+
 ## Repository context behavior
 
 - `--repo PROJECT/slug` has highest precedence.
 - If `--repo` is omitted, `bb` can infer repository context from local git remotes that match authenticated hosts.
-- If multiple remotes match different repositories, `bb` returns an ambiguity error and asks for explicit selection.
+- When several remotes match, `origin` wins — a fork or mirror alongside it does not make the context ambiguous.
+- An `upstream` remote is the exception: it conventionally outranks `origin`, so having both is a genuine ambiguity and `bb` asks for explicit selection.
 
 See [Advanced: Repository Discovery and Server Switching](advanced/repository-discovery-and-server-switching.md)
 for remote URL formats, precedence, ambiguity handling, and multi-server workflows.

@@ -29,23 +29,30 @@ type ListOptions struct {
 }
 
 type PullRequest struct {
-	ID           int64          `json:"id"`
-	Title        string         `json:"title"`
-	Description  string         `json:"description,omitempty"`
-	State        string         `json:"state"`
-	Open         bool           `json:"open"`
-	Closed       bool           `json:"closed"`
-	Draft        bool           `json:"draft,omitempty"`
-	Repository   *RepositoryRef `json:"repository,omitempty"`
-	Version      int            `json:"version,omitempty"`
-	Author       string         `json:"author,omitempty"`
-	SourceBranch string         `json:"source_branch,omitempty"`
-	TargetBranch string         `json:"target_branch,omitempty"`
-	SourceCommit string         `json:"source_commit,omitempty"`
-	CreatedDate  int64          `json:"created_date,omitempty"`
-	UpdatedDate  int64          `json:"updated_date,omitempty"`
-	Reviewers    []Reviewer     `json:"reviewers,omitempty"`
-	Mergeability *Mergeability  `json:"mergeability,omitempty"`
+	ID          int64  `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description,omitempty"`
+	State       string `json:"state"`
+	Open        bool   `json:"open"`
+	Closed      bool   `json:"closed"`
+	Draft       bool   `json:"draft,omitempty"`
+	// Repository is where the pull request targets — the repository it will
+	// merge into.
+	Repository *RepositoryRef `json:"repository,omitempty"`
+	// SourceRepository is where the source branch lives. It differs from
+	// Repository exactly when the pull request comes from a fork, which is the
+	// only way to tell a fork pull request from a same-repository one, and the
+	// thing that decides where a checkout has to fetch from.
+	SourceRepository *RepositoryRef `json:"source_repository,omitempty"`
+	Version          int            `json:"version,omitempty"`
+	Author           string         `json:"author,omitempty"`
+	SourceBranch     string         `json:"source_branch,omitempty"`
+	TargetBranch     string         `json:"target_branch,omitempty"`
+	SourceCommit     string         `json:"source_commit,omitempty"`
+	CreatedDate      int64          `json:"created_date,omitempty"`
+	UpdatedDate      int64          `json:"updated_date,omitempty"`
+	Reviewers        []Reviewer     `json:"reviewers,omitempty"`
+	Mergeability     *Mergeability  `json:"mergeability,omitempty"`
 
 	// CommentCount, OpenTaskCount and ResolvedTaskCount come from the
 	// "properties" object Bitbucket returns alongside every pull request. The
@@ -996,6 +1003,13 @@ func mapPullRequest(raw pullRequestValue) PullRequest {
 		pr.Repository = &RepositoryRef{
 			ProjectKey: raw.ToRef.Repository.Project.Key,
 			Slug:       raw.ToRef.Repository.Slug,
+		}
+	}
+
+	if raw.FromRef != nil && raw.FromRef.Repository != nil {
+		pr.SourceRepository = &RepositoryRef{
+			ProjectKey: raw.FromRef.Repository.Project.Key,
+			Slug:       raw.FromRef.Repository.Slug,
 		}
 	}
 

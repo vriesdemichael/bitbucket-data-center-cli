@@ -129,6 +129,11 @@ func (backend *Backend) Fetch(ctx context.Context, repositoryDirectory string, o
 	if strings.TrimSpace(options.Remote) != "" {
 		args = append(args, options.Remote)
 	}
+	for _, refspec := range options.Refspecs {
+		if trimmed := strings.TrimSpace(refspec); trimmed != "" {
+			args = append(args, trimmed)
+		}
+	}
 
 	_, err := backend.run(ctx, runOptions{cwd: repositoryDirectory, args: args})
 	return err
@@ -162,8 +167,100 @@ func (backend *Backend) Checkout(ctx context.Context, repositoryDirectory string
 		return apperrors.New(apperrors.KindValidation, "checkout ref cannot be empty", nil)
 	}
 
-	_, err := backend.run(ctx, runOptions{cwd: repositoryDirectory, args: []string{"checkout", options.Ref}})
+	args := []string{"checkout"}
+	if options.Force {
+		args = append(args, "--force")
+	}
+	if options.Detach {
+		args = append(args, "--detach")
+	}
+	if branch := strings.TrimSpace(options.NewBranch); branch != "" {
+		if options.Detach {
+			return apperrors.New(apperrors.KindValidation, "cannot create a branch and detach HEAD in the same checkout", nil)
+		}
+		// -b rather than -B: -B would move an existing branch of the same name
+		// to the new start point, discarding whatever it pointed at.
+		args = append(args, "-b", branch)
+	}
+	args = append(args, options.Ref)
+
+	_, err := backend.run(ctx, runOptions{cwd: repositoryDirectory, args: args})
 	return err
+}
+
+// WorkingTreeState reports modifications to tracked files.
+//
+// --untracked-files=no is the point of the method: untracked files cannot be
+// overwritten by a branch switch, so counting them would refuse checkouts over
+// build output and scratch files. --porcelain pins the format, which is
+// documented as stable across git versions, unlike the human one.
+func (backend *Backend) WorkingTreeState(ctx context.Context, repositoryDirectory string) (git.WorkingTreeStatus, error) {
+	trimmedDir := strings.TrimSpace(repositoryDirectory)
+	if trimmedDir == "" {
+		return git.WorkingTreeStatus{}, apperrors.New(apperrors.KindValidation, "repository directory cannot be empty", nil)
+	}
+
+	result, err := backend.run(ctx, runOptions{cwd: trimmedDir, args: []string{"status", "--porcelain", "--untracked-files=no"}})
+	if err != nil {
+		return git.WorkingTreeStatus{}, err
+	}
+
+	entries := make([]string, 0)
+	for _, line := range strings.Split(result.stdout, "\n") {
+		if trimmed := strings.TrimSpace(line); trimmed != "" {
+			entries = append(entries, trimmed)
+		}
+	}
+
+	return git.WorkingTreeStatus{Dirty: len(entries) > 0, Entries: entries}, nil
+}
+
+// FastForward advances the checked-out branch to ref, refusing to diverge.
+func (backend *Backend) FastForward(ctx context.Context, repositoryDirectory string, ref string) error {
+	trimmedDir := strings.TrimSpace(repositoryDirectory)
+	if trimmedDir == "" {
+		return apperrors.New(apperrors.KindValidation, "repository directory cannot be empty", nil)
+	}
+
+	trimmedRef := strings.TrimSpace(ref)
+	if trimmedRef == "" {
+		return apperrors.New(apperrors.KindValidation, "fast-forward ref cannot be empty", nil)
+	}
+
+	_, err := backend.run(ctx, runOptions{cwd: trimmedDir, args: []string{"merge", "--ff-only", trimmedRef}})
+	return err
+}
+
+// BranchExists reports whether a local branch of this name is present.
+func (backend *Backend) BranchExists(ctx context.Context, repositoryDirectory string, branch string) (bool, error) {
+	trimmedDir := strings.TrimSpace(repositoryDirectory)
+	if trimmedDir == "" {
+		return false, apperrors.New(apperrors.KindValidation, "repository directory cannot be empty", nil)
+	}
+
+	trimmedBranch := strings.TrimSpace(branch)
+	if trimmedBranch == "" {
+		return false, apperrors.New(apperrors.KindValidation, "branch name cannot be empty", nil)
+	}
+
+	// show-ref --verify with a full refname rather than `git branch --list`:
+	// the latter takes a glob, so a branch name containing a wildcard would
+	// match something other than itself.
+	result, err := backend.run(ctx, runOptions{
+		cwd:  trimmedDir,
+		args: []string{"show-ref", "--verify", "--quiet", "refs/heads/" + trimmedBranch},
+	})
+	if err != nil {
+		// Exit 1 with nothing on stderr is show-ref's way of saying the ref is
+		// absent, which is an answer rather than a failure.
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 && strings.TrimSpace(result.stderr) == "" {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (backend *Backend) RepositoryRoot(ctx context.Context, workingDirectory string) (string, error) {

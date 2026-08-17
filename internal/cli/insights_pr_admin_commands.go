@@ -531,6 +531,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	// was the odd one out. Canonical location stays under `bb diff`.
 	prCmd.AddCommand(newPullRequestDiffAlias(options, &repository))
 	prCmd.AddCommand(newPullRequestStatusCommand(options, &repository))
+	prCmd.AddCommand(newPullRequestCheckoutCommand(options, &repository))
 
 	listCmd := &cobra.Command{
 		Use:   "list",

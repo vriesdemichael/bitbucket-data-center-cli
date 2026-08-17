@@ -235,6 +235,24 @@ func inferRepositoryContextFromGit(cfg config.AppConfig) (*inferredRepositoryCon
 	}
 
 	if len(unique) > 1 {
+		// A side remote next to origin — a contributor's fork, a mirror — does
+		// not make the context ambiguous. Git's convention is that origin is
+		// the repository this clone belongs to, and honouring it costs nothing
+		// while --repo stays available to override.
+		//
+		// bb pr checkout makes this more than a nicety: it adds a remote for
+		// the fork a pull request comes from, so without this every later bb
+		// command in that repository would refuse to infer context — a trap
+		// laid by the previous command.
+		//
+		// upstream is the deliberate exception. It is the one remote name that
+		// conventionally outranks origin, so a repository with both really is
+		// ambiguous about which one bb should act on, and saying so is better
+		// than picking.
+		if origin, found := unambiguousOriginCandidate(unique); found {
+			return &origin, nil
+		}
+
 		ordered := make([]inferredRepositoryContext, 0, len(unique))
 		for _, candidate := range unique {
 			ordered = append(ordered, candidate)
@@ -273,6 +291,34 @@ func inferRepositoryContextFromGit(cfg config.AppConfig) (*inferredRepositoryCon
 	}
 
 	return nil, nil
+}
+
+// unambiguousOriginCandidate returns the remote named origin when it is the
+// only reasonable reading of the repository's context.
+//
+// Exactly one origin, not the first: git cannot have two remotes of one name,
+// but one origin with several URLs yields several candidates, and those may
+// name different repositories. Picking either would be a guess.
+//
+// An upstream remote disqualifies origin outright, because the convention that
+// puts a fork on origin puts the repository people actually work against on
+// upstream. There is no defensible default between the two.
+func unambiguousOriginCandidate(candidates map[string]inferredRepositoryContext) (inferredRepositoryContext, bool) {
+	var found inferredRepositoryContext
+	count := 0
+
+	for _, candidate := range candidates {
+		if strings.EqualFold(candidate.RemoteName, "upstream") {
+			return inferredRepositoryContext{}, false
+		}
+		if candidate.RemoteName != "origin" {
+			continue
+		}
+		found = candidate
+		count++
+	}
+
+	return found, count == 1
 }
 
 func authenticatedHostLookup(cfg config.AppConfig, stored config.StoredConfig) map[string]string {

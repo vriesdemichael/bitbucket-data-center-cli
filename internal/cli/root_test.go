@@ -4461,3 +4461,15 @@ func TestDiffPullRequestRejectsBadInvocations(t *testing.T) {
 		}
 	})
 }
+
+func (stub inferenceGitBackendStub) WorkingTreeState(context.Context, string) (git.WorkingTreeStatus, error) {
+	return git.WorkingTreeStatus{}, nil
+}
+
+func (stub inferenceGitBackendStub) BranchExists(context.Context, string, string) (bool, error) {
+	return false, nil
+}
+
+func (stub inferenceGitBackendStub) FastForward(context.Context, string, string) error {
+	return nil
+}

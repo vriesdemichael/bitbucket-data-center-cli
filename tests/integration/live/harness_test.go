@@ -432,6 +432,25 @@ func repositoryPushURL(cfg config.AppConfig, projectKey, repositorySlug string) 
 	return parsed.String(), nil
 }
 
+// runGitCapture is runGit for the cases that need to read git's answer rather
+// than only know it succeeded — verifying which branch is checked out, or what
+// its upstream resolved to. No retry: these are local queries against a
+// repository on disk, so a failure is a real one rather than the remote rate
+// limiting that runGit exists to ride out.
+func runGitCapture(directory string, args ...string) (string, error) {
+	gitArgs := append([]string{"-c", "credential.helper="}, args...)
+	command := exec.Command("git", gitArgs...)
+	command.Dir = directory
+	command.Env = append(execgit.ScopeFreeEnv(), "GIT_TERMINAL_PROMPT=0")
+
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return string(output), fmt.Errorf("git %s failed: %v: %s", strings.Join(args, " "), err, strings.TrimSpace(string(output)))
+	}
+
+	return string(output), nil
+}
+
 func runGit(directory string, args ...string) error {
 	const maxRetries = 4
 	const baseBackoff = 500 * time.Millisecond
