@@ -228,6 +228,18 @@ They are still expected, and a reviewer will ask:
   nothing stops a malformed subject locally. The release workflow parses commit
   subjects to decide whether to publish, so a wrong type has a real effect —
   see the table above.
+- **Tests for `tools/`.** The coverage gate is scoped to `cmd/` and `internal/`,
+  so a change under `tools/` reports "no coverable changed lines" and passes
+  whatever you do. Write the tests anyway when the code has logic worth testing:
+  parsing, tokenising, path resolution, arithmetic. Skip `main()` and flag
+  plumbing — a test there proves nothing, and the point is not to chase a
+  percentage.
+
+  The reason is asymmetry, not tidiness. A tool that shells out or reads a file
+  fails loudly on the next run. A tool that *computes* fails quietly and
+  wrongly, and `tools/quality-report` produces the numbers every other gate
+  reads — a bug there makes CI pass when it should not. ADR-049 has the
+  measurements behind leaving `tools/` out of the gate.
 
 ## What CI checks
 
