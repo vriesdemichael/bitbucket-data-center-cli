@@ -111,34 +111,87 @@ Use --token to restrict all API calls to the rights of a specific PAT.`,
 }
 
 func newMCPToolsCommand(deps Dependencies) *cobra.Command {
+	var safeOnly bool
+
 	cmd := &cobra.Command{
 		Use:   "tools",
-		Short: "List available MCP tools with name and description",
+		Short: "List available MCP tools with name, exposure and description",
 		Long: `Print all MCP tools the serve command can expose.
 
-Use this output to build --tools and --exclude allowlists/denylists.`,
+Use this output to build --tools and --exclude allowlists/denylists.
+
+The EXPOSURE column says when a tool is available:
+
+  SAFE   exposed by default; side-effects are low-blast-radius and easily
+         reversed, such as opening a pull request or adding a comment
+  YOLO   withheld unless 'bb ai mcp serve --yolo' (or --allow-writes) is set,
+         because the operation is irreversible
+
+--tools takes precedence over the safety filter, so naming a YOLO tool in an
+allowlist exposes it without --yolo. Pass --safe-only to list just the set the
+server exposes by default.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			specs := bbmcp.AllSpecs()
+			if safeOnly {
+				filtered := make([]bbmcp.Spec, 0, len(specs))
+				for _, spec := range specs {
+					if spec.Safe {
+						filtered = append(filtered, spec)
+					}
+				}
+				specs = filtered
+			}
 
 			if isJSON, _ := cmd.Root().PersistentFlags().GetBool("json"); isJSON {
 				type toolEntry struct {
 					Name        string `json:"name"`
 					Description string `json:"description"`
+					// Safe mirrors the server's classification; Exposure is the
+					// same fact as a stable string, so a consumer can render it
+					// without re-deriving the vocabulary.
+					Safe     bool   `json:"safe"`
+					Exposure string `json:"exposure"`
 				}
 				entries := make([]toolEntry, len(specs))
 				for i, spec := range specs {
-					entries[i] = toolEntry{Name: spec.Tool.Name, Description: toolDescription(spec)}
+					entries[i] = toolEntry{
+						Name:        spec.Tool.Name,
+						Description: toolDescription(spec),
+						Safe:        spec.Safe,
+						Exposure:    toolExposure(spec),
+					}
 				}
 				return deps.WriteJSON(cmd.OutOrStdout(), entries)
 			}
 
 			for _, spec := range specs {
-				fmt.Fprintf(cmd.OutOrStdout(), "%-40s %s\n", spec.Tool.Name, toolDescription(spec))
+				fmt.Fprintf(cmd.OutOrStdout(), "%-40s %-6s %s\n", spec.Tool.Name, toolExposure(spec), toolDescription(spec))
 			}
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVar(&safeOnly, "safe-only", false, "List only the tools the server exposes without --yolo")
+
 	return cmd
+}
+
+// Exposure labels for the tool listing. These are part of the --json contract,
+// so they are constants rather than inline literals.
+const (
+	exposureSafe = "SAFE"
+	exposureYolo = "YOLO"
+)
+
+// toolExposure reports when a tool is available, rather than whether it is
+// "safe" in the abstract — the question a reader building an allowlist has is
+// which tools they get without --yolo.
+func toolExposure(spec bbmcp.Spec) string {
+	if spec.Safe {
+		return exposureSafe
+	}
+
+	return exposureYolo
 }
 
 // toolDescription extracts the human-readable description from a tool spec.

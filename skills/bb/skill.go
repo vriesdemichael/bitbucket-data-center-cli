@@ -4,9 +4,12 @@ package skill
 
 import _ "embed"
 
-// Content holds the embedded SKILL.md template bytes.
-// The template may contain {{BB_VERSION}} which callers replace with the
-// running binary's version string.
+// Content holds the embedded SKILL.md bytes.
+//
+// The file is complete and correct as committed: it contains no placeholders,
+// because this same file is what `npx skills add` distributes. Callers that
+// render it for a specific binary append a version stamp rather than
+// substituting into it.
 //
 //go:embed SKILL.md
 var Content []byte

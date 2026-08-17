@@ -147,12 +147,20 @@ func resolveInstallPath(global bool) (string, error) {
 	return filepath.Join(home, ".agents", "skills", "bb", "SKILL.md"), nil
 }
 
-// buildSkill returns the skill content with version substituted.
-// The embedded template contains the literal marker {{BB_VERSION}} which is
-// replaced with the running binary's version at generation time.
+// buildSkill returns the skill content stamped with the running binary's
+// version.
+//
+// The stamp is appended here rather than substituted into a placeholder in the
+// committed file. The repository copy is what `npx skills add` distributes, and
+// the skill advertises that install path itself, so a `{{BB_VERSION}}` marker in
+// the source shipped raw to anyone who followed the documented instructions.
+// Nothing in the file can now be wrong when read unrendered.
 func buildSkill(version string) string {
-	if version == "" {
+	if strings.TrimSpace(version) == "" {
 		version = "dev"
 	}
-	return strings.ReplaceAll(string(bbskill.Content), "{{BB_VERSION}}", version)
+
+	content := strings.TrimRight(string(bbskill.Content), "\n")
+
+	return content + "\n\n---\n\nPrinted by `bb` " + version + ".\n"
 }

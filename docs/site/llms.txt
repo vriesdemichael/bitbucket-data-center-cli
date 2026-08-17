@@ -49,7 +49,8 @@ It is designed to be:
 
 - [AI and llms.txt overview](https://vriesdemichael.github.io/bitbucket-server-cli/latest/ai-and-llms/)
 - [bb AI skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-server-cli/blob/main/skills/bb/SKILL.md)
-- Run `bb ai skill show` to print a version-accurate skill for the installed binary
+- Run `bb ai skill show` to print the skill, stamped with the installed binary's version
+- Run `bb ai mcp tools` for the authoritative MCP tool list, including which are withheld without `--yolo`
 - Run `bb ai mcp serve` to expose Bitbucket operations as MCP tools to IDEs and agents
 
 ## Basic commands
