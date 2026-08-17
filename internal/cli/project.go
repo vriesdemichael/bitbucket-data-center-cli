@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	projectservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/project"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 )
 
 func newProjectCommand(options *rootOptions) *cobra.Command {

@@ -360,4 +360,3 @@ func (service *Service) RemoveHookScript(ctx context.Context, projectKey, repoSl
 
 	return nil
 }
-

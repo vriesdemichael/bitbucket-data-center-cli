@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	reviewerservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reviewer"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 )
 
 func newReviewerGroupCommand(options *rootOptions) *cobra.Command {

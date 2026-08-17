@@ -693,7 +693,6 @@ func TestServiceCreatePendingComment(t *testing.T) {
 	}
 }
 
-
 func TestCountTasks(t *testing.T) {
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

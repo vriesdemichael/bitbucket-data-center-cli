@@ -178,4 +178,3 @@ func TestGetIssueCommitsTruncates(t *testing.T) {
 		t.Fatalf("expected 1 commit (truncated), got %d", len(commits))
 	}
 }
-

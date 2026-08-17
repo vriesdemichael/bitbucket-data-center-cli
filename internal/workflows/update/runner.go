@@ -281,13 +281,13 @@ func (runner *Runner) Run(ctx context.Context, options Options) (Result, error) 
 
 		swapResultPath := windowsSwapResultPath(targetPath)
 		launchOptions := windowsSwapLaunchOptions{
-			ParentPID:      runner.processID(),
-			TargetPath:     targetPath,
-			StagedPath:     stagedPath,
-			ResultPath:     swapResultPath,
-			WaitTimeout:    windowsSwapWaitTimeout,
-			RetryInterval:  windowsSwapRetryInterval,
-			RetryTimeout:   windowsSwapRetryTimeout,
+			ParentPID:     runner.processID(),
+			TargetPath:    targetPath,
+			StagedPath:    stagedPath,
+			ResultPath:    swapResultPath,
+			WaitTimeout:   windowsSwapWaitTimeout,
+			RetryInterval: windowsSwapRetryInterval,
+			RetryTimeout:  windowsSwapRetryTimeout,
 		}
 		if err := runner.launchWindows(context.Background(), launchOptions); err != nil {
 			kind := apperrors.KindOf(err)

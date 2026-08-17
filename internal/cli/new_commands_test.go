@@ -688,8 +688,8 @@ func TestIssue221CLICommands(t *testing.T) {
 	dryRunCmds := [][]string{
 		{"build", "set", "abc", "--key", "ci/main", "--state", "SUCCESSFUL", "--url", "https://ci.example", "--dry-run"},
 		{"build", "set", "abc", "--key", "ci/other", "--state", "SUCCESSFUL", "--url", "https://ci.example", "--dry-run"}, // predicted: create
-		{"build", "delete", "abc", "--key", "ci/main", "--dry-run"}, // predicted: delete
-		{"build", "delete", "abc", "--key", "ci/other", "--dry-run"}, // predicted: no-op
+		{"build", "delete", "abc", "--key", "ci/main", "--dry-run"},                                                       // predicted: delete
+		{"build", "delete", "abc", "--key", "ci/other", "--dry-run"},                                                      // predicted: no-op
 		{"deployment", "create", "abc",
 			"--deployment-sequence-number", "1",
 			"--display-name", "deploy1",
@@ -710,8 +710,8 @@ func TestIssue221CLICommands(t *testing.T) {
 			"--env-name", "Production",
 			"--dry-run",
 		}, // predicted: create
-		{"deployment", "delete", "abc", "--key", "dep1", "--dry-run"}, // predicted: delete
-		{"deployment", "delete", "abc", "--key", "dep-new", "--dry-run"}, // predicted: no-op
+		{"deployment", "delete", "abc", "--key", "dep1", "--dry-run"},                                                  // predicted: delete
+		{"deployment", "delete", "abc", "--key", "dep-new", "--dry-run"},                                               // predicted: no-op
 		{"insights", "annotation", "set", "abc", "lint", "a1", "--message", "fixed", "--severity", "LOW", "--dry-run"}, // predicted: update
 		{"insights", "annotation", "set", "abc", "lint", "a2", "--message", "fixed", "--severity", "LOW", "--dry-run"}, // predicted: create
 	}
@@ -803,5 +803,3 @@ func TestIssue221CLICommands(t *testing.T) {
 		}
 	}
 }
-
-

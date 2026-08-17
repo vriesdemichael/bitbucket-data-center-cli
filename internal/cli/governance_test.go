@@ -2465,10 +2465,10 @@ func TestReviewerGroupAndDefaultReviewersCLI(t *testing.T) {
 		{"reviewer-group", "update", "2", "--repo", "PRJ/demo", "--description", "newdesc"},
 		{"--json", "reviewer-group", "update", "2", "--repo", "PRJ/demo"},
 		{"--dry-run", "reviewer-group", "update", "1", "--project", "PRJ", "--name", "newname"},
-		{"--dry-run", "reviewer-group", "update", "1", "--project", "PRJ"}, // no-op
+		{"--dry-run", "reviewer-group", "update", "1", "--project", "PRJ"},  // no-op
 		{"--dry-run", "reviewer-group", "update", "99", "--project", "PRJ"}, // not found
 		{"--dry-run", "reviewer-group", "update", "2", "--repo", "PRJ/demo", "--description", "newdesc"},
-		{"--dry-run", "reviewer-group", "update", "2", "--repo", "PRJ/demo"}, // no-op
+		{"--dry-run", "reviewer-group", "update", "2", "--repo", "PRJ/demo"},  // no-op
 		{"--dry-run", "reviewer-group", "update", "99", "--repo", "PRJ/demo"}, // not found
 
 		// Delete
@@ -2537,7 +2537,7 @@ func TestReviewerGroupAndDefaultReviewersCLI(t *testing.T) {
 
 func TestDefaultReviewersCLIErrorsAndFallbacks(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	
+
 	// 1. Error resolving repository (repo flag invalid)
 	cmd := NewRootCommand()
 	cmd.SetArgs([]string{"pr", "default-reviewers", "--repo", "INVALID_FORMAT"})
@@ -2609,6 +2609,3 @@ func TestDefaultReviewersCLIErrorsAndFallbacks(t *testing.T) {
 		t.Fatalf("expected refs and name fallback in output, got: %s", buffer.String())
 	}
 }
-
-
-

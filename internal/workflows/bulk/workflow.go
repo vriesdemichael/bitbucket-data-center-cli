@@ -31,9 +31,9 @@ const (
 	OperationRepoPullRequestRequiredAllTasksComplete = "repo.pull-request-settings.required-all-tasks-complete"
 	OperationRepoPullRequestRequiredApproversCount   = "repo.pull-request-settings.required-approvers-count"
 	OperationBuildRequiredCreate                     = "build.required.create"
-	OperationRepoSettingsAutoMerge                  = "repo.settings.auto-merge"
-	OperationRepoSettingsAutoDecline                = "repo.settings.auto-decline"
-	OperationRepoDefaultTaskCreate                  = "repo.default-task.create"
+	OperationRepoSettingsAutoMerge                   = "repo.settings.auto-merge"
+	OperationRepoSettingsAutoDecline                 = "repo.settings.auto-decline"
+	OperationRepoDefaultTaskCreate                   = "repo.default-task.create"
 
 	resultStatusSuccess = "success"
 	resultStatusFailed  = "failed"

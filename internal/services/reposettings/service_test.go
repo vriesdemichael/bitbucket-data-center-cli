@@ -874,7 +874,7 @@ func TestRepositoryServiceErrors(t *testing.T) {
 func TestNewRepositorySettingsMethods(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		
+
 		switch {
 		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-merge":
 			_, _ = writer.Write([]byte(`{"enabled":true}`))

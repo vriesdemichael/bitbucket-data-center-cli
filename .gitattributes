@@ -1,0 +1,35 @@
+# Line endings are LF everywhere: in the repository and in every working tree.
+#
+# Without this file, `core.autocrlf` decides — a per-user setting the repository
+# cannot see and does not control. That produced a working tree where line
+# endings varied file by file depending on whether git had checked a file out or
+# a tool had rewritten it, which broke three things at once:
+#
+#   * `gofmt -l` reported 188 of 248 Go files as unformatted, all of it line-ending
+#     noise, which is why formatting was never enforced;
+#   * tools parsing repository text saw a trailing \r inside the last token, which
+#     pflag reports as an unknown flag with nothing visible in the message;
+#   * docker/harness/start-bitbucket.sh, which the Dockerfile COPYs into a Linux
+#     image, acquired a CRLF shebang and failed with `$'\r': command not found`.
+#
+# eol=lf rather than plain `text=auto` is deliberate. `text=auto` alone
+# normalises the repository but still checks out CRLF on Windows, which leaves
+# every problem above in place locally. Go, Git Bash, PowerShell 7 and VS Code
+# all handle LF on Windows; the shell scripts and container files genuinely
+# cannot handle CRLF.
+* text=auto eol=lf
+
+# Binary files must never be touched. Marking them explicitly is cheaper than
+# trusting git's heuristics on a file it has not seen before.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tgz binary
+*.woff binary
+*.woff2 binary
+*.exe binary
