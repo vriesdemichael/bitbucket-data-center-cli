@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -26,7 +27,7 @@ func newSearchCommand(options *rootOptions) *cobra.Command {
 }
 
 func newSearchReposCommand(options *rootOptions) *cobra.Command {
-	var limit int
+	var listPaging paging.Options
 	var start int
 	var projectKey string
 
@@ -44,7 +45,7 @@ func newSearchReposCommand(options *rootOptions) *cobra.Command {
 			service := repositoryservice.NewService(client)
 
 			opts := repositoryservice.ListOptions{
-				Limit: limit,
+				Limit: listPaging.ServiceLimit(),
 				Start: start,
 			}
 			if len(args) > 0 {
@@ -79,7 +80,7 @@ func newSearchReposCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&limit, "limit", 25, "Page size")
+	listPaging.Register(cmd, 25)
 	cmd.Flags().IntVar(&start, "start", 0, "Pagination start index")
 	cmd.Flags().StringVar(&projectKey, "project", "", "Filter by project key")
 
@@ -87,7 +88,7 @@ func newSearchReposCommand(options *rootOptions) *cobra.Command {
 }
 
 func newSearchCommitsCommand(options *rootOptions) *cobra.Command {
-	var limit int
+	var listPaging paging.Options
 	var start int
 	var repositorySelector string
 	var path string
@@ -113,7 +114,7 @@ func newSearchCommitsCommand(options *rootOptions) *cobra.Command {
 			service := commitservice.NewService(client)
 
 			opts := commitservice.ListOptions{
-				Limit:  limit,
+				Limit:  listPaging.ServiceLimit(),
 				Start:  start,
 				Path:   path,
 				Since:  since,
@@ -146,7 +147,7 @@ func newSearchCommitsCommand(options *rootOptions) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (required)")
-	cmd.Flags().IntVar(&limit, "limit", 25, "Page size")
+	listPaging.Register(cmd, 25)
 	cmd.Flags().IntVar(&start, "start", 0, "Pagination start index")
 	cmd.Flags().StringVar(&path, "path", "", "Filter by file path")
 	cmd.Flags().StringVar(&since, "since", "", "Commit ID or ref to search after (exclusive)")
@@ -159,7 +160,7 @@ func newSearchCommitsCommand(options *rootOptions) *cobra.Command {
 }
 
 func newSearchPRsCommand(options *rootOptions) *cobra.Command {
-	var limit int
+	var listPaging paging.Options
 	var start int
 	var repositorySelector string
 	var state string
@@ -186,14 +187,14 @@ func newSearchPRsCommand(options *rootOptions) *cobra.Command {
 				}
 				repo := pullrequestservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
 				opts := pullrequestservice.ListOptions{
-					Limit: limit,
+					Limit: listPaging.ServiceLimit(),
 					Start: start,
 					State: state,
 				}
 				prs, err = service.List(cmd.Context(), repo, opts)
 			} else {
 				opts := pullrequestservice.DashboardListOptions{
-					Limit: limit,
+					Limit: listPaging.ServiceLimit(),
 					Start: start,
 					State: state,
 					Role:  role,
@@ -229,7 +230,7 @@ func newSearchPRsCommand(options *rootOptions) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Optional repository as PROJECT/slug to scope search")
-	cmd.Flags().IntVar(&limit, "limit", 25, "Page size")
+	listPaging.Register(cmd, 25)
 	cmd.Flags().IntVar(&start, "start", 0, "Pagination start index")
 	cmd.Flags().StringVar(&state, "state", "open", "Filter by state (open, closed, all)")
 	cmd.Flags().StringVar(&role, "role", "", "Filter by role (author, reviewer, participant) - only applies when --repo is not used")

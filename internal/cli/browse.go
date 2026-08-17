@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -23,7 +24,7 @@ func newRepoBrowseCommand(options *rootOptions) *cobra.Command {
 	browseCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	var treeAt string
-	var treeLimit int
+	var treePaging paging.Options
 	treeCmd := &cobra.Command{
 		Use:   "tree [path]",
 		Short: "List repository files in a directory",
@@ -49,7 +50,7 @@ func newRepoBrowseCommand(options *rootOptions) *cobra.Command {
 
 			files, err := service.Tree(cmd.Context(), repo, path, browseservice.TreeOptions{
 				At:    treeAt,
-				Limit: treeLimit,
+				Limit: treePaging.ServiceLimit(),
 			})
 			if err != nil {
 				return err
@@ -72,7 +73,7 @@ func newRepoBrowseCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 	treeCmd.Flags().StringVar(&treeAt, "at", "", "Commit ID or ref to browse")
-	treeCmd.Flags().IntVar(&treeLimit, "limit", 1000, "Page size for file listing")
+	treePaging.Register(treeCmd, 1000)
 	browseCmd.AddCommand(treeCmd)
 
 	var rawAt string
@@ -226,7 +227,7 @@ func newRepoBrowseCommand(options *rootOptions) *cobra.Command {
 	blameCmd.Flags().StringVar(&blameAt, "at", "", "Commit ID or ref")
 	browseCmd.AddCommand(blameCmd)
 
-	var historyLimit int
+	var historyPaging paging.Options
 	historyCmd := &cobra.Command{
 		Use:   "history <path>",
 		Short: "List commit history for a file",
@@ -245,7 +246,7 @@ func newRepoBrowseCommand(options *rootOptions) *cobra.Command {
 			repo := commitservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
 			service := commitservice.NewService(client)
 
-			commits, err := service.List(cmd.Context(), repo, commitservice.ListOptions{Limit: historyLimit, Path: args[0]})
+			commits, err := service.List(cmd.Context(), repo, commitservice.ListOptions{Limit: historyPaging.ServiceLimit(), Path: args[0]})
 			if err != nil {
 				return err
 			}
@@ -268,7 +269,7 @@ func newRepoBrowseCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	historyCmd.Flags().IntVar(&historyLimit, "limit", 25, "Page size for history operations")
+	historyPaging.Register(historyCmd, 25)
 	browseCmd.AddCommand(historyCmd)
 
 	return browseCmd

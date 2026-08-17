@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"strings"
 	"time"
 
@@ -70,7 +71,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 	}
 
 	var scope tokenScope
-	var limit int
+	var listPaging paging.Options
 
 	// Define persistent scope flags on the parent token command so they are inherited by all subcommands
 	tokenCmd.PersistentFlags().StringVar(&scope.user, "user", "", "User slug for personal access token scope")
@@ -96,7 +97,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			tokens, err := svc.List(cmd.Context(), scopeType, target, limit)
+			tokens, err := svc.List(cmd.Context(), scopeType, target, listPaging.ServiceLimit())
 			if err != nil {
 				return err
 			}
@@ -129,7 +130,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	listCmd.Flags().IntVar(&limit, "limit", 25, "Maximum number of tokens to list")
+	listPaging.Register(listCmd, 25)
 	tokenCmd.AddCommand(listCmd)
 
 	getCmd := &cobra.Command{

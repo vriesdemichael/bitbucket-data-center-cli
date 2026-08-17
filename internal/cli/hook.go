@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"io"
 	"os"
 	"reflect"
@@ -17,7 +18,7 @@ import (
 func newHookCommand(options *rootOptions) *cobra.Command {
 	var projectKey string
 	var repositorySelector string
-	var limit int
+	var listPaging paging.Options
 	var start int
 
 	hookCmd := &cobra.Command{
@@ -44,7 +45,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				hooks, err := service.ListRepositoryHooks(cmd.Context(), repo.ProjectKey, repo.Slug, limit, start)
+				hooks, err := service.ListRepositoryHooks(cmd.Context(), repo.ProjectKey, repo.Slug, listPaging.ServiceLimit(), start)
 				if err != nil {
 					return err
 				}
@@ -62,7 +63,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 				return fmt.Errorf("project key is required (use --project or --repo)")
 			}
 
-			hooks, err := service.ListProjectHooks(cmd.Context(), projectKey, limit, start)
+			hooks, err := service.ListProjectHooks(cmd.Context(), projectKey, listPaging.ServiceLimit(), start)
 			if err != nil {
 				return err
 			}
@@ -73,7 +74,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	listCmd.Flags().IntVar(&limit, "limit", 25, "Maximum number of hooks to list")
+	listPaging.Register(listCmd, 25)
 	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
 	hookCmd.AddCommand(listCmd)
 

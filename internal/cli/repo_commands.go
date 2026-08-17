@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"slices"
 	"strconv"
 	"strings"
@@ -23,10 +24,10 @@ func newRepoCommand(options *rootOptions) *cobra.Command {
 		Short: "Repository commands",
 	}
 
-	var limit int
+	var listPaging paging.Options
 	var start int
 	var projectKey string
-	repoCmd.PersistentFlags().IntVar(&limit, "limit", 25, "Maximum number of results to return")
+	listPaging.RegisterPersistent(repoCmd, 25)
 	repoCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	listCmd := &cobra.Command{
@@ -41,7 +42,7 @@ func newRepoCommand(options *rootOptions) *cobra.Command {
 			client := httpclient.NewFromConfig(cfg)
 			service := repository.NewService(client)
 
-			listOptions := repository.ListOptions{Limit: limit, Start: start}
+			listOptions := repository.ListOptions{Limit: listPaging.ServiceLimit(), Start: start}
 
 			var repos []repository.Repository
 			if projectKey != "" {
@@ -109,7 +110,7 @@ func newRepoCommentCommand(options *rootOptions) *cobra.Command {
 	commentCmd.PersistentFlags().StringVar(&commitID, "commit", "", "Commit ID context")
 	commentCmd.PersistentFlags().StringVar(&pullRequestID, "pr", "", "Pull request ID context")
 
-	var listLimit int
+	var listPaging paging.Options
 	var listPath string
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -126,7 +127,7 @@ func newRepoCommentCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := commentservice.NewService(client)
-			comments, err := service.List(cmd.Context(), target, listPath, listLimit)
+			comments, err := service.List(cmd.Context(), target, listPath, listPaging.ServiceLimit())
 			if err != nil {
 				return err
 			}
@@ -148,7 +149,7 @@ func newRepoCommentCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 	listCmd.Flags().StringVar(&listPath, "path", "", "File path for comment listing scope")
-	listCmd.Flags().IntVar(&listLimit, "limit", 25, "Page size for Bitbucket comment list operations")
+	listPaging.Register(listCmd, 25)
 	_ = listCmd.MarkFlagRequired("path")
 	commentCmd.AddCommand(listCmd)
 
@@ -422,7 +423,7 @@ func newRepoSettingsCommand(options *rootOptions) *cobra.Command {
 	securityCmd := &cobra.Command{Use: "security", Short: "Security settings"}
 	permissionsCmd := &cobra.Command{Use: "permissions", Short: "Repository permissions"}
 	permissionsUsersCmd := &cobra.Command{Use: "users", Short: "User permissions"}
-	var permissionsLimit int
+	var permissionsPaging paging.Options
 	permissionsUsersListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List users with repository permissions",
@@ -438,7 +439,7 @@ func newRepoSettingsCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := reposettings.NewService(client)
-			users, err := service.ListRepositoryPermissionUsers(cmd.Context(), repo, permissionsLimit)
+			users, err := service.ListRepositoryPermissionUsers(cmd.Context(), repo, permissionsPaging.ServiceLimit())
 			if err != nil {
 				return err
 			}
@@ -463,7 +464,7 @@ func newRepoSettingsCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	permissionsUsersListCmd.Flags().IntVar(&permissionsLimit, "limit", 100, "Page size for listing permission users")
+	permissionsPaging.Register(permissionsUsersListCmd, 100)
 	permissionsUsersGrantCmd := &cobra.Command{
 		Use:   "grant <username> <permission>",
 		Short: "Grant a repository permission to a user",
@@ -487,7 +488,7 @@ func newRepoSettingsCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
-				users, err := service.ListRepositoryPermissionUsers(cmd.Context(), repo, permissionsLimit)
+				users, err := service.ListRepositoryPermissionUsers(cmd.Context(), repo, permissionsPaging.ServiceLimit())
 				if err != nil {
 					return err
 				}
@@ -570,7 +571,7 @@ func newRepoSettingsCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
-				users, err := service.ListRepositoryPermissionUsers(cmd.Context(), repo, permissionsLimit)
+				users, err := service.ListRepositoryPermissionUsers(cmd.Context(), repo, permissionsPaging.ServiceLimit())
 				if err != nil {
 					return err
 				}
@@ -641,7 +642,7 @@ func newRepoSettingsCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := reposettings.NewService(client)
-			groups, err := service.ListRepositoryPermissionGroups(cmd.Context(), repo, permissionsLimit)
+			groups, err := service.ListRepositoryPermissionGroups(cmd.Context(), repo, permissionsPaging.ServiceLimit())
 			if err != nil {
 				return err
 			}
@@ -662,7 +663,7 @@ func newRepoSettingsCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	permissionsGroupsListCmd.Flags().IntVar(&permissionsLimit, "limit", 100, "Page size for listing permission groups")
+	permissionsPaging.Register(permissionsGroupsListCmd, 100)
 
 	permissionsGroupsGrantCmd := &cobra.Command{
 		Use:   "grant <group> <permission>",
@@ -687,7 +688,7 @@ func newRepoSettingsCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
-				groups, err := service.ListRepositoryPermissionGroups(cmd.Context(), repo, permissionsLimit)
+				groups, err := service.ListRepositoryPermissionGroups(cmd.Context(), repo, permissionsPaging.ServiceLimit())
 				if err != nil {
 					return err
 				}
@@ -771,7 +772,7 @@ func newRepoSettingsCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
-				groups, err := service.ListRepositoryPermissionGroups(cmd.Context(), repo, permissionsLimit)
+				groups, err := service.ListRepositoryPermissionGroups(cmd.Context(), repo, permissionsPaging.ServiceLimit())
 				if err != nil {
 					return err
 				}

@@ -95,6 +95,15 @@ func TestClassifyUsageErrorMatchesCobrasRealMessages(t *testing.T) {
 			args: []string{"one"},
 		},
 		{
+			name: "mutually exclusive flags",
+			configure: func(root *cobra.Command) {
+				root.Flags().Bool("all", false, "")
+				root.Flags().Int("limit", 25, "")
+				root.MarkFlagsMutuallyExclusive("all", "limit")
+			},
+			args: []string{"--all", "--limit", "5"},
+		},
+		{
 			name: "argument outside the valid set",
 			configure: func(root *cobra.Command) {
 				root.Args = cobra.OnlyValidArgs

@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"slices"
 	"strconv"
 	"strings"
@@ -17,7 +18,7 @@ import (
 
 func newBranchCommand(options *rootOptions) *cobra.Command {
 	var repositorySelector string
-	var limit int
+	var listPaging paging.Options
 	var start int
 
 	branchCmd := &cobra.Command{
@@ -26,7 +27,7 @@ func newBranchCommand(options *rootOptions) *cobra.Command {
 	}
 
 	branchCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
-	branchCmd.PersistentFlags().IntVar(&limit, "limit", 25, "Page size for list operations")
+	listPaging.RegisterPersistent(branchCmd, 25)
 	branchCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var orderBy string
@@ -54,7 +55,7 @@ func newBranchCommand(options *rootOptions) *cobra.Command {
 
 			service := branchservice.NewService(client)
 			branches, err := service.List(cmd.Context(), repo, branchservice.ListOptions{
-				Limit:      limit,
+				Limit:      listPaging.ServiceLimit(),
 				Start:      start,
 				OrderBy:    orderBy,
 				FilterText: filterText,
@@ -380,7 +381,7 @@ func newBranchCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := branchservice.NewService(client)
-			refs, err := service.FindByCommit(cmd.Context(), repo, args[0], limit)
+			refs, err := service.FindByCommit(cmd.Context(), repo, args[0], listPaging.ServiceLimit())
 			if err != nil {
 				return err
 			}
@@ -506,7 +507,7 @@ func newBranchCommand(options *rootOptions) *cobra.Command {
 
 			service := branchservice.NewService(client)
 			restrictions, err := service.ListRestrictions(cmd.Context(), repo, branchservice.RestrictionListOptions{
-				Limit:       limit,
+				Limit:       listPaging.ServiceLimit(),
 				Type:        restrictionType,
 				MatcherType: matcherType,
 				MatcherID:   matcherID,
@@ -988,7 +989,7 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 	_ = setCmd.MarkFlagRequired("url")
 	statusCmd.AddCommand(setCmd)
 
-	var getLimit int
+	var getPaging paging.Options
 	var getOrderBy string
 	statusCmd.AddCommand(&cobra.Command{
 		Use:   "get <commit>",
@@ -1001,7 +1002,7 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 			}
 
 			service := qualityservice.NewService(client)
-			statuses, err := service.GetBuildStatuses(cmd.Context(), args[0], getLimit, getOrderBy)
+			statuses, err := service.GetBuildStatuses(cmd.Context(), args[0], getPaging.ServiceLimit(), getOrderBy)
 			if err != nil {
 				return err
 			}
@@ -1025,7 +1026,7 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	})
-	statusCmd.PersistentFlags().IntVar(&getLimit, "limit", 25, "Page size for list operations")
+	getPaging.RegisterPersistent(statusCmd, 25)
 	statusCmd.PersistentFlags().StringVar(&getOrderBy, "order-by", "", "Order by NEWEST, OLDEST, or STATUS")
 
 	var includeUnique bool
@@ -1103,8 +1104,8 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 		Short: "Required build merge-check management",
 	}
 
-	var requiredLimit int
-	requiredCmd.PersistentFlags().IntVar(&requiredLimit, "limit", 25, "Page size for list operations")
+	var requiredPaging paging.Options
+	requiredPaging.RegisterPersistent(requiredCmd, 25)
 
 	requiredCmd.AddCommand(&cobra.Command{
 		Use:   "list",
@@ -1115,7 +1116,7 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 				return err
 			}
 
-			checks, err := service.ListRequiredBuildChecks(cmd.Context(), repo, requiredLimit)
+			checks, err := service.ListRequiredBuildChecks(cmd.Context(), repo, requiredPaging.ServiceLimit())
 			if err != nil {
 				return err
 			}
@@ -1270,7 +1271,7 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 					return err
 				}
 
-				checks, err := service.ListRequiredBuildChecks(cmd.Context(), repo, requiredLimit)
+				checks, err := service.ListRequiredBuildChecks(cmd.Context(), repo, requiredPaging.ServiceLimit())
 				if err != nil {
 					return err
 				}
