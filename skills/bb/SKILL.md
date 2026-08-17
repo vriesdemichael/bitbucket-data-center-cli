@@ -344,6 +344,14 @@ bb insights annotation list <commit-sha> --repo MYPROJ/payments
 
 `bb` ships a built-in MCP server for IDE integration. It exposes Bitbucket operations as MCP tools that AI agents can call directly without constructing CLI arguments.
 
+**This is optional.** Everything above works through the CLI alone, and the two
+have different context costs: an MCP server advertises every tool it exposes on
+connect, whereas the workflows above cost only the text you have already read.
+If you need a handful of operations, the CLI is usually the cheaper choice; if
+you are making many calls per session, the tools save you argument construction.
+Skip this section entirely if MCP is not enabled or not permitted in your
+environment.
+
 ```bash
 # List all available MCP tools
 bb ai mcp tools
