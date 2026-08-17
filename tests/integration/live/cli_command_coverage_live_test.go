@@ -95,6 +95,17 @@ func TestLiveCLIDiffPRAndCommitHumanOutput(t *testing.T) {
 		t.Fatalf("expected patch output for diff pr, got: %s", prDiffOutput)
 	}
 
+	// `bb pr diff` is the gh-shaped spelling of the same command. Asserting the
+	// two produce identical output is what makes it an alias rather than a
+	// second implementation that can drift.
+	prDiffAliasOutput, err := executeLiveCLI(t, "pr", "diff", pullRequestID, "--patch")
+	if err != nil {
+		t.Fatalf("pr diff failed: %v\noutput: %s", err, prDiffAliasOutput)
+	}
+	if prDiffAliasOutput != prDiffOutput {
+		t.Fatalf("pr diff and diff pr disagree:\n pr diff: %s\n diff pr: %s", prDiffAliasOutput, prDiffOutput)
+	}
+
 	commitDiffOutput, err := executeLiveCLI(t, "diff", "commit", repo.CommitIDs[0], "--path", "seed.txt")
 	if err != nil {
 		t.Fatalf("diff commit failed: %v\noutput: %s", err, commitDiffOutput)

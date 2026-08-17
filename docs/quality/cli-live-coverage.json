@@ -1,9 +1,9 @@
 {
   "version": 1,
   "summary": {
-    "runnable_commands": 227,
-    "covered_commands": 121,
-    "covered_percent": 53.30396475770925,
+    "runnable_commands": 228,
+    "covered_commands": 122,
+    "covered_percent": 53.50877192982456,
     "masked_commands": 4,
     "uncovered_commands": 102
   },
@@ -59,6 +59,7 @@
     "pr create",
     "pr decline",
     "pr default-reviewers",
+    "pr diff",
     "pr get",
     "pr list",
     "pr merge",

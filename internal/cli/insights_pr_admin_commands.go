@@ -527,6 +527,10 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	}
 	prCmd.PersistentFlags().StringVar(&repository, "repo", "", "Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG)")
 
+	// gh spells this `gh pr diff`, and the MCP tool is get_pr_diff, so `bb diff pr`
+	// was the odd one out. Canonical location stays under `bb diff`.
+	prCmd.AddCommand(newPullRequestDiffAlias(options, &repository))
+
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List pull requests",

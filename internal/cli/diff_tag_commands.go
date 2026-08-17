@@ -68,47 +68,7 @@ func newDiffCommand(options *rootOptions) *cobra.Command {
 	refsCmd.Flags().BoolVar(&refsNameOnly, "name-only", false, "Output only changed file names")
 	diffCmd.AddCommand(refsCmd)
 
-	var prPatch bool
-	var prStat bool
-	var prNameOnly bool
-
-	prCmd := &cobra.Command{
-		Use:   "pr <id>",
-		Short: "Diff a pull request",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, client, err := loadConfigAndClient()
-			if err != nil {
-				return err
-			}
-
-			repo, err := resolveRepositoryReference(repositorySelector, cfg)
-			if err != nil {
-				return err
-			}
-
-			service := diffservice.NewService(client)
-			outputMode, err := resolveDiffOutputMode(prPatch, prStat, prNameOnly)
-			if err != nil {
-				return err
-			}
-
-			result, err := service.DiffPR(cmd.Context(), diffservice.DiffPRInput{
-				Repository:    repo,
-				PullRequestID: args[0],
-				Output:        outputMode,
-			})
-			if err != nil {
-				return err
-			}
-
-			return writeDiffResult(cmd.OutOrStdout(), options.JSON, outputMode, result)
-		},
-	}
-	prCmd.Flags().BoolVar(&prPatch, "patch", false, "Output unified patch stream")
-	prCmd.Flags().BoolVar(&prStat, "stat", false, "Output structured diff stats")
-	prCmd.Flags().BoolVar(&prNameOnly, "name-only", false, "Output only changed file names")
-	diffCmd.AddCommand(prCmd)
+	diffCmd.AddCommand(newDiffPullRequestCommand(options, &repositorySelector))
 
 	var commitPath string
 
@@ -394,4 +354,70 @@ func newTagCommand(options *rootOptions) *cobra.Command {
 	})
 
 	return tagCmd
+}
+
+// newDiffPullRequestCommand builds the "diff a pull request" command.
+//
+// It is registered twice: as `bb diff pr`, which is canonical and where the
+// generated reference documents it, and as `bb pr diff`, which is the shape
+// gh uses and the one the MCP tool get_pr_diff is named after. Agents guess the
+// gh form first, and a wrong guess costs a round trip.
+//
+// A constructor rather than one shared command value: each registration needs
+// its own flag variables, and each resolves --repo from the tree it sits in —
+// diff's own persistent flag in one case, the pr tree's in the other.
+func newDiffPullRequestCommand(options *rootOptions, repositorySelector *string) *cobra.Command {
+	var patch bool
+	var stat bool
+	var nameOnly bool
+
+	command := &cobra.Command{
+		Use:   "pr <id>",
+		Short: "Diff a pull request",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := loadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			repo, err := resolveRepositoryReference(*repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+
+			service := diffservice.NewService(client)
+			outputMode, err := resolveDiffOutputMode(patch, stat, nameOnly)
+			if err != nil {
+				return err
+			}
+
+			result, err := service.DiffPR(cmd.Context(), diffservice.DiffPRInput{
+				Repository:    repo,
+				PullRequestID: args[0],
+				Output:        outputMode,
+			})
+			if err != nil {
+				return err
+			}
+
+			return writeDiffResult(cmd.OutOrStdout(), options.JSON, outputMode, result)
+		},
+	}
+
+	command.Flags().BoolVar(&patch, "patch", false, "Output unified patch stream")
+	command.Flags().BoolVar(&stat, "stat", false, "Output structured diff stats")
+	command.Flags().BoolVar(&nameOnly, "name-only", false, "Output only changed file names")
+
+	return command
+}
+
+// newPullRequestDiffAlias is `bb pr diff`, the gh-shaped spelling of
+// `bb diff pr`.
+func newPullRequestDiffAlias(options *rootOptions, repositorySelector *string) *cobra.Command {
+	command := newDiffPullRequestCommand(options, repositorySelector)
+	command.Use = "diff <id>"
+	command.Short = "Diff a pull request (alias for bb diff pr)"
+
+	return command
 }
