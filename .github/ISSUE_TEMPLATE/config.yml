@@ -1,0 +1,17 @@
+# Blank issues stay enabled on purpose.
+#
+# Discussions are not enabled on this repository, so issues are the only venue
+# for feature proposals, questions and design debate. A template chooser that
+# forced everything through a bug form would push that conversation somewhere it
+# does not fit, or away entirely. The bug form is an offer for the one kind of
+# report that benefits from structure — everything else goes in the blank issue
+# below it.
+blank_issues_enabled: true
+
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/vriesdemichael/bitbucket-data-center-cli/security/advisories/new
+    about: Please do not open a public issue. This opens a private advisory instead.
+  - name: Contributing guide
+    url: https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md
+    about: Setting up, running the suites, and what CI checks before you open a pull request.

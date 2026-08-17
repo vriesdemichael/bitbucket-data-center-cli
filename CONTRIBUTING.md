@@ -315,12 +315,29 @@ Collected from actually doing this, not hypothetical:
 
 ## Reporting bugs
 
-Open an issue. Include `bb --version`, the exact command, and `--json` output if
-relevant. For unexpected behaviour, `--log-level debug --log-format jsonl` gives
-a diagnostic trace worth attaching.
+Open an issue and pick **Bug report**. It asks for `bb --version`, the exact
+command and what you expected instead. For unexpected behaviour,
+`--log-level debug --log-format jsonl` gives a diagnostic trace worth attaching.
+
+Anything that is not a bug — a feature, a question, an idea worth arguing about —
+goes in a blank issue. Those are deliberately unstructured and there is no form
+to fill in. Discussions are not enabled here, so issues are the venue for design
+conversation too.
 
 For security vulnerabilities, see [`SECURITY.md`](SECURITY.md) — please do not
 open a public issue.
+
+## Opening a pull request
+
+The template asks for three things, and deliberately not for a checklist: CI
+already runs the gates listed under [What CI checks](#what-ci-checks) and knows
+whether they passed better than a ticked box does.
+
+What it does ask for is what no gate can work out on its own — what the change
+does, **why** the current behaviour was wrong, and whether the change is a
+*decision* that needs an ADR in `docs/decisions/`. Contracts, defaults, the
+meaning of a flag and the shape of parsed output are all decisions; a bug fix
+that restores documented behaviour is not.
 
 ## Code of conduct
 
