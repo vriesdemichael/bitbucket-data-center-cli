@@ -225,7 +225,7 @@ jobs:
       # recomputes them every run, so the artifact is the copy worth keeping.
       - name: Upload coverage profiles
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-profiles
           path: |
