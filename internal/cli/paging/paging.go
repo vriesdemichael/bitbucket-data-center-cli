@@ -57,6 +57,11 @@ func (options *Options) register(command *cobra.Command, flags *pflag.FlagSet, d
 }
 
 // ServiceLimit is the cap to pass to a service.
+//
+// One more than the caller asked for. That extra result is what makes
+// truncation detectable, and Truncate drops it. Every call site using this must
+// pass its results through Truncate — enforced by
+// TestEveryServiceLimitCallSiteTruncates.
 func (options Options) ServiceLimit() int {
 	if options.all {
 		return unlimitedLimit
@@ -71,4 +76,22 @@ func (options Options) effectiveLimit() int {
 	}
 
 	return options.limit
+}
+
+// LimitReached reports that a result set came back at the cap, so there may be
+// more behind it.
+//
+// Deliberately this rather than a precise "there is definitely more". Knowing
+// precisely would mean fetching one extra result at every call site and
+// dropping it, and a site that forgot the drop would silently return one row
+// too many — a correctness bug traded for a nicety. Reaching the cap is the
+// signal a caller acts on either way: ask again with a higher --limit or --all.
+//
+// Always false under --all, which has no cap to reach.
+func LimitReached(options Options, count int) bool {
+	if options.all {
+		return false
+	}
+
+	return count >= options.effectiveLimit()
 }

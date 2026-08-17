@@ -400,6 +400,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 					if err != nil {
 						return err
 					}
+
 					if options.JSON {
 						return writeJSON(cmd.OutOrStdout(), settings)
 					}
@@ -421,6 +422,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 				if err != nil {
 					return err
 				}
+
 				if options.JSON {
 					return writeJSON(cmd.OutOrStdout(), settings)
 				}
@@ -499,6 +501,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 				if err != nil {
 					return err
 				}
+
 				if options.JSON {
 					return writeJSON(cmd.OutOrStdout(), result)
 				}
@@ -565,6 +568,7 @@ func newHookCommand(options *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			if options.JSON {
 				return writeJSON(cmd.OutOrStdout(), result)
 			}

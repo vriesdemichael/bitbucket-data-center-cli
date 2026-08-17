@@ -206,7 +206,7 @@ func newInsightsCommand(options *rootOptions) *cobra.Command {
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), reports)
+				return writeJSONList(cmd.OutOrStdout(), reports, paging.LimitReached(reportPaging, len(reports)))
 			}
 
 			if len(reports) == 0 {
@@ -305,7 +305,7 @@ func newInsightsCommand(options *rootOptions) *cobra.Command {
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), annotations)
+				return writeJSONList(cmd.OutOrStdout(), annotations, paging.LimitReached(reportPaging, len(annotations)))
 			}
 
 			if len(annotations) == 0 {
@@ -574,7 +574,9 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				if reviewSummaries != nil {
 					payload["review_summaries"] = reviewSummaries
 				}
-				return writeJSON(cmd.OutOrStdout(), payload)
+				// Counted on the pull requests, not on payload: payload is a
+				// wrapper whose length is its number of keys.
+				return writeJSONList(cmd.OutOrStdout(), payload, paging.LimitReached(listPaging, len(pullRequests)))
 			}
 
 			if len(pullRequests) == 0 {

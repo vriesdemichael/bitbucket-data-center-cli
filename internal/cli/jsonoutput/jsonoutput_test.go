@@ -223,3 +223,64 @@ func TestWriteErrorWriterFailure(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestWriteListCarriesLimitReached(t *testing.T) {
+	for _, reached := range []bool{true, false} {
+		buffer := &bytes.Buffer{}
+		if err := WriteList(buffer, []string{"a"}, reached); err != nil {
+			t.Fatalf("WriteList returned %v", err)
+		}
+
+		var envelope struct {
+			Meta struct {
+				Contract     string `json:"contract"`
+				LimitReached *bool  `json:"limit_reached"`
+			} `json:"meta"`
+		}
+		if err := json.Unmarshal(buffer.Bytes(), &envelope); err != nil {
+			t.Fatalf("expected a parseable envelope, got %q (%v)", buffer.String(), err)
+		}
+		if envelope.Meta.LimitReached == nil {
+			t.Fatal("expected limit_reached to be present on a list envelope")
+		}
+		if *envelope.Meta.LimitReached != reached {
+			t.Fatalf("limit_reached = %v, want %v", *envelope.Meta.LimitReached, reached)
+		}
+		if envelope.Meta.Contract != ContractName {
+			t.Fatalf("unexpected contract %q", envelope.Meta.Contract)
+		}
+	}
+}
+
+// TestWriteOmitsLimitReached keeps the field meaningful: its presence is the
+// signal that a result set is bounded, so a non-list command must not carry it.
+func TestWriteOmitsLimitReached(t *testing.T) {
+	buffer := &bytes.Buffer{}
+	if err := Write(buffer, map[string]string{"a": "b"}); err != nil {
+		t.Fatalf("Write returned %v", err)
+	}
+
+	if strings.Contains(buffer.String(), "limit_reached") {
+		t.Fatalf("non-list envelope carries limit_reached: %s", buffer.String())
+	}
+}
+
+func TestWriteListMarshalFailure(t *testing.T) {
+	err := WriteList(&bytes.Buffer{}, map[string]any{"invalid": func() {}}, false)
+	if err == nil {
+		t.Fatal("expected marshal failure")
+	}
+	if !strings.Contains(err.Error(), "failed to encode JSON output") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestWriteListWriterFailure(t *testing.T) {
+	err := WriteList(failingWriter{}, []string{"a"}, true)
+	if err == nil {
+		t.Fatal("expected write failure")
+	}
+	if !strings.Contains(err.Error(), "failed to write JSON output") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

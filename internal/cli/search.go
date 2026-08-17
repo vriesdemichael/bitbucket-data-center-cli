@@ -62,7 +62,7 @@ func newSearchReposCommand(options *rootOptions) *cobra.Command {
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), repos)
+				return writeJSONList(cmd.OutOrStdout(), repos, paging.LimitReached(listPaging, len(repos)))
 			}
 
 			if len(repos) == 0 {

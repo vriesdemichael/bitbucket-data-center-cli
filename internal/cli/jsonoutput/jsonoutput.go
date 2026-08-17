@@ -19,6 +19,14 @@ type Envelope struct {
 
 type EnvelopeMeta struct {
 	Contract string `json:"contract"`
+	// LimitReached reports that the result set came back at --limit, so there
+	// may be more behind it. Omitted for commands that do not list, so its
+	// presence is itself the signal that a result set is bounded.
+	//
+	// Without it a consumer cannot tell a complete result set from the first
+	// --limit of an unknown number — the difference between finishing and
+	// needing to ask again with a higher --limit or --all.
+	LimitReached *bool `json:"limit_reached,omitempty"`
 }
 
 // ErrorEnvelope is the bb.machine v2 document written to stdout when a command
@@ -121,4 +129,24 @@ func marshalEnvelope(envelope any) ([]byte, error) {
 
 	// Encode already terminates the document with a newline.
 	return buffer.Bytes(), nil
+}
+
+// WriteList emits a list payload, recording whether --limit cut it short.
+func WriteList(writer io.Writer, payload any, limitReached bool) error {
+	envelope := Envelope{
+		Version: ContractVersion,
+		Data:    payload,
+		Meta:    EnvelopeMeta{Contract: ContractName, LimitReached: &limitReached},
+	}
+
+	encoded, marshalErr := marshalEnvelope(envelope)
+	if marshalErr != nil {
+		return apperrors.New(apperrors.KindInternal, "failed to encode JSON output", marshalErr)
+	}
+
+	if _, writeErr := writer.Write(encoded); writeErr != nil {
+		return apperrors.New(apperrors.KindInternal, "failed to write JSON output", writeErr)
+	}
+
+	return nil
 }

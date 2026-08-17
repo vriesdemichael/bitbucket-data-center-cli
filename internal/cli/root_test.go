@@ -2419,6 +2419,20 @@ func TestTagViewDeleteAndListCommandPaths(t *testing.T) {
 		t.Fatalf("expected tag in human list output, got: %s", humanListBuffer.String())
 	}
 
+	// The --json list branch reports whether the result came back at --limit,
+	// which is what tells a consumer to ask again rather than stop.
+	jsonListCommand := NewRootCommand()
+	jsonListBuffer := &bytes.Buffer{}
+	jsonListCommand.SetOut(jsonListBuffer)
+	jsonListCommand.SetErr(jsonListBuffer)
+	jsonListCommand.SetArgs([]string{"--json", "tag", "list", "--limit", "1"})
+	if err := jsonListCommand.Execute(); err != nil {
+		t.Fatalf("tag list json failed: %v", err)
+	}
+	if !strings.Contains(jsonListBuffer.String(), "\"limit_reached\": true") {
+		t.Fatalf("expected limit_reached true for a capped tag list, got: %s", jsonListBuffer.String())
+	}
+
 	jsonViewCommand := NewRootCommand()
 	jsonViewBuffer := &bytes.Buffer{}
 	jsonViewCommand.SetOut(jsonViewBuffer)

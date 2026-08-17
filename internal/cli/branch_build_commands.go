@@ -1008,7 +1008,7 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), statuses)
+				return writeJSONList(cmd.OutOrStdout(), statuses, paging.LimitReached(getPaging, len(statuses)))
 			}
 
 			if len(statuses) == 0 {
@@ -1122,7 +1122,7 @@ func newBuildCommand(options *rootOptions) *cobra.Command {
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), checks)
+				return writeJSONList(cmd.OutOrStdout(), checks, paging.LimitReached(requiredPaging, len(checks)))
 			}
 
 			if len(checks) == 0 {

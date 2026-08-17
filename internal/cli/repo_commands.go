@@ -55,7 +55,7 @@ func newRepoCommand(options *rootOptions) *cobra.Command {
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), repos)
+				return writeJSONList(cmd.OutOrStdout(), repos, paging.LimitReached(listPaging, len(repos)))
 			}
 
 			if len(repos) == 0 {
@@ -1572,6 +1572,7 @@ func newRepoSettingsAutoMergeCommand(options *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			if options.JSON {
 				return writeJSON(cmd.OutOrStdout(), res)
 			}
@@ -1624,6 +1625,7 @@ func newRepoSettingsAutoMergeCommand(options *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			if options.JSON {
 				return writeJSON(cmd.OutOrStdout(), res)
 			}
@@ -1713,6 +1715,7 @@ func newRepoSettingsAutoDeclineCommand(options *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			if options.JSON {
 				return writeJSON(cmd.OutOrStdout(), res)
 			}
@@ -1778,6 +1781,7 @@ func newRepoSettingsAutoDeclineCommand(options *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			if options.JSON {
 				return writeJSON(cmd.OutOrStdout(), res)
 			}
@@ -2116,6 +2120,7 @@ func newRepoDefaultTaskCommand(options *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			if options.JSON {
 				return writeJSON(cmd.OutOrStdout(), tasks)
 			}
@@ -2198,6 +2203,7 @@ func newRepoDefaultTaskCommand(options *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			if options.JSON {
 				return writeJSON(cmd.OutOrStdout(), task)
 			}
@@ -2261,6 +2267,7 @@ func newRepoDefaultTaskCommand(options *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			if options.JSON {
 				return writeJSON(cmd.OutOrStdout(), task)
 			}
