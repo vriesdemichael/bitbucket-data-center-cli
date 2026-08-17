@@ -1,0 +1,71 @@
+name: Bug report
+description: A command did something other than what it says it does. For features, questions or design discussion, use a blank issue instead.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form is only for a command behaving incorrectly.
+
+        **Anything else — a feature, a question, an idea worth arguing about — belongs in a
+        [blank issue](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/new).**
+        Those are welcome and deliberately unstructured; there is no form to fill in.
+
+        **Found a security vulnerability?** Do not file it here. Use
+        [private vulnerability reporting](https://github.com/vriesdemichael/bitbucket-data-center-cli/security/advisories/new)
+        so it stays private until a fix ships.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect instead?
+      placeholder: |
+        bb pr list returned an empty list for a repository that has three open pull requests.
+        I expected the three pull requests.
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: The exact command
+      description: >
+        Including flags, as you ran it — for example
+        `bb pr list --repo PROJECT/repo --state open --json`. Redact hostnames or project
+        keys if you need to, but keep the shape of the command intact: it is usually where
+        the answer is.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: bb-version
+    attributes:
+      label: bb version
+      description: Output of `bb --version`.
+      placeholder: bb version 2.4.1
+    validations:
+      required: true
+
+  - type: input
+    id: bitbucket-version
+    attributes:
+      label: Bitbucket Data Center version
+      description: >
+        Shown at the bottom of the Bitbucket admin page, or via `/rest/api/latest/application-properties`.
+        Leave blank if you cannot get at it.
+      placeholder: "9.4.16"
+    validations:
+      required: false
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostic output
+      description: >
+        Optional, and the single most useful thing you can attach. Re-run with
+        `--log-level debug --log-format jsonl` and paste the trace. Check it for tokens
+        before posting.
+      render: shell
+    validations:
+      required: false
