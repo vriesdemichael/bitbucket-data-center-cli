@@ -210,8 +210,8 @@ func TestNewDryRunPreviewIncludesRepositoryAndArgs(t *testing.T) {
 	}
 
 	preview := newDryRunPreview(dryRunProfile{
-		Intent:  "project.create",
-		Action:  "create",
+		Intent: "project.create",
+		Action: "create",
 	}, cmd, []string{"PRJ", "--name", "Demo"})
 
 	if preview.Items[0].Target["repository"] != "PRJ/demo" {
@@ -236,8 +236,8 @@ func TestNewDryRunPreviewIncludesInheritedRepositoryFlag(t *testing.T) {
 	root.AddCommand(projectCmd)
 
 	preview := newDryRunPreview(dryRunProfile{
-		Intent:  "project.update",
-		Action:  "update",
+		Intent: "project.update",
+		Action: "update",
 	}, updateCmd, []string{"PRJ"})
 
 	if preview.Items[0].Target["repository"] != "PRJ/inherited" {

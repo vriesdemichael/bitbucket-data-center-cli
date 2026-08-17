@@ -514,4 +514,3 @@ func TestCloneFailureRedactsURLCredentials(t *testing.T) {
 		t.Fatalf("expected error message to contain redacted URL basic auth, got: %s", errMsg)
 	}
 }
-

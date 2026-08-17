@@ -2525,4 +2525,3 @@ func newRepoSyncCommand(options *rootOptions) *cobra.Command {
 	syncCmd.AddCommand(disableCmd)
 	return syncCmd
 }
-

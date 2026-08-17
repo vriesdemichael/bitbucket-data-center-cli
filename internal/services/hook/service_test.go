@@ -397,4 +397,3 @@ func TestHookServiceProjectPaginationLimit(t *testing.T) {
 		t.Errorf("expected 2 page requests, got %d", calls)
 	}
 }
-

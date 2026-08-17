@@ -40,10 +40,10 @@ type Options struct {
 }
 
 type Verification struct {
-	CertificateIdentity           string
-	CertificateOIDCIssuer         string
+	CertificateIdentity            string
+	CertificateOIDCIssuer          string
 	TransparencyLogEntriesVerified int
-	VerifiedTimestampCount        int
+	VerifiedTimestampCount         int
 }
 
 type Verifier struct {
@@ -66,9 +66,9 @@ type legacyRekorBundle struct {
 }
 
 type legacyRekorPayload struct {
-	Body           any   `json:"body"`
-	IntegratedTime int64 `json:"integratedTime"`
-	LogIndex       int64 `json:"logIndex"`
+	Body           any    `json:"body"`
+	IntegratedTime int64  `json:"integratedTime"`
+	LogIndex       int64  `json:"logIndex"`
 	LogID          string `json:"logID"`
 }
 

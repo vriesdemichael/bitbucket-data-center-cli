@@ -552,5 +552,3 @@ func TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks(t *testing.T)
 
 	_, _ = service.CreateProjectReviewerGroup(ctx, "PRJ", "group", "")
 }
-
-

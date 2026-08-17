@@ -458,4 +458,3 @@ func (service *Service) GetDefaultReviewers(ctx context.Context, projectKey, rep
 
 	return *response.JSON200, nil
 }
-

@@ -977,7 +977,7 @@ func TestCopyOperationsDeepClone(t *testing.T) {
 	sourceRef := "refs/heads/feature"
 	targetRef := "refs/heads/main"
 
-	input := []OperationSpec{ {
+	input := []OperationSpec{{
 		Type:                     OperationRepoWebhookCreate,
 		Events:                   []string{"repo:refs_changed"},
 		Payload:                  map[string]any{"k": "v"},

@@ -5,11 +5,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	bbmcp "github.com/vriesdemichael/bitbucket-server-cli/internal/mcp"
-	"github.com/mark3labs/mcp-go/server"
 )
 
 func newMCPCommand(deps Dependencies) *cobra.Command {

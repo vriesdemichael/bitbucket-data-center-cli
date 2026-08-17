@@ -976,7 +976,6 @@ func TestNewCloneLoginRequiredError(t *testing.T) {
 	}
 }
 
-
 func TestSameCloneHostEdgeCasesAdditional(t *testing.T) {
 	// Missing scheme defaults to https and 443.
 	if !sameCloneHost("bitbucket.example.com", "https://bitbucket.example.com") {
@@ -1456,4 +1455,3 @@ func TestRepoCloneCommandUserNamespace(t *testing.T) {
 		t.Fatalf("unexpected clone URL: %s", stub.cloneCalls[0].repositoryURL)
 	}
 }
-

@@ -139,4 +139,3 @@ func TestForkSyncServiceErrors(t *testing.T) {
 		t.Fatal("expected error setting enabled on empty response body (non-json 200)")
 	}
 }
-

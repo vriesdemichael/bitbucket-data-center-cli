@@ -196,4 +196,3 @@ func TestRepoSyncCLICommandsAdditionalCoverage(t *testing.T) {
 		}
 	})
 }
-

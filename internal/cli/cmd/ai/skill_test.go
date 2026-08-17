@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 )
 
 // testDeps builds a minimal Dependencies for skill tests.

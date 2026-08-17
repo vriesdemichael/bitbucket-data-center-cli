@@ -38,9 +38,9 @@ default and the failure is unhelpful, so install it or work from WSL. (Removing
 this dependency is tracked in
 [#346](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/346).)
 
-On Windows, run the shell scripts from Git Bash or WSL. If a script fails
-immediately with `$'\r': command not found`, it has CRLF line endings from the
-checkout — run it through `tr -d '\r'` or set `core.autocrlf=input`.
+On Windows, run the shell scripts from Git Bash or WSL. Line endings are handled
+for you: `.gitattributes` pins the whole tree to LF regardless of your
+`core.autocrlf` setting.
 
 ## First run
 
@@ -147,9 +147,36 @@ the command later becomes valid.
 ## Before opening a pull request
 
 ```bash
-gofmt -l ./cmd ./internal ./tools   # expect no output
+task quality:verify
 task test:unit
 task docs:validate
+```
+
+`quality:verify` includes the formatting and line-ending gates, so the usual fix
+for a failure there is:
+
+```bash
+gofmt -w ./cmd ./internal ./tools
+```
+
+### Line endings
+
+`.gitattributes` pins every file to LF, in the repository and in your working
+tree, on every platform. You do not need to set `core.autocrlf`, and setting it
+will not override this.
+
+This is not a style preference. Before it existed, line endings varied file by
+file depending on whether git had checked a file out or a tool had rewritten it,
+which broke three things at once: `gofmt -l` reported 188 of 248 Go files as
+unformatted, tools parsing repository text saw a stray `\r` inside the last
+token, and `docker/harness/start-bitbucket.sh` — which the Dockerfile copies
+into a Linux image — acquired a CRLF shebang and failed with
+`$'\r': command not found`.
+
+CI checks that no committed file contains a carriage return. If it ever fails:
+
+```bash
+git add --renormalize .
 ```
 
 ### What the git hooks actually do
@@ -217,13 +244,6 @@ inspect.
 Some conventions this project relies on have no hook or CI check behind them.
 They are still expected, and a reviewer will ask:
 
-- **`gofmt`.** There is no formatting check in the hooks or in CI, and no
-  golangci-lint configuration. The tree is nevertheless gofmt-clean, so please
-  keep it that way: run `gofmt -l ./cmd ./internal ./tools` and expect no
-  output. On Windows this command lists nearly every file — that is a CRLF
-  artifact of the checkout, not real formatting drift. Check with
-  `gofmt -d <file>`: if every line appears both removed and added identically,
-  it is line endings.
 - **Conventional Commit subjects.** No `commit-msg` hook validates them, so
   nothing stops a malformed subject locally. The release workflow parses commit
   subjects to decide whether to publish, so a wrong type has a real effect —
@@ -240,6 +260,9 @@ They are still expected, and a reviewer will ask:
   wrongly, and `tools/quality-report` produces the numbers every other gate
   reads — a bug there makes CI pass when it should not. ADR-049 has the
   measurements behind leaving `tools/` out of the gate.
+- **golangci-lint.** There is no configuration and no lint job. `gofmt` *is*
+  enforced (see below), but nothing checks for unused parameters, shadowing, or
+  the other things a linter would catch.
 
 ## What CI checks
 

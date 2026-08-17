@@ -327,5 +327,3 @@ func TestPRReviewJiraEdgeCases(t *testing.T) {
 		t.Error("expected error on empty URL in review discard cmd, got nil")
 	}
 }
-
-

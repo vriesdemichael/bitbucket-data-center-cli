@@ -832,4 +832,3 @@ func validateRepositoryRef(repo RepositoryRef) error {
 
 	return nil
 }
-

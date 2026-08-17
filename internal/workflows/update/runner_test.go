@@ -438,7 +438,7 @@ func TestRunnerValidationAndErrorPaths(t *testing.T) {
 func TestRunnerUpdateErrorCases(t *testing.T) {
 	baseRelease := releaseWithSignatureBundle(githubrelease.Release{
 		TagName: "v1.2.0",
-		Assets: []githubrelease.Asset{{Name: "bb_1.2.0_linux_amd64.tar.gz", BrowserDownloadURL: "archive"}, {Name: "sha256sums.txt", BrowserDownloadURL: "checksums"}},
+		Assets:  []githubrelease.Asset{{Name: "bb_1.2.0_linux_amd64.tar.gz", BrowserDownloadURL: "archive"}, {Name: "sha256sums.txt", BrowserDownloadURL: "checksums"}},
 	})
 
 	t.Run("missing archive asset", func(t *testing.T) {
@@ -553,7 +553,9 @@ func TestRunnerUpdateErrorCases(t *testing.T) {
 		archive := buildTarGzArchive(t, "bb", []byte("new-binary"))
 		checksum := fmt.Sprintf("%s  %s\n", sha256Hex(archive), "bb_1.2.0_linux_amd64.tar.gz")
 		client := &stubReleaseClient{release: baseRelease, downloads: downloadsWithSignatureBundle(map[string][]byte{"checksums": []byte(checksum), "archive": archive})}
-		runner := newTestRunner(Dependencies{Releases: client, RepositoryOwner: "vriesdemichael", RepositoryName: "bitbucket-data-center-cli", CurrentVersion: func() string { return "v1.1.0" }, ExecutablePath: func() (string, error) { return "/tmp/bb", nil }, Platform: func() (string, string) { return "linux", "amd64" }, WriteBinary: func(string, []byte, fs.FileMode) error { return apperrors.New(apperrors.KindInternal, "write failed", nil) }})
+		runner := newTestRunner(Dependencies{Releases: client, RepositoryOwner: "vriesdemichael", RepositoryName: "bitbucket-data-center-cli", CurrentVersion: func() string { return "v1.1.0" }, ExecutablePath: func() (string, error) { return "/tmp/bb", nil }, Platform: func() (string, string) { return "linux", "amd64" }, WriteBinary: func(string, []byte, fs.FileMode) error {
+			return apperrors.New(apperrors.KindInternal, "write failed", nil)
+		}})
 		_, err := runner.Run(context.Background(), Options{})
 		if !apperrors.IsKind(err, apperrors.KindInternal) {
 			t.Fatalf("expected internal error, got %v", err)
@@ -624,7 +626,9 @@ func TestRunnerWindowsAndVersionComparisonPaths(t *testing.T) {
 		if err := os.WriteFile(targetPath, []byte("old"), 0o755); err != nil {
 			t.Fatalf("seed target: %v", err)
 		}
-		runner := newTestRunner(Dependencies{Releases: client, RepositoryOwner: "vriesdemichael", RepositoryName: "bitbucket-data-center-cli", CurrentVersion: func() string { return "v1.1.0" }, ExecutablePath: func() (string, error) { return targetPath, nil }, Platform: func() (string, string) { return "windows", "amd64" }, LaunchWindows: func(context.Context, windowsSwapLaunchOptions) error { return apperrors.New(apperrors.KindInternal, "launch failed", nil) }})
+		runner := newTestRunner(Dependencies{Releases: client, RepositoryOwner: "vriesdemichael", RepositoryName: "bitbucket-data-center-cli", CurrentVersion: func() string { return "v1.1.0" }, ExecutablePath: func() (string, error) { return targetPath, nil }, Platform: func() (string, string) { return "windows", "amd64" }, LaunchWindows: func(context.Context, windowsSwapLaunchOptions) error {
+			return apperrors.New(apperrors.KindInternal, "launch failed", nil)
+		}})
 		_, err := runner.Run(context.Background(), Options{})
 		if !apperrors.IsKind(err, apperrors.KindInternal) || err == nil || !strings.Contains(err.Error(), ".new") {
 			t.Fatalf("expected actionable launch error, got %v", err)
