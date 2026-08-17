@@ -77,6 +77,36 @@ gh attestation verify bb_${VERSION#v}_linux_amd64.tar.gz --repo vriesdemichael/b
 
 `bb update` now requires the signed checksum bundle. If Sigstore verification is unavailable or fails, self-update stops and you should use WinGet, Scoop, or manual release installation instead.
 
+### Software Bill of Materials
+
+Every release publishes `sbom.spdx.json`, an SPDX 2.3 SBOM of the Go module
+graph. It is covered by `sha256sums.txt` and Sigstore-signed like every other
+artifact:
+
+```bash
+VERSION=v0.1.0
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sbom.spdx.json"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sbom.spdx.json.sigstore.json"
+cosign verify-blob \
+	--bundle sbom.spdx.json.sigstore.json \
+	--certificate-identity "https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main" \
+	--certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+	sbom.spdx.json
+```
+
+The SBOM is also **attested against each released artifact**, which is the
+stronger claim: not just "here is an SBOM" but "this SBOM describes that
+binary", signed by the workflow that built both.
+
+```bash
+gh attestation verify bb_${VERSION#v}_linux_amd64.tar.gz \
+	--repo vriesdemichael/bitbucket-data-center-cli \
+	--predicate-type https://spdx.dev/Document
+```
+
+One SBOM covers every platform artifact: they are built from the same module at
+the same commit, so the dependency set does not vary between them.
+
 ## Authenticate to Bitbucket
 
 ```bash
