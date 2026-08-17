@@ -177,8 +177,22 @@ func configureCheckoutEnv(t *testing.T, serverURL string) {
 	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
 	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
 	t.Setenv("BITBUCKET_TOKEN", "test-token")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
+
+	// The whole credential fallback chain, not just the primary names.
+	// BITBUCKET_USERNAME falls back to BITBUCKET_USER and then ADMIN_USER, and
+	// the password to ADMIN_PASSWORD — so clearing only the first of each
+	// leaves a test inheriting whatever the surrounding environment has. The
+	// live CI job exports ADMIN_USER and ADMIN_PASSWORD for the harness, which
+	// is exactly where that assumption broke.
+	for _, key := range []string{
+		"BITBUCKET_USERNAME",
+		"BITBUCKET_USER",
+		"BITBUCKET_PASSWORD",
+		"ADMIN_USER",
+		"ADMIN_PASSWORD",
+	} {
+		t.Setenv(key, "")
+	}
 }
 
 func runCheckout(t *testing.T, args ...string) string {
