@@ -1832,3 +1832,53 @@ func TestListReturnsEverythingBelowTheLimit(t *testing.T) {
 		t.Fatalf("expected %d results, got %d", total, len(results))
 	}
 }
+
+// TestListTrimsAnOvershootingPage covers the case where a page carries more
+// results than --limit asked for.
+//
+// The loop can only stop between pages, so a page larger than the remaining
+// allowance overshoots and the surplus has to be trimmed. Without the trim,
+// `bb pr list --limit 7` against a server paging in tens returns 10.
+func TestListTrimsAnOvershootingPage(t *testing.T) {
+	const (
+		serverPageSize = 10
+		requested      = 7
+	)
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		values := make([]map[string]any, 0, serverPageSize)
+		for index := 0; index < serverPageSize; index++ {
+			values = append(values, map[string]any{"id": index + 1, "title": "pr", "state": "OPEN", "open": true})
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(writer).Encode(map[string]any{
+			"values":        values,
+			"isLastPage":    false,
+			"nextPageStart": serverPageSize,
+		})
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	service := NewService(httpclient.NewFromConfig(cfg))
+
+	results, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "repo"}, ListOptions{
+		State: "open",
+		Limit: requested,
+	})
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+
+	if len(results) != requested {
+		t.Fatalf("expected %d results after trimming an oversized page, got %d", requested, len(results))
+	}
+}
