@@ -514,3 +514,88 @@ func TestCloneFailureRedactsURLCredentials(t *testing.T) {
 		t.Fatalf("expected error message to contain redacted URL basic auth, got: %s", errMsg)
 	}
 }
+
+func TestCurrentBranchRequiresDirectory(t *testing.T) {
+	backend := New()
+	backend.Timeout = time.Second
+
+	if _, err := backend.CurrentBranch(context.Background(), "  "); err == nil {
+		t.Fatal("expected an empty repository directory to be rejected")
+	}
+}
+
+func TestCurrentBranchNonRepositoryError(t *testing.T) {
+	backend := New()
+	backend.Timeout = 5 * time.Second
+
+	if _, err := backend.CurrentBranch(context.Background(), t.TempDir()); err == nil {
+		t.Fatal("expected current branch resolution to fail for a non-repository directory")
+	}
+}
+
+// TestCurrentBranchReportsCheckedOutBranch also covers the unborn branch: the
+// first assertion runs against a repository with no commits, where rev-parse
+// cannot resolve HEAD and the first version of this method failed outright.
+func TestCurrentBranchReportsCheckedOutBranch(t *testing.T) {
+	backend := New()
+	backend.Timeout = 10 * time.Second
+
+	repositoryDirectory := filepath.Join(t.TempDir(), "repo")
+	if _, err := backend.run(context.Background(), runOptions{args: []string{"init", "--initial-branch", "main", repositoryDirectory}}); err != nil {
+		t.Fatalf("git init failed: %v", err)
+	}
+
+	branch, err := backend.CurrentBranch(context.Background(), repositoryDirectory)
+	if err != nil {
+		t.Fatalf("current branch failed: %v", err)
+	}
+	if branch != "main" {
+		t.Fatalf("expected main, got %q", branch)
+	}
+
+	if _, err := backend.run(context.Background(), runOptions{cwd: repositoryDirectory, args: []string{"checkout", "-b", "feature/x"}}); err != nil {
+		t.Fatalf("git checkout -b failed: %v", err)
+	}
+
+	branch, err = backend.CurrentBranch(context.Background(), repositoryDirectory)
+	if err != nil {
+		t.Fatalf("current branch after checkout failed: %v", err)
+	}
+	if branch != "feature/x" {
+		t.Fatalf("expected feature/x, got %q", branch)
+	}
+}
+
+// TestCurrentBranchReportsDetachedHeadAsNoBranch pins the reason the empty
+// string exists: rev-parse answers "HEAD" when detached, and passing that
+// through would send callers looking for a branch by that name.
+func TestCurrentBranchReportsDetachedHeadAsNoBranch(t *testing.T) {
+	backend := New()
+	backend.Timeout = 15 * time.Second
+
+	repositoryDirectory := filepath.Join(t.TempDir(), "repo")
+	if _, err := backend.run(context.Background(), runOptions{args: []string{"init", "--initial-branch", "main", repositoryDirectory}}); err != nil {
+		t.Fatalf("git init failed: %v", err)
+	}
+	for _, args := range [][]string{
+		{"config", "user.email", "test@example.local"},
+		{"config", "user.name", "Test"},
+		{"commit", "--allow-empty", "-m", "first"},
+	} {
+		if _, err := backend.run(context.Background(), runOptions{cwd: repositoryDirectory, args: args}); err != nil {
+			t.Fatalf("git %v failed: %v", args, err)
+		}
+	}
+
+	if _, err := backend.run(context.Background(), runOptions{cwd: repositoryDirectory, args: []string{"checkout", "--detach", "HEAD"}}); err != nil {
+		t.Fatalf("git checkout --detach failed: %v", err)
+	}
+
+	branch, err := backend.CurrentBranch(context.Background(), repositoryDirectory)
+	if err != nil {
+		t.Fatalf("current branch on a detached head failed: %v", err)
+	}
+	if branch != "" {
+		t.Fatalf("expected no branch on a detached head, got %q", branch)
+	}
+}

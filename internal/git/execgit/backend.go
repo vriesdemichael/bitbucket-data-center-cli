@@ -175,6 +175,31 @@ func (backend *Backend) RepositoryRoot(ctx context.Context, workingDirectory str
 	return strings.TrimSpace(result.stdout), nil
 }
 
+func (backend *Backend) CurrentBranch(ctx context.Context, repositoryDirectory string) (string, error) {
+	trimmedDir := strings.TrimSpace(repositoryDirectory)
+	if trimmedDir == "" {
+		return "", apperrors.New(apperrors.KindValidation, "repository directory cannot be empty", nil)
+	}
+
+	// symbolic-ref rather than rev-parse --abbrev-ref: it answers correctly on a
+	// branch with no commits yet, where rev-parse cannot resolve HEAD at all and
+	// fails. A freshly cloned-and-branched repository is a normal state to be
+	// standing in, not an error.
+	result, err := backend.run(ctx, runOptions{cwd: trimmedDir, args: []string{"symbolic-ref", "--quiet", "--short", "HEAD"}})
+	if err != nil {
+		// --quiet makes a detached HEAD exit 1 with nothing on either stream.
+		// That is the answer "no branch", not a failure, and it is distinguished
+		// from a real one (exit 128, which always writes to stderr).
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 && strings.TrimSpace(result.stderr) == "" {
+			return "", nil
+		}
+		return "", err
+	}
+
+	return strings.TrimSpace(result.stdout), nil
+}
+
 func (backend *Backend) ListRemotes(ctx context.Context, repositoryDirectory string) ([]git.Remote, error) {
 	trimmedDir := strings.TrimSpace(repositoryDirectory)
 	if trimmedDir == "" {

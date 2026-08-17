@@ -374,7 +374,11 @@ func newDiffPullRequestCommand(options *rootOptions, repositorySelector *string)
 	command := &cobra.Command{
 		Use:   "pr <id>",
 		Short: "Diff a pull request",
-		Args:  cobra.ExactArgs(1),
+		// Named here as well as on the alias so the cross-reference is findable
+		// from either end. A reader who lands on the canonical page otherwise
+		// has no way to learn the shorter spelling exists.
+		Long: "Diff a pull request.\n\nAlso available as bb pr diff, which is the gh spelling.",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := loadConfigAndClient()
 			if err != nil {
@@ -418,6 +422,7 @@ func newPullRequestDiffAlias(options *rootOptions, repositorySelector *string) *
 	command := newDiffPullRequestCommand(options, repositorySelector)
 	command.Use = "diff <id>"
 	command.Short = "Diff a pull request (alias for bb diff pr)"
+	command.Long = "Diff a pull request.\n\nAlias for bb diff pr, which is where the command reference documents it."
 
 	return command
 }

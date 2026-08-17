@@ -26,10 +26,12 @@ import (
 )
 
 type inferenceGitBackendStub struct {
-	repoRoot string
-	rootErr  error
-	remotes  []git.Remote
-	listErr  error
+	repoRoot  string
+	rootErr   error
+	remotes   []git.Remote
+	listErr   error
+	branch    string
+	branchErr error
 }
 
 func (stub inferenceGitBackendStub) Version(context.Context) (string, error) {
@@ -57,6 +59,13 @@ func (stub inferenceGitBackendStub) RepositoryRoot(context.Context, string) (str
 		return "", stub.rootErr
 	}
 	return stub.repoRoot, nil
+}
+
+func (stub inferenceGitBackendStub) CurrentBranch(context.Context, string) (string, error) {
+	if stub.branchErr != nil {
+		return "", stub.branchErr
+	}
+	return stub.branch, nil
 }
 
 func (stub inferenceGitBackendStub) ListRemotes(context.Context, string) ([]git.Remote, error) {

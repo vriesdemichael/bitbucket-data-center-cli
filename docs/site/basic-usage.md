@@ -25,6 +25,51 @@ bb repo settings security --help
 
 The command reference page is generated from Cobra help output, so usage/flags match CLI behavior.
 
+## Shorter spellings
+
+Some operations are reachable under a second, shorter name because that is the name people
+(and coding agents) reach for first. Both spellings run the same command and produce
+identical output; the canonical one is longer but names its subject in the path rather
+than in a flag.
+
+Both appear in [All Commands](reference/commands/index.md), and each one's `--help` names
+the other, so you can find either from either.
+
+```bash
+bb pr diff 42
+bb repo permissions list --repo TEST/my-repo
+bb repo permissions grant alice REPO_WRITE --repo TEST/my-repo
+bb repo permissions grant --group developers REPO_READ --repo TEST/my-repo
+bb project permissions grant TEST alice PROJECT_WRITE
+```
+
+| Shorter | Canonical |
+| --- | --- |
+| `bb pr diff` | `bb diff pr` |
+| `bb repo permissions list` / `grant` / `revoke` | `bb repo settings security permissions users …` |
+| the same with `--group` | `bb repo settings security permissions groups …` |
+| `bb project permissions list` / `grant` / `revoke` | `bb project permissions users …` |
+| the same with `--group` | `bb project permissions groups …` |
+
+`--group` is what replaces the `users` / `groups` path segment. Omitting it means a user,
+so it is worth being deliberate about on a grant.
+
+## `bb pr status`
+
+Not a shorter spelling but a view of its own: the pull requests on your current branch, the
+ones you opened, and the ones waiting on your review, across every repository.
+
+```bash
+bb pr status
+```
+
+The review section shows only what you have not responded to yet — the same set Bitbucket's
+own dashboard shows. Pull requests you already approved or sent back as needing work are
+waiting on their author, not on you.
+
+The current-branch section needs a git checkout with a Bitbucket remote. Outside one, it
+reports why in a `note` and the other two sections still answer.
+
 ## Repository context behavior
 
 - `--repo PROJECT/slug` has highest precedence.

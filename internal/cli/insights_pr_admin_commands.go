@@ -530,6 +530,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 	// gh spells this `gh pr diff`, and the MCP tool is get_pr_diff, so `bb diff pr`
 	// was the odd one out. Canonical location stays under `bb diff`.
 	prCmd.AddCommand(newPullRequestDiffAlias(options, &repository))
+	prCmd.AddCommand(newPullRequestStatusCommand(options, &repository))
 
 	listCmd := &cobra.Command{
 		Use:   "list",

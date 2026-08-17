@@ -74,6 +74,10 @@ func (stub *cloneBackendStub) RepositoryRoot(context.Context, string) (string, e
 	return "", nil
 }
 
+func (stub *cloneBackendStub) CurrentBranch(context.Context, string) (string, error) {
+	return "", nil
+}
+
 func (stub *cloneBackendStub) ListRemotes(context.Context, string) ([]git.Remote, error) {
 	return nil, nil
 }
