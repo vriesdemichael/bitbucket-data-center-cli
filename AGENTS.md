@@ -59,6 +59,23 @@ which does not see untracked files — a new `.go` file is simply absent from th
 run reports a healthy percentage over the lines it can see and CI, where everything is committed,
 reports a lower one. If the changed-line count looks too small for the change, that is why.
 
+### `tools/` is outside the gate and still gets tests
+
+The coverage scope is `cmd/` + `internal/`. Nothing under `tools/` is measured, so a change there
+reports "no coverable changed lines" and passes regardless. **That is not permission to skip tests.**
+
+Write table-driven unit tests for tool logic in the same change that introduces it: parsers,
+tokenisers, path resolution, diff and coverage arithmetic — anything with branches worth getting
+wrong. Skip `main()`, flag registration and `os.Exit` plumbing; a test there proves nothing.
+
+The distinction worth applying: a missing flag or a bad path fails loudly on the next run, so a test
+adds little. Arithmetic and parsing fail *quietly and wrongly*. `tools/quality-report` is the
+extreme case — it produces the numbers every other gate reads, so a bug there makes the build pass
+when it should not.
+
+Do not add `tools/` to `-scope-include`, and do not lower a threshold to accommodate a tool change.
+ADR-049 records the measurements behind that line.
+
 ### Tests must not reconfigure the repository they run in
 
 `internal/git/gittest` snapshots the repository-scoped git configuration before a package's tests and

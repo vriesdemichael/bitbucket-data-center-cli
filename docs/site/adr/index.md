@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `47`
-- Accepted ADRs: `44`
+- Total ADRs: `48`
+- Accepted ADRs: `45`
 
 ## ADR List
 
@@ -56,4 +56,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 045: Compute coverage measurements, commit only verifiable baselines](045-coverage-measurements-are-computed-not-committed.md) (`development`, `accepted`)
 - [ADR 046: Emit a JSON error envelope on the failure path](046-json-error-envelope-on-the-failure-path.md) (`architecture`, `accepted`)
 - [ADR 047: Credential input paths and enforceable keyring storage](047-credential-input-and-keyring-enforcement.md) (`architecture`, `accepted`)
+- [ADR 049: Build tooling stays outside the coverage gate but not outside testing](049-tools-are-outside-the-coverage-gate-but-not-outside-testing.md) (`development`, `accepted`)
 
