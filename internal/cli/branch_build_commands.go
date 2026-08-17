@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	branchservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/branch"
 	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 )
 
 func newBranchCommand(options *rootOptions) *cobra.Command {

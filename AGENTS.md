@@ -59,6 +59,19 @@ which does not see untracked files — a new `.go` file is simply absent from th
 run reports a healthy percentage over the lines it can see and CI, where everything is committed,
 reports a lower one. If the changed-line count looks too small for the change, that is why.
 
+### Line endings are LF, enforced
+
+`.gitattributes` pins every file to LF in the repository and in every working tree, overriding
+whatever `core.autocrlf` a contributor has set. `task quality:verify` fails if any committed file
+contains a carriage return, and if the Go tree is not gofmt-clean.
+
+Do not add a `-text` or `eol=crlf` exemption to `.gitattributes` to work around a tool. That is the
+one way CR can still reach the index, and it is what the line-ending gate exists to catch. Fix the
+tool instead — a parser that chokes on `\r` should normalise its input.
+
+If a `git status` shows files as modified but `git diff` is empty, the index has stale stat data
+after a bulk rewrite; `git update-index --refresh` settles it. Nothing is actually different.
+
 ### Tests must not reconfigure the repository they run in
 
 `internal/git/gittest` snapshots the repository-scoped git configuration before a package's tests and

@@ -980,4 +980,3 @@ func TestFormatRestDiff(t *testing.T) {
 		}
 	})
 }
-

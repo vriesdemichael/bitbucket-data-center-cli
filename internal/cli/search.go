@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	commitservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/commit"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 	repositoryservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 )
 
 func newSearchCommand(options *rootOptions) *cobra.Command {

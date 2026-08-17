@@ -169,10 +169,42 @@ tasks:
   quality:verify:
     desc: Run every quality gate that needs no Bitbucket instance (fast; matches what CI checks before the live job)
     cmds:
+      - task: quality:format:verify
+      - task: quality:line-endings:verify
       - task: quality:validate-decisions
       - task: quality:spec-coverage:verify
       - task: quality:cli-live-coverage:verify
       - task: docs:verify-generated
+
+  quality:format:verify:
+    desc: Verify the Go tree is gofmt-clean
+    cmds:
+      - |
+        unformatted=$(gofmt -l ./cmd ./internal ./tools)
+        if [ -n "$unformatted" ]; then
+          echo "Not gofmt-clean:" >&2
+          echo "$unformatted" >&2
+          echo "" >&2
+          echo "Fix with: gofmt -w ./cmd ./internal ./tools" >&2
+          exit 1
+        fi
+
+  quality:line-endings:verify:
+    desc: Verify no committed file contains a carriage return
+    cmds:
+      # Checks the committed blobs, not the working tree. .gitattributes pins
+      # every checkout to LF, so a CR reaching the index means something wrote
+      # around git — and CRLF here breaks container entrypoints and makes tools
+      # that parse repository text see \r inside the last token.
+      - |
+        offenders=$(git grep --cached -I -l "$(printf '\r')" -- . || true)
+        if [ -n "$offenders" ]; then
+          echo "Committed files contain carriage returns:" >&2
+          echo "$offenders" >&2
+          echo "" >&2
+          echo "Fix with: git add --renormalize ." >&2
+          exit 1
+        fi
 
   quality:coverage:
     desc: Run combined (unit + live) global + patch coverage checks and generated-operation coverage metric

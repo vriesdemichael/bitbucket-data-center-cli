@@ -113,4 +113,3 @@ func buildCloneURLs(baseURL, project, repo string) (httpsURL, sshURL string, err
 
 	return httpsURL, sshURL, nil
 }
-

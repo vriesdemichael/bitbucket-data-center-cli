@@ -473,7 +473,6 @@ func resolveSSHCloneURL(rawInput string, usedURLInput bool, cloneHost string, re
 	return sshCloneURL, true, nil
 }
 
-
 func isExplicitCloneURL(rawInput string) bool {
 	trimmed := strings.TrimSpace(rawInput)
 	return strings.Contains(trimmed, "://") || strings.HasPrefix(trimmed, "git@")

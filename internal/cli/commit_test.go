@@ -262,4 +262,3 @@ func TestCommitListJiraError(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 }
-

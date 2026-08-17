@@ -202,4 +202,3 @@ func TestGpgKeyServiceLimitAndEmpty(t *testing.T) {
 		t.Fatal("expected error adding with empty body (non-json 200)")
 	}
 }
-

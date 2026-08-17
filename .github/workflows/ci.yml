@@ -73,6 +73,15 @@ jobs:
       - name: Setup Task
         run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
+      # First, because they take seconds and the test run takes minutes. A
+      # formatting failure reported after a three-minute suite is a worse
+      # experience for no benefit.
+      - name: Verify formatting
+        run: task quality:format:verify
+
+      - name: Verify line endings
+        run: task quality:line-endings:verify
+
       - name: Run Go tests (targeted non-live package scope)
         run: task test:go:safe
 

@@ -275,5 +275,3 @@ func TestAuthGpgKeyCommandsAdditionalCoverage(t *testing.T) {
 		}
 	}
 }
-
-

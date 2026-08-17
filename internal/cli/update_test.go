@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	githubrelease "github.com/vriesdemichael/bitbucket-server-cli/internal/transport/githubrelease"
 	updatesigstore "github.com/vriesdemichael/bitbucket-server-cli/internal/transport/sigstore"
@@ -72,7 +72,7 @@ func TestUpdateCommandJSONDryRun(t *testing.T) {
 					}),
 				},
 				downloads: map[string][]byte{
-					"https://example.test/sha256sums.txt": []byte(fmt.Sprintf("%s  %s\n", archiveChecksum, "bb_1.2.0_linux_amd64.tar.gz")),
+					"https://example.test/sha256sums.txt":               []byte(fmt.Sprintf("%s  %s\n", archiveChecksum, "bb_1.2.0_linux_amd64.tar.gz")),
 					"https://example.test/sha256sums.txt.sigstore.json": []byte("bundle"),
 				},
 			},
@@ -158,7 +158,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 						}),
 					},
 					downloads: map[string][]byte{
-						"https://example.test/sha256sums.txt": []byte("deadbeef  bb_1.2.0_linux_amd64.tar.gz\n"),
+						"https://example.test/sha256sums.txt":               []byte("deadbeef  bb_1.2.0_linux_amd64.tar.gz\n"),
 						"https://example.test/sha256sums.txt.sigstore.json": []byte("bundle"),
 					},
 				},
@@ -310,7 +310,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 				t.Fatalf("unexpected tls options: %+v", httpConfig.tlsOptions)
 			}
 			return updateworkflow.NewRunner(updateworkflow.Dependencies{
-				Releases: updateCommandReleaseClient{release: githubrelease.Release{TagName: "v1.1.0"}},
+				Releases:        updateCommandReleaseClient{release: githubrelease.Release{TagName: "v1.1.0"}},
 				RepositoryOwner: "vriesdemichael",
 				RepositoryName:  "bitbucket-data-center-cli",
 				CurrentVersion:  func() string { return version },

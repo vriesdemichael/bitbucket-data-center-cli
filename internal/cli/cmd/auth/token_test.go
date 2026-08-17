@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
@@ -36,10 +36,10 @@ func (m *mockUsersClient) GetUsers2WithResponse(ctx context.Context, params *ope
 	resp := &openapigenerated.GetUsers2Response{
 		HTTPResponse: &http.Response{StatusCode: http.StatusOK},
 		ApplicationjsonCharsetUTF8200: &openapigenerated.RestApplicationUser{
-			Name:         &name,
-			Slug:         &m.userSlug,
-			DisplayName:  &name,
-			Active:       &active,
+			Name:        &name,
+			Slug:        &m.userSlug,
+			DisplayName: &name,
+			Active:      &active,
 		},
 	}
 	return resp, nil
@@ -59,10 +59,10 @@ func (m *mockUsersClient) GetUserWithResponse(ctx context.Context, userSlug stri
 	return &openapigenerated.GetUserResponse{
 		HTTPResponse: &http.Response{StatusCode: http.StatusOK},
 		ApplicationjsonCharsetUTF8200: &openapigenerated.RestApplicationUser{
-			Name:         &name,
-			Slug:         &m.userSlug,
-			DisplayName:  &name,
-			Active:       &active,
+			Name:        &name,
+			Slug:        &m.userSlug,
+			DisplayName: &name,
+			Active:      &active,
 		},
 	}, nil
 }
