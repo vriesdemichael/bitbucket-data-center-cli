@@ -109,6 +109,38 @@ func (backend *Backend) Clone(ctx context.Context, repositoryURL string, options
 	return nil
 }
 
+// credentialArgs renders credentials as leading `git -c` arguments, scoped to
+// the host they belong to.
+//
+// Scoping is the whole point. An unscoped http.extraHeader is attached to every
+// request git makes from that repository, so a token for Bitbucket would also
+// be sent to any unrelated HTTP remote, and to a redirect target. Where the URL
+// gives no host to scope to, nothing is sent at all rather than sent to
+// everything.
+func credentialArgs(credentials *git.Credentials) []string {
+	if credentials == nil {
+		return nil
+	}
+
+	var header string
+	switch {
+	case strings.TrimSpace(credentials.Token) != "":
+		header = "Authorization: Bearer " + credentials.Token
+	case strings.TrimSpace(credentials.Username) != "" && credentials.Password != "":
+		pair := credentials.Username + ":" + credentials.Password
+		header = "Authorization: Basic " + base64.StdEncoding.EncodeToString([]byte(pair))
+	default:
+		return nil
+	}
+
+	scope := httpConfigScope(credentials.URL)
+	if scope == "" {
+		return nil
+	}
+
+	return []string{"-c", fmt.Sprintf("http.%s.extraHeader=%s", scope, header)}
+}
+
 // httpConfigScope returns the scheme://host[:port]/ prefix git uses to scope
 // http.* configuration, or an empty string when the URL cannot be parsed.
 func httpConfigScope(repositoryURL string) string {
@@ -125,7 +157,12 @@ func (backend *Backend) Fetch(ctx context.Context, repositoryDirectory string, o
 		return apperrors.New(apperrors.KindValidation, "repository directory cannot be empty", nil)
 	}
 
-	args := []string{"fetch"}
+	// Credentials go in front of the subcommand, as `git -c ... fetch`, and
+	// only for this invocation. A repository cloned by bb deliberately holds no
+	// credential, so a fetch that brought none would stop and prompt for a
+	// username — a hang in any non-interactive context.
+	args := credentialArgs(options.Credentials)
+	args = append(args, "fetch")
 	if strings.TrimSpace(options.Remote) != "" {
 		args = append(args, options.Remote)
 	}

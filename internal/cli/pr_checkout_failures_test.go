@@ -206,3 +206,59 @@ func TestPullRequestCheckoutWithoutAGitBackend(t *testing.T) {
 		t.Fatalf("expected a missing-backend error, got: %v", err)
 	}
 }
+
+// TestPullRequestCheckoutSuppliesCredentialsToTheFetch is a regression guard
+// for a real CI failure.
+//
+// The first version left authentication to git, on the reasoning that ADR-044
+// makes the credential helper the mechanism for an existing repository. But a
+// repository cloned by bb deliberately holds no credential, so `bb repo clone`
+// followed by `bb pr checkout` stopped to prompt for a username — breaking the
+// exact two-command sequence this command exists to serve, and failing the live
+// suite with "could not read Username".
+func TestPullRequestCheckoutSuppliesCredentialsToTheFetch(t *testing.T) {
+	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
+	configureCheckoutEnv(t, server.URL)
+
+	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
+	withGitBackend(t, stub)
+
+	runCheckout(t, "--json", "pr", "checkout", "42")
+
+	if len(stub.fetches) != 1 {
+		t.Fatalf("expected one fetch, got %d", len(stub.fetches))
+	}
+	credentials := stub.fetches[0].Credentials
+	if credentials == nil {
+		t.Fatal("expected the fetch to carry credentials")
+	}
+	if credentials.Token != "test-token" {
+		t.Fatalf("expected the configured token, got %q", credentials.Token)
+	}
+	// The URL is what scopes the header to one host. Without it the token would
+	// be attached to every request git makes from this repository.
+	if !strings.Contains(credentials.URL, "/scm/PRJ/demo.git") {
+		t.Fatalf("expected credentials scoped to the remote URL, got %q", credentials.URL)
+	}
+}
+
+// TestPullRequestCheckoutWithoutCredentialsLeavesItToGit covers the other side:
+// with nothing configured, the fetch carries nothing and git falls back to
+// whatever helper the user has.
+func TestPullRequestCheckoutWithoutCredentialsLeavesItToGit(t *testing.T) {
+	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
+	configureCheckoutEnv(t, server.URL)
+	t.Setenv("BITBUCKET_TOKEN", "")
+
+	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
+	withGitBackend(t, stub)
+
+	runCheckout(t, "--json", "pr", "checkout", "42")
+
+	if len(stub.fetches) != 1 {
+		t.Fatalf("expected one fetch, got %d", len(stub.fetches))
+	}
+	if stub.fetches[0].Credentials != nil {
+		t.Fatalf("expected no credentials, got %#v", stub.fetches[0].Credentials)
+	}
+}

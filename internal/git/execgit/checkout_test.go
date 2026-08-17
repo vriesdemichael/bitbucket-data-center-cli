@@ -2,6 +2,7 @@ package execgit
 
 import (
 	"context"
+	"encoding/base64"
 	"os"
 	"path/filepath"
 	"strings"
@@ -287,5 +288,78 @@ func TestFetchPassesRefspecs(t *testing.T) {
 
 	if err := backend.Fetch(context.Background(), "  ", git.FetchOptions{Remote: "src"}); err == nil {
 		t.Fatal("expected an empty repository directory to be rejected")
+	}
+}
+
+// TestCredentialArgsScopesToTheHost is a security property, not a formatting
+// one.
+//
+// git applies an unscoped http.extraHeader to every request it makes from a
+// repository — including to unrelated remotes and to redirect targets — so an
+// unscoped Bitbucket token would be handed to whatever else that repository
+// talks to. Where there is no host to scope to, nothing is sent at all.
+func TestCredentialArgsScopesToTheHost(t *testing.T) {
+	cases := []struct {
+		name        string
+		credentials *git.Credentials
+		wantArgs    bool
+		wantScope   string
+		wantSecret  string
+	}{
+		{
+			name:        "nil credentials",
+			credentials: nil,
+		},
+		{
+			name:        "token is scoped to scheme, host and port",
+			credentials: &git.Credentials{URL: "https://bitbucket.example.com:7990/scm/PRJ/repo.git", Token: "tok"},
+			wantArgs:    true,
+			wantScope:   "http.https://bitbucket.example.com:7990/.extraHeader=",
+			wantSecret:  "Authorization: Bearer tok",
+		},
+		{
+			name:        "basic auth is base64 encoded",
+			credentials: &git.Credentials{URL: "https://bitbucket.example.com/scm/PRJ/repo.git", Username: "alice", Password: "hunter2"},
+			wantArgs:    true,
+			wantScope:   "http.https://bitbucket.example.com/.extraHeader=",
+			wantSecret:  "Authorization: Basic " + base64.StdEncoding.EncodeToString([]byte("alice:hunter2")),
+		},
+		{
+			// An SSH remote has no scheme to scope an HTTP header to. Sending it
+			// unscoped would be worse than sending nothing.
+			name:        "unparseable URL sends nothing",
+			credentials: &git.Credentials{URL: "git@bitbucket.example.com:PRJ/repo.git", Token: "tok"},
+		},
+		{
+			name:        "no secret sends nothing",
+			credentials: &git.Credentials{URL: "https://bitbucket.example.com/scm/PRJ/repo.git"},
+		},
+		{
+			name:        "username without password sends nothing",
+			credentials: &git.Credentials{URL: "https://bitbucket.example.com/scm/PRJ/repo.git", Username: "alice"},
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			args := credentialArgs(testCase.credentials)
+
+			if !testCase.wantArgs {
+				if len(args) != 0 {
+					t.Fatalf("expected no arguments, got %v", args)
+				}
+				return
+			}
+
+			if len(args) != 2 || args[0] != "-c" {
+				t.Fatalf("expected a single -c pair, got %v", args)
+			}
+			if !strings.HasPrefix(args[1], testCase.wantScope) {
+				t.Fatalf("expected scope %q, got %q", testCase.wantScope, args[1])
+			}
+			if !strings.HasSuffix(args[1], testCase.wantSecret) {
+				t.Fatalf("expected the rendered header to end with %q, got %q", testCase.wantSecret, args[1])
+			}
+		})
 	}
 }
