@@ -60,6 +60,11 @@ type Backend interface {
 	Fetch(ctx context.Context, repositoryDirectory string, options FetchOptions) error
 	Checkout(ctx context.Context, repositoryDirectory string, options CheckoutOptions) error
 	RepositoryRoot(ctx context.Context, workingDirectory string) (string, error)
+	// CurrentBranch returns the checked-out branch name, or an empty string
+	// when HEAD is detached. Detached HEAD is not an error: it is a repository
+	// state with no branch to report, and callers that wanted one simply have
+	// nothing to work with.
+	CurrentBranch(ctx context.Context, repositoryDirectory string) (string, error)
 	ListRemotes(ctx context.Context, repositoryDirectory string) ([]Remote, error)
 	// GetConfig returns the value of a configuration key, or an empty string
 	// when the key is unset. An unset key is not an error.

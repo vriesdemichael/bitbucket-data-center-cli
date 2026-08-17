@@ -140,8 +140,13 @@ func (service *Service) WithAPIClient(apiClient *openapigenerated.ClientWithResp
 type DashboardListOptions struct {
 	State string
 	Role  string
-	Limit int
-	Start int
+	// ParticipantStatus narrows the result to how the authenticated user has
+	// responded so far: a comma-separated list of UNAPPROVED, NEEDS_WORK and
+	// APPROVED. Combined with Role=REVIEWER, UNAPPROVED is "asked to review and
+	// has not acted yet", which is what Bitbucket's own dashboard shows.
+	ParticipantStatus string
+	Limit             int
+	Start             int
 }
 
 func (service *Service) ListDashboard(ctx context.Context, options DashboardListOptions) ([]PullRequest, error) {
@@ -176,6 +181,10 @@ func (service *Service) ListDashboard(ctx context.Context, options DashboardList
 
 		if options.Role != "" {
 			query["role"] = strings.ToUpper(options.Role)
+		}
+
+		if strings.TrimSpace(options.ParticipantStatus) != "" {
+			query["participantStatus"] = strings.ToUpper(strings.TrimSpace(options.ParticipantStatus))
 		}
 
 		var response pagedPullRequestResponse

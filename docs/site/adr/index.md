@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `49`
-- Accepted ADRs: `46`
+- Total ADRs: `50`
+- Accepted ADRs: `47`
 
 ## ADR List
 
@@ -58,4 +58,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 047: Credential input paths and enforceable keyring storage](047-credential-input-and-keyring-enforcement.md) (`architecture`, `accepted`)
 - [ADR 048: Documented commands are validated against the command tree](048-documented-commands-are-validated-against-the-command-tree.md) (`development`, `accepted`)
 - [ADR 049: Build tooling stays outside the coverage gate but not outside testing](049-tools-are-outside-the-coverage-gate-but-not-outside-testing.md) (`development`, `accepted`)
+- [ADR 050: Frequently-used commands get a shallow alias, and the deep path stays canonical](050-shallow-aliases-for-deep-command-paths.md) (`architecture`, `accepted`)
 
