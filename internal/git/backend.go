@@ -14,10 +14,42 @@ type CloneOptions struct {
 
 type FetchOptions struct {
 	Remote string
+	// Refspecs are passed after the remote, overriding whatever the remote is
+	// configured to fetch.
+	//
+	// A pull request checkout needs this: the branch it wants may live in a
+	// fork the local repository has never fetched from, and even for a
+	// same-repository pull request the configured refspec may not have been
+	// fetched recently enough to contain the head.
+	Refspecs []string
 }
 
 type CheckoutOptions struct {
+	// Ref is what to check out, or what to start a new branch from when
+	// NewBranch is set.
 	Ref string
+	// NewBranch creates a branch of this name at Ref rather than checking out
+	// Ref itself. Creating a branch that already exists is an error, which is
+	// deliberate: silently moving someone's branch is not a checkout.
+	NewBranch string
+	// Detach checks out Ref without putting HEAD on a branch. Useful for
+	// reading a pull request without adopting it.
+	Detach bool
+	// Force discards local modifications that would be overwritten.
+	Force bool
+}
+
+// WorkingTreeStatus describes how far a repository is from a clean checkout.
+type WorkingTreeStatus struct {
+	// Dirty reports staged or unstaged modifications to tracked files.
+	//
+	// Untracked files deliberately do not count. They cannot be overwritten by
+	// a branch switch, so refusing a checkout for them would block the common
+	// case of build output or scratch files sitting in the tree.
+	Dirty bool
+	// Entries are the porcelain status lines behind Dirty, so an error can name
+	// what is in the way instead of only asserting that something is.
+	Entries []string
 }
 
 type Remote struct {
@@ -65,6 +97,21 @@ type Backend interface {
 	// state with no branch to report, and callers that wanted one simply have
 	// nothing to work with.
 	CurrentBranch(ctx context.Context, repositoryDirectory string) (string, error)
+	// WorkingTreeState reports modifications to tracked files, so a command
+	// that is about to move HEAD can refuse before git does and say what is in
+	// the way.
+	WorkingTreeState(ctx context.Context, repositoryDirectory string) (WorkingTreeStatus, error)
+	// BranchExists reports whether a local branch of this name is already
+	// present. Checking first is what lets a caller reuse a branch it created
+	// earlier instead of failing on the second run.
+	BranchExists(ctx context.Context, repositoryDirectory string, branch string) (bool, error)
+	// FastForward advances the checked-out branch to ref, refusing when ref is
+	// not a descendant.
+	//
+	// --ff-only rather than a plain merge or a reset: silently creating a merge
+	// commit and silently discarding local commits are both worse than an
+	// error telling the caller their branch has diverged.
+	FastForward(ctx context.Context, repositoryDirectory string, ref string) error
 	ListRemotes(ctx context.Context, repositoryDirectory string) ([]Remote, error)
 	// GetConfig returns the value of a configuration key, or an empty string
 	// when the key is unset. An unset key is not an error.

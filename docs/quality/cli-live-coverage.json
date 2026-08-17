@@ -1,9 +1,9 @@
 {
   "version": 1,
   "summary": {
-    "runnable_commands": 235,
-    "covered_commands": 129,
-    "covered_percent": 54.8936170212766,
+    "runnable_commands": 236,
+    "covered_commands": 130,
+    "covered_percent": 55.08474576271186,
     "masked_commands": 4,
     "uncovered_commands": 102
   },
@@ -54,6 +54,7 @@
     "insights report list",
     "insights report set",
     "pr activity list",
+    "pr checkout",
     "pr comment get",
     "pr comment list",
     "pr create",

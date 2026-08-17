@@ -1459,3 +1459,15 @@ func TestRepoCloneCommandUserNamespace(t *testing.T) {
 		t.Fatalf("unexpected clone URL: %s", stub.cloneCalls[0].repositoryURL)
 	}
 }
+
+func (stub *cloneBackendStub) WorkingTreeState(context.Context, string) (git.WorkingTreeStatus, error) {
+	return git.WorkingTreeStatus{}, nil
+}
+
+func (stub *cloneBackendStub) BranchExists(context.Context, string, string) (bool, error) {
+	return false, nil
+}
+
+func (stub *cloneBackendStub) FastForward(context.Context, string, string) error {
+	return nil
+}
