@@ -507,6 +507,19 @@ jobs:
 
           ls -1 dist/*.deb dist/*.rpm
 
+      # Before the checksum step on purpose, so the SBOM is covered by
+      # sha256sums.txt and signed like every other artifact rather than being a
+      # loose file nobody can verify.
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0.24.0
+        with:
+          path: .
+          format: spdx-json
+          output-file: dist/sbom.spdx.json
+          # This workflow publishes the release itself, further down.
+          upload-artifact: false
+          upload-release-assets: false
+
       - name: Generate checksums
         run: |
           set -euo pipefail
@@ -523,7 +536,7 @@ jobs:
           COSIGN_YES: "true"
         run: |
           set -euo pipefail
-          for file in dist/*.tar.gz dist/*.zip dist/*.deb dist/*.rpm dist/sha256sums.txt; do
+          for file in dist/*.tar.gz dist/*.zip dist/*.deb dist/*.rpm dist/sha256sums.txt dist/sbom.spdx.json; do
             if [[ ! -f "$file" ]]; then
               continue
             fi
@@ -544,6 +557,23 @@ jobs:
             dist/*.zip
             dist/*.deb
             dist/*.rpm
+
+      # A published SBOM file answers "give us an SBOM". An SBOM *attestation*
+      # answers "prove this SBOM describes that binary", which is the question a
+      # supply-chain scanner actually asks, and it is verifiable with the same
+      # `gh attestation verify` the provenance already uses.
+      #
+      # One SBOM covers every artifact because they are all built from the same
+      # module at the same commit; the dependency set does not vary by platform.
+      - name: Attest the SBOM against the released artifacts
+        uses: actions/attest-sbom@v4.1.0
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.deb
+            dist/*.rpm
+          sbom-path: dist/sbom.spdx.json
 
       - name: Publish GitHub release
         env:

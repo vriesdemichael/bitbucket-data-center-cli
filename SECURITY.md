@@ -93,6 +93,22 @@ The signing identity is pinned to the release workflow on `refs/heads/main`;
 `bb update` hard-fails on an identity mismatch rather than trusting release
 metadata.
 
+### Software Bill of Materials
+
+Every release publishes `sbom.spdx.json`, an SPDX 2.3 SBOM of the Go module
+graph, signed and checksummed like every other artifact. It is also attested
+against each released binary, so the link between the SBOM and the artifact is
+itself verifiable rather than asserted:
+
+```bash
+gh attestation verify bb_2.0.2_linux_amd64.tar.gz \
+  --repo vriesdemichael/bitbucket-data-center-cli \
+  --predicate-type https://spdx.dev/Document
+```
+
+One SBOM covers every platform artifact: all of them are built from the same
+module at the same commit, so the dependency set does not vary between them.
+
 ## Credential handling
 
 `bb` stores credentials in the OS keyring where one is available, and in a
