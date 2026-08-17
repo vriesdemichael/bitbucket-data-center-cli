@@ -94,8 +94,12 @@ anything.
 A working tree with uncommitted changes to tracked files is refused; pass `--force` to
 discard them. Untracked files are ignored, so build output does not get in the way.
 
-Authentication uses whatever git is already configured to use for the host. If fetching
-prompts for credentials, run `bb auth setup-git` once.
+The fetch uses the credentials `bb` is already authenticated with, so this works immediately
+after `bb repo clone` with no git credential setup. The credential is passed to that one git
+invocation and never written into the repository.
+
+Pushing afterwards is plain `git`, which does not go through `bb` — run `bb auth setup-git`
+once to let it authenticate. See [Git Authentication](advanced/git-authentication.md).
 
 ## Repository context behavior
 

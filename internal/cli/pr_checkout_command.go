@@ -30,6 +30,10 @@ type checkoutPlan struct {
 	localBranch    string
 	branchExists   bool
 	fork           bool
+	// credentials are supplied to the one fetch this command runs. A clone made
+	// by bb holds none by design, so without them the fetch prompts for a
+	// username and hangs wherever nothing can answer.
+	credentials *git.Credentials
 }
 
 func newPullRequestCheckoutCommand(options *rootOptions, repositorySelector *string) *cobra.Command {
@@ -45,8 +49,8 @@ func newPullRequestCheckoutCommand(options *rootOptions, repositorySelector *str
 			"repository. Pull requests from a fork fetch from the fork, adding a remote for it when one " +
 			"is not configured yet, so a later git push goes back to the fork branch the pull request is " +
 			"built from.\n\n" +
-			"Authentication uses whatever git is already configured to use for the host. Run " +
-			"bb auth setup-git once if fetching prompts for credentials.",
+			"The fetch uses the credentials bb is already authenticated with, so no git credential setup " +
+			"is needed first. Pushing afterwards is plain git and does need one: run bb auth setup-git once.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := loadConfigAndClient()
@@ -182,6 +186,7 @@ func planPullRequestCheckout(
 		remoteIsNew:    remoteIsNew,
 		sourceBranch:   sourceBranch,
 		fork:           fork,
+		credentials:    checkoutCredentials(cfg, remoteURL),
 	}
 
 	if detach {
@@ -221,6 +226,34 @@ func defaultCheckoutBranchName(sourceBranch string, sourceRepository pullrequest
 	}
 
 	return strings.ToLower(owner) + "/" + sourceBranch
+}
+
+// checkoutCredentials supplies the fetch with the credential bb is already
+// authenticated with.
+//
+// The alternative was to leave it to git and tell people to run
+// bb auth setup-git first, which is what the first version of this command did
+// — and it meant `bb repo clone` followed by `bb pr checkout` prompted for a
+// password, breaking the exact two-command sequence this command exists to
+// serve. ADR-044 permits this: credentials for a single git invocation are
+// passed with `git -c`, scoped to the host, and never written to disk. It is
+// the same thing `bb repo clone` already does.
+//
+// A configured credential helper still works; this only removes the
+// requirement to have one.
+func checkoutCredentials(cfg config.AppConfig, remoteURL string) *git.Credentials {
+	credentials := git.Credentials{
+		URL:      remoteURL,
+		Token:    strings.TrimSpace(cfg.BitbucketToken),
+		Username: strings.TrimSpace(cfg.BitbucketUsername),
+		Password: cfg.BitbucketPassword,
+	}
+
+	if credentials.Token == "" && (credentials.Username == "" || credentials.Password == "") {
+		return nil
+	}
+
+	return &credentials
 }
 
 // resolveCheckoutRemote finds the remote that already points at the source
@@ -334,7 +367,11 @@ func applyPullRequestCheckout(
 	// pulling an entire fork to check out one pull request.
 	remoteTrackingRef := fmt.Sprintf("refs/remotes/%s/%s", plan.remoteName, plan.sourceBranch)
 	refspec := fmt.Sprintf("+refs/heads/%s:%s", plan.sourceBranch, remoteTrackingRef)
-	if err := backend.Fetch(ctx, plan.repositoryRoot, git.FetchOptions{Remote: plan.remoteName, Refspecs: []string{refspec}}); err != nil {
+	if err := backend.Fetch(ctx, plan.repositoryRoot, git.FetchOptions{
+		Remote:      plan.remoteName,
+		Refspecs:    []string{refspec},
+		Credentials: plan.credentials,
+	}); err != nil {
 		return checkoutResult{}, err
 	}
 

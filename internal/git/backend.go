@@ -22,6 +22,27 @@ type FetchOptions struct {
 	// same-repository pull request the configured refspec may not have been
 	// fetched recently enough to contain the head.
 	Refspecs []string
+	// Credentials, when set, are supplied to this one fetch.
+	//
+	// Without them a fetch into a repository that has no credential helper
+	// configured stops to prompt for a username, which in a non-interactive
+	// context is a hang or a failure rather than a question. A clone made by
+	// bb leaves no credential behind by design, so its own later fetches have
+	// to bring their own.
+	Credentials *Credentials
+}
+
+// Credentials are handed to a single git invocation and never persisted.
+//
+// URL is required and is what scopes them: git applies an unscoped
+// http.extraHeader to every host it contacts, including redirect targets, so
+// an unscoped credential for one host leaks to any other remote in the same
+// repository. See ADR-044.
+type Credentials struct {
+	URL      string
+	Token    string
+	Username string
+	Password string
 }
 
 type CheckoutOptions struct {

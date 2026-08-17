@@ -3395,7 +3395,7 @@ Check out the source branch of a pull request in the current git repository.
 
 Same-repository pull requests are checked out from the remote that already points at the repository. Pull requests from a fork fetch from the fork, adding a remote for it when one is not configured yet, so a later git push goes back to the fork branch the pull request is built from.
 
-Authentication uses whatever git is already configured to use for the host. Run bb auth setup-git once if fetching prompts for credentials.
+The fetch uses the credentials bb is already authenticated with, so no git credential setup is needed first. Pushing afterwards is plain git and does need one: run bb auth setup-git once.
 
 Usage:
   bb pr checkout <id> [flags]
