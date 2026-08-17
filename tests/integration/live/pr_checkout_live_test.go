@@ -114,17 +114,13 @@ func TestLivePullRequestCheckout(t *testing.T) {
 	}
 
 	// A dirty tree is refused rather than silently discarded.
+	//
+	// Modifying a tracked file in place, without switching branches first: an
+	// earlier version wrote the file and then ran `git checkout master`, which
+	// git refuses for exactly the reason under test here. The refusal happens
+	// before anything is touched, so where HEAD currently sits does not matter.
 	if err := os.WriteFile(filepath.Join(cloneDir, "checkout-live.txt"), []byte("local edit\n"), 0o600); err != nil {
 		t.Fatalf("write local edit failed: %v", err)
-	}
-	if _, err := runGitCapture(cloneDir, "checkout", defaultBranchName); err != nil {
-		t.Fatalf("switch to the default branch failed: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(cloneDir, "checkout-live-dirty.txt"), []byte("tracked edit\n"), 0o600); err != nil {
-		t.Fatalf("write tracked file failed: %v", err)
-	}
-	if _, err := runGitCapture(cloneDir, "add", "checkout-live-dirty.txt"); err != nil {
-		t.Fatalf("git add failed: %v", err)
 	}
 
 	dirtyOutput, dirtyErr := executeLiveCLI(t, "pr", "checkout", pullRequestID)
@@ -133,5 +129,11 @@ func TestLivePullRequestCheckout(t *testing.T) {
 	}
 	if !strings.Contains(dirtyOutput, "uncommitted changes") && !strings.Contains(dirtyErr.Error(), "uncommitted changes") {
 		t.Fatalf("expected the refusal to name uncommitted changes, got: %v\noutput: %s", dirtyErr, dirtyOutput)
+	}
+
+	// --force gets past it, which is the escape hatch the refusal advertises.
+	forcedOutput, err := executeLiveCLI(t, "pr", "checkout", pullRequestID, "--force")
+	if err != nil {
+		t.Fatalf("pr checkout --force over a dirty tree failed: %v\noutput: %s", err, forcedOutput)
 	}
 }
