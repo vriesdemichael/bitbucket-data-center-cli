@@ -1,9 +1,9 @@
 {
   "version": 1,
   "summary": {
-    "runnable_commands": 228,
-    "covered_commands": 122,
-    "covered_percent": 53.50877192982456,
+    "runnable_commands": 232,
+    "covered_commands": 126,
+    "covered_percent": 54.310344827586206,
     "masked_commands": 4,
     "uncovered_commands": 102
   },
@@ -70,6 +70,7 @@
     "pr review reviewer add",
     "pr review reviewer remove",
     "pr review unapprove",
+    "pr status",
     "pr unwatch",
     "pr update",
     "pr watch",
@@ -102,6 +103,9 @@
     "repo comment list",
     "repo comment update",
     "repo list",
+    "repo permissions grant",
+    "repo permissions list",
+    "repo permissions revoke",
     "repo permissions show",
     "repo settings pull-requests get",
     "repo settings pull-requests merge-checks list",

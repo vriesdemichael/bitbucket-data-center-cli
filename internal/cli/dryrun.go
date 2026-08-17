@@ -103,6 +103,12 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"repo settings security permissions users revoke":  {Intent: "repo.permission.user.revoke", Action: "delete", Stateful: true},
 	"repo settings security permissions groups grant":  {Intent: "repo.permission.group.grant", Action: "update", Stateful: true},
 	"repo settings security permissions groups revoke": {Intent: "repo.permission.group.revoke", Action: "delete", Stateful: true},
+	// The shallow aliases of the four above. Their subject is a --group flag
+	// rather than a path segment, so the intent they emit is decided at run
+	// time; the Intent recorded here names the default (user) case. Stateful
+	// entries build their own preview, so this field is documentation.
+	"repo permissions grant":  {Intent: "repo.permission.user.grant", Action: "update", Stateful: true},
+	"repo permissions revoke": {Intent: "repo.permission.user.revoke", Action: "delete", Stateful: true},
 	// repo
 	"repo edit":                {Intent: "repo.edit", Action: "update", Stateful: true},
 	"repo hook-script set":     {Intent: "repo.hook-script.set", Action: "update", Stateful: true},

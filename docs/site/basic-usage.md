@@ -25,6 +25,34 @@ bb repo settings security --help
 
 The command reference page is generated from Cobra help output, so usage/flags match CLI behavior.
 
+## `gh`-shaped shortcuts
+
+Some operations are reachable under a second, shorter name because that is the name people
+(and coding agents) reach for first. The canonical path is what the command reference
+documents; the shortcut runs exactly the same command.
+
+```bash
+bb pr diff 42
+bb repo permissions list --repo TEST/my-repo
+bb repo permissions grant alice REPO_WRITE --repo TEST/my-repo
+bb repo permissions grant --group developers REPO_READ --repo TEST/my-repo
+```
+
+| Shortcut | Canonical path |
+| --- | --- |
+| `bb pr diff` | `bb diff pr` |
+| `bb repo permissions list` | `bb repo settings security permissions users list` |
+| `bb repo permissions list --group` | `bb repo settings security permissions groups list` |
+| `bb repo permissions grant` / `revoke` | `bb repo settings security permissions users grant` / `revoke` |
+| `bb repo permissions grant --group` / `revoke --group` | `bb repo settings security permissions groups grant` / `revoke` |
+
+`bb pr status` is not a shortcut but a view of its own: the pull requests on your current
+branch, the ones you opened, and the ones waiting on your review, across every repository.
+
+```bash
+bb pr status
+```
+
 ## Repository context behavior
 
 - `--repo PROJECT/slug` has highest precedence.
