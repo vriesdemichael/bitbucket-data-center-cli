@@ -58,12 +58,14 @@ nav:
       - Overview: reference/overview.md
       - All Commands: reference/commands/index.md
       - JSON Schemas: reference/schemas.md
+      - Environment Variables: reference/environment.md
   - Advanced Topics:
       - Overview: advanced/index.md
       - Repository Discovery and Server Switching: advanced/repository-discovery-and-server-switching.md
       - Bulk Operations: advanced/bulk-operations.md
       - Dry-Run Planning: advanced/dry-run-planning.md
       - Git Authentication: advanced/git-authentication.md
+      - Networks, Proxies and TLS: advanced/networks-proxies-and-tls.md
       - Machine Mode and Diagnostics: advanced/machine-mode-diagnostics.md
   - AI and llms.txt: ai-and-llms.md
   - ADR Records: adr/index.md
