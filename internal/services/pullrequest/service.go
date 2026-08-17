@@ -251,6 +251,18 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, opti
 			}
 		}
 
+		// Limit caps the results returned, as it does in every other list
+		// service. This loop used to run to the last page and return everything,
+		// treating Limit purely as a page size — so `bb pr list --limit 10`
+		// against a repository with 500 open pull requests returned all 500.
+		//
+		// The pages still have to be walked, because matchesFilters runs after
+		// the fetch and a page can contribute nothing; the cap belongs on the
+		// results, not on the requests.
+		if len(results) >= options.Limit {
+			break
+		}
+
 		if response.IsLastPage {
 			break
 		}
@@ -260,6 +272,10 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, opti
 		}
 
 		start = response.NextPageStart
+	}
+
+	if len(results) > options.Limit {
+		results = results[:options.Limit]
 	}
 
 	return results, nil
