@@ -32,10 +32,10 @@ Download the `.deb` or `.rpm` for your architecture from GitHub Releases and ins
 ```bash
 VERSION=v1.0.0
 # Debian/Ubuntu
-curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.deb"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.deb"
 sudo dpkg -i "bb_${VERSION#v}_linux_amd64.deb"
 # RHEL/Fedora
-curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.rpm"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.rpm"
 sudo rpm -i "bb_${VERSION#v}_linux_amd64.rpm"
 ```
 
@@ -49,13 +49,13 @@ Linux amd64 example:
 
 ```bash
 VERSION=v0.1.0
-curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.tar.gz"
-curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/sha256sums.txt"
-curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/sha256sums.txt.sigstore.json"
-curl -LO "https://github.com/vriesdemichael/bitbucket-server-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.tar.gz.sigstore.json"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.tar.gz"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sha256sums.txt"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sha256sums.txt.sigstore.json"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.tar.gz.sigstore.json"
 cosign verify-blob \
 	--bundle sha256sums.txt.sigstore.json \
-	--certificate-identity "https://github.com/vriesdemichael/bitbucket-server-cli/.github/workflows/release.yml@refs/heads/main" \
+	--certificate-identity "https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main" \
 	--certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
 	sha256sums.txt
 sha256sum -c sha256sums.txt --ignore-missing
@@ -69,10 +69,10 @@ Archive-level provenance verification remains available when you want to inspect
 ```bash
 cosign verify-blob \
 	--bundle "bb_${VERSION#v}_linux_amd64.tar.gz.sigstore.json" \
-	--certificate-identity "https://github.com/vriesdemichael/bitbucket-server-cli/.github/workflows/release.yml@refs/heads/main" \
+	--certificate-identity "https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main" \
 	--certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
 	"bb_${VERSION#v}_linux_amd64.tar.gz"
-gh attestation verify bb_${VERSION#v}_linux_amd64.tar.gz --repo vriesdemichael/bitbucket-server-cli
+gh attestation verify bb_${VERSION#v}_linux_amd64.tar.gz --repo vriesdemichael/bitbucket-data-center-cli
 ```
 
 `bb update` now requires the signed checksum bundle. If Sigstore verification is unavailable or fails, self-update stops and you should use WinGet, Scoop, or manual release installation instead.

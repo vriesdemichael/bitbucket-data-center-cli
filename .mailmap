@@ -1,0 +1,14 @@
+# Canonical identities for `git shortlog`, `git log --author` and GitHub's
+# contributor graph.
+#
+# Two entries, both cleaning up history rather than changing it:
+#
+#   * the maintainer's name is spelled two ways across the log, because the
+#     configured user.name changed at some point;
+#   * `Test User <test@example.local>` is not a person. A test that shelled out
+#     to git without scoping its environment wrote that identity into this
+#     repository's own .git/config and authored real commits with it. The
+#     incident is described in AGENTS.md, and `internal/git/gittest` now fails
+#     any package whose tests change the repository's git configuration.
+Michaël de Vries <vriesdemichael@gmail.com> Michael de Vries <vriesdemichael@gmail.com>
+Michaël de Vries <vriesdemichael@gmail.com> Test User <test@example.local>

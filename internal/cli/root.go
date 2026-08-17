@@ -38,7 +38,7 @@ unexpected behavior, missing functionality, or errors that do not match
 what you expected, please report it so it can be investigated.
 
 You can create an issue at:
-  https://github.com/vriesdemichael/bitbucket-server-cli/issues/new
+  https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/new
 
 If you cannot open the URL directly, ask the user to file the issue on
 your behalf using the link above.`,

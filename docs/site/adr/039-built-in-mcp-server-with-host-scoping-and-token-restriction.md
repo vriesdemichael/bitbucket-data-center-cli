@@ -11,22 +11,11 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 
 ## Decision
 
-Expose a curated set of high-value Bitbucket operations as MCP tools via bb ai mcp serve. The server uses stdio transport for IDE-native integration. When more than one Bitbucket server context is configured, --host is required and the server exits immediately with an actionable error if it is omitted. An optional --token flag scopes all API calls made by the server to the supplied PAT, restricting capabilities to that token's rights. An optional --tools allowlist and --exclude denylist allow further narrowing of the exposed tool surface. A companion bb ai mcp tools command lists all available tools with name and description to support allowlist/denylist construction.
+Expose a curated set of high-value Bitbucket operations as MCP tools via bb ai mcp serve. The server uses stdio transport for IDE-native integration. When more than one Bitbucket server context is configured, --host is required and the server exits immediately with an actionable error if it is omitted. An optional --token flag scopes all API calls made by the server to the supplied PAT, restricting capabilities to that token's rights. An optional --tools allowlist and --exclude denylist allow further narrowing of the exposed tool surface. A companion bb ai mcp tools command lists all available tools with name, description and exposure to support allowlist/denylist construction. Tools are classified safe or unsafe. Safe tools have side-effects that are low-blast-radius and easily reversed — opening a pull request, adding a comment, submitting a review — and are exposed by default. Unsafe tools perform irreversible operations and are withheld unless --yolo (or its alias --allow-writes) is set. --tools takes precedence over the classification, so an operator can expose one unsafe tool without enabling all of them. This record does not enumerate the tools. mcp.AllSpecs() is the catalogue, bb ai mcp tools prints it with an EXPOSURE column, and an MCP client receives it at connect time.
 
 ## Agent Instructions
 
-When generating MCP server configuration for an IDE (e.g. VS Code, Cursor), always emit bb ai mcp serve as the server command. If the user has multiple Bitbucket instances configured (detectable via bb auth server list), prompt for --host before generating the config snippet. Document the --token flag as the recommended way to run a read-only MCP server instance: instruct users to create a read-only PAT and pass it via --token. Never silently pick one host when multiple are configured; always surface the ambiguity.
-Tier-1 tools to expose by default (highest need in autonomous workflows):
-  get_pull_request, list_pr_comments, list_pr_tasks, get_build_status,
-  resolve_ref, clone_repository, list_tags
-
-Tier-2 tools (common in multi-step workflows, enabled by default):
-  search_repositories, list_pull_requests, create_pull_request, add_pr_comment,
-  list_branches, list_required_builds
-
-Tier-3 tools (targeted; enabled by default but commonly excluded via --exclude):
-  compare_refs, list_commits, get_commit, create_tag, set_build_status,
-  submit_pr_review, merge_pull_request
+When generating MCP server configuration for an IDE (e.g. VS Code, Cursor), always emit bb ai mcp serve as the server command. If the user has multiple Bitbucket instances configured (detectable via bb auth server list), prompt for --host before generating the config snippet. Document the --token flag as the recommended way to run a read-only MCP server instance: instruct users to create a read-only PAT and pass it via --token. Never silently pick one host when multiple are configured; always surface the ambiguity. Do not list tool names here or anywhere else that has to be maintained by hand. This record previously carried three tiers of them and drifted: it named a tool that has never existed, omitted five that do, and described two withheld-by-default tools as enabled by default. Read the catalogue from mcp.AllSpecs(), or run bb ai mcp tools. TestADRDoesNotNameToolsThatDoNotExist fails the build if a name appears here that the server does not implement, so the only names that may appear are real ones. When a new tool is added, set Safe according to whether its effect can be undone easily. That flag is what bb ai mcp tools reports and what the server filters on, so it is the whole of the safe-by-default behaviour.
 
 ## Rationale
 
