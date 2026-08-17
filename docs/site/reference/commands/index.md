@@ -160,7 +160,7 @@ Usage:
 
 Available Commands:
   serve       Start the MCP server (stdio transport)
-  tools       List available MCP tools with name and description
+  tools       List available MCP tools with name, exposure and description
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -232,15 +232,29 @@ Global Flags:
 
 ## `bb ai mcp tools`
 
-List available MCP tools with name and description
+List available MCP tools with name, exposure and description
 
 ```text
 Print all MCP tools the serve command can expose.
 
 Use this output to build --tools and --exclude allowlists/denylists.
 
+The EXPOSURE column says when a tool is available:
+
+  SAFE   exposed by default; side-effects are low-blast-radius and easily
+         reversed, such as opening a pull request or adding a comment
+  YOLO   withheld unless 'bb ai mcp serve --yolo' (or --allow-writes) is set,
+         because the operation is irreversible
+
+--tools takes precedence over the safety filter, so naming a YOLO tool in an
+allowlist exposes it without --yolo. Pass --safe-only to list just the set the
+server exposes by default.
+
 Usage:
   bb ai mcp tools [flags]
+
+Flags:
+      --safe-only   List only the tools the server exposes without --yolo
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust

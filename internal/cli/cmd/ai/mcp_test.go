@@ -254,3 +254,159 @@ func TestMCPToolsCountMatchesAllSpecs(t *testing.T) {
 		t.Errorf("expected %d tool lines, got %d", want, lines)
 	}
 }
+
+// gatedToolNames are the tools the server withholds without --yolo.
+//
+// Listed literally rather than derived from AllSpecs, so that reclassifying a
+// tool has to be a deliberate edit here as well. Silently promoting
+// merge_pull_request to safe is exactly the change that should not pass review
+// unnoticed.
+var gatedToolNames = []string{
+	"merge_pull_request",
+	"enable_auto_merge",
+	"set_build_status",
+}
+
+func TestToolExposureMatchesTheServerClassification(t *testing.T) {
+	gated := map[string]bool{}
+	for _, name := range gatedToolNames {
+		gated[name] = true
+	}
+
+	seen := map[string]bool{}
+	for _, spec := range bbmcp.AllSpecs() {
+		seen[spec.Tool.Name] = true
+
+		want := exposureSafe
+		if gated[spec.Tool.Name] {
+			want = exposureYolo
+		}
+
+		if got := toolExposure(spec); got != want {
+			t.Errorf("tool %q: exposure %q, want %q", spec.Tool.Name, got, want)
+		}
+		if spec.Safe == gated[spec.Tool.Name] {
+			t.Errorf("tool %q: Safe=%v contradicts the expected gating", spec.Tool.Name, spec.Safe)
+		}
+	}
+
+	for _, name := range gatedToolNames {
+		if !seen[name] {
+			t.Errorf("expected gated tool %q to exist; was it renamed or removed?", name)
+		}
+	}
+}
+
+// TestMCPToolsMarksGatedTools is the defect from #324: the listing is
+// documented as the source for building allowlists, so a tool that is withheld
+// by default has to say so.
+func TestMCPToolsMarksGatedTools(t *testing.T) {
+	cmd := New(testMCPDeps())
+	buf := &bytes.Buffer{}
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"mcp", "tools"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	for _, line := range strings.Split(buf.String(), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+
+		name, exposure := fields[0], fields[1]
+		if exposure != exposureSafe && exposure != exposureYolo {
+			continue
+		}
+
+		wantYolo := false
+		for _, gatedName := range gatedToolNames {
+			if name == gatedName {
+				wantYolo = true
+			}
+		}
+
+		if wantYolo && exposure != exposureYolo {
+			t.Errorf("gated tool %q is listed as %s", name, exposure)
+		}
+		if !wantYolo && exposure != exposureSafe {
+			t.Errorf("safe tool %q is listed as %s", name, exposure)
+		}
+	}
+}
+
+func TestMCPToolsSafeOnlyOmitsGatedTools(t *testing.T) {
+	cmd := New(testMCPDeps())
+	buf := &bytes.Buffer{}
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"mcp", "tools", "--safe-only"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	out := buf.String()
+	for _, name := range gatedToolNames {
+		if strings.Contains(out, name) {
+			t.Errorf("--safe-only listed gated tool %q", name)
+		}
+	}
+
+	// The safe tools must still all be present: a filter that drops too much is
+	// as wrong as one that drops nothing.
+	for _, spec := range bbmcp.AllSpecs() {
+		if spec.Safe && !strings.Contains(out, spec.Tool.Name) {
+			t.Errorf("--safe-only omitted safe tool %q", spec.Tool.Name)
+		}
+	}
+}
+
+func TestMCPToolsJSONCarriesExposure(t *testing.T) {
+	cmd := New(testMCPDeps())
+	cmd.PersistentFlags().Bool("json", true, "")
+
+	buf := &bytes.Buffer{}
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"mcp", "tools", "--json"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var envelope struct {
+		Data []struct {
+			Name     string `json:"name"`
+			Safe     bool   `json:"safe"`
+			Exposure string `json:"exposure"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &envelope); err != nil {
+		t.Fatalf("output is not a parseable envelope: %v", err)
+	}
+	if len(envelope.Data) != len(bbmcp.AllSpecs()) {
+		t.Fatalf("expected %d entries, got %d", len(bbmcp.AllSpecs()), len(envelope.Data))
+	}
+
+	gated := map[string]bool{}
+	for _, name := range gatedToolNames {
+		gated[name] = true
+	}
+
+	for _, entry := range envelope.Data {
+		if entry.Safe == gated[entry.Name] {
+			t.Errorf("tool %q: safe=%v contradicts expected gating", entry.Name, entry.Safe)
+		}
+		// The two fields describe the same fact and must not disagree.
+		if entry.Safe && entry.Exposure != exposureSafe {
+			t.Errorf("tool %q: safe=true but exposure=%q", entry.Name, entry.Exposure)
+		}
+		if !entry.Safe && entry.Exposure != exposureYolo {
+			t.Errorf("tool %q: safe=false but exposure=%q", entry.Name, entry.Exposure)
+		}
+	}
+}

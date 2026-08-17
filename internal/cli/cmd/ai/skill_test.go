@@ -11,6 +11,7 @@ import (
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
+	bbskill "github.com/vriesdemichael/bitbucket-server-cli/skills/bb"
 )
 
 // testDeps builds a minimal Dependencies for skill tests.
@@ -26,12 +27,9 @@ func testSkillDeps(version string) Dependencies {
 	}
 }
 
-// TestBuildSkillSubstitutesVersion ensures the {{BB_VERSION}} marker is replaced.
-func TestBuildSkillSubstitutesVersion(t *testing.T) {
+// TestBuildSkillStampsVersion ensures the rendered skill names the binary.
+func TestBuildSkillStampsVersion(t *testing.T) {
 	result := buildSkill("1.2.3")
-	if strings.Contains(result, "{{BB_VERSION}}") {
-		t.Fatal("buildSkill left the {{BB_VERSION}} placeholder unreplaced")
-	}
 	if !strings.Contains(result, "1.2.3") {
 		t.Fatal("buildSkill did not inject the version string")
 	}
@@ -40,9 +38,6 @@ func TestBuildSkillSubstitutesVersion(t *testing.T) {
 // TestBuildSkillFallsBackToDev ensures an empty version string yields "dev".
 func TestBuildSkillFallsBackToDev(t *testing.T) {
 	result := buildSkill("")
-	if strings.Contains(result, "{{BB_VERSION}}") {
-		t.Fatal("buildSkill left the {{BB_VERSION}} placeholder unreplaced for empty version")
-	}
 	if !strings.Contains(result, "dev") {
 		t.Fatal("buildSkill did not substitute 'dev' for empty version")
 	}
@@ -254,4 +249,59 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// TestCommittedSkillHasNoUnrenderedPlaceholders is the defect from #325.
+//
+// The committed SKILL.md is what `npx skills add` distributes, and the skill
+// advertises that install path itself — so anyone following the documented
+// instructions reads the file exactly as committed. A template marker left in
+// it ships raw to them.
+func TestCommittedSkillHasNoUnrenderedPlaceholders(t *testing.T) {
+	committed := string(bbskill.Content)
+
+	for _, marker := range []string{"{{", "}}"} {
+		if strings.Contains(committed, marker) {
+			t.Errorf("committed SKILL.md contains the template marker %q; it is distributed verbatim by npx", marker)
+		}
+	}
+}
+
+// TestCommittedSkillDoesNotClaimToBeGenerated guards the second half of #325:
+// the file used to promise that `bb ai skill show` reflected "the exact
+// capabilities of your installed binary", which was never true — it is a static
+// embed with one string substitution.
+func TestCommittedSkillDoesNotClaimToBeGenerated(t *testing.T) {
+	committed := strings.ToLower(string(bbskill.Content))
+
+	for _, claim := range []string{
+		"exact capabilities of your installed binary",
+		"version-specific skill",
+	} {
+		if strings.Contains(committed, claim) {
+			t.Errorf("SKILL.md still claims %q, which the static embed does not deliver", claim)
+		}
+	}
+}
+
+// TestSkillDoesNotListMCPToolsInline guards the drift that produced #325: a
+// hand-maintained copy of the tool catalogue that fell out of step with the
+// server and gave no hint which tools are withheld by default.
+func TestSkillDoesNotListMCPToolsInline(t *testing.T) {
+	committed := string(bbskill.Content)
+
+	// Naming a gated tool is the specific failure: an agent plans around it and
+	// discovers at call time that the default server does not expose it.
+	for _, gated := range gatedToolNames {
+		if strings.Contains(committed, "`"+gated+"`") {
+			t.Errorf("SKILL.md names the gated tool %q; point at `bb ai mcp tools` instead", gated)
+		}
+	}
+
+	if !strings.Contains(committed, "bb ai mcp tools") {
+		t.Error("SKILL.md should direct the reader to `bb ai mcp tools` for the catalogue")
+	}
+	if !strings.Contains(committed, "YOLO") {
+		t.Error("SKILL.md should explain the YOLO exposure class so an agent can plan around it")
+	}
 }
