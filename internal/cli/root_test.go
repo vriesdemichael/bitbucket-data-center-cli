@@ -3054,6 +3054,21 @@ func TestDiffPRNameOnlyAndCommitJSON(t *testing.T) {
 		t.Fatalf("expected filename in diff pr name-only output, got: %s", prNameOnlyBuffer.String())
 	}
 
+	// `bb pr diff` is the same command registered under the gh-shaped path.
+	// Asserting identical output keeps it an alias rather than a second
+	// implementation free to drift.
+	prDiffAliasCmd := NewRootCommand()
+	prDiffAliasBuffer := &bytes.Buffer{}
+	prDiffAliasCmd.SetOut(prDiffAliasBuffer)
+	prDiffAliasCmd.SetErr(prDiffAliasBuffer)
+	prDiffAliasCmd.SetArgs([]string{"pr", "diff", "99", "--name-only"})
+	if err := prDiffAliasCmd.Execute(); err != nil {
+		t.Fatalf("pr diff name-only failed: %v", err)
+	}
+	if prDiffAliasBuffer.String() != prNameOnlyBuffer.String() {
+		t.Fatalf("pr diff and diff pr disagree: %q vs %q", prDiffAliasBuffer.String(), prNameOnlyBuffer.String())
+	}
+
 	commitJSONCmd := NewRootCommand()
 	commitJSONBuffer := &bytes.Buffer{}
 	commitJSONCmd.SetOut(commitJSONBuffer)
@@ -4396,4 +4411,44 @@ func TestPRBuildStatusCLI(t *testing.T) {
 	if !strings.Contains(emptyBuf.String(), "No build statuses found") {
 		t.Fatalf("expected 'No build statuses found', got: %s", emptyBuf.String())
 	}
+}
+
+// TestDiffPullRequestRejectsBadInvocations covers the error paths of the shared
+// diff-pull-request command, which both `bb diff pr` and `bb pr diff` use.
+func TestDiffPullRequestRejectsBadInvocations(t *testing.T) {
+	t.Run("conflicting output modes", func(t *testing.T) {
+		t.Setenv("BITBUCKET_URL", "https://bitbucket.example.invalid")
+		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+		t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+		t.Setenv("BITBUCKET_TOKEN", "token")
+		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+
+		command := NewRootCommand()
+		buffer := &bytes.Buffer{}
+		command.SetOut(buffer)
+		command.SetErr(buffer)
+		command.SetArgs([]string{"pr", "diff", "1", "--patch", "--stat"})
+
+		if err := command.Execute(); err == nil {
+			t.Fatal("expected --patch with --stat to be rejected")
+		}
+	})
+
+	t.Run("no repository context", func(t *testing.T) {
+		t.Setenv("BITBUCKET_URL", "https://bitbucket.example.invalid")
+		t.Setenv("BITBUCKET_PROJECT_KEY", "")
+		t.Setenv("BITBUCKET_REPO_SLUG", "")
+		t.Setenv("BITBUCKET_TOKEN", "token")
+		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+
+		command := NewRootCommand()
+		buffer := &bytes.Buffer{}
+		command.SetOut(buffer)
+		command.SetErr(buffer)
+		command.SetArgs([]string{"pr", "diff", "1"})
+
+		if err := command.Execute(); err == nil {
+			t.Fatal("expected a missing repository to be rejected")
+		}
+	})
 }
