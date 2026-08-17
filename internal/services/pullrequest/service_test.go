@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -1730,5 +1731,104 @@ func TestListPullRequestsAppliesRoleFilter(t *testing.T) {
 	}
 	if gotRole != "REVIEWER" {
 		t.Fatalf("expected role to be upper-cased to REVIEWER, got %q", gotRole)
+	}
+}
+
+// TestListCapsResultsAtLimit is the defect from #323.
+//
+// List used to treat Limit purely as a page size: it walked every page and
+// returned all of them, so --limit 10 against a repository with more pull
+// requests than that returned every one. Every other list service in the
+// project caps, and the help text described this one as capping too.
+func TestListCapsResultsAtLimit(t *testing.T) {
+	pageSize := 10
+	total := 47
+	pagesServed := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		pagesServed++
+
+		start, _ := strconv.Atoi(request.URL.Query().Get("start"))
+		values := make([]map[string]any, 0, pageSize)
+		for index := start; index < start+pageSize && index < total; index++ {
+			values = append(values, map[string]any{
+				"id":    index + 1,
+				"title": "pr",
+				"state": "OPEN",
+				"open":  true,
+			})
+		}
+
+		nextStart := start + pageSize
+		isLast := nextStart >= total
+
+		writer.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(writer).Encode(map[string]any{
+			"values":        values,
+			"isLastPage":    isLast,
+			"nextPageStart": nextStart,
+		})
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	service := NewService(httpclient.NewFromConfig(cfg))
+
+	results, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "repo"}, ListOptions{
+		State: "open",
+		Limit: pageSize,
+	})
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+
+	if len(results) != pageSize {
+		t.Fatalf("expected %d results, got %d — Limit is not capping", pageSize, len(results))
+	}
+
+	// It must also stop fetching once satisfied, rather than walking to the
+	// last page and discarding the rest.
+	if pagesServed != 1 {
+		t.Fatalf("expected 1 page request, got %d", pagesServed)
+	}
+}
+
+func TestListReturnsEverythingBelowTheLimit(t *testing.T) {
+	total := 3
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		values := make([]map[string]any, 0, total)
+		for index := 0; index < total; index++ {
+			values = append(values, map[string]any{"id": index + 1, "title": "pr", "state": "OPEN", "open": true})
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(writer).Encode(map[string]any{"values": values, "isLastPage": true, "nextPageStart": total})
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	service := NewService(httpclient.NewFromConfig(cfg))
+
+	results, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "repo"}, ListOptions{State: "open", Limit: 25})
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(results) != total {
+		t.Fatalf("expected %d results, got %d", total, len(results))
 	}
 }
