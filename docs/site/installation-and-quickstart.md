@@ -158,14 +158,14 @@ bb --json auth status
 
 ## Runtime flags and environment variables
 
-Global runtime controls are available as flags and environment variables:
+Most global runtime controls exist as both a flag and an environment variable —
+`--ca-file` / `BB_CA_FILE`, `--retry-count` / `BB_RETRY_COUNT`, and so on. Flags
+win over environment variables, which win over stored configuration.
 
-- `--ca-file` / `BB_CA_FILE`
-- `--insecure-skip-verify` / `BB_INSECURE_SKIP_VERIFY`
-- `--request-timeout` / `BB_REQUEST_TIMEOUT`
-- `--retry-count` / `BB_RETRY_COUNT`
-- `--retry-backoff` / `BB_RETRY_BACKOFF`
-- `--log-level` / `BB_LOG_LEVEL`
-- `--log-format` / `BB_LOG_FORMAT`
+**[Environment Variables](reference/environment.md)** is the complete list, with
+defaults and what each one does.
+
+Behind a proxy, or against a certificate from an internal CA, see
+[Networks, Proxies and TLS](advanced/networks-proxies-and-tls.md).
 
 See [Basic Usage](basic-usage.md) for precedence, dry-run behavior, machine mode, and diagnostics guidance.
