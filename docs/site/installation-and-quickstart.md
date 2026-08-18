@@ -137,7 +137,24 @@ bb auth status
 ```text
 Target Bitbucket: https://bitbucket.acme.corp (auth=token, source=stored)
 Credential storage: keyring
+- authentication: Alice Smith (alice)
+- git credential helper: configured for https://bitbucket.acme.corp
 ```
+
+`bb auth status` does not just report the configuration, it checks it: the
+authentication line proves the host is reachable, its certificate is trusted,
+any proxy is working, and the credential is still valid. A failing line says
+what to do about it.
+
+In CI, `--check` makes it exit non-zero when something is wrong:
+
+```bash
+bb auth status --check
+```
+
+Without it the exit status stays zero whatever the findings, so existing scripts
+are unaffected. Under `--json` the exit status is always zero and the verdict is
+the `ok` field.
 
 To refuse the plaintext fallback, pass `--require-keyring` at login, or set `BB_REQUIRE_KEYRING=1`
 to enforce it fleet-wide. With the policy on, bb fails rather than degrading — including on later

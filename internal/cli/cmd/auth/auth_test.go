@@ -78,6 +78,11 @@ func TestStatusJSONUsesHostOverride(t *testing.T) {
 		WriteJSON: func(writer io.Writer, payload any) error {
 			return jsonoutput.Write(writer, payload)
 		},
+		// Injected so the status probe never reaches the network. Without it
+		// this test performed a real DNS lookup for override.example.
+		NewUsersClient: func(config.AppConfig) (usersClient, error) {
+			return nil, errors.New("users client unavailable in test")
+		},
 	})
 
 	buffer := &bytes.Buffer{}
@@ -93,7 +98,7 @@ func TestStatusJSONUsesHostOverride(t *testing.T) {
 		t.Fatalf("expected host override to be applied, got %q", seenHost)
 	}
 
-	var parsed map[string]string
+	var parsed map[string]any
 	if err := decodeJSONEnvelopeData(buffer.Bytes(), &parsed); err != nil {
 		t.Fatalf("expected json output, got %q (%v)", buffer.String(), err)
 	}

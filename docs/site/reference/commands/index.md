@@ -28,7 +28,7 @@ Usage:
   bb [command]
 
 Available Commands:
-  admin          Local environment/admin commands
+  admin          Administrative and connectivity checks
   ai             AI-first tooling: MCP server and agent skill distribution
   auth           Authentication commands
   branch         Repository branch and branch restriction commands
@@ -70,16 +70,16 @@ Use "bb [command] --help" for more information about a command.
 
 ## `bb admin`
 
-Local environment/admin commands
+Administrative and connectivity checks
 
 ```text
-Local environment/admin commands
+Administrative and connectivity checks
 
 Usage:
   bb admin [command]
 
 Available Commands:
-  health      Check local stack health
+  health      Probe the configured Bitbucket for reachability and authentication
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -98,10 +98,14 @@ Use "bb admin [command] --help" for more information about a command.
 
 ## `bb admin health`
 
-Check local stack health
+Probe the configured Bitbucket for reachability and authentication
 
 ```text
-Check local stack health
+Probe the configured Bitbucket for reachability and authentication.
+
+This was previously described as checking "local stack health", which it never did: it probes whichever host BITBUCKET_URL resolves to, wherever that is. The description was wrong, not the command.
+
+bb auth status now reports the same thing and more — identity, credential storage, and whether git is set up to authenticate through bb — so prefer that. This stays for scripts that already call it.
 
 Usage:
   bb admin health [flags]
@@ -421,7 +425,7 @@ Available Commands:
   logout         Remove stored credentials for a Bitbucket host
   server         Manage server contexts
   setup-git      Configure git to authenticate to Bitbucket through bb
-  status         Show configured target
+  status         Show the configured target and verify it works
   token          Manage HTTP access tokens
   token-url      Show personal access token creation URL
 
@@ -946,15 +950,32 @@ Global Flags:
 
 ## `bb auth status`
 
-Show configured target
+Show the configured target and verify it works
 
 ```text
-Show configured target
+Show the configured target and verify it works.
+
+Reports the resolved host, how the credential is stored, whether that credential
+still authenticates, and whether git is set up to authenticate through bb.
+
+Reporting alone is not enough to be useful: an expired token, an unreachable
+host and a working setup used to produce the same confident output. Each line
+now says which it is, and what to do when it is not the last one.
+
+Exit status is unchanged by default, so existing scripts keep working. Pass
+--check to exit non-zero when something is wrong, which is the form worth
+putting in CI.
+
+Under --json the exit status is always zero and the verdict is the "ok" field.
+Machine output is a single document on stdout, so a failing exit would replace
+the findings with an error envelope — losing exactly the detail that was asked
+for.
 
 Usage:
   bb auth status [flags]
 
 Flags:
+      --check         Exit non-zero when a check fails (for CI)
       --host string   Override host for this status check
 
 Global Flags:
