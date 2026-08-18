@@ -1,5 +1,5 @@
 version: 1
-updated_at: "2026-08-16"
+updated_at: "2026-08-18"
 source_openapi: docs/reference/atlassian/bitbucket-10.2-openapi.json
 fixes:
   - id: OPENAPI-001
@@ -297,3 +297,60 @@ fixes:
         - bb auth token create "verify" --permission REPO_READ
         - bb ssh-key list
         - bb repo ssh-key list --repo PROJECT/repo
+
+  - id: OPENAPI-012
+    area: spec-parameter-requiredness
+    description: >
+      Send the url query parameter on the webhook test endpoints, which the server requires even
+      though the spec marks it optional.
+    reference:
+      type: endpoint
+      value: >
+        POST /api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/test and
+        POST /api/latest/projects/{projectKey}/webhooks/test
+      upstream_issue: >
+        Both operations declare webhookId, url and sslVerificationRequired as optional query
+        parameters. In practice the server needs url: calling with webhookId alone throws an
+        unhandled exception and answers 500 rather than a validation error naming the missing
+        parameter.
+
+        Probed directly against a running instance, same webhook each time:
+          webhookId only, empty body  -> 500  (this is what bb sent)
+          webhookId + url             -> 200
+          url alone                   -> 200
+
+        The server log records it as an UnhandledExceptionMapper entry, not a rejection, which is
+        why the response carries no usable message.
+
+        The consequence was that bb webhook test and bb project webhook test had never worked on
+        any version. Neither had a live test — they were two of the 102 commands the coverage gate
+        grandfathered — so nothing contradicted the assumption that the spec's optional meant
+        optional.
+    change:
+      files:
+        - internal/services/reposettings/service.go
+        - internal/services/project/webhook.go
+        - internal/cli/webhook.go
+        - internal/cli/project_webhook.go
+      detail: >
+        TestWebhook and TestProjectWebhook now resolve the webhook's stored url and pass it
+        alongside webhookId, rather than requiring the caller to repeat a value the server already
+        holds. A webhook with no url yields a validation error naming --url instead of a 500.
+
+        Both commands also accept an explicit --url override. That is not a workaround but the
+        endpoint's documented purpose — "test connectivity to a specific endpoint" — so testing a
+        candidate url before saving it is a first-class use rather than an accident of the fix.
+
+        The empty JSON body bb already sent is unchanged; it is the missing query parameter that
+        the server chokes on, not the body.
+
+        This is the same root cause as the partial-update failure tracked separately: both were bb
+        sending an incomplete webhook payload. Update needs the whole webhook because that endpoint
+        replaces it; test needs the url because that endpoint tests a url.
+    verification:
+      commands:
+        - go build ./...
+        - go test ./internal/services/reposettings/ ./internal/services/project/
+        - bb webhook test <id> --repo PROJECT/repo
+        - bb webhook test <id> --repo PROJECT/repo --url http://localhost:7990/status
+        - bb project webhook test PROJECT <id>
