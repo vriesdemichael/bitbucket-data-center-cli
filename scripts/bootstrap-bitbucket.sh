@@ -36,23 +36,53 @@ POLL_INTERVAL=5
 
 log() { echo "[bootstrap-bitbucket] $*" >&2; }
 
+# Extract a value from Bitbucket's setup HTML.
+#
+# Tries, in order: the xsrfTokenValue embedded in page JavaScript, then an
+# input whose name precedes its value, then one whose value precedes its name.
+#
+# The order is carried over verbatim from the python implementation this
+# replaced, including the part that looks odd: the xsrfTokenValue pattern is
+# tried first whatever field was asked for, so a page carrying one yields the
+# token even when asked for "step". Callers tolerate that today and every one
+# of them falls back on failure, so this is a faithful port rather than a
+# silent behaviour change. Worth revisiting separately.
+#
+# grep -oE rather than sed: sed's .* is greedy, so it would return the last
+# match on a line where python's re.search returned the first. grep -o emits
+# matches left to right, so head -n 1 is the first one.
 extract_html_input_value() {
-  python3 -c "
-import re, sys
-html = sys.argv[1]
-name = re.escape(sys.argv[2])
-patterns = [
-    rf\"xsrfTokenValue['\\\"]?\s*:\s*['\\\"]?([a-f0-9]+)\",
-    rf\"name=['\\\"]{name}['\\\"][^>]*value=['\\\"]([^'\\\"]*)\",
-    rf\"value=['\\\"]([^'\\\"]*)['\\\"][^>]*name=['\\\"]{name}['\\\"]\",
-]
-for pat in patterns:
-    match = re.search(pat, html)
-    if match:
-        print(match.group(1))
-        sys.exit(0)
-sys.exit(1)
-" "$1" "$2"
+  local html="$1" name="$2" match value
+
+  match=$(printf '%s' "$html" \
+    | grep -oE "xsrfTokenValue['\"]?[[:space:]]*:[[:space:]]*['\"]?[a-f0-9]+" \
+    | head -n 1) || true
+  if [ -n "$match" ]; then
+    printf '%s\n' "${match##*[!a-f0-9]}"
+    return 0
+  fi
+
+  match=$(printf '%s' "$html" \
+    | grep -oE "name=['\"]${name}['\"][^>]*value=['\"][^'\"]*['\"]" \
+    | head -n 1) || true
+  if [ -n "$match" ]; then
+    value="${match##*value=}"
+    value="${value#[\"\']}"
+    printf '%s\n' "${value%[\"\']}"
+    return 0
+  fi
+
+  match=$(printf '%s' "$html" \
+    | grep -oE "value=['\"][^'\"]*['\"][^>]*name=['\"]${name}['\"]" \
+    | head -n 1) || true
+  if [ -n "$match" ]; then
+    value="${match#*value=}"
+    value="${value#[\"\']}"
+    printf '%s\n' "${value%%[\"\']*}"
+    return 0
+  fi
+
+  return 1
 }
 
 extract_setup_step() {
@@ -230,15 +260,24 @@ enable_basic_auth() {
 # Print the Bitbucket server state (STARTING, FIRST_RUN, RUNNING, or empty on
 # error) by querying /status.
 query_state() {
-  local response
+  local response state
   response=$(curl -sf "${BASE_URL}/status" 2>/dev/null) || { echo ""; return 0; }
-  python3 -c "
-import sys, json
-try:
-    print(json.loads(sys.argv[1]).get('state', ''))
-except Exception:
-    print('')
-" "$response"
+
+  # The payload is a flat {"state":"RUNNING"}, so matching the one key is
+  # enough and avoids a JSON parser.
+  #
+  # The `|| true` is load-bearing under `set -euo pipefail`: grep exits 1 when
+  # it matches nothing, which would fail the pipeline and abort the script at
+  # `state=$(query_state)` rather than polling again. A body with no state is
+  # normal while the instance is still coming up, and the python this replaced
+  # swallowed it with a bare except. Empty means "not ready yet"; callers
+  # already handle that.
+  state=$(printf '%s' "$response" \
+    | grep -oE '"state"[[:space:]]*:[[:space:]]*"[^"]*"' \
+    | head -n 1 \
+    | sed -e 's/.*"\([^"]*\)"$/\1/') || true
+
+  printf '%s\n' "$state"
 }
 
 # Poll /status until one of the expected states is reached.

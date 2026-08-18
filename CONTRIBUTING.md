@@ -15,7 +15,7 @@ request.
 | **Go** (see `go.mod`, currently 1.26) | building and testing |
 | **[Task](https://taskfile.dev)** | every workflow in this repo is a `task` target |
 | **Docker** | runs the local Bitbucket instance for live tests |
-| **Bash** + **curl** + **python3** | `scripts/bootstrap-bitbucket.sh` needs all three |
+| **Bash** + **curl** | `scripts/bootstrap-bitbucket.sh` needs both |
 | **~6GB disk, ~4GB RAM** | the Bitbucket instance is a real JVM application |
 
 Install Task with:
@@ -30,17 +30,14 @@ Install the git hooks with:
 lefthook install
 ```
 
-**`python3` is a real requirement, not an optional extra.**
-`scripts/bootstrap-bitbucket.sh` uses it to parse tokens out of Bitbucket's
-setup pages, and the script is how basic authentication gets enabled — without
-it the live suite cannot authenticate. On Windows `python3` is not present by
-default and the failure is unhelpful, so install it or work from WSL. (Removing
-this dependency is tracked in
-[#346](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/346).)
-
 On Windows, run the shell scripts from Git Bash or WSL. Line endings are handled
 for you: `.gitattributes` pins the whole tree to LF regardless of your
 `core.autocrlf` setting.
+
+No Python is needed for any of this. One maintenance task, `docs:refresh-openapi`,
+still shells out to `python3` to sanity-check the vendored Atlassian spec after
+downloading it, and the documentation site builds through `uv` in `docs/` — but
+neither is part of building, testing, or running the live suite.
 
 ## First run
 
