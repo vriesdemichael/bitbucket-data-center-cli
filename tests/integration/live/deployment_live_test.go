@@ -40,6 +40,8 @@ func TestLiveDeploymentLifecycle(t *testing.T) {
 		"--env-type", "STAGING",
 		"--state", "SUCCESSFUL",
 		"--display-name", "Live deployment",
+		"--url", "http://localhost:65535/deployment",
+		"--env-url", "http://localhost:65535/env",
 		"--description", "created by the live suite",
 		"--deployment-sequence-number", "1",
 	)
