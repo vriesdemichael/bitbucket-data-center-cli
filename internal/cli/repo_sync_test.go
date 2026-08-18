@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -8,6 +9,7 @@ import (
 )
 
 func TestRepoSyncCLICommands(t *testing.T) {
+	var capturedSyncBody map[string]any
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
@@ -15,7 +17,12 @@ func TestRepoSyncCLICommands(t *testing.T) {
 			_, _ = w.Write([]byte(`{"enabled":true,"available":true}`))
 		case r.Method == http.MethodPost && r.URL.Path == "/rest/sync/latest/projects/PRJ/repos/repo":
 			_, _ = w.Write([]byte(`{"enabled":false,"available":true}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/default-branch":
+			// A bare `repo sync` resolves the ref from here, because the server
+			// requires one and will not pick a default itself.
+			_, _ = w.Write([]byte(`{"id":"refs/heads/main","displayId":"main"}`))
 		case r.Method == http.MethodPost && r.URL.Path == "/rest/sync/latest/projects/PRJ/repos/repo/synchronize":
+			_ = json.NewDecoder(r.Body).Decode(&capturedSyncBody)
 			w.WriteHeader(http.StatusNoContent)
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/repos":
 			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"slug":"repo","project":{"key":"PRJ"}}]}`))
@@ -63,8 +70,17 @@ func TestRepoSyncCLICommands(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sync trigger failed: %v, out: %s", err, out)
 	}
-	if !strings.Contains(out, "Synchronization triggered for fork PRJ/repo from upstream") {
+	if !strings.Contains(out, "Synchronization triggered for fork PRJ/repo on refs/heads/main from upstream") {
 		t.Fatalf("unexpected sync trigger output: %s", out)
+	}
+	// Both fields are required by the server, which answers a missing one with a
+	// 500 that names nothing, so this asserts bb never sends the empty body it
+	// used to.
+	if capturedSyncBody["refId"] != "refs/heads/main" {
+		t.Fatalf("refId = %v, want the default branch", capturedSyncBody["refId"])
+	}
+	if capturedSyncBody["action"] != "MERGE" {
+		t.Fatalf("action = %v, want MERGE by default", capturedSyncBody["action"])
 	}
 
 	// 5. Dry run sync trigger

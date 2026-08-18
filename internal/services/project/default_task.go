@@ -63,49 +63,10 @@ func (service *Service) AddDefaultTask(ctx context.Context, projectKey string, d
 		Description: trimmedDesc,
 	}
 
-	if sourceRef != nil && *sourceRef != "" {
-		ref := *sourceRef
-		typeId := openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId("ANY_REF_MATCHER")
-		body.SourceMatcher = &struct {
-			DisplayId *string `json:"displayId,omitempty"`
-			Id        *string `json:"id,omitempty"`
-			Type      *struct {
-				Id   openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			} `json:"type,omitempty"`
-		}{
-			Id:        &ref,
-			DisplayId: &ref,
-			Type: &struct {
-				Id   openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			}{
-				Id: typeId,
-			},
-		}
-	}
-
-	if targetRef != nil && *targetRef != "" {
-		ref := *targetRef
-		typeId := openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId("ANY_REF_MATCHER")
-		body.TargetMatcher = &struct {
-			DisplayId *string `json:"displayId,omitempty"`
-			Id        *string `json:"id,omitempty"`
-			Type      *struct {
-				Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			} `json:"type,omitempty"`
-		}{
-			Id:        &ref,
-			DisplayId: &ref,
-			Type: &struct {
-				Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			}{
-				Id: typeId,
-			},
-		}
-	}
+	// Both matchers are mandatory: the API rejects a default task that leaves
+	// either one out, so an unset flag becomes an any-ref matcher.
+	body.SourceMatcher = openapi.NewDefaultTaskSourceMatcher(sourceRef)
+	body.TargetMatcher = openapi.NewDefaultTaskTargetMatcher(targetRef)
 
 	response, err := service.client.AddDefaultTaskWithResponse(ctx, trimmedProject, body)
 	if err != nil {
@@ -145,49 +106,10 @@ func (service *Service) UpdateDefaultTask(ctx context.Context, projectKey string
 		Description: trimmedDesc,
 	}
 
-	if sourceRef != nil && *sourceRef != "" {
-		ref := *sourceRef
-		typeId := openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId("ANY_REF_MATCHER")
-		body.SourceMatcher = &struct {
-			DisplayId *string `json:"displayId,omitempty"`
-			Id        *string `json:"id,omitempty"`
-			Type      *struct {
-				Id   openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			} `json:"type,omitempty"`
-		}{
-			Id:        &ref,
-			DisplayId: &ref,
-			Type: &struct {
-				Id   openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			}{
-				Id: typeId,
-			},
-		}
-	}
-
-	if targetRef != nil && *targetRef != "" {
-		ref := *targetRef
-		typeId := openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId("ANY_REF_MATCHER")
-		body.TargetMatcher = &struct {
-			DisplayId *string `json:"displayId,omitempty"`
-			Id        *string `json:"id,omitempty"`
-			Type      *struct {
-				Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			} `json:"type,omitempty"`
-		}{
-			Id:        &ref,
-			DisplayId: &ref,
-			Type: &struct {
-				Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			}{
-				Id: typeId,
-			},
-		}
-	}
+	// Both matchers are mandatory: the API rejects a default task that leaves
+	// either one out, so an unset flag becomes an any-ref matcher.
+	body.SourceMatcher = openapi.NewDefaultTaskSourceMatcher(sourceRef)
+	body.TargetMatcher = openapi.NewDefaultTaskTargetMatcher(targetRef)
 
 	response, err := service.client.UpdateDefaultTaskWithResponse(ctx, trimmedProject, trimmedTaskID, body)
 	if err != nil {

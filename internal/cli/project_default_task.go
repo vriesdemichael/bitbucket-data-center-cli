@@ -129,8 +129,8 @@ func newProjectDefaultTaskCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	addCmd.Flags().StringVar(&sourceRef, "source-ref", "", "Source ref matcher (e.g. refs/heads/feature/*)")
-	addCmd.Flags().StringVar(&targetRef, "target-ref", "", "Target ref matcher (e.g. refs/heads/master)")
+	addCmd.Flags().StringVar(&sourceRef, "source-ref", "", "Source ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)")
+	addCmd.Flags().StringVar(&targetRef, "target-ref", "", "Target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)")
 	defaultTaskCmd.AddCommand(addCmd)
 
 	var updateDesc string
@@ -192,8 +192,8 @@ func newProjectDefaultTaskCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 	updateCmd.Flags().StringVar(&updateDesc, "description", "", "New task description")
-	updateCmd.Flags().StringVar(&sourceRef, "source-ref", "", "New source ref matcher")
-	updateCmd.Flags().StringVar(&targetRef, "target-ref", "", "New target ref matcher")
+	updateCmd.Flags().StringVar(&sourceRef, "source-ref", "", "New source ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)")
+	updateCmd.Flags().StringVar(&targetRef, "target-ref", "", "New target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)")
 	_ = updateCmd.MarkFlagRequired("description")
 	defaultTaskCmd.AddCommand(updateCmd)
 

@@ -80,8 +80,11 @@ func TestPRCommentPendingCommand(t *testing.T) {
 	if !strings.Contains(out, "Created pending comment 99") {
 		t.Fatalf("unexpected output: %s", out)
 	}
-	if capturedBody.Pending == nil || !*capturedBody.Pending {
-		t.Fatalf("expected pending to be true in request payload")
+	// The server treats pending as readOnly and reads the state instead, so this
+	// asserts the field that actually makes the comment a draft. Asserting the
+	// other one is what let a no-op flag ship.
+	if capturedBody.State == nil || *capturedBody.State != "PENDING" {
+		t.Fatalf("expected state PENDING in request payload, got %v", capturedBody.State)
 	}
 
 	// 2. Dry-run

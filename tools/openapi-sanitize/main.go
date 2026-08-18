@@ -113,6 +113,10 @@ func sanitize(inputPath, outputPath string) error {
 	}
 
 	fixedSchemaFields := fixEpochMillisFields(spec)
+	fixedPathParams := fixContentEncodedPathParams(spec)
+	renamedProperties := fixSchemaPropertyNames(spec)
+	fixedArrayProperties := fixArrayTypedProperties(spec)
+	fixedArrayResponses := fixArrayTypedResponses(spec)
 
 	output, err := json.MarshalIndent(spec, "", "  ")
 	if err != nil {
@@ -124,8 +128,8 @@ func sanitize(inputPath, outputPath string) error {
 	}
 
 	fmt.Printf(
-		"sanitized OpenAPI spec; fixed operations=%d renamed operationIds=%d fixed schema fields=%d\n",
-		fixedOperations, renamedOperationIDs, fixedSchemaFields,
+		"sanitized OpenAPI spec; fixed operations=%d renamed operationIds=%d fixed schema fields=%d fixed path params=%d renamed properties=%d fixed array properties=%d fixed array responses=%d\n",
+		fixedOperations, renamedOperationIDs, fixedSchemaFields, fixedPathParams, renamedProperties, fixedArrayProperties, fixedArrayResponses,
 	)
 	return nil
 }
@@ -304,4 +308,302 @@ func appendParameter(rawParameters any, name string) []any {
 func exitWithErr(err error) {
 	fmt.Fprintln(os.Stderr, err)
 	os.Exit(1)
+}
+
+// fixContentEncodedPathParams rewrites path parameters declared with a `content`
+// map into the equivalent plain `schema`.
+//
+// A parameter carrying `content: {application/json: {schema: ...}}` asks for the
+// value to be serialised as JSON, which is what oapi-codegen emits: a
+// json.Marshal of the argument rather than the usual style-based encoding. For a
+// string parameter that yields a path segment wrapped in literal double quotes,
+// and Bitbucket passes the quotes straight through to git:
+//
+//	git branch --contains "\"<sha>\"" ... -> malformed object name
+//
+// Bitbucket 10.2 declares exactly one parameter this way, commitId on the
+// branches/info endpoint, and it is plainly unintentional -- the same commit id
+// is a plain string schema on every other endpoint that takes one. The endpoint
+// answers correctly when the id is sent unquoted.
+func fixContentEncodedPathParams(spec map[string]any) int {
+	paths, ok := spec["paths"].(map[string]any)
+	if !ok {
+		return 0
+	}
+
+	fixed := 0
+	for _, rawPathItem := range paths {
+		pathItem, ok := rawPathItem.(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, rawOp := range pathItem {
+			op, ok := rawOp.(map[string]any)
+			if !ok {
+				continue
+			}
+			rawParams, ok := op["parameters"].([]any)
+			if !ok {
+				continue
+			}
+			for _, rawParam := range rawParams {
+				param, ok := rawParam.(map[string]any)
+				if !ok {
+					continue
+				}
+				if location, _ := param["in"].(string); location != "path" {
+					continue
+				}
+				if _, alreadyHasSchema := param["schema"]; alreadyHasSchema {
+					continue
+				}
+				content, ok := param["content"].(map[string]any)
+				if !ok {
+					continue
+				}
+				mediaType, ok := content["application/json"].(map[string]any)
+				if !ok {
+					continue
+				}
+				schema, ok := mediaType["schema"]
+				if !ok {
+					continue
+				}
+				param["schema"] = schema
+				delete(param, "content")
+				fixed++
+			}
+		}
+	}
+
+	return fixed
+}
+
+// schemaPropertyRename records a request property whose name in the spec is not
+// the name the server reads.
+type schemaPropertyRename struct {
+	schema       string
+	from         string
+	to           string
+	alsoRequired bool
+}
+
+// schemaPropertyRenames lists those renames.
+//
+// Only properties whose wire name has been confirmed against a running Bitbucket
+// belong here. A rename is not a workaround for an awkward name: it exists only
+// where sending the documented name fails and sending the other one works.
+var schemaPropertyRenames = []schemaPropertyRename{
+	{
+		// The apply-suggestion endpoint reads the commit message from `message`.
+		// Sending the documented `commitMessage` is rejected with
+		// "'message' cannot be null or empty", the same answer as sending
+		// nothing at all, so the field is also required rather than optional.
+		schema:       "RestApplySuggestionRequest",
+		from:         "commitMessage",
+		to:           "message",
+		alsoRequired: true,
+	},
+}
+
+// fixSchemaPropertyNames applies the confirmed renames to the component schemas.
+func fixSchemaPropertyNames(spec map[string]any) int {
+	components, ok := spec["components"].(map[string]any)
+	if !ok {
+		return 0
+	}
+	schemas, ok := components["schemas"].(map[string]any)
+	if !ok {
+		return 0
+	}
+
+	renamed := 0
+	for _, rename := range schemaPropertyRenames {
+		schema, ok := schemas[rename.schema].(map[string]any)
+		if !ok {
+			continue
+		}
+		properties, ok := schema["properties"].(map[string]any)
+		if !ok {
+			continue
+		}
+		property, present := properties[rename.from]
+		if !present {
+			continue
+		}
+		if _, taken := properties[rename.to]; taken {
+			continue
+		}
+
+		delete(properties, rename.from)
+		properties[rename.to] = property
+		renamed++
+
+		if !rename.alsoRequired {
+			continue
+		}
+		required, _ := schema["required"].([]any)
+		alreadyRequired := false
+		for _, name := range required {
+			if text, ok := name.(string); ok && text == rename.to {
+				alreadyRequired = true
+				break
+			}
+		}
+		if !alreadyRequired {
+			schema["required"] = append(required, rename.to)
+		}
+	}
+
+	return renamed
+}
+
+// schemaArrayProperty names a property the spec declares as a single object but
+// the server returns as an array of that object.
+type schemaArrayProperty struct {
+	schema   string
+	property string
+}
+
+// schemaArrayProperties lists those properties.
+//
+// The generated model for a bare object cannot decode a JSON array, so every
+// response carrying one fails with "cannot unmarshal array into Go struct
+// field". Only properties whose encoding has been confirmed against a running
+// Bitbucket are listed here; a plural name on its own is a hint, not evidence.
+var schemaArrayProperties = []schemaArrayProperty{
+	// A fork's ref synchronization status reports three collections of refs. The
+	// GET omits them entirely while synchronization is off, which is why only the
+	// call that enables it -- and so gets a populated body back -- failed.
+	{schema: "RestRefSyncStatus", property: "aheadRefs"},
+	{schema: "RestRefSyncStatus", property: "divergedRefs"},
+	{schema: "RestRefSyncStatus", property: "orphanedRefs"},
+}
+
+// fixArrayTypedProperties rewrites the listed properties into arrays of the
+// object they already describe.
+func fixArrayTypedProperties(spec map[string]any) int {
+	components, ok := spec["components"].(map[string]any)
+	if !ok {
+		return 0
+	}
+	schemas, ok := components["schemas"].(map[string]any)
+	if !ok {
+		return 0
+	}
+
+	fixed := 0
+	for _, entry := range schemaArrayProperties {
+		schema, ok := schemas[entry.schema].(map[string]any)
+		if !ok {
+			continue
+		}
+		properties, ok := schema["properties"].(map[string]any)
+		if !ok {
+			continue
+		}
+		property, ok := properties[entry.property].(map[string]any)
+		if !ok {
+			continue
+		}
+		if propertyType, _ := property["type"].(string); propertyType != "object" {
+			continue
+		}
+
+		// readOnly describes the field rather than its element type, so it moves
+		// up to the array and does not stay on the item schema.
+		wrapper := map[string]any{"type": "array", "items": property}
+		if readOnly, present := property["readOnly"]; present {
+			wrapper["readOnly"] = readOnly
+			delete(property, "readOnly")
+		}
+
+		properties[entry.property] = wrapper
+		fixed++
+	}
+
+	return fixed
+}
+
+// arrayTypedResponse names an operation response the spec describes as a single
+// object but the server sends as an array of that object.
+type arrayTypedResponse struct {
+	operationID string
+	status      string
+}
+
+// arrayTypedResponses lists those responses.
+//
+// Same rule as the property list: an entry belongs here only where the encoding
+// has been seen coming back from a running Bitbucket.
+var arrayTypedResponses = []arrayTypedResponse{
+	// Adding a GPG key answers with every key the submitted block contained, so
+	// even the ordinary one-key case comes back wrapped in an array. The
+	// description says "the GPG key that was just created", singular, which is
+	// what the schema was written from.
+	{operationID: "addKey", status: "200"},
+}
+
+// fixArrayTypedResponses rewrites the listed responses into arrays.
+func fixArrayTypedResponses(spec map[string]any) int {
+	paths, ok := spec["paths"].(map[string]any)
+	if !ok {
+		return 0
+	}
+
+	wanted := map[string]map[string]struct{}{}
+	for _, entry := range arrayTypedResponses {
+		if wanted[entry.operationID] == nil {
+			wanted[entry.operationID] = map[string]struct{}{}
+		}
+		wanted[entry.operationID][entry.status] = struct{}{}
+	}
+
+	fixed := 0
+	for _, rawPathItem := range paths {
+		pathItem, ok := rawPathItem.(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, rawOp := range pathItem {
+			op, ok := rawOp.(map[string]any)
+			if !ok {
+				continue
+			}
+			operationID, _ := op["operationId"].(string)
+			statuses, present := wanted[operationID]
+			if !present {
+				continue
+			}
+			responses, ok := op["responses"].(map[string]any)
+			if !ok {
+				continue
+			}
+			for status := range statuses {
+				response, ok := responses[status].(map[string]any)
+				if !ok {
+					continue
+				}
+				content, ok := response["content"].(map[string]any)
+				if !ok {
+					continue
+				}
+				mediaType, ok := content["application/json"].(map[string]any)
+				if !ok {
+					continue
+				}
+				schema, ok := mediaType["schema"].(map[string]any)
+				if !ok {
+					continue
+				}
+				if schemaType, _ := schema["type"].(string); schemaType == "array" {
+					continue
+				}
+				mediaType["schema"] = map[string]any{"type": "array", "items": schema}
+				fixed++
+			}
+		}
+	}
+
+	return fixed
 }

@@ -223,10 +223,25 @@ func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool) map[s
 			return true
 		}
 		identifier, ok := call.Fun.(*ast.Ident)
-		if !ok || identifier.Name != "executeLiveCLI" {
+		if !ok {
 			return true
 		}
-		if path := commandPathFromArgs(call.Args, valueFlags); path != "" {
+		// The stdin variant takes the input as an extra argument before the
+		// command words. Recognising only the plain helper reported commands
+		// that are driven through stdin -- the credential helper protocol, for
+		// one -- as never invoked, when they were covered all along.
+		leadingArgs := 1
+		switch identifier.Name {
+		case "executeLiveCLI":
+		case "executeLiveCLIWithStdin":
+			leadingArgs = 2
+		default:
+			return true
+		}
+		if len(call.Args) < leadingArgs {
+			return true
+		}
+		if path := commandPathFromArgs(call.Args[leadingArgs-1:], valueFlags); path != "" {
 			commands[path] = struct{}{}
 		}
 		return true

@@ -55,10 +55,15 @@ func (s *Service) ListGpgKeys(ctx context.Context, limit int) ([]openapigenerate
 	return results, nil
 }
 
-func (s *Service) AddGpgKey(ctx context.Context, keyText string) (openapigenerated.RestGpgKey, error) {
+// AddGpgKey submits an armored public key block and returns every key the server
+// took from it.
+//
+// The result is a list because a block can carry more than one key, and the
+// server answers with all of them even in the ordinary single-key case.
+func (s *Service) AddGpgKey(ctx context.Context, keyText string) ([]openapigenerated.RestGpgKey, error) {
 	trimmedKey := strings.TrimSpace(keyText)
 	if trimmedKey == "" {
-		return openapigenerated.RestGpgKey{}, apperrors.New(apperrors.KindValidation, "GPG public key text is required", nil)
+		return nil, apperrors.New(apperrors.KindValidation, "GPG public key text is required", nil)
 	}
 
 	body := openapigenerated.AddKeyJSONRequestBody{
@@ -67,16 +72,16 @@ func (s *Service) AddGpgKey(ctx context.Context, keyText string) (openapigenerat
 
 	resp, err := s.client.AddKeyWithResponse(ctx, nil, body)
 	if err != nil {
-		return openapigenerated.RestGpgKey{}, apperrors.New(apperrors.KindTransient, "failed to add GPG key", err)
+		return nil, apperrors.New(apperrors.KindTransient, "failed to add GPG key", err)
 	}
 	if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
-		return openapigenerated.RestGpgKey{}, err
+		return nil, err
 	}
 	if resp.JSON200 != nil {
 		return *resp.JSON200, nil
 	}
 
-	return openapigenerated.RestGpgKey{}, apperrors.New(apperrors.KindInternal, "unexpected empty response adding GPG key", nil)
+	return nil, apperrors.New(apperrors.KindInternal, "unexpected empty response adding GPG key", nil)
 }
 
 func (s *Service) RemoveGpgKey(ctx context.Context, fingerprintOrId string) error {

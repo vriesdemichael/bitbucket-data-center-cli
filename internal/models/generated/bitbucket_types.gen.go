@@ -2822,10 +2822,10 @@ type RestApplicationUserWithPermissionsType string
 
 // RestApplySuggestionRequest defines model for RestApplySuggestionRequest.
 type RestApplySuggestionRequest struct {
-	CommentVersion     int32   `json:"commentVersion"`
-	CommitMessage      *string `json:"commitMessage,omitempty"`
-	PullRequestVersion int32   `json:"pullRequestVersion"`
-	SuggestionIndex    int32   `json:"suggestionIndex"`
+	CommentVersion     int32  `json:"commentVersion"`
+	Message            string `json:"message"`
+	PullRequestVersion int32  `json:"pullRequestVersion"`
+	SuggestionIndex    int32  `json:"suggestionIndex"`
 }
 
 // RestAttachmentMetadata defines model for RestAttachmentMetadata.
@@ -5966,7 +5966,7 @@ type RestRefSyncRequestAction string
 
 // RestRefSyncStatus defines model for RestRefSyncStatus.
 type RestRefSyncStatus struct {
-	AheadRefs *struct {
+	AheadRefs *[]struct {
 		DisplayId string                           `json:"displayId"`
 		Id        string                           `json:"id"`
 		State     *RestRefSyncStatusAheadRefsState `json:"state,omitempty"`
@@ -5974,7 +5974,7 @@ type RestRefSyncStatus struct {
 		Type      RestRefSyncStatusAheadRefsType   `json:"type"`
 	} `json:"aheadRefs,omitempty"`
 	Available    *bool `json:"available,omitempty"`
-	DivergedRefs *struct {
+	DivergedRefs *[]struct {
 		DisplayId string                              `json:"displayId"`
 		Id        string                              `json:"id"`
 		State     *RestRefSyncStatusDivergedRefsState `json:"state,omitempty"`
@@ -5983,7 +5983,7 @@ type RestRefSyncStatus struct {
 	} `json:"divergedRefs,omitempty"`
 	Enabled      *bool    `json:"enabled,omitempty"`
 	LastSync     *float32 `json:"lastSync,omitempty"`
-	OrphanedRefs *struct {
+	OrphanedRefs *[]struct {
 		DisplayId string                              `json:"displayId"`
 		Id        string                              `json:"id"`
 		State     *RestRefSyncStatusOrphanedRefsState `json:"state,omitempty"`

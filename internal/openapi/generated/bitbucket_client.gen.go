@@ -2829,10 +2829,10 @@ type RestApplicationUserWithPermissionsType string
 
 // RestApplySuggestionRequest defines model for RestApplySuggestionRequest.
 type RestApplySuggestionRequest struct {
-	CommentVersion     int32   `json:"commentVersion"`
-	CommitMessage      *string `json:"commitMessage,omitempty"`
-	PullRequestVersion int32   `json:"pullRequestVersion"`
-	SuggestionIndex    int32   `json:"suggestionIndex"`
+	CommentVersion     int32  `json:"commentVersion"`
+	Message            string `json:"message"`
+	PullRequestVersion int32  `json:"pullRequestVersion"`
+	SuggestionIndex    int32  `json:"suggestionIndex"`
 }
 
 // RestAttachmentMetadata defines model for RestAttachmentMetadata.
@@ -5973,7 +5973,7 @@ type RestRefSyncRequestAction string
 
 // RestRefSyncStatus defines model for RestRefSyncStatus.
 type RestRefSyncStatus struct {
-	AheadRefs *struct {
+	AheadRefs *[]struct {
 		DisplayId string                           `json:"displayId"`
 		Id        string                           `json:"id"`
 		State     *RestRefSyncStatusAheadRefsState `json:"state,omitempty"`
@@ -5981,7 +5981,7 @@ type RestRefSyncStatus struct {
 		Type      RestRefSyncStatusAheadRefsType   `json:"type"`
 	} `json:"aheadRefs,omitempty"`
 	Available    *bool `json:"available,omitempty"`
-	DivergedRefs *struct {
+	DivergedRefs *[]struct {
 		DisplayId string                              `json:"displayId"`
 		Id        string                              `json:"id"`
 		State     *RestRefSyncStatusDivergedRefsState `json:"state,omitempty"`
@@ -5990,7 +5990,7 @@ type RestRefSyncStatus struct {
 	} `json:"divergedRefs,omitempty"`
 	Enabled      *bool    `json:"enabled,omitempty"`
 	LastSync     *float32 `json:"lastSync,omitempty"`
-	OrphanedRefs *struct {
+	OrphanedRefs *[]struct {
 		DisplayId string                              `json:"displayId"`
 		Id        string                              `json:"id"`
 		State     *RestRefSyncStatusOrphanedRefsState `json:"state,omitempty"`
@@ -46774,12 +46774,10 @@ func NewFindByCommitRequest(server string, projectKey string, repositorySlug str
 
 	var pathParam2 string
 
-	var pathParamBuf2 []byte
-	pathParamBuf2, err = json.Marshal(commitId)
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "commitId", runtime.ParamLocationPath, commitId)
 	if err != nil {
 		return nil, err
 	}
-	pathParam2 = string(pathParamBuf2)
 
 	serverURL, err := url.Parse(server)
 	if err != nil {
@@ -69387,7 +69385,7 @@ func (r GetKeysForUserResponse) StatusCode() int {
 type AddKeyResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *RestGpgKey
+	JSON200      *[]RestGpgKey
 	JSON400      *struct {
 		Errors *[]RestErrorMessage `json:"errors,omitempty"`
 	}
@@ -98497,7 +98495,7 @@ func ParseAddKeyResponse(rsp *http.Response) (*AddKeyResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RestGpgKey
+		var dest []RestGpgKey
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

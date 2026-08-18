@@ -705,48 +705,10 @@ func (service *Service) AddDefaultTask(ctx context.Context, repo RepositoryRef, 
 	body := openapigenerated.RestDefaultTaskRequest{
 		Description: trimmed,
 	}
-	if sourceRef != nil && *sourceRef != "" {
-		ref := *sourceRef
-		typeId := openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId("ANY_REF_MATCHER")
-		body.SourceMatcher = &struct {
-			DisplayId *string `json:"displayId,omitempty"`
-			Id        *string `json:"id,omitempty"`
-			Type      *struct {
-				Id   openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			} `json:"type,omitempty"`
-		}{
-			Id:        &ref,
-			DisplayId: &ref,
-			Type: &struct {
-				Id   openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			}{
-				Id: typeId,
-			},
-		}
-	}
-	if targetRef != nil && *targetRef != "" {
-		ref := *targetRef
-		typeId := openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId("ANY_REF_MATCHER")
-		body.TargetMatcher = &struct {
-			DisplayId *string `json:"displayId,omitempty"`
-			Id        *string `json:"id,omitempty"`
-			Type      *struct {
-				Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			} `json:"type,omitempty"`
-		}{
-			Id:        &ref,
-			DisplayId: &ref,
-			Type: &struct {
-				Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			}{
-				Id: typeId,
-			},
-		}
-	}
+	// Both matchers are mandatory: the API rejects a default task that leaves
+	// either one out, so an unset flag becomes an any-ref matcher.
+	body.SourceMatcher = openapi.NewDefaultTaskSourceMatcher(sourceRef)
+	body.TargetMatcher = openapi.NewDefaultTaskTargetMatcher(targetRef)
 
 	response, err := service.client.AddDefaultTask1WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
@@ -779,48 +741,10 @@ func (service *Service) UpdateDefaultTask(ctx context.Context, repo RepositoryRe
 	body := openapigenerated.RestDefaultTaskRequest{
 		Description: trimmed,
 	}
-	if sourceRef != nil && *sourceRef != "" {
-		ref := *sourceRef
-		typeId := openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId("ANY_REF_MATCHER")
-		body.SourceMatcher = &struct {
-			DisplayId *string `json:"displayId,omitempty"`
-			Id        *string `json:"id,omitempty"`
-			Type      *struct {
-				Id   openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			} `json:"type,omitempty"`
-		}{
-			Id:        &ref,
-			DisplayId: &ref,
-			Type: &struct {
-				Id   openapigenerated.RestDefaultTaskRequestSourceMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			}{
-				Id: typeId,
-			},
-		}
-	}
-	if targetRef != nil && *targetRef != "" {
-		ref := *targetRef
-		typeId := openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId("ANY_REF_MATCHER")
-		body.TargetMatcher = &struct {
-			DisplayId *string `json:"displayId,omitempty"`
-			Id        *string `json:"id,omitempty"`
-			Type      *struct {
-				Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			} `json:"type,omitempty"`
-		}{
-			Id:        &ref,
-			DisplayId: &ref,
-			Type: &struct {
-				Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
-				Name string                                                     `json:"name"`
-			}{
-				Id: typeId,
-			},
-		}
-	}
+	// Both matchers are mandatory: the API rejects a default task that leaves
+	// either one out, so an unset flag becomes an any-ref matcher.
+	body.SourceMatcher = openapi.NewDefaultTaskSourceMatcher(sourceRef)
+	body.TargetMatcher = openapi.NewDefaultTaskTargetMatcher(targetRef)
 
 	response, err := service.client.UpdateDefaultTask1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, body)
 	if err != nil {

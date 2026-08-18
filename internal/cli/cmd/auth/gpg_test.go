@@ -23,7 +23,9 @@ func TestAuthGpgKeyCommands(t *testing.T) {
 			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"426","emailAddress":"user@example.com","fingerprint":"FINGERPRINT1"}]}`))
 		case r.Method == http.MethodPost && r.URL.Path == "/rest/gpg/latest/keys":
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"id":"426","emailAddress":"user@example.com","fingerprint":"FINGERPRINT1"}`))
+			// The server answers with every key it took from the block, so this is
+			// an array even for one key.
+			_, _ = w.Write([]byte(`[{"id":"426","emailAddress":"user@example.com","fingerprint":"FINGERPRINT1"}]`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/rest/gpg/latest/keys/426":
 			w.WriteHeader(http.StatusNoContent)
 		case r.Method == http.MethodDelete && r.URL.Path == "/rest/gpg/latest/keys":

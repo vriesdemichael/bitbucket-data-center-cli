@@ -104,20 +104,24 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			key, err := svc.AddGpgKey(cmd.Context(), keyContent)
+			keys, err := svc.AddGpgKey(cmd.Context(), keyContent)
 			if err != nil {
 				return err
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), key)
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"keys": keys})
 			}
 
-			id := ""
-			if key.Id != nil {
-				id = *key.Id
+			// A block can carry several keys and the server reports each one, so
+			// the output names them rather than claiming a single success.
+			ids := make([]string, 0, len(keys))
+			for _, key := range keys {
+				if key.Id != nil {
+					ids = append(ids, *key.Id)
+				}
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "GPG key %s added successfully\n", style.Secondary.Render(id))
+			fmt.Fprintf(cmd.OutOrStdout(), "GPG key %s added successfully\n", style.Secondary.Render(strings.Join(ids, ", ")))
 			return nil
 		},
 	}

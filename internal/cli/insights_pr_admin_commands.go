@@ -2196,9 +2196,14 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			prID := args[0]
 			commentID := args[1]
 
-			req := openapigenerated.RestApplySuggestionRequest{}
-			if cmd.Flags().Changed("commit-message") {
-				req.CommitMessage = &commentSuggestionMsg
+			// The server requires a commit message and rejects the request
+			// without one, so an omitted flag gets the message Bitbucket's own
+			// UI would have written rather than an error.
+			req := openapigenerated.RestApplySuggestionRequest{
+				Message: fmt.Sprintf("Apply suggestion from comment %s", commentID),
+			}
+			if strings.TrimSpace(commentSuggestionMsg) != "" {
+				req.Message = commentSuggestionMsg
 			}
 			if cmd.Flags().Changed("index") {
 				req.SuggestionIndex = commentSuggestionIdx
@@ -2249,7 +2254,7 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	commentApplySuggestionCmd.Flags().StringVar(&commentSuggestionMsg, "commit-message", "", "Optional commit message for the suggestion application")
+	commentApplySuggestionCmd.Flags().StringVar(&commentSuggestionMsg, "commit-message", "", "Commit message for the applied suggestion (default: names the comment)")
 	commentApplySuggestionCmd.Flags().Int32Var(&commentSuggestionIdx, "index", 0, "Optional index of the suggestion in the comment (default 0)")
 	commentApplySuggestionCmd.Flags().Int32Var(&commentSuggestionCommentVer, "comment-version", 0, "Optional expected version of the comment")
 	commentApplySuggestionCmd.Flags().Int32Var(&commentSuggestionPrVer, "pr-version", 0, "Optional expected version of the pull request")

@@ -236,7 +236,14 @@ func (h *liveHarness) pushCommitsToRepository(projectKey, repositorySlug string,
 	return nil
 }
 
+// pushCommitOnBranch writes a file naming the branch and pushes it.
 func (h *liveHarness) pushCommitOnBranch(projectKey, repositorySlug, branch, fileName string) error {
+	return h.pushFileOnBranch(projectKey, repositorySlug, branch, fileName, fmt.Sprintf("branch=%s\n", branch))
+}
+
+// pushFileOnBranch is the same with the content chosen by the caller, for tests
+// that need two sides to conflict rather than merely differ.
+func (h *liveHarness) pushFileOnBranch(projectKey, repositorySlug, branch, fileName, content string) error {
 	tempDir := h.t.TempDir()
 
 	if err := runGit(tempDir, "init"); err != nil {
