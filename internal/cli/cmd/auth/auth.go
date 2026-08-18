@@ -93,9 +93,14 @@ Reporting alone is not enough to be useful: an expired token, an unreachable
 host and a working setup used to produce the same confident output. Each line
 now says which it is, and what to do when it is not the last one.
 
+Lines marked ! are advisory: they report something worth knowing that does not
+mean the setup is broken. The git credential helper is one — it is needed to git
+push and irrelevant to anything that only calls the API — so it is reported but
+never fails the command.
+
 Exit status is unchanged by default, so existing scripts keep working. Pass
---check to exit non-zero when something is wrong, which is the form worth
-putting in CI.
+--check to exit non-zero when a non-advisory check fails, which is the form
+worth putting in CI.
 
 Under --json the exit status is always zero and the verdict is the "ok" field.
 Machine output is a single document on stdout, so a failing exit would replace
@@ -118,9 +123,11 @@ for.`,
 				gitCredentialHelperState(cmd.Context(), defaultGitBackend(), cfg.BitbucketURL),
 			}
 
+			// Advisory failures are reported but do not make the setup unhealthy.
+			// See the note on statusCheck.Advisory.
 			allOK := true
 			for _, check := range checks {
-				if !check.OK {
+				if !check.OK && !check.Advisory {
 					allOK = false
 				}
 			}
@@ -156,9 +163,16 @@ for.`,
 			fmt.Fprintf(cmd.OutOrStdout(), "Credential storage: %s\n", describeCredentialStorage(cfg))
 
 			for _, check := range checks {
-				marker := "x"
-				if check.OK {
+				// An advisory miss reads as a suggestion rather than breakage,
+				// because for an API-only setup that is exactly what it is.
+				marker := "-"
+				switch {
+				case check.OK:
 					marker = "-"
+				case check.Advisory:
+					marker = "!"
+				default:
+					marker = "x"
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s %s: %s\n", marker, check.Name, check.Detail)
 				if check.Remedy != "" {

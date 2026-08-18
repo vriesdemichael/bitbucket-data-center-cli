@@ -151,3 +151,31 @@ func TestGitCredentialHelperState(t *testing.T) {
 		}
 	})
 }
+
+// TestGitCredentialHelperCheckIsAdvisory guards the distinction a CI run
+// exposed. The helper is needed to git push and irrelevant to anything that
+// only calls the API, so its absence must not report a broken setup to the CI
+// pipelines and agents that never run git at all.
+func TestGitCredentialHelperCheckIsAdvisory(t *testing.T) {
+	for _, testCase := range []struct {
+		name  string
+		value string
+	}{
+		{name: "configured", value: `!"/usr/local/bin/bb" auth git-credential`},
+		{name: "not configured", value: ""},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			check := gitCredentialHelperState(context.Background(), &gitConfigStub{value: testCase.value}, "https://bitbucket.example.com")
+			if !check.Advisory {
+				t.Fatalf("the git helper check must be advisory whatever it finds, got %#v", check)
+			}
+		})
+	}
+
+	// The authentication check is the opposite: a rejected credential is a
+	// broken setup, and must count.
+	identity := statusCheck{Name: "authentication"}
+	if identity.Advisory {
+		t.Fatal("authentication must not be advisory")
+	}
+}
