@@ -21,6 +21,8 @@ func TestProjectSettingsCLI(t *testing.T) {
 			_, _ = w.Write([]byte(`{"id":123,"name":"wh-new","url":"http://url","active":true}`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/PRJ/webhooks/123":
 			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/webhooks/123":
+			_, _ = w.Write([]byte(`{"id":123,"name":"wh","url":"http://url","active":true}`))
 		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/webhooks/test":
 			_, _ = w.Write([]byte(`{"status":"ok"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/webhooks/123/statistics":

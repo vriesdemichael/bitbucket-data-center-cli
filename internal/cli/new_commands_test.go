@@ -55,10 +55,10 @@ func TestNewCLICommandsMock(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks":
 			_, _ = w.Write([]byte(`{"values":[{"id":1,"name":"hook1","url":"http://test","active":true,"events":["repo:refs_changed"]},{"id":2,"name":"hook2","url":"http://test2","active":false,"events":["repo:modified"]}]}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/1":
-			_, _ = w.Write([]byte(`{"id":1,"name":"hook1"}`))
+			_, _ = w.Write([]byte(`{"id":1,"name":"hook1","url":"http://test"}`))
 		case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/1":
 			_, _ = w.Write([]byte(`{"id":1,"name":"hook1-updated"}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/test" && r.URL.RawQuery == "webhookId=1":
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/test" && r.URL.Query().Get("webhookId") == "1" && r.URL.Query().Get("url") != "":
 			_, _ = w.Write([]byte(`{"status":"success"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/1/statistics":
 			_, _ = w.Write([]byte(`{"invocations":10}`))
@@ -345,10 +345,10 @@ func TestNewCLICommandsDryRunAndJSON(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks":
 			_, _ = w.Write([]byte(`{"values":[{"id":1,"name":"hook1","url":"http://test","active":true,"events":["repo:refs_changed"]},{"id":2,"name":"hook2","url":"http://test2","active":false,"events":["repo:modified"]}]}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/1":
-			_, _ = w.Write([]byte(`{"id":1,"name":"hook1"}`))
+			_, _ = w.Write([]byte(`{"id":1,"name":"hook1","url":"http://test"}`))
 		case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/1":
 			_, _ = w.Write([]byte(`{"id":1,"name":"hook1-updated"}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/test" && r.URL.RawQuery == "webhookId=1":
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/test" && r.URL.Query().Get("webhookId") == "1" && r.URL.Query().Get("url") != "":
 			_, _ = w.Write([]byte(`{"status":"success"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/webhooks/1/statistics":
 			_, _ = w.Write([]byte(`{"invocations":10}`))

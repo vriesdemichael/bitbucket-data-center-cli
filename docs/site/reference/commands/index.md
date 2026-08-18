@@ -5612,6 +5612,9 @@ Trigger a connection test ping
 Usage:
   bb project webhook test <project-key> <webhook-id> [flags]
 
+Flags:
+      --url string   Test this URL instead of the webhook's configured one
+
 Global Flags:
       --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -9181,6 +9184,9 @@ Test connection to repository webhook URL by sending a ping event
 
 Usage:
   bb webhook test <id> [flags]
+
+Flags:
+      --url string   Test this URL instead of the webhook's configured one
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust

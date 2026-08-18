@@ -296,6 +296,7 @@ func newProjectWebhookCommand(options *rootOptions) *cobra.Command {
 	}
 	webhookCmd.AddCommand(deleteCmd)
 
+	var projectWebhookTestURL string
 	testCmd := &cobra.Command{
 		Use:   "test <project-key> <webhook-id>",
 		Short: "Trigger a connection test ping",
@@ -331,7 +332,7 @@ func newProjectWebhookCommand(options *rootOptions) *cobra.Command {
 				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
 			}
 
-			res, err := service.TestProjectWebhook(cmd.Context(), args[0], args[1])
+			res, err := service.TestProjectWebhook(cmd.Context(), args[0], args[1], projectWebhookTestURL)
 			if err != nil {
 				return err
 			}
@@ -349,6 +350,9 @@ func newProjectWebhookCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
+	// The server requires a url even though the spec marks it optional; bb
+	// supplies the webhook's own by default. See #383.
+	testCmd.Flags().StringVar(&projectWebhookTestURL, "url", "", "Test this URL instead of the webhook's configured one")
 	webhookCmd.AddCommand(testCmd)
 
 	var summary bool

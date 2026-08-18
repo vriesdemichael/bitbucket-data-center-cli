@@ -80,12 +80,18 @@ func TestLiveRepositoryWebhookLifecycle(t *testing.T) {
 		t.Fatalf("expected the rename to persist, got: %s", afterUpdate)
 	}
 
-	// bb webhook test is deliberately not asserted here. The request matches the
-	// 10.2 spec — webhookId goes in the query string, and bb sends it — but the
-	// server answers with an unhandled exception and a 500 whatever URL the
-	// webhook points at. Asserting the failure would pin a server bug as if it
-	// were intended behaviour, so the command stays uncovered and the finding is
-	// filed instead.
+	// Fixed in this branch: bb now sends the webhook's url alongside webhookId,
+	// which the server requires despite the spec marking it optional. Verified
+	// directly — webhookId alone returns 500, webhookId with url returns 200.
+	if _, err := executeLiveCLI(t, "--json", "webhook", "test", webhookID); err != nil {
+		t.Fatalf("webhook test failed: %v", err)
+	}
+
+	// The override is what the endpoint is documented for: testing connectivity
+	// to a candidate url before saving it.
+	if _, err := executeLiveCLI(t, "--json", "webhook", "test", webhookID, "--url", "http://localhost:7990/status"); err != nil {
+		t.Fatalf("webhook test with an explicit url failed: %v", err)
+	}
 
 	if _, err := executeLiveCLI(t, "--json", "webhook", "stats", webhookID, "--summary"); err != nil {
 		t.Fatalf("webhook stats failed: %v", err)
@@ -143,7 +149,9 @@ func TestLiveProjectWebhookLifecycle(t *testing.T) {
 		t.Fatalf("expected the rename to persist, got: %s", afterUpdate)
 	}
 
-	// Same server-side 500 as the repository variant; see the note there.
+	if _, err := executeLiveCLI(t, "--json", "project", "webhook", "test", seeded.Key, webhookID); err != nil {
+		t.Fatalf("project webhook test failed: %v", err)
+	}
 
 	if _, err := executeLiveCLI(t, "--json", "project", "webhook", "stats", seeded.Key, webhookID, "--summary"); err != nil {
 		t.Fatalf("project webhook stats failed: %v", err)
