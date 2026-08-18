@@ -127,26 +127,6 @@ func TestInsightsAndPRDryRunPredictionBranches(t *testing.T) {
 	if err != nil || !strings.Contains(out, `"predicted_action": "no-op"`) {
 		t.Fatalf("expected pr reviewer remove no-op prediction, err=%v output=%s", err, out)
 	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "task", "create", "20", "--text", "dry-run task")
-	if err != nil || !strings.Contains(out, `"predicted_action": "create"`) {
-		t.Fatalf("expected pr task create dry-run create prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "task", "update", "20", "--task", "700", "--text", "same task", "--resolved=false")
-	if err != nil || !strings.Contains(out, `"predicted_action": "no-op"`) {
-		t.Fatalf("expected pr task update no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "task", "update", "20", "--task", "999", "--text", "missing")
-	if err != nil || !strings.Contains(out, `"predicted_action": "blocked"`) {
-		t.Fatalf("expected pr task update blocked prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "task", "delete", "20", "--task", "999")
-	if err != nil || !strings.Contains(out, `"predicted_action": "no-op"`) {
-		t.Fatalf("expected pr task delete no-op prediction, err=%v output=%s", err, out)
-	}
 }
 
 func TestGovernanceAndRepoDryRunPredictionBranches(t *testing.T) {
@@ -522,9 +502,6 @@ func TestDryRunRepoPermissionPrechecksFailBeforePlanning(t *testing.T) {
 		{name: "pr review unapprove", args: []string{"--json", "--dry-run", "pr", "review", "unapprove", "20"}},
 		{name: "pr reviewer add", args: []string{"--json", "--dry-run", "pr", "review", "reviewer", "add", "20", "--user", "alice"}},
 		{name: "pr reviewer remove", args: []string{"--json", "--dry-run", "pr", "review", "reviewer", "remove", "20", "--user", "alice"}},
-		{name: "pr task create", args: []string{"--json", "--dry-run", "pr", "task", "create", "20", "--text", "Task"}},
-		{name: "pr task update", args: []string{"--json", "--dry-run", "pr", "task", "update", "20", "--task", "700", "--text", "Task"}},
-		{name: "pr task delete", args: []string{"--json", "--dry-run", "pr", "task", "delete", "20", "--task", "700"}},
 		{name: "repo admin fork", args: []string{"--json", "--dry-run", "repo", "admin", "fork", "--repo", "TEST/demo", "--name", "forked"}},
 		{name: "repo admin update", args: []string{"--json", "--dry-run", "repo", "admin", "update", "--repo", "TEST/demo"}},
 		{name: "repo admin delete", args: []string{"--json", "--dry-run", "repo", "admin", "delete", "--repo", "TEST/demo"}},

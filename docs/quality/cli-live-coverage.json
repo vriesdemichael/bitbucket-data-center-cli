@@ -1,10 +1,10 @@
 {
   "version": 1,
   "summary": {
-    "runnable_commands": 229,
-    "covered_commands": 222,
-    "covered_percent": 96.94323144104804,
-    "masked_commands": 4,
+    "runnable_commands": 227,
+    "covered_commands": 224,
+    "covered_percent": 98.6784140969163,
+    "masked_commands": 0,
     "uncovered_commands": 3
   },
   "covered": [
@@ -90,6 +90,8 @@
     "pr comment get",
     "pr comment list",
     "pr comment react",
+    "pr comment reopen",
+    "pr comment resolve",
     "pr commits",
     "pr create",
     "pr decline",
@@ -231,12 +233,7 @@
     "webhook test",
     "webhook update"
   ],
-  "known_masked": [
-    "pr task create",
-    "pr task delete",
-    "pr task list",
-    "pr task update"
-  ],
+  "known_masked": [],
   "known_uncovered": [
     "ai mcp serve",
     "ai mcp tools",

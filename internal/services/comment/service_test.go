@@ -744,3 +744,96 @@ func TestCountTasksValidatesTarget(t *testing.T) {
 		t.Fatalf("expected a validation error for a missing project key")
 	}
 }
+
+// TestSetStateResolvesAndReopens covers the state transitions that replaced
+// marking a pull request task done.
+func TestSetStateResolvesAndReopens(t *testing.T) {
+	var sentBody map[string]any
+	currentVersion := int32(4)
+
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Method {
+		case http.MethodGet:
+			// The version the update needs; the caller did not supply one.
+			_, _ = w.Write([]byte(`{"id":7,"version":4,"state":"OPEN","severity":"BLOCKER"}`))
+		case http.MethodPut:
+			_ = json.NewDecoder(r.Body).Decode(&sentBody)
+			_, _ = w.Write([]byte(`{"id":7,"version":5,"state":"RESOLVED","severity":"BLOCKER"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+
+	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
+
+	updated, err := service.SetState(context.Background(), target, "7", CommentStateResolved, nil)
+	if err != nil {
+		t.Fatalf("resolve failed: %v", err)
+	}
+	if updated.State == nil || *updated.State != "RESOLVED" {
+		t.Fatalf("state = %v, want RESOLVED", updated.State)
+	}
+	if sentBody["state"] != "RESOLVED" {
+		t.Fatalf("sent state = %v, want RESOLVED", sentBody["state"])
+	}
+	// The endpoint rejects a request without the version -- 409, reporting
+	// expectedVersion -1 -- so reading it first is not an optimisation.
+	if sentBody["version"] != float64(currentVersion) {
+		t.Fatalf("sent version = %v, want the version read from the server", sentBody["version"])
+	}
+	// Only the state moves. Sending the text back would overwrite an edit made
+	// between the read and the write.
+	if _, present := sentBody["text"]; present {
+		t.Fatalf("text should not be sent when only changing state, got: %v", sentBody)
+	}
+
+	if _, err := service.SetState(context.Background(), target, "7", CommentStateOpen, nil); err != nil {
+		t.Fatalf("reopen failed: %v", err)
+	}
+	if sentBody["state"] != "OPEN" {
+		t.Fatalf("sent state = %v, want OPEN", sentBody["state"])
+	}
+}
+
+func TestSetStateValidation(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {})
+	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
+
+	if _, err := service.SetState(context.Background(), target, "  ", CommentStateResolved, nil); err == nil {
+		t.Fatal("expected a validation error for an empty comment id")
+	}
+	if _, err := service.SetState(context.Background(), target, "7", CommentState("DONE"), nil); err == nil {
+		t.Fatal("expected a validation error for an unknown state")
+	}
+}
+
+// A supplied version is used as given, so a caller holding one does not pay for
+// an extra read.
+func TestSetStateUsesSuppliedVersion(t *testing.T) {
+	var sentBody map[string]any
+	reads := 0
+
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			reads++
+			_, _ = w.Write([]byte(`{"id":7,"version":99}`))
+			return
+		}
+		_ = json.NewDecoder(r.Body).Decode(&sentBody)
+		_, _ = w.Write([]byte(`{"id":7,"version":3,"state":"RESOLVED"}`))
+	})
+
+	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
+	supplied := int32(2)
+	if _, err := service.SetState(context.Background(), target, "7", CommentStateResolved, &supplied); err != nil {
+		t.Fatalf("resolve with a supplied version failed: %v", err)
+	}
+	if reads != 0 {
+		t.Fatalf("expected no read when a version is supplied, got %d", reads)
+	}
+	if sentBody["version"] != float64(2) {
+		t.Fatalf("sent version = %v, want the supplied 2", sentBody["version"])
+	}
+}

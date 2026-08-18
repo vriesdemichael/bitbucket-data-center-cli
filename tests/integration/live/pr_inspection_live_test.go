@@ -79,8 +79,7 @@ func TestLivePullRequestInspection(t *testing.T) {
 	}
 }
 
-// bb pr task create|list|update|delete are deliberately not covered here.
-// The pull request task endpoints do not exist in Bitbucket 10.2 — the vendored
-// spec has no pull-requests/{id}/tasks path at all — so the commands answer 404
-// and cannot be made to pass. Removal is filed separately; a test that skipped
-// on the error is exactly what let this survive for years.
+// Pull request tasks are gone from bb, along with the endpoints they called.
+// Bitbucket folded tasks into comments carrying a blocker severity, so the
+// coverage lives in TestLivePullRequestCommentResolveReopen instead: add a
+// blocker, resolve it, reopen it.

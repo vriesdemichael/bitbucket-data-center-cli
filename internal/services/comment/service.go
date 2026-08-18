@@ -519,3 +519,64 @@ func validateTarget(target Target) error {
 
 	return nil
 }
+
+// CommentState is the resolution state of a pull request comment.
+//
+// Bitbucket replaced pull request tasks with blocker comments, and this is what
+// took the place of marking a task done: a resolved comment carries a resolver
+// and drops out of the unresolved counts.
+type CommentState string
+
+const (
+	CommentStateOpen     CommentState = "OPEN"
+	CommentStateResolved CommentState = "RESOLVED"
+)
+
+// SetState resolves or reopens a comment.
+//
+// The version is read first unless the caller supplies one. The endpoint uses it
+// for optimistic concurrency and rejects a request without it -- 409
+// CommentOutOfDateException, reporting expectedVersion -1 -- so leaving it out is
+// not an option, and asking every caller for it would be ceremony over a value
+// the server already holds.
+func (service *Service) SetState(ctx context.Context, target Target, commentID string, state CommentState, version *int32) (openapigenerated.RestComment, error) {
+	if err := validateTarget(target); err != nil {
+		return openapigenerated.RestComment{}, err
+	}
+
+	trimmedCommentID := strings.TrimSpace(commentID)
+	if trimmedCommentID == "" {
+		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindValidation, "comment id is required", nil)
+	}
+
+	switch state {
+	case CommentStateOpen, CommentStateResolved:
+	default:
+		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindValidation, "state must be OPEN or RESOLVED", nil)
+	}
+
+	resolvedVersion := version
+	if resolvedVersion == nil {
+		current, err := service.Get(ctx, target, trimmedCommentID)
+		if err != nil {
+			return openapigenerated.RestComment{}, err
+		}
+		resolvedVersion = current.Version
+	}
+
+	stateValue := string(state)
+	body := openapigenerated.RestComment{State: &stateValue, Version: resolvedVersion}
+
+	response, err := service.client.UpdateComment2WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, body)
+	if err != nil {
+		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to update pull request comment state", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapigenerated.RestComment{}, err
+	}
+	if response.ApplicationjsonCharsetUTF8200 != nil {
+		return *response.ApplicationjsonCharsetUTF8200, nil
+	}
+
+	return body, nil
+}

@@ -1861,10 +1861,6 @@ func TestPRCoreConfigErrorsCLI(t *testing.T) {
 		{"pr", "review", "unapprove", "30", "--repo", "PRJ/demo"},
 		{"pr", "review", "reviewer", "add", "30", "--user", "u", "--repo", "PRJ/demo"},
 		{"pr", "review", "reviewer", "remove", "30", "--user", "u", "--repo", "PRJ/demo"},
-		{"pr", "task", "list", "30", "--repo", "PRJ/demo"},
-		{"pr", "task", "create", "30", "--text", "todo", "--repo", "PRJ/demo"},
-		{"pr", "task", "update", "1", "--repo", "PRJ/demo"},
-		{"pr", "task", "delete", "1", "--repo", "PRJ/demo"},
 	}
 
 	for _, args := range commands {
@@ -1964,16 +1960,12 @@ func TestPRSubCommandsCLI(t *testing.T) {
 		{"pr", "review", "reviewer", "remove", "30", "--user", "u2", "--repo", "PRJ/demo"},
 		{"--json", "pr", "review", "reviewer", "remove", "30", "--user", "u2", "--repo", "PRJ/demo"},
 
-		{"pr", "task", "list", "30", "--repo", "PRJ/demo"},
 		{"--json", "pr", "task", "list", "30", "--repo", "PRJ/demo"},
 
-		{"pr", "task", "create", "30", "--text", "todo", "--repo", "PRJ/demo"},
 		{"--json", "pr", "task", "create", "30", "--text", "todo", "--repo", "PRJ/demo"},
 
-		{"pr", "task", "update", "1", "--repo", "PRJ/demo"},
 		{"--json", "pr", "task", "update", "1", "--repo", "PRJ/demo"},
 
-		{"pr", "task", "delete", "1", "--repo", "PRJ/demo"},
 		{"--json", "pr", "task", "delete", "1", "--repo", "PRJ/demo"},
 	}
 

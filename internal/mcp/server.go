@@ -77,7 +77,6 @@ func AllSpecs() []Spec {
 		{specGetFileContent().Tool, specGetFileContent().Handler, true},
 		// Adding a comment is trivially reversed — safe by default.
 		{specAddPRComment().Tool, specAddPRComment().Handler, true},
-		{specListPRTasks().Tool, specListPRTasks().Handler, true},
 		// Submitting a review influences merge gating: APPROVED is the input a
 		// merge check consumes, so an agent that can approve takes part in the
 		// review it is subject to. Gated for the same reason as set_build_status,
