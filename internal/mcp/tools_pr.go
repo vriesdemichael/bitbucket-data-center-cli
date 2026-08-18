@@ -280,38 +280,6 @@ func specAddPRComment() Spec {
 	}}
 }
 
-func specListPRTasks() Spec {
-	tool := mcpgo.NewTool("list_pr_tasks",
-		mcpgo.WithDescription("List tasks on a pull request. Open tasks block merging. For tasks together with the "+
-			"review comment threads they belong to, use list_pr_comments with tasks_only or state=open instead."),
-		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
-		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
-		mcpgo.WithString("pr_id", mcpgo.Required(), mcpgo.Description("Pull request ID")),
-		mcpgo.WithString("state", mcpgo.Description("Filter by state: OPEN (default) or RESOLVED")),
-		mcpgo.WithNumber("limit", mcpgo.Description("Maximum number of results (default 25)")),
-	)
-	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
-		svc := pullrequestservice.NewService(c.HTTP)
-		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
-			project, _ := req.RequireString("project")
-			repo, _ := req.RequireString("repo")
-			prID, _ := req.RequireString("pr_id")
-			tasks, err := svc.ListTasks(ctx,
-				pullrequestservice.RepositoryRef{ProjectKey: project, Slug: repo},
-				prID,
-				pullrequestservice.TaskListOptions{
-					State: req.GetString("state", "OPEN"),
-					Limit: req.GetInt("limit", 25),
-				},
-			)
-			if err != nil {
-				return mcpgo.NewToolResultErrorFromErr("list_pr_tasks failed", err), nil
-			}
-			return resultJSON(tasks)
-		}
-	}}
-}
-
 func specSubmitPRReview() Spec {
 	tool := mcpgo.NewTool("submit_pr_review",
 		mcpgo.WithDescription("Set review status on a pull request: approve, unapprove, or request changes (needs_work)."),

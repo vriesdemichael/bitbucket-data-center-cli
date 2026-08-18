@@ -117,24 +117,6 @@ type AutoMerge struct {
 	MergedImmediately bool `json:"merged_immediately,omitempty"`
 }
 
-type TaskListOptions struct {
-	State string `json:"state"`
-	Limit int    `json:"limit"`
-	Start int    `json:"start"`
-}
-
-type Task struct {
-	ID          int64  `json:"id"`
-	Text        string `json:"text"`
-	State       string `json:"state,omitempty"`
-	Resolved    bool   `json:"resolved"`
-	Version     int    `json:"version,omitempty"`
-	CreatedDate int64  `json:"created_date,omitempty"`
-	UpdatedDate int64  `json:"updated_date,omitempty"`
-	Author      string `json:"author,omitempty"`
-	Assignee    string `json:"assignee,omitempty"`
-}
-
 type Service struct {
 	client    *httpclient.Client
 	apiClient *openapigenerated.ClientWithResponses
@@ -604,144 +586,6 @@ func (service *Service) RemoveReviewer(ctx context.Context, repository Repositor
 	return service.updateReviewer(ctx, repository, pullRequestID, username, false)
 }
 
-func (service *Service) ListTasks(ctx context.Context, repository RepositoryRef, pullRequestID string, options TaskListOptions) ([]Task, error) {
-	if err := validateRepositoryRef(repository); err != nil {
-		return nil, err
-	}
-
-	resolvedID, err := normalizePullRequestID(pullRequestID)
-	if err != nil {
-		return nil, err
-	}
-
-	normalizedState, err := normalizeTaskState(options.State)
-	if err != nil {
-		return nil, err
-	}
-
-	if options.Limit <= 0 {
-		options.Limit = 25
-	}
-	if options.Start < 0 {
-		return nil, apperrors.New(apperrors.KindValidation, "start must be greater than or equal to 0", nil)
-	}
-
-	path := fmt.Sprintf("%s/%s/tasks", pullRequestPath(repository), resolvedID)
-	results := make([]Task, 0)
-	start := options.Start
-
-	for {
-		query := map[string]string{
-			"limit": strconv.Itoa(options.Limit),
-			"start": strconv.Itoa(start),
-		}
-
-		var response pagedTaskResponse
-		if err := service.client.GetJSON(ctx, path, query, &response); err != nil {
-			return nil, err
-		}
-
-		for _, value := range response.Values {
-			mapped := mapTask(value)
-			if taskMatchesState(mapped, normalizedState) {
-				results = append(results, mapped)
-			}
-		}
-
-		if response.IsLastPage || response.NextPageStart == start {
-			break
-		}
-
-		start = response.NextPageStart
-	}
-
-	return results, nil
-}
-
-func (service *Service) CreateTask(ctx context.Context, repository RepositoryRef, pullRequestID string, text string) (Task, error) {
-	if err := validateRepositoryRef(repository); err != nil {
-		return Task{}, err
-	}
-
-	resolvedID, err := normalizePullRequestID(pullRequestID)
-	if err != nil {
-		return Task{}, err
-	}
-
-	trimmedText := strings.TrimSpace(text)
-	if trimmedText == "" {
-		return Task{}, apperrors.New(apperrors.KindValidation, "task text is required", nil)
-	}
-
-	var response taskValue
-	if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/tasks", pullRequestPath(repository), resolvedID), nil, map[string]any{"text": trimmedText}, &response); err != nil {
-		return Task{}, err
-	}
-
-	return mapTask(response), nil
-}
-
-func (service *Service) UpdateTask(ctx context.Context, repository RepositoryRef, pullRequestID string, taskID string, text string, resolved *bool, version *int) (Task, error) {
-	if err := validateRepositoryRef(repository); err != nil {
-		return Task{}, err
-	}
-
-	resolvedPRID, err := normalizePullRequestID(pullRequestID)
-	if err != nil {
-		return Task{}, err
-	}
-
-	resolvedTaskID, err := normalizeTaskID(taskID)
-	if err != nil {
-		return Task{}, err
-	}
-
-	payload := map[string]any{}
-	if strings.TrimSpace(text) != "" {
-		payload["text"] = strings.TrimSpace(text)
-	}
-	if resolved != nil {
-		payload["state"] = resolveTaskStateValue(*resolved)
-	}
-	if version != nil {
-		payload["version"] = *version
-	}
-
-	if len(payload) == 0 {
-		return Task{}, apperrors.New(apperrors.KindValidation, "at least one of text, resolved, or version is required", nil)
-	}
-
-	var response taskValue
-	if err := service.client.PutJSON(ctx, fmt.Sprintf("%s/%s/tasks/%s", pullRequestPath(repository), resolvedPRID, resolvedTaskID), nil, payload, &response); err != nil {
-		return Task{}, err
-	}
-
-	return mapTask(response), nil
-}
-
-func (service *Service) DeleteTask(ctx context.Context, repository RepositoryRef, pullRequestID string, taskID string, version *int) error {
-	if err := validateRepositoryRef(repository); err != nil {
-		return err
-	}
-
-	resolvedPRID, err := normalizePullRequestID(pullRequestID)
-	if err != nil {
-		return err
-	}
-
-	resolvedTaskID, err := normalizeTaskID(taskID)
-	if err != nil {
-		return err
-	}
-
-	query := map[string]string{}
-	if version != nil {
-		query["version"] = strconv.Itoa(*version)
-	}
-
-	return service.client.DeleteJSON(ctx, fmt.Sprintf("%s/%s/tasks/%s", pullRequestPath(repository), resolvedPRID, resolvedTaskID), query, nil, nil)
-}
-
 // BuildStatus represents a single CI build status associated with a pull request.
 type BuildStatus struct {
 	Key   string `json:"key,omitempty"`
@@ -1130,39 +974,6 @@ func mapMergeability(raw mergeabilityValue) Mergeability {
 	}
 }
 
-func mapTask(raw taskValue) Task {
-	author := ""
-	if raw.Author != nil {
-		author = resolveUserName(raw.Author)
-	}
-
-	assignee := ""
-	if raw.Assignee != nil {
-		assignee = resolveUserName(raw.Assignee)
-	}
-
-	state := strings.TrimSpace(raw.State)
-	if state == "" {
-		if raw.Resolved {
-			state = "RESOLVED"
-		} else {
-			state = "OPEN"
-		}
-	}
-
-	return Task{
-		ID:          raw.ID,
-		Text:        strings.TrimSpace(raw.Text),
-		State:       state,
-		Resolved:    raw.Resolved,
-		Version:     raw.Version,
-		CreatedDate: raw.CreatedDate,
-		UpdatedDate: raw.UpdatedDate,
-		Author:      author,
-		Assignee:    assignee,
-	}
-}
-
 func resolveUserName(user *pullRequestUserIdentity) string {
 	if user == nil {
 		return ""
@@ -1354,17 +1165,6 @@ func (service *Service) updateReviewer(ctx context.Context, repository Repositor
 	return mapPullRequest(response), nil
 }
 
-func taskMatchesState(task Task, state string) bool {
-	switch state {
-	case "open":
-		return !task.Resolved
-	case "resolved":
-		return task.Resolved
-	default:
-		return true
-	}
-}
-
 func resolveTaskStateValue(resolved bool) string {
 	if resolved {
 		return "RESOLVED"
@@ -1463,24 +1263,6 @@ type pullRequestRepository struct {
 
 type pullRequestProject struct {
 	Key string `json:"key"`
-}
-
-type pagedTaskResponse struct {
-	Values        []taskValue `json:"values"`
-	IsLastPage    bool        `json:"isLastPage"`
-	NextPageStart int         `json:"nextPageStart"`
-}
-
-type taskValue struct {
-	ID          int64                    `json:"id"`
-	Text        string                   `json:"text"`
-	State       string                   `json:"state"`
-	Resolved    bool                     `json:"resolved"`
-	Version     int                      `json:"version"`
-	CreatedDate int64                    `json:"createdDate"`
-	UpdatedDate int64                    `json:"updatedDate"`
-	Author      *pullRequestUserIdentity `json:"author"`
-	Assignee    *pullRequestUserIdentity `json:"assignee"`
 }
 
 func (service *Service) Watch(ctx context.Context, repository RepositoryRef, pullRequestID string) error {

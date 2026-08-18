@@ -265,3 +265,95 @@ func TestLivePullRequestApplySuggestion(t *testing.T) {
 		t.Fatalf("expected the suggestion to be applied to %s, got: %s", fileName, catOutput)
 	}
 }
+
+// TestLivePullRequestCommentResolveReopen covers bb pr comment resolve and
+// reopen, which are what replaced marking a pull request task done.
+//
+// Bitbucket removed pull request tasks in 8.0 and folded them into comments with
+// a blocker severity. bb could already create one and list them but not close
+// one, so the workflow the removed commands served had no ending.
+func TestLivePullRequestCommentResolveReopen(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	branch := "feature/resolve-reopen"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "resolve-reopen.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+	if err != nil {
+		t.Fatalf("create pull request failed: %v", err)
+	}
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// A blocker comment is what Bitbucket now calls a task.
+	addOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID,
+		"--text", "blocker to resolve", "--blocker")
+	if err != nil {
+		t.Fatalf("pr comment add --blocker failed: %v\noutput: %s", err, addOutput)
+	}
+	addData := decodeJSONMap(t, addOutput)
+	commentObject, ok := addData["comment"].(map[string]any)
+	if !ok {
+		commentObject = addData
+	}
+	commentID, ok := numericOrStringID(commentObject["id"])
+	if !ok {
+		t.Fatalf("expected a comment id in the add output: %s", addOutput)
+	}
+
+	// An open blocker counts against the pull request, which is what makes
+	// resolving it mean something.
+	beforeResolve, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--tasks-only")
+	if err != nil {
+		t.Fatalf("pr comment list --tasks-only failed: %v\noutput: %s", err, beforeResolve)
+	}
+	if !strings.Contains(beforeResolve, "blocker to resolve") {
+		t.Fatalf("expected the blocker in the task listing, got: %s", beforeResolve)
+	}
+
+	resolveOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "resolve", pullRequestID, commentID)
+	if err != nil {
+		t.Fatalf("pr comment resolve failed: %v\noutput: %s", err, resolveOutput)
+	}
+
+	// Read back rather than trusting the response: the version handling is the
+	// part most likely to be subtly wrong, and a stale version is refused with a
+	// 409 rather than silently ignored.
+	afterResolve, err := executeLiveCLI(t, "--json", "pr", "comment", "get", pullRequestID, commentID)
+	if err != nil {
+		t.Fatalf("pr comment get after resolve failed: %v\noutput: %s", err, afterResolve)
+	}
+	if !strings.Contains(afterResolve, "RESOLVED") {
+		t.Fatalf("expected the comment to read as RESOLVED, got: %s", afterResolve)
+	}
+
+	reopenOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "reopen", pullRequestID, commentID)
+	if err != nil {
+		t.Fatalf("pr comment reopen failed: %v\noutput: %s", err, reopenOutput)
+	}
+
+	afterReopen, err := executeLiveCLI(t, "--json", "pr", "comment", "get", pullRequestID, commentID)
+	if err != nil {
+		t.Fatalf("pr comment get after reopen failed: %v\noutput: %s", err, afterReopen)
+	}
+	if !strings.Contains(afterReopen, `"state": "OPEN"`) {
+		t.Fatalf("expected the comment to read as OPEN again, got: %s", afterReopen)
+	}
+
+	// Resolving twice in a row exercises the version being re-read each time.
+	// A cached version would make the second call fail with a 409.
+	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "resolve", pullRequestID, commentID); err != nil {
+		t.Fatalf("second resolve failed: %v", err)
+	}
+	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "reopen", pullRequestID, commentID); err != nil {
+		t.Fatalf("second reopen failed: %v", err)
+	}
+}

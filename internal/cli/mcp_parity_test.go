@@ -29,7 +29,6 @@ var mcpToCLI = map[string]string{
 	"get_pr_diff":         "diff pr",
 	"get_file_content":    "repo cat",
 	"add_pr_comment":      "pr comment add",
-	"list_pr_tasks":       "pr task list",
 	// `pr review complete --status APPROVED|NEEDS_WORK|UNAPPROVED`, not
 	// `pr review approve`: the tool submits any of the three outcomes, and only
 	// complete takes all of them.

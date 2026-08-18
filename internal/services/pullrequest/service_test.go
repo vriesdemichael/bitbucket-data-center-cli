@@ -173,7 +173,7 @@ func TestPullRequestHelperBranches(t *testing.T) {
 	}
 }
 
-func TestPullRequestLifecycleReviewAndTaskOperations(t *testing.T) {
+func TestPullRequestLifecycleAndReviewOperations(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		switch {
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/22":
@@ -288,44 +288,15 @@ func TestPullRequestLifecycleReviewAndTaskOperations(t *testing.T) {
 	if err != nil || len(withoutReviewer.Reviewers) != 0 {
 		t.Fatalf("expected remove reviewer to succeed, got reviewers=%#v err=%v", withoutReviewer.Reviewers, err)
 	}
-
-	openTasks, err := service.ListTasks(context.Background(), repo, "30", TaskListOptions{State: "open", Limit: 20})
-	if err != nil || len(openTasks) != 1 || openTasks[0].Resolved {
-		t.Fatalf("expected open task filter to return one unresolved task, got tasks=%#v err=%v", openTasks, err)
-	}
-
-	createdTask, err := service.CreateTask(context.Background(), repo, "30", "New task")
-	if err != nil || createdTask.ID != 502 {
-		t.Fatalf("expected create task to succeed, got task=%#v err=%v", createdTask, err)
-	}
-
-	updatedTask, err := service.UpdateTask(context.Background(), repo, "30", "501", "Resolved task updated", boolPtr(true), nil)
-	if err != nil || !updatedTask.Resolved {
-		t.Fatalf("expected update task to succeed, got task=%#v err=%v", updatedTask, err)
-	}
-
-	if err := service.DeleteTask(context.Background(), repo, "30", "501", intPtr(3)); err != nil {
-		t.Fatalf("expected delete task to succeed, got: %v", err)
-	}
 }
 
-func TestPullRequestTaskAndUpdateValidation(t *testing.T) {
+func TestPullRequestUpdateValidation(t *testing.T) {
 	service := NewService(httpclient.NewFromConfig(config.AppConfig{BitbucketURL: "http://localhost:7990"}))
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
 	_, err := service.Update(context.Background(), repo, "30", UpdateInput{Version: 0})
 	if err == nil || apperrors.ExitCode(err) != 2 {
 		t.Fatalf("expected update validation error, got: %v", err)
-	}
-
-	_, err = service.UpdateTask(context.Background(), repo, "30", "501", "", nil, nil)
-	if err == nil || apperrors.ExitCode(err) != 2 {
-		t.Fatalf("expected update task validation error, got: %v", err)
-	}
-
-	_, err = service.ListTasks(context.Background(), repo, "30", TaskListOptions{State: "bad"})
-	if err == nil || apperrors.ExitCode(err) != 2 {
-		t.Fatalf("expected task state validation error, got: %v", err)
 	}
 }
 

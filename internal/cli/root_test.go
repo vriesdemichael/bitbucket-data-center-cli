@@ -1171,7 +1171,7 @@ func TestBulkCommandAvailableFromRoot(t *testing.T) {
 	}
 }
 
-func TestPRLifecycleReviewAndTaskCommands(t *testing.T) {
+func TestPRLifecycleAndReviewCommands(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		switch {
@@ -1238,7 +1238,6 @@ func TestPRLifecycleReviewAndTaskCommands(t *testing.T) {
 		{name: "pr activity list human", args: []string{"pr", "activity", "list", "30", "--limit", "10"}, expectSnippet: "[901 COMMENTED]"},
 		{name: "pr merge human", args: []string{"pr", "merge", "30", "--version", "1"}, expectSnippet: "Merged pull request #30"},
 		{name: "pr review approve human", args: []string{"pr", "review", "approve", "30"}, expectSnippet: "Approved pull request #30"},
-		{name: "pr task list json", args: []string{"--json", "pr", "task", "list", "30", "--state", "open"}, expectSnippet: `"tasks"`},
 	}
 
 	for _, testCase := range testCases {
@@ -1337,7 +1336,7 @@ func TestPRCommentListNoCommentsAndMissingRepo(t *testing.T) {
 	})
 }
 
-func TestPRExtendedLifecycleReviewerAndTaskCommands(t *testing.T) {
+func TestPRExtendedLifecycleAndReviewerCommands(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		switch {
@@ -1399,9 +1398,6 @@ func TestPRExtendedLifecycleReviewerAndTaskCommands(t *testing.T) {
 		{name: "pr review unapprove", args: []string{"pr", "review", "unapprove", "30"}, expectSnippet: "Removed approval for pull request #30"},
 		{name: "pr reviewer add", args: []string{"pr", "review", "reviewer", "add", "30", "--user", "reviewer2"}, expectSnippet: "Added reviewer reviewer2"},
 		{name: "pr reviewer remove", args: []string{"pr", "review", "reviewer", "remove", "30", "--user", "reviewer2"}, expectSnippet: "Removed reviewer reviewer2"},
-		{name: "pr task create", args: []string{"pr", "task", "create", "30", "--text", "Task B"}, expectSnippet: "Created task 701"},
-		{name: "pr task update", args: []string{"pr", "task", "update", "30", "--task", "700", "--text", "Task A+", "--resolved=true", "--version", "2"}, expectSnippet: "Updated task 700"},
-		{name: "pr task delete json", args: []string{"--json", "pr", "task", "delete", "30", "--task", "700", "--version", "2"}, expectSnippet: `"status": "ok"`},
 	}
 
 	for _, testCase := range testCases {

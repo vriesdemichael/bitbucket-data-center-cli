@@ -197,7 +197,16 @@ Then fix and report back:
 ```bash
 # Post a progress note on the pull request
 bb pr comment add 42 --repo MYPROJ/payments --text "Fixed in <commit>. Please re-review."
+
+# Close a task once it is addressed, or put it back if it was not
+bb pr comment resolve 42 131 --repo MYPROJ/payments
+bb pr comment reopen 42 131 --repo MYPROJ/payments
 ```
+
+Resolving is what closing a task became: Bitbucket removed pull request tasks in
+8.0 and folded them into blocker comments, so `resolve` on the comment is the
+whole of it. `bb pr task *` is gone — it called the removed endpoint and could
+never have worked.
 
 Re-run the listing afterwards to confirm the thread count dropped. Note that
 reviewers resolve their own threads, so an addressed comment stays unresolved

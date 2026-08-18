@@ -130,16 +130,4 @@ func TestReviewerAndPRDryRunHelpers(t *testing.T) {
 	if !hasReviewer(reviewers, " ALICE ") {
 		t.Fatal("expected reviewer lookup to be case-insensitive")
 	}
-
-	tasks := []pullrequestservice.Task{{ID: 7, Text: "same text", Resolved: false}}
-	if _, ok := findTask(tasks, "7"); !ok {
-		t.Fatal("expected task 7 to be found")
-	}
-	if !taskUpdateEquivalent(tasks[0], "same text", nil) {
-		t.Fatal("expected task update equivalence for unchanged text")
-	}
-	resolved := true
-	if taskUpdateEquivalent(tasks[0], "same text", &resolved) {
-		t.Fatal("expected task update mismatch when resolved flag changes")
-	}
 }
