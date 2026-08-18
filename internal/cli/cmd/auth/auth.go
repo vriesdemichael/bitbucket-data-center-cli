@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
@@ -36,6 +37,12 @@ type Dependencies struct {
 	// at bb for credentials. Injected so setup-git can be tested without
 	// mutating the developer's real git configuration.
 	ConfigureGitCredentialHelper func(ctx context.Context, key, value string, global, force bool) error
+	// GitBackend reads git configuration for the status checks. Injected for
+	// the same reason as the writer above: without it, running auth status in a
+	// test shells out to real git and reads whatever global configuration the
+	// machine happens to have, so the result depends on the developer rather
+	// than on the code.
+	GitBackend func() git.Backend
 }
 
 func New(deps Dependencies) *cobra.Command {
@@ -49,6 +56,10 @@ func New(deps Dependencies) *cobra.Command {
 		deps.WriteJSON = func(io.Writer, any) error {
 			return apperrors.New(apperrors.KindInternal, "auth command dependency WriteJSON is not configured", nil)
 		}
+	}
+
+	if deps.GitBackend == nil {
+		deps.GitBackend = defaultGitBackend
 	}
 
 	if deps.NewUsersClient == nil {
@@ -120,7 +131,7 @@ for.`,
 
 			checks := []statusCheck{
 				identityState(cmd.Context(), cfg, deps.NewUsersClient),
-				gitCredentialHelperState(cmd.Context(), defaultGitBackend(), cfg.BitbucketURL),
+				gitCredentialHelperState(cmd.Context(), deps.GitBackend(), cfg.BitbucketURL),
 			}
 
 			// Advisory failures are reported but do not make the setup unhealthy.

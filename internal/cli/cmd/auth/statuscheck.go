@@ -79,8 +79,8 @@ func gitCredentialHelperState(ctx context.Context, backend git.Backend, bitbucke
 	return check
 }
 
-// defaultGitBackend is a seam so the helper check can be exercised without
-// touching the developer's real git configuration.
+// defaultGitBackend is what the status check uses when no backend is
+// injected. Dependencies.GitBackend is the seam; this is only its default.
 var defaultGitBackend = func() git.Backend { return execgit.New() }
 
 // identityState reaches the configured Bitbucket and reports who the stored

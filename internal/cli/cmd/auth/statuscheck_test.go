@@ -1,11 +1,15 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
 )
@@ -177,5 +181,52 @@ func TestGitCredentialHelperCheckIsAdvisory(t *testing.T) {
 	identity := statusCheck{Name: "authentication"}
 	if identity.Advisory {
 		t.Fatal("authentication must not be advisory")
+	}
+}
+
+// TestStatusCommandUsesTheInjectedGitBackend closes a gap the unit tests above
+// did not: they exercise gitCredentialHelperState directly, but the command
+// wired it to a real execgit backend, so running `bb auth status` in a test
+// shelled out to git and read whatever global configuration the machine had.
+//
+// Nothing asserted on the result, so it passed either way — which is the
+// problem. The outcome depended on whether the developer had run
+// bb auth setup-git, not on the code.
+func TestStatusCommandUsesTheInjectedGitBackend(t *testing.T) {
+	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
+
+	stub := &gitConfigStub{value: `!"/usr/local/bin/bb" auth git-credential`}
+
+	cmd := New(Dependencies{
+		JSONEnabled: func() bool { return true },
+		LoadConfig: func() (config.AppConfig, error) {
+			return config.AppConfig{BitbucketURL: "https://bitbucket.example.com"}, nil
+		},
+		WriteJSON: func(writer io.Writer, payload any) error {
+			return jsonoutput.Write(writer, payload)
+		},
+		NewUsersClient: func(config.AppConfig) (usersClient, error) {
+			return nil, errors.New("users client unavailable in test")
+		},
+		GitBackend: func() git.Backend { return stub },
+	})
+
+	buffer := &bytes.Buffer{}
+	cmd.SetOut(buffer)
+	cmd.SetErr(buffer)
+	cmd.SetArgs([]string{"status"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	// The injected backend was consulted, and with the host-scoped key: proof
+	// the command no longer reaches for the machine's real git configuration.
+	if stub.seenKey != "credential.https://bitbucket.example.com.helper" {
+		t.Fatalf("expected the injected backend to be asked for the scoped key, got %q", stub.seenKey)
+	}
+
+	if !strings.Contains(buffer.String(), "git credential helper") {
+		t.Fatalf("expected the helper check in the output, got %q", buffer.String())
 	}
 }
