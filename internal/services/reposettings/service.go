@@ -936,7 +936,19 @@ func (service *Service) SearchWebhooks(ctx context.Context, repo RepositoryRef, 
 	return payload, nil
 }
 
-func (service *Service) TestWebhook(ctx context.Context, repo RepositoryRef, id string) (any, error) {
+// TestWebhook asks the server to deliver a test payload to a webhook.
+//
+// The url query parameter is required in practice even though the specification
+// marks it optional. Sending only webhookId makes the server throw an unhandled
+// exception and answer 500 — verified directly against a live instance:
+// webhookId alone returns 500, webhookId with url returns 200, url alone
+// returns 200. That was #383, and it meant bb webhook test had never worked.
+//
+// The webhook is fetched to recover its url rather than requiring the caller to
+// repeat something the server already knows. An explicit override is accepted
+// because the endpoint is documented as "test connectivity to a specific
+// endpoint", so testing a candidate url before saving it is a real use.
+func (service *Service) TestWebhook(ctx context.Context, repo RepositoryRef, id string, overrideURL string) (any, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
@@ -950,8 +962,17 @@ func (service *Service) TestWebhook(ctx context.Context, repo RepositoryRef, id 
 	}
 	webhookID32 := int32(webhookIDVal)
 
+	targetURL := strings.TrimSpace(overrideURL)
+	if targetURL == "" {
+		targetURL, err = service.webhookURL(ctx, repo, trimmedID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	params := &openapigenerated.TestWebhook1Params{
 		WebhookId: &webhookID32,
+		Url:       &targetURL,
 	}
 	body := openapigenerated.TestWebhook1JSONRequestBody{}
 
@@ -967,6 +988,27 @@ func (service *Service) TestWebhook(ctx context.Context, repo RepositoryRef, id 
 		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode test webhook response", err)
 	}
 	return payload, nil
+}
+
+// webhookURL reads the stored url of a webhook, so testing one does not require
+// the caller to supply what the server already holds.
+func (service *Service) webhookURL(ctx context.Context, repo RepositoryRef, id string) (string, error) {
+	payload, err := service.GetWebhook(ctx, repo, id)
+	if err != nil {
+		return "", err
+	}
+
+	webhook, ok := payload.(map[string]any)
+	if !ok {
+		return "", apperrors.New(apperrors.KindPermanent, "unexpected webhook payload shape", nil)
+	}
+
+	url, ok := webhook["url"].(string)
+	if !ok || strings.TrimSpace(url) == "" {
+		return "", apperrors.New(apperrors.KindNotFound, "webhook has no url to test; pass --url to test a specific endpoint", nil)
+	}
+
+	return url, nil
 }
 
 func (service *Service) GetWebhookLatestInvocation(ctx context.Context, repo RepositoryRef, id string, event *string, outcome *string) (any, error) {

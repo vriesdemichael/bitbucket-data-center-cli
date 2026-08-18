@@ -186,7 +186,12 @@ func (service *Service) DeleteProjectWebhook(ctx context.Context, projectKey str
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
 
-func (service *Service) TestProjectWebhook(ctx context.Context, projectKey string, id string) (any, error) {
+// TestProjectWebhook asks the server to deliver a test payload.
+//
+// url is required in practice even though the specification marks it optional:
+// sending only webhookId makes the server throw an unhandled exception and
+// answer 500. Same defect and same fix as the repository variant — see #383.
+func (service *Service) TestProjectWebhook(ctx context.Context, projectKey string, id string, overrideURL string) (any, error) {
 	trimmedProject := strings.TrimSpace(projectKey)
 	if trimmedProject == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
@@ -203,8 +208,17 @@ func (service *Service) TestProjectWebhook(ctx context.Context, projectKey strin
 	}
 	webhookID32 := int32(webhookIDVal)
 
+	targetURL := strings.TrimSpace(overrideURL)
+	if targetURL == "" {
+		targetURL, err = service.projectWebhookURL(ctx, trimmedProject, trimmedID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	params := &openapigenerated.TestWebhookParams{
 		WebhookId: &webhookID32,
+		Url:       &targetURL,
 	}
 	body := openapigenerated.TestWebhookJSONRequestBody{}
 
@@ -276,4 +290,25 @@ func (service *Service) GetProjectWebhookStatisticsSummary(ctx context.Context, 
 	}
 
 	return payload, nil
+}
+
+// projectWebhookURL reads a project webhook's stored url, so testing one does
+// not require the caller to repeat what the server already holds.
+func (service *Service) projectWebhookURL(ctx context.Context, projectKey string, id string) (string, error) {
+	payload, err := service.GetProjectWebhook(ctx, projectKey, id)
+	if err != nil {
+		return "", err
+	}
+
+	webhook, ok := payload.(map[string]any)
+	if !ok {
+		return "", apperrors.New(apperrors.KindPermanent, "unexpected webhook payload shape", nil)
+	}
+
+	url, ok := webhook["url"].(string)
+	if !ok || strings.TrimSpace(url) == "" {
+		return "", apperrors.New(apperrors.KindNotFound, "webhook has no url to test; pass --url to test a specific endpoint", nil)
+	}
+
+	return url, nil
 }

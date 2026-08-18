@@ -120,6 +120,7 @@ func newWebhookCommand(options *rootOptions) *cobra.Command {
 	updateCmd.Flags().StringSliceVar(&events, "event", nil, "New list of webhook events to subscribe to")
 	updateCmd.Flags().StringVar(&activeVal, "active", "", "Active status (true or false)")
 
+	var webhookTestURL string
 	testCmd := &cobra.Command{
 		Use:   "test <id>",
 		Short: "Test connection to repository webhook URL by sending a ping event",
@@ -156,7 +157,7 @@ func newWebhookCommand(options *rootOptions) *cobra.Command {
 				}
 				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
 			}
-			res, err := service.TestWebhook(cmd.Context(), repo, args[0])
+			res, err := service.TestWebhook(cmd.Context(), repo, args[0], webhookTestURL)
 			if err != nil {
 				return err
 			}
@@ -299,6 +300,11 @@ func newWebhookCommand(options *rootOptions) *cobra.Command {
 	webhookCmd.AddCommand(getCmd)
 	webhookCmd.AddCommand(listCmd)
 	webhookCmd.AddCommand(updateCmd)
+	// The server requires a url on this endpoint even though the spec marks it
+	// optional; bb supplies the webhook's own by default. Overriding it is what
+	// the endpoint is actually documented for — testing connectivity to a
+	// candidate endpoint before saving it.
+	testCmd.Flags().StringVar(&webhookTestURL, "url", "", "Test this URL instead of the webhook's configured one")
 	webhookCmd.AddCommand(testCmd)
 	webhookCmd.AddCommand(statsCmd)
 	return webhookCmd

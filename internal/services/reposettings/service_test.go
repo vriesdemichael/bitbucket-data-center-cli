@@ -658,7 +658,7 @@ func TestNewRepositoryServiceValidationErrors(t *testing.T) {
 	if _, err := service.SearchWebhooks(ctx, emptyRepo, nil); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.TestWebhook(ctx, emptyRepo, "1"); err == nil {
+	if _, err := service.TestWebhook(ctx, emptyRepo, "1", ""); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := service.GetWebhookLatestInvocation(ctx, emptyRepo, "1", nil, nil); err == nil {
@@ -696,10 +696,10 @@ func TestNewRepositoryServiceValidationErrors(t *testing.T) {
 	if _, err := service.UpdateWebhook(ctx, repo, "", "name", "url", nil, nil); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.TestWebhook(ctx, repo, ""); err == nil {
+	if _, err := service.TestWebhook(ctx, repo, "", ""); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.TestWebhook(ctx, repo, "not-an-int"); err == nil {
+	if _, err := service.TestWebhook(ctx, repo, "not-an-int", ""); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := service.GetWebhookLatestInvocation(ctx, repo, "", nil, nil); err == nil {
@@ -857,7 +857,7 @@ func TestRepositoryServiceErrors(t *testing.T) {
 	if _, err := service.SearchWebhooks(ctx, repo, nil); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.TestWebhook(ctx, repo, "1"); err == nil {
+	if _, err := service.TestWebhook(ctx, repo, "1", ""); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := service.GetWebhookLatestInvocation(ctx, repo, "1", nil, nil); err == nil {
@@ -907,7 +907,7 @@ func TestNewRepositorySettingsMethods(t *testing.T) {
 		case request.Method == http.MethodDelete && request.URL.Path == "/default-tasks/latest/projects/PRJ/repos/demo/tasks/123":
 			writer.WriteHeader(http.StatusNoContent)
 		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1":
-			_, _ = writer.Write([]byte(`{"id":1,"name":"hook1"}`))
+			_, _ = writer.Write([]byte(`{"id":1,"name":"hook1","url":"http://hook.example"}`))
 		case request.Method == http.MethodPut && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1":
 			_, _ = writer.Write([]byte(`{"id":1,"name":"hook1-updated"}`))
 		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/search":
@@ -1020,7 +1020,7 @@ func TestNewRepositorySettingsMethods(t *testing.T) {
 	if err != nil {
 		t.Errorf("SearchWebhooks failed: %v", err)
 	}
-	testRes, err := service.TestWebhook(ctx, repo, "1")
+	testRes, err := service.TestWebhook(ctx, repo, "1", "")
 	if err != nil {
 		t.Errorf("TestWebhook failed: %v", err)
 	}

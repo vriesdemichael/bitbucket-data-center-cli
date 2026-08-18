@@ -147,6 +147,10 @@ func TestProjectWebhookService(t *testing.T) {
 	t.Run("TestWebhook", func(t *testing.T) {
 		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
+			if r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/webhooks/123" {
+				_, _ = w.Write([]byte(`{"id":123,"name":"wh","url":"http://url"}`))
+				return
+			}
 			if r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/webhooks/test" {
 				_, _ = w.Write([]byte(`{"status":"ok"}`))
 				return
@@ -154,7 +158,7 @@ func TestProjectWebhookService(t *testing.T) {
 			http.NotFound(w, r)
 		})
 
-		res, err := service.TestProjectWebhook(context.Background(), "PRJ", "123")
+		res, err := service.TestProjectWebhook(context.Background(), "PRJ", "123", "")
 		if err != nil {
 			t.Fatalf("unexpected test error: %v", err)
 		}
@@ -163,13 +167,13 @@ func TestProjectWebhookService(t *testing.T) {
 		}
 
 		// Validation error
-		if _, err := service.TestProjectWebhook(context.Background(), "", "123"); err == nil {
+		if _, err := service.TestProjectWebhook(context.Background(), "", "123", ""); err == nil {
 			t.Fatal("expected validation error for empty project key")
 		}
-		if _, err := service.TestProjectWebhook(context.Background(), "PRJ", ""); err == nil {
+		if _, err := service.TestProjectWebhook(context.Background(), "PRJ", "", ""); err == nil {
 			t.Fatal("expected validation error for empty id")
 		}
-		if _, err := service.TestProjectWebhook(context.Background(), "PRJ", "abc"); err == nil {
+		if _, err := service.TestProjectWebhook(context.Background(), "PRJ", "abc", ""); err == nil {
 			t.Fatal("expected validation error for non-integer id")
 		}
 	})
@@ -555,7 +559,7 @@ func TestProjectSettingsServiceAPIErrors(t *testing.T) {
 	if err := service.DeleteProjectWebhook(ctx, "PRJ", "123"); err == nil {
 		t.Fatal("expected error on DeleteProjectWebhook")
 	}
-	if _, err := service.TestProjectWebhook(ctx, "PRJ", "123"); err == nil {
+	if _, err := service.TestProjectWebhook(ctx, "PRJ", "123", ""); err == nil {
 		t.Fatal("expected error on TestProjectWebhook")
 	}
 	if _, err := service.GetProjectWebhookStatistics(ctx, "PRJ", "123"); err == nil {
@@ -781,7 +785,7 @@ func TestProjectSettingsServiceTransientErrors(t *testing.T) {
 	if err := service.DeleteProjectWebhook(ctx, "PRJ", "123"); err == nil {
 		t.Fatal("expected transient error")
 	}
-	if _, err := service.TestProjectWebhook(ctx, "PRJ", "123"); err == nil {
+	if _, err := service.TestProjectWebhook(ctx, "PRJ", "123", ""); err == nil {
 		t.Fatal("expected transient error")
 	}
 	if _, err := service.GetProjectWebhookStatistics(ctx, "PRJ", "123"); err == nil {
