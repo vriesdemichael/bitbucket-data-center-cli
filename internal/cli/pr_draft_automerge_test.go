@@ -51,6 +51,18 @@ func newDraftAutoMergeServer(t *testing.T) *httptest.Server {
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(`{"errors":[{"message":"no mergeability"}]}`))
 
+		// Arming auto-merge posts here, not to the auto-merge resource: see #378.
+		// The pull request comes back still OPEN, which is the armed-and-pending
+		// case rather than the merged-on-the-spot one.
+		case r.Method == http.MethodPost && strings.HasSuffix(path, "/merge"):
+			body := readRequestBody(t, r)
+			if !strings.Contains(body, `"autoMerge":true`) {
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(`{"errors":[{"message":"expected autoMerge in the body"}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"id":30,"title":"Same","state":"OPEN","open":true,"closed":false,"version":2,"fromRef":{"displayId":"feature/x"},"toRef":{"displayId":"master"}}`))
+
 		// Update PR (execution path).
 		case r.Method == http.MethodPut && path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30":
 			body := readRequestBody(t, r)
@@ -67,12 +79,12 @@ func newDraftAutoMergeServer(t *testing.T) *httptest.Server {
 				w.WriteHeader(http.StatusNotFound)
 				_, _ = w.Write([]byte(`{"errors":[{"message":"auto-merge not configured"}]}`))
 			case http.MethodPost:
-				body := readRequestBody(t, r)
-				strategy := "no-ff"
-				if strings.Contains(body, "rebase-ff-only") {
-					strategy = "rebase-ff-only"
-				}
-				_, _ = w.Write([]byte(`{"strategyId":"` + strategy + `"}`))
+				// Arming through this endpoint is the #378 defect. The real server
+				// answers AutoMergeNotRequestedException here; the stub fails the
+				// test instead, so a regression cannot pass quietly.
+				t.Errorf("auto-merge must be armed through the merge endpoint, not POST %s", path)
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(`{"errors":[{"message":"System won't attempt to merge this pull request as auto-merge was not requested","exceptionName":"com.atlassian.bitbucket.pull.automerge.AutoMergeNotRequestedException"}]}`))
 			default:
 				http.NotFound(w, r)
 			}
@@ -332,5 +344,50 @@ func TestPRAutoMergeDryRunPermissionFailure(t *testing.T) {
 	}
 	if _, err := executeTestCLI(t, "--dry-run", "pr", "auto-merge", "disable", "30"); err == nil {
 		t.Fatal("expected permission precheck failure for auto-merge disable dry-run")
+	}
+}
+
+// TestPRAutoMergeEnableReportsAnImmediateMerge covers the outcome that is easy
+// to misreport: a pull request whose checks already pass merges the moment
+// auto-merge is armed. Saying "enabled auto-merge" there would describe a
+// pending state that does not exist and will never fire, and would leave the
+// caller believing the merge had not happened yet.
+func TestPRAutoMergeEnableReportsAnImmediateMerge(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/50":
+			_, _ = w.Write([]byte(`{"id":50,"title":"Ready","state":"OPEN","open":true,"closed":false,"version":4}`))
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/pull-requests/50/merge"):
+			// Checks already passed, so the server merges rather than queueing.
+			_, _ = w.Write([]byte(`{"id":50,"title":"Ready","state":"MERGED","open":false,"closed":true,"version":5}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	configureDryRunEnv(t, server.URL, "TEST", "demo")
+
+	out, err := executeTestCLI(t, "pr", "auto-merge", "enable", "50")
+	if err != nil {
+		t.Fatalf("unexpected error: %v output=%s", err, out)
+	}
+	if !strings.Contains(out, "Merged pull request #50 immediately") {
+		t.Fatalf("expected the immediate merge to be reported, output=%s", out)
+	}
+	if strings.Contains(out, "Enabled auto-merge") {
+		t.Fatalf("must not claim a pending auto-merge after an immediate merge, output=%s", out)
+	}
+
+	// The machine payload has to agree with the human line.
+	jsonOut, err := executeTestCLI(t, "--json", "pr", "auto-merge", "enable", "50")
+	if err != nil {
+		t.Fatalf("unexpected error (json): %v output=%s", err, jsonOut)
+	}
+	if !strings.Contains(jsonOut, `"merged_immediately": true`) {
+		t.Fatalf("expected merged_immediately in the payload, got=%s", jsonOut)
+	}
+	if strings.Contains(jsonOut, `"enabled": true`) {
+		t.Fatalf("a merged pull request has no pending auto-merge, got=%s", jsonOut)
 	}
 }

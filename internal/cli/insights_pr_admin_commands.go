@@ -2754,6 +2754,14 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 				return writeJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "auto_merge": autoMerge})
 			}
 
+			// Arming a pull request whose checks already pass merges it there and
+			// then. Reporting "enabled" would describe a pending auto-merge that
+			// does not exist and will never fire.
+			if autoMerge.MergedImmediately {
+				fmt.Fprintf(cmd.OutOrStdout(), "Merged pull request #%s immediately (strategy=%s): its checks already passed, so there was nothing to wait for\n", args[0], autoMerge.StrategyID)
+				return nil
+			}
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Enabled auto-merge on pull request #%s (strategy=%s)\n", args[0], autoMerge.StrategyID)
 			return nil
 		},

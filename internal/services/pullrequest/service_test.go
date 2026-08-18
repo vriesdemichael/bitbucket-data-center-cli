@@ -976,7 +976,15 @@ func TestUpdateDraftPullRequest(t *testing.T) {
 	}
 }
 
-func TestAutoMergeEnableDisableGet(t *testing.T) {
+// TestAutoMergeGetAndDisable covers the two operations that genuinely use the
+// auto-merge endpoint. Enable does not: it arms through the merge endpoint, and
+// is covered by TestEnableAutoMergeUsesTheMergeEndpoint.
+//
+// This test previously exercised Enable here too, against a stub that served
+// only the auto-merge path — which is part of why #378 survived. A stub can
+// confirm bb called what bb thought it should call; it cannot tell you that
+// belief was wrong.
+func TestAutoMergeGetAndDisable(t *testing.T) {
 	const autoMergePath = "/rest/api/latest/projects/TEST/repos/demo/pull-requests/42/auto-merge"
 	autoMergeEnabled := true
 
@@ -1024,15 +1032,6 @@ func TestAutoMergeEnableDisableGet(t *testing.T) {
 		t.Fatalf("GetAutoMerge: expected enabled=true strategy=no-ff, got %+v", am)
 	}
 
-	// Enable with a specific strategy
-	enabled, err := service.EnableAutoMerge(context.Background(), repo, "42", "rebase-ff-only")
-	if err != nil {
-		t.Fatalf("EnableAutoMerge: unexpected error: %v", err)
-	}
-	if !enabled.Enabled || enabled.StrategyID != "rebase-ff-only" {
-		t.Fatalf("EnableAutoMerge: expected enabled=true strategy=rebase-ff-only, got %+v", enabled)
-	}
-
 	// Disable
 	if err := service.DisableAutoMerge(context.Background(), repo, "42"); err != nil {
 		t.Fatalf("DisableAutoMerge: unexpected error: %v", err)
@@ -1064,37 +1063,6 @@ func TestAutoMergeValidation(t *testing.T) {
 	err = service.DisableAutoMerge(context.Background(), RepositoryRef{}, "1")
 	if err == nil || apperrors.ExitCode(err) != 2 {
 		t.Fatalf("expected validation error for missing repo ref in disable, got: %v", err)
-	}
-}
-
-func TestEnableAutoMergeDefaultStrategy(t *testing.T) {
-	var receivedBody string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			receivedBody = readBody(t, r)
-			_, _ = fmt.Fprint(w, `{"strategyId":"no-ff"}`)
-			return
-		}
-		http.NotFound(w, r)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-
-	cfg, _ := config.LoadFromEnv()
-	service := NewService(httpclient.NewFromConfig(cfg))
-
-	// Empty strategy should default to "no-ff"
-	am, err := service.EnableAutoMerge(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "1", "")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if am.StrategyID != "no-ff" {
-		t.Fatalf("expected strategy no-ff, got %s", am.StrategyID)
-	}
-	if !strings.Contains(receivedBody, `"strategyId":"no-ff"`) {
-		t.Fatalf("expected request body to contain no-ff, got: %s", receivedBody)
 	}
 }
 
@@ -1930,4 +1898,153 @@ func TestListDashboardParticipantStatus(t *testing.T) {
 			t.Fatalf("participant status %q: expected %q on the wire, got %v", testCase.option, testCase.expected, received)
 		}
 	}
+}
+
+// TestEnableAutoMergeUsesTheMergeEndpoint is the regression guard for #378.
+//
+// bb posted to .../auto-merge, which the 10.2 spec documents as "requests the
+// system to try merging the pull request if auto-merge was requested on it" —
+// a retry of an existing request. Arming one that way always failed with
+// AutoMergeNotRequestedException, so there was no way to arm auto-merge from
+// the CLI at all.
+//
+// Arming is RestPullRequestMergeRequest.autoMerge on POST .../merge, in the
+// body rather than the query string. This asserts the path and the body,
+// because those are precisely what was wrong.
+func TestEnableAutoMergeUsesTheMergeEndpoint(t *testing.T) {
+	var mergePath string
+	var mergeBody map[string]any
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/pull-requests/42"):
+			// The version the merge endpoint needs for optimistic locking.
+			_, _ = fmt.Fprint(w, `{"id":42,"title":"t","state":"OPEN","open":true,"version":7}`)
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/pull-requests/42/merge"):
+			mergePath = r.URL.Path
+			_ = json.NewDecoder(r.Body).Decode(&mergeBody)
+			_, _ = fmt.Fprint(w, `{"id":42,"title":"t","state":"OPEN","open":true,"version":8}`)
+		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "/auto-merge"):
+			// The endpoint the bug used. Reaching it is the failure.
+			t.Errorf("enable must not post to the auto-merge endpoint: %s", r.URL.Path)
+			w.WriteHeader(http.StatusBadRequest)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	service := NewService(httpclient.NewFromConfig(config.AppConfig{BitbucketURL: server.URL}))
+
+	result, err := service.EnableAutoMerge(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, "42", "no-ff")
+	if err != nil {
+		t.Fatalf("enable auto-merge failed: %v", err)
+	}
+
+	if !strings.HasSuffix(mergePath, "/pull-requests/42/merge") {
+		t.Fatalf("expected the merge endpoint, got %q", mergePath)
+	}
+	if mergeBody["autoMerge"] != true {
+		t.Fatalf("expected autoMerge=true in the body, got %#v", mergeBody)
+	}
+	if mergeBody["strategyId"] != "no-ff" {
+		t.Fatalf("expected the strategy in the body, got %#v", mergeBody)
+	}
+	// Without the version the server rejects the merge on optimistic locking,
+	// and the caller never supplied one — it is resolved here.
+	if mergeBody["version"] != float64(7) {
+		t.Fatalf("expected the current version in the body, got %#v", mergeBody["version"])
+	}
+
+	if !result.Enabled || result.MergedImmediately {
+		t.Fatalf("expected auto-merge to be armed and pending, got %#v", result)
+	}
+}
+
+// TestEnableAutoMergeReportsAnImmediateMerge covers the other outcome: a pull
+// request whose checks already pass merges on the spot. Reporting it as
+// "enabled" would describe a pending state that will never fire.
+func TestEnableAutoMergeReportsAnImmediateMerge(t *testing.T) {
+	var mergeBody map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/pull-requests/42"):
+			_, _ = fmt.Fprint(w, `{"id":42,"title":"t","state":"OPEN","open":true,"version":1}`)
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/merge"):
+			_ = json.NewDecoder(r.Body).Decode(&mergeBody)
+			_, _ = fmt.Fprint(w, `{"id":42,"title":"t","state":"MERGED","open":false,"closed":true,"version":2}`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	service := NewService(httpclient.NewFromConfig(config.AppConfig{BitbucketURL: server.URL}))
+
+	result, err := service.EnableAutoMerge(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, "42", "")
+	if err != nil {
+		t.Fatalf("enable auto-merge failed: %v", err)
+	}
+
+	if !result.MergedImmediately {
+		t.Fatalf("expected an immediate merge to be reported, got %#v", result)
+	}
+	if result.Enabled {
+		t.Fatalf("a merged pull request has no pending auto-merge, got %#v", result)
+	}
+	// The default strategy is reported and, more importantly, actually sent.
+	// The test this replaced asserted the body but accepted any POST path, so it
+	// passed while bb was calling the wrong endpoint entirely.
+	if result.StrategyID != "no-ff" {
+		t.Fatalf("expected the default strategy, got %#v", result)
+	}
+	if mergeBody["strategyId"] != "no-ff" {
+		t.Fatalf("expected the defaulted strategy in the request body, got %#v", mergeBody)
+	}
+}
+
+// TestEnableAutoMergeSurfacesFailures covers the two ways arming can fail
+// before it reports success. Both matter: the version lookup is a round trip
+// the caller never asked for, so a failure there has to say so rather than
+// look like the merge itself was refused.
+func TestEnableAutoMergeSurfacesFailures(t *testing.T) {
+	t.Run("version lookup fails", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = fmt.Fprint(w, `{"errors":[{"message":"no such pull request"}]}`)
+		}))
+		defer server.Close()
+
+		service := NewService(httpclient.NewFromConfig(config.AppConfig{BitbucketURL: server.URL}))
+		if _, err := service.EnableAutoMerge(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, "42", ""); err == nil {
+			t.Fatal("expected the pull request lookup failure to surface")
+		}
+	})
+
+	t.Run("merge is refused", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if r.Method == http.MethodGet {
+				_, _ = fmt.Fprint(w, `{"id":42,"title":"t","state":"OPEN","open":true,"version":3}`)
+				return
+			}
+			// What the server says when the repository does not permit
+			// auto-merge at all.
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = fmt.Fprint(w, `{"errors":[{"message":"auto-merge is not enabled for this repository"}]}`)
+		}))
+		defer server.Close()
+
+		service := NewService(httpclient.NewFromConfig(config.AppConfig{BitbucketURL: server.URL}))
+		_, err := service.EnableAutoMerge(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, "42", "")
+		if err == nil {
+			t.Fatal("expected the refused merge to surface")
+		}
+		if !strings.Contains(err.Error(), "auto-merge is not enabled") {
+			t.Fatalf("expected the server's reason to be preserved, got: %v", err)
+		}
+	})
 }
