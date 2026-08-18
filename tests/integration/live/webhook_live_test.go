@@ -61,14 +61,14 @@ func TestLiveRepositoryWebhookLifecycle(t *testing.T) {
 		t.Fatalf("expected the webhook name in get output, got: %s", getOutput)
 	}
 
-	// The server requires url and events on every update, even when only the
-	// name changes — a partial update is rejected outright. That is a real
-	// limitation of bb update rather than of this test, and is filed separately.
+	// A name-only update. The endpoint replaces the webhook rather than patching
+	// it, so bb reads the current one and merges -- without that, this call is
+	// rejected for the url and events it never mentioned, and any field the
+	// server does not validate is silently cleared.
 	renamed := name + "-renamed"
-	updateOutput, err := executeLiveCLI(t, "--json", "webhook", "update", webhookID,
-		"--name", renamed, "--url", "http://localhost:7990/status", "--event", "repo:refs_changed")
+	updateOutput, err := executeLiveCLI(t, "--json", "webhook", "update", webhookID, "--name", renamed)
 	if err != nil {
-		t.Fatalf("webhook update failed: %v\noutput: %s", err, updateOutput)
+		t.Fatalf("webhook update with only a name failed: %v\noutput: %s", err, updateOutput)
 	}
 
 	// Read back rather than trusting the update response.
@@ -78,6 +78,13 @@ func TestLiveRepositoryWebhookLifecycle(t *testing.T) {
 	}
 	if !strings.Contains(afterUpdate, renamed) {
 		t.Fatalf("expected the rename to persist, got: %s", afterUpdate)
+	}
+	// The url and events the update never mentioned have to still be there.
+	if !strings.Contains(afterUpdate, "http://localhost:7990/status") {
+		t.Fatalf("expected the url to survive a name-only update, got: %s", afterUpdate)
+	}
+	if !strings.Contains(afterUpdate, "repo:refs_changed") {
+		t.Fatalf("expected the events to survive a name-only update, got: %s", afterUpdate)
 	}
 
 	// Fixed in this branch: bb now sends the webhook's url alongside webhookId,
@@ -119,12 +126,12 @@ func TestLiveProjectWebhookLifecycle(t *testing.T) {
 		t.Fatalf("project webhook create failed: %v\noutput: %s", err, createOutput)
 	}
 
-	// The project variant returns the webhook flat in data, where the
-	// repository one nests it under a webhook key. That inconsistency is filed
-	// separately; this reads whichever shape is present.
-	webhookID, ok := flatWebhookIDFromCreateOutput(createOutput)
+	// Both create commands nest the webhook under the same key now. The test
+	// used to read whichever shape turned up, which was the tell that they
+	// disagreed.
+	webhookID, ok := webhookIDFromCreateOutput(createOutput)
 	if !ok {
-		t.Fatalf("expected a webhook id in the create output: %s", createOutput)
+		t.Fatalf("expected a nested webhook id in the create output: %s", createOutput)
 	}
 
 	listOutput, err := executeLiveCLI(t, "--json", "project", "webhook", "list", seeded.Key, "--limit", "50")
@@ -135,10 +142,11 @@ func TestLiveProjectWebhookLifecycle(t *testing.T) {
 		t.Fatalf("expected the created webhook in the listing, got: %s", listOutput)
 	}
 
+	// A name-only update, as on the repository side: the merge is what keeps the
+	// url and events the caller never mentioned.
 	renamed := name + "-renamed"
-	if _, err := executeLiveCLI(t, "--json", "project", "webhook", "update", seeded.Key, webhookID,
-		"--name", renamed, "--url", "http://localhost:7990/status", "--event", "repo:refs_changed"); err != nil {
-		t.Fatalf("project webhook update failed: %v", err)
+	if _, err := executeLiveCLI(t, "--json", "project", "webhook", "update", seeded.Key, webhookID, "--name", renamed); err != nil {
+		t.Fatalf("project webhook update with only a name failed: %v", err)
 	}
 
 	afterUpdate, err := executeLiveCLI(t, "--json", "project", "webhook", "list", seeded.Key, "--limit", "50")
@@ -147,6 +155,12 @@ func TestLiveProjectWebhookLifecycle(t *testing.T) {
 	}
 	if !strings.Contains(afterUpdate, renamed) {
 		t.Fatalf("expected the rename to persist, got: %s", afterUpdate)
+	}
+	if !strings.Contains(afterUpdate, "http://localhost:7990/status") {
+		t.Fatalf("expected the url to survive a name-only update, got: %s", afterUpdate)
+	}
+	if !strings.Contains(afterUpdate, "repo:refs_changed") {
+		t.Fatalf("expected the events to survive a name-only update, got: %s", afterUpdate)
 	}
 
 	if _, err := executeLiveCLI(t, "--json", "project", "webhook", "test", seeded.Key, webhookID); err != nil {
@@ -160,19 +174,4 @@ func TestLiveProjectWebhookLifecycle(t *testing.T) {
 	if _, err := executeLiveCLI(t, "--json", "project", "webhook", "delete", seeded.Key, webhookID); err != nil {
 		t.Fatalf("project webhook delete failed: %v", err)
 	}
-}
-
-// flatWebhookIDFromCreateOutput reads an id from a payload that carries the
-// webhook fields directly, which is what the project variant returns.
-func flatWebhookIDFromCreateOutput(output string) (string, bool) {
-	payload := map[string]any{}
-	if err := unmarshalJSONObject(output, &payload); err != nil {
-		return "", false
-	}
-
-	if nested, ok := payload["webhook"].(map[string]any); ok {
-		return numericOrStringID(nested["id"])
-	}
-
-	return numericOrStringID(payload["id"])
 }

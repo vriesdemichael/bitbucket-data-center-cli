@@ -41,7 +41,10 @@ func newWebhookCommand(options *rootOptions) *cobra.Command {
 				return err
 			}
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), hook)
+				// Single-webhook payloads nest under "webhook" across the whole group.
+				// Five of these commands used to disagree about it, so a caller had
+				// to special-case each one.
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"webhook": hook})
 			}
 			pretty, err := json.MarshalIndent(hook, "", "  ")
 			if err != nil {
@@ -109,7 +112,7 @@ func newWebhookCommand(options *rootOptions) *cobra.Command {
 				return err
 			}
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), updated)
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "webhook": updated})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated webhook:"), style.Secondary.Render(args[0]))
 			return nil

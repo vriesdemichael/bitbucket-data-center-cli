@@ -116,6 +116,31 @@ func (service *Service) GetProjectWebhook(ctx context.Context, projectKey string
 	return payload, nil
 }
 
+// projectWebhookForUpdate reads the current webhook as an update request body.
+//
+// The update endpoint replaces the webhook rather than patching it, so every
+// field has to be sent back. Reading first is what lets --name on its own mean
+// "change the name" instead of "clear the url and the events".
+func (service *Service) projectWebhookForUpdate(ctx context.Context, projectKey string, id string) (openapigenerated.RestWebhook, error) {
+	response, err := service.client.GetWebhookWithResponse(ctx, projectKey, id, nil)
+	if err != nil {
+		return openapigenerated.RestWebhook{}, apperrors.New(apperrors.KindTransient, "failed to read the project webhook before updating it", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapigenerated.RestWebhook{}, err
+	}
+
+	var current openapigenerated.RestWebhook
+	if err := json.Unmarshal(response.Body, &current); err != nil {
+		return openapigenerated.RestWebhook{}, apperrors.New(apperrors.KindPermanent, "failed to decode the project webhook being updated", err)
+	}
+
+	current.Statistics = nil
+	current.ScopeType = nil
+
+	return current, nil
+}
+
 func (service *Service) UpdateProjectWebhook(ctx context.Context, projectKey string, id string, name string, url string, events []string, active *bool) (any, error) {
 	trimmedProject := strings.TrimSpace(projectKey)
 	if trimmedProject == "" {
@@ -127,7 +152,11 @@ func (service *Service) UpdateProjectWebhook(ctx context.Context, projectKey str
 		return nil, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
 	}
 
-	body := openapigenerated.UpdateWebhookJSONRequestBody{}
+	body, err := service.projectWebhookForUpdate(ctx, trimmedProject, trimmedID)
+	if err != nil {
+		return nil, err
+	}
+
 	if strings.TrimSpace(name) != "" {
 		n := strings.TrimSpace(name)
 		body.Name = &n
