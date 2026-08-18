@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "runnable_commands": 236,
-    "covered_commands": 226,
-    "covered_percent": 95.76271186440678,
+    "runnable_commands": 229,
+    "covered_commands": 222,
+    "covered_percent": 96.94323144104804,
     "masked_commands": 4,
-    "uncovered_commands": 6
+    "uncovered_commands": 3
   },
   "covered": [
     "admin health",
@@ -71,10 +71,6 @@
     "diff commit",
     "diff pr",
     "diff refs",
-    "hook configure",
-    "hook disable",
-    "hook enable",
-    "hook list",
     "insights annotation add",
     "insights annotation delete",
     "insights annotation list",
@@ -244,9 +240,6 @@
   "known_uncovered": [
     "ai mcp serve",
     "ai mcp tools",
-    "repo hook-script list",
-    "repo hook-script remove",
-    "repo hook-script set",
     "update"
   ]
 }

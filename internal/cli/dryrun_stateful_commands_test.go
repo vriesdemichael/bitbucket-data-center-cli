@@ -203,21 +203,6 @@ func TestGovernanceAndRepoDryRunPredictionBranches(t *testing.T) {
 		t.Fatalf("expected reviewer update blocked prediction, err=%v output=%s", err, out)
 	}
 
-	out, err = executeTestCLI(t, "--json", "--dry-run", "hook", "enable", "missing", "--project", "PRJ")
-	if err != nil || !strings.Contains(out, `"predicted_action": "blocked"`) {
-		t.Fatalf("expected hook enable blocked prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "hook", "disable", "missing", "--project", "PRJ")
-	if err != nil || !strings.Contains(out, `"predicted_action": "blocked"`) {
-		t.Fatalf("expected hook disable blocked prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "hook", "configure", "missing", `{"required":true}`, "--project", "PRJ")
-	if err != nil || !strings.Contains(out, `"predicted_action": "blocked"`) {
-		t.Fatalf("expected hook configure blocked prediction, err=%v output=%s", err, out)
-	}
-
 	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "users", "grant", "alice", "repo_write")
 	if err != nil || !strings.Contains(out, `"predicted_action": "no-op"`) {
 		t.Fatalf("expected repo users grant no-op prediction, err=%v output=%s", err, out)
@@ -546,9 +531,6 @@ func TestDryRunRepoPermissionPrechecksFailBeforePlanning(t *testing.T) {
 		{name: "reviewer repo create", args: []string{"--json", "--dry-run", "reviewer", "condition", "create", `{"requiredApprovals":1}`, "--repo", "TEST/demo"}},
 		{name: "reviewer repo update", args: []string{"--json", "--dry-run", "reviewer", "condition", "update", "1", `{"requiredApprovals":1}`, "--repo", "TEST/demo"}},
 		{name: "reviewer repo delete", args: []string{"--json", "--dry-run", "reviewer", "condition", "delete", "1", "--repo", "TEST/demo"}},
-		{name: "hook repo enable", args: []string{"--json", "--dry-run", "hook", "enable", "com.example.hook:hook", "--repo", "TEST/demo"}},
-		{name: "hook repo disable", args: []string{"--json", "--dry-run", "hook", "disable", "com.example.hook:hook", "--repo", "TEST/demo"}},
-		{name: "hook repo configure", args: []string{"--json", "--dry-run", "hook", "configure", "com.example.hook:hook", `{"required":true}`, "--repo", "TEST/demo"}},
 	}
 
 	for _, testCase := range testCases {
@@ -605,9 +587,6 @@ func TestDryRunProjectPermissionPrechecksFailBeforePlanning(t *testing.T) {
 		{name: "reviewer project create", args: []string{"--json", "--dry-run", "reviewer", "condition", "create", `{"requiredApprovals":1}`, "--project", "PRJ"}},
 		{name: "reviewer project update", args: []string{"--json", "--dry-run", "reviewer", "condition", "update", "1", `{"requiredApprovals":1}`, "--project", "PRJ"}},
 		{name: "reviewer project delete", args: []string{"--json", "--dry-run", "reviewer", "condition", "delete", "1", "--project", "PRJ"}},
-		{name: "hook project enable", args: []string{"--json", "--dry-run", "hook", "enable", "com.example.hook:hook", "--project", "PRJ"}},
-		{name: "hook project disable", args: []string{"--json", "--dry-run", "hook", "disable", "com.example.hook:hook", "--project", "PRJ"}},
-		{name: "hook project configure", args: []string{"--json", "--dry-run", "hook", "configure", "com.example.hook:hook", `{"required":true}`, "--project", "PRJ"}},
 	}
 
 	for _, testCase := range testCases {

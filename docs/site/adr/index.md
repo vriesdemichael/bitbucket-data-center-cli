@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `50`
-- Accepted ADRs: `47`
+- Total ADRs: `51`
+- Accepted ADRs: `48`
 
 ## ADR List
 
@@ -59,4 +59,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 048: Documented commands are validated against the command tree](048-documented-commands-are-validated-against-the-command-tree.md) (`development`, `accepted`)
 - [ADR 049: Build tooling stays outside the coverage gate but not outside testing](049-tools-are-outside-the-coverage-gate-but-not-outside-testing.md) (`development`, `accepted`)
 - [ADR 050: Frequently-used commands get a shallow alias, and the deep path stays canonical](050-shallow-aliases-for-deep-command-paths.md) (`architecture`, `accepted`)
+- [ADR 051: bb does not manage server-side hooks](051-no-server-side-hook-management.md) (`architecture`, `accepted`)
 

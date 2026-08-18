@@ -54,59 +54,6 @@ func TestReviewerCLI(t *testing.T) {
 	}
 }
 
-func TestHookCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks":
-			_, _ = writer.Write([]byte(`{"values":[{"enabled":true,"details":{"key":"h1"}}]}`))
-		case request.Method == http.MethodPut && request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks/h1/enabled":
-			_, _ = writer.Write([]byte(`{"enabled":true}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks/h1/settings":
-			_, _ = writer.Write([]byte(`{"foo":"bar"}`))
-		default:
-			http.NotFound(writer, request)
-		}
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-
-	// List
-	command.SetArgs([]string{"--json", "hook", "list", "--project", "PRJ"})
-	if err := command.Execute(); err != nil {
-		t.Fatalf("list execute failed: %v", err)
-	}
-	if !strings.Contains(buffer.String(), `"hooks"`) {
-		t.Fatalf("expected hooks in output, got: %s", buffer.String())
-	}
-
-	// Enable
-	buffer.Reset()
-	command.SetArgs([]string{"--json", "hook", "enable", "h1", "--project", "PRJ"})
-	if err := command.Execute(); err != nil {
-		t.Fatalf("enable execute failed: %v", err)
-	}
-	if !strings.Contains(buffer.String(), `"hook"`) {
-		t.Fatalf("expected hook in output, got: %s", buffer.String())
-	}
-
-	// Configure (get)
-	buffer.Reset()
-	command.SetArgs([]string{"hook", "configure", "h1", "--project", "PRJ"})
-	if err := command.Execute(); err != nil {
-		t.Fatalf("configure get execute failed: %v", err)
-	}
-	if !strings.Contains(buffer.String(), `"foo": "bar"`) {
-		t.Fatalf("expected settings in output, got: %s", buffer.String())
-	}
-}
-
 func TestProjectPermissionsCLI(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -263,15 +210,6 @@ func TestRepoScopedGovernanceCLI(t *testing.T) {
 		t.Fatalf("expected conditions in output, got: %s", buffer.String())
 	}
 
-	// Repo hook list
-	buffer.Reset()
-	command.SetArgs([]string{"--json", "hook", "list", "--repo", "PRJ/demo"})
-	if err := command.Execute(); err != nil {
-		t.Fatalf("repo hook list failed: %v", err)
-	}
-	if !strings.Contains(buffer.String(), `"hooks"`) {
-		t.Fatalf("expected hooks in output, got: %s", buffer.String())
-	}
 }
 
 func TestRevokeAndStrategyCLI(t *testing.T) {
@@ -318,69 +256,6 @@ func TestRevokeAndStrategyCLI(t *testing.T) {
 	}
 	if !strings.Contains(buffer.String(), `"merge-base"`) {
 		t.Fatalf("expected strategy in output, got: %s", buffer.String())
-	}
-}
-
-func TestHookConfigureCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		if request.Method == http.MethodPut && request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks/h1/settings" {
-			_, _ = writer.Write([]byte(`{"foo":"updated"}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-
-	// Configure with JSON arg
-	command.SetArgs([]string{"--json", "hook", "configure", "h1", `{"foo":"updated"}`, "--project", "PRJ"})
-	if err := command.Execute(); err != nil {
-		t.Fatalf("hook configure failed: %v", err)
-	}
-	if !strings.Contains(buffer.String(), `"updated"`) {
-		t.Fatalf("expected updated settings in output, got: %s", buffer.String())
-	}
-}
-
-func TestHookConfigureFileAndStdinCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		if request.Method == http.MethodPut && request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks/h1/settings" {
-			_, _ = writer.Write([]byte(`{"status":"ok"}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-
-	// Test --config-file
-	tmpFile := filepath.Join(t.TempDir(), "hook.json")
-	_ = os.WriteFile(tmpFile, []byte(`{"foo":"bar"}`), 0644)
-
-	command.SetArgs([]string{"--json", "hook", "configure", "h1", "--config-file", tmpFile, "--project", "PRJ"})
-	if err := command.Execute(); err != nil {
-		t.Fatalf("hook configure file failed: %v", err)
-	}
-
-	// Test stdin
-	command = NewRootCommand()
-	stdinBuffer := bytes.NewBufferString(`{"foo":"bar"}`)
-	command.SetIn(stdinBuffer)
-	command.SetArgs([]string{"--json", "hook", "configure", "h1", "-", "--project", "PRJ"})
-	if err := command.Execute(); err != nil {
-		t.Fatalf("hook configure stdin failed: %v", err)
 	}
 }
 

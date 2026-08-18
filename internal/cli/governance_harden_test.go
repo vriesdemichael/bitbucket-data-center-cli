@@ -10,20 +10,6 @@ import (
 	"testing"
 )
 
-func TestHookConfigureMutualExclusionCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://localhost")
-	command := NewRootCommand()
-	command.SetArgs([]string{"hook", "configure", "h1", "{}", "--config-file", "some.json", "--project", "PRJ"})
-	err := command.Execute()
-	if err == nil {
-		t.Fatal("expected error for mutual exclusion")
-	}
-	if !strings.Contains(err.Error(), "cannot provide settings as both an argument and via --config-file") {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
 func TestReviewerConditionCreateMutualExclusionCLI(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	t.Setenv("BITBUCKET_URL", "http://localhost")

@@ -1,0 +1,29 @@
+# ADR 051: bb does not manage server-side hooks
+
+This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
+
+- Number: `051`
+- Title: `bb does not manage server-side hooks`
+- Category: `architecture`
+- Status: `accepted`
+- Provenance: `guided-ai`
+- Source: `docs/decisions/051-no-server-side-hook-management.yaml`
+
+## Decision
+
+Remove the plugin hook commands (bb hook list|enable|disable|configure) and the hook script commands (bb repo hook-script list|set|remove), and do not add equivalents. Webhooks stay. bb webhook and bb project webhook are the supported way to make Bitbucket tell an external service that something happened. The endpoints remain reachable through the raw REST passthrough planned in issue 330, which is the intended escape hatch for one-off cases. That is the shape of the decision: the API is not forbidden, it just does not get first-class commands that imply it is a good idea.
+
+## Agent Instructions
+
+Do not add commands that configure code running inside Bitbucket. That covers hook scripts, plugin hook enablement and hook settings, whatever they are called in a future API version. When a user asks for push-time enforcement, answer with the alternatives rather than the endpoint: a webhook to a service they control, a required build status, or a merge check. Each of those fails where the person who caused the failure can see it. If someone genuinely needs these endpoints — a migration, an audit — point them at the raw REST passthrough rather than reopening the command surface. This is arguable and should stay arguable. A workflow that cannot be expressed as a webhook, a merge check or a CI job is a reason to revisit; a preference for driving it from a terminal is not.
+
+## Rationale
+
+A hook script is a shell script that runs in the Bitbucket server's process on every push to every repository it is bound to, deployed by upload rather than from version control. What is running is whatever was last pushed through an API call: no branch, no review, no history, and no straightforward answer to "what changed and who changed it". When it breaks it breaks pushes for everyone, on the server, away from anyone who can see it. The general form of the argument is that pushing enforcement into the server makes it invisible to the people it applies to. The alternatives are visible — CI reporting on a pull request, a required build status, a merge check — and they fail somewhere the author can act on. Plugin hooks are better behaved, being versioned and installed as apps. They are excluded for a different reason: enabling one and setting its configuration is an administrative act performed once per repository or project. It is not a scripted workflow, and it is not something a coding agent should reach for while working on a change. Two commands that look alike and differ only in how bad an idea they are would be worse than removing both. A live-coverage sweep is what forced the question. Hook scripts turned out to be the only command group with no live test and no way to get one: the feature is dark on the Atlassian SDK stack and every endpoint answers 409 "Feature hook.scripts is disabled". The options were to enable a dark feature in the shared test stack for every other test's benefit, ship three commands nothing verifies, or decide they should not exist. Being unable to test them was the prompt, not the reason.
+
+## Rejected Alternatives
+
+- `Keep both command groups and enable the dark feature in the test stack`: Pays a real cost — a dark feature switched on for every test that runs against the stack, and harness changes to carry it — to keep a surface the project does not want. It also answers the testing question while leaving the design question unasked.
+- `Keep the commands untested, as they were`: They were untested precisely because nothing could run them, and unverified commands are how the six broken commands found in the same sweep survived. Shipping a fourth group in that state, knowingly, is worse than shipping it unknowingly.
+- `Remove hook scripts but keep plugin hooks`: Defensible: plugin hooks are versioned and installed as apps, so the strongest objection does not apply. Rejected because the remaining objection still does — enablement is a one-off administrative act — and because a surface that keeps the safer half of a pair invites the question of why the other half is missing every time someone reads the help.
+- `Deprecate the commands with a warning rather than removing them`: Appropriate where users depend on something and need time to move. Nothing depended on these: the hook script commands could never have worked against a stack with the feature off, and the plugin hook commands are administrative. A deprecation period would carry the surface, and the argument about it, for no one's benefit.

@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-10.2-openapi.json",
-  "covered": 222,
+  "covered": 209,
   "total": 565,
-  "coverage_percent": 39.29203539823009,
+  "coverage_percent": 36.991150442477874,
   "by_tag": [
     {
       "tag": "",
@@ -67,7 +67,7 @@
     },
     {
       "tag": "Project",
-      "covered": 37,
+      "covered": 32,
       "total": 73
     },
     {
@@ -77,7 +77,7 @@
     },
     {
       "tag": "Repository",
-      "covered": 63,
+      "covered": 55,
       "total": 96
     },
     {
@@ -980,6 +980,24 @@
     },
     {
       "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/hook-scripts",
+      "tag": "Repository",
+      "summary": "Get hook scripts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/hook-scripts/{scriptId}",
+      "tag": "Repository",
+      "summary": "Remove a hook script"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/hook-scripts/{scriptId}",
+      "tag": "Repository",
+      "summary": "Create/update a hook script"
+    },
+    {
+      "method": "GET",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/last-modified",
       "tag": "Repository",
       "summary": "Stream files"
@@ -1183,6 +1201,12 @@
       "summary": "Edit an existing repository secret scanning rule"
     },
     {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks",
+      "tag": "Repository",
+      "summary": "Get repository hooks"
+    },
+    {
       "method": "DELETE",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks/{hookKey}",
       "tag": "Repository",
@@ -1193,6 +1217,30 @@
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks/{hookKey}",
       "tag": "Repository",
       "summary": "Get repository hook"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks/{hookKey}/enabled",
+      "tag": "Repository",
+      "summary": "Disable repository hook"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks/{hookKey}/enabled",
+      "tag": "Repository",
+      "summary": "Enable repository hook"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks/{hookKey}/settings",
+      "tag": "Repository",
+      "summary": "Get repository hook settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks/{hookKey}/settings",
+      "tag": "Repository",
+      "summary": "Update repository hook settings"
     },
     {
       "method": "GET",
@@ -1328,9 +1376,39 @@
     },
     {
       "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/settings/hooks",
+      "tag": "Project",
+      "summary": "Get repository hooks"
+    },
+    {
+      "method": "GET",
       "path": "/api/latest/projects/{projectKey}/settings/hooks/{hookKey}",
       "tag": "Project",
       "summary": "Get a repository hook"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/settings/hooks/{hookKey}/enabled",
+      "tag": "Project",
+      "summary": "Disable repository hook"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/settings/hooks/{hookKey}/enabled",
+      "tag": "Project",
+      "summary": "Enable repository hook"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/settings/hooks/{hookKey}/settings",
+      "tag": "Project",
+      "summary": "Get repository hook settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/settings/hooks/{hookKey}/settings",
+      "tag": "Project",
+      "summary": "Update repository hook settings"
     },
     {
       "method": "GET",
