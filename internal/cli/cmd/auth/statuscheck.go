@@ -27,6 +27,15 @@ const statusProbeTimeout = 10 * time.Second
 type statusCheck struct {
 	Name string `json:"name"`
 	OK   bool   `json:"ok"`
+	// Advisory marks a check whose failure does not mean the setup is broken.
+	//
+	// The git credential helper is the case that forced this: it is needed to
+	// git push, and irrelevant to anything that only calls the API. Counting it
+	// as a failure would have made bb auth status --check fail on every CI
+	// pipeline and every agent that never runs git at all — reporting a broken
+	// setup to people whose setup is fine, which is the failure mode this whole
+	// command exists to remove.
+	Advisory bool `json:"advisory,omitempty"`
 	// Detail is the finding: who you are, or what went wrong.
 	Detail string `json:"detail,omitempty"`
 	// Remedy is what to do about it, and is only set when OK is false. A
@@ -41,7 +50,7 @@ type statusCheck struct {
 // after bb works fine", because bb authenticates itself and plain git does
 // not go through bb at all. Nothing previously surfaced it.
 func gitCredentialHelperState(ctx context.Context, backend git.Backend, bitbucketURL string) statusCheck {
-	check := statusCheck{Name: "git credential helper"}
+	check := statusCheck{Name: "git credential helper", Advisory: true}
 
 	parsed, err := url.Parse(strings.TrimSpace(bitbucketURL))
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {

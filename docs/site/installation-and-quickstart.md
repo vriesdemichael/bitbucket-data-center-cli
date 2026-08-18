@@ -146,7 +146,11 @@ authentication line proves the host is reachable, its certificate is trusted,
 any proxy is working, and the credential is still valid. A failing line says
 what to do about it.
 
-In CI, `--check` makes it exit non-zero when something is wrong:
+Lines marked `!` are advisory — worth knowing, but not a broken setup. The git
+credential helper is one: it is needed to `git push` and irrelevant if you only
+call the API, so it is reported and never fails the command.
+
+In CI, `--check` makes it exit non-zero when a non-advisory check fails:
 
 ```bash
 bb auth status --check

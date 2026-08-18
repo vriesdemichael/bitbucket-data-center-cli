@@ -962,9 +962,14 @@ Reporting alone is not enough to be useful: an expired token, an unreachable
 host and a working setup used to produce the same confident output. Each line
 now says which it is, and what to do when it is not the last one.
 
+Lines marked ! are advisory: they report something worth knowing that does not
+mean the setup is broken. The git credential helper is one — it is needed to git
+push and irrelevant to anything that only calls the API — so it is reported but
+never fails the command.
+
 Exit status is unchanged by default, so existing scripts keep working. Pass
---check to exit non-zero when something is wrong, which is the form worth
-putting in CI.
+--check to exit non-zero when a non-advisory check fails, which is the form
+worth putting in CI.
 
 Under --json the exit status is always zero and the verdict is the "ok" field.
 Machine output is a single document on stdout, so a failing exit would replace
