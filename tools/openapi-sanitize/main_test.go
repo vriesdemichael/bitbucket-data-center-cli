@@ -260,3 +260,190 @@ func TestFixEpochMillisFieldsLeavesCorrectDeclarationsAlone(t *testing.T) {
 		t.Fatalf("expiryDate was rewritten despite being out of scope: %v", expiry)
 	}
 }
+
+func TestFixContentEncodedPathParamsRewritesToSchema(t *testing.T) {
+	spec := map[string]any{
+		"paths": map[string]any{
+			"/branches/info/{commitId}": map[string]any{
+				"get": map[string]any{
+					"parameters": []any{
+						map[string]any{
+							"in":   "path",
+							"name": "commitId",
+							"content": map[string]any{
+								"application/json": map[string]any{
+									"schema": map[string]any{"type": "string", "maxLength": float64(40)},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if fixed := fixContentEncodedPathParams(spec); fixed != 1 {
+		t.Fatalf("fixed = %d, want 1", fixed)
+	}
+
+	param := spec["paths"].(map[string]any)["/branches/info/{commitId}"].(map[string]any)["get"].(map[string]any)["parameters"].([]any)[0].(map[string]any)
+	if _, present := param["content"]; present {
+		t.Fatal("content map should be removed, or oapi-codegen still emits a json.Marshal")
+	}
+	schema, ok := param["schema"].(map[string]any)
+	if !ok {
+		t.Fatalf("schema = %v, want the schema lifted out of the content map", param["schema"])
+	}
+	if schema["type"] != "string" || schema["maxLength"] != float64(40) {
+		t.Fatalf("schema = %v, want the original schema preserved intact", schema)
+	}
+}
+
+// Parameters that already declare a schema, and parameters outside the path, are
+// left exactly as they are: the rewrite is only sound for a path segment.
+func TestFixContentEncodedPathParamsLeavesOtherParamsAlone(t *testing.T) {
+	spec := map[string]any{
+		"paths": map[string]any{
+			"/thing/{id}": map[string]any{
+				"get": map[string]any{
+					"parameters": []any{
+						map[string]any{
+							"in":      "path",
+							"name":    "id",
+							"schema":  map[string]any{"type": "string"},
+							"content": map[string]any{"application/json": map[string]any{"schema": map[string]any{"type": "integer"}}},
+						},
+						map[string]any{
+							"in":      "query",
+							"name":    "filter",
+							"content": map[string]any{"application/json": map[string]any{"schema": map[string]any{"type": "string"}}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if fixed := fixContentEncodedPathParams(spec); fixed != 0 {
+		t.Fatalf("fixed = %d, want 0", fixed)
+	}
+
+	params := spec["paths"].(map[string]any)["/thing/{id}"].(map[string]any)["get"].(map[string]any)["parameters"].([]any)
+	pathParam := params[0].(map[string]any)
+	if schema := pathParam["schema"].(map[string]any); schema["type"] != "string" {
+		t.Fatalf("existing schema was overwritten: %v", schema)
+	}
+	if _, present := params[1].(map[string]any)["content"]; !present {
+		t.Fatal("query parameter content map should be untouched")
+	}
+}
+
+func TestFixArrayTypedPropertiesWrapsObjectInArray(t *testing.T) {
+	spec := map[string]any{
+		"components": map[string]any{
+			"schemas": map[string]any{
+				"RestRefSyncStatus": map[string]any{
+					"properties": map[string]any{
+						"aheadRefs": map[string]any{
+							"type":       "object",
+							"readOnly":   true,
+							"properties": map[string]any{"id": map[string]any{"type": "string"}},
+						},
+						"enabled": map[string]any{"type": "boolean"},
+					},
+				},
+			},
+		},
+	}
+
+	if fixed := fixArrayTypedProperties(spec); fixed != 1 {
+		t.Fatalf("fixed = %d, want 1 (only the listed property)", fixed)
+	}
+
+	properties := spec["components"].(map[string]any)["schemas"].(map[string]any)["RestRefSyncStatus"].(map[string]any)["properties"].(map[string]any)
+	wrapped, ok := properties["aheadRefs"].(map[string]any)
+	if !ok || wrapped["type"] != "array" {
+		t.Fatalf("aheadRefs = %v, want an array schema", properties["aheadRefs"])
+	}
+	// readOnly describes the field, not the element, so it must not be left behind
+	// on the item schema where it would describe each ref instead.
+	items, ok := wrapped["items"].(map[string]any)
+	if !ok || items["type"] != "object" {
+		t.Fatalf("items = %v, want the original object schema", wrapped["items"])
+	}
+	if wrapped["readOnly"] != true {
+		t.Fatal("readOnly should move up to the array")
+	}
+	if _, present := items["readOnly"]; present {
+		t.Fatal("readOnly should not remain on the item schema")
+	}
+	if enabled := properties["enabled"].(map[string]any); enabled["type"] != "boolean" {
+		t.Fatalf("unlisted property was rewritten: %v", enabled)
+	}
+}
+
+func TestFixArrayTypedResponsesWrapsSchemaInArray(t *testing.T) {
+	spec := map[string]any{
+		"paths": map[string]any{
+			"/gpg/latest/keys": map[string]any{
+				"post": map[string]any{
+					"operationId": "addKey",
+					"responses": map[string]any{
+						"200": map[string]any{
+							"content": map[string]any{
+								"application/json": map[string]any{
+									"schema": map[string]any{"$ref": "#/components/schemas/RestGpgKey"},
+								},
+							},
+						},
+						"400": map[string]any{
+							"content": map[string]any{
+								"application/json": map[string]any{
+									"schema": map[string]any{"type": "object"},
+								},
+							},
+						},
+					},
+				},
+				"get": map[string]any{
+					"operationId": "getKeys",
+					"responses": map[string]any{
+						"200": map[string]any{
+							"content": map[string]any{
+								"application/json": map[string]any{
+									"schema": map[string]any{"$ref": "#/components/schemas/RestGpgKey"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if fixed := fixArrayTypedResponses(spec); fixed != 1 {
+		t.Fatalf("fixed = %d, want 1", fixed)
+	}
+
+	post := spec["paths"].(map[string]any)["/gpg/latest/keys"].(map[string]any)["post"].(map[string]any)
+	responses := post["responses"].(map[string]any)
+	ok200 := responses["200"].(map[string]any)["content"].(map[string]any)["application/json"].(map[string]any)["schema"].(map[string]any)
+	if ok200["type"] != "array" {
+		t.Fatalf("200 schema = %v, want an array", ok200)
+	}
+	if items, _ := ok200["items"].(map[string]any); items["$ref"] != "#/components/schemas/RestGpgKey" {
+		t.Fatalf("items = %v, want the original ref", ok200["items"])
+	}
+
+	// Only the listed status on the listed operation moves; error responses and
+	// other operations on the same path stay as they are.
+	bad400 := responses["400"].(map[string]any)["content"].(map[string]any)["application/json"].(map[string]any)["schema"].(map[string]any)
+	if bad400["type"] != "object" {
+		t.Fatalf("400 schema was rewritten: %v", bad400)
+	}
+	get := spec["paths"].(map[string]any)["/gpg/latest/keys"].(map[string]any)["get"].(map[string]any)
+	getSchema := get["responses"].(map[string]any)["200"].(map[string]any)["content"].(map[string]any)["application/json"].(map[string]any)["schema"].(map[string]any)
+	if getSchema["$ref"] != "#/components/schemas/RestGpgKey" {
+		t.Fatalf("an unlisted operation was rewritten: %v", getSchema)
+	}
+}

@@ -3519,7 +3519,7 @@ Usage:
 
 Flags:
       --comment-version int32   Optional expected version of the comment
-      --commit-message string   Optional commit message for the suggestion application
+      --commit-message string   Commit message for the applied suggestion (default: names the comment)
       --index int32             Optional index of the suggestion in the comment (default 0)
       --pr-version int32        Optional expected version of the pull request
 
@@ -4847,8 +4847,8 @@ Usage:
   bb project default-task add <project-key> <description> [flags]
 
 Flags:
-      --source-ref string   Source ref matcher (e.g. refs/heads/feature/*)
-      --target-ref string   Target ref matcher (e.g. refs/heads/master)
+      --source-ref string   Source ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
+      --target-ref string   Target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
 
 Global Flags:
       --all                      Return every result rather than the first --limit
@@ -4930,8 +4930,8 @@ Usage:
 
 Flags:
       --description string   New task description
-      --source-ref string    New source ref matcher
-      --target-ref string    New target ref matcher
+      --source-ref string    New source ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
+      --target-ref string    New target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
 
 Global Flags:
       --all                      Return every result rather than the first --limit
@@ -6488,8 +6488,8 @@ Usage:
   bb repo default-task add <description> [flags]
 
 Flags:
-      --source-ref string   Source ref matcher (e.g. refs/heads/feature/*)
-      --target-ref string   Target ref matcher (e.g. refs/heads/master)
+      --source-ref string   Source ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
+      --target-ref string   Target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
 
 Global Flags:
       --all                      Return every result rather than the first --limit
@@ -6574,8 +6574,8 @@ Usage:
 
 Flags:
       --description string   New task description
-      --source-ref string    New source ref matcher
-      --target-ref string    New target ref matcher
+      --source-ref string    New source ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
+      --target-ref string    New target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
 
 Global Flags:
       --all                      Return every result rather than the first --limit
@@ -8150,7 +8150,9 @@ Available Commands:
   status      Query synchronization status, divergence, and settings
 
 Flags:
-      --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
+      --action string   How to reconcile the ref: MERGE, DISCARD or REBASE (default "MERGE")
+      --ref string      Ref to synchronize (defaults to the repository default branch)
+      --repo string     Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
       --all                      Return every result rather than the first --limit

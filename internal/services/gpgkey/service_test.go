@@ -31,7 +31,9 @@ func TestGpgKeyServiceCRUD(t *testing.T) {
 			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"426","emailAddress":"user@example.com","fingerprint":"FINGERPRINT1","text":"gpg-key-text"}]}`))
 		case r.Method == http.MethodPost && r.URL.Path == "/rest/gpg/latest/keys":
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"id":"426","emailAddress":"user@example.com","fingerprint":"FINGERPRINT1","text":"gpg-key-text"}`))
+			// An array even for one key: the endpoint reports every key the block
+			// carried. A single object here is what hid the mismatch.
+			_, _ = w.Write([]byte(`[{"id":"426","emailAddress":"user@example.com","fingerprint":"FINGERPRINT1","text":"gpg-key-text"}]`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/rest/gpg/latest/keys/426":
 			w.WriteHeader(http.StatusNoContent)
 		case r.Method == http.MethodDelete && r.URL.Path == "/rest/gpg/latest/keys":
@@ -51,7 +53,7 @@ func TestGpgKeyServiceCRUD(t *testing.T) {
 
 	// Add
 	added, err := service.AddGpgKey(ctx, "gpg-key-text")
-	if err != nil || *added.Id != "426" {
+	if err != nil || len(added) != 1 || *added[0].Id != "426" {
 		t.Fatalf("expected gpg key add success, got %#v err=%v", added, err)
 	}
 

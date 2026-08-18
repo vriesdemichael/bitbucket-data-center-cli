@@ -354,3 +354,331 @@ fixes:
         - bb webhook test <id> --repo PROJECT/repo
         - bb webhook test <id> --repo PROJECT/repo --url http://localhost:7990/status
         - bb project webhook test PROJECT <id>
+
+  - id: OPENAPI-013
+    area: spec-body-requiredness
+    description: >
+      Always send both default-task ref matchers, with a type id drawn from the schema enum, because
+      the server rejects a default task that omits either one.
+    reference:
+      type: endpoint
+      value: >
+        POST and PUT /default-tasks/latest/projects/{projectKey}/tasks and
+        POST and PUT /default-tasks/latest/projects/{projectKey}/repos/{repositorySlug}/tasks
+      upstream_issue: >
+        RestDefaultTaskRequest declares sourceMatcher and targetMatcher as optional properties. The
+        server requires both: a request carrying only a description is rejected with "A sourceMatcher
+        with ID and type is required when creating or updating a default task."
+
+        Separately, bb sent the matcher type id ANY_REF_MATCHER, which is not one of the five values
+        the schema enum lists (ANY_REF, BRANCH, PATTERN, MODEL_CATEGORY, MODEL_BRANCH). That value
+        appears to have been taken from a response rather than the schema: on a successful create the
+        server echoes the any-ref matcher's *id* as ANY_REF_MATCHER_ID, which reads like a type name
+        but is not one.
+
+        Probed directly against a running instance, POST to the project endpoint:
+          description only                                  -> 400  sourceMatcher required
+          type id ANY_REF_MATCHER                            -> 400  Unable to get ref matcher for type
+          type id ANY_REF, id ANY_REF                        -> 200
+          PATTERN refs/heads/feature/* + BRANCH refs/heads/master -> 200
+          type name sent empty                               -> 200  (schema marks it required)
+
+        The consequence was that bb repo default-task add|update and bb project default-task
+        add|update had never worked in any form: without the flags the request was rejected for the
+        missing matchers, and with them for the invented type. All four were among the commands the
+        live-coverage gate grandfathered, so nothing contradicted either assumption.
+    change:
+      files:
+        - internal/openapi/refmatcher.go
+        - internal/services/reposettings/service.go
+        - internal/services/project/default_task.go
+        - internal/cli/repo_commands.go
+        - internal/cli/project_default_task.go
+      detail: >
+        A shared builder now constructs both matchers for all four call sites, which previously
+        carried eight copies of the same wrong literal.
+
+        The matcher type is inferred from the ref rather than asked for, because the ref already
+        determines it: a glob can only be a PATTERN and anything else can only be a BRANCH. An unset
+        --source-ref or --target-ref becomes an ANY_REF matcher, which is what the flag being
+        optional has to mean given that the field is not.
+
+        MODEL_CATEGORY and MODEL_BRANCH matchers are not reachable through these flags. They match on
+        branching-model names rather than refs, so they do not belong to a flag called --source-ref;
+        expressing them would need a separate flag and is left until something asks for it.
+
+        The type name is sent correctly even though the server tolerates it empty, since the schema
+        marks it required and a future version may enforce that.
+    verification:
+      commands:
+        - go build ./...
+        - go test ./internal/openapi/ ./internal/services/reposettings/ ./internal/services/project/
+        - go test -tags live -run TestLiveRepoDefaultTaskLifecycle ./tests/integration/live/
+
+  - id: OPENAPI-014
+    area: spec-parameter-serialization
+    description: >
+      Rewrite path parameters declared with a content map into a plain schema, so the generated
+      client sends the value as a path segment rather than as JSON.
+    reference:
+      type: endpoint
+      value: GET /branch-utils/latest/projects/{projectKey}/repos/{repositorySlug}/branches/info/{commitId}
+      upstream_issue: >
+        commitId is declared with content.application/json rather than schema. Per OpenAPI that asks
+        for the value to be serialized as JSON, and oapi-codegen honours it: the generated request
+        builder calls json.Marshal on the commit id instead of the usual style-based encoding, so the
+        path segment arrives wrapped in literal double quotes.
+
+        Bitbucket passes the quoted string straight to git, which rejects it:
+          'git branch --no-color --contains "\"<sha>\"" --list -- master' exited with code 129
+          saying: error: malformed object name
+
+        Probed directly against a running instance, same repository and commit:
+          GET branches/info/<sha>            -> 200, lists refs/heads/master
+          GET branches/info/<sha>?start=0&limit=25 -> 200
+          bb branch model inspect <sha>      -> 500 (the id arrives quoted)
+
+        The argument is irrelevant to the failure: a branch name fails the same way, because the
+        quotes are what git cannot parse. This is the only parameter in the 10.2 spec declared this
+        way, and every other endpoint taking a commit id declares it as a plain string, so it reads
+        as an upstream slip rather than an intended encoding.
+
+        The consequence was that bb branch model inspect had never worked against any server for any
+        input. It was among the commands the live-coverage gate grandfathered.
+    change:
+      files:
+        - tools/openapi-sanitize/main.go
+        - internal/openapi/generated/bitbucket_client.gen.go
+        - internal/models/generated/bitbucket_types.gen.go
+      detail: >
+        The sanitizer now moves content.application/json.schema onto the parameter as schema and
+        drops the content map, for path parameters that do not already declare one. The regenerated
+        client encodes commitId with StyleParamWithLocation like every other path parameter.
+
+        The pass is written against the shape rather than against this one endpoint, so a future spec
+        revision that declares another parameter the same way is fixed on regeneration instead of
+        shipping the same defect again. It reports its count alongside the other sanitizer counts,
+        which is what would make a new occurrence visible.
+    verification:
+      commands:
+        - task models:generate
+        - task client:generate
+        - go build ./...
+        - go test -tags live -run TestLiveBranchModelInspect ./tests/integration/live/
+
+  - id: OPENAPI-015
+    area: spec-property-naming
+    description: >
+      Send the applied-suggestion commit message as message rather than commitMessage, and treat it
+      as required.
+    reference:
+      type: endpoint
+      value: >
+        POST /api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId}/apply-suggestion
+      upstream_issue: >
+        RestApplySuggestionRequest declares an optional commitMessage property. The server reads the
+        message from a property named message, and requires it.
+
+        Probed directly against a running instance, same suggestion comment each time:
+          commentVersion + pullRequestVersion + suggestionIndex + commitMessage -> 400 'message' cannot be null or empty
+          the same three fields alone                                           -> 400 'message' cannot be null or empty
+          the same three fields plus message                                    -> 204, suggestion applied
+
+        The identical answer with and without commitMessage is what shows the property is simply not
+        read: the server is reporting a missing message either way.
+
+        The consequence was that bb pr comment apply-suggestion had never worked, with or without
+        --commit-message. It was among the commands the live-coverage gate grandfathered.
+    change:
+      files:
+        - tools/openapi-sanitize/main.go
+        - internal/cli/insights_pr_admin_commands.go
+        - internal/models/generated/bitbucket_types.gen.go
+        - internal/openapi/generated/bitbucket_client.gen.go
+      detail: >
+        The sanitizer gained a small table of confirmed property renames and applies them to the
+        component schemas; RestApplySuggestionRequest.commitMessage becomes message and joins the
+        required list, so the regenerated type carries a non-pointer Message field.
+
+        The --commit-message flag keeps its name, since that is what it means to the user, and now
+        defaults to a message naming the comment when it is not given. Requiring the flag would have
+        been the smaller change but a worse one: the server requires a message, not that the user
+        supply one, and Bitbucket's own UI writes a default.
+
+        The rename table is deliberately narrow. An entry belongs there only where sending the
+        documented name has been observed to fail and the other name to work; it is not a place to
+        tidy up names that merely read awkwardly.
+    verification:
+      commands:
+        - task models:generate
+        - task client:generate
+        - go build ./...
+        - go test -tags live -run TestLivePullRequestApplySuggestion ./tests/integration/live/
+
+  - id: OPENAPI-016
+    area: spec-property-requiredness
+    description: >
+      Create draft pull request comments by asking for the PENDING state, not by setting the
+      read-only pending flag.
+    reference:
+      type: endpoint
+      value: POST /api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments
+      upstream_issue: >
+        RestComment carries both a pending boolean, marked readOnly, and a free-form state string
+        whose only documented example is OPEN. Nothing in the spec says which one puts a comment into
+        the draft state, and the read-only marker on pending says only that it cannot be set -- not
+        what to set instead.
+
+        Probed directly against a running instance, each on a fresh pull request:
+          body pending: true          -> 201, response state OPEN, pull request review empty
+          query ?draft=true           -> 201, review empty
+          query ?pending=true         -> 201, review empty
+          body state: "PENDING"       -> 201, comment appears in GET .../review
+
+        The failure was silent in the worst way: bb reported "Created pending comment", and the
+        comment was published to everyone on the pull request instead.
+
+        This is a spec gap rather than a server defect, so it is recorded here rather than fixed in
+        the sanitizer: the wire contract is fine once you know which field carries the state.
+    change:
+      files:
+        - internal/services/comment/service.go
+        - internal/cli/pr_review_jira_test.go
+      detail: >
+        Comment creation sends state PENDING when --pending is given, and nothing otherwise.
+
+        The unit test asserted the pending flag was set, so it passed throughout. It now asserts the
+        state, which is the field the server reads. A stub can only confirm that bb sent what bb
+        meant to send; that the meaning was wrong needed a real server, and the pending review
+        commands had no live test until now.
+    verification:
+      commands:
+        - go test ./internal/cli/ -run TestPRCommentPending
+        - go test -tags live -run TestLivePullRequestPendingReview ./tests/integration/live/
+
+  - id: OPENAPI-017
+    area: spec-property-types
+    description: >
+      Declare the three ref collections on RestRefSyncStatus as arrays, which is what the server
+      returns.
+    reference:
+      type: endpoint
+      value: >
+        GET and POST /sync/latest/projects/{projectKey}/repos/{repositorySlug}
+      upstream_issue: >
+        RestRefSyncStatus declares aheadRefs, divergedRefs and orphanedRefs as single objects. The
+        server returns each as an array, so the generated model cannot decode the response:
+        "json: cannot unmarshal array into Go struct field RestRefSyncStatus.aheadRefs".
+
+        Probed directly against a running instance, on a fresh fork:
+          GET while synchronization is off -> {"available":true,"enabled":false}
+          POST enabling it                 -> {"available":true,"enabled":true,"lastSync":...,
+                                               "aheadRefs":[],"divergedRefs":[],"orphanedRefs":[]}
+
+        The GET omits the three fields entirely while synchronization is off, which is why only the
+        call that switches it on -- the one that gets a populated body back -- failed. bb repo sync
+        status and bb repo sync disable appeared to work throughout.
+    change:
+      files:
+        - tools/openapi-sanitize/main.go
+        - internal/models/generated/bitbucket_types.gen.go
+        - internal/openapi/generated/bitbucket_client.gen.go
+      detail: >
+        The sanitizer wraps each listed property in an array schema, moving readOnly up to the array
+        since it describes the field rather than its element type.
+
+        The list is explicit rather than inferred from plural names: a plural name is a hint, and the
+        rewrite is only safe where the encoding has been seen.
+    verification:
+      commands:
+        - task models:generate
+        - task client:generate
+        - go test -tags live -run TestLiveRepositoryForkSync ./tests/integration/live/
+
+  - id: OPENAPI-018
+    area: spec-property-requiredness
+    description: >
+      Send a ref and an action on the manual fork synchronization endpoint, both of which the server
+      requires despite the schema marking them optional.
+    reference:
+      type: endpoint
+      value: POST /sync/latest/projects/{projectKey}/repos/{repositorySlug}/synchronize
+      upstream_issue: >
+        RestRefSyncRequest declares refId, action and context as optional properties. The server
+        requires refId and action, and answers a missing one with an unhandled exception rather than
+        a validation error, so the response says nothing about what was wrong.
+
+        Probed directly against a running instance, same fork each time:
+          {}                                            -> 500 generic "An error occurred"
+          {"refId":"refs/heads/master"}                 -> 500 generic
+          {"action":"MERGE"}                            -> 500 generic
+          {"refId":"refs/heads/master","action":"MERGE"} -> reaches the ref logic
+
+        bb sent an empty body, so bb repo sync answered 500 for every fork in every state and had
+        never worked. It was among the commands the live-coverage gate grandfathered.
+    change:
+      files:
+        - internal/services/forksync/service.go
+        - internal/cli/repo_commands.go
+      detail: >
+        Synchronize now takes a ref and an action, and validates both before calling, so a missing
+        one is a validation error naming the flag rather than a 500 naming nothing.
+
+        The command gained --ref and --action. --action defaults to MERGE, which is what the endpoint
+        is for and what Bitbucket's own UI offers first. --ref defaults to the repository's default
+        branch: a bare bb repo sync means the branch the fork exists for, and making the user repeat
+        it would be ceremony given the server needs a ref either way.
+
+        The requiredness is recorded here rather than fixed in the sanitizer. Adding the two fields
+        to the schema's required list would make the generated struct carry them as non-pointers,
+        which is right, but it would also describe the endpoint as one where the caller must choose a
+        ref -- and the useful behaviour is bb choosing a sensible one.
+    verification:
+      commands:
+        - go build ./...
+        - go test ./internal/services/forksync/
+        - go test -tags live -run TestLiveRepositoryForkSync ./tests/integration/live/
+
+  - id: OPENAPI-019
+    area: spec-response-types
+    description: >
+      Declare the add-GPG-key response as an array of keys, which is what the server sends.
+    reference:
+      type: endpoint
+      value: POST /gpg/latest/keys
+      upstream_issue: >
+        The 200 response is declared as a single RestGpgKey, described as "the GPG key that was just
+        created". The server answers with every key the submitted block contained, as an array, so
+        even the ordinary one-key case fails to decode:
+        "json: cannot unmarshal array into Go value of type openapigenerated.RestGpgKey".
+
+        Probed directly against a running instance with a one-key armored block:
+          POST /gpg/latest/keys -> 200 [{"fingerprint":"04f4...","id":"55f7...","emailAddress":"...","subKeys":[]}]
+
+        The consequence was that bb auth gpg-key add had never worked. Its unit tests passed
+        throughout because both stubs -- the service one and the CLI one -- answered with a single
+        object, the shape bb expected rather than the shape the server sends.
+    change:
+      files:
+        - tools/openapi-sanitize/main.go
+        - internal/services/gpgkey/service.go
+        - internal/cli/cmd/auth/gpg.go
+        - internal/services/gpgkey/service_test.go
+        - internal/cli/cmd/auth/gpg_test.go
+      detail: >
+        The sanitizer gained a pass for operation responses, keyed by operationId and status, that
+        wraps the declared schema in an array. It is separate from the property-level pass because a
+        response schema sits under paths rather than under components.
+
+        AddGpgKey returns every key the server reports rather than one, and the command names them
+        all. There was no established output shape to preserve, since the command had never returned
+        successfully.
+
+        Both stubs now answer with an array. A stub written from the spec inherits the spec's
+        mistakes, which is the whole reason this needed a live test to surface.
+    verification:
+      commands:
+        - task models:generate
+        - task client:generate
+        - go test ./internal/services/gpgkey/ ./internal/cli/cmd/auth/
+        - go test -tags live -run TestLiveGPGKeyLifecycle ./tests/integration/live/

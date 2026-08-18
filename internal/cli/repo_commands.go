@@ -10,6 +10,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	branchservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/branch"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/services/forksync"
 	reposettings "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reposettings"
@@ -1805,8 +1806,8 @@ func newRepoDefaultTaskCommand(options *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	addCmd.Flags().StringVar(&sourceRef, "source-ref", "", "Source ref matcher (e.g. refs/heads/feature/*)")
-	addCmd.Flags().StringVar(&targetRef, "target-ref", "", "Target ref matcher (e.g. refs/heads/master)")
+	addCmd.Flags().StringVar(&sourceRef, "source-ref", "", "Source ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)")
+	addCmd.Flags().StringVar(&targetRef, "target-ref", "", "Target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)")
 
 	var updateDesc string
 	updateCmd := &cobra.Command{
@@ -1866,8 +1867,8 @@ func newRepoDefaultTaskCommand(options *rootOptions) *cobra.Command {
 		},
 	}
 	updateCmd.Flags().StringVar(&updateDesc, "description", "", "New task description")
-	updateCmd.Flags().StringVar(&sourceRef, "source-ref", "", "New source ref matcher")
-	updateCmd.Flags().StringVar(&targetRef, "target-ref", "", "New target ref matcher")
+	updateCmd.Flags().StringVar(&sourceRef, "source-ref", "", "New source ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)")
+	updateCmd.Flags().StringVar(&targetRef, "target-ref", "", "New target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)")
 	_ = updateCmd.MarkFlagRequired("description")
 
 	deleteCmd := &cobra.Command{
@@ -1928,6 +1929,8 @@ func newRepoDefaultTaskCommand(options *rootOptions) *cobra.Command {
 func newRepoSyncCommand(options *rootOptions) *cobra.Command {
 	var repositorySelector string
 
+	var syncRefID string
+	var syncAction string
 	syncCmd := &cobra.Command{
 		Use:   "sync",
 		Short: "Manage repository fork synchronization",
@@ -1965,18 +1968,35 @@ func newRepoSyncCommand(options *rootOptions) *cobra.Command {
 				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
 			}
 
-			if err := service.Synchronize(cmd.Context(), repo.ProjectKey, repo.Slug); err != nil {
+			syncRef := strings.TrimSpace(syncRefID)
+			if syncRef == "" {
+				// A bare `bb repo sync` means the branch the fork is for, which
+				// is what the default branch names. Asking the user to repeat it
+				// would be ceremony; the server needs a ref either way.
+				defaultRef, err := branchservice.NewService(client).GetDefault(cmd.Context(),
+					branchservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug})
+				if err != nil {
+					return err
+				}
+				if defaultRef.Id != nil {
+					syncRef = *defaultRef.Id
+				}
+			}
+
+			if err := service.Synchronize(cmd.Context(), repo.ProjectKey, repo.Slug, syncRef, syncAction); err != nil {
 				return err
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "sync": "triggered"})
+				return writeJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "sync": "triggered", "ref": syncRef, "action": strings.ToUpper(syncAction)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Synchronization triggered for fork %s/%s from upstream\n", repo.ProjectKey, repo.Slug)
+			fmt.Fprintf(cmd.OutOrStdout(), "Synchronization triggered for fork %s/%s on %s from upstream\n", repo.ProjectKey, repo.Slug, syncRef)
 			return nil
 		},
 	}
+	syncCmd.Flags().StringVar(&syncRefID, "ref", "", "Ref to synchronize (defaults to the repository default branch)")
+	syncCmd.Flags().StringVar(&syncAction, "action", "MERGE", "How to reconcile the ref: MERGE, DISCARD or REBASE")
 	syncCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	statusCmd := &cobra.Command{

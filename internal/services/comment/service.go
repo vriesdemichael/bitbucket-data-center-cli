@@ -191,14 +191,17 @@ func (service *Service) Create(ctx context.Context, target Target, text string) 
 		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindValidation, "comment text is required", nil)
 	}
 
-	var pendingPtr *bool
+	// A draft comment is created by asking for the PENDING state, not by the
+	// pending flag: the schema marks pending readOnly and the server ignores it,
+	// publishing the comment the caller wanted kept private.
+	var pendingState *string
 	if target.Pending {
-		p := true
-		pendingPtr = &p
+		state := "PENDING"
+		pendingState = &state
 	}
 	body := openapigenerated.RestComment{
-		Text:    &trimmedText,
-		Pending: pendingPtr,
+		Text:  &trimmedText,
+		State: pendingState,
 	}
 
 	if strings.TrimSpace(target.CommitID) != "" {

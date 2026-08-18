@@ -1,0 +1,267 @@
+//go:build live
+
+package live_test
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"testing"
+	"time"
+)
+
+// postLiveJSON sends a raw authenticated POST, for fixtures bb has no command
+// for. Inline comments are the case here: bb can add a pull request comment but
+// not anchor one to a file and line, and an unanchored comment cannot carry a
+// suggestion.
+func postLiveJSON(t *testing.T, path string, payload any) map[string]any {
+	t.Helper()
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal fixture payload failed: %v", err)
+	}
+
+	request, err := http.NewRequest(http.MethodPost, strings.TrimSuffix(os.Getenv("BITBUCKET_URL"), "/")+path, bytes.NewReader(body))
+	if err != nil {
+		t.Fatalf("build fixture request failed: %v", err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.SetBasicAuth(os.Getenv("ADMIN_USER"), os.Getenv("ADMIN_PASSWORD"))
+
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatalf("fixture request failed: %v", err)
+	}
+	defer func() { _ = response.Body.Close() }()
+
+	responseBody, _ := io.ReadAll(response.Body)
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		t.Fatalf("fixture POST %s returned %d: %s", path, response.StatusCode, responseBody)
+	}
+
+	var decoded map[string]any
+	if len(responseBody) > 0 {
+		if err := json.Unmarshal(responseBody, &decoded); err != nil {
+			t.Fatalf("decode fixture response failed: %v\nbody: %s", err, responseBody)
+		}
+	}
+	return decoded
+}
+
+// TestLivePullRequestPendingReview covers bb pr review get/complete/discard
+// together with the pending comments they act on.
+//
+// A pending review only exists as the sum of its draft comments, so the three
+// commands cannot be tested apart: discard has nothing to discard and complete
+// has nothing to publish unless a pending comment was added first.
+func TestLivePullRequestPendingReview(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	branch := "feature/pending-review"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "pending-review.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+	if err != nil {
+		t.Fatalf("create pull request failed: %v", err)
+	}
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// A draft comment is what brings a pending review into existence.
+	const draftText = "draft comment from the live suite"
+	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID, "--text", draftText, "--pending"); err != nil {
+		t.Fatalf("pr comment add --pending failed: %v", err)
+	}
+
+	pendingOutput, err := executeLiveCLI(t, "--json", "pr", "review", "get", pullRequestID)
+	if err != nil {
+		t.Fatalf("pr review get failed: %v\noutput: %s", err, pendingOutput)
+	}
+	if !strings.Contains(pendingOutput, draftText) {
+		t.Fatalf("expected the draft comment in the pending review, got: %s", pendingOutput)
+	}
+
+	// A draft is not visible as a comment until the review is completed, which
+	// is the whole point of the pending state.
+	listWhilePending, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID)
+	if err != nil {
+		t.Fatalf("pr comment list failed: %v\noutput: %s", err, listWhilePending)
+	}
+	if strings.Contains(listWhilePending, draftText) {
+		t.Fatalf("expected the draft to stay out of the published comments, got: %s", listWhilePending)
+	}
+
+	if _, err := executeLiveCLI(t, "--json", "pr", "review", "discard", pullRequestID); err != nil {
+		t.Fatalf("pr review discard failed: %v", err)
+	}
+
+	afterDiscard, err := executeLiveCLI(t, "--json", "pr", "review", "get", pullRequestID)
+	if err != nil {
+		t.Fatalf("pr review get after discard failed: %v\noutput: %s", err, afterDiscard)
+	}
+	if strings.Contains(afterDiscard, draftText) {
+		t.Fatalf("expected the discarded draft to be gone, got: %s", afterDiscard)
+	}
+
+	// Complete publishes drafts rather than dropping them, which is the
+	// difference from discard and the reason both need covering.
+	const publishedText = "draft comment that gets published"
+	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID, "--text", publishedText, "--pending"); err != nil {
+		t.Fatalf("second pr comment add --pending failed: %v", err)
+	}
+
+	completeOutput, err := executeLiveCLI(t, "--json", "pr", "review", "complete", pullRequestID,
+		"--status", "NEEDS_WORK", "--comment", "completing the review from the live suite")
+	if err != nil {
+		t.Fatalf("pr review complete failed: %v\noutput: %s", err, completeOutput)
+	}
+
+	listAfterComplete, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID)
+	if err != nil {
+		t.Fatalf("pr comment list after complete failed: %v\noutput: %s", err, listAfterComplete)
+	}
+	if !strings.Contains(listAfterComplete, publishedText) {
+		t.Fatalf("expected completing the review to publish the draft, got: %s", listAfterComplete)
+	}
+}
+
+// TestLivePullRequestCommentReaction covers bb pr comment react in both
+// directions.
+func TestLivePullRequestCommentReaction(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	branch := "feature/comment-reaction"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "comment-reaction.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+	if err != nil {
+		t.Fatalf("create pull request failed: %v", err)
+	}
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	addOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID,
+		"--text", "comment that gets a reaction", "--blocker")
+	if err != nil {
+		t.Fatalf("pr comment add --blocker failed: %v\noutput: %s", err, addOutput)
+	}
+	addData := decodeJSONMap(t, addOutput)
+	commentObject, ok := addData["comment"].(map[string]any)
+	if !ok {
+		commentObject = addData
+	}
+	commentID, ok := numericOrStringID(commentObject["id"])
+	if !ok {
+		t.Fatalf("expected a comment id in the add output: %s", addOutput)
+	}
+
+	reactOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "react", pullRequestID, commentID, "thumbsup")
+	if err != nil {
+		t.Fatalf("pr comment react failed: %v\noutput: %s", err, reactOutput)
+	}
+
+	getOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "get", pullRequestID, commentID)
+	if err != nil {
+		t.Fatalf("pr comment get failed: %v\noutput: %s", err, getOutput)
+	}
+	if !strings.Contains(getOutput, "thumbsup") {
+		t.Fatalf("expected the reaction on the comment, got: %s", getOutput)
+	}
+
+	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "react", pullRequestID, commentID, "thumbsup", "--remove"); err != nil {
+		t.Fatalf("pr comment react --remove failed: %v", err)
+	}
+
+	afterRemove, err := executeLiveCLI(t, "--json", "pr", "comment", "get", pullRequestID, commentID)
+	if err != nil {
+		t.Fatalf("pr comment get after removing the reaction failed: %v\noutput: %s", err, afterRemove)
+	}
+	if strings.Contains(afterRemove, "thumbsup") {
+		t.Fatalf("expected the reaction to be gone, got: %s", afterRemove)
+	}
+}
+
+// TestLivePullRequestApplySuggestion covers bb pr comment apply-suggestion.
+//
+// The suggestion has to sit on an inline comment anchored to a file and line,
+// which bb cannot create, so the comment is posted directly. What is under test
+// is the applying, and the proof is the file content on the source branch
+// afterwards rather than the response body.
+func TestLivePullRequestApplySuggestion(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	branch := "feature/apply-suggestion"
+	const fileName = "apply-suggestion.txt"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, fileName); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+	if err != nil {
+		t.Fatalf("create pull request failed: %v", err)
+	}
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	const suggested = "branch=rewritten-by-suggestion"
+	suggestionText := "please change this\n\n" + "```suggestion\n" + suggested + "\n```"
+	comment := postLiveJSON(t, fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/comments",
+		seeded.Key, repo.Slug, pullRequestID), map[string]any{
+		"text": suggestionText,
+		"anchor": map[string]any{
+			"line":     1,
+			"lineType": "ADDED",
+			"fileType": "TO",
+			"path":     fileName,
+			"diffType": "EFFECTIVE",
+		},
+	})
+
+	commentID, ok := numericOrStringID(comment["id"])
+	if !ok {
+		t.Fatalf("expected an id on the fixture comment: %v", comment)
+	}
+
+	applyOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "apply-suggestion", pullRequestID, commentID,
+		"--commit-message", "apply suggestion from the live suite")
+	if err != nil {
+		t.Fatalf("pr comment apply-suggestion failed: %v\noutput: %s", err, applyOutput)
+	}
+
+	// Applying is a commit on the source branch, so the file has to have changed.
+	catOutput, err := executeLiveCLI(t, "repo", "cat", fileName, "--at", branch)
+	if err != nil {
+		t.Fatalf("repo cat after applying the suggestion failed: %v\noutput: %s", err, catOutput)
+	}
+	if !strings.Contains(catOutput, suggested) {
+		t.Fatalf("expected the suggestion to be applied to %s, got: %s", fileName, catOutput)
+	}
+}

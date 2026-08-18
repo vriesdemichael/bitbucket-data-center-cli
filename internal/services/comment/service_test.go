@@ -688,8 +688,10 @@ func TestServiceCreatePendingComment(t *testing.T) {
 		t.Errorf("expected created comment to have pending true, got: %v", created.Pending)
 	}
 
-	if capturedBody.Pending == nil || !*capturedBody.Pending {
-		t.Errorf("expected API payload to have pending true, got: %v", capturedBody.Pending)
+	// The server reads the draft state from state, not from the pending flag it
+	// marks readOnly. Asserting the flag is what let a no-op --pending ship.
+	if capturedBody.State == nil || *capturedBody.State != "PENDING" {
+		t.Errorf("expected API payload to carry state PENDING, got: %v", capturedBody.State)
 	}
 }
 

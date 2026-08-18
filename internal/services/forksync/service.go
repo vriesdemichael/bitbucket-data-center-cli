@@ -67,18 +67,47 @@ func (s *Service) SetEnabled(ctx context.Context, projectKey, repoSlug string, e
 	return nil, apperrors.New(apperrors.KindInternal, "unexpected empty response setting synchronization status", nil)
 }
 
-func (s *Service) Synchronize(ctx context.Context, projectKey, repoSlug string) error {
+// Synchronize triggers a manual synchronization of one ref.
+//
+// Both the ref and the action are required by the server even though the schema
+// marks them optional: omitting either answers 500 with an unhandled exception
+// rather than a validation error, so they are checked here instead.
+func (s *Service) Synchronize(ctx context.Context, projectKey, repoSlug, refID, action string) error {
 	proj := strings.TrimSpace(projectKey)
 	slug := strings.TrimSpace(repoSlug)
 	if proj == "" || slug == "" {
 		return apperrors.New(apperrors.KindValidation, "project key and repository slug are required", nil)
 	}
+	trimmedRef := strings.TrimSpace(refID)
+	if trimmedRef == "" {
+		return apperrors.New(apperrors.KindValidation, "ref is required", nil)
+	}
+	normalizedAction, err := normalizeSyncAction(action)
+	if err != nil {
+		return err
+	}
 
-	body := openapigenerated.SynchronizeJSONRequestBody{}
+	body := openapigenerated.SynchronizeJSONRequestBody{
+		RefId:  &trimmedRef,
+		Action: &normalizedAction,
+	}
 
 	resp, err := s.client.SynchronizeWithResponse(ctx, proj, slug, body)
 	if err != nil {
 		return apperrors.New(apperrors.KindTransient, "failed to trigger fork synchronization", err)
 	}
 	return openapi.MapStatusError(resp.StatusCode(), resp.Body)
+}
+
+func normalizeSyncAction(action string) (openapigenerated.RestRefSyncRequestAction, error) {
+	switch strings.ToUpper(strings.TrimSpace(action)) {
+	case "", "MERGE":
+		return openapigenerated.RestRefSyncRequestAction("MERGE"), nil
+	case "DISCARD":
+		return openapigenerated.RestRefSyncRequestAction("DISCARD"), nil
+	case "REBASE":
+		return openapigenerated.RestRefSyncRequestAction("REBASE"), nil
+	default:
+		return "", apperrors.New(apperrors.KindValidation, "action must be one of MERGE, DISCARD, REBASE", nil)
+	}
 }

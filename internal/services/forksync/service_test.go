@@ -2,6 +2,7 @@ package forksync
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -54,7 +55,7 @@ func TestForkSyncServiceCRUD(t *testing.T) {
 	}
 
 	// Trigger Manual Sync
-	if err := service.Synchronize(ctx, "PRJ", "repo"); err != nil {
+	if err := service.Synchronize(ctx, "PRJ", "repo", "refs/heads/master", "MERGE"); err != nil {
 		t.Fatalf("expected trigger sync success, got %v", err)
 	}
 }
@@ -76,7 +77,7 @@ func TestForkSyncServiceValidation(t *testing.T) {
 	}
 
 	// Synchronize validation error
-	err = service.Synchronize(ctx, " ", "repo")
+	err = service.Synchronize(ctx, " ", "repo", "refs/heads/master", "MERGE")
 	if err == nil || apperrors.ExitCode(err) != 2 {
 		t.Fatalf("expected validation error syncing with empty project, got %v", err)
 	}
@@ -94,7 +95,7 @@ func TestForkSyncServiceErrors(t *testing.T) {
 	if _, err := badService.SetEnabled(ctx, "PRJ", "repo", true); err == nil {
 		t.Fatal("expected error setting enabled with bad client")
 	}
-	if err := badService.Synchronize(ctx, "PRJ", "repo"); err == nil {
+	if err := badService.Synchronize(ctx, "PRJ", "repo", "refs/heads/master", "MERGE"); err == nil {
 		t.Fatal("expected error syncing with bad client")
 	}
 
@@ -109,7 +110,7 @@ func TestForkSyncServiceErrors(t *testing.T) {
 	if _, err := errorService.SetEnabled(ctx, "PRJ", "repo", true); err == nil {
 		t.Fatal("expected error setting enabled on 500")
 	}
-	if err := errorService.Synchronize(ctx, "PRJ", "repo"); err == nil {
+	if err := errorService.Synchronize(ctx, "PRJ", "repo", "refs/heads/master", "MERGE"); err == nil {
 		t.Fatal("expected error syncing on 500")
 	}
 
@@ -137,5 +138,39 @@ func TestForkSyncServiceErrors(t *testing.T) {
 	}
 	if _, err := emptyResponseService.SetEnabled(ctx, "PRJ", "repo", true); err == nil {
 		t.Fatal("expected error setting enabled on empty response body (non-json 200)")
+	}
+}
+
+// The server answers a missing ref or a missing action with a 500 that names
+// nothing, so both are refused here instead, where the error can name the flag.
+func TestForkSyncSynchronizeRequiresRefAndAction(t *testing.T) {
+	service := newForkSyncTestService(t, func(w http.ResponseWriter, r *http.Request) {})
+	ctx := context.Background()
+
+	if err := service.Synchronize(ctx, "PRJ", "repo", "  ", "MERGE"); err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected a validation error for a missing ref, got %v", err)
+	}
+	if err := service.Synchronize(ctx, "PRJ", "repo", "refs/heads/master", "SQUASH"); err == nil || apperrors.ExitCode(err) != 2 {
+		t.Fatalf("expected a validation error for an unknown action, got %v", err)
+	}
+}
+
+// An omitted action means MERGE rather than an empty field, since the server
+// requires one and merging is what the endpoint is for.
+func TestForkSyncSynchronizeDefaultsToMerge(t *testing.T) {
+	var captured map[string]any
+	service := newForkSyncTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&captured)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	if err := service.Synchronize(context.Background(), "PRJ", "repo", "refs/heads/master", ""); err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+	if captured["action"] != "MERGE" {
+		t.Fatalf("action = %v, want MERGE", captured["action"])
+	}
+	if captured["refId"] != "refs/heads/master" {
+		t.Fatalf("refId = %v, want refs/heads/master", captured["refId"])
 	}
 }
