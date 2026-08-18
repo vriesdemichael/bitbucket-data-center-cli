@@ -80,9 +80,27 @@ func New(deps Dependencies) *cobra.Command {
 	}
 
 	var statusHost string
+	var statusCheckExit bool
 	statusCmd := &cobra.Command{
 		Use:   "status",
-		Short: "Show configured target",
+		Short: "Show the configured target and verify it works",
+		Long: `Show the configured target and verify it works.
+
+Reports the resolved host, how the credential is stored, whether that credential
+still authenticates, and whether git is set up to authenticate through bb.
+
+Reporting alone is not enough to be useful: an expired token, an unreachable
+host and a working setup used to produce the same confident output. Each line
+now says which it is, and what to do when it is not the last one.
+
+Exit status is unchanged by default, so existing scripts keep working. Pass
+--check to exit non-zero when something is wrong, which is the form worth
+putting in CI.
+
+Under --json the exit status is always zero and the verdict is the "ok" field.
+Machine output is a single document on stdout, so a failing exit would replace
+the findings with an error envelope — losing exactly the detail that was asked
+for.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if strings.TrimSpace(statusHost) != "" {
 				if err := os.Setenv("BITBUCKET_URL", statusHost); err != nil {
@@ -95,8 +113,21 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			checks := []statusCheck{
+				identityState(cmd.Context(), cfg, deps.NewUsersClient),
+				gitCredentialHelperState(cmd.Context(), defaultGitBackend(), cfg.BitbucketURL),
+			}
+
+			allOK := true
+			for _, check := range checks {
+				if !check.OK {
+					allOK = false
+				}
+			}
+
 			if isJSON() {
 				payload := map[string]any{
+					"ok":                       allOK,
 					"bitbucket_url":            cfg.BitbucketURL,
 					"bitbucket_version_target": cfg.BitbucketVersionTarget,
 					"auth_mode":                cfg.AuthMode(),
@@ -105,6 +136,7 @@ func New(deps Dependencies) *cobra.Command {
 					// an existing machine can see how its credentials are held
 					// without having to grep the config file.
 					"credential_storage": cfg.CredentialStorage(),
+					"checks":             checks,
 				}
 				return deps.WriteJSON(cmd.OutOrStdout(), payload)
 			}
@@ -122,10 +154,27 @@ func New(deps Dependencies) *cobra.Command {
 			// rather than repeating the generic warning loadConfig already put on
 			// stderr for every command.
 			fmt.Fprintf(cmd.OutOrStdout(), "Credential storage: %s\n", describeCredentialStorage(cfg))
+
+			for _, check := range checks {
+				marker := "x"
+				if check.OK {
+					marker = "-"
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %s: %s\n", marker, check.Name, check.Detail)
+				if check.Remedy != "" {
+					fmt.Fprintf(cmd.OutOrStdout(), "    %s\n", check.Remedy)
+				}
+			}
+
+			if statusCheckExit && !allOK {
+				return apperrors.New(apperrors.KindAuthentication, "one or more authentication checks failed", nil)
+			}
+
 			return nil
 		},
 	}
 	statusCmd.Flags().StringVar(&statusHost, "host", "", "Override host for this status check")
+	statusCmd.Flags().BoolVar(&statusCheckExit, "check", false, "Exit non-zero when a check fails (for CI)")
 	authCmd.AddCommand(statusCmd)
 
 	var loginToken string

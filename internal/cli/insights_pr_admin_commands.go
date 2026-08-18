@@ -714,6 +714,14 @@ func newPRCommand(options *rootOptions) *cobra.Command {
 		Short: "List the commits in a pull request",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Deliberately not cobra's Deprecated field: that prints to stdout,
+			// which would put a warning line in front of the JSON payload and
+			// break the bb.machine contract for every existing caller. Stderr
+			// carries the nudge; stdout stays a single document.
+			if !options.JSON {
+				fmt.Fprintln(cmd.ErrOrStderr(), style.Warning.Render("bb admin health is superseded by bb auth status, which reports reachability, authentication and more"))
+			}
+
 			cfg, err := loadConfig()
 			if err != nil {
 				return err
@@ -3210,12 +3218,19 @@ func printDefaultReviewers(cmd *cobra.Command, conditions []openapigenerated.Res
 func newAdminCommand(options *rootOptions) *cobra.Command {
 	adminCmd := &cobra.Command{
 		Use:   "admin",
-		Short: "Local environment/admin commands",
+		Short: "Administrative and connectivity checks",
 	}
 
 	adminCmd.AddCommand(&cobra.Command{
 		Use:   "health",
-		Short: "Check local stack health",
+		Short: "Probe the configured Bitbucket for reachability and authentication",
+		Long: "Probe the configured Bitbucket for reachability and authentication.\n\n" +
+			"This was previously described as checking \"local stack health\", which it never did: " +
+			"it probes whichever host BITBUCKET_URL resolves to, wherever that is. The description " +
+			"was wrong, not the command.\n\n" +
+			"bb auth status now reports the same thing and more — identity, credential storage, and " +
+			"whether git is set up to authenticate through bb — so prefer that. This stays for " +
+			"scripts that already call it.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := loadConfig()
 			if err != nil {
