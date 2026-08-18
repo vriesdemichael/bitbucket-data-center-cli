@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -1086,4 +1087,24 @@ func safeStringFromInsightResult(result *openapigenerated.RestInsightReportResul
 	}
 
 	return string(*result)
+}
+
+// normalizeJSONShape round-trips a value through JSON so the result contains only
+// plain maps, slices and scalars.
+//
+// It matters where a payload is echoed back to the caller: a typed value carrying
+// custom marshalling would otherwise reach the output encoder untouched and print
+// differently from every other command.
+func normalizeJSONShape(value any) any {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return value
+	}
+
+	var normalized any
+	if err := json.Unmarshal(raw, &normalized); err != nil {
+		return value
+	}
+
+	return normalized
 }

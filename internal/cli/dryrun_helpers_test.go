@@ -89,28 +89,10 @@ func TestWebhookHelperFunctions(t *testing.T) {
 	}
 }
 
-func TestHookAndDryRunCommonHelpers(t *testing.T) {
-	hookKey := "com.example.hook"
-	hookName := "Example Hook"
-	hook := openapigenerated.RestRepositoryHook{Details: &openapigenerated.RepositoryHookDetails{Key: &hookKey, Name: &hookName}}
-
-	if _, ok := findHookByKey([]openapigenerated.RestRepositoryHook{hook}, " COM.EXAMPLE.HOOK "); !ok {
-		t.Fatal("expected to find hook by key")
-	}
-	if _, ok := findHookByKey([]openapigenerated.RestRepositoryHook{hook}, ""); ok {
-		t.Fatal("did not expect empty hook key to match")
-	}
-
-	summary := dryRunSummary{}
-	applyDryRunSummaryPredicted(&summary, "create")
-	if summary.CreateCount != 1 {
-		t.Fatalf("expected create count to be 1, got %+v", summary)
-	}
-	applyDryRunSummaryPredicted(&summary, "unknown")
-	if summary.UnknownCount != 1 {
-		t.Fatalf("expected unknown count to be 1 after unknown prediction, got %+v", summary)
-	}
-
+// normalizeJSONShape is what keeps an echoed-back payload printing like every
+// other command's, so it is worth a check of its own now that the hook commands
+// that first needed it are gone.
+func TestNormalizeJSONShape(t *testing.T) {
 	normalized := normalizeJSONShape(struct {
 		Enabled bool `json:"enabled"`
 	}{Enabled: true})

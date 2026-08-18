@@ -158,84 +158,6 @@ func TestRepoArchiveCLI(t *testing.T) {
 	}
 }
 
-func TestRepoHookScriptCLI(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/hook-scripts":
-			_, _ = w.Write([]byte(`{"values":[{"script":{"id":123,"name":"my-script","description":"test hook"},"triggerIds":["trigger1"]}],"isLastPage":true}`))
-		case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/hook-scripts/123":
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{}`))
-		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/hook-scripts/123":
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
-
-	// Test list
-	out, err := executeTestCLI(t, "repo", "hook-script", "list")
-	if err != nil {
-		t.Fatalf("hook-script list failed: %v", err)
-	}
-	if !strings.Contains(out, "123") || !strings.Contains(out, "my-script") || !strings.Contains(out, "trigger1") {
-		t.Fatalf("unexpected hook-script list output: %s", out)
-	}
-
-	// Test list json
-	out, err = executeTestCLI(t, "--json", "repo", "hook-script", "list")
-	if err != nil {
-		t.Fatalf("hook-script list json failed: %v", err)
-	}
-	if !strings.Contains(out, `"triggerIds"`) || !strings.Contains(out, `"my-script"`) {
-		t.Fatalf("unexpected hook-script list json output: %s", out)
-	}
-
-	// Test set
-	out, err = executeTestCLI(t, "repo", "hook-script", "set", "123", "--trigger", "trigger1,trigger2")
-	if err != nil {
-		t.Fatalf("hook-script set failed: %v", err)
-	}
-	if !strings.Contains(out, "Successfully configured hook script 123") {
-		t.Fatalf("unexpected hook-script set output: %s", out)
-	}
-
-	// Test set json
-	out, err = executeTestCLI(t, "--json", "repo", "hook-script", "set", "123", "--trigger", "trigger1,trigger2")
-	if err != nil {
-		t.Fatalf("hook-script set json failed: %v", err)
-	}
-	if !strings.Contains(out, `"status"`) || !strings.Contains(out, `"success"`) {
-		t.Fatalf("unexpected hook-script set json output: %s", out)
-	}
-
-	// Test remove
-	out, err = executeTestCLI(t, "repo", "hook-script", "remove", "123")
-	if err != nil {
-		t.Fatalf("hook-script remove failed: %v", err)
-	}
-	if !strings.Contains(out, "Successfully removed hook script 123") {
-		t.Fatalf("unexpected hook-script remove output: %s", out)
-	}
-
-	// Test remove json
-	out, err = executeTestCLI(t, "--json", "repo", "hook-script", "remove", "123")
-	if err != nil {
-		t.Fatalf("hook-script remove json failed: %v", err)
-	}
-	if !strings.Contains(out, `"status"`) || !strings.Contains(out, `"success"`) {
-		t.Fatalf("unexpected hook-script remove json output: %s", out)
-	}
-}
-
 func TestRepoMutatingCLICommandsDryRun(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -260,24 +182,6 @@ func TestRepoMutatingCLICommandsDryRun(t *testing.T) {
 	if !strings.Contains(out, "Dry-run") || !strings.Contains(out, "repo.edit") {
 		t.Fatalf("unexpected dry-run edit output: %s", out)
 	}
-
-	// dry-run hook-script set
-	out, err = executeTestCLI(t, "--dry-run", "repo", "hook-script", "set", "123")
-	if err != nil {
-		t.Fatalf("dry-run hook-script set failed: %v", err)
-	}
-	if !strings.Contains(out, "Dry-run") || !strings.Contains(out, "repo.hook-script.set") {
-		t.Fatalf("unexpected dry-run hook-script set output: %s", out)
-	}
-
-	// dry-run hook-script remove
-	out, err = executeTestCLI(t, "--dry-run", "repo", "hook-script", "remove", "123")
-	if err != nil {
-		t.Fatalf("dry-run hook-script remove failed: %v", err)
-	}
-	if !strings.Contains(out, "Dry-run") || !strings.Contains(out, "repo.hook-script.remove") {
-		t.Fatalf("unexpected dry-run hook-script remove output: %s", out)
-	}
 }
 
 func TestRepoCLIErrorAndEdgeCases(t *testing.T) {
@@ -300,8 +204,6 @@ func TestRepoCLIErrorAndEdgeCases(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/archive":
 			w.Header().Set("Content-Type", "application/zip")
 			_, _ = w.Write([]byte("fake zip data"))
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo/hook-scripts" && r.URL.Query().Get("limit") == "100":
-			w.WriteHeader(http.StatusInternalServerError)
 		case r.URL.Path == "/rest/api/latest/repos":
 			// return empty list to simulate not having required repository permission
 			_, _ = w.Write([]byte(`{"values":[],"isLastPage":true}`))
@@ -388,22 +290,5 @@ func TestRepoCLIErrorAndEdgeCases(t *testing.T) {
 	_, err = executeTestCLI(t, "repo", "archive", "-o", "nonexistent/file.zip")
 	if err == nil {
 		t.Fatal("expected file creation error")
-	}
-
-	// 5. repo hook-script list: API error
-	_, err = executeTestCLI(t, "repo", "hook-script", "list")
-	if err == nil {
-		t.Fatal("expected hook list error")
-	}
-
-	// 6. repo hook-script set/remove dry-run permission failure
-	_, err = executeTestCLI(t, "--dry-run", "repo", "hook-script", "set", "123")
-	if err == nil || !strings.Contains(err.Error(), "REPO_ADMIN") {
-		t.Fatalf("expected dry-run permission failure, got %v", err)
-	}
-
-	_, err = executeTestCLI(t, "--dry-run", "repo", "hook-script", "remove", "123")
-	if err == nil || !strings.Contains(err.Error(), "REPO_ADMIN") {
-		t.Fatalf("expected dry-run permission failure, got %v", err)
 	}
 }

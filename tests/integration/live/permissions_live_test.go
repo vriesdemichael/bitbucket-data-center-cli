@@ -244,67 +244,6 @@ func TestLivePermissionPullRequestSettingsDryRunDeniedWithRepoWriteOnly(t *testi
 }
 
 // ---------------------------------------------------------------------------
-// Repo hook management boundary: enabling/disabling hooks requires REPO_ADMIN.
-// ---------------------------------------------------------------------------
-
-func TestLivePermissionHookEnableDeniedWithRepoWriteOnly(t *testing.T) {
-	harness := newLiveHarness(t)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
-	defer cancel()
-
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
-	if err != nil {
-		t.Fatalf("seed project failed: %v", err)
-	}
-	repo := seeded.Repos[0]
-
-	user, err := harness.createRestrictedUser(ctx)
-	if err != nil {
-		t.Fatalf("create restricted user failed: %v", err)
-	}
-
-	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, user.Username, openapigenerated.SetPermissionForUserParamsPermissionREPOWRITE); err != nil {
-		t.Fatalf("grant repo write permission failed: %v", err)
-	}
-
-	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, user)
-
-	hookKey := "com.atlassian.bitbucket.server.bitbucket-bundled-hooks:verify-committer-hook"
-	output, cliErr := executeLiveCLI(t, "--json", "hook", "enable", hookKey, "--repo", seeded.Key+"/"+repo.Slug)
-	assertAuthorizationError(t, cliErr, output, "hook enable with REPO_WRITE only")
-}
-
-// Dry-run: hook enable with REPO_WRITE must surface authorization error.
-func TestLivePermissionHookEnableDryRunDeniedWithRepoWriteOnly(t *testing.T) {
-	harness := newLiveHarness(t)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
-	defer cancel()
-
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
-	if err != nil {
-		t.Fatalf("seed project failed: %v", err)
-	}
-	repo := seeded.Repos[0]
-
-	user, err := harness.createRestrictedUser(ctx)
-	if err != nil {
-		t.Fatalf("create restricted user failed: %v", err)
-	}
-
-	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, user.Username, openapigenerated.SetPermissionForUserParamsPermissionREPOWRITE); err != nil {
-		t.Fatalf("grant repo write permission failed: %v", err)
-	}
-
-	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, user)
-
-	hookKey := "com.atlassian.bitbucket.server.bitbucket-bundled-hooks:verify-committer-hook"
-	output, cliErr := executeLiveCLI(t, "--json", "--dry-run", "hook", "enable", hookKey, "--repo", seeded.Key+"/"+repo.Slug)
-	assertDryRunAuthorizationError(t, cliErr, output, "hook enable dry-run with REPO_WRITE only")
-}
-
-// ---------------------------------------------------------------------------
 // Project-admin boundary: a user with PROJECT_WRITE cannot delete a project or
 // manage project-level permissions.
 // ---------------------------------------------------------------------------

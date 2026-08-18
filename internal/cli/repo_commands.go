@@ -90,7 +90,6 @@ func newRepoCommand(options *rootOptions) *cobra.Command {
 	repoCmd.AddCommand(newRepoEditCommand(options))
 	repoCmd.AddCommand(newRepoCompareCommand(options))
 	repoCmd.AddCommand(newRepoArchiveCommand(options))
-	repoCmd.AddCommand(newRepoHookScriptCommand(options))
 	repoCmd.AddCommand(newRepoSyncCommand(options))
 
 	return repoCmd

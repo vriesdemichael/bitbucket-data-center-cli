@@ -260,20 +260,12 @@ bb repo archive --repo MYPROJ/payments --at main --output payments-main.zip
 bb repo archive --repo MYPROJ/payments --format tar.gz -o - > archive.tar.gz
 ```
 
-### 9. Hook scripts management
+### 9. Server-side hooks
 
-View and configure repository hook scripts and trigger configurations (Bitbucket DC 7.14+):
-
-```bash
-# List all configured hook scripts and their triggers on a repo
-bb repo hook-script list --repo MYPROJ/payments
-
-# Enable or update triggers for a hook script
-bb repo hook-script set 42 --repo MYPROJ/payments --trigger pr:opened,pr:from_ref_updated
-
-# Remove a hook script configuration
-bb repo hook-script remove 42 --repo MYPROJ/payments
-```
+`bb` does not manage plugin hooks or hook scripts. Both configure code that runs
+inside Bitbucket on every push, and neither belongs in a CLI workflow — see
+[Server-Side Hooks](advanced/server-side-hooks.md). Use `webhook` to have
+Bitbucket call out to a service you control instead.
 
 ### 10. SSH keys and HTTP Access Tokens
 
