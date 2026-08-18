@@ -110,6 +110,11 @@ type UpdateInput struct {
 type AutoMerge struct {
 	Enabled    bool   `json:"enabled"`
 	StrategyID string `json:"strategy_id,omitempty"`
+	// MergedImmediately reports that arming merged the pull request rather than
+	// queueing it, because its checks already passed. Enabled is false then:
+	// there is no pending auto-merge, and saying otherwise would describe a
+	// state that will never fire.
+	MergedImmediately bool `json:"merged_immediately,omitempty"`
 }
 
 type TaskListOptions struct {
@@ -864,6 +869,22 @@ func (service *Service) GetAutoMerge(ctx context.Context, repository RepositoryR
 
 // EnableAutoMerge enables auto-merge on a pull request using the given merge strategy.
 // Valid strategy values: no-ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only.
+// EnableAutoMerge arms auto-merge so the pull request merges once its checks
+// pass.
+//
+// This goes through the merge endpoint, not POST .../auto-merge, and the
+// difference is the whole bug in #378. The auto-merge endpoint is documented as
+// "requests the system to try merging the pull request *if auto-merge was
+// requested on it*" — it retries an existing request. Asking it to arm one
+// produces AutoMergeNotRequestedException, which reads like a server quirk and
+// is in fact the server correctly reporting that nothing was ever armed.
+//
+// Arming is RestPullRequestMergeRequest.autoMerge on POST .../merge, a body
+// field rather than a query parameter.
+//
+// The merge endpoint enforces optimistic locking, so a version is required. It
+// is resolved here rather than pushed onto callers: every caller would
+// otherwise have to fetch the pull request first to do the same thing.
 func (service *Service) EnableAutoMerge(ctx context.Context, repository RepositoryRef, pullRequestID string, strategyID string) (AutoMerge, error) {
 	if err := validateRepositoryRef(repository); err != nil {
 		return AutoMerge{}, err
@@ -879,17 +900,33 @@ func (service *Service) EnableAutoMerge(ctx context.Context, repository Reposito
 		strategy = "no-ff"
 	}
 
-	payload := map[string]any{"strategyId": strategy}
-	var response autoMergeValue
-	if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/auto-merge", pullRequestPath(repository), resolvedID), nil, payload, &response); err != nil {
+	current, err := service.Get(ctx, repository, resolvedID)
+	if err != nil {
 		return AutoMerge{}, err
 	}
 
-	responseStrategy := strategy
-	if response.StrategyId != nil {
-		responseStrategy = *response.StrategyId
+	payload := map[string]any{
+		"autoMerge":  true,
+		"strategyId": strategy,
+		"version":    current.Version,
 	}
-	return AutoMerge{Enabled: true, StrategyID: responseStrategy}, nil
+
+	var response pullRequestValue
+	if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/merge", pullRequestPath(repository), resolvedID), nil, payload, &response); err != nil {
+		return AutoMerge{}, err
+	}
+
+	// Arming a pull request that already satisfies its checks merges it there
+	// and then — that is what auto-merge means, and the endpoint returns the
+	// merged pull request. Reporting "auto-merge enabled" in that case would
+	// describe a pending state that does not exist and will never fire, so the
+	// two outcomes are distinguished rather than blurred.
+	merged := mapPullRequest(response)
+	if strings.EqualFold(strings.TrimSpace(merged.State), "MERGED") || merged.Closed {
+		return AutoMerge{Enabled: false, StrategyID: strategy, MergedImmediately: true}, nil
+	}
+
+	return AutoMerge{Enabled: true, StrategyID: strategy}, nil
 }
 
 // DisableAutoMerge removes the auto-merge configuration from a pull request.

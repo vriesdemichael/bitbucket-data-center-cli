@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-10.2-openapi.json",
-  "covered": 223,
+  "covered": 222,
   "total": 565,
-  "coverage_percent": 39.469026548672566,
+  "coverage_percent": 39.29203539823009,
   "by_tag": [
     {
       "tag": "",
@@ -72,7 +72,7 @@
     },
     {
       "tag": "Pull Requests",
-      "covered": 60,
+      "covered": 59,
       "total": 69
     },
     {
@@ -1025,6 +1025,12 @@
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}",
       "tag": "Pull Requests",
       "summary": "Delete pull request"
+    },
+    {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/auto-merge",
+      "tag": "Pull Requests",
+      "summary": "Auto-merge pull request"
     },
     {
       "method": "GET",
