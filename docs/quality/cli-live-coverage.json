@@ -2,10 +2,10 @@
   "version": 1,
   "summary": {
     "runnable_commands": 236,
-    "covered_commands": 161,
-    "covered_percent": 68.22033898305084,
+    "covered_commands": 159,
+    "covered_percent": 67.37288135593221,
     "masked_commands": 4,
-    "uncovered_commands": 71
+    "uncovered_commands": 73
   },
   "covered": [
     "admin health",
@@ -100,7 +100,6 @@
     "project webhook delete",
     "project webhook list",
     "project webhook stats",
-    "project webhook test",
     "project webhook update",
     "ref list",
     "ref resolve",
@@ -167,7 +166,6 @@
     "webhook get",
     "webhook list",
     "webhook stats",
-    "webhook test",
     "webhook update"
   ],
   "known_masked": [
@@ -226,6 +224,7 @@
     "project default-task delete",
     "project default-task list",
     "project default-task update",
+    "project webhook test",
     "repo archive",
     "repo cat",
     "repo compare",
@@ -247,6 +246,7 @@
     "ssh-key add",
     "ssh-key list",
     "ssh-key remove",
-    "update"
+    "update",
+    "webhook test"
   ]
 }
