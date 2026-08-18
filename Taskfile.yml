@@ -296,7 +296,27 @@ tasks:
 
   stack:up:
     desc: Start local SDK-licensed Bitbucket stack (no licence key required)
-    cmd: docker compose -f docker/compose.yml up -d --wait
+    cmds:
+      # --wait makes this fail when the healthcheck is unhealthy, which is what
+      # catches an aged licence: `docker compose up -d` reuses a running
+      # container rather than recreating it, so a stale instance would otherwise
+      # be reported as started. Docker's own message says only "container is
+      # unhealthy", so the remedy is spelled out here.
+      - |
+        if ! docker compose -f docker/compose.yml up -d --wait; then
+          echo "" >&2
+          echo "The stack did not come up healthy." >&2
+          echo "" >&2
+          echo "The usual cause is the SDK licence ageing out: it lasts three hours" >&2
+          echo "from container start, and 'up' reuses a running container instead of" >&2
+          echo "reissuing it. Check with 'task stack:status', then:" >&2
+          echo "" >&2
+          echo "    task stack:restart" >&2
+          echo "" >&2
+          echo "If it is a cold start instead, the first run downloads ~800MB and can" >&2
+          echo "exceed the start period; 'task stack:logs' shows progress." >&2
+          exit 1
+        fi
 
   stack:down:
     desc: Stop local Bitbucket stack
@@ -315,8 +335,24 @@ tasks:
       - task: stack:up
 
   stack:status:
-    desc: Show local stack status
-    cmd: docker compose -f docker/compose.yml ps
+    desc: Show local stack status and how long the SDK licence has left
+    cmds:
+      - docker compose -f docker/compose.yml ps
+      # Reads the same marker the healthcheck does, so the two cannot disagree.
+      # Knowing this before starting an hour of work is the point: the licence
+      # expiring mid-run produces a failure that looks like a product bug.
+      - |
+        issued=$(docker exec bb-bitbucket cat /tmp/licence-issued-at 2>/dev/null || true)
+        if [ -z "$issued" ]; then
+          echo "SDK licence: unknown (container not running)"
+          exit 0
+        fi
+        remaining=$(( issued + 10800 - $(date +%s) ))
+        if [ "$remaining" -le 0 ]; then
+          echo "SDK licence: EXPIRED $(( -remaining / 60 ))m ago - run 'task stack:restart'"
+        else
+          echo "SDK licence: $(( remaining / 60 ))m remaining (healthcheck retires the container at 2h45m)"
+        fi
 
   stack:logs:
     desc: Tail Bitbucket service logs

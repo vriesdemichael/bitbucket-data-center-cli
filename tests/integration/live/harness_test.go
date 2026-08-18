@@ -59,6 +59,11 @@ func newLiveHarness(t *testing.T) *liveHarness {
 		t.Skip("git executable is required for commit seeding")
 	}
 
+	// Before anything is seeded. An expired licence still reports RUNNING and
+	// only refuses writes, so without this the run gets several minutes in and
+	// then fails at a git push with a message that reads like a product bug.
+	requireUsableLicence(t)
+
 	client, err := newGeneratedClient(cfg)
 	if err != nil {
 		t.Fatalf("create generated client: %v", err)
@@ -468,6 +473,12 @@ func runGit(directory string, args ...string) error {
 
 		message := strings.TrimSpace(string(output))
 		lastErr = fmt.Errorf("git %s failed: %v: %s", strings.Join(args, " "), err, message)
+		if hint := licenceExpiryHint(message); hint != "" {
+			// The licence can lapse mid-run even when the preflight passed.
+			// Saying so here is the difference between one clear line and an
+			// afternoon spent debugging the wrong thing.
+			return fmt.Errorf("%s (%w)", hint, lastErr)
+		}
 
 		if attempt >= maxRetries || !isRetriableGitRateLimit(message, args) {
 			break
