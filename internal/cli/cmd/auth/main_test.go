@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/gittest"
 )
 
@@ -23,6 +24,17 @@ import (
 // The guard was already installed on internal/cli and internal/git/execgit but
 // not here, so nothing caught it.
 func TestMain(m *testing.M) {
+	// Same reasoning as the guard below, one step earlier: bb auth status reads
+	// git configuration, and the default backend shells out to real git. Left
+	// alone, every test that runs status would read whichever global
+	// configuration the developer happens to have, so its result would depend on
+	// whether they had run bb auth setup-git rather than on the code.
+	//
+	// Defaulting it here rather than at five call sites means a test added later
+	// cannot reintroduce the problem by forgetting to inject. Tests that care
+	// about the backend pass Dependencies.GitBackend explicitly.
+	defaultGitBackend = func() git.Backend { return &gitConfigStub{} }
+
 	before := gittest.SnapshotAmbientConfig()
 	code := m.Run()
 
