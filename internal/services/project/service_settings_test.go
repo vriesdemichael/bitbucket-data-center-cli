@@ -94,9 +94,17 @@ func TestProjectWebhookService(t *testing.T) {
 	})
 
 	t.Run("UpdateWebhook", func(t *testing.T) {
+		var sentBody map[string]any
 		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
+			// Update reads the webhook first, because the endpoint replaces it
+			// rather than patching it.
+			if r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/webhooks/123" {
+				_, _ = w.Write([]byte(`{"id":123,"name":"wh-old","url":"http://url-old","active":true,"events":["repo:refs_changed"],"sslVerificationRequired":true}`))
+				return
+			}
 			if r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/PRJ/webhooks/123" {
+				_ = json.NewDecoder(r.Body).Decode(&sentBody)
 				_, _ = w.Write([]byte(`{"id":123,"name":"wh-new","url":"http://url-new","active":false}`))
 				return
 			}
@@ -110,6 +118,11 @@ func TestProjectWebhookService(t *testing.T) {
 		}
 		if res == nil {
 			t.Fatal("expected non-nil updated webhook")
+		}
+		// Fields nobody asked to change survive the round trip; the endpoint
+		// would otherwise clear them.
+		if sentBody["sslVerificationRequired"] != true {
+			t.Fatalf("expected the untouched field to be carried over, sent: %v", sentBody)
 		}
 
 		// Validation error
@@ -749,6 +762,13 @@ func TestProjectSettingsServiceEmptyAndInvalidJSON(t *testing.T) {
 
 	t.Run("UpdateProjectWebhookInvalidJSON", func(t *testing.T) {
 		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			// The read that update does first has to succeed, or the decode
+			// failure under test is the read's rather than the update's.
+			if r.Method == http.MethodGet {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"id":123,"name":"wh","url":"http://url"}`))
+				return
+			}
 			w.Header().Set("Content-Type", "text/plain")
 			_, _ = w.Write([]byte("{invalid-json"))
 		})
@@ -756,6 +776,19 @@ func TestProjectSettingsServiceEmptyAndInvalidJSON(t *testing.T) {
 		_, err := service.UpdateProjectWebhook(context.Background(), "PRJ", "123", "wh", "http://url", nil, &active)
 		if err == nil || !strings.Contains(err.Error(), "failed to decode project webhook payload") {
 			t.Fatalf("expected json decode error, got: %v", err)
+		}
+	})
+
+	// The read is a second thing that can fail, and its error has to name the
+	// read rather than looking like the update failed.
+	t.Run("UpdateProjectWebhookUnreadable", func(t *testing.T) {
+		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = w.Write([]byte("{invalid-json"))
+		})
+		_, err := service.UpdateProjectWebhook(context.Background(), "PRJ", "123", "wh", "", nil, nil)
+		if err == nil || !strings.Contains(err.Error(), "failed to decode the project webhook being updated") {
+			t.Fatalf("expected the read to be named in the error, got: %v", err)
 		}
 	})
 }

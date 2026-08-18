@@ -153,7 +153,7 @@ func newProjectWebhookCommand(options *rootOptions) *cobra.Command {
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), created)
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "project": args[0], "webhook": created})
 			}
 
 			var hook WebhookModel
@@ -234,7 +234,7 @@ func newProjectWebhookCommand(options *rootOptions) *cobra.Command {
 			}
 
 			if options.JSON {
-				return writeJSON(cmd.OutOrStdout(), updated)
+				return writeJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "project": args[0], "webhook": updated})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated webhook:"), style.Secondary.Render(args[1]))

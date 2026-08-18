@@ -799,6 +799,34 @@ func (service *Service) GetWebhook(ctx context.Context, repo RepositoryRef, id s
 	return payload, nil
 }
 
+// webhookForUpdate reads the current webhook as an update request body.
+//
+// The update endpoint replaces the webhook rather than patching it, so every
+// field has to be sent back. Reading first is what lets --name on its own mean
+// "change the name" instead of "clear the url and the events" -- which is what
+// the flag help has always promised, and what the server rejected.
+func (service *Service) webhookForUpdate(ctx context.Context, repo RepositoryRef, id string) (openapigenerated.RestWebhook, error) {
+	response, err := service.client.GetWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, id, nil)
+	if err != nil {
+		return openapigenerated.RestWebhook{}, apperrors.New(apperrors.KindTransient, "failed to read the webhook before updating it", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapigenerated.RestWebhook{}, err
+	}
+
+	var current openapigenerated.RestWebhook
+	if err := json.Unmarshal(response.Body, &current); err != nil {
+		return openapigenerated.RestWebhook{}, apperrors.New(apperrors.KindPermanent, "failed to decode the webhook being updated", err)
+	}
+
+	// Server-computed and scope-describing fields; sending them back says
+	// nothing and invites the server to disagree with itself.
+	current.Statistics = nil
+	current.ScopeType = nil
+
+	return current, nil
+}
+
 func (service *Service) UpdateWebhook(ctx context.Context, repo RepositoryRef, id string, name string, url string, events []string, active *bool) (any, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
@@ -808,7 +836,11 @@ func (service *Service) UpdateWebhook(ctx context.Context, repo RepositoryRef, i
 		return nil, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
 	}
 
-	body := openapigenerated.UpdateWebhook1JSONRequestBody{}
+	body, err := service.webhookForUpdate(ctx, repo, trimmedID)
+	if err != nil {
+		return nil, err
+	}
+
 	if strings.TrimSpace(name) != "" {
 		n := strings.TrimSpace(name)
 		body.Name = &n

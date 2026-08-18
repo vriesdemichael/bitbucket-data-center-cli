@@ -682,3 +682,52 @@ fixes:
         - task client:generate
         - go test ./internal/services/gpgkey/ ./internal/cli/cmd/auth/
         - go test -tags live -run TestLiveGPGKeyLifecycle ./tests/integration/live/
+
+  - id: OPENAPI-020
+    area: spec-endpoint-semantics
+    description: >
+      Read the current webhook before updating it, because the update endpoint replaces the webhook
+      rather than patching it.
+    reference:
+      type: endpoint
+      value: >
+        PUT /api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/{webhookId} and
+        PUT /api/latest/projects/{projectKey}/webhooks/{webhookId}
+      upstream_issue: >
+        RestWebhook declares every property optional, which reads as a partial update. The endpoint
+        replaces the stored webhook with the body it is given, so an omitted property is a cleared
+        property.
+
+        For url and events the server catches it:
+          PUT {"name":"new"} -> 400 "No URL was specified", "At least one event must be provided"
+
+        For everything else it does not. active, sslVerificationRequired and the configuration block
+        carry no such validation, so a name-only update silently switched off TLS verification and
+        dropped the shared secret. The loud half is what got noticed.
+
+        This is a spec-semantics gap rather than a wire-format defect, so it is recorded here rather
+        than fixed in the sanitizer: nothing about the schema is wrong, it just does not say that
+        absent means cleared.
+    change:
+      files:
+        - internal/services/reposettings/service.go
+        - internal/services/project/webhook.go
+      detail: >
+        Both update paths read the webhook, overlay the supplied flags and send the complete object,
+        so --name on its own means what its help says.
+
+        Statistics and scopeType are dropped from the body on the way back. They describe the webhook
+        rather than configure it, and echoing them invites the server to disagree with itself.
+
+        The alternative was to validate up front and require all three flags together. Rejected
+        because repo edit and pr update already accept partial changes, so update-meaning-partial is
+        the established shape here -- and because it would have left the silent half of the bug
+        intact, merely better documented.
+
+        Credentials cannot be preserved this way: the password is write-only and never returned, so
+        an update still clears it. That is a server limitation rather than something the merge can
+        fix, and it is unchanged from the previous behaviour.
+    verification:
+      commands:
+        - go test ./internal/services/reposettings/ ./internal/services/project/
+        - go test -tags live -run "TestLiveRepositoryWebhookLifecycle|TestLiveProjectWebhookLifecycle" ./tests/integration/live/

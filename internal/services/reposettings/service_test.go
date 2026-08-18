@@ -2,6 +2,7 @@ package reposettings
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -1043,4 +1044,73 @@ func TestNewRepositorySettingsMethods(t *testing.T) {
 	_ = latestRes
 	_ = statsRes
 	_ = summaryRes
+}
+
+// TestUpdateWebhookPreservesUnchangedFields covers the read-then-merge that makes
+// the update flags mean what their help says.
+//
+// The endpoint replaces the webhook rather than patching it, so sending only the
+// changed field used to clear the rest -- loudly, as a 400 naming the url and
+// events the caller never touched, and silently for anything the server does not
+// validate.
+func TestUpdateWebhookPreservesUnchangedFields(t *testing.T) {
+	var sentBody map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		switch {
+		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1":
+			_, _ = writer.Write([]byte(`{"id":1,"name":"old-name","url":"http://old","active":true,` +
+				`"events":["repo:refs_changed"],"sslVerificationRequired":true,` +
+				`"configuration":{"secret":"s3cret"},"scopeType":"repository","statistics":{"x":1}}`))
+		case request.Method == http.MethodPut && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1":
+			_ = json.NewDecoder(request.Body).Decode(&sentBody)
+			_, _ = writer.Write([]byte(`{"id":1,"name":"new-name"}`))
+		default:
+			http.NotFound(writer, request)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	client, err := openapigenerated.NewClientWithResponses(server.URL)
+	if err != nil {
+		t.Fatalf("create generated client: %v", err)
+	}
+	service := NewService(client)
+	repo := RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}
+
+	if _, err := service.UpdateWebhook(context.Background(), repo, "1", "new-name", "", nil, nil); err != nil {
+		t.Fatalf("update with only a name failed: %v", err)
+	}
+
+	if sentBody["name"] != "new-name" {
+		t.Fatalf("name = %v, want the supplied value", sentBody["name"])
+	}
+	// Everything the caller did not name has to survive, or the update is a
+	// destructive replace wearing the word "update".
+	if sentBody["url"] != "http://old" {
+		t.Fatalf("url = %v, want the stored value carried over", sentBody["url"])
+	}
+	if sentBody["active"] != true {
+		t.Fatalf("active = %v, want the stored value carried over", sentBody["active"])
+	}
+	if sentBody["sslVerificationRequired"] != true {
+		t.Fatalf("sslVerificationRequired = %v, want the stored value carried over", sentBody["sslVerificationRequired"])
+	}
+	events, ok := sentBody["events"].([]any)
+	if !ok || len(events) != 1 || events[0] != "repo:refs_changed" {
+		t.Fatalf("events = %v, want the stored list carried over", sentBody["events"])
+	}
+	configuration, ok := sentBody["configuration"].(map[string]any)
+	if !ok || configuration["secret"] != "s3cret" {
+		t.Fatalf("configuration = %v, want the stored value carried over", sentBody["configuration"])
+	}
+
+	// Server-computed fields are not echoed back: they describe the webhook
+	// rather than configure it.
+	if _, present := sentBody["statistics"]; present {
+		t.Fatalf("statistics should not be sent back, got: %v", sentBody)
+	}
+	if _, present := sentBody["scopeType"]; present {
+		t.Fatalf("scopeType should not be sent back, got: %v", sentBody)
+	}
 }
