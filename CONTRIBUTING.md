@@ -76,10 +76,26 @@ BITBUCKET_URL=http://localhost:7990 ADMIN_USER=admin ADMIN_PASSWORD=admin task t
 A full run takes about five minutes. `task stack:down` when you are finished.
 
 **The instance's licence lasts three hours.** It is issued by the Atlassian
-Plugin SDK on each start and reissued on restart. If the stack has been up
-longer than that, `task stack:up` reports the container unhealthy and fails —
-run `task stack:restart` and bootstrap again. See
-[`docker/README.md`](docker/README.md).
+Plugin SDK on each start and reissued on restart — but not by `task stack:up`,
+which reuses a running container rather than recreating it. `task stack:restart`
+is what reissues it.
+
+Check before starting a long session:
+
+```bash
+task stack:status
+```
+
+```text
+SDK licence: 148m remaining (healthcheck retires the container at 2h45m)
+```
+
+You do not have to remember. The live suite refuses to start against an expired
+instance and tells you what to run, and `task stack:up` fails with the same
+advice. Both exist because an expired licence does not look like one: Bitbucket
+keeps reporting `RUNNING` and only refuses writes, so the first symptom used to
+be a `git push` failing partway through seeding with `License limit exceeded` —
+which reads like a broken test. See [`docker/README.md`](docker/README.md).
 
 ## Making a change
 
