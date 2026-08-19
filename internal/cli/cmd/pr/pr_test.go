@@ -62,7 +62,7 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte(`{"id":42,"title":"Test PR","state":"OPEN","open":true}`))
 
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/activities":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
+			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"action":"COMMENTED","comment":{"id":101,"version":1,"text":"Comment 1","state":"OPEN","author":{"name":"alice"}}}]}`))
 
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/comments":
 			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":101,"version":1,"text":"Comment 1","state":"OPEN","author":{"name":"alice"}}]}`))
@@ -76,7 +76,23 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 		case r.Method == http.MethodPut && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/comments/101":
 			_, _ = w.Write([]byte(`{"id":101,"version":2,"text":"Comment 1","state":"RESOLVED","author":{"name":"alice"}}`))
 
+		case (r.Method == http.MethodPut || r.Method == http.MethodDelete) && strings.Contains(path, "/comment-likes/latest/"):
+			_, _ = w.Write([]byte(`{"emoticon":{"value":"thumbsup"}}`))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/commits":
+			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"c123","displayId":"c123","message":"Commit 1"}]}`))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/changes":
+			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"path":{"toString":"file1.go"}}]}`))
+
+		case r.Method == http.MethodGet && (strings.HasSuffix(path, "42.diff") || strings.HasSuffix(path, "/diff")):
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = w.Write([]byte("diff --git a/file1.go b/file1.go\n--- a/file1.go\n+++ b/file1.go\n@@ -1 +1 @@\n-old\n+new\n"))
+
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/auto-merge":
+			_, _ = w.Write([]byte(`{"enabled":true,"strategyId":"no-ff"}`))
+
+		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/auto-merge":
 			_, _ = w.Write([]byte(`{"enabled":true,"strategyId":"no-ff"}`))
 
 		case r.Method == http.MethodDelete && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/auto-merge":
@@ -102,12 +118,14 @@ func executePr(t *testing.T, serverURL string, args ...string) (string, error) {
 
 	var jsonFlag bool
 	var dryRunFlag bool
+	filteredArgs := make([]string, 0, len(args))
 	for _, a := range args {
 		if a == "--json" {
 			jsonFlag = true
-		}
-		if a == "--dry-run" {
+		} else if a == "--dry-run" {
 			dryRunFlag = true
+		} else {
+			filteredArgs = append(filteredArgs, a)
 		}
 	}
 
@@ -132,14 +150,13 @@ func executePr(t *testing.T, serverURL string, args ...string) (string, error) {
 		},
 	}
 
-	cmd := testPrCommand(deps)
+	root := New(deps)
 	buffer := &bytes.Buffer{}
-	cmd.SetOut(buffer)
-	cmd.SetErr(buffer)
+	root.SetOut(buffer)
+	root.SetErr(buffer)
 
-	fullArgs := append([]string{"pr"}, args...)
-	cmd.SetArgs(fullArgs)
-	err := cmd.Execute()
+	root.SetArgs(filteredArgs)
+	err := root.Execute()
 	return buffer.String(), err
 }
 
@@ -156,12 +173,12 @@ func TestPRList(t *testing.T) {
 
 func TestPRGet(t *testing.T) {
 	server := newMockPRServer(t)
-	out, err := executePr(t, server.URL, "get", "42", "--no-review-summary")
+	out, err := executePr(t, server.URL, "get", "42")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, "#42") || !strings.Contains(out, "Test PR") {
-		t.Fatalf("expected PR #42 in get output, got:\n%s", out)
+	if !strings.Contains(out, "Test PR") || !strings.Contains(out, "feature/x") {
+		t.Fatalf("expected PR details in get output, got:\n%s", out)
 	}
 }
 
@@ -172,13 +189,13 @@ func TestPRCreate(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !strings.Contains(out, "Created pull request #43") {
-		t.Fatalf("expected creation confirmation, got:\n%s", out)
+		t.Fatalf("expected create confirmation, got:\n%s", out)
 	}
 }
 
 func TestPRUpdate(t *testing.T) {
 	server := newMockPRServer(t)
-	out, err := executePr(t, server.URL, "update", "42", "--version", "1", "--title", "Updated PR")
+	out, err := executePr(t, server.URL, "update", "42", "--version", "1", "--title", "Updated PR", "--description", "New Desc")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -253,14 +270,103 @@ func TestPRReviewerAdd(t *testing.T) {
 	}
 }
 
-func TestPRCommentResolve(t *testing.T) {
+func TestPRReviewerRemove(t *testing.T) {
 	server := newMockPRServer(t)
-	out, err := executePr(t, server.URL, "comment", "resolve", "42", "101")
+	out, err := executePr(t, server.URL, "review", "reviewer", "remove", "42", "--user", "bob")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if !strings.Contains(out, "Removed reviewer bob from pull request #42") {
+		t.Fatalf("expected reviewer remove confirmation, got:\n%s", out)
+	}
+}
+
+func TestPRCommentCommands(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Add comment
+	out, err := executePr(t, server.URL, "comment", "add", "42", "--text", "New comment")
+	if err != nil {
+		t.Fatalf("unexpected error on comment add: %v", err)
+	}
+	if !strings.Contains(out, "Created comment") && !strings.Contains(out, "102") {
+		t.Fatalf("expected Created comment in add output: %s", out)
+	}
+
+	// List comments
+	out, err = executePr(t, server.URL, "comment", "list", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on comment list: %v", err)
+	}
+	if !strings.Contains(out, "Comment 1") {
+		t.Fatalf("expected Comment 1 in list output: %s", out)
+	}
+
+	// Get comment
+	out, err = executePr(t, server.URL, "comment", "get", "42", "101")
+	if err != nil {
+		t.Fatalf("unexpected error on comment get: %v", err)
+	}
+	if !strings.Contains(out, "Comment 1") {
+		t.Fatalf("expected Comment 1 in get output: %s", out)
+	}
+
+	// Resolve comment
+	out, err = executePr(t, server.URL, "comment", "resolve", "42", "101")
+	if err != nil {
+		t.Fatalf("unexpected error on resolve: %v", err)
+	}
 	if !strings.Contains(out, "Resolved comment 101") {
 		t.Fatalf("expected resolve confirmation, got:\n%s", out)
+	}
+
+	// Reopen comment
+	out, err = executePr(t, server.URL, "comment", "reopen", "42", "101")
+	if err != nil {
+		t.Fatalf("unexpected error on reopen: %v", err)
+	}
+	if !strings.Contains(out, "Reopened comment 101") {
+		t.Fatalf("expected reopen confirmation, got:\n%s", out)
+	}
+
+	// React to comment
+	out, err = executePr(t, server.URL, "comment", "react", "42", "101", "thumbsup")
+	if err != nil {
+		t.Fatalf("unexpected error on react: %v", err)
+	}
+	if !strings.Contains(out, "Added reaction") {
+		t.Fatalf("expected reaction confirmation, got:\n%s", out)
+	}
+}
+
+func TestPRCommitsAndFiles(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Commits
+	out, err := executePr(t, server.URL, "commits", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on commits: %v", err)
+	}
+	if !strings.Contains(out, "c123") {
+		t.Fatalf("expected commit c123 in output: %s", out)
+	}
+
+	// Files
+	out, err = executePr(t, server.URL, "files", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on files: %v", err)
+	}
+	if !strings.Contains(out, "file1.go") {
+		t.Fatalf("expected file1.go in output: %s", out)
+	}
+
+	// Diff
+	out, err = executePr(t, server.URL, "diff", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on diff: %v", err)
+	}
+	if !strings.Contains(out, "file1.go") {
+		t.Fatalf("expected diff output, got: %s", out)
 	}
 }
 
@@ -268,18 +374,29 @@ func TestPRAutoMergeGet(t *testing.T) {
 	server := newMockPRServer(t)
 	out, err := executePr(t, server.URL, "auto-merge", "get", "42")
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("unexpected error on auto-merge get: %v", err)
 	}
 	if !strings.Contains(out, "Auto-merge: enabled") {
 		t.Fatalf("expected auto-merge enabled, got:\n%s", out)
 	}
 }
 
-func TestPRAutoMergeDisable(t *testing.T) {
+func TestPRAutoMergeEnableAndDisable(t *testing.T) {
 	server := newMockPRServer(t)
-	out, err := executePr(t, server.URL, "auto-merge", "disable", "42")
+
+	// Enable
+	out, err := executePr(t, server.URL, "auto-merge", "enable", "42", "--strategy", "no-ff")
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("unexpected error on enable: %v", err)
+	}
+	if !strings.Contains(out, "Enabled auto-merge") && !strings.Contains(out, "Merged pull request") {
+		t.Fatalf("expected enable confirmation, got:\n%s", out)
+	}
+
+	// Disable
+	out, err = executePr(t, server.URL, "auto-merge", "disable", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on disable: %v", err)
 	}
 	if !strings.Contains(out, "Disabled auto-merge on pull request #42") {
 		t.Fatalf("expected disable confirmation, got:\n%s", out)
