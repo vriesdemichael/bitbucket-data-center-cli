@@ -327,6 +327,14 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 	}
 
 	key := hostKey(host)
+
+	// Aliases are host-recognition config, not credentials: re-authenticating
+	// against a host should not discard the ones already stored. Discovery
+	// cannot find every alias, so an alias added by hand would otherwise be lost
+	// on the next login -- silently, and only noticed later when repository
+	// inference stops recognising a remote.
+	aliases = mergeAliases(normalizeStoredAliases(stored.Hosts[key].Aliases), aliases)
+
 	if err := ensureAliasOwnership(stored, key, aliases); err != nil {
 		return LoginResult{}, err
 	}
@@ -1148,4 +1156,24 @@ func envDurationOrDefault(key string, fallback time.Duration) (time.Duration, er
 	}
 
 	return parsed, nil
+}
+
+// mergeAliases appends the additions that are not already present, preserving
+// the order of both.
+func mergeAliases(existing []string, additions []string) []string {
+	merged := append([]string{}, existing...)
+	seen := make(map[string]struct{}, len(merged))
+	for _, alias := range merged {
+		seen[alias] = struct{}{}
+	}
+
+	for _, alias := range additions {
+		if _, present := seen[alias]; present {
+			continue
+		}
+		seen[alias] = struct{}{}
+		merged = append(merged, alias)
+	}
+
+	return merged
 }

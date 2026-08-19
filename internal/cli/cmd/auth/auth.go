@@ -555,36 +555,71 @@ to fail instead of falling back.`,
 	aliasCmd.AddCommand(aliasRemoveCmd)
 
 	var aliasDiscoverHost string
+	var aliasDiscoverReplace bool
 	aliasDiscoverCmd := &cobra.Command{
 		Use:   "discover",
 		Short: "Discover aliases from the first accessible repository clone links",
+		Long: "Discover aliases from the first accessible repository clone links.\n\n" +
+			"Discovered aliases are added to the ones already stored. Aliases added by hand are " +
+			"kept, because discovery cannot find every alias -- an instance whose SSH clone host " +
+			"differs from its web URL is the documented case for adding one manually, and it would " +
+			"be undone by every later discovery run.\n\n" +
+			"Pass --replace to store only what was discovered. Anything dropped is named in the " +
+			"output.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := loadConfigWithOptionalHostOverride(deps.LoadConfig, aliasDiscoverHost)
 			if err != nil {
 				return err
 			}
 
-			aliases, err := discoverAliases(cmd.Context(), cfg, deps.NewReposClient)
-			if err != nil {
-				return err
-			}
-			aliases, err = config.SetHostAliases(cfg.BitbucketURL, aliases)
+			discovered, err := discoverAliases(cmd.Context(), cfg, deps.NewReposClient)
 			if err != nil {
 				return err
 			}
 
+			// Read what is stored before writing, so a removal can be named rather
+			// than just happening.
+			existing, _, err := config.ListHostAliases(cfg.BitbucketURL)
+			if err != nil {
+				return err
+			}
+
+			var aliases []string
+			if aliasDiscoverReplace {
+				aliases, err = config.SetHostAliases(cfg.BitbucketURL, discovered)
+			} else {
+				aliases, err = config.AddHostAliases(cfg.BitbucketURL, discovered)
+			}
+			if err != nil {
+				return err
+			}
+
+			removed := aliasesMissingFrom(existing, aliases)
+
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"host": cfg.BitbucketURL, "aliases": aliases})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
+					"host":       cfg.BitbucketURL,
+					"aliases":    aliases,
+					"discovered": discovered,
+					"removed":    removed,
+				})
 			}
-			if len(aliases) == 0 {
+			if len(discovered) == 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "No aliases discovered for %s\n", cfg.BitbucketURL)
-				return nil
+			} else {
+				fmt.Fprintf(cmd.OutOrStdout(), "Discovered aliases for %s: %s\n", cfg.BitbucketURL, strings.Join(discovered, ", "))
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Discovered aliases for %s: %s\n", cfg.BitbucketURL, strings.Join(aliases, ", "))
+			// Removals are the part worth saying out loud: they are configuration
+			// the user put there, and losing them silently is what made this a bug.
+			if len(removed) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "Removed aliases: %s\n", strings.Join(removed, ", "))
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Stored aliases for %s: %s\n", cfg.BitbucketURL, strings.Join(aliases, ", "))
 			return nil
 		},
 	}
 	aliasDiscoverCmd.Flags().StringVar(&aliasDiscoverHost, "host", "", "Bitbucket host URL")
+	aliasDiscoverCmd.Flags().BoolVar(&aliasDiscoverReplace, "replace", false, "Store only the discovered aliases, dropping any others")
 	aliasCmd.AddCommand(aliasDiscoverCmd)
 
 	authCmd.AddCommand(aliasCmd)
@@ -901,4 +936,25 @@ func personalAccessTokenURL(host string, userSlug string) (string, error) {
 	parsed.Fragment = ""
 
 	return parsed.String(), nil
+}
+
+// aliasesMissingFrom returns the entries of before that are absent from after.
+//
+// Discovery adds by default, so this is normally empty; it is what --replace
+// dropped, and reporting it is the difference between a removal and a silent
+// loss.
+func aliasesMissingFrom(before []string, after []string) []string {
+	remaining := make(map[string]struct{}, len(after))
+	for _, alias := range after {
+		remaining[alias] = struct{}{}
+	}
+
+	missing := []string{}
+	for _, alias := range before {
+		if _, present := remaining[alias]; !present {
+			missing = append(missing, alias)
+		}
+	}
+
+	return missing
 }

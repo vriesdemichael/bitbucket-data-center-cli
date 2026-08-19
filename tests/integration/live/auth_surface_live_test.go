@@ -75,6 +75,44 @@ func TestLiveAuthAliasLifecycle(t *testing.T) {
 		t.Fatalf("expected the added alias to be listed, got: %s", listOutput)
 	}
 
+	// discover runs between add and remove, which is the natural order and was
+	// not possible before: it replaced the stored list, so it deleted the alias
+	// added a moment earlier and the test had to run discover last to avoid it.
+	if output, err := executeLiveCLI(t, "auth", "alias", "discover", "--host", host); err != nil {
+		t.Fatalf("auth alias discover failed: %v\noutput: %s", err, output)
+	}
+
+	afterDiscover, err := executeLiveCLI(t, "--json", "auth", "alias", "list", "--host", host)
+	if err != nil {
+		t.Fatalf("auth alias list after discover failed: %v\noutput: %s", err, afterDiscover)
+	}
+	if !strings.Contains(afterDiscover, "live-suite.example") {
+		t.Fatalf("expected discovery to keep the manually added alias, got: %s", afterDiscover)
+	}
+
+	// --replace is the explicit way to drop what discovery did not find, and it
+	// names what it took away.
+	replaceOutput, err := executeLiveCLI(t, "auth", "alias", "discover", "--host", host, "--replace")
+	if err != nil {
+		t.Fatalf("auth alias discover --replace failed: %v\noutput: %s", err, replaceOutput)
+	}
+	if !strings.Contains(replaceOutput, "live-suite.example") {
+		t.Fatalf("expected --replace to report the alias it removed, got: %s", replaceOutput)
+	}
+
+	afterReplace, err := executeLiveCLI(t, "--json", "auth", "alias", "list", "--host", host)
+	if err != nil {
+		t.Fatalf("auth alias list after replace failed: %v\noutput: %s", err, afterReplace)
+	}
+	if strings.Contains(afterReplace, "live-suite.example") {
+		t.Fatalf("expected --replace to drop the manual alias, got: %s", afterReplace)
+	}
+
+	// Put it back so remove has something of its own to take away.
+	if output, err := executeLiveCLI(t, "auth", "alias", "add", alias, "--host", host); err != nil {
+		t.Fatalf("auth alias add before remove failed: %v\noutput: %s", err, output)
+	}
+
 	if output, err := executeLiveCLI(t, "auth", "alias", "remove", alias, "--host", host); err != nil {
 		t.Fatalf("auth alias remove failed: %v\noutput: %s", err, output)
 	}
@@ -85,15 +123,6 @@ func TestLiveAuthAliasLifecycle(t *testing.T) {
 	}
 	if strings.Contains(afterRemove, "live-suite.example") {
 		t.Fatalf("expected the alias to be gone, got: %s", afterRemove)
-	}
-
-	// discover runs last on purpose. It asks the server for clone links, which
-	// needs the credential the login stored — but it also replaces the alias
-	// list rather than merging into it, so running it earlier silently deleted
-	// the alias this test had just added. That data loss is filed separately;
-	// the ordering here covers the command without depending on the bug.
-	if output, err := executeLiveCLI(t, "auth", "alias", "discover", "--host", host); err != nil {
-		t.Fatalf("auth alias discover failed: %v\noutput: %s", err, output)
 	}
 
 	if output, err := executeLiveCLI(t, "auth", "logout", "--host", host); err != nil {
