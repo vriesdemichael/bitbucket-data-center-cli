@@ -76,7 +76,7 @@ func (h *liveHarness) username() string {
 	if u := strings.TrimSpace(h.config.BitbucketUsername); u != "" {
 		return u
 	}
-	if u := strings.TrimSpace(h.config.AdminUser); u != "" {
+	if u := strings.TrimSpace(os.Getenv("ADMIN_USER")); u != "" {
 		return u
 	}
 	return "admin"
