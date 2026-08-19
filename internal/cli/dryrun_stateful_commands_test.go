@@ -501,6 +501,8 @@ func TestDryRunRepoPermissionPrechecksFailBeforePlanning(t *testing.T) {
 		{name: "pr review approve", args: []string{"--json", "--dry-run", "pr", "review", "approve", "20"}},
 		{name: "pr review unapprove", args: []string{"--json", "--dry-run", "pr", "review", "unapprove", "20"}},
 		{name: "pr reviewer add", args: []string{"--json", "--dry-run", "pr", "review", "reviewer", "add", "20", "--user", "alice"}},
+		{name: "pr comment resolve", args: []string{"--json", "--dry-run", "pr", "comment", "resolve", "20", "100"}},
+		{name: "pr comment reopen", args: []string{"--json", "--dry-run", "pr", "comment", "reopen", "20", "100"}},
 		{name: "pr reviewer remove", args: []string{"--json", "--dry-run", "pr", "review", "reviewer", "remove", "20", "--user", "alice"}},
 		{name: "repo admin fork", args: []string{"--json", "--dry-run", "repo", "admin", "fork", "--repo", "TEST/demo", "--name", "forked"}},
 		{name: "repo admin update", args: []string{"--json", "--dry-run", "repo", "admin", "update", "--repo", "TEST/demo"}},

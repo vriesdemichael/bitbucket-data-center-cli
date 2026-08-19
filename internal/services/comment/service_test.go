@@ -837,3 +837,68 @@ func TestSetStateUsesSuppliedVersion(t *testing.T) {
 		t.Fatalf("sent version = %v, want the supplied 2", sentBody["version"])
 	}
 }
+
+// The error paths SetState can take, each of which returns a different kind and
+// so a different exit code.
+func TestSetStateErrorPaths(t *testing.T) {
+	validTarget := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
+
+	t.Run("invalid target", func(t *testing.T) {
+		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			t.Error("expected no request for an invalid target")
+		})
+		_, err := service.SetState(context.Background(), Target{}, "7", CommentStateResolved, nil)
+		if err == nil || apperrors.ExitCode(err) != 2 {
+			t.Fatalf("expected a validation error, got: %v", err)
+		}
+	})
+
+	t.Run("read fails", func(t *testing.T) {
+		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPut {
+				t.Error("expected no update when the comment cannot be read")
+			}
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"errors":[{"message":"Comment 7 does not exist."}]}`))
+		})
+		_, err := service.SetState(context.Background(), validTarget, "7", CommentStateResolved, nil)
+		if err == nil || apperrors.ExitCode(err) != 4 {
+			t.Fatalf("expected a not-found error from the read, got: %v", err)
+		}
+	})
+
+	t.Run("update fails", func(t *testing.T) {
+		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if r.Method == http.MethodGet {
+				_, _ = w.Write([]byte(`{"id":7,"version":1}`))
+				return
+			}
+			// A stale version is the realistic failure here, and the one the
+			// version read exists to avoid.
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"errors":[{"message":"You are attempting to modify a comment based on out-of-date information."}]}`))
+		})
+		_, err := service.SetState(context.Background(), validTarget, "7", CommentStateResolved, nil)
+		if err == nil || apperrors.ExitCode(err) != 5 {
+			t.Fatalf("expected a conflict error from the update, got: %v", err)
+		}
+	})
+
+	t.Run("update answers without a parsed body", func(t *testing.T) {
+		supplied := int32(1)
+		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			// 200 with a content type the generated client does not decode, so
+			// the request body is echoed back instead of a parsed comment.
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusOK)
+		})
+		updated, err := service.SetState(context.Background(), validTarget, "7", CommentStateResolved, &supplied)
+		if err != nil {
+			t.Fatalf("expected the sent body to be returned, got: %v", err)
+		}
+		if updated.State == nil || *updated.State != "RESOLVED" {
+			t.Fatalf("state = %v, want the state that was sent", updated.State)
+		}
+	})
+}
