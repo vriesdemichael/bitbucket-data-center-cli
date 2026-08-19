@@ -9,9 +9,28 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	admincmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/admin"
 	aicmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/ai"
 	authcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/auth"
+	branchcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/branch"
+	browsecmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/browse"
+	buildcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/build"
 	bulkcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/bulk"
+	commitcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/commit"
+	deploymentcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/deployment"
+	diffcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/diff"
+	insightscmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/insights"
+	prcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/pr"
+	projectcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/project"
+	refcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/ref"
+	repocmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/repo"
+	reviewercmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/reviewer"
+	reviewergroupcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/reviewergroup"
+	searchcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/search"
+	sshkeycmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/sshkey"
+	tagcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/tag"
+	updatecmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/update"
+	webhookcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/webhook"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
@@ -80,26 +99,180 @@ your behalf using the link above.`,
 		LoadConfig:  loadConfig,
 		WriteJSON:   writeJSON,
 	}))
-	rootCmd.AddCommand(newRepoCommand(options))
-	rootCmd.AddCommand(newCloneCommand(options))
-	rootCmd.AddCommand(newTagCommand(options))
-	rootCmd.AddCommand(newBranchCommand(options))
-	rootCmd.AddCommand(newDiffCommand(options))
-	rootCmd.AddCommand(newBuildCommand(options))
-	rootCmd.AddCommand(newDeploymentCommand(options))
-	rootCmd.AddCommand(newInsightsCommand(options))
-	rootCmd.AddCommand(newPRCommand(options))
-	rootCmd.AddCommand(newAdminCommand(options))
-	rootCmd.AddCommand(newCommitCommand(options))
-	rootCmd.AddCommand(newRefCommand(options))
-	rootCmd.AddCommand(newProjectCommand(options))
-	rootCmd.AddCommand(newReviewerCommand(options))
-	rootCmd.AddCommand(newReviewerGroupCommand(options))
-	rootCmd.AddCommand(newWebhookCommand(options))
-	rootCmd.AddCommand(newBrowseCommand(options))
-	rootCmd.AddCommand(newSearchCommand(options))
-	rootCmd.AddCommand(newUpdateCommand(options))
-	rootCmd.AddCommand(newSshKeyCommand(options))
+	rootCmd.AddCommand(repocmd.New(repocmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		DryRunEnabled:       func() bool { return options.DryRun },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		WriteJSONList:       writeJSONList,
+		PermissionChecker: func(client *openapigenerated.ClientWithResponses) repocmd.PermissionChecker {
+			return options.permissionCheckerFor(client)
+		},
+	}))
+	rootCmd.AddCommand(repocmd.NewClone(repocmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		DryRunEnabled:       func() bool { return options.DryRun },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		WriteJSONList:       writeJSONList,
+	}))
+	rootCmd.AddCommand(tagcmd.New(tagcmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		DryRunEnabled:       func() bool { return options.DryRun },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		WriteJSONList:       writeJSONList,
+		PermissionChecker: func(client *openapigenerated.ClientWithResponses) tagcmd.PermissionChecker {
+			return options.permissionCheckerFor(client)
+		},
+	}))
+	rootCmd.AddCommand(branchcmd.New(branchcmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		DryRunEnabled:       func() bool { return options.DryRun },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		WriteJSONList:       writeJSONList,
+		PermissionChecker: func(client *openapigenerated.ClientWithResponses) branchcmd.PermissionChecker {
+			return options.permissionCheckerFor(client)
+		},
+	}))
+	rootCmd.AddCommand(diffcmd.New(diffcmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+	}))
+	rootCmd.AddCommand(buildcmd.New(buildcmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		DryRunEnabled:       func() bool { return options.DryRun },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		WriteJSONList:       writeJSONList,
+		PermissionChecker: func(client *openapigenerated.ClientWithResponses) buildcmd.PermissionChecker {
+			return options.permissionCheckerFor(client)
+		},
+	}))
+	rootCmd.AddCommand(deploymentcmd.New(deploymentcmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		DryRunEnabled:       func() bool { return options.DryRun },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		PermissionChecker: func(client *openapigenerated.ClientWithResponses) deploymentcmd.PermissionChecker {
+			return options.permissionCheckerFor(client)
+		},
+	}))
+	rootCmd.AddCommand(insightscmd.New(insightscmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		DryRunEnabled:       func() bool { return options.DryRun },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		WriteJSONList:       writeJSONList,
+		PermissionChecker: func(client *openapigenerated.ClientWithResponses) insightscmd.PermissionChecker {
+			return options.permissionCheckerFor(client)
+		},
+	}))
+	rootCmd.AddCommand(prcmd.New(prcmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		DryRunEnabled:       func() bool { return options.DryRun },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		WriteJSONList:       writeJSONList,
+		GitBackend:          gitBackendFactory,
+		PermissionChecker: func(client *openapigenerated.ClientWithResponses) prcmd.PermissionChecker {
+			return options.permissionCheckerFor(client)
+		},
+	}))
+	rootCmd.AddCommand(admincmd.New(admincmd.Dependencies{
+		JSONEnabled: func() bool { return options.JSON },
+		LoadConfig:  loadConfig,
+		WriteJSON:   writeJSON,
+	}))
+	rootCmd.AddCommand(commitcmd.New(commitcmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		WriteJSONList:       writeJSONList,
+	}))
+	rootCmd.AddCommand(refcmd.New(refcmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+	}))
+	rootCmd.AddCommand(projectcmd.New(projectcmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		DryRunEnabled:       func() bool { return options.DryRun },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		WriteJSONList:       writeJSONList,
+		PermissionChecker: func(client *openapigenerated.ClientWithResponses) projectcmd.PermissionChecker {
+			return options.permissionCheckerFor(client)
+		},
+	}))
+	rootCmd.AddCommand(reviewercmd.New(reviewercmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		DryRunEnabled:       func() bool { return options.DryRun },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		PermissionChecker: func(client *openapigenerated.ClientWithResponses) reviewercmd.PermissionChecker {
+			return options.permissionCheckerFor(client)
+		},
+	}))
+	rootCmd.AddCommand(reviewergroupcmd.New(reviewergroupcmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		DryRunEnabled:       func() bool { return options.DryRun },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		PermissionChecker: func(client *openapigenerated.ClientWithResponses) reviewergroupcmd.PermissionChecker {
+			return options.permissionCheckerFor(client)
+		},
+	}))
+	rootCmd.AddCommand(webhookcmd.New(webhookcmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		DryRunEnabled:       func() bool { return options.DryRun },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		PermissionChecker: func(client *openapigenerated.ClientWithResponses) webhookcmd.PermissionChecker {
+			return options.permissionCheckerFor(client)
+		},
+	}))
+	rootCmd.AddCommand(browsecmd.New(browsecmd.Dependencies{
+		JSONEnabled: func() bool { return options.JSON },
+		LoadConfig:  loadConfig,
+		WriteJSON:   writeJSON,
+	}))
+	rootCmd.AddCommand(searchcmd.New(searchcmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		WriteJSONList:       writeJSONList,
+	}))
+	rootCmd.AddCommand(updatecmd.New(updatecmd.Dependencies{
+		JSONEnabled:   func() bool { return options.JSON },
+		DryRunEnabled: func() bool { return options.DryRun },
+		WriteJSON:     writeJSON,
+	}))
+	rootCmd.AddCommand(sshkeycmd.New(sshkeycmd.Dependencies{
+		JSONEnabled:         func() bool { return options.JSON },
+		LoadConfig:          loadConfig,
+		LoadConfigAndClient: loadConfigAndClient,
+		WriteJSON:           writeJSON,
+		WriteJSONList:       writeJSONList,
+	}))
 
 	registerGlobalDryRunInterceptors(rootCmd, options)
 

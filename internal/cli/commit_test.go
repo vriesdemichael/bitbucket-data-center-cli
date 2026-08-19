@@ -1,28 +1,11 @@
 package cli
 
 import (
-	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 )
-
-func executeTestCLI(t *testing.T, args ...string) (string, error) {
-	t.Helper()
-
-	// Disable colors so assertions can match plain text without ANSI codes.
-	t.Setenv("NO_COLOR", "1")
-
-	command := NewRootCommand()
-	output := &bytes.Buffer{}
-	command.SetOut(output)
-	command.SetErr(output)
-	command.SetArgs(args)
-
-	err := command.Execute()
-	return output.String(), err
-}
 
 func TestCommitCLICommandValidation(t *testing.T) {
 	output, err := executeTestCLI(t, "commit", "get")
