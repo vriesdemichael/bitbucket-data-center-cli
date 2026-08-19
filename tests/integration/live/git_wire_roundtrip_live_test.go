@@ -59,7 +59,10 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 		prData = inner
 	}
 	prID := fmt.Sprintf("%v", prData["id"])
-	prVersion := fmt.Sprintf("%v", prData["version"])
+	prVersion := "0"
+	if v, ok := prData["version"]; ok && v != nil {
+		prVersion = fmt.Sprintf("%v", v)
+	}
 
 	// 4. In client-2 (separate clone), run bb pr checkout
 	workDir2 := filepath.Join(t.TempDir(), "client-2")
