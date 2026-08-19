@@ -83,9 +83,10 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if state, ok := getPR["state"].(string); !ok || state != "OPEN" {
 		t.Fatalf("expected state OPEN before decline, got %v", state)
 	}
+	prVersion := fmt.Sprintf("%v", getPR["version"])
 
 	// 3. Decline PR -> DECLINED
-	declineOutput, err := executeLiveCLI(t, "--json", "pr", "decline", prID)
+	declineOutput, err := executeLiveCLI(t, "--json", "pr", "decline", prID, "--version", prVersion)
 	if err != nil {
 		t.Fatalf("pr decline failed: %v\noutput: %s", err, declineOutput)
 	}
@@ -100,9 +101,10 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if state, ok := declinePR["state"].(string); !ok || state != "DECLINED" {
 		t.Fatalf("expected state DECLINED, got %v", state)
 	}
+	declineVersion := fmt.Sprintf("%v", declinePR["version"])
 
 	// 4. Reopen PR -> OPEN
-	reopenOutput, err := executeLiveCLI(t, "--json", "pr", "reopen", prID)
+	reopenOutput, err := executeLiveCLI(t, "--json", "pr", "reopen", prID, "--version", declineVersion)
 	if err != nil {
 		t.Fatalf("pr reopen failed: %v\noutput: %s", err, reopenOutput)
 	}
@@ -117,9 +119,10 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if state, ok := reopenPR["state"].(string); !ok || state != "OPEN" {
 		t.Fatalf("expected state OPEN after reopen, got %v", state)
 	}
+	reopenVersion := fmt.Sprintf("%v", reopenPR["version"])
 
 	// 5. Merge PR -> MERGED
-	mergeOutput, err := executeLiveCLI(t, "--json", "pr", "merge", prID)
+	mergeOutput, err := executeLiveCLI(t, "--json", "pr", "merge", prID, "--version", reopenVersion)
 	if err != nil {
 		t.Fatalf("pr merge failed: %v\noutput: %s", err, mergeOutput)
 	}
@@ -136,7 +139,7 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	}
 
 	// 6. Attempt second merge on already merged PR -> Bitbucket DC returns 409 Conflict (exit code 5)
-	_, mergeAgainErr := executeLiveCLI(t, "--json", "pr", "merge", prID)
+	_, mergeAgainErr := executeLiveCLI(t, "--json", "pr", "merge", prID, "--version", fmt.Sprintf("%v", mergePR["version"]))
 	if mergeAgainErr == nil {
 		t.Fatalf("expected error on merging already merged PR, got success")
 	}

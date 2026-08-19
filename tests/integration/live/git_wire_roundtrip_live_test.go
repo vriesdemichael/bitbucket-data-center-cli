@@ -59,6 +59,7 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 		prData = inner
 	}
 	prID := fmt.Sprintf("%v", prData["id"])
+	prVersion := fmt.Sprintf("%v", prData["version"])
 
 	// 4. In client-2 (separate clone), run bb pr checkout
 	workDir2 := filepath.Join(t.TempDir(), "client-2")
@@ -83,7 +84,7 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 
 	// 5. Merge PR via REST API
 	_ = os.Chdir(originalDir)
-	mergeOutput, err := executeLiveCLI(t, "--json", "pr", "merge", prID)
+	mergeOutput, err := executeLiveCLI(t, "--json", "pr", "merge", prID, "--version", prVersion)
 	if err != nil {
 		t.Fatalf("pr merge failed: %v\noutput: %s", err, mergeOutput)
 	}
