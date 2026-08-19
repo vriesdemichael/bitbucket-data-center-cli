@@ -196,3 +196,96 @@ func TestPRCommentCommandsJSONAndErrors(t *testing.T) {
 		t.Fatalf("Apply suggestion dry-run flags failed, out: %s, err: %v", out, err)
 	}
 }
+
+// TestPRCommentResolveAndReopenCommands covers the two commands that replaced
+// marking a pull request task done.
+func TestPRCommentResolveAndReopenCommands(t *testing.T) {
+	var sentBodies []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/repos":
+			_, _ = w.Write([]byte(`{"values":[{"slug":"demo","name":"test-repo","project":{"key":"TEST"}}],"isLastPage":true}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/7/comments/100":
+			// The version the update needs, which the command reads rather than
+			// asking the caller for.
+			_, _ = w.Write([]byte(`{"id":100,"version":3,"state":"OPEN","severity":"BLOCKER","text":"blocker"}`))
+		case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/7/comments/100":
+			body := make([]byte, r.ContentLength)
+			_, _ = r.Body.Read(body)
+			sentBodies = append(sentBodies, string(body))
+			_, _ = w.Write([]byte(`{"id":100,"version":4,"state":"RESOLVED","severity":"BLOCKER"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	configureDryRunEnv(t, server.URL, "TEST", "demo")
+
+	resolveOutput, err := executeTestCLI(t, "pr", "comment", "resolve", "7", "100")
+	if err != nil {
+		t.Fatalf("unexpected error resolving comment: %v", err)
+	}
+	if !strings.Contains(resolveOutput, "Resolved comment 100") {
+		t.Fatalf("expected a resolve confirmation, got: %s", resolveOutput)
+	}
+	if len(sentBodies) != 1 || !strings.Contains(sentBodies[0], `"state":"RESOLVED"`) {
+		t.Fatalf("expected the request to carry state RESOLVED, got: %v", sentBodies)
+	}
+	// The version comes from the read, not from the caller: the endpoint refuses
+	// an update without one.
+	if !strings.Contains(sentBodies[0], `"version":3`) {
+		t.Fatalf("expected the request to carry the version read from the server, got: %v", sentBodies)
+	}
+
+	reopenOutput, err := executeTestCLI(t, "pr", "comment", "reopen", "7", "100")
+	if err != nil {
+		t.Fatalf("unexpected error reopening comment: %v", err)
+	}
+	if !strings.Contains(reopenOutput, "Reopened comment 100") {
+		t.Fatalf("expected a reopen confirmation, got: %s", reopenOutput)
+	}
+	if len(sentBodies) != 2 || !strings.Contains(sentBodies[1], `"state":"OPEN"`) {
+		t.Fatalf("expected the second request to carry state OPEN, got: %v", sentBodies)
+	}
+
+	jsonOutput, err := executeTestCLI(t, "--json", "pr", "comment", "resolve", "7", "100")
+	if err != nil {
+		t.Fatalf("unexpected error resolving comment as JSON: %v", err)
+	}
+	if !strings.Contains(jsonOutput, `"comment"`) || !strings.Contains(jsonOutput, `"pull_request_id"`) {
+		t.Fatalf("expected the machine payload to carry the comment, got: %s", jsonOutput)
+	}
+
+	for _, name := range []string{"resolve", "reopen"} {
+		dryRunOutput, err := executeTestCLI(t, "--dry-run", "pr", "comment", name, "7", "100")
+		if err != nil {
+			t.Fatalf("unexpected error on %s dry run: %v", name, err)
+		}
+		if !strings.Contains(dryRunOutput, "Dry-run") || !strings.Contains(dryRunOutput, "pr.comment."+name) {
+			t.Fatalf("expected a %s dry-run preview, got: %s", name, dryRunOutput)
+		}
+	}
+}
+
+// A comment that does not exist fails on the read, before anything is written.
+func TestPRCommentResolveMissingComment(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/repos" {
+			_, _ = w.Write([]byte(`{"values":[{"slug":"demo","name":"test-repo","project":{"key":"TEST"}}],"isLastPage":true}`))
+			return
+		}
+		if r.Method == http.MethodPut {
+			t.Error("expected no update when the comment cannot be read")
+		}
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"errors":[{"message":"Comment 999 does not exist."}]}`))
+	}))
+	defer server.Close()
+	configureDryRunEnv(t, server.URL, "TEST", "demo")
+
+	if _, err := executeTestCLI(t, "pr", "comment", "resolve", "7", "999"); err == nil {
+		t.Fatal("expected an error resolving a comment that does not exist")
+	}
+}
