@@ -42,4 +42,4 @@ rejected_alternatives:
     reason: >
       Running all combinatorial flag validation in live tests would dramatically slow down the live
       test suite (which already takes ~8 minutes) and degrade local developer feedback loops.
-provenance: human-ai-alignment
+provenance: guided-ai
