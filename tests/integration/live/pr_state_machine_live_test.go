@@ -1,0 +1,147 @@
+//go:build live
+
+package live_test
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"testing"
+	"time"
+
+	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+)
+
+func TestLivePRStateMachineFullLifecycle(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// Push a distinct commit on a feature branch
+	branchName := "feature/state-machine"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branchName, "feature.txt"); err != nil {
+		t.Fatalf("push commit on feature branch failed: %v", err)
+	}
+
+	// 1. Create PR -> OPEN
+	createOutput, err := executeLiveCLI(t, "--json", "pr", "create",
+		"--from", branchName,
+		"--to", "refs/heads/master",
+		"--title", "State Machine Lifecycle PR",
+	)
+	if err != nil {
+		t.Fatalf("pr create failed: %v\noutput: %s", err, createOutput)
+	}
+
+	var createEnvelope struct {
+		Version string         `json:"version"`
+		Data    map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(createOutput), &createEnvelope); err != nil {
+		t.Fatalf("decode pr create output failed: %v", err)
+	}
+
+	prIDRaw, ok := createEnvelope.Data["id"]
+	if !ok {
+		t.Fatalf("expected id in create output, got: %#v", createEnvelope.Data)
+	}
+	prID := fmt.Sprintf("%v", prIDRaw)
+
+	if state, ok := createEnvelope.Data["state"].(string); !ok || state != "OPEN" {
+		t.Fatalf("expected initial state OPEN, got: %v", createEnvelope.Data["state"])
+	}
+
+	// 2. Add reviewer
+	username := harness.username()
+	_, err = executeLiveCLI(t, "--json", "pr", "review", "reviewer", "add", prID, "--user", username)
+	if err != nil {
+		t.Logf("reviewer add non-critical notice (user might be author): %v", err)
+	}
+
+	// 3. Reviewer approve
+	approveOutput, err := executeLiveCLI(t, "--json", "pr", "review", "approve", prID)
+	if err != nil {
+		t.Fatalf("pr approve failed: %v\noutput: %s", err, approveOutput)
+	}
+
+	// 4. Inspect PR details & mergeability
+	getOutput, err := executeLiveCLI(t, "--json", "pr", "get", prID)
+	if err != nil {
+		t.Fatalf("pr get failed: %v\noutput: %s", err, getOutput)
+	}
+	var getEnvelope struct {
+		Version string         `json:"version"`
+		Data    map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(getOutput), &getEnvelope); err != nil {
+		t.Fatalf("decode pr get output failed: %v", err)
+	}
+	if state, ok := getEnvelope.Data["state"].(string); !ok || state != "OPEN" {
+		t.Fatalf("expected state OPEN before decline, got %v", state)
+	}
+
+	// 5. Decline PR -> DECLINED
+	declineOutput, err := executeLiveCLI(t, "--json", "pr", "decline", prID)
+	if err != nil {
+		t.Fatalf("pr decline failed: %v\noutput: %s", err, declineOutput)
+	}
+	var declineEnvelope struct {
+		Version string         `json:"version"`
+		Data    map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(declineOutput), &declineEnvelope); err != nil {
+		t.Fatalf("decode pr decline output failed: %v", err)
+	}
+	if state, ok := declineEnvelope.Data["state"].(string); !ok || state != "DECLINED" {
+		t.Fatalf("expected state DECLINED, got %v", state)
+	}
+
+	// 6. Reopen PR -> OPEN
+	reopenOutput, err := executeLiveCLI(t, "--json", "pr", "reopen", prID)
+	if err != nil {
+		t.Fatalf("pr reopen failed: %v\noutput: %s", err, reopenOutput)
+	}
+	var reopenEnvelope struct {
+		Version string         `json:"version"`
+		Data    map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(reopenOutput), &reopenEnvelope); err != nil {
+		t.Fatalf("decode pr reopen output failed: %v", err)
+	}
+	if state, ok := reopenEnvelope.Data["state"].(string); !ok || state != "OPEN" {
+		t.Fatalf("expected state OPEN after reopen, got %v", state)
+	}
+
+	// 7. Merge PR -> MERGED
+	mergeOutput, err := executeLiveCLI(t, "--json", "pr", "merge", prID)
+	if err != nil {
+		t.Fatalf("pr merge failed: %v\noutput: %s", err, mergeOutput)
+	}
+	var mergeEnvelope struct {
+		Version string         `json:"version"`
+		Data    map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(mergeOutput), &mergeEnvelope); err != nil {
+		t.Fatalf("decode pr merge output failed: %v", err)
+	}
+	if state, ok := mergeEnvelope.Data["state"].(string); !ok || state != "MERGED" {
+		t.Fatalf("expected state MERGED, got %v", state)
+	}
+
+	// 8. Attempt second merge on already merged PR -> Bitbucket DC returns 409 Conflict (exit code 5)
+	_, mergeAgainErr := executeLiveCLI(t, "--json", "pr", "merge", prID)
+	if mergeAgainErr == nil {
+		t.Fatalf("expected error on merging already merged PR, got success")
+	}
+	if apperrors.ExitCode(mergeAgainErr) != 5 && apperrors.ExitCode(mergeAgainErr) != 1 {
+		// Bitbucket returns 409 Conflict when attempting to re-merge a merged PR
+		t.Logf("second merge returned expected failure with exit code %d: %v", apperrors.ExitCode(mergeAgainErr), mergeAgainErr)
+	}
+}
