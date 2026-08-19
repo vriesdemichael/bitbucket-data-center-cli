@@ -1,0 +1,56 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.branch.get-default.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb branch get-default --json`. Data contains the repository and its current default branch name.",
+  "properties": {
+    "data": {
+      "additionalProperties": true,
+      "properties": {
+        "default_branch": {
+          "description": "Current default branch name.",
+          "type": "string"
+        },
+        "repository": {
+          "additionalProperties": true,
+          "properties": {
+            "ProjectKey": {
+              "type": "string"
+            },
+            "Slug": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "repository",
+        "default_branch"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb branch get-default output",
+  "type": "object"
+}
