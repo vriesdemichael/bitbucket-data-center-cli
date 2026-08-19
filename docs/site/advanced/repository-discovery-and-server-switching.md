@@ -90,6 +90,17 @@ bb auth alias discover --host https://bitbucket.acme.corp
 Discovery is best-effort. It requests only a small repository page and stops at the first accessible
 repository that exposes clone links. Login still succeeds when discovery finds no aliases.
 
+Discovery **adds** to the aliases already stored; it never removes one. That matters because
+discovery cannot find every alias — an instance whose SSH clone host differs from its web URL is
+exactly the case for adding one by hand, and it would otherwise be undone by the next discovery run,
+or by the next `bb auth login`. Re-authenticating keeps stored aliases for the same reason.
+
+To store only what discovery finds, ask for it explicitly. Anything dropped is named in the output:
+
+```bash
+bb auth alias discover --host https://bitbucket.acme.corp --replace
+```
+
 ## Server switching workflow
 
 Use server contexts to control which host is active by default:

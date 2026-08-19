@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/spf13/cobra"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -1675,5 +1676,83 @@ func TestStatusHumanReportsPinnedVersion(t *testing.T) {
 
 	if output := buffer.String(); !strings.Contains(output, "expected version 10.2.1") {
 		t.Errorf("expected the pinned version to be reported, got %q", output)
+	}
+}
+
+// TestAliasDiscoverPreservesManualAliases covers the bug that made discovery
+// destructive: it replaced the stored list instead of adding to it, so an alias
+// added by hand disappeared without a word and the command still exited 0.
+func TestAliasDiscoverPreservesManualAliases(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
+	t.Setenv("BB_CONFIG_PATH", configPath)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+
+	cloneLinks := map[string]interface{}{
+		"clone": []any{
+			map[string]any{"name": "ssh", "href": "ssh://git@git.company.org:7999/scm/PRJ/repo.git"},
+		},
+	}
+	recentResponse := &openapigenerated.GetRepositoriesRecentlyAccessedResponse{
+		HTTPResponse: &http.Response{StatusCode: 200},
+		ApplicationjsonCharsetUTF8200: &struct {
+			IsLastPage    *bool                              `json:"isLastPage,omitempty"`
+			Limit         *float32                           `json:"limit,omitempty"`
+			NextPageStart *int32                             `json:"nextPageStart,omitempty"`
+			Size          *float32                           `json:"size,omitempty"`
+			Start         *int32                             `json:"start,omitempty"`
+			Values        *[]openapigenerated.RestRepository `json:"values,omitempty"`
+		}{Values: &[]openapigenerated.RestRepository{{Links: &cloneLinks}}},
+	}
+
+	newAuthCommand := func() *cobra.Command {
+		return New(Dependencies{
+			JSONEnabled: func() bool { return true },
+			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			NewReposClient: func(cfg config.AppConfig) (repositoriesClient, error) {
+				return &fakeReposClient{recent: recentResponse, all: recentResponseToAll(recentResponse)}, nil
+			},
+		})
+	}
+
+	run := func(t *testing.T, args ...string) string {
+		t.Helper()
+		command := newAuthCommand()
+		out := &bytes.Buffer{}
+		command.SetOut(out)
+		command.SetErr(out)
+		command.SetArgs(args)
+		if err := command.Execute(); err != nil {
+			t.Fatalf("%v failed: %v\noutput: %s", args, err, out.String())
+		}
+		return out.String()
+	}
+
+	run(t, "login", "https://bitbucket.company.org", "--token", "t", "--discover-aliases=false")
+	run(t, "alias", "add", "--host", "https://bitbucket.company.org", "manual.example:7999")
+
+	discoverOut := run(t, "alias", "discover", "--host", "https://bitbucket.company.org")
+	if !strings.Contains(discoverOut, "git.company.org:7999") {
+		t.Fatalf("expected the discovered alias in the output, got: %s", discoverOut)
+	}
+
+	listOut := run(t, "alias", "list", "--host", "https://bitbucket.company.org")
+	if !strings.Contains(listOut, "manual.example:7999") {
+		t.Fatalf("expected the manual alias to survive discovery, got: %s", listOut)
+	}
+	if !strings.Contains(listOut, "git.company.org:7999") {
+		t.Fatalf("expected the discovered alias to be stored, got: %s", listOut)
+	}
+
+	// --replace is the explicit way to get the old behaviour, and it has to say
+	// what it took away.
+	replaceOut := run(t, "alias", "discover", "--host", "https://bitbucket.company.org", "--replace")
+	if !strings.Contains(replaceOut, "manual.example:7999") {
+		t.Fatalf("expected --replace to report the alias it removed, got: %s", replaceOut)
+	}
+
+	afterReplace := run(t, "alias", "list", "--host", "https://bitbucket.company.org")
+	if strings.Contains(afterReplace, "manual.example:7999") {
+		t.Fatalf("expected --replace to drop the manual alias, got: %s", afterReplace)
 	}
 }

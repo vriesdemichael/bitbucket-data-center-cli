@@ -505,13 +505,18 @@ Global Flags:
 Discover aliases from the first accessible repository clone links
 
 ```text
-Discover aliases from the first accessible repository clone links
+Discover aliases from the first accessible repository clone links.
+
+Discovered aliases are added to the ones already stored. Aliases added by hand are kept, because discovery cannot find every alias -- an instance whose SSH clone host differs from its web URL is the documented case for adding one manually, and it would be undone by every later discovery run.
+
+Pass --replace to store only what was discovered. Anything dropped is named in the output.
 
 Usage:
   bb auth alias discover [flags]
 
 Flags:
       --host string   Bitbucket host URL
+      --replace       Store only the discovered aliases, dropping any others
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust

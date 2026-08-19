@@ -1179,3 +1179,79 @@ func TestAliasOperationsAdditionalBranches(t *testing.T) {
 		t.Fatalf("expected invalid stored aliases to normalize to an empty slice, got %+v", got)
 	}
 }
+
+// TestSaveLoginPreservesExistingAliases covers the alias loss that made
+// re-authenticating destructive.
+//
+// Aliases are host-recognition config rather than credentials. Discovery cannot
+// find every alias -- an instance whose SSH clone host differs from its web URL
+// is the documented case for adding one by hand -- so a login that replaced the
+// list undid the documented remedy, silently, on every run.
+func TestSaveLoginPreservesExistingAliases(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
+	t.Setenv("BB_CONFIG_PATH", configPath)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+
+	if _, err := SaveLogin(LoginInput{
+		Host:    "localhost:7990",
+		Token:   "token-one",
+		Aliases: []string{"discovered.example:7999"},
+	}); err != nil {
+		t.Fatalf("first login failed: %v", err)
+	}
+
+	if _, err := AddHostAliases("localhost:7990", []string{"manual.example:7999"}); err != nil {
+		t.Fatalf("adding a manual alias failed: %v", err)
+	}
+
+	// Logging in again, as happens on a token refresh.
+	result, err := SaveLogin(LoginInput{
+		Host:    "localhost:7990",
+		Token:   "token-two",
+		Aliases: []string{"discovered.example:7999"},
+	})
+	if err != nil {
+		t.Fatalf("second login failed: %v", err)
+	}
+
+	stored, _, err := ListHostAliases("localhost:7990")
+	if err != nil {
+		t.Fatalf("listing aliases failed: %v", err)
+	}
+
+	if !containsAlias(stored, "manual.example:7999") {
+		t.Fatalf("expected the manually added alias to survive a re-login, got: %v", stored)
+	}
+	if !containsAlias(stored, "discovered.example:7999") {
+		t.Fatalf("expected the discovered alias to still be present, got: %v", stored)
+	}
+	if len(stored) != 2 {
+		t.Fatalf("expected exactly the two aliases without duplication, got: %v", stored)
+	}
+	if !containsAlias(result.Aliases, "manual.example:7999") {
+		t.Fatalf("expected the login result to report the merged list, got: %v", result.Aliases)
+	}
+}
+
+func containsAlias(aliases []string, want string) bool {
+	for _, alias := range aliases {
+		if alias == want {
+			return true
+		}
+	}
+	return false
+}
+
+func TestMergeAliasesDeduplicatesAndPreservesOrder(t *testing.T) {
+	merged := mergeAliases([]string{"a", "b"}, []string{"b", "c"})
+	if len(merged) != 3 || merged[0] != "a" || merged[1] != "b" || merged[2] != "c" {
+		t.Fatalf("merged = %v, want [a b c]", merged)
+	}
+
+	if merged := mergeAliases(nil, []string{"a"}); len(merged) != 1 || merged[0] != "a" {
+		t.Fatalf("merged = %v, want [a]", merged)
+	}
+	if merged := mergeAliases([]string{"a"}, nil); len(merged) != 1 || merged[0] != "a" {
+		t.Fatalf("merged = %v, want [a]", merged)
+	}
+}
