@@ -73,12 +73,14 @@ func executeInsights(t *testing.T, serverURL string, args ...string) (string, er
 
 	var jsonFlag bool
 	var dryRunFlag bool
+	filteredArgs := make([]string, 0, len(args))
 	for _, a := range args {
 		if a == "--json" {
 			jsonFlag = true
-		}
-		if a == "--dry-run" {
+		} else if a == "--dry-run" {
 			dryRunFlag = true
+		} else {
+			filteredArgs = append(filteredArgs, a)
 		}
 	}
 
@@ -104,15 +106,13 @@ func executeInsights(t *testing.T, serverURL string, args ...string) (string, er
 	}
 
 	root := &cobra.Command{Use: "bb"}
-	root.PersistentFlags().Bool("json", false, "")
-	root.PersistentFlags().Bool("dry-run", false, "")
 	root.AddCommand(New(deps))
 
 	buffer := &bytes.Buffer{}
 	root.SetOut(buffer)
 	root.SetErr(buffer)
 
-	fullArgs := append([]string{"insights"}, args...)
+	fullArgs := append([]string{"insights"}, filteredArgs...)
 	root.SetArgs(fullArgs)
 	err := root.Execute()
 	return buffer.String(), err
@@ -130,13 +130,19 @@ func TestInsightsReportSetAndGet(t *testing.T) {
 		t.Fatalf("expected report1 in set output, got:\n%s", out)
 	}
 
-	// Get report
-	out, err = executeInsights(t, server.URL, "report", "get", "commit1", "report1")
+	// Set report in dry-run mode
+	out, err = executeInsights(t, server.URL, "--dry-run", "report", "set", "commit1", "report1", "--body", `{"title":"Report 1","result":"PASS"}`)
 	if err != nil {
-		t.Fatalf("unexpected error on get: %v", err)
+		t.Fatalf("unexpected error on set dry-run: %v", err)
 	}
-	if !strings.Contains(out, "report1") {
-		t.Fatalf("expected report1 in get output, got:\n%s", out)
+
+	// Get report in JSON mode
+	out, err = executeInsights(t, server.URL, "--json", "report", "get", "commit1", "report1")
+	if err != nil {
+		t.Fatalf("unexpected error on get JSON: %v", err)
+	}
+	if !strings.Contains(out, `"key"`) {
+		t.Fatalf("expected key in get JSON output, got:\n%s", out)
 	}
 }
 
@@ -155,7 +161,14 @@ func TestInsightsReportList(t *testing.T) {
 func TestInsightsReportDelete(t *testing.T) {
 	server := newMockInsightsServer(t)
 
-	out, err := executeInsights(t, server.URL, "report", "delete", "commit1", "report1")
+	// Delete in dry-run mode
+	out, err := executeInsights(t, server.URL, "--dry-run", "report", "delete", "commit1", "report1")
+	if err != nil {
+		t.Fatalf("unexpected error on delete dry-run: %v", err)
+	}
+
+	// Delete for real
+	out, err = executeInsights(t, server.URL, "report", "delete", "commit1", "report1")
 	if err != nil {
 		t.Fatalf("unexpected error on delete: %v", err)
 	}
@@ -167,13 +180,25 @@ func TestInsightsReportDelete(t *testing.T) {
 func TestInsightsAnnotationAddAndList(t *testing.T) {
 	server := newMockInsightsServer(t)
 
+	// Add annotation in dry-run mode
+	out, err := executeInsights(t, server.URL, "--dry-run", "annotation", "add", "commit1", "report1", "--body", `[{"message":"Issue found","severity":"HIGH"}]`)
+	if err != nil {
+		t.Fatalf("unexpected error on add dry-run: %v", err)
+	}
+
 	// Add annotation
-	out, err := executeInsights(t, server.URL, "annotation", "add", "commit1", "report1", "--body", `[{"message":"Issue found","severity":"HIGH"}]`)
+	out, err = executeInsights(t, server.URL, "annotation", "add", "commit1", "report1", "--body", `[{"message":"Issue found","severity":"HIGH"}]`)
 	if err != nil {
 		t.Fatalf("unexpected error on add: %v", err)
 	}
 	if !strings.Contains(out, "Added 1 annotations to report report1") {
 		t.Fatalf("expected annotation add confirmation, got:\n%s", out)
+	}
+
+	// Set single annotation
+	out, err = executeInsights(t, server.URL, "annotation", "set", "commit1", "report1", "ann1", "--message", "Issue found", "--severity", "HIGH")
+	if err != nil {
+		t.Fatalf("unexpected error on set annotation: %v", err)
 	}
 
 	// List annotations
@@ -183,5 +208,11 @@ func TestInsightsAnnotationAddAndList(t *testing.T) {
 	}
 	if !strings.Contains(out, "ann1") || !strings.Contains(out, "Issue found") {
 		t.Fatalf("expected ann1 in list output, got:\n%s", out)
+	}
+
+	// Delete annotations
+	out, err = executeInsights(t, server.URL, "annotation", "delete", "commit1", "report1", "--external-id", "ann1")
+	if err != nil {
+		t.Fatalf("unexpected error on delete annotation: %v", err)
 	}
 }
