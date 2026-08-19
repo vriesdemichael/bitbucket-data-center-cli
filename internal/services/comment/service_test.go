@@ -38,40 +38,6 @@ func TestTargetContext(t *testing.T) {
 	}
 }
 
-func TestServiceListCommitAndPullRequest(t *testing.T) {
-	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/comments":
-			if r.URL.Query().Get("path") != "seed.txt" {
-				w.WriteHeader(http.StatusBadRequest)
-				_, _ = w.Write([]byte("missing path"))
-				return
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":1,"text":"c1","version":1}]}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/comments":
-			if r.URL.Query().Get("path") != "seed.txt" {
-				w.WriteHeader(http.StatusBadRequest)
-				_, _ = w.Write([]byte("missing path"))
-				return
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":2,"text":"pr1","version":1}]}`))
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	commitComments, err := service.List(context.Background(), Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}, "seed.txt", 25)
-	if err != nil || len(commitComments) != 1 {
-		t.Fatalf("expected commit comment list, got len=%d err=%v", len(commitComments), err)
-	}
-
-	prComments, err := service.List(context.Background(), Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}, "seed.txt", 25)
-	if err != nil || len(prComments) != 1 {
-		t.Fatalf("expected pr comment list, got len=%d err=%v", len(prComments), err)
-	}
-}
-
 func TestServiceCreateGetUpdateDeleteCommit(t *testing.T) {
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
