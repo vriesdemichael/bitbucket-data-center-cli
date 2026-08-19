@@ -22,7 +22,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
-	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
 )
 
 type inferenceGitBackendStub struct {
@@ -36,6 +35,18 @@ type inferenceGitBackendStub struct {
 
 func (stub inferenceGitBackendStub) Version(context.Context) (string, error) {
 	return "", nil
+}
+
+func executeTestCLI(t *testing.T, args ...string) (string, error) {
+	t.Helper()
+	t.Setenv("NO_COLOR", "1")
+	command := NewRootCommand()
+	output := &bytes.Buffer{}
+	command.SetOut(output)
+	command.SetErr(output)
+	command.SetArgs(args)
+	err := command.Execute()
+	return output.String(), err
 }
 
 func (stub inferenceGitBackendStub) Clone(context.Context, string, git.CloneOptions) error {
@@ -2396,15 +2407,6 @@ func TestCommentHelpersAndSafeHelpers(t *testing.T) {
 	}
 	if commentAnchorPath(detailedComment) != "main.go" {
 		t.Fatalf("expected child-only anchor path, got: %s", commentAnchorPath(detailedComment))
-	}
-
-	activity := pullrequestactivityservice.Activity{ID: 77, Comment: &comment}
-	if !strings.Contains(formatPullRequestActivitySummary(activity), "UNKNOWN") {
-		t.Fatalf("expected UNKNOWN action summary, got: %s", formatPullRequestActivitySummary(activity))
-	}
-	activity.Comment = nil
-	if formatPullRequestActivitySummary(activity) != "[77 UNKNOWN]" {
-		t.Fatalf("unexpected non-comment activity summary: %s", formatPullRequestActivitySummary(activity))
 	}
 }
 

@@ -6,16 +6,16 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
 
 const (
-	planningModeStatic   = "static"
-	planningModeStateful = "stateful"
+	planningModeStatic   = dryrunpreview.PlanningModeStatic
+	planningModeStateful = dryrunpreview.PlanningModeStateful
 
-	capabilityFull    = "full"
-	capabilityPartial = "partial"
+	capabilityFull    = dryrunpreview.CapabilityFull
+	capabilityPartial = dryrunpreview.CapabilityPartial
 )
 
 type dryRunProfile struct {
@@ -26,37 +26,9 @@ type dryRunProfile struct {
 	DryRunDoesNotAddBenefit bool
 }
 
-type dryRunItem struct {
-	Intent          string         `json:"intent"`
-	Target          map[string]any `json:"target"`
-	Action          string         `json:"action"`
-	PredictedAction string         `json:"predicted_action,omitempty"`
-	Supported       bool           `json:"supported"`
-	Reason          string         `json:"reason,omitempty"`
-	Confidence      string         `json:"confidence,omitempty"`
-	RequiredState   []string       `json:"required_state,omitempty"`
-	BlockingReasons []string       `json:"blocking_reasons,omitempty"`
-}
-
-type dryRunSummary struct {
-	Total       int `json:"total"`
-	Supported   int `json:"supported"`
-	Unsupported int `json:"unsupported"`
-
-	NoopCount    int `json:"no_op"`
-	CreateCount  int `json:"create"`
-	UpdateCount  int `json:"update"`
-	DeleteCount  int `json:"delete"`
-	UnknownCount int `json:"unknown"`
-}
-
-type dryRunPreview struct {
-	DryRun       bool          `json:"dry_run"`
-	PlanningMode string        `json:"planning_mode"`
-	Capability   string        `json:"capability"`
-	Items        []dryRunItem  `json:"items"`
-	Summary      dryRunSummary `json:"summary"`
-}
+type dryRunItem = dryrunpreview.Item
+type dryRunSummary = dryrunpreview.Summary
+type dryRunPreview = dryrunpreview.Preview
 
 // dryRunProfiles is the single source of truth for dry-run behaviour on every
 // mutating command. Stateful: true means the command handler performs its own
@@ -358,38 +330,5 @@ func newDryRunPreview(profile dryRunProfile, command *cobra.Command, args []stri
 }
 
 func writeDryRunPreview(writer io.Writer, asJSON bool, preview dryRunPreview) error {
-	if asJSON {
-		return writeJSON(writer, preview)
-	}
-
-	if _, err := fmt.Fprintf(writer, "%s\n", style.DryRun.Render(fmt.Sprintf("Dry-run (%s, capability=%s)", preview.PlanningMode, preview.Capability))); err != nil {
-		return err
-	}
-
-	for _, item := range preview.Items {
-		line := fmt.Sprintf("- %s=%s %s=%s", style.Secondary.Render("intent"), item.Intent, style.Secondary.Render("action"), item.Action)
-		if item.PredictedAction != "" {
-			line += fmt.Sprintf(" %s=%s", style.Secondary.Render("predicted_action"), item.PredictedAction)
-		}
-		if _, err := fmt.Fprintln(writer, line); err != nil {
-			return err
-		}
-		if repository, ok := item.Target["repository"].(string); ok && strings.TrimSpace(repository) != "" {
-			if _, err := fmt.Fprintf(writer, "  %s=%s\n", style.Secondary.Render("repository"), style.Resource.Render(repository)); err != nil {
-				return err
-			}
-		}
-		if args, ok := item.Target["args"].([]string); ok && len(args) > 0 {
-			if _, err := fmt.Fprintf(writer, "  %s=%s\n", style.Secondary.Render("args"), strings.Join(args, " ")); err != nil {
-				return err
-			}
-		}
-		if item.Reason != "" {
-			if _, err := fmt.Fprintf(writer, "  %s=%s\n", style.Secondary.Render("note"), style.Warning.Render(item.Reason)); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
+	return dryrunpreview.Write(writer, asJSON, preview)
 }
