@@ -72,6 +72,16 @@ func newLiveHarness(t *testing.T) *liveHarness {
 	return &liveHarness{t: t, config: cfg, client: client}
 }
 
+func (h *liveHarness) username() string {
+	if u := strings.TrimSpace(h.config.BitbucketUsername); u != "" {
+		return u
+	}
+	if u := strings.TrimSpace(h.config.AdminUser); u != "" {
+		return u
+	}
+	return "admin"
+}
+
 func applyLocalLiveDefaults(t *testing.T) {
 	t.Helper()
 

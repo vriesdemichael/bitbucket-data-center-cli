@@ -338,10 +338,7 @@ func TestLiveCLIRepoPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	username := strings.TrimSpace(harness.config.BitbucketUsername)
-	if username == "" {
-		t.Skip("no username configured for permission dry-run live test")
-	}
+	username := harness.username()
 
 	listBeforeOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "users", "list", "--limit", "200")
 	if err != nil {
@@ -816,10 +813,7 @@ func TestLiveCLIPRReviewerAddDryRunNoSideEffect(t *testing.T) {
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	username := strings.TrimSpace(harness.config.BitbucketUsername)
-	if username == "" {
-		t.Skip("no username configured for reviewer dry-run live test")
-	}
+	username := harness.username()
 
 	beforeOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
@@ -849,10 +843,7 @@ func TestLiveCLIPRReviewerRemoveDryRunNoSideEffect(t *testing.T) {
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	username := strings.TrimSpace(harness.config.BitbucketUsername)
-	if username == "" {
-		t.Skip("no username configured for reviewer dry-run live test")
-	}
+	username := harness.username()
 
 	beforeOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {

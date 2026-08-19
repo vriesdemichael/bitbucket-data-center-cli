@@ -321,7 +321,7 @@ func TestLiveCLIBuildRequiredAndInsightsHumanOutput(t *testing.T) {
 		t.Fatalf("expected human stats output, got: %s", statsBuildOutput)
 	}
 
-	requiredBody := `{"buildParentKeys":["ci"],"refMatcher":{"id":"refs/heads/master"}}`
+	requiredBody := `{"buildParentKeys":["ci"],"refMatcher":{"id":"refs/heads/master","type":{"id":"BRANCH"}}}`
 	requiredID, requiredAvailable := createRequiredBuildCheckWithRetry(t, requiredBody)
 	if requiredAvailable {
 		requiredListOutput, err := executeLiveCLI(t, "build", "required", "list")

@@ -134,14 +134,14 @@ func TestLiveRequiredBuildCheckLifecycle(t *testing.T) {
 		"buildParentKeys": []string{"ci"},
 		"refMatcher": map[string]any{
 			"id": "refs/heads/master",
+			"type": map[string]any{
+				"id": "BRANCH",
+			},
 		},
 	}
 
 	created, err := service.CreateRequiredBuildCheck(ctx, repo, payload)
 	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "returned 500") {
-			t.Skipf("required build check endpoint returned server error in live environment: %v", err)
-		}
 		t.Fatalf("create required build check failed: %v", err)
 	}
 
@@ -447,7 +447,7 @@ func TestLiveCLIBuildRequiredCreateUpdateDeleteDryRunNoSideEffect(t *testing.T) 
 		t.Fatalf("build required list before create failed: %v\noutput: %s", err, listBeforeCreateOutput)
 	}
 
-	body := `{"buildParentKeys":["ci"],"refMatcher":{"id":"refs/heads/master"}}`
+	body := `{"buildParentKeys":["ci"],"refMatcher":{"id":"refs/heads/master","type":{"id":"BRANCH"}}}`
 	createDryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "build", "required", "create", "--body", body)
 	if err != nil {
 		t.Fatalf("build required create dry-run failed: %v\noutput: %s", err, createDryRunOutput)
@@ -466,7 +466,7 @@ func TestLiveCLIBuildRequiredCreateUpdateDeleteDryRunNoSideEffect(t *testing.T) 
 
 	requiredID, requiredAvailable := createRequiredBuildCheckWithRetry(t, body)
 	if !requiredAvailable {
-		t.Skip("required-build endpoint unavailable for update/delete dry-run assertions")
+		t.Fatalf("required-build endpoint unavailable for update/delete dry-run assertions")
 	}
 
 	listBeforeUpdateOutput, err := executeLiveCLI(t, "--json", "build", "required", "list", "--limit", "200")
