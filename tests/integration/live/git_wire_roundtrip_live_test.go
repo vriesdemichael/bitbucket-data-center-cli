@@ -33,6 +33,8 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 	}
 
 	// 2. In client-1, create a feature branch, author commit, and git push
+	_ = runGit(workDir1, "config", "user.name", "bb-live-test")
+	_ = runGit(workDir1, "config", "user.email", "bb-live-test@example.local")
 	if err := runGit(workDir1, "checkout", "-b", "feature/hybrid-test"); err != nil {
 		t.Fatalf("git checkout -b failed: %v", err)
 	}

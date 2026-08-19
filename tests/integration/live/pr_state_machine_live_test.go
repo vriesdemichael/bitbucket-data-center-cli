@@ -45,6 +45,8 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if err := os.WriteFile(testFile, []byte("state machine test\n"), 0o600); err != nil {
 		t.Fatalf("write file failed: %v", err)
 	}
+	_ = runGit(workDir, "config", "user.name", "bb-live-test")
+	_ = runGit(workDir, "config", "user.email", "bb-live-test@example.local")
 	if err := runGit(workDir, "checkout", "-b", branchName); err != nil {
 		t.Fatalf("git checkout -b failed: %v", err)
 	}
