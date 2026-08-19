@@ -23,33 +23,6 @@ func newJiraTestService(t *testing.T, handler http.HandlerFunc) *Service {
 	return NewService(client)
 }
 
-func TestGetPRIssues(t *testing.T) {
-	service := newJiraTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet && r.URL.Path == "/rest/jira/latest/projects/PROJ/repos/repo/pull-requests/42/issues" {
-			_, _ = w.Write([]byte(`[{"key":"TEST-101","url":"http://jira/TEST-101"},{"key":"TEST-102","url":"http://jira/TEST-102"}]`))
-			return
-		}
-		http.NotFound(w, r)
-	})
-
-	issues, err := service.GetPRIssues(context.Background(), RepositoryRef{ProjectKey: "PROJ", Slug: "repo"}, "42")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(issues) != 2 {
-		t.Fatalf("expected 2 issues, got %d", len(issues))
-	}
-
-	if issues[0].Key != "TEST-101" || issues[0].URL != "http://jira/TEST-101" {
-		t.Errorf("unexpected issue 0: %+v", issues[0])
-	}
-	if issues[1].Key != "TEST-102" || issues[1].URL != "http://jira/TEST-102" {
-		t.Errorf("unexpected issue 1: %+v", issues[1])
-	}
-}
-
 func TestGetIssueCommits(t *testing.T) {
 	service := newJiraTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

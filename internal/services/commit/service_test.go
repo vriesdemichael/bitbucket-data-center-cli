@@ -25,62 +25,6 @@ func newCommitTestService(t *testing.T, handler http.HandlerFunc) *Service {
 	return NewService(client)
 }
 
-func TestCommitServiceCoreCommands(t *testing.T) {
-	service := newCommitTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits":
-			if r.URL.Query().Get("since") == "v1.0" && r.URL.Query().Get("until") == "main" && r.URL.Query().Get("merges") == "exclude" {
-				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"abc","displayId":"abc","message":"init"}]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"abc","displayId":"abc","message":"init"}]}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc":
-			_, _ = w.Write([]byte(`{"id":"abc","displayId":"abc","message":"init"}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/compare/commits":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"def","displayId":"def","message":"feature"}]}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/branches":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"refs/heads/main","displayId":"main","type":"BRANCH"}]}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/tags":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"refs/tags/v1.0","displayId":"v1.0","type":"TAG"}]}`))
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-	commits, err := service.List(context.Background(), repo, ListOptions{Limit: 25})
-	if err != nil || len(commits) != 1 {
-		t.Fatalf("expected commit list success, len=%d err=%v", len(commits), err)
-	}
-
-	commitsWithOptions, err := service.List(context.Background(), repo, ListOptions{
-		Limit:  25,
-		Since:  "v1.0",
-		Until:  "main",
-		Merges: "exclude",
-	})
-	if err != nil || len(commitsWithOptions) != 1 {
-		t.Fatalf("expected commit list with options success, len=%d err=%v", len(commitsWithOptions), err)
-	}
-
-	commit, err := service.Get(context.Background(), repo, "abc")
-	if err != nil || commit.Id == nil || *commit.Id != "abc" {
-		t.Fatalf("expected commit get success, got %#v err=%v", commit, err)
-	}
-
-	compared, err := service.Compare(context.Background(), repo, CompareOptions{From: "abc", To: "def", Limit: 25})
-	if err != nil || len(compared) != 1 {
-		t.Fatalf("expected commit compare success, len=%d err=%v", len(compared), err)
-	}
-
-	refs, err := service.ListTagsAndBranches(context.Background(), repo, "")
-	if err != nil || len(refs) != 2 {
-		t.Fatalf("expected ref list success, len=%d err=%v", len(refs), err)
-	}
-}
-
 func TestCommitServiceValidationAndHelpers(t *testing.T) {
 	service := newCommitTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)

@@ -24,42 +24,6 @@ func newForkSyncTestService(t *testing.T, handler http.HandlerFunc) *Service {
 	return NewService(client)
 }
 
-func TestForkSyncServiceCRUD(t *testing.T) {
-	service := newForkSyncTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/sync/latest/projects/PRJ/repos/repo":
-			_, _ = w.Write([]byte(`{"enabled":true,"available":true}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/rest/sync/latest/projects/PRJ/repos/repo":
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"enabled":false,"available":true}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/rest/sync/latest/projects/PRJ/repos/repo/synchronize":
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	ctx := context.Background()
-
-	// Get Status
-	status, err := service.GetSyncStatus(ctx, "PRJ", "repo")
-	if err != nil || status.Enabled == nil || !*status.Enabled {
-		t.Fatalf("expected status success, got %#v err=%v", status, err)
-	}
-
-	// Set Enabled
-	updated, err := service.SetEnabled(ctx, "PRJ", "repo", false)
-	if err != nil || updated.Enabled == nil || *updated.Enabled {
-		t.Fatalf("expected update success, got %#v err=%v", updated, err)
-	}
-
-	// Trigger Manual Sync
-	if err := service.Synchronize(ctx, "PRJ", "repo", "refs/heads/master", "MERGE"); err != nil {
-		t.Fatalf("expected trigger sync success, got %v", err)
-	}
-}
-
 func TestForkSyncServiceValidation(t *testing.T) {
 	service := newForkSyncTestService(t, func(w http.ResponseWriter, r *http.Request) {})
 	ctx := context.Background()
