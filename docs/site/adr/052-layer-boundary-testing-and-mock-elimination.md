@@ -6,16 +6,16 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Layer-boundary testing policy and HTTP mock elimination`
 - Category: `development`
 - Status: `accepted`
-- Provenance: `human-ai-alignment`
+- Provenance: `guided-ai`
 - Source: `docs/decisions/052-layer-boundary-testing-and-mock-elimination.yaml`
 
 ## Decision
 
-Define strict testing boundaries per layer: Unit tests must only test fast, deterministic logic (parameter translation, CLI flag mutual exclusion, syntax parsing, output envelopes, error taxonomy mapping, and dry-run prediction state machines). Eliminate the class of hand-rolled httptest.Server mock tests that simulate happy-path Bitbucket API responses merely to echo canned payloads. Live integration tests against the SDK-licensed Bitbucket container stack are the sole source of truth for Bitbucket REST API contracts, Git wire transports (HTTP/SSH), permission checks, auto-merge workflows, and real server behavior.
+Define strict testing boundaries per layer: 1. Unit tests must only test fast, deterministic logic (parameter translation, CLI flag mutual exclusion, syntax parsing, output envelopes, error taxonomy mapping, client-side pagination algorithms, and dry-run prediction state machines). 2. Eliminate the class of hand-rolled httptest.Server mock tests that simulate happy-path Bitbucket API responses merely to echo canned payloads through 1-to-1 pass-through service methods. 3. Client-side algorithms (such as multi-page stream filtering or version auto-resolution) must be tested as pure unit functions or lightweight fixture tests, decoupled from heavy in-process HTTP servers wherever possible. 4. Live integration tests against the SDK-licensed Bitbucket container stack are the sole source of truth for Bitbucket REST API contracts, Git wire transports (HTTP/SSH), permission checks, auto-merge workflows, and real server behavior.
 
 ## Agent Instructions
 
-Do not write mock HTTP servers that pretend to be Bitbucket Server in unit tests for happy paths. Unit tests in internal/cli/cmd/ and internal/services/ should verify flag validation, required arguments, conflicting options, formatting (--json vs human), and domain error mapping. When a feature needs verification against the Bitbucket REST API or Git transport, add a live test in tests/integration/live/. Never pad coverage with mock tests that assert tautological return values from hardcoded mock handlers.
+Do not write mock HTTP servers that pretend to be Bitbucket Server in unit tests for 1-to-1 pass-through methods. Unit tests in internal/cli/cmd/ and internal/services/ should verify flag validation, required arguments, conflicting options, formatting (--json vs human), and domain error mapping. When client-side logic exists (e.g. stream filtering, page traversal, version resolution), test the algorithm directly with in-memory data structures rather than spinning up TCP mock listeners. When a feature needs verification against the Bitbucket REST API or Git transport, add a live test in tests/integration/live/. Never pad coverage with mock tests that assert tautological return values from hardcoded mock handlers.
 
 ## Rationale
 
