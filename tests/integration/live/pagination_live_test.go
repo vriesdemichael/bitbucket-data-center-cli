@@ -31,15 +31,17 @@ func TestLiveCommitPaginationOverRealStream(t *testing.T) {
 	}
 
 	var envelope struct {
-		Version string           `json:"version"`
-		Data    []map[string]any `json:"data"`
+		Version string `json:"version"`
+		Data    struct {
+			Commits []map[string]any `json:"commits"`
+		} `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(output), &envelope); err != nil {
 		t.Fatalf("failed to decode commit list output: %v\nraw: %s", err, output)
 	}
 
-	if len(envelope.Data) != 28 {
-		t.Fatalf("expected exactly 28 commits across paginated stream, got %d", len(envelope.Data))
+	if len(envelope.Data.Commits) != 28 {
+		t.Fatalf("expected exactly 28 commits across paginated stream, got %d", len(envelope.Data.Commits))
 	}
 
 	// Fetch 10 commits: must truncate on page 1 without requesting page 2
@@ -49,15 +51,17 @@ func TestLiveCommitPaginationOverRealStream(t *testing.T) {
 	}
 
 	var envelopeShort struct {
-		Version string           `json:"version"`
-		Data    []map[string]any `json:"data"`
+		Version string `json:"version"`
+		Data    struct {
+			Commits []map[string]any `json:"commits"`
+		} `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(outputShort), &envelopeShort); err != nil {
 		t.Fatalf("failed to decode short commit list output: %v", err)
 	}
 
-	if len(envelopeShort.Data) != 10 {
-		t.Fatalf("expected exactly 10 commits for short query, got %d", len(envelopeShort.Data))
+	if len(envelopeShort.Data.Commits) != 10 {
+		t.Fatalf("expected exactly 10 commits for short query, got %d", len(envelopeShort.Data.Commits))
 	}
 }
 
@@ -90,14 +94,16 @@ func TestLiveBranchPaginationOverRealStream(t *testing.T) {
 	}
 
 	var envelope struct {
-		Version string           `json:"version"`
-		Data    []map[string]any `json:"data"`
+		Version string `json:"version"`
+		Data    struct {
+			Branches []map[string]any `json:"branches"`
+		} `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(output), &envelope); err != nil {
 		t.Fatalf("failed to decode branch list output: %v\nraw: %s", err, output)
 	}
 
-	if len(envelope.Data) != 26 {
-		t.Fatalf("expected exactly 26 branches across paginated stream, got %d", len(envelope.Data))
+	if len(envelope.Data.Branches) != 26 {
+		t.Fatalf("expected exactly 26 branches across paginated stream, got %d", len(envelope.Data.Branches))
 	}
 }

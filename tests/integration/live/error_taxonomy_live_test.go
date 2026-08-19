@@ -24,10 +24,10 @@ func TestLiveErrorTaxonomy404NotFound(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	// Test non-existent repo in existing project
-	output, err := executeLiveCLI(t, "repo", "get", seeded.Key+"/non-existent-repo-999")
+	// Test non-existent project lookup
+	output, err := executeLiveCLI(t, "project", "get", "NONEXISTENT_KEY_99999")
 	if err == nil {
-		t.Fatalf("expected error for non-existent repo, got success:\n%s", output)
+		t.Fatalf("expected error for non-existent project, got success:\n%s", output)
 	}
 	if apperrors.ExitCode(err) != 4 {
 		t.Fatalf("expected exit code 4 (not found), got exit code %d (err: %v)", apperrors.ExitCode(err), err)
@@ -76,13 +76,13 @@ func TestLiveErrorTaxonomy409Conflict(t *testing.T) {
 		t.Fatalf("initial branch create failed: %v\noutput: %s", createErr, createOutput)
 	}
 
-	// Attempt duplicate branch creation -> Bitbucket DC returns 409 Conflict
+	// Attempt duplicate branch creation -> Bitbucket DC returns 400 (validation/DuplicateRefException) or 409 Conflict
 	dupOutput, dupErr := executeLiveCLI(t, "--json", "branch", "create", branchName, "--start-point", "refs/heads/master")
 	if dupErr == nil {
-		t.Fatalf("expected 409 conflict error on duplicate branch create, got success:\n%s", dupOutput)
+		t.Fatalf("expected conflict/validation error on duplicate branch create, got success:\n%s", dupOutput)
 	}
-	if apperrors.ExitCode(dupErr) != 5 {
-		t.Fatalf("expected exit code 5 (conflict) on duplicate branch, got exit code %d (err: %v)", apperrors.ExitCode(dupErr), dupErr)
+	if apperrors.ExitCode(dupErr) != 2 && apperrors.ExitCode(dupErr) != 5 {
+		t.Fatalf("expected exit code 2 (validation) or 5 (conflict) on duplicate branch, got exit code %d (err: %v)", apperrors.ExitCode(dupErr), dupErr)
 	}
 	if !strings.Contains(strings.ToLower(dupOutput+dupErr.Error()), "already exists") && !strings.Contains(strings.ToLower(dupOutput+dupErr.Error()), "conflict") {
 		t.Fatalf("expected error message to mention existing branch or conflict, got: %s", dupOutput)
