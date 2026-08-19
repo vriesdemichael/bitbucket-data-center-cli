@@ -71,13 +71,13 @@ func TestLiveErrorTaxonomy409Conflict(t *testing.T) {
 	branchName := "feature/dup-test"
 
 	// Create branch first time -> must succeed
-	createOutput, createErr := executeLiveCLI(t, "--json", "branch", "create", branchName, "--target", "refs/heads/master")
+	createOutput, createErr := executeLiveCLI(t, "--json", "branch", "create", branchName, "--start-point", "refs/heads/master")
 	if createErr != nil {
 		t.Fatalf("initial branch create failed: %v\noutput: %s", createErr, createOutput)
 	}
 
-	// Create same branch second time -> Bitbucket DC returns 409 Conflict
-	dupOutput, dupErr := executeLiveCLI(t, "--json", "branch", "create", branchName, "--target", "refs/heads/master")
+	// Attempt duplicate branch creation -> Bitbucket DC returns 409 Conflict
+	dupOutput, dupErr := executeLiveCLI(t, "--json", "branch", "create", branchName, "--start-point", "refs/heads/master")
 	if dupErr == nil {
 		t.Fatalf("expected 409 conflict error on duplicate branch create, got success:\n%s", dupOutput)
 	}

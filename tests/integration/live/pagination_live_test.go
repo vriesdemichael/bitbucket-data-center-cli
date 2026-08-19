@@ -77,7 +77,7 @@ func TestLiveBranchPaginationOverRealStream(t *testing.T) {
 	// Create 28 branches to exceed Bitbucket DC's default page size of 25
 	for index := 1; index <= 28; index++ {
 		branchName := fmt.Sprintf("feature/paginated-%02d", index)
-		createOutput, createErr := executeLiveCLI(t, "--json", "branch", "create", branchName, "--target", "refs/heads/master")
+		createOutput, createErr := executeLiveCLI(t, "--json", "branch", "create", branchName, "--start-point", "refs/heads/master")
 		if createErr != nil {
 			t.Fatalf("create branch %s failed: %v\noutput: %s", branchName, createErr, createOutput)
 		}
