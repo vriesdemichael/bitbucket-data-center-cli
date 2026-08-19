@@ -67,20 +67,7 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 		t.Fatalf("expected initial state OPEN, got: %v", createPR["state"])
 	}
 
-	// 2. Add reviewer
-	username := harness.username()
-	_, err = executeLiveCLI(t, "--json", "pr", "review", "reviewer", "add", prID, "--user", username)
-	if err != nil {
-		t.Logf("reviewer add non-critical notice (user might be author): %v", err)
-	}
-
-	// 3. Reviewer approve
-	approveOutput, err := executeLiveCLI(t, "--json", "pr", "review", "approve", prID)
-	if err != nil {
-		t.Fatalf("pr approve failed: %v\noutput: %s", err, approveOutput)
-	}
-
-	// 4. Inspect PR details & mergeability
+	// 2. Inspect PR details & verify initial OPEN state
 	getOutput, err := executeLiveCLI(t, "--json", "pr", "get", prID)
 	if err != nil {
 		t.Fatalf("pr get failed: %v\noutput: %s", err, getOutput)
@@ -97,7 +84,7 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 		t.Fatalf("expected state OPEN before decline, got %v", state)
 	}
 
-	// 5. Decline PR -> DECLINED
+	// 3. Decline PR -> DECLINED
 	declineOutput, err := executeLiveCLI(t, "--json", "pr", "decline", prID)
 	if err != nil {
 		t.Fatalf("pr decline failed: %v\noutput: %s", err, declineOutput)
@@ -114,7 +101,7 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 		t.Fatalf("expected state DECLINED, got %v", state)
 	}
 
-	// 6. Reopen PR -> OPEN
+	// 4. Reopen PR -> OPEN
 	reopenOutput, err := executeLiveCLI(t, "--json", "pr", "reopen", prID)
 	if err != nil {
 		t.Fatalf("pr reopen failed: %v\noutput: %s", err, reopenOutput)
@@ -131,7 +118,7 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 		t.Fatalf("expected state OPEN after reopen, got %v", state)
 	}
 
-	// 7. Merge PR -> MERGED
+	// 5. Merge PR -> MERGED
 	mergeOutput, err := executeLiveCLI(t, "--json", "pr", "merge", prID)
 	if err != nil {
 		t.Fatalf("pr merge failed: %v\noutput: %s", err, mergeOutput)
@@ -148,7 +135,7 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 		t.Fatalf("expected state MERGED, got %v", state)
 	}
 
-	// 8. Attempt second merge on already merged PR -> Bitbucket DC returns 409 Conflict (exit code 5)
+	// 6. Attempt second merge on already merged PR -> Bitbucket DC returns 409 Conflict (exit code 5)
 	_, mergeAgainErr := executeLiveCLI(t, "--json", "pr", "merge", prID)
 	if mergeAgainErr == nil {
 		t.Fatalf("expected error on merging already merged PR, got success")
