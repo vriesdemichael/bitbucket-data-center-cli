@@ -111,10 +111,7 @@ func TestLiveCLIProjectPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("seed project failed: %v", err)
 	}
 
-	username := strings.TrimSpace(harness.config.BitbucketUsername)
-	if username == "" {
-		t.Skip("no username configured for project permission dry-run live test")
-	}
+	username := harness.username()
 
 	configureLiveCLIEnv(t, harness, seeded.Key, seeded.Repos[0].Slug)
 

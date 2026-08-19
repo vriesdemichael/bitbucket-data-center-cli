@@ -87,10 +87,7 @@ func TestLiveRepoSettingsGrantUserPermission(t *testing.T) {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
 
-	username := harness.config.BitbucketUsername
-	if username == "" {
-		t.Skip("no username configured for permission grant live test")
-	}
+	username := harness.username()
 
 	if err := service.GrantRepositoryUserPermission(ctx, reposettings.RepositoryRef{ProjectKey: seeded.Key, Slug: seeded.Repos[0].Slug}, username, "REPO_WRITE"); err != nil {
 		t.Fatalf("grant repository permission failed: %v", err)
@@ -164,9 +161,8 @@ func TestLiveRepoSettingsDeleteWebhook(t *testing.T) {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
 
-	name := fmt.Sprintf("lt-webhook-delete-%d", time.Now().UnixNano()%100000)
 	payload, err := service.CreateRepositoryWebhook(ctx, reposettings.RepositoryRef{ProjectKey: seeded.Key, Slug: seeded.Repos[0].Slug}, reposettings.WebhookCreateInput{
-		Name:   name,
+		Name:   "live-test-webhook",
 		URL:    "http://localhost:65535/hook",
 		Events: []string{"repo:refs_changed"},
 		Active: true,
@@ -177,7 +173,7 @@ func TestLiveRepoSettingsDeleteWebhook(t *testing.T) {
 
 	webhookID, ok := extractWebhookID(payload)
 	if !ok {
-		t.Skip("created webhook payload did not include id; skipping delete validation")
+		t.Fatalf("created webhook payload did not include a valid id: %#v", payload)
 	}
 
 	if err := service.DeleteRepositoryWebhook(ctx, reposettings.RepositoryRef{ProjectKey: seeded.Key, Slug: seeded.Repos[0].Slug}, webhookID); err != nil {
@@ -212,20 +208,34 @@ func TestLiveRepoSettingsUpdatePullRequestRequiredApprovers(t *testing.T) {
 }
 
 func extractWebhookID(payload any) (string, bool) {
-	object, ok := payload.(map[string]any)
-	if !ok {
-		return "", false
-	}
-
-	switch value := object["id"].(type) {
-	case string:
-		if value == "" {
+	switch p := payload.(type) {
+	case map[string]any:
+		switch value := p["id"].(type) {
+		case string:
+			return strings.TrimSpace(value), strings.TrimSpace(value) != ""
+		case float64:
+			return strconv.FormatInt(int64(value), 10), true
+		case int:
+			return strconv.Itoa(value), true
+		case int32:
+			return strconv.FormatInt(int64(value), 10), true
+		case int64:
+			return strconv.FormatInt(value, 10), true
+		case json.Number:
+			return value.String(), value.String() != ""
+		default:
 			return "", false
 		}
-		return value, true
-	case float64:
-		return strconv.FormatInt(int64(value), 10), true
 	default:
-		return "", false
+		// Try JSON marshaling/unmarshaling fallback for generated struct types
+		data, err := json.Marshal(payload)
+		if err != nil {
+			return "", false
+		}
+		var m map[string]any
+		if err := json.Unmarshal(data, &m); err != nil {
+			return "", false
+		}
+		return extractWebhookID(m)
 	}
 }
