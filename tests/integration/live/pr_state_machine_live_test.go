@@ -19,6 +19,14 @@ func extractPRData(data map[string]any) map[string]any {
 	return data
 }
 
+func extractPRVersion(data map[string]any) string {
+	pr := extractPRData(data)
+	if v, ok := pr["version"]; ok && v != nil {
+		return fmt.Sprintf("%v", v)
+	}
+	return "0"
+}
+
 func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -83,7 +91,7 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if state, ok := getPR["state"].(string); !ok || state != "OPEN" {
 		t.Fatalf("expected state OPEN before decline, got %v", state)
 	}
-	prVersion := fmt.Sprintf("%v", getPR["version"])
+	prVersion := extractPRVersion(getEnvelope.Data)
 
 	// 3. Decline PR -> DECLINED
 	declineOutput, err := executeLiveCLI(t, "--json", "pr", "decline", prID, "--version", prVersion)
@@ -101,7 +109,7 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if state, ok := declinePR["state"].(string); !ok || state != "DECLINED" {
 		t.Fatalf("expected state DECLINED, got %v", state)
 	}
-	declineVersion := fmt.Sprintf("%v", declinePR["version"])
+	declineVersion := extractPRVersion(declineEnvelope.Data)
 
 	// 4. Reopen PR -> OPEN
 	reopenOutput, err := executeLiveCLI(t, "--json", "pr", "reopen", prID, "--version", declineVersion)
@@ -119,7 +127,7 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if state, ok := reopenPR["state"].(string); !ok || state != "OPEN" {
 		t.Fatalf("expected state OPEN after reopen, got %v", state)
 	}
-	reopenVersion := fmt.Sprintf("%v", reopenPR["version"])
+	reopenVersion := extractPRVersion(reopenEnvelope.Data)
 
 	// 5. Merge PR -> MERGED
 	mergeOutput, err := executeLiveCLI(t, "--json", "pr", "merge", prID, "--version", reopenVersion)
@@ -137,9 +145,10 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if state, ok := mergePR["state"].(string); !ok || state != "MERGED" {
 		t.Fatalf("expected state MERGED, got %v", state)
 	}
+	mergeVersion := extractPRVersion(mergeEnvelope.Data)
 
 	// 6. Attempt second merge on already merged PR -> Bitbucket DC returns 409 Conflict (exit code 5)
-	_, mergeAgainErr := executeLiveCLI(t, "--json", "pr", "merge", prID, "--version", fmt.Sprintf("%v", mergePR["version"]))
+	_, mergeAgainErr := executeLiveCLI(t, "--json", "pr", "merge", prID, "--version", mergeVersion)
 	if mergeAgainErr == nil {
 		t.Fatalf("expected error on merging already merged PR, got success")
 	}
