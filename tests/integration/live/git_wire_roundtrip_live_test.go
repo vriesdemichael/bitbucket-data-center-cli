@@ -32,24 +32,9 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 		t.Fatalf("repo clone to client-1 failed: %v\noutput: %s", err, cloneOutput)
 	}
 
-	// 2. In client-1, create a feature branch, author commit, and git push
-	_ = runGit(workDir1, "config", "user.name", "bb-live-test")
-	_ = runGit(workDir1, "config", "user.email", "bb-live-test@example.local")
-	if err := runGit(workDir1, "checkout", "-b", "feature/hybrid-test"); err != nil {
-		t.Fatalf("git checkout -b failed: %v", err)
-	}
-	proofFile := filepath.Join(workDir1, "hybrid-proof.txt")
-	if err := os.WriteFile(proofFile, []byte("hybrid-roundtrip-verified\n"), 0o644); err != nil {
-		t.Fatalf("write proof file failed: %v", err)
-	}
-	if err := runGit(workDir1, "add", "hybrid-proof.txt"); err != nil {
-		t.Fatalf("git add failed: %v", err)
-	}
-	if err := runGit(workDir1, "commit", "-m", "add hybrid proof file"); err != nil {
-		t.Fatalf("git commit failed: %v", err)
-	}
-	if err := runGit(workDir1, "push", "-u", "origin", "feature/hybrid-test"); err != nil {
-		t.Fatalf("git push feature/hybrid-test failed: %v", err)
+	// 2. Push commit to feature branch
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, "feature/hybrid-test", "hybrid-proof.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
 	}
 
 	// 3. Create PR via bb pr create (REST API)
@@ -103,15 +88,12 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 		t.Fatalf("pr merge failed: %v\noutput: %s", err, mergeOutput)
 	}
 
-	// 6. In client-1, switch to master and git pull -> verify commit is now on master
-	if err := runGit(workDir1, "checkout", "master"); err != nil {
-		t.Fatalf("checkout master in client-1 failed: %v", err)
+	// 6. In client-3 (fresh clone after merge), verify commit is now on master
+	workDir3 := filepath.Join(t.TempDir(), "client-3")
+	if _, err := executeLiveCLI(t, "repo", "clone", seeded.Key+"/"+repo.Slug, workDir3); err != nil {
+		t.Fatalf("repo clone to client-3 failed: %v", err)
 	}
-	if err := runGit(workDir1, "pull", "origin", "master"); err != nil {
-		t.Fatalf("git pull master in client-1 failed: %v", err)
-	}
-
-	if _, err := os.Stat(filepath.Join(workDir1, "hybrid-proof.txt")); err != nil {
-		t.Fatalf("expected hybrid-proof.txt on master in client-1 after merge & pull: %v", err)
+	if _, err := os.Stat(filepath.Join(workDir3, "hybrid-proof.txt")); err != nil {
+		t.Fatalf("expected hybrid-proof.txt on master in client-3 after merge: %v", err)
 	}
 }

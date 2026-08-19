@@ -36,28 +36,8 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 
 	// Create branch with a commit to open PR against master
 	branchName := "feature/lifecycle-test"
-	workDir := filepath.Join(t.TempDir(), "client")
-	if _, err := executeLiveCLI(t, "repo", "clone", seeded.Key+"/"+repo.Slug, workDir); err != nil {
-		t.Fatalf("clone failed: %v", err)
-	}
-
-	testFile := filepath.Join(workDir, "lifecycle.txt")
-	if err := os.WriteFile(testFile, []byte("state machine test\n"), 0o600); err != nil {
-		t.Fatalf("write file failed: %v", err)
-	}
-	_ = runGit(workDir, "config", "user.name", "bb-live-test")
-	_ = runGit(workDir, "config", "user.email", "bb-live-test@example.local")
-	if err := runGit(workDir, "checkout", "-b", branchName); err != nil {
-		t.Fatalf("git checkout -b failed: %v", err)
-	}
-	if err := runGit(workDir, "add", "lifecycle.txt"); err != nil {
-		t.Fatalf("git add failed: %v", err)
-	}
-	if err := runGit(workDir, "commit", "-m", "add lifecycle test file"); err != nil {
-		t.Fatalf("git commit failed: %v", err)
-	}
-	if err := runGit(workDir, "push", "origin", branchName); err != nil {
-		t.Fatalf("push commit on feature branch failed: %v", err)
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branchName, "lifecycle.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
 	}
 
 	// 1. Create PR -> OPEN
