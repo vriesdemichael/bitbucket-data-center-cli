@@ -55,3 +55,38 @@ func TestIsNonRepositoryError(t *testing.T) {
 		t.Fatalf("expected false for other error")
 	}
 }
+
+func FuzzParseBitbucketRemote(f *testing.F) {
+	f.Add("https://bitbucket.example.com/scm/PROJ/repo.git")
+	f.Add("http://localhost:7990/bitbucket/scm/PROJ/repo.git")
+	f.Add("git@bitbucket.example.com:PROJ/repo.git")
+	f.Add("ssh://git@bitbucket.example.com:7999/PROJ/repo.git")
+	f.Add("invalid")
+	f.Add("")
+
+	f.Fuzz(func(t *testing.T, rawURL string) {
+		host, proj, slug, ok := ParseBitbucketRemote(rawURL)
+		if ok {
+			if host == "" || proj == "" || slug == "" {
+				t.Fatalf("ParseBitbucketRemote(%q) returned ok=true with empty fields: host=%q, proj=%q, slug=%q", rawURL, host, proj, slug)
+			}
+		}
+	})
+}
+
+func FuzzParseBitbucketPath(f *testing.F) {
+	f.Add("/scm/PROJ/repo.git")
+	f.Add("/bitbucket/scm/PROJ/repo.git")
+	f.Add("PROJ/repo.git")
+	f.Add("/projects/PROJ/repos/repo/browse")
+	f.Add("")
+
+	f.Fuzz(func(t *testing.T, path string) {
+		proj, slug, ok := ParseBitbucketPath(path)
+		if ok {
+			if proj == "" || slug == "" {
+				t.Fatalf("ParseBitbucketPath(%q) returned ok=true with empty fields: proj=%q, slug=%q", path, proj, slug)
+			}
+		}
+	})
+}

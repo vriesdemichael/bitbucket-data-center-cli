@@ -75,3 +75,26 @@ func TestResolve(t *testing.T) {
 		}
 	})
 }
+
+func FuzzParse(f *testing.F) {
+	// Seed initial corpus
+	f.Add("PROJ/repo")
+	f.Add("PROJ/sub/repo")
+	f.Add("/repo")
+	f.Add("PROJ/")
+	f.Add("")
+	f.Add("   ")
+	f.Add("PROJECT_KEY/my-awesome-repo")
+
+	f.Fuzz(func(t *testing.T, input string) {
+		proj, slug, err := Parse(input)
+		if err == nil {
+			if proj == "" || slug == "" {
+				t.Fatalf("Parse(%q) returned empty components on success: proj=%q, slug=%q", input, proj, slug)
+			}
+			if len(proj) > len(input) || len(slug) > len(input) {
+				t.Fatalf("Parse(%q) returned component larger than input: proj=%q, slug=%q", input, proj, slug)
+			}
+		}
+	})
+}
