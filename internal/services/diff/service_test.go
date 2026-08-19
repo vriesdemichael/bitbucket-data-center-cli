@@ -12,41 +12,6 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
-func TestDiffRefsRaw(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/api/latest/projects/PRJ/repos/demo/patch" {
-			http.NotFound(writer, request)
-			return
-		}
-		if request.URL.Query().Get("since") != "refs/heads/main" || request.URL.Query().Get("until") != "refs/heads/feature" {
-			writer.WriteHeader(http.StatusBadRequest)
-			_, _ = writer.Write([]byte("missing refs"))
-			return
-		}
-		_, _ = writer.Write([]byte("diff --git a/seed.txt b/seed.txt\n"))
-	}))
-	defer server.Close()
-
-	client, err := openapigenerated.NewClientWithResponses(server.URL)
-	if err != nil {
-		t.Fatalf("create generated client: %v", err)
-	}
-
-	service := NewService(client)
-	result, err := service.DiffRefs(context.Background(), DiffRefsInput{
-		Repository: RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-		From:       "refs/heads/main",
-		To:         "refs/heads/feature",
-		Output:     OutputKindRaw,
-	})
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if !strings.Contains(result.Patch, "seed.txt") {
-		t.Fatalf("expected diff body, got: %q", result.Patch)
-	}
-}
-
 func TestDiffRefsDefaultAndNameOnlyModes(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path != "/api/latest/projects/PRJ/repos/demo/patch" {

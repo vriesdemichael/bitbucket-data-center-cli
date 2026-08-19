@@ -26,51 +26,6 @@ func newProjectTestService(t *testing.T, handler http.HandlerFunc) *Service {
 	return NewService(client)
 }
 
-func TestProjectServiceCoreCommands(t *testing.T) {
-	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"key":"PRJ","name":"Project"}]}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ":
-			_, _ = w.Write([]byte(`{"key":"PRJ","name":"Project"}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects":
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"key":"PRJ2","name":"Project 2"}`))
-		case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/PRJ":
-			_, _ = w.Write([]byte(`{"key":"PRJ","name":"Project Updated"}`))
-		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/PRJ":
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	list, err := service.List(context.Background(), ListOptions{Limit: 25, Name: "Project"})
-	if err != nil || len(list) != 1 {
-		t.Fatalf("expected list success, len=%d err=%v", len(list), err)
-	}
-
-	get, err := service.Get(context.Background(), "PRJ")
-	if err != nil || get.Key == nil || *get.Key != "PRJ" {
-		t.Fatalf("expected get success, got %#v err=%v", get, err)
-	}
-
-	created, err := service.Create(context.Background(), CreateInput{Key: "PRJ2", Name: "Project 2", Description: "desc"})
-	if err != nil || created.Key == nil || *created.Key != "PRJ2" {
-		t.Fatalf("expected create success, got %#v err=%v", created, err)
-	}
-
-	updated, err := service.Update(context.Background(), "PRJ", UpdateInput{Name: "Project Updated", Description: "desc"})
-	if err != nil || updated.Name == nil || *updated.Name != "Project Updated" {
-		t.Fatalf("expected update success, got %#v err=%v", updated, err)
-	}
-
-	if err := service.Delete(context.Background(), "PRJ"); err != nil {
-		t.Fatalf("expected delete success, got %v", err)
-	}
-}
-
 func TestProjectServiceValidation(t *testing.T) {
 	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)

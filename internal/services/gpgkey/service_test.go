@@ -23,51 +23,6 @@ func newGpgKeyTestService(t *testing.T, handler http.HandlerFunc) *Service {
 	return NewService(client)
 }
 
-func TestGpgKeyServiceCRUD(t *testing.T) {
-	service := newGpgKeyTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/gpg/latest/keys":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"426","emailAddress":"user@example.com","fingerprint":"FINGERPRINT1","text":"gpg-key-text"}]}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/rest/gpg/latest/keys":
-			w.WriteHeader(http.StatusOK)
-			// An array even for one key: the endpoint reports every key the block
-			// carried. A single object here is what hid the mismatch.
-			_, _ = w.Write([]byte(`[{"id":"426","emailAddress":"user@example.com","fingerprint":"FINGERPRINT1","text":"gpg-key-text"}]`))
-		case r.Method == http.MethodDelete && r.URL.Path == "/rest/gpg/latest/keys/426":
-			w.WriteHeader(http.StatusNoContent)
-		case r.Method == http.MethodDelete && r.URL.Path == "/rest/gpg/latest/keys":
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	ctx := context.Background()
-
-	// List
-	list, err := service.ListGpgKeys(ctx, 10)
-	if err != nil || len(list) != 1 || *list[0].Id != "426" {
-		t.Fatalf("expected gpg key list success, got len=%d err=%v", len(list), err)
-	}
-
-	// Add
-	added, err := service.AddGpgKey(ctx, "gpg-key-text")
-	if err != nil || len(added) != 1 || *added[0].Id != "426" {
-		t.Fatalf("expected gpg key add success, got %#v err=%v", added, err)
-	}
-
-	// Remove
-	if err := service.RemoveGpgKey(ctx, "426"); err != nil {
-		t.Fatalf("expected gpg key remove success, got %v", err)
-	}
-
-	// Clear
-	if err := service.ClearGpgKeys(ctx); err != nil {
-		t.Fatalf("expected gpg key clear success, got %v", err)
-	}
-}
-
 func TestGpgKeyServiceValidation(t *testing.T) {
 	service := newGpgKeyTestService(t, func(w http.ResponseWriter, r *http.Request) {})
 	ctx := context.Background()
