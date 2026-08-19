@@ -52,8 +52,8 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 
 	// 3. Create PR via bb pr create (REST API)
 	prCreateOutput, err := executeLiveCLI(t, "--json", "pr", "create",
-		"--from", "feature/hybrid-test",
-		"--to", "refs/heads/master",
+		"--from-ref", "feature/hybrid-test",
+		"--to-ref", "refs/heads/master",
 		"--title", "Hybrid Roundtrip PR",
 	)
 	if err != nil {
@@ -67,7 +67,11 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 	if err := json.Unmarshal([]byte(prCreateOutput), &createEnvelope); err != nil {
 		t.Fatalf("decode pr create output failed: %v", err)
 	}
-	prID := fmt.Sprintf("%v", createEnvelope.Data["id"])
+	prData := createEnvelope.Data
+	if inner, ok := createEnvelope.Data["pull_request"].(map[string]any); ok {
+		prData = inner
+	}
+	prID := fmt.Sprintf("%v", prData["id"])
 
 	// 4. In client-2 (separate clone), run bb pr checkout
 	workDir2 := filepath.Join(t.TempDir(), "client-2")

@@ -6,11 +6,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
+
+func extractPRData(data map[string]any) map[string]any {
+	if inner, ok := data["pull_request"].(map[string]any); ok {
+		return inner
+	}
+	return data
+}
 
 func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	harness := newLiveHarness(t)
@@ -21,19 +30,38 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
+
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	// Push a distinct commit on a feature branch
-	branchName := "feature/state-machine"
-	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branchName, "feature.txt"); err != nil {
+	// Create branch with a commit to open PR against master
+	branchName := "feature/lifecycle-test"
+	workDir := filepath.Join(t.TempDir(), "client")
+	if _, err := executeLiveCLI(t, "repo", "clone", seeded.Key+"/"+repo.Slug, workDir); err != nil {
+		t.Fatalf("clone failed: %v", err)
+	}
+
+	testFile := filepath.Join(workDir, "lifecycle.txt")
+	if err := os.WriteFile(testFile, []byte("state machine test\n"), 0o600); err != nil {
+		t.Fatalf("write file failed: %v", err)
+	}
+	if err := runGit(workDir, "checkout", "-b", branchName); err != nil {
+		t.Fatalf("git checkout -b failed: %v", err)
+	}
+	if err := runGit(workDir, "add", "lifecycle.txt"); err != nil {
+		t.Fatalf("git add failed: %v", err)
+	}
+	if err := runGit(workDir, "commit", "-m", "add lifecycle test file"); err != nil {
+		t.Fatalf("git commit failed: %v", err)
+	}
+	if err := runGit(workDir, "push", "origin", branchName); err != nil {
 		t.Fatalf("push commit on feature branch failed: %v", err)
 	}
 
 	// 1. Create PR -> OPEN
 	createOutput, err := executeLiveCLI(t, "--json", "pr", "create",
-		"--from", branchName,
-		"--to", "refs/heads/master",
+		"--from-ref", branchName,
+		"--to-ref", "refs/heads/master",
 		"--title", "State Machine Lifecycle PR",
 	)
 	if err != nil {
@@ -48,14 +76,15 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 		t.Fatalf("decode pr create output failed: %v", err)
 	}
 
-	prIDRaw, ok := createEnvelope.Data["id"]
+	createPR := extractPRData(createEnvelope.Data)
+	prIDRaw, ok := createPR["id"]
 	if !ok {
 		t.Fatalf("expected id in create output, got: %#v", createEnvelope.Data)
 	}
 	prID := fmt.Sprintf("%v", prIDRaw)
 
-	if state, ok := createEnvelope.Data["state"].(string); !ok || state != "OPEN" {
-		t.Fatalf("expected initial state OPEN, got: %v", createEnvelope.Data["state"])
+	if state, ok := createPR["state"].(string); !ok || state != "OPEN" {
+		t.Fatalf("expected initial state OPEN, got: %v", createPR["state"])
 	}
 
 	// 2. Add reviewer
@@ -83,7 +112,8 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if err := json.Unmarshal([]byte(getOutput), &getEnvelope); err != nil {
 		t.Fatalf("decode pr get output failed: %v", err)
 	}
-	if state, ok := getEnvelope.Data["state"].(string); !ok || state != "OPEN" {
+	getPR := extractPRData(getEnvelope.Data)
+	if state, ok := getPR["state"].(string); !ok || state != "OPEN" {
 		t.Fatalf("expected state OPEN before decline, got %v", state)
 	}
 
@@ -99,7 +129,8 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if err := json.Unmarshal([]byte(declineOutput), &declineEnvelope); err != nil {
 		t.Fatalf("decode pr decline output failed: %v", err)
 	}
-	if state, ok := declineEnvelope.Data["state"].(string); !ok || state != "DECLINED" {
+	declinePR := extractPRData(declineEnvelope.Data)
+	if state, ok := declinePR["state"].(string); !ok || state != "DECLINED" {
 		t.Fatalf("expected state DECLINED, got %v", state)
 	}
 
@@ -115,7 +146,8 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if err := json.Unmarshal([]byte(reopenOutput), &reopenEnvelope); err != nil {
 		t.Fatalf("decode pr reopen output failed: %v", err)
 	}
-	if state, ok := reopenEnvelope.Data["state"].(string); !ok || state != "OPEN" {
+	reopenPR := extractPRData(reopenEnvelope.Data)
+	if state, ok := reopenPR["state"].(string); !ok || state != "OPEN" {
 		t.Fatalf("expected state OPEN after reopen, got %v", state)
 	}
 
@@ -131,7 +163,8 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if err := json.Unmarshal([]byte(mergeOutput), &mergeEnvelope); err != nil {
 		t.Fatalf("decode pr merge output failed: %v", err)
 	}
-	if state, ok := mergeEnvelope.Data["state"].(string); !ok || state != "MERGED" {
+	mergePR := extractPRData(mergeEnvelope.Data)
+	if state, ok := mergePR["state"].(string); !ok || state != "MERGED" {
 		t.Fatalf("expected state MERGED, got %v", state)
 	}
 
