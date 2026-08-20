@@ -32,7 +32,7 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":42,"title":"Test PR","state":"OPEN","open":true,"fromRef":{"displayId":"feature/x"},"toRef":{"displayId":"main"}}]}`))
 
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42":
-			_, _ = w.Write([]byte(`{"id":42,"title":"Test PR","description":"Desc","state":"OPEN","open":true,"version":1,"fromRef":{"displayId":"feature/x"},"toRef":{"displayId":"main"},"reviewers":[{"user":{"name":"alice","displayName":"Alice"},"approved":false,"status":"UNAPPROVED"}]}`))
+			_, _ = w.Write([]byte(`{"id":42,"title":"Test PR","description":"Desc","state":"OPEN","open":true,"version":1,"fromRef":{"displayId":"feature/x","latestCommit":"c123"},"toRef":{"displayId":"main"},"reviewers":[{"user":{"name":"alice","displayName":"Alice"},"approved":false,"status":"UNAPPROVED"}]}`))
 
 		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests":
 			_, _ = w.Write([]byte(`{"id":43,"title":"Created PR","state":"OPEN","open":true,"fromRef":{"displayId":"feature/y"},"toRef":{"displayId":"main"}}`))
@@ -97,6 +97,30 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 
 		case r.Method == http.MethodDelete && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/auto-merge":
 			w.WriteHeader(http.StatusNoContent)
+
+		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/watch":
+			w.WriteHeader(http.StatusNoContent)
+
+		case r.Method == http.MethodDelete && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/watch":
+			w.WriteHeader(http.StatusNoContent)
+
+		case r.Method == http.MethodGet && path == "/rest/jira/latest/projects/PRJ/repos/demo/pull-requests/42/issues":
+			_, _ = w.Write([]byte(`[{"key":"PROJ-123","url":"https://jira.example.com/browse/PROJ-123"}]`))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/participants":
+			_, _ = w.Write([]byte(`{"values":[{"name":"alice","displayName":"Alice","emailAddress":"alice@example.com","active":true}]}`))
+
+		case r.Method == http.MethodGet && path == "/rest/default-reviewers/latest/projects/PRJ/repos/demo/reviewers":
+			_, _ = w.Write([]byte(`[{"id":1,"reviewers":[{"name":"bob","displayName":"Bob"}]}]`))
+
+		case r.Method == http.MethodGet && strings.Contains(path, "/projects/PRJ/repos/demo/pull-requests/42/rebase"):
+			_, _ = w.Write([]byte(`{"canRebase":true}`))
+
+		case r.Method == http.MethodPost && strings.Contains(path, "/projects/PRJ/repos/demo/pull-requests/42/rebase"):
+			_, _ = w.Write([]byte(`{"id":42,"title":"Test PR","state":"OPEN","open":true}`))
+
+		case r.Method == http.MethodGet && strings.Contains(path, "/build-status/"):
+			_, _ = w.Write([]byte(`{"values":[{"key":"ci/build","state":"SUCCESSFUL","url":"https://ci.example.com"}]}`))
 
 		default:
 			http.NotFound(w, r)
@@ -400,5 +424,186 @@ func TestPRAutoMergeEnableAndDisable(t *testing.T) {
 	}
 	if !strings.Contains(out, "Disabled auto-merge on pull request #42") {
 		t.Fatalf("expected disable confirmation, got:\n%s", out)
+	}
+}
+
+func TestPRWatchAndUnwatch(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Watch human mode
+	out, err := executePr(t, server.URL, "watch", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on watch: %v", err)
+	}
+	if !strings.Contains(out, "Watching pull request #42") {
+		t.Fatalf("expected Watching confirmation, got: %s", out)
+	}
+
+	// Watch JSON mode
+	out, err = executePr(t, server.URL, "--json", "watch", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on watch json: %v", err)
+	}
+	if !strings.Contains(out, `"watched": true`) && !strings.Contains(out, `"watched":true`) {
+		t.Fatalf("expected watched: true in json, got: %s", out)
+	}
+
+	// Watch dry-run mode
+	out, err = executePr(t, server.URL, "--dry-run", "watch", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on watch dry-run: %v", err)
+	}
+
+	// Unwatch human mode
+	out, err = executePr(t, server.URL, "unwatch", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on unwatch: %v", err)
+	}
+	if !strings.Contains(out, "Unwatching pull request #42") {
+		t.Fatalf("expected Unwatching confirmation, got: %s", out)
+	}
+
+	// Unwatch JSON mode
+	out, err = executePr(t, server.URL, "--json", "unwatch", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on unwatch json: %v", err)
+	}
+	if !strings.Contains(out, `"watched": false`) && !strings.Contains(out, `"watched":false`) {
+		t.Fatalf("expected watched: false in json, got: %s", out)
+	}
+
+	// Unwatch dry-run mode
+	out, err = executePr(t, server.URL, "--dry-run", "unwatch", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on unwatch dry-run: %v", err)
+	}
+}
+
+func TestPRJiraIssues(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Human mode
+	out, err := executePr(t, server.URL, "jira", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on jira: %v", err)
+	}
+	if !strings.Contains(out, "PROJ-123") {
+		t.Fatalf("expected PROJ-123 in jira output: %s", out)
+	}
+
+	// JSON mode
+	out, err = executePr(t, server.URL, "--json", "jira", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on jira json: %v", err)
+	}
+	if !strings.Contains(out, "PROJ-123") {
+		t.Fatalf("expected PROJ-123 in jira json output: %s", out)
+	}
+}
+
+func TestPRParticipants(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Human mode
+	out, err := executePr(t, server.URL, "participants", "--search", "alice")
+	if err != nil {
+		t.Fatalf("unexpected error on participants: %v", err)
+	}
+	if !strings.Contains(out, "alice") {
+		t.Fatalf("expected alice in participants output: %s", out)
+	}
+
+	// JSON mode
+	out, err = executePr(t, server.URL, "--json", "participants", "--search", "alice")
+	if err != nil {
+		t.Fatalf("unexpected error on participants json: %v", err)
+	}
+	if !strings.Contains(out, "alice") {
+		t.Fatalf("expected alice in participants json output: %s", out)
+	}
+}
+
+func TestPRDefaultReviewers(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Human mode
+	out, err := executePr(t, server.URL, "default-reviewers")
+	if err != nil {
+		t.Fatalf("unexpected error on default-reviewers: %v", err)
+	}
+	if !strings.Contains(out, "bob") {
+		t.Fatalf("expected bob in default-reviewers output: %s", out)
+	}
+
+	// JSON mode
+	out, err = executePr(t, server.URL, "--json", "default-reviewers")
+	if err != nil {
+		t.Fatalf("unexpected error on default-reviewers json: %v", err)
+	}
+	if !strings.Contains(out, "bob") {
+		t.Fatalf("expected bob in default-reviewers json output: %s", out)
+	}
+}
+
+func TestPRRebase(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Dry run
+	out, err := executePr(t, server.URL, "--dry-run", "rebase", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on rebase dry run: %v", err)
+	}
+
+	// Real execution
+	out, err = executePr(t, server.URL, "rebase", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on rebase: %v", err)
+	}
+	if !strings.Contains(out, "Rebased pull request #42") {
+		t.Fatalf("expected Rebased confirmation, got: %s", out)
+	}
+}
+
+func TestPRActivity(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Human mode
+	out, err := executePr(t, server.URL, "activity", "list", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on activity list: %v", err)
+	}
+	if !strings.Contains(out, "Comment 1") && !strings.Contains(out, "COMMENTED") {
+		t.Fatalf("expected activity in output: %s", out)
+	}
+
+	// JSON mode
+	out, err = executePr(t, server.URL, "--json", "activity", "list", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on activity list json: %v", err)
+	}
+	if !strings.Contains(out, "activities") {
+		t.Fatalf("expected activities in json: %s", out)
+	}
+}
+
+func TestPRBuildStatus(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Human mode
+	out, err := executePr(t, server.URL, "build", "status", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on build status: %v", err)
+	}
+	if !strings.Contains(out, "SUCCESSFUL") && !strings.Contains(out, "ci/build") {
+		t.Fatalf("expected build status in output: %s", out)
+	}
+
+	// JSON mode
+	out, err = executePr(t, server.URL, "--json", "build", "status", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on build status json: %v", err)
+	}
+	if !strings.Contains(out, "statuses") {
+		t.Fatalf("expected statuses in json: %s", out)
 	}
 }

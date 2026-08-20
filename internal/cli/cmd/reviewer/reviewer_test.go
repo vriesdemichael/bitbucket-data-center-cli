@@ -15,12 +15,18 @@ import (
 )
 
 func TestReviewerConditionCommands(t *testing.T) {
+	emptyRepoConditions := false
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		path := r.URL.Path
 
 		switch {
 		case r.Method == http.MethodGet && path == "/rest/default-reviewers/latest/projects/PRJ/repos/repo1/conditions":
+			if emptyRepoConditions {
+				_, _ = w.Write([]byte(`[]`))
+				return
+			}
 			_, _ = w.Write([]byte(`[{"id":101,"requiredApprovals":1}]`))
 
 		case r.Method == http.MethodGet && path == "/rest/default-reviewers/latest/projects/PRJ/conditions":
@@ -98,7 +104,7 @@ func TestReviewerConditionCommands(t *testing.T) {
 	}
 	jsonEnabled = false
 
-	// 3. list project in human mode
+	// 3. list project in human mode and JSON mode
 	cmd = New(deps)
 	buf.Reset()
 	cmd.SetOut(buf)
@@ -110,20 +116,30 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if !strings.Contains(buf.String(), "1 conditions") {
 		t.Fatalf("expected 1 conditions in list output: %s", buf.String())
 	}
+	jsonEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "list", "--project", "PRJ"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on list project JSON: %v", err)
+	}
+	jsonEnabled = false
 
-	// 4. create condition on repo in dry-run mode
+	// 4. create condition on repo in dry-run mode (create vs conflict)
 	dryRunEnabled = true
 	cmd = New(deps)
 	buf.Reset()
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"condition", "create", `{"requiredApprovals":1}`, "--repo", "PRJ/repo1"})
+	cmd.SetArgs([]string{"condition", "create", `{"requiredApprovals":5}`, "--repo", "PRJ/repo1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on create condition repo dry-run: %v", err)
 	}
 	dryRunEnabled = false
 
-	// 5. create condition on repo
+	// 5. create condition on repo (real and JSON)
 	cmd = New(deps)
 	buf.Reset()
 	cmd.SetOut(buf)
@@ -135,6 +151,16 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if !strings.Contains(buf.String(), "Created reviewer condition") {
 		t.Fatalf("expected Created reviewer condition in output: %s", buf.String())
 	}
+	jsonEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "create", `{"requiredApprovals":1}`, "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on create condition repo JSON: %v", err)
+	}
+	jsonEnabled = false
 
 	// 6. create condition on project in dry-run mode
 	dryRunEnabled = true
@@ -148,7 +174,7 @@ func TestReviewerConditionCommands(t *testing.T) {
 	}
 	dryRunEnabled = false
 
-	// 7. create condition on project
+	// 7. create condition on project (real and JSON)
 	cmd = New(deps)
 	buf.Reset()
 	cmd.SetOut(buf)
@@ -160,6 +186,16 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if !strings.Contains(buf.String(), "Created reviewer condition") {
 		t.Fatalf("expected Created reviewer condition in output: %s", buf.String())
 	}
+	jsonEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "create", `{"requiredApprovals":2}`, "--project", "PRJ"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on create condition project JSON: %v", err)
+	}
+	jsonEnabled = false
 
 	// 8. create condition with invalid JSON -> validation error
 	cmd = New(deps)
@@ -171,7 +207,7 @@ func TestReviewerConditionCommands(t *testing.T) {
 		t.Fatalf("expected error for invalid json in create condition")
 	}
 
-	// 9. update condition on repo in dry-run mode (condition exists)
+	// 9. update condition on repo in dry-run mode (update, no-op, blocked)
 	dryRunEnabled = true
 	cmd = New(deps)
 	buf.Reset()
@@ -181,10 +217,18 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on update condition repo dry-run: %v", err)
 	}
-
-	// 10. update condition on repo in dry-run mode (condition not found)
-	buf.Reset()
+	// No-op preview (matching requiredApprovals: 1)
 	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "update", "101", `{"requiredApprovals":1}`, "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on update condition repo dry-run no-op: %v", err)
+	}
+	// Blocked preview (condition not found)
+	cmd = New(deps)
+	buf.Reset()
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"condition", "update", "999", `{"requiredApprovals":3}`, "--repo", "PRJ/repo1"})
@@ -193,7 +237,7 @@ func TestReviewerConditionCommands(t *testing.T) {
 	}
 	dryRunEnabled = false
 
-	// 11. update condition on repo
+	// 10. update condition on repo (real and JSON)
 	cmd = New(deps)
 	buf.Reset()
 	cmd.SetOut(buf)
@@ -205,8 +249,18 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if !strings.Contains(buf.String(), "Updated reviewer condition") {
 		t.Fatalf("expected Updated reviewer condition in output: %s", buf.String())
 	}
+	jsonEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "update", "101", `{"requiredApprovals":3}`, "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on update condition repo JSON: %v", err)
+	}
+	jsonEnabled = false
 
-	// 12. update condition on project in dry-run mode
+	// 11. update condition on project in dry-run mode (update, no-op, blocked)
 	dryRunEnabled = true
 	cmd = New(deps)
 	buf.Reset()
@@ -216,9 +270,27 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on update condition project dry-run: %v", err)
 	}
+	// No-op preview (matching requiredApprovals: 2)
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "update", "102", `{"requiredApprovals":2}`, "--project", "PRJ"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on update condition project dry-run no-op: %v", err)
+	}
+	// Blocked preview
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "update", "999", `{"requiredApprovals":3}`, "--project", "PRJ"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on update non-existent project condition dry-run: %v", err)
+	}
 	dryRunEnabled = false
 
-	// 13. update condition on project
+	// 12. update condition on project (real and JSON)
 	cmd = New(deps)
 	buf.Reset()
 	cmd.SetOut(buf)
@@ -230,8 +302,18 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if !strings.Contains(buf.String(), "Updated reviewer condition") {
 		t.Fatalf("expected Updated reviewer condition in output: %s", buf.String())
 	}
+	jsonEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "update", "102", `{"requiredApprovals":3}`, "--project", "PRJ"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on update condition project JSON: %v", err)
+	}
+	jsonEnabled = false
 
-	// 14. delete repo condition in dry-run mode
+	// 13. delete repo condition in dry-run mode (found vs not found)
 	dryRunEnabled = true
 	cmd = New(deps)
 	buf.Reset()
@@ -241,9 +323,17 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on delete repo dry-run: %v", err)
 	}
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "delete", "999", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete repo dry-run not found: %v", err)
+	}
 	dryRunEnabled = false
 
-	// 15. delete repo condition
+	// 14. delete repo condition (real and JSON)
 	cmd = New(deps)
 	buf.Reset()
 	cmd.SetOut(buf)
@@ -255,8 +345,38 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if !strings.Contains(buf.String(), "Deleted condition") {
 		t.Fatalf("expected Deleted condition in delete output: %s", buf.String())
 	}
+	jsonEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "delete", "101", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete repo JSON: %v", err)
+	}
+	jsonEnabled = false
 
-	// 16. delete project condition
+	// 15. delete project condition in dry-run mode (found vs not found)
+	dryRunEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "delete", "102", "--project", "PRJ"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete project dry-run: %v", err)
+	}
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "delete", "999", "--project", "PRJ"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete project dry-run not found: %v", err)
+	}
+	dryRunEnabled = false
+
+	// 16. delete project condition (real and JSON)
 	cmd = New(deps)
 	buf.Reset()
 	cmd.SetOut(buf)
@@ -268,8 +388,18 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if !strings.Contains(buf.String(), "Deleted condition") {
 		t.Fatalf("expected Deleted condition in delete output: %s", buf.String())
 	}
+	jsonEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "delete", "102", "--project", "PRJ"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete project JSON: %v", err)
+	}
+	jsonEnabled = false
 
-	// 17. create condition with config file
+	// 17. create & update condition with config file
 	tempConfigFile := filepath.Join(t.TempDir(), "condition.json")
 	if err := os.WriteFile(tempConfigFile, []byte(`{"requiredApprovals":1}`), 0o644); err != nil {
 		t.Fatalf("failed to write temp config file: %v", err)
@@ -282,6 +412,14 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error creating condition with config-file: %v", err)
 	}
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "update", "101", "--config-file", tempConfigFile, "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error updating condition with config-file: %v", err)
+	}
 
 	// 18. mutually exclusive config-file and inline arg validation error
 	cmd = New(deps)
@@ -292,8 +430,31 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if err := cmd.Execute(); err == nil {
 		t.Fatalf("expected error when both arg and --config-file are provided")
 	}
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "update", "101", `{"requiredApprovals":1}`, "--config-file", tempConfigFile, "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatalf("expected error when both arg and --config-file are provided for update")
+	}
 
-	// 19. missing project key validation error
+	// 19. Empty reviewer conditions list
+	emptyRepoConditions = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "list", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on empty repo conditions: %v", err)
+	}
+	if !strings.Contains(buf.String(), "No conditions found") {
+		t.Fatalf("expected No conditions found in list output: %s", buf.String())
+	}
+	emptyRepoConditions = false
+
+	// 20. Missing project key validation error
 	cfgNoProject := config.AppConfig{BitbucketURL: server.URL}
 	depsNoProject := deps
 	depsNoProject.LoadConfig = func() (config.AppConfig, error) { return cfgNoProject, nil }
