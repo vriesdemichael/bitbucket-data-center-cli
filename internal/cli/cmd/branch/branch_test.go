@@ -3,6 +3,7 @@ package branchcmd_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -42,6 +43,10 @@ func newMockBranchServer(t *testing.T) *httptest.Server {
 
 		case r.Method == http.MethodDelete && path == "/rest/branch-utils/latest/projects/PRJ/repos/demo/branches":
 			w.WriteHeader(http.StatusNoContent)
+
+		case r.Method == http.MethodPut && path == "/rest/branch-utils/latest/projects/PRJ/repos/demo/branch-model/configuration":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"development":{"refId":"refs/heads/develop"}}`))
 
 		case r.Method == http.MethodGet && strings.Contains(path, "/branches/info/"):
 			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"refs/heads/main","displayId":"main"}]}`))
@@ -385,5 +390,225 @@ func TestBranchRestrictions(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), "Deleted restriction") {
 		t.Fatalf("expected Deleted restriction in output: %s", buf.String())
+	}
+}
+
+func TestBranchRestrictionMatching(t *testing.T) {
+	var restriction openapigenerated.RestRefRestriction
+	_ = json.Unmarshal([]byte(`{"type":"read-only","matcher":{"id":"refs/heads/main","displayId":"main","type":{"id":"BRANCH"}}}`), &restriction)
+
+	// Signature matches
+	if !branchcmd.MatchesRestrictionSignature(restriction, "read-only", "BRANCH", "main") {
+		t.Fatal("expected match for read-only BRANCH main")
+	}
+	if !branchcmd.MatchesRestrictionSignature(restriction, "READ-ONLY", "branch", "refs/heads/main") {
+		t.Fatal("expected case-insensitive match with refs/heads prefix")
+	}
+
+	// Signature mismatches
+	if branchcmd.MatchesRestrictionSignature(restriction, "fast-forward-only", "BRANCH", "main") {
+		t.Fatal("expected mismatch for different restriction type")
+	}
+	if branchcmd.MatchesRestrictionSignature(restriction, "read-only", "MODEL_BRANCH", "main") {
+		t.Fatal("expected mismatch for different matcher type")
+	}
+	if branchcmd.MatchesRestrictionSignature(restriction, "read-only", "BRANCH", "feature") {
+		t.Fatal("expected mismatch for different matcher id")
+	}
+	if branchcmd.MatchesRestrictionSignature(openapigenerated.RestRefRestriction{}, "read-only", "BRANCH", "main") {
+		t.Fatal("expected mismatch for empty restriction")
+	}
+
+	// Update matching with users, groups, access keys
+	var restrictionWithEntities openapigenerated.RestRefRestriction
+	_ = json.Unmarshal([]byte(`{
+		"type":"read-only",
+		"matcher":{"id":"refs/heads/main","displayId":"main","type":{"id":"BRANCH"}},
+		"users":[{"name":"alice"},{"name":"bob"}],
+		"groups":["developers"],
+		"accessKeys":[{"key":{"id":101}}]
+	}`), &restrictionWithEntities)
+
+	if !branchcmd.MatchesRestrictionUpdate(restrictionWithEntities, "read-only", "BRANCH", "main", []string{"bob", "alice"}, []string{"developers"}, []int32{101}) {
+		t.Fatal("expected MatchesRestrictionUpdate to match regardless of user order")
+	}
+	if branchcmd.MatchesRestrictionUpdate(restrictionWithEntities, "read-only", "BRANCH", "main", []string{"bob"}, []string{"developers"}, []int32{101}) {
+		t.Fatal("expected MatchesRestrictionUpdate to fail on user count mismatch")
+	}
+	if branchcmd.MatchesRestrictionUpdate(restrictionWithEntities, "read-only", "BRANCH", "main", []string{"bob", "alice"}, []string{"admins"}, []int32{101}) {
+		t.Fatal("expected MatchesRestrictionUpdate to fail on group mismatch")
+	}
+	if branchcmd.MatchesRestrictionUpdate(restrictionWithEntities, "read-only", "BRANCH", "main", []string{"bob", "alice"}, []string{"developers"}, []int32{999}) {
+		t.Fatal("expected MatchesRestrictionUpdate to fail on key mismatch")
+	}
+}
+
+func TestBranchNormalize(t *testing.T) {
+	if branchcmd.NormalizeBranchName("main") != "refs/heads/main" {
+		t.Fatalf("expected refs/heads/main, got: %s", branchcmd.NormalizeBranchName("main"))
+	}
+	if branchcmd.NormalizeBranchName("refs/heads/feature") != "refs/heads/feature" {
+		t.Fatalf("expected refs/heads/feature, got: %s", branchcmd.NormalizeBranchName("refs/heads/feature"))
+	}
+	if branchcmd.NormalizeBranchName("  hotfix  ") != "refs/heads/hotfix" {
+		t.Fatalf("expected refs/heads/hotfix, got: %s", branchcmd.NormalizeBranchName("  hotfix  "))
+	}
+}
+
+func TestBranchJSONAndFlagModes(t *testing.T) {
+	server := newMockBranchServer(t)
+
+	// List with filter and flags
+	deps := newTestDependencies(t, server.URL, false, false)
+	cmd := branchcmd.New(deps)
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"list", "--filter", "main", "--order-by", "ALPHABETICAL", "--details"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on list with flags: %v", err)
+	}
+
+	// Create JSON mode
+	depsJSON := newTestDependencies(t, server.URL, true, false)
+	cmd = branchcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "feature-1", "--start-point", "main"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on create JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "feature-1") {
+		t.Fatalf("expected feature-1 in JSON output: %s", buf.String())
+	}
+
+	// Delete JSON mode
+	cmd = branchcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "feature-1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "branch") {
+		t.Fatalf("expected branch in JSON output: %s", buf.String())
+	}
+
+	// Default get JSON mode
+	cmd = branchcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"default", "get"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on default get JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "default_branch") {
+		t.Fatalf("expected default_branch in JSON output: %s", buf.String())
+	}
+
+	// Default set JSON mode
+	cmd = branchcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"default", "set", "master"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on default set JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "default_branch") {
+		t.Fatalf("expected default_branch in JSON output: %s", buf.String())
+	}
+
+	// Model update JSON mode
+	cmd = branchcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"model", "update", "develop"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on model update JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "default_branch") {
+		t.Fatalf("expected default_branch in JSON output: %s", buf.String())
+	}
+
+	// Restriction list JSON mode & with filter flags
+	cmd = branchcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"restriction", "list", "--matcher-id", "main", "--matcher-type", "BRANCH", "--type", "read-only"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on restriction list JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "restrictions") {
+		t.Fatalf("expected restrictions in JSON output: %s", buf.String())
+	}
+
+	// Restriction create JSON mode
+	cmd = branchcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"restriction", "create", "--type", "read-only", "--matcher-id", "main", "--user", "alice", "--group", "devs"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on restriction create JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "restriction") {
+		t.Fatalf("expected restriction in JSON output: %s", buf.String())
+	}
+
+	// Restriction update JSON mode
+	cmd = branchcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"restriction", "update", "42", "--type", "read-only", "--matcher-id", "main", "--user", "alice"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on restriction update JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "restriction") {
+		t.Fatalf("expected restriction in JSON output: %s", buf.String())
+	}
+
+	// Restriction delete JSON mode
+	cmd = branchcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"restriction", "delete", "42"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on restriction delete JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "restriction") {
+		t.Fatalf("expected restriction in JSON output: %s", buf.String())
+	}
+}
+
+func TestBranchValidationErrors(t *testing.T) {
+	server := newMockBranchServer(t)
+	deps := newTestDependencies(t, server.URL, false, false)
+
+	cases := [][]string{
+		{"restriction", "get", "abc"},
+		{"restriction", "update", "abc"},
+		{"restriction", "delete", "abc"},
+		{"restriction", "create", "--type", "read-only", "--matcher-id", ""},
+		{"restriction", "create", "--type", "read-only", "--matcher-id", "main", "--access-key-id", "-1"},
+		{"create", ""},
+	}
+
+	for _, args := range cases {
+		cmd := branchcmd.New(deps)
+		buf := new(bytes.Buffer)
+		cmd.SetOut(buf)
+		cmd.SetErr(buf)
+		cmd.SetArgs(args)
+		if err := cmd.Execute(); err == nil {
+			t.Fatalf("expected error for args %v, got nil", args)
+		}
 	}
 }
