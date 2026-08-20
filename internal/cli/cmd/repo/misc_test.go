@@ -462,3 +462,209 @@ func TestRepoSshKeyAddAndRemove(t *testing.T) {
 		t.Fatalf("expected removed successfully in output: %s", buf.String())
 	}
 }
+
+func TestRepoLabelsWatchAndTasks(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		path := r.URL.Path
+
+		switch {
+		// Labels
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/repo1/labels":
+			_, _ = w.Write([]byte(`{"values":[{"name":"backend"},{"name":"go"}]}`))
+		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/repo1/labels":
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodDelete && strings.HasPrefix(path, "/rest/api/latest/projects/PRJ/repos/repo1/labels/"):
+			w.WriteHeader(http.StatusNoContent)
+
+		// Watch / Unwatch
+		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/repo1/watch":
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodDelete && path == "/rest/api/latest/projects/PRJ/repos/repo1/watch":
+			w.WriteHeader(http.StatusNoContent)
+
+		// Tasks
+		case r.Method == http.MethodGet && path == "/rest/default-tasks/latest/projects/PRJ/repos/repo1/tasks":
+			_, _ = w.Write([]byte(`{"values":[{"id":1001,"description":"Check tests"}]}`))
+		case r.Method == http.MethodPost && path == "/rest/default-tasks/latest/projects/PRJ/repos/repo1/tasks":
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":1002,"description":"New task"}`))
+		case r.Method == http.MethodDelete && path == "/rest/default-tasks/latest/projects/PRJ/repos/repo1/tasks/1001":
+			w.WriteHeader(http.StatusNoContent)
+
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	cfg := config.AppConfig{
+		BitbucketURL: server.URL,
+		ProjectKey:   "PRJ",
+	}
+
+	jsonEnabled := false
+	dryRunEnabled := false
+
+	deps := Dependencies{
+		JSONEnabled:   func() bool { return jsonEnabled },
+		DryRunEnabled: func() bool { return dryRunEnabled },
+		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },
+		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+			return cfg, client, err
+		},
+	}
+
+	// 1. Labels list (human & JSON)
+	cmd := New(deps)
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"label", "list", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on label list: %v", err)
+	}
+	if !strings.Contains(buf.String(), "backend") {
+		t.Fatalf("expected backend in label list output: %s", buf.String())
+	}
+
+	jsonEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"label", "list", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on label list JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "labels") {
+		t.Fatalf("expected labels in JSON output: %s", buf.String())
+	}
+	jsonEnabled = false
+
+	// 2. Label add & remove (dry-run & real)
+	dryRunEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"label", "add", "new-label", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on label add dry-run: %v", err)
+	}
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"label", "remove", "old-label", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on label remove dry-run: %v", err)
+	}
+	dryRunEnabled = false
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"label", "add", "new-label", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on label add: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Added label:") {
+		t.Fatalf("expected Added label: in output: %s", buf.String())
+	}
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"label", "remove", "old-label", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on label remove: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Removed label:") {
+		t.Fatalf("expected Removed label: in output: %s", buf.String())
+	}
+
+	// 3. Watch & Unwatch (dry-run & real)
+	dryRunEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"watch", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on watch dry-run: %v", err)
+	}
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"unwatch", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on unwatch dry-run: %v", err)
+	}
+	dryRunEnabled = false
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"watch", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on watch: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Watching repository") {
+		t.Fatalf("expected Watching repository in output: %s", buf.String())
+	}
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"unwatch", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on unwatch: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Unwatched repository") {
+		t.Fatalf("expected Unwatched repository in output: %s", buf.String())
+	}
+
+	// 4. Default tasks (list, create, delete)
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"default-task", "list", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on default-task list: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Check tests") {
+		t.Fatalf("expected Check tests in default-task list output: %s", buf.String())
+	}
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"default-task", "add", "New task", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on default-task add: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Created default task") {
+		t.Fatalf("expected Created default task in output: %s", buf.String())
+	}
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"default-task", "delete", "1001", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on default-task delete: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Deleted default task:") {
+		t.Fatalf("expected Deleted default task: in output: %s", buf.String())
+	}
+}

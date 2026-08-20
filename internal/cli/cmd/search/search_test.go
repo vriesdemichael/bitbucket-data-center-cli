@@ -168,3 +168,121 @@ func TestSearchReposEmptyResult(t *testing.T) {
 		t.Fatalf("expected empty-state message, got: %s", output.String())
 	}
 }
+
+func TestSearchDefaultsAndSafeString(t *testing.T) {
+	if safeString(nil) != "" {
+		t.Fatal("expected empty string for safeString(nil)")
+	}
+	s := "test"
+	if safeString(&s) != "test" {
+		t.Fatal("expected test for safeString(&s)")
+	}
+
+	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
+	var deps Dependencies
+	d := deps.withDefaults()
+
+	if d.JSONEnabled == nil || d.JSONEnabled() {
+		t.Fatal("expected JSONEnabled to default to false")
+	}
+	if d.WriteJSONList == nil {
+		t.Fatal("expected WriteJSONList to default to non-nil")
+	}
+	if d.LoadConfig != nil {
+		cfg, err := d.LoadConfig()
+		if err != nil || cfg.BitbucketURL != "http://localhost:7990" {
+			t.Fatalf("unexpected LoadConfig: %v", err)
+		}
+	}
+	if d.LoadConfigAndClient != nil {
+		cfg, client, err := d.LoadConfigAndClient()
+		if err != nil || client == nil || cfg.BitbucketURL != "http://localhost:7990" {
+			t.Fatalf("unexpected LoadConfigAndClient: %v", err)
+		}
+	}
+}
+
+func TestSearchJSONAndEmptyStates(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.Contains(r.URL.Path, "empty") {
+			_, _ = w.Write([]byte(`{"values":[],"isLastPage":true}`))
+			return
+		}
+		if strings.Contains(r.URL.Path, "pull-requests") {
+			_, _ = w.Write([]byte(`{"values":[{"id":10,"title":"PR Title"}],"isLastPage":true}`))
+			return
+		}
+		if strings.Contains(r.URL.Path, "commits") {
+			_, _ = w.Write([]byte(`{"values":[{"id":"c1","displayId":"c1","message":"Commit Msg"}],"isLastPage":true}`))
+			return
+		}
+		if strings.Contains(r.URL.Path, "repos") {
+			_, _ = w.Write([]byte(`{"values":[{"slug":"r1","name":"Repo 1","project":{"key":"PRJ"}}],"isLastPage":true}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
+	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
+
+	// JSON mode for repos, commits, prs
+	depsJSON := Dependencies{JSONEnabled: func() bool { return true }}
+
+	// search repos JSON
+	cmd := New(depsJSON)
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetArgs([]string{"repos", "query"})
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("unexpected error searching repos JSON: %v", err)
+	}
+
+	// search commits JSON
+	cmd = New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetArgs([]string{"commits", "--repo", "PRJ/repo"})
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("unexpected error searching commits JSON: %v", err)
+	}
+
+	// search prs JSON
+	cmd = New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetArgs([]string{"prs", "--repo", "PRJ/repo"})
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("unexpected error searching prs JSON: %v", err)
+	}
+
+	// Empty states
+	depsHuman := Dependencies{JSONEnabled: func() bool { return false }}
+
+	// commits empty state
+	cmd = New(depsHuman)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetArgs([]string{"commits", "--repo", "PRJ/empty"})
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("unexpected error on empty commits: %v", err)
+	}
+	if !strings.Contains(buf.String(), "No commits found") {
+		t.Fatalf("expected No commits found in output: %s", buf.String())
+	}
+
+	// prs empty state
+	cmd = New(depsHuman)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetArgs([]string{"prs", "--repo", "PRJ/empty"})
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("unexpected error on empty prs: %v", err)
+	}
+	if !strings.Contains(buf.String(), "No pull requests found") {
+		t.Fatalf("expected No pull requests found in output: %s", buf.String())
+	}
+}

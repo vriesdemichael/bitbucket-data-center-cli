@@ -293,3 +293,34 @@ func TestCanonicalPermissionCommandsPointAtTheirAlias(t *testing.T) {
 		}
 	}
 }
+
+func TestProjectPermissionHumanOutput(t *testing.T) {
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	recorded := []string{}
+	server := newProjectPermissionTestServer(t, &recorded)
+	t.Setenv("BITBUCKET_URL", server.URL)
+
+	// List users human mode
+	out := runRepoPermissionCommand(t, "project", "permissions", "list", "PRJ")
+	if !strings.Contains(out, "Alice A") {
+		t.Fatalf("expected Alice A in list output, got:\n%s", out)
+	}
+
+	// Grant user human mode
+	out = runRepoPermissionCommand(t, "project", "permissions", "grant", "PRJ", "alice", "project_write")
+	if !strings.Contains(out, "Granted PROJECT_WRITE") {
+		t.Fatalf("expected Granted PROJECT_WRITE in output, got:\n%s", out)
+	}
+
+	// Revoke user human mode
+	out = runRepoPermissionCommand(t, "project", "permissions", "revoke", "PRJ", "alice")
+	if !strings.Contains(out, "Revoked permission") {
+		t.Fatalf("expected Revoked permission in output, got:\n%s", out)
+	}
+
+	// Dry run human mode
+	out = runRepoPermissionCommand(t, "--dry-run", "project", "permissions", "grant", "PRJ", "bob", "project_read")
+	if !strings.Contains(out, "Dry-run") {
+		t.Fatalf("expected Dry-run in output, got:\n%s", out)
+	}
+}

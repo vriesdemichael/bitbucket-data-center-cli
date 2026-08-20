@@ -2,6 +2,7 @@ package reviewergroupcmd
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -510,5 +511,127 @@ func TestReviewerGroupCommands(t *testing.T) {
 		if err := cmd.Execute(); err == nil {
 			t.Fatalf("expected missing project error for args: %v", args)
 		}
+	}
+}
+
+type mockReviewerGroupPermChecker struct {
+	repoErr    error
+	projectErr error
+}
+
+func (m *mockReviewerGroupPermChecker) CheckRepoPermission(ctx context.Context, projectKey, repoSlug string, permission openapigenerated.GetRepositories1ParamsPermission) error {
+	return m.repoErr
+}
+
+func (m *mockReviewerGroupPermChecker) CheckProjectAdmin(ctx context.Context, projectKey string) error {
+	return m.projectErr
+}
+
+func TestReviewerGroupDefaults(t *testing.T) {
+	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
+	var deps Dependencies
+	d := deps.withDefaults()
+
+	if d.JSONEnabled == nil || d.JSONEnabled() {
+		t.Fatal("expected JSONEnabled to default to false")
+	}
+	if d.DryRunEnabled == nil || d.DryRunEnabled() {
+		t.Fatal("expected DryRunEnabled to default to false")
+	}
+	if d.WriteJSON == nil {
+		t.Fatal("expected WriteJSON to default to non-nil")
+	}
+	if d.LoadConfig != nil {
+		cfg, err := d.LoadConfig()
+		if err != nil || cfg.BitbucketURL != "http://localhost:7990" {
+			t.Fatalf("unexpected LoadConfig: %v", err)
+		}
+	}
+	if d.LoadConfigAndClient != nil {
+		cfg, client, err := d.LoadConfigAndClient()
+		if err != nil || client == nil || cfg.BitbucketURL != "http://localhost:7990" {
+			t.Fatalf("unexpected LoadConfigAndClient: %v", err)
+		}
+	}
+}
+
+func TestReviewerGroupPermissionRejections(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[{"id":201,"name":"group1"}]`))
+	}))
+	t.Cleanup(server.Close)
+
+	cfg := config.AppConfig{BitbucketURL: server.URL, ProjectKey: "PRJ"}
+	deps := Dependencies{
+		DryRunEnabled: func() bool { return true },
+		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },
+		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+			return cfg, client, err
+		},
+		PermissionChecker: func(c *openapigenerated.ClientWithResponses) PermissionChecker {
+			return &mockReviewerGroupPermChecker{repoErr: http.ErrAbortHandler, projectErr: http.ErrAbortHandler}
+		},
+	}
+
+	// Repo create dry-run permission rejection
+	cmd := New(deps)
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "group-new", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on repo create dry-run")
+	}
+
+	// Repo update dry-run permission rejection
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"update", "201", "--name", "group-renamed", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on repo update dry-run")
+	}
+
+	// Repo delete dry-run permission rejection
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "201", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on repo delete dry-run")
+	}
+
+	// Project create dry-run permission rejection
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "group-new", "--project", "PRJ"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on project create dry-run")
+	}
+
+	// Project update dry-run permission rejection
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"update", "201", "--name", "group-renamed", "--project", "PRJ"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on project update dry-run")
+	}
+
+	// Project delete dry-run permission rejection
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "201", "--project", "PRJ"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on project delete dry-run")
 	}
 }
