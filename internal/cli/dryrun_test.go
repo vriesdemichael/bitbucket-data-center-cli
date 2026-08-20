@@ -386,9 +386,6 @@ func TestDryRunPassthroughPathCoverage(t *testing.T) {
 		"project permissions users revoke",
 		"project permissions groups grant",
 		"project permissions groups revoke",
-		"hook enable",
-		"hook disable",
-		"hook configure",
 		"repo settings workflow webhooks create",
 		"repo settings workflow webhooks delete",
 		"repo settings pull-requests update",
@@ -501,11 +498,71 @@ func TestRegisterGlobalDryRunInterceptorsNotImplemented(t *testing.T) {
 	}
 }
 
+func TestAllCommandsExhaustivelyClassifiedForDryRun(t *testing.T) {
+	root := NewRootCommand()
+	var visit func(*cobra.Command)
+	visitedCount := 0
+
+	visit = func(cmd *cobra.Command) {
+		if cmd.Hidden || cmd.Name() == "help" || cmd.Name() == "completion" {
+			return
+		}
+		if cmd.Runnable() {
+			visitedCount++
+			path := dryRunCommandPath(cmd)
+			category := classifyCommand(path)
+			if category == classificationUnknown {
+				t.Errorf("Command %q is unclassified in internal/cli/dryrun.go. Every runnable CLI command must be registered in dryRunProfiles (mutating), readOnlyCommands (read-only/inspection), or clientLocalCommands (client-local/configuration) to prevent fail-open dry-run bugs.", path)
+			}
+
+			// Verify disjoint sets (no overlaps)
+			inMutating := false
+			if _, ok := dryRunProfiles[path]; ok {
+				inMutating = true
+			}
+			inReadOnly := false
+			if _, ok := readOnlyCommands[path]; ok {
+				inReadOnly = true
+			}
+			inLocal := false
+			if _, ok := clientLocalCommands[path]; ok {
+				inLocal = true
+			}
+
+			categories := 0
+			if inMutating {
+				categories++
+			}
+			if inReadOnly {
+				categories++
+			}
+			if inLocal {
+				categories++
+			}
+
+			if categories > 1 {
+				t.Errorf("Command %q is classified in multiple categories (mutating: %t, read-only: %t, local: %t)", path, inMutating, inReadOnly, inLocal)
+			}
+		}
+		for _, child := range cmd.Commands() {
+			visit(child)
+		}
+	}
+	visit(root)
+
+	if visitedCount == 0 {
+		t.Fatal("expected to visit runnable commands")
+	}
+}
+
 func TestAllMutatingCommandsHaveDryRunProfile(t *testing.T) {
 	root := NewRootCommand()
 	var visit func(*cobra.Command)
 	visit = func(cmd *cobra.Command) {
-		if cmd.RunE != nil {
+		if cmd.Hidden || cmd.Name() == "help" || cmd.Name() == "completion" {
+			return
+		}
+		if cmd.Runnable() {
 			path := dryRunCommandPath(cmd)
 			if isServerMutatingPath(path) {
 				if _, ok := dryRunProfiles[path]; !ok {
@@ -518,4 +575,24 @@ func TestAllMutatingCommandsHaveDryRunProfile(t *testing.T) {
 		}
 	}
 	visit(root)
+}
+
+func TestAuthGpgKeyClearDryRun(t *testing.T) {
+	root := NewRootCommand()
+	buffer := &bytes.Buffer{}
+	root.SetOut(buffer)
+	root.SetErr(buffer)
+	root.SetArgs([]string{"--dry-run", "--json", "auth", "gpg-key", "clear"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("unexpected error executing auth gpg-key clear in dry-run mode: %v", err)
+	}
+
+	output := buffer.String()
+	if !strings.Contains(output, "auth.gpg-key.clear") {
+		t.Fatalf("expected intent auth.gpg-key.clear in dry-run output, got: %s", output)
+	}
+	if !strings.Contains(output, `"dry_run": true`) {
+		t.Fatalf("expected dry_run: true in json output, got: %s", output)
+	}
 }
