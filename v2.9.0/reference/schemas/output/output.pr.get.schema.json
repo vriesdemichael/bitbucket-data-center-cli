@@ -1,0 +1,183 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.pr.get.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb pr get --json`. Data contains the repository, the pull request, and a review summary describing outstanding review feedback.",
+  "properties": {
+    "data": {
+      "additionalProperties": true,
+      "properties": {
+        "pull_request": {
+          "additionalProperties": true,
+          "properties": {
+            "author": {
+              "type": "string"
+            },
+            "closed": {
+              "type": "boolean"
+            },
+            "comment_count": {
+              "description": "Reported by Bitbucket on listings; absent on the single pull request endpoint in 10.x.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "draft": {
+              "type": "boolean"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "open": {
+              "type": "boolean"
+            },
+            "open_task_count": {
+              "description": "Reported by Bitbucket on listings; absent on the single pull request endpoint in 10.x. Absent means unknown, not zero.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "resolved_task_count": {
+              "description": "Reported by Bitbucket on listings; absent on the single pull request endpoint in 10.x.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "source_branch": {
+              "type": "string"
+            },
+            "source_commit": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "target_branch": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "state"
+          ],
+          "type": "object"
+        },
+        "repository": {
+          "additionalProperties": true,
+          "properties": {
+            "project_key": {
+              "type": "string"
+            },
+            "slug": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "review_summary": {
+          "additionalProperties": true,
+          "description": "Outstanding review feedback. Count fields are omitted when they could not be measured, which is not the same as zero — check counts_source before treating a missing count as 'nothing outstanding'.",
+          "properties": {
+            "action_required": {
+              "description": "True when the pull request is waiting on its author: an unresolved thread, an open task, or a reviewer who requested changes.",
+              "type": "boolean"
+            },
+            "approvals": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "comment_count": {
+              "description": "Raw comment counter reported by Bitbucket, replies included. A weaker signal than unresolved_threads.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "counts_source": {
+              "description": "Where the counts came from. 'activities' counts unresolved threads exactly; 'blocker_comments' and 'properties' carry task counts only; 'none' means nothing was measured.",
+              "enum": [
+                "activities",
+                "blocker_comments",
+                "properties",
+                "none"
+              ]
+            },
+            "needs_work": {
+              "description": "Reviewers who requested changes.",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "open_tasks": {
+              "description": "Subset of unresolved_threads that blocks the merge. Do not add to unresolved_threads.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "pending_comments": {
+              "description": "The author's own unpublished draft comments.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "resolved_tasks": {
+              "description": "Subset of resolved_threads that Bitbucket tracks as tasks.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "resolved_threads": {
+              "description": "Comment threads marked resolved.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "reviewers": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "unresolved_threads": {
+              "description": "Comment threads still open, tasks included.",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "action_required",
+            "counts_source",
+            "approvals",
+            "reviewers"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "repository",
+        "pull_request",
+        "review_summary"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb pr get output",
+  "type": "object"
+}
