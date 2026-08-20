@@ -67,6 +67,9 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/comments":
 			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":101,"version":1,"text":"Comment 1","state":"OPEN","author":{"name":"alice"}}]}`))
 
+		case r.Method == http.MethodGet && strings.Contains(path, "blocker-comments"):
+			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":103,"version":1,"text":"Blocker comment","severity":"BLOCKER"}]}`))
+
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/comments/101":
 			_, _ = w.Write([]byte(`{"id":101,"version":1,"text":"Comment 1","state":"OPEN","author":{"name":"alice"}}`))
 
@@ -88,6 +91,13 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 		case r.Method == http.MethodGet && (strings.HasSuffix(path, "42.diff") || strings.HasSuffix(path, "/diff")):
 			w.Header().Set("Content-Type", "text/plain")
 			_, _ = w.Write([]byte("diff --git a/file1.go b/file1.go\n--- a/file1.go\n+++ b/file1.go\n@@ -1 +1 @@\n-old\n+new\n"))
+
+		case r.Method == http.MethodGet && (strings.HasSuffix(path, "42.patch") || strings.HasSuffix(path, "/patch")):
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = w.Write([]byte("From c123\nSubject: Patch\n---\n"))
+
+		case r.Method == http.MethodGet && strings.Contains(path, "diff-stats-summary"):
+			_, _ = w.Write([]byte(`{"linesAdded":10,"linesRemoved":2,"filesChanged":1,"files":[{"path":"file1.go","linesAdded":10,"linesRemoved":2}]}`))
 
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/auto-merge":
 			_, _ = w.Write([]byte(`{"enabled":true,"strategyId":"no-ff"}`))
@@ -121,6 +131,21 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 
 		case r.Method == http.MethodGet && strings.Contains(path, "/build-status/"):
 			_, _ = w.Write([]byte(`{"values":[{"key":"ci/build","state":"SUCCESSFUL","url":"https://ci.example.com"}]}`))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/merge-base":
+			_, _ = w.Write([]byte(`{"id":"base123456","displayId":"base123","message":"Base commit"}`))
+
+		case r.Method == http.MethodPost && strings.Contains(path, "/comments/101/apply-suggestion"):
+			w.WriteHeader(http.StatusOK)
+
+		case r.Method == http.MethodGet && strings.Contains(path, "/pull-requests/42/review"):
+			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":101,"text":"Draft comment","author":{"name":"alice"}}]}`))
+
+		case (r.Method == http.MethodPost || r.Method == http.MethodPut) && strings.Contains(path, "/pull-requests/42/review"):
+			w.WriteHeader(http.StatusOK)
+
+		case r.Method == http.MethodDelete && strings.Contains(path, "/pull-requests/42/review"):
+			w.WriteHeader(http.StatusNoContent)
 
 		default:
 			http.NotFound(w, r)
@@ -605,5 +630,556 @@ func TestPRBuildStatus(t *testing.T) {
 	}
 	if !strings.Contains(out, "statuses") {
 		t.Fatalf("expected statuses in json: %s", out)
+	}
+}
+
+func TestPRMergeBase(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Human mode
+	out, err := executePr(t, server.URL, "merge-base", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on merge-base: %v", err)
+	}
+	if !strings.Contains(out, "base123") {
+		t.Fatalf("expected base123 in merge-base output: %s", out)
+	}
+
+	// JSON mode
+	out, err = executePr(t, server.URL, "--json", "merge-base", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on merge-base json: %v", err)
+	}
+	if !strings.Contains(out, "merge_base") {
+		t.Fatalf("expected merge_base in json: %s", out)
+	}
+}
+
+func TestPRFiles(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Human mode
+	out, err := executePr(t, server.URL, "files", "42", "--start", "0", "--limit", "10")
+	if err != nil {
+		t.Fatalf("unexpected error on files: %v", err)
+	}
+	if !strings.Contains(out, "file1.go") {
+		t.Fatalf("expected file1.go in files output: %s", out)
+	}
+
+	// JSON mode
+	out, err = executePr(t, server.URL, "--json", "files", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on files json: %v", err)
+	}
+	if !strings.Contains(out, "file1.go") {
+		t.Fatalf("expected file1.go in json: %s", out)
+	}
+}
+
+func TestPRReviewCompleteAndDiscard(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Complete dry-run
+	out, err := executePr(t, server.URL, "--dry-run", "review", "complete", "42", "--status", "APPROVED", "--comment", "Looks good")
+	if err != nil {
+		t.Fatalf("unexpected error on review complete dry-run: %v", err)
+	}
+
+	// Complete real execution (human & JSON)
+	out, err = executePr(t, server.URL, "review", "complete", "42", "--status", "APPROVED", "--comment", "Looks good")
+	if err != nil {
+		t.Fatalf("unexpected error on review complete: %v", err)
+	}
+	if !strings.Contains(out, "Completed review for pull request #42") {
+		t.Fatalf("expected Completed review in output: %s", out)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "review", "complete", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on review complete json: %v", err)
+	}
+	if !strings.Contains(out, "completed") {
+		t.Fatalf("expected completed in json output: %s", out)
+	}
+
+	// Discard dry-run
+	out, err = executePr(t, server.URL, "--dry-run", "review", "discard", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on review discard dry-run: %v", err)
+	}
+
+	// Discard real execution (human & JSON)
+	out, err = executePr(t, server.URL, "review", "discard", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on review discard: %v", err)
+	}
+	if !strings.Contains(out, "Discarded review for pull request #42") {
+		t.Fatalf("expected Discarded review in output: %s", out)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "review", "discard", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on review discard json: %v", err)
+	}
+	if !strings.Contains(out, "discarded") {
+		t.Fatalf("expected discarded in json output: %s", out)
+	}
+}
+
+func TestPRReviewGet(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Human mode
+	out, err := executePr(t, server.URL, "review", "get", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on review get: %v", err)
+	}
+	if !strings.Contains(out, "Draft comment") {
+		t.Fatalf("expected Draft comment in review get output: %s", out)
+	}
+
+	// JSON mode
+	out, err = executePr(t, server.URL, "--json", "review", "get", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on review get json: %v", err)
+	}
+	if !strings.Contains(out, "Draft comment") {
+		t.Fatalf("expected Draft comment in json output: %s", out)
+	}
+}
+
+func TestPRCommentApplySuggestion(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Dry run
+	out, err := executePr(t, server.URL, "--dry-run", "comment", "apply-suggestion", "42", "101", "--commit-message", "Apply fix", "--index", "0")
+	if err != nil {
+		t.Fatalf("unexpected error on apply-suggestion dry-run: %v", err)
+	}
+
+	// Real execution (human & JSON)
+	out, err = executePr(t, server.URL, "comment", "apply-suggestion", "42", "101", "--commit-message", "Apply fix", "--comment-version", "1", "--pr-version", "1")
+	if err != nil {
+		t.Fatalf("unexpected error on apply-suggestion: %v", err)
+	}
+	if !strings.Contains(out, "Applied suggestion on comment 101 for pull request 42") {
+		t.Fatalf("expected Applied suggestion in output: %s", out)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "comment", "apply-suggestion", "42", "101")
+	if err != nil {
+		t.Fatalf("unexpected error on apply-suggestion json: %v", err)
+	}
+	if !strings.Contains(out, "applied") && !strings.Contains(out, "ok") {
+		t.Fatalf("expected ok/applied in json output: %s", out)
+	}
+}
+
+func TestPRCommentReact(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// React add dry-run
+	out, err := executePr(t, server.URL, "--dry-run", "comment", "react", "42", "101", "thumbsup")
+	if err != nil {
+		t.Fatalf("unexpected error on react dry-run: %v", err)
+	}
+
+	// React add (human & JSON)
+	out, err = executePr(t, server.URL, "comment", "react", "42", "101", "thumbsup")
+	if err != nil {
+		t.Fatalf("unexpected error on react add: %v", err)
+	}
+	if !strings.Contains(out, "Added reaction :thumbsup: to comment 101") {
+		t.Fatalf("expected Added reaction in output: %s", out)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "comment", "react", "42", "101", "thumbsup")
+	if err != nil {
+		t.Fatalf("unexpected error on react json: %v", err)
+	}
+	if !strings.Contains(out, "thumbsup") {
+		t.Fatalf("expected thumbsup in json output: %s", out)
+	}
+
+	// React delete (dry-run, human, JSON)
+	out, err = executePr(t, server.URL, "--dry-run", "comment", "react", "42", "101", "thumbsup", "--remove")
+	if err != nil {
+		t.Fatalf("unexpected error on react delete dry-run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "comment", "react", "42", "101", "thumbsup", "--remove")
+	if err != nil {
+		t.Fatalf("unexpected error on react delete: %v", err)
+	}
+	if !strings.Contains(out, "Removed reaction :thumbsup: from comment 101") {
+		t.Fatalf("expected Removed reaction in output: %s", out)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "comment", "react", "42", "101", "thumbsup", "--remove")
+	if err != nil {
+		t.Fatalf("unexpected error on react delete json: %v", err)
+	}
+	if !strings.Contains(out, "removed") && !strings.Contains(out, "ok") {
+		t.Fatalf("expected removed/ok in json output: %s", out)
+	}
+}
+
+func TestPRDefaultDependencies(t *testing.T) {
+	cmd := New(Dependencies{})
+	if cmd == nil {
+		t.Fatal("expected New to return command with default dependencies")
+	}
+	checker := nopPermissionChecker{}
+	if err := checker.CheckRepoPermission(context.Background(), "PRJ", "demo", openapigenerated.REPOREAD); err != nil {
+		t.Fatalf("expected nop checker to return nil error: %v", err)
+	}
+}
+
+func TestPRListModes(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// List with review status
+	out, err := executePr(t, server.URL, "list", "--with-review-status", "--state", "OPEN", "--source-branch", "feature/x", "--target-branch", "main")
+	if err != nil {
+		t.Fatalf("unexpected error on list with review status: %v", err)
+	}
+	if !strings.Contains(out, "#42") {
+		t.Fatalf("expected #42 in list output: %s", out)
+	}
+
+	// List JSON mode
+	out, err = executePr(t, server.URL, "--json", "list", "--limit", "10", "--start", "0")
+	if err != nil {
+		t.Fatalf("unexpected error on list json: %v", err)
+	}
+	if !strings.Contains(out, "pull_requests") {
+		t.Fatalf("expected pull_requests in json: %s", out)
+	}
+}
+
+func TestPRGetModes(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Get with --no-review-summary
+	out, err := executePr(t, server.URL, "get", "42", "--no-review-summary")
+	if err != nil {
+		t.Fatalf("unexpected error on get no review summary: %v", err)
+	}
+	if !strings.Contains(out, "Test PR") {
+		t.Fatalf("expected Test PR in get output: %s", out)
+	}
+
+	// Get JSON mode
+	out, err = executePr(t, server.URL, "--json", "get", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on get json: %v", err)
+	}
+	if !strings.Contains(out, "pull_request") {
+		t.Fatalf("expected pull_request in json: %s", out)
+	}
+}
+
+func TestPRCreateUpdateMergeDeclineReopenModes(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Create dry-run and JSON
+	out, err := executePr(t, server.URL, "--dry-run", "create", "--from-ref", "feature/y", "--to-ref", "main", "--title", "Created PR", "--description", "Desc", "--reviewers", "alice", "--draft")
+	if err != nil {
+		t.Fatalf("unexpected error on create dry run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "create", "--from-ref", "feature/y", "--to-ref", "main", "--title", "Created PR")
+	if err != nil {
+		t.Fatalf("unexpected error on create json: %v", err)
+	}
+	if !strings.Contains(out, "Created PR") {
+		t.Fatalf("expected Created PR in json: %s", out)
+	}
+
+	// Update dry-run and JSON
+	out, err = executePr(t, server.URL, "--dry-run", "update", "42", "--version", "1", "--title", "Updated PR", "--description", "New Desc", "--draft")
+	if err != nil {
+		t.Fatalf("unexpected error on update dry run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "update", "42", "--version", "1", "--title", "Updated PR")
+	if err != nil {
+		t.Fatalf("unexpected error on update json: %v", err)
+	}
+	if !strings.Contains(out, "Updated PR") {
+		t.Fatalf("expected Updated PR in json: %s", out)
+	}
+
+	// Merge dry-run and JSON
+	out, err = executePr(t, server.URL, "--dry-run", "merge", "42", "--version", "1")
+	if err != nil {
+		t.Fatalf("unexpected error on merge dry run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "merge", "42", "--version", "1")
+	if err != nil {
+		t.Fatalf("unexpected error on merge json: %v", err)
+	}
+	if !strings.Contains(out, "MERGED") {
+		t.Fatalf("expected MERGED in json: %s", out)
+	}
+
+	// Decline dry-run and JSON
+	out, err = executePr(t, server.URL, "--dry-run", "decline", "42", "--version", "1")
+	if err != nil {
+		t.Fatalf("unexpected error on decline dry run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "decline", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on decline json: %v", err)
+	}
+	if !strings.Contains(out, "DECLINED") {
+		t.Fatalf("expected DECLINED in json: %s", out)
+	}
+
+	// Reopen dry-run and JSON
+	out, err = executePr(t, server.URL, "--dry-run", "reopen", "42", "--version", "1")
+	if err != nil {
+		t.Fatalf("unexpected error on reopen dry run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "reopen", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on reopen json: %v", err)
+	}
+	if !strings.Contains(out, "OPEN") {
+		t.Fatalf("expected OPEN in json: %s", out)
+	}
+}
+
+func TestPRReviewAndReviewerModes(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Review approve (dry-run & JSON)
+	out, err := executePr(t, server.URL, "--dry-run", "review", "approve", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on approve dry run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "review", "approve", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on approve json: %v", err)
+	}
+	if !strings.Contains(out, "APPROVED") {
+		t.Fatalf("expected APPROVED in json: %s", out)
+	}
+
+	// Review unapprove (dry-run & JSON)
+	out, err = executePr(t, server.URL, "--dry-run", "review", "unapprove", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on unapprove dry run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "review", "unapprove", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on unapprove json: %v", err)
+	}
+	if !strings.Contains(out, "UNAPPROVED") {
+		t.Fatalf("expected UNAPPROVED in json: %s", out)
+	}
+
+	// Reviewer add (dry-run & JSON)
+	out, err = executePr(t, server.URL, "--dry-run", "review", "reviewer", "add", "42", "--user", "bob")
+	if err != nil {
+		t.Fatalf("unexpected error on reviewer add dry run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "review", "reviewer", "add", "42", "--user", "bob")
+	if err != nil {
+		t.Fatalf("unexpected error on reviewer add json: %v", err)
+	}
+	if !strings.Contains(out, "bob") {
+		t.Fatalf("expected bob in json: %s", out)
+	}
+
+	// Reviewer remove (dry-run & JSON)
+	out, err = executePr(t, server.URL, "--dry-run", "review", "reviewer", "remove", "42", "--user", "bob")
+	if err != nil {
+		t.Fatalf("unexpected error on reviewer remove dry run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "review", "reviewer", "remove", "42", "--user", "bob")
+	if err != nil {
+		t.Fatalf("unexpected error on reviewer remove json: %v", err)
+	}
+	if !strings.Contains(out, "pull_request") {
+		t.Fatalf("expected pull_request in json: %s", out)
+	}
+}
+
+func TestPRCommentModes(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// Comment list variations
+	out, err := executePr(t, server.URL, "comment", "list", "42", "--unresolved")
+	if err != nil {
+		t.Fatalf("unexpected error on comment list unresolved: %v", err)
+	}
+	if !strings.Contains(out, "Comment 1") {
+		t.Fatalf("expected Comment 1 in list: %s", out)
+	}
+
+	out, err = executePr(t, server.URL, "comment", "list", "42", "--full")
+	if err != nil {
+		t.Fatalf("unexpected error on comment list full: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "comment", "list", "42", "--blocker")
+	if err != nil {
+		t.Fatalf("unexpected error on comment list blocker: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "comment", "list", "42", "--path", "file1.go")
+	if err != nil {
+		t.Fatalf("unexpected error on comment list path: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "comment", "list", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on comment list json: %v", err)
+	}
+	if !strings.Contains(out, "threads") {
+		t.Fatalf("expected threads in json: %s", out)
+	}
+
+	// Comment get JSON
+	out, err = executePr(t, server.URL, "--json", "comment", "get", "42", "101")
+	if err != nil {
+		t.Fatalf("unexpected error on comment get json: %v", err)
+	}
+	if !strings.Contains(out, "Comment 1") {
+		t.Fatalf("expected Comment 1 in json: %s", out)
+	}
+
+	// Comment add dry-run and JSON
+	out, err = executePr(t, server.URL, "--dry-run", "comment", "add", "42", "--text", "Blocker note", "--blocker")
+	if err != nil {
+		t.Fatalf("unexpected error on comment add blocker dry run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "comment", "add", "42", "--text", "Draft note", "--pending")
+	if err != nil {
+		t.Fatalf("unexpected error on comment add json: %v", err)
+	}
+	if !strings.Contains(out, "pending") {
+		t.Fatalf("expected pending in json: %s", out)
+	}
+
+	// Comment resolve dry-run and JSON
+	out, err = executePr(t, server.URL, "--dry-run", "comment", "resolve", "42", "101")
+	if err != nil {
+		t.Fatalf("unexpected error on comment resolve dry run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "comment", "resolve", "42", "101")
+	if err != nil {
+		t.Fatalf("unexpected error on comment resolve json: %v", err)
+	}
+	if !strings.Contains(out, "RESOLVED") {
+		t.Fatalf("expected RESOLVED in json: %s", out)
+	}
+
+	// Comment reopen dry-run and JSON
+	out, err = executePr(t, server.URL, "--dry-run", "comment", "reopen", "42", "101")
+	if err != nil {
+		t.Fatalf("unexpected error on comment reopen dry run: %v", err)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "comment", "reopen", "42", "101")
+	if err != nil {
+		t.Fatalf("unexpected error on comment reopen json: %v", err)
+	}
+}
+
+func TestPRDiffModes(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// --patch
+	out, err := executePr(t, server.URL, "diff", "42", "--patch")
+	if err != nil {
+		t.Fatalf("unexpected error on diff patch: %v", err)
+	}
+	if !strings.Contains(out, "Patch") {
+		t.Fatalf("expected Patch in diff patch output: %s", out)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "diff", "42", "--patch")
+	if err != nil {
+		t.Fatalf("unexpected error on diff patch json: %v", err)
+	}
+	if !strings.Contains(out, "Patch") {
+		t.Fatalf("expected Patch in diff patch json output: %s", out)
+	}
+
+	// --stat
+	out, err = executePr(t, server.URL, "diff", "42", "--stat")
+	if err != nil {
+		t.Fatalf("unexpected error on diff stat: %v", err)
+	}
+	if !strings.Contains(out, "file1.go") {
+		t.Fatalf("expected file1.go in diff stat output: %s", out)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "diff", "42", "--stat")
+	if err != nil {
+		t.Fatalf("unexpected error on diff stat json: %v", err)
+	}
+	if !strings.Contains(out, "filesChanged") && !strings.Contains(out, "linesAdded") {
+		t.Fatalf("expected stat in diff stat json output: %s", out)
+	}
+
+	// --name-only
+	out, err = executePr(t, server.URL, "diff", "42", "--name-only")
+	if err != nil {
+		t.Fatalf("unexpected error on diff name-only: %v", err)
+	}
+	if !strings.Contains(out, "file1.go") {
+		t.Fatalf("expected file1.go in diff name-only output: %s", out)
+	}
+
+	out, err = executePr(t, server.URL, "--json", "diff", "42", "--name-only")
+	if err != nil {
+		t.Fatalf("unexpected error on diff name-only json: %v", err)
+	}
+	if !strings.Contains(out, "file1.go") {
+		t.Fatalf("expected file1.go in diff name-only json output: %s", out)
+	}
+
+	// raw diff json
+	out, err = executePr(t, server.URL, "--json", "diff", "42")
+	if err != nil {
+		t.Fatalf("unexpected error on diff raw json: %v", err)
+	}
+	if !strings.Contains(out, "diff") {
+		t.Fatalf("expected diff in raw json output: %s", out)
+	}
+
+	// mutual exclusion
+	_, err = executePr(t, server.URL, "diff", "42", "--patch", "--stat")
+	if err == nil {
+		t.Fatalf("expected error on --patch and --stat together")
+	}
+}
+
+func TestPRValidationErrors(t *testing.T) {
+	server := newMockPRServer(t)
+
+	// --unresolved with conflicting --state
+	_, err := executePr(t, server.URL, "comment", "list", "42", "--unresolved", "--state", "resolved")
+	if err == nil {
+		t.Fatalf("expected error on --unresolved with --state resolved")
+	}
+
+	// invalid state
+	_, err = executePr(t, server.URL, "comment", "list", "42", "--state", "invalid-state")
+	if err == nil {
+		t.Fatalf("expected error on invalid comment state")
 	}
 }
