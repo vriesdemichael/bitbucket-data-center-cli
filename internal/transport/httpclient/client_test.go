@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -767,5 +768,167 @@ func TestCurrentUserSlugPropagatesStatusErrors(t *testing.T) {
 
 	if _, err := client.CurrentUserSlug(context.Background()); err == nil || apperrors.ExitCode(err) != 3 {
 		t.Fatalf("expected authentication exit code 3, got %v", err)
+	}
+}
+
+func TestDoRequestSuccess(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", request.Method)
+		}
+		if request.URL.Path != "/rest/api/1.0/custom" {
+			t.Errorf("expected path /rest/api/1.0/custom, got %s", request.URL.Path)
+		}
+		if request.URL.Query().Get("filter") != "active" {
+			t.Errorf("expected filter=active, got %s", request.URL.Query().Get("filter"))
+		}
+		if request.Header.Get("X-Custom-Header") != "custom-value" {
+			t.Errorf("expected custom header, got %s", request.Header.Get("X-Custom-Header"))
+		}
+		if request.Header.Get("Authorization") != "Bearer secret-token" {
+			t.Errorf("expected bearer token, got %s", request.Header.Get("Authorization"))
+		}
+
+		body, _ := io.ReadAll(request.Body)
+		if string(body) != `{"name":"test"}` {
+			t.Errorf("expected body payload, got %s", string(body))
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusOK)
+		_, _ = writer.Write([]byte(`{"status":"ok"}`))
+	}))
+	defer server.Close()
+
+	client := NewFromConfig(config.AppConfig{
+		BitbucketURL:   server.URL,
+		BitbucketToken: "secret-token",
+	})
+
+	headers := make(http.Header)
+	headers.Set("X-Custom-Header", "custom-value")
+
+	query := make(url.Values)
+	query.Set("filter", "active")
+
+	resp, err := client.DoRequest(context.Background(), RequestOptions{
+		Method:  "POST",
+		Path:    "rest/api/1.0/custom",
+		Query:   query,
+		Headers: headers,
+		Body:    []byte(`{"name":"test"}`),
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+	if string(resp.Body) != `{"status":"ok"}` {
+		t.Fatalf("expected body, got: %s", string(resp.Body))
+	}
+}
+
+func TestDoRequestFullURL(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusOK)
+		_, _ = writer.Write([]byte(`"full-url-ok"`))
+	}))
+	defer server.Close()
+
+	client := NewFromConfig(config.AppConfig{BitbucketURL: "http://other.local"})
+
+	resp, err := client.DoRequest(context.Background(), RequestOptions{
+		Method: "GET",
+		Path:   server.URL + "/rest/api/1.0/projects",
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if string(resp.Body) != `"full-url-ok"` {
+		t.Fatalf("expected full-url-ok, got: %s", string(resp.Body))
+	}
+}
+
+func TestDoRequestInitError(t *testing.T) {
+	client := &Client{
+		initErr: apperrors.New(apperrors.KindValidation, "forced init error", nil),
+	}
+	_, err := client.DoRequest(context.Background(), RequestOptions{
+		Method: "GET",
+		Path:   "/rest/api/1.0/test",
+	})
+	if err == nil {
+		t.Fatal("expected init error")
+	}
+}
+
+func TestDoRequestInvalidURL(t *testing.T) {
+	client := NewFromConfig(config.AppConfig{BitbucketURL: "http://example.local"})
+	_, err := client.DoRequest(context.Background(), RequestOptions{
+		Method: "GET",
+		Path:   "://invalid-url",
+	})
+	if err == nil {
+		t.Fatal("expected error on invalid URL")
+	}
+}
+
+func TestDoRequestRetriesAndStatusErrors(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		attempts++
+		if attempts == 1 {
+			writer.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		if attempts == 2 {
+			writer.Header().Set("Retry-After", "1")
+			writer.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		writer.WriteHeader(http.StatusOK)
+		_, _ = writer.Write([]byte(`{"recovered":true}`))
+	}))
+	defer server.Close()
+
+	client := NewFromConfig(config.AppConfig{
+		BitbucketURL: server.URL,
+		RetryCount:   3,
+		RetryBackoff: 10 * time.Millisecond,
+	})
+
+	resp, err := client.DoRequest(context.Background(), RequestOptions{
+		Method: "GET",
+		Path:   "/rest/api/1.0/flaky",
+	})
+	if err != nil {
+		t.Fatalf("expected recovery after retries, got: %v", err)
+	}
+	if !strings.Contains(string(resp.Body), "recovered") {
+		t.Fatalf("expected recovered payload, got: %s", string(resp.Body))
+	}
+}
+
+func TestDoRequestRetryExhaustion(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusInternalServerError)
+		_, _ = writer.Write([]byte(`{"errors":[{"message":"fatal"}]}`))
+	}))
+	defer server.Close()
+
+	client := NewFromConfig(config.AppConfig{
+		BitbucketURL: server.URL,
+		RetryCount:   1,
+		RetryBackoff: 5 * time.Millisecond,
+	})
+
+	_, err := client.DoRequest(context.Background(), RequestOptions{
+		Method: "GET",
+		Path:   "/rest/api/1.0/fatal",
+	})
+	if err == nil {
+		t.Fatal("expected error after exhausted retries")
 	}
 }
