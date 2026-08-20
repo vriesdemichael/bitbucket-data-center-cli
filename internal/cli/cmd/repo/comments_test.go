@@ -1,8 +1,14 @@
 package repocmd
 
 import (
+	"bytes"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
@@ -47,5 +53,175 @@ func TestCommentOwnedByUser(t *testing.T) {
 	}
 	if commentOwnedByUser(commentWithName, "bob") {
 		t.Fatal("expected mismatched username to fail ownership check")
+	}
+}
+
+func TestRepoCommentCommands(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		path := r.URL.Path
+
+		switch {
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/repo1/commits/c123/comments":
+			_, _ = w.Write([]byte(`{"values":[{"id":101,"version":1,"text":"Commit comment","author":{"name":"alice"}}]}`))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/repo1/commits/c123/comments/101":
+			_, _ = w.Write([]byte(`{"id":101,"version":1,"text":"Commit comment","author":{"name":"alice"}}`))
+
+		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/repo1/commits/c123/comments":
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":102,"version":1,"text":"Created comment","author":{"name":"alice"}}`))
+
+		case r.Method == http.MethodPut && path == "/rest/api/latest/projects/PRJ/repos/repo1/commits/c123/comments/101":
+			_, _ = w.Write([]byte(`{"id":101,"version":2,"text":"Updated comment","author":{"name":"alice"}}`))
+
+		case r.Method == http.MethodDelete && path == "/rest/api/latest/projects/PRJ/repos/repo1/commits/c123/comments/101":
+			w.WriteHeader(http.StatusNoContent)
+
+		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/repo1/commits/c123/comments/101/comments":
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":103,"version":1,"text":"Reply comment","author":{"name":"alice"}}`))
+
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	cfg := config.AppConfig{
+		BitbucketURL:      server.URL,
+		ProjectKey:        "PRJ",
+		BitbucketUsername: "alice",
+	}
+
+	jsonEnabled := false
+	dryRunEnabled := false
+
+	deps := Dependencies{
+		JSONEnabled:   func() bool { return jsonEnabled },
+		DryRunEnabled: func() bool { return dryRunEnabled },
+		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },
+		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+			return cfg, client, err
+		},
+	}
+
+	// 1. Comment list (human & JSON)
+	cmd := New(deps)
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"comment", "list", "--commit", "c123", "--path", "main.go", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on comment list: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Commit comment") {
+		t.Fatalf("expected Commit comment in output: %s", buf.String())
+	}
+
+	jsonEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"comment", "list", "--commit", "c123", "--path", "main.go", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on comment list JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "comments") {
+		t.Fatalf("expected comments in JSON output: %s", buf.String())
+	}
+	jsonEnabled = false
+
+	// 2. Comment create (dry-run & real)
+	dryRunEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"comment", "create", "--commit", "c123", "--text", "Created comment", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on comment create dry-run: %v", err)
+	}
+	dryRunEnabled = false
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"comment", "create", "--commit", "c123", "--text", "Created comment", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on comment create: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Created comment") {
+		t.Fatalf("expected Created comment in output: %s", buf.String())
+	}
+
+	// 3. Comment update (dry-run & real)
+	dryRunEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"comment", "update", "--commit", "c123", "--id", "101", "--text", "Updated comment", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on comment update dry-run: %v", err)
+	}
+	dryRunEnabled = false
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"comment", "update", "--commit", "c123", "--id", "101", "--text", "Updated comment", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on comment update: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Updated comment") {
+		t.Fatalf("expected Updated comment in output: %s", buf.String())
+	}
+
+	// 4. Comment delete (dry-run & real)
+	dryRunEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"comment", "delete", "--commit", "c123", "--id", "101", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on comment delete dry-run: %v", err)
+	}
+	dryRunEnabled = false
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"comment", "delete", "--commit", "c123", "--id", "101", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on comment delete: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Deleted comment") {
+		t.Fatalf("expected Deleted comment in output: %s", buf.String())
+	}
+
+	// 5. Target validation errors (both commit and pr, or neither)
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"comment", "list", "--path", "main.go", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatalf("expected validation error when neither --commit nor --pr is passed")
+	}
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"comment", "list", "--commit", "c123", "--pr", "42", "--path", "main.go", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatalf("expected validation error when both --commit and --pr are passed")
 	}
 }

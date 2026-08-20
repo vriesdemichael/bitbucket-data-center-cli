@@ -77,71 +77,131 @@ func newTestDependencies(t *testing.T, serverURL string, jsonMode bool, dryRun b
 
 func TestTagList(t *testing.T) {
 	server := newMockTagServer(t)
-	deps := newTestDependencies(t, server.URL, false, false)
 
+	// Human mode
+	deps := newTestDependencies(t, server.URL, false, false)
 	cmd := tagcmd.New(deps)
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"list"})
-
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on list: %v", err)
 	}
+	if !strings.Contains(buf.String(), "v1.0") {
+		t.Fatalf("expected 'v1.0' in output, got: %s", buf.String())
+	}
 
-	out := buf.String()
-	if !strings.Contains(out, "v1.0") {
-		t.Fatalf("expected 'v1.0' in output, got: %s", out)
+	// JSON mode
+	depsJSON := newTestDependencies(t, server.URL, true, false)
+	cmd = tagcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"list"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on list json: %v", err)
+	}
+	if !strings.Contains(buf.String(), "tags") {
+		t.Fatalf("expected 'tags' in json output, got: %s", buf.String())
 	}
 }
 
 func TestTagCreate(t *testing.T) {
 	server := newMockTagServer(t)
-	deps := newTestDependencies(t, server.URL, false, false)
 
-	cmd := tagcmd.New(deps)
+	// Dry run mode
+	depsDryRun := newTestDependencies(t, server.URL, false, true)
+	cmd := tagcmd.New(depsDryRun)
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"create", "v1.1", "--start-point", "main"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on create dry-run: %v", err)
+	}
 
+	// Real execution
+	deps := newTestDependencies(t, server.URL, false, false)
+	cmd = tagcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "v1.1", "--start-point", "main"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on create: %v", err)
 	}
+	if !strings.Contains(buf.String(), "Created tag") {
+		t.Fatalf("expected 'Created tag' in output, got: %s", buf.String())
+	}
 
-	out := buf.String()
-	if !strings.Contains(out, "Created tag") {
-		t.Fatalf("expected 'Created tag' in output, got: %s", out)
+	// JSON execution
+	depsJSON := newTestDependencies(t, server.URL, true, false)
+	cmd = tagcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "v1.1", "--start-point", "main"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on create json: %v", err)
+	}
+	if !strings.Contains(buf.String(), "tag") {
+		t.Fatalf("expected 'tag' in json output, got: %s", buf.String())
 	}
 }
 
 func TestTagViewAndDelete(t *testing.T) {
 	server := newMockTagServer(t)
-	deps := newTestDependencies(t, server.URL, false, false)
 
+	// View human
+	deps := newTestDependencies(t, server.URL, false, false)
 	cmd := tagcmd.New(deps)
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"view", "v1.0"})
-
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on view: %v", err)
 	}
-
-	out := buf.String()
-	if !strings.Contains(out, "Tag: v1.0") {
-		t.Fatalf("expected 'Tag: v1.0' in output, got: %s", out)
+	if !strings.Contains(buf.String(), "Tag: v1.0") {
+		t.Fatalf("expected 'Tag: v1.0' in output, got: %s", buf.String())
 	}
 
+	// View JSON
+	depsJSON := newTestDependencies(t, server.URL, true, false)
+	cmd = tagcmd.New(depsJSON)
 	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"view", "v1.0"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on view json: %v", err)
+	}
+	if !strings.Contains(buf.String(), "tag") {
+		t.Fatalf("expected 'tag' in json output, got: %s", buf.String())
+	}
+
+	// Delete dry run
+	depsDryRun := newTestDependencies(t, server.URL, false, true)
+	cmd = tagcmd.New(depsDryRun)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "v1.0"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete dry-run: %v", err)
+	}
+
+	// Delete real execution
+	cmd = tagcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"delete", "v1.0"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on delete: %v", err)
 	}
-
-	out = buf.String()
-	if !strings.Contains(out, "Deleted tag v1.0") {
-		t.Fatalf("expected 'Deleted tag v1.0' in output, got: %s", out)
+	if !strings.Contains(buf.String(), "Deleted tag v1.0") {
+		t.Fatalf("expected 'Deleted tag v1.0' in output, got: %s", buf.String())
 	}
 }
