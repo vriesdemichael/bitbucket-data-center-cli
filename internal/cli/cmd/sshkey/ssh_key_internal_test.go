@@ -1,21 +1,16 @@
-package tagcmd
+package sshkeycmd
 
 import (
 	"testing"
-
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 )
 
-func TestTagDefaults(t *testing.T) {
+func TestSSHKeyDefaults(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
 	var deps Dependencies
 	d := deps.withDefaults()
 
 	if d.JSONEnabled == nil || d.JSONEnabled() {
 		t.Fatal("expected JSONEnabled to default to false")
-	}
-	if d.DryRunEnabled == nil || d.DryRunEnabled() {
-		t.Fatal("expected DryRunEnabled to default to false")
 	}
 	if d.WriteJSON == nil || d.WriteJSONList == nil {
 		t.Fatal("expected WriteJSON and WriteJSONList to default to non-nil")
@@ -31,20 +26,5 @@ func TestTagDefaults(t *testing.T) {
 		if err != nil || client == nil || cfg.BitbucketURL != "http://localhost:7990" {
 			t.Fatalf("unexpected LoadConfigAndClient: %v", err)
 		}
-	}
-}
-
-func TestTagHelpers(t *testing.T) {
-	if safeString(nil) != "" {
-		t.Fatal("expected empty string for safeString(nil)")
-	}
-	s := "v1.0.0"
-	if safeString(&s) != "v1.0.0" {
-		t.Fatal("expected v1.0.0 for safeString(&s)")
-	}
-
-	cfg := config.AppConfig{ProjectKey: "PRJ"}
-	if _, err := resolveTagRepositoryReference("invalid-selector-no-slash", cfg); err == nil {
-		t.Fatal("expected error for invalid repository selector")
 	}
 }

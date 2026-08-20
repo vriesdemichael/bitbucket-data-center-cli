@@ -284,3 +284,22 @@ func TestBrowserCommand(t *testing.T) {
 		t.Fatalf("unexpected linux command: %s %v", cmd, args)
 	}
 }
+
+func TestBrowseDefaults(t *testing.T) {
+	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
+	var deps Dependencies
+	d := deps.withDefaults()
+
+	if d.JSONEnabled == nil || d.JSONEnabled() {
+		t.Fatal("expected JSONEnabled to default to false")
+	}
+	if d.WriteJSON == nil || d.URLOpener == nil {
+		t.Fatal("expected WriteJSON and URLOpener to default to non-nil")
+	}
+	if d.LoadConfig != nil {
+		cfg, err := d.LoadConfig()
+		if err != nil || cfg.BitbucketURL != "http://localhost:7990" {
+			t.Fatalf("unexpected LoadConfig: %v", err)
+		}
+	}
+}
