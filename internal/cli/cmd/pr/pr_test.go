@@ -1183,3 +1183,38 @@ func TestPRValidationErrors(t *testing.T) {
 		t.Fatalf("expected error on invalid comment state")
 	}
 }
+
+func TestPRURLAndBranchResolution(t *testing.T) {
+	server := newMockPRServer(t)
+
+	t.Run("resolve via full Bitbucket browser PR URL", func(t *testing.T) {
+		prURL := server.URL + "/projects/PRJ/repos/demo/pull-requests/42"
+		out, err := executePr(t, server.URL, "get", prURL)
+		if err != nil {
+			t.Fatalf("unexpected error resolving PR URL: %v", err)
+		}
+		if !strings.Contains(out, "#42") || !strings.Contains(out, "Test PR") {
+			t.Fatalf("unexpected output for PR URL: %s", out)
+		}
+	})
+
+	t.Run("resolve via numeric hash #42", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "get", "#42")
+		if err != nil {
+			t.Fatalf("unexpected error resolving #42: %v", err)
+		}
+		if !strings.Contains(out, "#42") {
+			t.Fatalf("unexpected output for #42: %s", out)
+		}
+	})
+
+	t.Run("resolve via source branch name", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "get", "feature/x")
+		if err != nil {
+			t.Fatalf("unexpected error resolving branch name: %v", err)
+		}
+		if !strings.Contains(out, "#42") {
+			t.Fatalf("unexpected output for branch name: %s", out)
+		}
+	})
+}

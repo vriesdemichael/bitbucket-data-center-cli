@@ -261,6 +261,32 @@ func TestDiffPRModes(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on diff pr raw: %v", err)
 	}
+
+	// 5. Resolving via full PR URL
+	cmd = diffcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"pr", server.URL + "/projects/PRJ/repos/demo/pull-requests/1", "--patch"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on diff pr URL: %v", err)
+	}
+	if !strings.Contains(buf.String(), "diff --git a/pr.txt") {
+		t.Fatalf("expected pr diff in URL output, got: %s", buf.String())
+	}
+
+	// 6. Resolving via #1
+	cmd = diffcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"pr", "#1", "--patch"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on diff pr #1: %v", err)
+	}
+	if !strings.Contains(buf.String(), "diff --git a/pr.txt") {
+		t.Fatalf("expected pr diff in #1 output, got: %s", buf.String())
+	}
 }
 
 func TestDiffCommit(t *testing.T) {

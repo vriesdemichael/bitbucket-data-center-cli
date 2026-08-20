@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prsel"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -226,10 +227,11 @@ func NewDiffPullRequestCommand(deps Dependencies, repositorySelector *string) *c
 			if repositorySelector != nil {
 				repoSelector = *repositorySelector
 			}
-			repo, err := resolveDiffRepositoryReference(repoSelector, cfg)
+			target, err := prsel.Resolve(cmd.Context(), args[0], repoSelector, cfg, nil)
 			if err != nil {
 				return err
 			}
+			repo := diffservice.RepositoryRef{ProjectKey: target.ProjectKey, Slug: target.RepoSlug}
 
 			service := diffservice.NewService(client)
 			outputMode, err := resolveDiffOutputMode(patch, stat, nameOnly)
@@ -239,7 +241,7 @@ func NewDiffPullRequestCommand(deps Dependencies, repositorySelector *string) *c
 
 			result, err := service.DiffPR(cmd.Context(), diffservice.DiffPRInput{
 				Repository:    repo,
-				PullRequestID: args[0],
+				PullRequestID: target.PullRequestID,
 				Output:        outputMode,
 			})
 			if err != nil {

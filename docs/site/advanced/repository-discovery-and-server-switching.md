@@ -34,7 +34,7 @@ JSON mode suppresses that banner to preserve machine output contracts on `stdout
 
 Repository selection precedence for repo-scoped commands:
 
-1. Explicit `--repo PROJECT/slug`
+1. Explicit `--repo` (accepts `PROJECT/slug`, personal repos `~username/slug`, or full Bitbucket URLs like `https://bitbucket.acme.corp/projects/PROJECT/repos/slug` and `ssh://...`)
 2. Git remote discovery (if exactly one matching remote context exists)
 3. `BITBUCKET_PROJECT_KEY` + `BITBUCKET_REPO_SLUG`
 

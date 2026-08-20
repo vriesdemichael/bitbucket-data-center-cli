@@ -11,6 +11,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prsel"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
@@ -211,21 +212,21 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
-			pullRequest, err := service.Get(cmd.Context(), repo, args[0])
+			pullRequest, err := service.Get(cmd.Context(), repo, target.PullRequestID)
 			if err != nil {
 				return err
 			}
 
 			counts := pullrequestservice.ReviewCounts{}
 			if !noReviewSummary {
-				counts, err = resolveReviewCounts(cmd.Context(), client, repo, args[0])
+				counts, err = resolveReviewCounts(cmd.Context(), client, repo, target.PullRequestID)
 				if err != nil {
 					return err
 				}
@@ -291,20 +292,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
-			commits, err := service.ListCommits(cmd.Context(), repo, args[0], pullrequestservice.PageOptions{Limit: commitsPaging.ServiceLimit(), Start: commitsStart})
+			commits, err := service.ListCommits(cmd.Context(), repo, target.PullRequestID, pullrequestservice.PageOptions{Limit: commitsPaging.ServiceLimit(), Start: commitsStart})
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "commits": commits})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "commits": commits})
 			}
 
 			if len(commits) == 0 {
@@ -333,20 +335,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
-			changes, err := service.ListChanges(cmd.Context(), repo, args[0], pullrequestservice.PageOptions{Limit: filesPaging.ServiceLimit(), Start: filesStart})
+			changes, err := service.ListChanges(cmd.Context(), repo, target.PullRequestID, pullrequestservice.PageOptions{Limit: filesPaging.ServiceLimit(), Start: filesStart})
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "changes": changes})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "changes": changes})
 			}
 
 			if len(changes) == 0 {
@@ -380,20 +383,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
-			commit, err := service.GetMergeBase(cmd.Context(), repo, args[0])
+			commit, err := service.GetMergeBase(cmd.Context(), repo, target.PullRequestID)
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "merge_base": commit})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "merge_base": commit})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", shortCommitID(commit), firstMessageLine(commit.Message))
@@ -539,25 +543,25 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
 			var draft *bool
 			if cmd.Flags().Changed("draft") {
 				draft = &updateDraft
 			}
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err
 				}
 
-				current, err := service.Get(cmd.Context(), repo, args[0])
+				current, err := service.Get(cmd.Context(), repo, target.PullRequestID)
 				if err != nil {
 					return err
 				}
@@ -578,7 +582,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.update",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "title": updateTitle, "description": updateDescription, "version": updateVersion, "draft": draft},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "title": updateTitle, "description": updateDescription, "version": updateVersion, "draft": draft},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -597,7 +601,7 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			updated, err := service.Update(cmd.Context(), repo, args[0], pullrequestservice.UpdateInput{
+			updated, err := service.Update(cmd.Context(), repo, target.PullRequestID, pullrequestservice.UpdateInput{
 				Title:       updateTitle,
 				Description: updateDescription,
 				Version:     updateVersion,
@@ -632,20 +636,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err
 				}
 
-				current, err := service.Get(cmd.Context(), repo, args[0])
+				current, err := service.Get(cmd.Context(), repo, target.PullRequestID)
 				if err != nil {
 					return err
 				}
@@ -668,7 +673,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.merge",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -695,7 +700,7 @@ func New(deps Dependencies) *cobra.Command {
 				version = &transitionVersion
 			}
 
-			merged, err := service.Merge(cmd.Context(), repo, args[0], version)
+			merged, err := service.Merge(cmd.Context(), repo, target.PullRequestID, version)
 			if err != nil {
 				return err
 			}
@@ -720,20 +725,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err
 				}
 
-				current, err := service.Get(cmd.Context(), repo, args[0])
+				current, err := service.Get(cmd.Context(), repo, target.PullRequestID)
 				if err != nil {
 					return err
 				}
@@ -751,7 +757,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.decline",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -775,7 +781,7 @@ func New(deps Dependencies) *cobra.Command {
 				version = &transitionVersion
 			}
 
-			declined, err := service.Decline(cmd.Context(), repo, args[0], version)
+			declined, err := service.Decline(cmd.Context(), repo, target.PullRequestID, version)
 			if err != nil {
 				return err
 			}
@@ -800,20 +806,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err
 				}
 
-				current, err := service.Get(cmd.Context(), repo, args[0])
+				current, err := service.Get(cmd.Context(), repo, target.PullRequestID)
 				if err != nil {
 					return err
 				}
@@ -831,7 +838,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.reopen",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -855,7 +862,7 @@ func New(deps Dependencies) *cobra.Command {
 				version = &transitionVersion
 			}
 
-			reopened, err := service.Reopen(cmd.Context(), repo, args[0], version)
+			reopened, err := service.Reopen(cmd.Context(), repo, target.PullRequestID, version)
 			if err != nil {
 				return err
 			}
@@ -882,20 +889,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
 					return err
 				}
 
-				current, err := service.Get(cmd.Context(), repo, args[0])
+				current, err := service.Get(cmd.Context(), repo, target.PullRequestID)
 				if err != nil {
 					return err
 				}
@@ -913,7 +921,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.review.approve",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -931,7 +939,7 @@ func New(deps Dependencies) *cobra.Command {
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
-			pullRequest, err := service.Approve(cmd.Context(), repo, args[0])
+			pullRequest, err := service.Approve(cmd.Context(), repo, target.PullRequestID)
 			if err != nil {
 				return err
 			}
@@ -955,20 +963,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
 					return err
 				}
 
-				current, err := service.Get(cmd.Context(), repo, args[0])
+				current, err := service.Get(cmd.Context(), repo, target.PullRequestID)
 				if err != nil {
 					return err
 				}
@@ -986,7 +995,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.review.unapprove",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -1004,7 +1013,7 @@ func New(deps Dependencies) *cobra.Command {
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
-			pullRequest, err := service.Unapprove(cmd.Context(), repo, args[0])
+			pullRequest, err := service.Unapprove(cmd.Context(), repo, target.PullRequestID)
 			if err != nil {
 				return err
 			}
@@ -1030,20 +1039,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err
 				}
 
-				current, err := service.Get(cmd.Context(), repo, args[0])
+				current, err := service.Get(cmd.Context(), repo, target.PullRequestID)
 				if err != nil {
 					return err
 				}
@@ -1060,7 +1070,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.review.reviewer.add",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "user": reviewerUsername},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "user": reviewerUsername},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -1078,7 +1088,7 @@ func New(deps Dependencies) *cobra.Command {
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
-			pullRequest, err := service.AddReviewer(cmd.Context(), repo, args[0], reviewerUsername)
+			pullRequest, err := service.AddReviewer(cmd.Context(), repo, target.PullRequestID, reviewerUsername)
 			if err != nil {
 				return err
 			}
@@ -1104,20 +1114,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err
 				}
 
-				current, err := service.Get(cmd.Context(), repo, args[0])
+				current, err := service.Get(cmd.Context(), repo, target.PullRequestID)
 				if err != nil {
 					return err
 				}
@@ -1134,7 +1145,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.review.reviewer.remove",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "user": reviewerUsername},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "user": reviewerUsername},
 						Action:          "delete",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -1152,7 +1163,7 @@ func New(deps Dependencies) *cobra.Command {
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
-			pullRequest, err := service.RemoveReviewer(cmd.Context(), repo, args[0], reviewerUsername)
+			pullRequest, err := service.RemoveReviewer(cmd.Context(), repo, target.PullRequestID, reviewerUsername)
 			if err != nil {
 				return err
 			}
@@ -1180,13 +1191,14 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, nil)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			response, err := client.GetReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, args[0], nil)
+			response, err := client.GetReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, target.PullRequestID, nil)
 			if err != nil {
 				return err
 			}
@@ -1200,7 +1212,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "comments": comments})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "comments": comments})
 			}
 
 			if len(comments) == 0 {
@@ -1227,11 +1239,12 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, nil)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
 			var body openapigenerated.RestPullRequestFinishReviewRequest
 			if reviewCompleteStatus != "" {
@@ -1255,7 +1268,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.review.complete",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "status": reviewCompleteStatus, "comment": reviewCompleteComment},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "status": reviewCompleteStatus, "comment": reviewCompleteComment},
 						Action:          "update",
 						PredictedAction: "update",
 						Supported:       true,
@@ -1268,7 +1281,7 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			response, err := client.FinishReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, args[0], nil, body)
+			response, err := client.FinishReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, target.PullRequestID, nil, body)
 			if err != nil {
 				return err
 			}
@@ -1277,10 +1290,10 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "status": "completed"})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "status": "completed"})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Completed review for pull request #%s\n", args[0])
+			fmt.Fprintf(cmd.OutOrStdout(), "Completed review for pull request #%s\n", target.PullRequestID)
 			return nil
 		},
 	}
@@ -1297,11 +1310,12 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, nil)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(client)
@@ -1315,7 +1329,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.review.discard",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 						Action:          "delete",
 						PredictedAction: "delete",
 						Supported:       true,
@@ -1328,7 +1342,7 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			response, err := client.DiscardReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, args[0])
+			response, err := client.DiscardReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, target.PullRequestID)
 			if err != nil {
 				return err
 			}
@@ -1337,10 +1351,10 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "status": "discarded"})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "status": "discarded"})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Discarded review for pull request #%s\n", args[0])
+			fmt.Fprintf(cmd.OutOrStdout(), "Discarded review for pull request #%s\n", target.PullRequestID)
 			return nil
 		},
 	}
@@ -1357,20 +1371,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, nil)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
 			jiraService := jiraservice.NewService(httpclient.NewFromConfig(cfg))
-			issues, err := jiraService.GetPRIssues(cmd.Context(), jiraservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0])
+			issues, err := jiraService.GetPRIssues(cmd.Context(), jiraservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID)
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "issues": issues})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "issues": issues})
 			}
 
 			if len(issues) == 0 {
@@ -1428,11 +1443,11 @@ func New(deps Dependencies) *cobra.Command {
 				return apperrors.New(apperrors.KindValidation, err.Error(), nil)
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, nil)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
 			threadOptions := pullrequestactivityservice.ThreadOptions{
 				State:         normalizedState,
@@ -1441,7 +1456,7 @@ func New(deps Dependencies) *cobra.Command {
 				BaseURL:       cfg.BitbucketURL,
 				ProjectKey:    repo.ProjectKey,
 				Slug:          repo.Slug,
-				PullRequestID: args[0],
+				PullRequestID: target.PullRequestID,
 			}
 
 			source := "comments"
@@ -1454,7 +1469,7 @@ func New(deps Dependencies) *cobra.Command {
 				service := commentservice.NewService(client)
 				comments, err = service.List(cmd.Context(), commentservice.Target{
 					Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
-					PullRequestID: args[0],
+					PullRequestID: target.PullRequestID,
 					Blocker:       true,
 				}, "", commentPaging.ServiceLimit())
 				if err != nil {
@@ -1464,7 +1479,7 @@ func New(deps Dependencies) *cobra.Command {
 			} else if trimmedCommentPath == "" {
 				source = "activities"
 				activityService := pullrequestactivityservice.NewService(client)
-				activities, listErr := activityService.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0], pullrequestactivityservice.ListOptions{Limit: commentPaging.ServiceLimit()})
+				activities, listErr := activityService.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID, pullrequestactivityservice.ListOptions{Limit: commentPaging.ServiceLimit()})
 				if listErr != nil {
 					return listErr
 				}
@@ -1474,7 +1489,7 @@ func New(deps Dependencies) *cobra.Command {
 				service := commentservice.NewService(client)
 				comments, err = service.List(cmd.Context(), commentservice.Target{
 					Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
-					PullRequestID: args[0],
+					PullRequestID: target.PullRequestID,
 				}, trimmedCommentPath, commentPaging.ServiceLimit())
 				if err != nil {
 					return err
@@ -1486,7 +1501,7 @@ func New(deps Dependencies) *cobra.Command {
 				if deps.JSONEnabled() {
 					return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
 						"repository":      repo,
-						"pull_request_id": args[0],
+						"pull_request_id": target.PullRequestID,
 						"source":          source,
 						"path":            trimmedCommentPath,
 						"comments":        comments,
@@ -1507,7 +1522,7 @@ func New(deps Dependencies) *cobra.Command {
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
 					"repository":      repo,
-					"pull_request_id": args[0],
+					"pull_request_id": target.PullRequestID,
 					"source":          source,
 					"path":            trimmedCommentPath,
 					"state":           normalizedState,
@@ -1557,23 +1572,23 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, nil)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
 			service := commentservice.NewService(client)
 			comment, err := service.Get(cmd.Context(), commentservice.Target{
 				Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
-				PullRequestID: args[0],
+				PullRequestID: target.PullRequestID,
 			}, args[1])
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "comment": comment})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "comment": comment})
 			}
 
 			fmt.Fprintln(cmd.OutOrStdout(), formatCommentDetail(comment))
@@ -1595,15 +1610,15 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, nil)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			target := commentservice.Target{
+			cmtTarget := commentservice.Target{
 				Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
-				PullRequestID: args[0],
+				PullRequestID: target.PullRequestID,
 				Blocker:       commentAddBlocker,
 				Pending:       commentAddPending,
 			}
@@ -1620,7 +1635,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.comment.add",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "text": commentAddText, "blocker": commentAddBlocker, "pending": commentAddPending},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "text": commentAddText, "blocker": commentAddBlocker, "pending": commentAddPending},
 						Action:          "create",
 						PredictedAction: "create",
 						Supported:       true,
@@ -1634,13 +1649,13 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			service := commentservice.NewService(client)
-			created, err := service.Create(cmd.Context(), target, commentAddText)
+			created, err := service.Create(cmd.Context(), cmtTarget, commentAddText)
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "comment": created, "blocker": commentAddBlocker, "pending": commentAddPending})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "comment": created, "blocker": commentAddBlocker, "pending": commentAddPending})
 			}
 
 			commentID := ""
@@ -1676,13 +1691,13 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, nil)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			prID := args[0]
+			prID := target.PullRequestID
 			commentID := args[1]
 			emoticon := normalizeEmoticon(args[2])
 
@@ -1775,13 +1790,13 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, nil)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			prID := args[0]
+			prID := target.PullRequestID
 			commentID := args[1]
 
 			req := openapigenerated.RestApplySuggestionRequest{
@@ -1865,20 +1880,20 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, nil)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
 			service := pullrequestactivityservice.NewService(client)
-			activities, err := service.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, args[0], pullrequestactivityservice.ListOptions{Limit: activityPaging.ServiceLimit()})
+			activities, err := service.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID, pullrequestactivityservice.ListOptions{Limit: activityPaging.ServiceLimit()})
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "activities": activities})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "activities": activities})
 			}
 
 			if len(activities) == 0 {
@@ -1914,14 +1929,14 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
-			statuses, err := service.GetBuildStatuses(cmd.Context(), repo, args[0], buildPaging.ServiceLimit())
+			statuses, err := service.GetBuildStatuses(cmd.Context(), repo, target.PullRequestID, buildPaging.ServiceLimit())
 			if err != nil {
 				return err
 			}
@@ -1929,7 +1944,7 @@ func New(deps Dependencies) *cobra.Command {
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
 					"repository":   repo,
-					"pull_request": args[0],
+					"pull_request": target.PullRequestID,
 					"statuses":     statuses,
 				})
 			}
@@ -1964,20 +1979,20 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
-			autoMerge, err := service.GetAutoMerge(cmd.Context(), repo, args[0])
+			autoMerge, err := service.GetAutoMerge(cmd.Context(), repo, target.PullRequestID)
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "auto_merge": autoMerge})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "auto_merge": autoMerge})
 			}
 
 			if !autoMerge.Enabled {
@@ -2005,20 +2020,20 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err
 				}
 
-				current, err := service.GetAutoMerge(cmd.Context(), repo, args[0])
+				current, err := service.GetAutoMerge(cmd.Context(), repo, target.PullRequestID)
 				if err != nil {
 					return err
 				}
@@ -2036,7 +2051,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.auto-merge.enable",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "strategy": autoMergeStrategy},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "strategy": autoMergeStrategy},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -2055,21 +2070,21 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			autoMerge, err := service.EnableAutoMerge(cmd.Context(), repo, args[0], autoMergeStrategy)
+			autoMerge, err := service.EnableAutoMerge(cmd.Context(), repo, target.PullRequestID, autoMergeStrategy)
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "auto_merge": autoMerge})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "auto_merge": autoMerge})
 			}
 
 			if autoMerge.MergedImmediately {
-				fmt.Fprintf(cmd.OutOrStdout(), "Merged pull request #%s immediately (strategy=%s): its checks already passed, so there was nothing to wait for\n", args[0], autoMerge.StrategyID)
+				fmt.Fprintf(cmd.OutOrStdout(), "Merged pull request #%s immediately (strategy=%s): its checks already passed, so there was nothing to wait for\n", target.PullRequestID, autoMerge.StrategyID)
 				return nil
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Enabled auto-merge on pull request #%s (strategy=%s)\n", args[0], autoMerge.StrategyID)
+			fmt.Fprintf(cmd.OutOrStdout(), "Enabled auto-merge on pull request #%s (strategy=%s)\n", target.PullRequestID, autoMerge.StrategyID)
 			return nil
 		},
 	}
@@ -2086,20 +2101,20 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err
 				}
 
-				current, err := service.GetAutoMerge(cmd.Context(), repo, args[0])
+				current, err := service.GetAutoMerge(cmd.Context(), repo, target.PullRequestID)
 				if err != nil {
 					return err
 				}
@@ -2117,7 +2132,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.auto-merge.disable",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 						Action:          "delete",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -2136,15 +2151,15 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			if err := service.DisableAutoMerge(cmd.Context(), repo, args[0]); err != nil {
+			if err := service.DisableAutoMerge(cmd.Context(), repo, target.PullRequestID); err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": repo, "pull_request_id": args[0]})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": repo, "pull_request_id": target.PullRequestID})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Disabled auto-merge on pull request #%s\n", args[0])
+			fmt.Fprintf(cmd.OutOrStdout(), "Disabled auto-merge on pull request #%s\n", target.PullRequestID)
 			return nil
 		},
 	}
@@ -2160,20 +2175,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(apiClient)
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(apiClient)
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
 					return err
 				}
 
-				if _, err := service.Get(cmd.Context(), repo, args[0]); err != nil {
+				if _, err := service.Get(cmd.Context(), repo, target.PullRequestID); err != nil {
 					return err
 				}
 
@@ -2183,7 +2199,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.watch",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 						Action:          "update",
 						PredictedAction: "update",
 						Supported:       true,
@@ -2195,16 +2211,16 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			err = service.Watch(cmd.Context(), repo, args[0])
+			err = service.Watch(cmd.Context(), repo, target.PullRequestID)
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "watched": true})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "watched": true})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Watching pull request #%s\n", args[0])
+			fmt.Fprintf(cmd.OutOrStdout(), "Watching pull request #%s\n", target.PullRequestID)
 			return nil
 		},
 	}
@@ -2219,20 +2235,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(apiClient)
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(apiClient)
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
 					return err
 				}
 
-				if _, err := service.Get(cmd.Context(), repo, args[0]); err != nil {
+				if _, err := service.Get(cmd.Context(), repo, target.PullRequestID); err != nil {
 					return err
 				}
 
@@ -2242,7 +2259,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.unwatch",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 						Action:          "delete",
 						PredictedAction: "delete",
 						Supported:       true,
@@ -2254,16 +2271,16 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			err = service.Unwatch(cmd.Context(), repo, args[0])
+			err = service.Unwatch(cmd.Context(), repo, target.PullRequestID)
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": args[0], "watched": false})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "watched": false})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Unwatching pull request #%s\n", args[0])
+			fmt.Fprintf(cmd.OutOrStdout(), "Unwatching pull request #%s\n", target.PullRequestID)
 			return nil
 		},
 	}
@@ -2279,20 +2296,21 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repoProj, repoSlug, err := reposel.Resolve(repository, cfg)
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(apiClient)
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(apiClient)
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err
 				}
 
-				rebaseability, err := service.CanRebase(cmd.Context(), repo, args[0])
+				rebaseability, err := service.CanRebase(cmd.Context(), repo, target.PullRequestID)
 				if err != nil {
 					return err
 				}
@@ -2329,7 +2347,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.rebase",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -2354,7 +2372,7 @@ func New(deps Dependencies) *cobra.Command {
 				version = &rebaseVersion
 			}
 
-			result, err := service.Rebase(cmd.Context(), repo, args[0], version)
+			result, err := service.Rebase(cmd.Context(), repo, target.PullRequestID, version)
 			if err != nil {
 				return err
 			}
@@ -2363,7 +2381,7 @@ func New(deps Dependencies) *cobra.Command {
 				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "rebase_result": result})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Rebased pull request #%s\n", args[0])
+			fmt.Fprintf(cmd.OutOrStdout(), "Rebased pull request #%s\n", target.PullRequestID)
 			return nil
 		},
 	}
@@ -2495,11 +2513,11 @@ func newPullRequestDiffAlias(deps Dependencies, repositorySelector *string) *cob
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(*repositorySelector, cfg)
+			target, err := prsel.Resolve(cmd.Context(), args[0], *repositorySelector, cfg, nil)
 			if err != nil {
 				return err
 			}
-			repo := diffservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := diffservice.RepositoryRef{ProjectKey: target.ProjectKey, Slug: target.RepoSlug}
 
 			service := diffservice.NewService(client)
 			outputMode, err := resolveDiffOutputMode(patch, stat, nameOnly)
@@ -2509,7 +2527,7 @@ func newPullRequestDiffAlias(deps Dependencies, repositorySelector *string) *cob
 
 			result, err := service.DiffPR(cmd.Context(), diffservice.DiffPRInput{
 				Repository:    repo,
-				PullRequestID: args[0],
+				PullRequestID: target.PullRequestID,
 				Output:        outputMode,
 			})
 			if err != nil {

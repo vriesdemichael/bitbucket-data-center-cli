@@ -1,9 +1,9 @@
 {
   "version": 1,
   "summary": {
-    "runnable_commands": 228,
-    "covered_commands": 225,
-    "covered_percent": 98.68421052631578,
+    "runnable_commands": 231,
+    "covered_commands": 228,
+    "covered_percent": 98.7012987012987,
     "masked_commands": 0,
     "uncovered_commands": 3
   },
@@ -167,11 +167,14 @@
     "repo comment list",
     "repo comment update",
     "repo compare",
+    "repo create",
     "repo default-task add",
     "repo default-task delete",
     "repo default-task list",
     "repo default-task update",
+    "repo delete",
     "repo edit",
+    "repo fork",
     "repo label add",
     "repo label list",
     "repo label remove",

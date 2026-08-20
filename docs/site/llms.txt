@@ -95,9 +95,12 @@ bb build status get 4f3c2b1 --limit 20
 Useful operator extras:
 
 ```bash
-bb pr get --repo MYPROJ/payments 42
-bb browse --repo MYPROJ/payments
+bb pr get https://bitbucket.example.com/projects/MYPROJ/repos/payments/pull-requests/42
+bb pr checkout #42
+bb pr diff feature/release-readiness
+bb repo create --project MYPROJ --name payments-v2
 bb repo clone MYPROJ/payments
+bb browse --repo MYPROJ/payments
 bb --json pr get --repo MYPROJ/payments 42
 ```
 

@@ -12,24 +12,23 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
 
-func newRepoAdminCommand(deps Dependencies) *cobra.Command {
-	var repositorySelector string
-
-	repoAdminCmd := &cobra.Command{
-		Use:   "admin",
-		Short: "Repository administration commands (create/fork/update/delete)",
-	}
-
-	repoAdminCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
-
+func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {
 	var createProject string
 	var createName string
 	var createDesc string
 	var createForkable bool
 	var createDefaultBranch string
+
+	shortDesc := "Create a new repository"
+	longDesc := "Create a new repository.\n\nAlso available as bb repo admin create."
+	if isAlias {
+		longDesc = "Create a new repository.\n\nAlias for bb repo create."
+	}
+
 	createCmd := &cobra.Command{
 		Use:   "create",
-		Short: "Create a new repository",
+		Short: shortDesc,
+		Long:  longDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -67,12 +66,17 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 					}
 				}
 
+				intent := "repo.create"
+				if isAlias {
+					intent = "repo.admin.create"
+				}
+
 				preview := dryrunpreview.Preview{
 					DryRun:       true,
 					PlanningMode: dryrunpreview.PlanningModeStateful,
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
-						Intent:          "repo.admin.create",
+						Intent:          intent,
 						Target:          map[string]any{"project": createProject, "name": createName, "default_branch": createDefaultBranch},
 						Action:          "create",
 						PredictedAction: predicted,
@@ -123,20 +127,35 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 	createCmd.Flags().StringVar(&createDefaultBranch, "default-branch", "", "Repository default branch")
 	_ = createCmd.MarkFlagRequired("project")
 	_ = createCmd.MarkFlagRequired("name")
-	repoAdminCmd.AddCommand(createCmd)
+	return createCmd
+}
 
+func newRepoForkCommand(deps Dependencies, repositorySelector *string, isAlias bool) *cobra.Command {
 	var forkName string
 	var forkProject string
+	var localRepoSelector string
+
+	shortDesc := "Fork a repository"
+	longDesc := "Fork a repository.\n\nAlso available as bb repo admin fork."
+	if isAlias {
+		longDesc = "Fork a repository.\n\nAlias for bb repo fork."
+	}
+
 	forkCmd := &cobra.Command{
 		Use:   "fork",
-		Short: "Fork a repository",
+		Short: shortDesc,
+		Long:  longDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
 				return err
 			}
 
-			repoRef, err := resolveRepoReference(repositorySelector, cfg)
+			selector := localRepoSelector
+			if repositorySelector != nil && *repositorySelector != "" {
+				selector = *repositorySelector
+			}
+			repoRef, err := resolveRepoReference(selector, cfg)
 			if err != nil {
 				return err
 			}
@@ -160,12 +179,17 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 
 				predicted := "create"
 				reason := "repository fork will be created"
+				intent := "repo.fork"
+				if isAlias {
+					intent = "repo.admin.fork"
+				}
+
 				preview := dryrunpreview.Preview{
 					DryRun:       true,
 					PlanningMode: dryrunpreview.PlanningModeStateful,
 					Capability:   dryrunpreview.CapabilityPartial,
 					Items: []dryrunpreview.Item{{
-						Intent:          "repo.admin.fork",
+						Intent:          intent,
 						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": forkName, "project": forkProject},
 						Action:          "create",
 						PredictedAction: predicted,
@@ -197,7 +221,106 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 	}
 	forkCmd.Flags().StringVar(&forkName, "name", "", "Name of the new fork")
 	forkCmd.Flags().StringVar(&forkProject, "project", "", "Project key of the new fork")
-	repoAdminCmd.AddCommand(forkCmd)
+	if repositorySelector == nil {
+		forkCmd.Flags().StringVar(&localRepoSelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	}
+	return forkCmd
+}
+
+func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias bool) *cobra.Command {
+	var localRepoSelector string
+
+	shortDesc := "Delete a repository"
+	longDesc := "Delete a repository.\n\nAlso available as bb repo admin delete."
+	if isAlias {
+		longDesc = "Delete a repository.\n\nAlias for bb repo delete."
+	}
+
+	deleteCmd := &cobra.Command{
+		Use:   "delete",
+		Short: shortDesc,
+		Long:  longDesc,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := deps.LoadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			selector := localRepoSelector
+			if repositorySelector != nil && *repositorySelector != "" {
+				selector = *repositorySelector
+			}
+			repoRef, err := resolveRepoReference(selector, cfg)
+			if err != nil {
+				return err
+			}
+
+			repo := reposervice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
+			service := reposervice.NewAdminService(client)
+			if deps.DryRunEnabled() {
+				if deps.PermissionChecker != nil {
+					checker := deps.PermissionChecker(client)
+					if checker != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+							return err
+						}
+					}
+				}
+
+				intent := "repo.delete"
+				if isAlias {
+					intent = "repo.admin.delete"
+				}
+
+				preview := dryrunpreview.Preview{
+					DryRun:       true,
+					PlanningMode: dryrunpreview.PlanningModeStateful,
+					Capability:   dryrunpreview.CapabilityPartial,
+					Items: []dryrunpreview.Item{{
+						Intent:          intent,
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
+						Action:          "delete",
+						PredictedAction: "delete",
+						Supported:       true,
+						Reason:          "repository delete will be attempted",
+						Confidence:      dryrunpreview.CapabilityPartial,
+						RequiredState:   []string{"repository reference"},
+					}},
+					Summary: dryrunpreview.Summary{Total: 1, Supported: 1, DeleteCount: 1},
+				}
+				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
+			}
+
+			if err := service.Delete(cmd.Context(), repo); err != nil {
+				return err
+			}
+
+			if deps.JSONEnabled() {
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "repository": repoRef.ProjectKey + "/" + repoRef.Slug})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted repository"), style.Resource.Render(repoRef.ProjectKey+"/"+repoRef.Slug))
+			return nil
+		},
+	}
+	if repositorySelector == nil {
+		deleteCmd.Flags().StringVar(&localRepoSelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	}
+	return deleteCmd
+}
+
+func newRepoAdminCommand(deps Dependencies) *cobra.Command {
+	var repositorySelector string
+
+	repoAdminCmd := &cobra.Command{
+		Use:   "admin",
+		Short: "Repository administration commands (create/fork/update/delete)",
+	}
+
+	repoAdminCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+
+	repoAdminCmd.AddCommand(newRepoCreateCommand(deps, true))
+	repoAdminCmd.AddCommand(newRepoForkCommand(deps, &repositorySelector, true))
 
 	var updateName string
 	var updateDesc string
@@ -281,64 +404,7 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 	updateCmd.Flags().StringVar(&updateDefaultBranch, "default-branch", "", "Repository default branch")
 	repoAdminCmd.AddCommand(updateCmd)
 
-	deleteCmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Delete a repository",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, client, err := deps.LoadConfigAndClient()
-			if err != nil {
-				return err
-			}
-
-			repoRef, err := resolveRepoReference(repositorySelector, cfg)
-			if err != nil {
-				return err
-			}
-
-			repo := reposervice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
-			service := reposervice.NewAdminService(client)
-			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
-							return err
-						}
-					}
-				}
-
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityPartial,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.admin.delete",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
-						Action:          "delete",
-						PredictedAction: "delete",
-						Supported:       true,
-						Reason:          "repository delete will be attempted",
-						Confidence:      dryrunpreview.CapabilityPartial,
-						RequiredState:   []string{"repository reference"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1, DeleteCount: 1},
-				}
-				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
-			}
-
-			if err := service.Delete(cmd.Context(), repo); err != nil {
-				return err
-			}
-
-			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "repository": repoRef.ProjectKey + "/" + repoRef.Slug})
-			}
-
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted repository"), style.Resource.Render(repoRef.ProjectKey+"/"+repoRef.Slug))
-			return nil
-		},
-	}
-	repoAdminCmd.AddCommand(deleteCmd)
+	repoAdminCmd.AddCommand(newRepoDeleteCommand(deps, &repositorySelector, true))
 
 	return repoAdminCmd
 }

@@ -25,34 +25,57 @@ bb repo settings security --help
 
 The command reference page is generated from Cobra help output, so usage/flags match CLI behavior.
 
-## Shorter spellings
+## Shorter spellings and aliases
 
 Some operations are reachable under a second, shorter name because that is the name people
 (and coding agents) reach for first. Both spellings run the same command and produce
-identical output; the canonical one is longer but names its subject in the path rather
-than in a flag.
-
-Both appear in [All Commands](reference/commands/index.md), and each one's `--help` names
-the other, so you can find either from either.
+identical output; each one's `--help` names the other so you can discover either form.
 
 ```bash
 bb pr diff 42
+bb repo create --project TEST --name my-repo
+bb repo fork --name my-fork --repo TEST/my-repo
+bb repo delete --repo TEST/my-fork
 bb repo permissions list --repo TEST/my-repo
 bb repo permissions grant alice REPO_WRITE --repo TEST/my-repo
 bb repo permissions grant --group developers REPO_READ --repo TEST/my-repo
 bb project permissions grant TEST alice PROJECT_WRITE
 ```
 
-| Shorter | Canonical |
-| --- | --- |
-| `bb pr diff` | `bb diff pr` |
-| `bb repo permissions list` / `grant` / `revoke` | `bb repo settings security permissions users …` |
-| the same with `--group` | `bb repo settings security permissions groups …` |
-| `bb project permissions list` / `grant` / `revoke` | `bb project permissions users …` |
-| the same with `--group` | `bb project permissions groups …` |
+| Shorter / Elevated | Deep Path / Alias | Notes |
+| --- | --- | --- |
+| `bb pr diff` | `bb diff pr` | `bb diff pr` is canonical in reference |
+| `bb repo create` | `bb repo admin create` | `bb repo create` is canonical |
+| `bb repo fork` | `bb repo admin fork` | `bb repo fork` is canonical |
+| `bb repo delete` | `bb repo admin delete` | `bb repo delete` is canonical |
+| `bb repo permissions list` / `grant` / `revoke` | `bb repo settings security permissions users …` | `--group` replaces `groups` segment |
+| `bb project permissions list` / `grant` / `revoke` | `bb project permissions users …` | `--group` replaces `groups` segment |
 
-`--group` is what replaces the `users` / `groups` path segment. Omitting it means a user,
+`--group` is what replaces the `users` / `groups` path segment on permission commands. Omitting it means a user,
 so it is worth being deliberate about on a grant.
+
+## Pull request target resolution
+
+Commands operating on a pull request (`bb pr get`, `bb pr checkout`, `bb pr diff`, `bb pr review`, `bb pr comment`, `bb pr merge`, etc.) resolve the target flexibly:
+
+- **Numeric ID**: `42`
+- **Hash prefix**: `#42`
+- **Source branch name**: `feature/login`, `refs/heads/feature/login`
+- **Full Bitbucket URL**: `https://bitbucket.acme.corp/projects/PRJ/repos/demo/pull-requests/42` (also supports personal repos `~username` and `/diff`, `/commits`, `/overview` subpaths)
+
+When you pass a full PR URL, `bb` automatically extracts the project, repository slug, and pull request ID, so you do not even need to supply `--repo` or stand inside a local clone:
+
+```bash
+# Target via full browser PR URL (no local git clone needed)
+bb pr get https://bitbucket.acme.corp/projects/PRJ/repos/demo/pull-requests/42
+
+# Diff via PR URL
+bb pr diff https://bitbucket.acme.corp/projects/PRJ/repos/demo/pull-requests/42
+
+# Check out via source branch name or hash
+bb pr checkout feature/payment-gateway
+bb pr checkout #42
+```
 
 ## `bb pr status`
 
@@ -77,6 +100,9 @@ run it, review it, and push fixes back.
 
 ```bash
 bb pr checkout 42
+bb pr checkout #42
+bb pr checkout feature/login
+bb pr checkout https://bitbucket.acme.corp/projects/PRJ/repos/demo/pull-requests/42
 bb pr checkout 42 --branch review-42
 bb pr checkout 42 --detach
 ```
@@ -103,13 +129,18 @@ once to let it authenticate. See [Git Authentication](advanced/git-authenticatio
 
 ## Repository context behavior
 
-- `--repo PROJECT/slug` has highest precedence.
+- `--repo PROJECT/slug` has highest precedence. `--repo` also accepts full Bitbucket repository URLs (`https://bitbucket.acme.corp/projects/PRJ/repos/demo`) and personal user repositories (`~username/slug`).
 - If `--repo` is omitted, `bb` can infer repository context from local git remotes that match authenticated hosts.
 - When several remotes match, `origin` wins — a fork or mirror alongside it does not make the context ambiguous.
 - An `upstream` remote is the exception: it conventionally outranks `origin`, so having both is a genuine ambiguity and `bb` asks for explicit selection.
 
 See [Advanced: Repository Discovery and Server Switching](advanced/repository-discovery-and-server-switching.md)
 for remote URL formats, precedence, ambiguity handling, and multi-server workflows.
+
+## Strict non-interactive contract
+
+`bb` operates strictly non-interactively across all commands ([ADR-054](adr/054-strict-non-interactive-cli-contract.md)).
+Commands never block on standard input for interactive prompts or confirmation dialogs (`[y/N]`). Missing or invalid options fail fast with descriptive error messages, ensuring predictable execution in scripts, CI/CD pipelines, and AI agent tool calls.
 
 ## Dry-run behavior and scope
 
@@ -177,6 +208,11 @@ are never written into a repository — see
 ```bash
 bb --json auth status
 bb repo clone TEST/my-repo
+bb repo create --project TEST --name my-service
+bb repo fork --repo TEST/my-service --name my-service-fork
+bb pr get https://bitbucket.acme.corp/projects/TEST/repos/my-service/pull-requests/42
+bb pr checkout #42
+bb pr diff feature/payments
 bb browse --repo TEST/my-repo src/main.go
 bb search repos demo --limit 20
 bb tag list --repo TEST/my-repo --limit 50

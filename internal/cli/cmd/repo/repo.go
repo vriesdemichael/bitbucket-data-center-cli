@@ -142,6 +142,9 @@ func New(deps Dependencies) *cobra.Command {
 	}
 	listCmd.Flags().StringVar(&projectKey, "project", "", "Filter by project key")
 	repoCmd.AddCommand(listCmd)
+	repoCmd.AddCommand(newRepoCreateCommand(d, false))
+	repoCmd.AddCommand(newRepoForkCommand(d, nil, false))
+	repoCmd.AddCommand(newRepoDeleteCommand(d, nil, false))
 
 	repoCmd.AddCommand(newRepoSettingsCommand(d))
 	repoCmd.AddCommand(newRepoCommentCommand(d))

@@ -5,11 +5,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prsel"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
-	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 )
 
 func newPullRequestCommentStateCommands(deps Dependencies, repository *string) []*cobra.Command {
@@ -69,13 +68,12 @@ func newCommentStateCommand(
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(*repository, cfg)
+			prTarget, err := prsel.Resolve(cmd.Context(), args[0], *repository, cfg, nil)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
-
-			prID := args[0]
+			repo := prTarget.RepositoryRef()
+			prID := prTarget.PullRequestID
 			commentID := args[1]
 
 			if deps.DryRunEnabled() {

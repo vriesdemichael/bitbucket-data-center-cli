@@ -113,4 +113,78 @@ func TestRepoAdminCLIValidation(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected create missing name error")
 	}
+
+	_, err = executeTestCLI(t, "repo", "create")
+	if err == nil {
+		t.Fatal("expected repo create missing arg error")
+	}
+
+	_, err = executeTestCLI(t, "repo", "create", "--project", "PRJ")
+	if err == nil {
+		t.Fatal("expected repo create missing name error")
+	}
+}
+
+func TestRepoCanonicalCRUDAndAliasEquivalence(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/repos":
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"slug":"repo","name":"repo"}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo":
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"slug":"forked","name":"forked"}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo":
+			w.WriteHeader(http.StatusAccepted)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_TOKEN", "test-token")
+	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
+	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
+
+	// Canonical Create vs Alias Create
+	outCanonical, err := executeTestCLI(t, "repo", "create", "--project", "PRJ", "--name", "repo")
+	if err != nil {
+		t.Fatalf("canonical create failed: %v", err)
+	}
+	outAlias, err := executeTestCLI(t, "repo", "admin", "create", "--project", "PRJ", "--name", "repo")
+	if err != nil {
+		t.Fatalf("alias create failed: %v", err)
+	}
+	if outCanonical != outAlias {
+		t.Fatalf("expected identical output between canonical and alias create:\ncanonical: %q\nalias: %q", outCanonical, outAlias)
+	}
+
+	// Canonical Fork vs Alias Fork
+	outCanonical, err = executeTestCLI(t, "repo", "fork", "--name", "forked")
+	if err != nil {
+		t.Fatalf("canonical fork failed: %v", err)
+	}
+	outAlias, err = executeTestCLI(t, "repo", "admin", "fork", "--name", "forked")
+	if err != nil {
+		t.Fatalf("alias fork failed: %v", err)
+	}
+	if outCanonical != outAlias {
+		t.Fatalf("expected identical output between canonical and alias fork:\ncanonical: %q\nalias: %q", outCanonical, outAlias)
+	}
+
+	// Canonical Delete vs Alias Delete
+	outCanonical, err = executeTestCLI(t, "repo", "delete")
+	if err != nil {
+		t.Fatalf("canonical delete failed: %v", err)
+	}
+	outAlias, err = executeTestCLI(t, "repo", "admin", "delete")
+	if err != nil {
+		t.Fatalf("alias delete failed: %v", err)
+	}
+	if outCanonical != outAlias {
+		t.Fatalf("expected identical output between canonical and alias delete:\ncanonical: %q\nalias: %q", outCanonical, outAlias)
+	}
 }
