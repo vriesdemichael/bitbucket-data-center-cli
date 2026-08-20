@@ -15,6 +15,11 @@ func TestParseBitbucketRemote(t *testing.T) {
 	}{
 		{"https://bitbucket.example.com/scm/PROJ/repo.git", "bitbucket.example.com", "PROJ", "repo", true},
 		{"http://localhost:7990/bitbucket/scm/PROJ/repo.git", "localhost", "PROJ", "repo", true},
+		{"https://bitbucket.example.com/projects/PROJ/repos/repo", "bitbucket.example.com", "PROJ", "repo", true},
+		{"https://bitbucket.example.com/projects/PROJ/repos/repo/browse", "bitbucket.example.com", "PROJ", "repo", true},
+		{"http://localhost:7990/bitbucket/projects/PROJ/repos/repo/browse/path/to/file", "localhost", "PROJ", "repo", true},
+		{"https://bitbucket.example.com/users/jdoe/repos/my-repo", "bitbucket.example.com", "~jdoe", "my-repo", true},
+		{"https://bitbucket.example.com/users/jdoe/repos/my-repo/browse", "bitbucket.example.com", "~jdoe", "my-repo", true},
 		{"git@bitbucket.example.com:PROJ/repo.git", "bitbucket.example.com", "PROJ", "repo", true},
 		{"ssh://git@bitbucket.example.com:7999/PROJ/repo.git", "bitbucket.example.com", "PROJ", "repo", true},
 		{"git@bitbucket.example.com:no-colon", "", "", "", false},
@@ -31,6 +36,48 @@ func TestParseBitbucketRemote(t *testing.T) {
 			if ok {
 				if host != tt.wantHost || proj != tt.wantProj || slug != tt.wantSlug {
 					t.Fatalf("ParseBitbucketRemote(%q) = (%q, %q, %q), want (%q, %q, %q)", tt.url, host, proj, slug, tt.wantHost, tt.wantProj, tt.wantSlug)
+				}
+			}
+		})
+	}
+}
+
+func TestParseBitbucketPR(t *testing.T) {
+	tests := []struct {
+		url      string
+		wantHost string
+		wantProj string
+		wantSlug string
+		wantID   string
+		wantOK   bool
+	}{
+		{"https://bitbucket.example.com/projects/PROJ/repos/repo/pull-requests/42", "bitbucket.example.com", "PROJ", "repo", "42", true},
+		{"https://bitbucket.example.com/projects/PROJ/repos/repo/pull-requests/42/overview", "bitbucket.example.com", "PROJ", "repo", "42", true},
+		{"https://bitbucket.example.com/projects/PROJ/repos/repo/pull-requests/42/diff", "bitbucket.example.com", "PROJ", "repo", "42", true},
+		{"http://localhost:7990/bitbucket/projects/PROJ/repos/repo/pull-requests/101", "localhost", "PROJ", "repo", "101", true},
+		{"https://bitbucket.example.com/users/jdoe/repos/my-repo/pull-requests/7", "bitbucket.example.com", "~jdoe", "my-repo", "7", true},
+		{"https://bitbucket.example.com/users/jdoe/repos/my-repo/pull-requests/7/overview", "bitbucket.example.com", "~jdoe", "my-repo", "7", true},
+		{"https://bitbucket.example.com/projects/~jdoe/repos/my-repo/pull-requests/99", "bitbucket.example.com", "~jdoe", "my-repo", "99", true},
+		{"https://bitbucket.example.com/projects/PROJ/repos/repo/pull-requests/42?commentId=101#comment-101", "bitbucket.example.com", "PROJ", "repo", "42", true},
+		{"bitbucket.example.com/projects/PROJ/repos/repo/pull-requests/42?commentId=101", "bitbucket.example.com", "PROJ", "repo", "42", true},
+		{"/projects/PROJ/repos/repo/pull-requests/42", "", "PROJ", "repo", "42", true},
+		{"bitbucket.example.com/projects/PROJ/repos/repo/pull-requests/42", "bitbucket.example.com", "PROJ", "repo", "42", true},
+		{"https://bitbucket.example.com/projects/PROJ/repos/repo/pull-requests/not-a-number", "", "", "", "", false},
+		{"https://bitbucket.example.com/projects/PROJ/repos/repo/pull-requests", "", "", "", "", false},
+		{"https://bitbucket.example.com/users/jdoe/repos/my-repo/pull-requests", "", "", "", "", false},
+		{"https://bitbucket.example.com/projects/PROJ/repos/repo", "", "", "", "", false},
+		{"", "", "", "", "", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.url, func(t *testing.T) {
+			host, proj, slug, id, ok := ParseBitbucketPR(tt.url)
+			if ok != tt.wantOK {
+				t.Fatalf("ParseBitbucketPR(%q) ok = %v, want %v", tt.url, ok, tt.wantOK)
+			}
+			if ok {
+				if host != tt.wantHost || proj != tt.wantProj || slug != tt.wantSlug || id != tt.wantID {
+					t.Fatalf("ParseBitbucketPR(%q) = (%q, %q, %q, %q), want (%q, %q, %q, %q)", tt.url, host, proj, slug, id, tt.wantHost, tt.wantProj, tt.wantSlug, tt.wantID)
 				}
 			}
 		})

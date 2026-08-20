@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prsel"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -51,14 +51,14 @@ func newPullRequestCheckoutCommand(deps Dependencies, repositorySelector *string
 				return err
 			}
 
-			repoProj, repoSlug, err := reposel.Resolve(*repositorySelector, cfg)
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(client)
+			target, err := prsel.Resolve(cmd.Context(), args[0], *repositorySelector, cfg, service)
 			if err != nil {
 				return err
 			}
-			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
+			repo := target.RepositoryRef()
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(client)
-			pullRequest, err := service.Get(cmd.Context(), repo, strings.TrimSpace(args[0]))
+			pullRequest, err := service.Get(cmd.Context(), repo, target.PullRequestID)
 			if err != nil {
 				return err
 			}

@@ -84,6 +84,9 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"repo permissions grant":  {Intent: "repo.permission.user.grant", Action: "update", Stateful: true},
 	"repo permissions revoke": {Intent: "repo.permission.user.revoke", Action: "delete", Stateful: true},
 	// repo
+	"repo create":              {Intent: "repo.create", Action: "create", Stateful: true},
+	"repo fork":                {Intent: "repo.fork", Action: "create", Stateful: true},
+	"repo delete":              {Intent: "repo.delete", Action: "delete", Stateful: true},
 	"repo edit":                {Intent: "repo.edit", Action: "update", Stateful: true},
 	"repo label add":           {Intent: "repo.label.add", Action: "create", Stateful: true},
 	"repo label remove":        {Intent: "repo.label.remove", Action: "delete", Stateful: true},

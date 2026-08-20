@@ -223,3 +223,59 @@ func TestLiveCLIRepoAdminForkDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected no repository side-effect from admin fork dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
 }
+
+func TestLiveCLIRepoLifecyclePromotedCanonical(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+
+	repoName := fmt.Sprintf("canon-repo-%d", time.Now().UnixNano()%100000)
+	forkName := fmt.Sprintf("canon-fork-%d", time.Now().UnixNano()%100000)
+
+	configureLiveCLIEnv(t, harness, seeded.Key, repoName)
+
+	// Canonical Create
+	createOutput, err := executeLiveCLI(t, "--json", "repo", "create", "--project", seeded.Key, "--name", repoName, "--description", "promoted canonical create")
+	if err != nil {
+		t.Fatalf("repo create failed: %v\noutput: %s", err, createOutput)
+	}
+	createPayload := decodeJSONMap(t, createOutput)
+	repoObj, ok := createPayload["repository"].(map[string]any)
+	if !ok || asString(repoObj["name"]) != repoName {
+		t.Fatalf("expected created repo name %s, got: %s", repoName, createOutput)
+	}
+
+	// Canonical Fork
+	forkOutput, err := executeLiveCLI(t, "--json", "repo", "fork", "--repo", seeded.Key+"/"+repoName, "--name", forkName)
+	if err != nil {
+		t.Fatalf("repo fork failed: %v\noutput: %s", err, forkOutput)
+	}
+	forkPayload := decodeJSONMap(t, forkOutput)
+	forkObj, ok := forkPayload["repository"].(map[string]any)
+	if !ok || asString(forkObj["name"]) != forkName {
+		t.Fatalf("expected forked repo name %s, got: %s", forkName, forkOutput)
+	}
+
+	// Canonical Delete Fork
+	deleteForkOutput, err := executeLiveCLI(t, "--json", "repo", "delete", "--repo", seeded.Key+"/"+forkName)
+	if err != nil {
+		t.Fatalf("repo delete fork failed: %v\noutput: %s", err, deleteForkOutput)
+	}
+
+	// Canonical Delete Repo
+	deleteOutput, err := executeLiveCLI(t, "--json", "repo", "delete", "--repo", seeded.Key+"/"+repoName)
+	if err != nil {
+		t.Fatalf("repo delete failed: %v\noutput: %s", err, deleteOutput)
+	}
+	deletePayload := decodeJSONMap(t, deleteOutput)
+	if asString(deletePayload["status"]) != "ok" {
+		t.Fatalf("expected delete status ok, got: %s", deleteOutput)
+	}
+}
+

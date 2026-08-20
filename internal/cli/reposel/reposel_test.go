@@ -18,6 +18,11 @@ func TestParse(t *testing.T) {
 	}{
 		{"valid selector", "PROJ/my-repo", "PROJ", "my-repo", false},
 		{"with spaces", " PROJ / my-repo ", "PROJ", "my-repo", false},
+		{"browser url", "https://bitbucket.example.com/projects/PROJ/repos/my-repo", "PROJ", "my-repo", false},
+		{"browser url with browse", "https://bitbucket.example.com/projects/PROJ/repos/my-repo/browse", "PROJ", "my-repo", false},
+		{"user personal repo url", "https://bitbucket.example.com/users/jdoe/repos/my-repo", "~jdoe", "my-repo", false},
+		{"git clone url", "https://bitbucket.example.com/scm/PROJ/my-repo.git", "PROJ", "my-repo", false},
+		{"ssh clone url", "ssh://git@bitbucket.example.com:7999/PROJ/my-repo.git", "PROJ", "my-repo", false},
 		{"missing project", "/my-repo", "", "", true},
 		{"missing slug", "PROJ/", "", "", true},
 		{"no slash", "PROJ", "", "", true},

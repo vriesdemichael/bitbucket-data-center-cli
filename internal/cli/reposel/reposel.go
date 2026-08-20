@@ -4,14 +4,15 @@ import (
 	"os"
 	"strings"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
 
-// Parse splits a "PROJECT/slug" selector into its components.
+// Parse splits a "PROJECT/slug" selector or Bitbucket URL into its project and slug components.
 func Parse(selector string) (projectKey, slug string, err error) {
-	parts := strings.Split(strings.TrimSpace(selector), "/")
-	if len(parts) != 2 || strings.TrimSpace(parts[0]) == "" || strings.TrimSpace(parts[1]) == "" {
+	trimmed := strings.TrimSpace(selector)
+	if trimmed == "" {
 		return "", "", apperrors.New(
 			apperrors.KindValidation,
 			"invalid repository selector (expected PROJECT/slug)",
@@ -19,7 +20,22 @@ func Parse(selector string) (projectKey, slug string, err error) {
 		)
 	}
 
-	return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), nil
+	if strings.Contains(trimmed, "://") || strings.HasPrefix(trimmed, "git@") || strings.HasPrefix(trimmed, "ssh://") {
+		_, proj, repoSlug, ok := giturl.ParseBitbucketRemote(trimmed)
+		if ok {
+			return proj, repoSlug, nil
+		}
+	}
+
+	if proj, repoSlug, ok := giturl.ParseBitbucketPath(trimmed); ok {
+		return proj, repoSlug, nil
+	}
+
+	return "", "", apperrors.New(
+		apperrors.KindValidation,
+		"invalid repository selector (expected PROJECT/slug)",
+		nil,
+	)
 }
 
 // Resolve resolves the project key and repo slug from the explicit selector if provided,
