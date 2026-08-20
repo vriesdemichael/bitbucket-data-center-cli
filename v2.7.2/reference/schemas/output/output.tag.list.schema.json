@@ -1,0 +1,65 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.tag.list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb tag list --json`. Data is an array of tag objects.",
+  "properties": {
+    "data": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "displayId": {
+            "description": "Short tag name (e.g. v1.0.0).",
+            "type": "string"
+          },
+          "hash": {
+            "description": "SHA1 of the tag object (annotated tags only).",
+            "type": "string"
+          },
+          "id": {
+            "description": "Full tag ref name (e.g. refs/tags/v1.0.0).",
+            "type": "string"
+          },
+          "latestChangeset": {
+            "type": "string"
+          },
+          "latestCommit": {
+            "description": "SHA1 of the tagged commit.",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "TAG",
+              "ANNOTATED_TAG"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb tag list output",
+  "type": "object"
+}
