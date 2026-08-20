@@ -2,6 +2,7 @@ package reviewercmd
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -469,5 +470,194 @@ func TestReviewerConditionCommands(t *testing.T) {
 	cmd.SetArgs([]string{"condition", "list"})
 	if err := cmd.Execute(); err == nil {
 		t.Fatalf("expected error when project key is missing")
+	}
+}
+
+type mockReviewerPermChecker struct {
+	repoErr    error
+	projectErr error
+}
+
+func (m *mockReviewerPermChecker) CheckRepoPermission(ctx context.Context, projectKey, repoSlug string, permission openapigenerated.GetRepositories1ParamsPermission) error {
+	return m.repoErr
+}
+
+func (m *mockReviewerPermChecker) CheckProjectAdmin(ctx context.Context, projectKey string) error {
+	return m.projectErr
+}
+
+func TestReviewerDefaultsAndHelpers(t *testing.T) {
+	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
+	var deps Dependencies
+	d := deps.withDefaults()
+
+	if d.JSONEnabled == nil || d.JSONEnabled() {
+		t.Fatal("expected JSONEnabled to default to false")
+	}
+	if d.DryRunEnabled == nil || d.DryRunEnabled() {
+		t.Fatal("expected DryRunEnabled to default to false")
+	}
+	if d.WriteJSON == nil {
+		t.Fatal("expected WriteJSON to default")
+	}
+	if d.LoadConfig != nil {
+		cfg, err := d.LoadConfig()
+		if err != nil || cfg.BitbucketURL != "http://localhost:7990" {
+			t.Fatalf("unexpected LoadConfig result: %v", err)
+		}
+	}
+	if d.LoadConfigAndClient != nil {
+		cfg, client, err := d.LoadConfigAndClient()
+		if err != nil || client == nil || cfg.BitbucketURL != "http://localhost:7990" {
+			t.Fatalf("unexpected LoadConfigAndClient result: %v", err)
+		}
+	}
+
+	// findReviewerCondition empty id
+	if _, ok := findReviewerCondition(nil, ""); ok {
+		t.Fatal("expected findReviewerCondition with empty id to return false")
+	}
+}
+
+func TestReviewerConditionStdin(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		path := r.URL.Path
+
+		switch {
+		case r.Method == http.MethodPost && path == "/rest/default-reviewers/latest/projects/PRJ/repos/repo1/condition":
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":105,"requiredApprovals":1}`))
+
+		case r.Method == http.MethodPut && path == "/rest/default-reviewers/latest/projects/PRJ/repos/repo1/condition/101":
+			_, _ = w.Write([]byte(`{"id":101,"requiredApprovals":1}`))
+
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	cfg := config.AppConfig{
+		BitbucketURL: server.URL,
+		ProjectKey:   "PRJ",
+	}
+
+	deps := Dependencies{
+		LoadConfig: func() (config.AppConfig, error) { return cfg, nil },
+		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+			return cfg, client, err
+		},
+	}
+
+	// Create via stdin
+	cmd := New(deps)
+	buf := new(bytes.Buffer)
+	cmd.SetIn(strings.NewReader(`{"requiredApprovals":1}`))
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "create", "-", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error creating condition via stdin: %v", err)
+	}
+
+	// Update via stdin
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetIn(strings.NewReader(`{"requiredApprovals":1}`))
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "update", "101", "-", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error updating condition via stdin: %v", err)
+	}
+}
+
+func TestReviewerPermissionErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[{"id":101,"requiredApprovals":1}]`))
+	}))
+	t.Cleanup(server.Close)
+
+	cfg := config.AppConfig{
+		BitbucketURL: server.URL,
+		ProjectKey:   "PRJ",
+	}
+
+	deps := Dependencies{
+		DryRunEnabled: func() bool { return true },
+		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },
+		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+			return cfg, client, err
+		},
+		PermissionChecker: func(c *openapigenerated.ClientWithResponses) PermissionChecker {
+			return &mockReviewerPermChecker{
+				repoErr:    http.ErrAbortHandler,
+				projectErr: http.ErrAbortHandler,
+			}
+		},
+	}
+
+	// Repo delete dry-run permission error
+	cmd := New(deps)
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "delete", "101", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on repo delete dry-run")
+	}
+
+	// Project delete dry-run permission error
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "delete", "101", "--project", "PRJ"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on project delete dry-run")
+	}
+
+	// Repo create dry-run permission error
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "create", `{"requiredApprovals":1}`, "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on repo create dry-run")
+	}
+
+	// Project create dry-run permission error
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "create", `{"requiredApprovals":1}`, "--project", "PRJ"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on project create dry-run")
+	}
+
+	// Repo update dry-run permission error
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "update", "101", `{"requiredApprovals":1}`, "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on repo update dry-run")
+	}
+
+	// Project update dry-run permission error
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"condition", "update", "101", `{"requiredApprovals":1}`, "--project", "PRJ"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on project update dry-run")
 	}
 }
