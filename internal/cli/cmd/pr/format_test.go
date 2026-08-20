@@ -1,9 +1,12 @@
 package prcmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
@@ -303,5 +306,131 @@ func TestFormatPullRequestActivitySummary(t *testing.T) {
 	activity.Comment = nil
 	if formatPullRequestActivitySummary(activity) != "[77 UNKNOWN]" {
 		t.Fatalf("unexpected non-comment activity summary: %s", formatPullRequestActivitySummary(activity))
+	}
+}
+
+func TestFormatHelpers(t *testing.T) {
+	// safeString
+	s := "hello"
+	if safeString(&s) != "hello" || safeString(nil) != "" {
+		t.Fatal("unexpected safeString result")
+	}
+
+	// safeInt32
+	var i32 int32 = 42
+	if safeInt32(&i32) != 42 || safeInt32(nil) != 0 {
+		t.Fatal("unexpected safeInt32 result")
+	}
+
+	// safeInt64
+	var i64 int64 = 100
+	if safeInt64(&i64) != 100 || safeInt64(nil) != 0 {
+		t.Fatal("unexpected safeInt64 result")
+	}
+
+	// safeStringSlice
+	slice := []string{"a", "b"}
+	if len(safeStringSlice(&slice)) != 2 || safeStringSlice(nil) != nil {
+		t.Fatal("unexpected safeStringSlice result")
+	}
+
+	// safeUsers
+	users := []openapigenerated.RestApplicationUser{{Name: &s}}
+	if len(safeUsers(&users)) != 1 || safeUsers(nil) != nil {
+		t.Fatal("unexpected safeUsers result")
+	}
+
+	// commentAuthorName
+	var commentWithDisplay, commentNoDisplay openapigenerated.RestComment
+	_ = json.Unmarshal([]byte(`{"author":{"name":"hello","displayName":"Hello Display"}}`), &commentWithDisplay)
+	_ = json.Unmarshal([]byte(`{"author":{"name":"hello"}}`), &commentNoDisplay)
+	if commentAuthorName(commentWithDisplay) != "Hello Display" {
+		t.Fatalf("expected Hello Display, got: %s", commentAuthorName(commentWithDisplay))
+	}
+	if commentAuthorName(commentNoDisplay) != "hello" {
+		t.Fatalf("expected hello, got: %s", commentAuthorName(commentNoDisplay))
+	}
+	if commentAuthorName(openapigenerated.RestComment{}) != "" {
+		t.Fatal("expected empty author name for nil author")
+	}
+
+	// commentAnchorPath
+	var commentWithAnchor, commentOnlyName openapigenerated.RestComment
+	_ = json.Unmarshal([]byte(`{"anchor":{"path":{"parent":"pkg/foo","name":"bar.go"}}}`), &commentWithAnchor)
+	_ = json.Unmarshal([]byte(`{"anchor":{"path":{"name":"bar.go"}}}`), &commentOnlyName)
+	if commentAnchorPath(commentWithAnchor) != "pkg/foo/bar.go" {
+		t.Fatalf("expected pkg/foo/bar.go, got: %s", commentAnchorPath(commentWithAnchor))
+	}
+	if commentAnchorPath(commentOnlyName) != "bar.go" {
+		t.Fatalf("expected bar.go, got: %s", commentAnchorPath(commentOnlyName))
+	}
+	var commentEmptyParent, commentEmptyName, commentNilPathFields openapigenerated.RestComment
+	_ = json.Unmarshal([]byte(`{"anchor":{"path":{"parent":"","name":"bar.go"}}}`), &commentEmptyParent)
+	_ = json.Unmarshal([]byte(`{"anchor":{"path":{"parent":"pkg/foo","name":""}}}`), &commentEmptyName)
+	_ = json.Unmarshal([]byte(`{"anchor":{"path":{}}}`), &commentNilPathFields)
+	if commentAnchorPath(commentEmptyParent) != "bar.go" {
+		t.Fatalf("expected bar.go, got: %s", commentAnchorPath(commentEmptyParent))
+	}
+	if commentAnchorPath(commentEmptyName) != "pkg/foo" {
+		t.Fatalf("expected pkg/foo, got: %s", commentAnchorPath(commentEmptyName))
+	}
+	if commentAnchorPath(commentNilPathFields) != "" {
+		t.Fatalf("expected empty, got: %s", commentAnchorPath(commentNilPathFields))
+	}
+	if commentAnchorPath(openapigenerated.RestComment{}) != "" {
+		t.Fatal("expected empty path for nil anchor")
+	}
+
+	// hasApprovedReviewer & reviewerApprovedByUser
+	reviewers := []pullrequestservice.Reviewer{
+		{Name: "alice", Approved: true, Status: "APPROVED"},
+		{Name: "bob", Approved: false, Status: "UNAPPROVED"},
+	}
+	if !hasApprovedReviewer(reviewers) {
+		t.Fatal("expected hasApprovedReviewer to be true")
+	}
+	if hasApprovedReviewer([]pullrequestservice.Reviewer{{Name: "bob", Approved: false, Status: "UNAPPROVED"}}) {
+		t.Fatal("expected hasApprovedReviewer to be false")
+	}
+	if !reviewerApprovedByUser(reviewers, "alice") {
+		t.Fatal("expected reviewerApprovedByUser(alice) to be true")
+	}
+	if reviewerApprovedByUser(reviewers, "bob") {
+		t.Fatal("expected reviewerApprovedByUser(bob) to be false")
+	}
+	if reviewerApprovedByUser(reviewers, "") {
+		t.Fatal("expected reviewerApprovedByUser('') to be false")
+	}
+	if !hasReviewer(reviewers, "bob") || hasReviewer(reviewers, "charlie") {
+		t.Fatal("unexpected hasReviewer results")
+	}
+
+	// shortCommitID
+	if shortCommitID(pullrequestservice.Commit{DisplayID: "c12345"}) != "c12345" {
+		t.Fatal("unexpected shortCommitID with DisplayID")
+	}
+	if shortCommitID(pullrequestservice.Commit{ID: "abcdef1234567890"}) != "abcdef12345" {
+		t.Fatal("unexpected shortCommitID with long ID")
+	}
+	if shortCommitID(pullrequestservice.Commit{ID: "abc"}) != "abc" {
+		t.Fatal("unexpected shortCommitID with short ID")
+	}
+
+	// firstMessageLine
+	if firstMessageLine("First line\nSecond line") != "First line" {
+		t.Fatal("unexpected firstMessageLine multiline")
+	}
+	if firstMessageLine("Single line") != "Single line" {
+		t.Fatal("unexpected firstMessageLine single line")
+	}
+}
+
+func TestPrintDefaultReviewersEmpty(t *testing.T) {
+	buf := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(buf)
+	printDefaultReviewers(cmd, nil)
+	if !strings.Contains(buf.String(), "No default reviewers") {
+		t.Fatalf("expected empty message, got: %s", buf.String())
 	}
 }
