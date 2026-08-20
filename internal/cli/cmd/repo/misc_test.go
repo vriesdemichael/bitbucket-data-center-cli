@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -48,7 +50,24 @@ func TestRepoMiscCommands(t *testing.T) {
 			w.WriteHeader(http.StatusNoContent)
 
 		case r.Method == http.MethodGet && strings.Contains(path, "/projects/PRJ/repos/repo1/ssh"):
-			_, _ = w.Write([]byte(`{"values":[{"key":{"id":1,"text":"ssh-rsa AAAA..."},"permission":"REPO_READ"}]}`))
+			_, _ = w.Write([]byte(`{"values":[{"key":{"id":1,"text":"ssh-rsa AAAA...","label":"repo-key"},"permission":"REPO_READ"}]}`))
+
+		case r.Method == http.MethodPost && strings.Contains(path, "/projects/PRJ/repos/repo1/ssh"):
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"key":{"id":2,"text":"ssh-rsa AAAA...","label":"new-key"},"permission":"REPO_WRITE"}`))
+
+		case r.Method == http.MethodDelete && strings.Contains(path, "/projects/PRJ/repos/repo1/ssh/"):
+			w.WriteHeader(http.StatusNoContent)
+
+		case r.Method == http.MethodGet && strings.Contains(path, "/projects/PRJ/ssh"):
+			_, _ = w.Write([]byte(`{"values":[{"key":{"id":10,"text":"ssh-rsa AAAA...","label":"proj-key"},"permission":"PROJECT_READ"}]}`))
+
+		case r.Method == http.MethodPost && strings.Contains(path, "/projects/PRJ/ssh"):
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"key":{"id":20,"text":"ssh-rsa AAAA...","label":"new-proj-key"},"permission":"PROJECT_WRITE"}`))
+
+		case r.Method == http.MethodDelete && strings.Contains(path, "/projects/PRJ/ssh/"):
+			w.WriteHeader(http.StatusNoContent)
 
 		default:
 			http.NotFound(w, r)
@@ -270,5 +289,176 @@ func TestRepoMiscCommands(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), "REPO_READ") {
 		t.Fatalf("expected REPO_READ in JSON output: %s", buf.String())
+	}
+}
+
+func TestReadPublicKeyAndScope(t *testing.T) {
+	// Direct text
+	textKey := "ssh-rsa AAAA..."
+	readKey, err := readPublicKey(textKey)
+	if err != nil || readKey != textKey {
+		t.Fatalf("unexpected readPublicKey text: %v", err)
+	}
+
+	// File text
+	tmpDir := t.TempDir()
+	keyFile := filepath.Join(tmpDir, "id_rsa.pub")
+	if err := os.WriteFile(keyFile, []byte("ssh-ed25519 BBBB...\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	readKey, err = readPublicKey(keyFile)
+	if err != nil || readKey != "ssh-ed25519 BBBB..." {
+		t.Fatalf("unexpected readPublicKey file: %s, %v", readKey, err)
+	}
+
+	// Scope resolution
+	proj, repo, isProj, err := resolveRepoSshKeyScope("PRJ", "")
+	if err != nil || proj != "PRJ" || repo != "" || !isProj {
+		t.Fatalf("unexpected resolveRepoSshKeyScope project: %s, %s, %v, %v", proj, repo, isProj, err)
+	}
+
+	proj, repo, isProj, err = resolveRepoSshKeyScope("", "PRJ/repo1")
+	if err != nil || proj != "PRJ" || repo != "repo1" || isProj {
+		t.Fatalf("unexpected resolveRepoSshKeyScope repo: %s, %s, %v, %v", proj, repo, isProj, err)
+	}
+
+	_, _, _, err = resolveRepoSshKeyScope("PRJ", "PRJ/repo1")
+	if err == nil {
+		t.Fatal("expected error when both project and repo are specified")
+	}
+
+	_, _, _, err = resolveRepoSshKeyScope("", "")
+	if err == nil {
+		t.Fatal("expected error when neither project nor repo is specified")
+	}
+
+	_, _, _, err = resolveRepoSshKeyScope("", "invalid-format")
+	if err == nil {
+		t.Fatal("expected error for invalid repo format")
+	}
+}
+
+func TestRepoSshKeyAddAndRemove(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		path := r.URL.Path
+
+		switch {
+		case r.Method == http.MethodGet && strings.Contains(path, "/projects/PRJ/repos/repo1/ssh"):
+			_, _ = w.Write([]byte(`{"values":[{"key":{"id":1,"text":"ssh-rsa AAAA...","label":"repo-key"},"permission":"REPO_READ"}]}`))
+
+		case r.Method == http.MethodPost && strings.Contains(path, "/projects/PRJ/repos/repo1/ssh"):
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"key":{"id":2,"text":"ssh-rsa AAAA...","label":"new-repo-key"},"permission":"REPO_WRITE"}`))
+
+		case r.Method == http.MethodDelete && strings.Contains(path, "/projects/PRJ/repos/repo1/ssh/2"):
+			w.WriteHeader(http.StatusNoContent)
+
+		case r.Method == http.MethodGet && strings.Contains(path, "/projects/PRJ/ssh"):
+			_, _ = w.Write([]byte(`{"values":[{"key":{"id":10,"text":"ssh-rsa AAAA...","label":"proj-key"},"permission":"PROJECT_READ"}]}`))
+
+		case r.Method == http.MethodPost && strings.Contains(path, "/projects/PRJ/ssh"):
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"key":{"id":20,"text":"ssh-rsa AAAA...","label":"new-proj-key"},"permission":"PROJECT_WRITE"}`))
+
+		case r.Method == http.MethodDelete && strings.Contains(path, "/projects/PRJ/ssh/20"):
+			w.WriteHeader(http.StatusNoContent)
+
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	cfg := config.AppConfig{
+		BitbucketURL: server.URL,
+		ProjectKey:   "PRJ",
+	}
+
+	jsonEnabled := false
+	deps := Dependencies{
+		JSONEnabled: func() bool { return jsonEnabled },
+		LoadConfig:  func() (config.AppConfig, error) { return cfg, nil },
+		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+			return cfg, client, err
+		},
+	}
+
+	// 1. Repo key add (human & JSON)
+	cmd := New(deps)
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"ssh-key", "add", "ssh-rsa AAAA...", "--repo", "PRJ/repo1", "--label", "new-repo-key", "--read-write"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on repo ssh-key add: %v", err)
+	}
+	if !strings.Contains(buf.String(), "added successfully") {
+		t.Fatalf("expected added successfully in output: %s", buf.String())
+	}
+
+	jsonEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"ssh-key", "add", "ssh-rsa AAAA...", "--repo", "PRJ/repo1", "--label", "new-repo-key", "--permission", "read-write"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on repo ssh-key add JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "key") {
+		t.Fatalf("expected key in JSON output: %s", buf.String())
+	}
+	jsonEnabled = false
+
+	// 2. Repo key remove (human & JSON)
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"ssh-key", "remove", "2", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on repo ssh-key remove: %v", err)
+	}
+	if !strings.Contains(buf.String(), "removed successfully") {
+		t.Fatalf("expected removed successfully in output: %s", buf.String())
+	}
+
+	// 3. Project key add & list & remove
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"ssh-key", "list", "--project", "PRJ"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on project ssh-key list: %v", err)
+	}
+	if !strings.Contains(buf.String(), "proj-key") {
+		t.Fatalf("expected proj-key in output: %s", buf.String())
+	}
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"ssh-key", "add", "ssh-rsa AAAA...", "--project", "PRJ", "--label", "new-proj-key", "--read-only"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on project ssh-key add: %v", err)
+	}
+	if !strings.Contains(buf.String(), "added successfully") {
+		t.Fatalf("expected added successfully in output: %s", buf.String())
+	}
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"ssh-key", "remove", "20", "--project", "PRJ"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on project ssh-key remove: %v", err)
+	}
+	if !strings.Contains(buf.String(), "removed successfully") {
+		t.Fatalf("expected removed successfully in output: %s", buf.String())
 	}
 }
