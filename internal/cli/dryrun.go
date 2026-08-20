@@ -134,10 +134,6 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"reviewer-group create": {Intent: "reviewer-group.create", Action: "create", Stateful: true},
 	"reviewer-group update": {Intent: "reviewer-group.update", Action: "update", Stateful: true},
 	"reviewer-group delete": {Intent: "reviewer-group.delete", Action: "delete", Stateful: true},
-	// hook
-	"hook enable":    {Intent: "hook.enable", Action: "update", Stateful: true},
-	"hook disable":   {Intent: "hook.disable", Action: "update", Stateful: true},
-	"hook configure": {Intent: "hook.configure", Action: "update", Stateful: true},
 	// project
 	"project create":                    {Intent: "project.create", Action: "create", Stateful: true},
 	"project update":                    {Intent: "project.update", Action: "update", Stateful: true},
@@ -166,6 +162,7 @@ var dryRunProfiles = map[string]dryRunProfile{
 	// auth gpg-key
 	"auth gpg-key add":    {Intent: "auth.gpg-key.add", Action: "create", Stateful: false},
 	"auth gpg-key remove": {Intent: "auth.gpg-key.remove", Action: "delete", Stateful: false},
+	"auth gpg-key clear":  {Intent: "auth.gpg-key.clear", Action: "delete", Stateful: false},
 	// ssh-key
 	"ssh-key add":    {Intent: "ssh-key.add", Action: "create", Stateful: false},
 	"ssh-key remove": {Intent: "ssh-key.remove", Action: "delete", Stateful: false},
@@ -178,6 +175,148 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"repo sync disable": {Intent: "repo.sync.disable", Action: "update", Stateful: true},
 	// bulk
 	"bulk apply": {Intent: "bulk.apply", Action: "apply", Stateful: false, DryRunDoesNotAddBenefit: true},
+}
+
+type commandClassification int
+
+const (
+	classificationUnknown commandClassification = iota
+	classificationMutating
+	classificationReadOnly
+	classificationLocal
+)
+
+var readOnlyCommands = map[string]struct{}{
+	"admin health":                    {},
+	"ai mcp tools":                    {},
+	"ai skill show":                   {},
+	"auth gpg-key list":               {},
+	"auth identity":                   {},
+	"auth status":                     {},
+	"auth token get":                  {},
+	"auth token list":                 {},
+	"auth token-url":                  {},
+	"branch default get":              {},
+	"branch list":                     {},
+	"branch model inspect":            {},
+	"branch restriction get":          {},
+	"branch restriction list":         {},
+	"browse":                          {},
+	"build get":                       {},
+	"build required list":             {},
+	"build status get":                {},
+	"build status stats":              {},
+	"bulk plan":                       {},
+	"bulk status":                     {},
+	"commit compare":                  {},
+	"commit get":                      {},
+	"commit list":                     {},
+	"commit prs":                      {},
+	"deployment get":                  {},
+	"diff commit":                     {},
+	"diff pr":                         {},
+	"diff refs":                       {},
+	"insights annotation list":        {},
+	"insights report get":             {},
+	"insights report list":            {},
+	"pr activity list":                {},
+	"pr auto-merge get":               {},
+	"pr build status":                 {},
+	"pr comment get":                  {},
+	"pr comment list":                 {},
+	"pr commits":                      {},
+	"pr default-reviewers":            {},
+	"pr diff":                         {},
+	"pr files":                        {},
+	"pr get":                          {},
+	"pr jira":                         {},
+	"pr list":                         {},
+	"pr merge-base":                   {},
+	"pr participants":                 {},
+	"pr review get":                   {},
+	"pr status":                       {},
+	"project branch-restriction get":  {},
+	"project branch-restriction list": {},
+	"project default-task list":       {},
+	"project get":                     {},
+	"project list":                    {},
+	"project permissions groups list": {},
+	"project permissions list":        {},
+	"project permissions show":        {},
+	"project permissions users list":  {},
+	"project webhook list":            {},
+	"project webhook stats":           {},
+	"ref list":                        {},
+	"ref resolve":                     {},
+	"repo archive":                    {},
+	"repo browse blame":               {},
+	"repo browse file":                {},
+	"repo browse history":             {},
+	"repo browse raw":                 {},
+	"repo browse tree":                {},
+	"repo cat":                        {},
+	"repo comment list":               {},
+	"repo compare":                    {},
+	"repo default-task list":          {},
+	"repo label list":                 {},
+	"repo list":                       {},
+	"repo permissions list":           {},
+	"repo permissions show":           {},
+	"repo settings auto-decline get":  {},
+	"repo settings auto-merge get":    {},
+	"repo settings pull-requests get": {},
+	"repo settings pull-requests merge-checks list":  {},
+	"repo settings security permissions groups list": {},
+	"repo settings security permissions users list":  {},
+	"repo settings workflow webhooks list":           {},
+	"repo ssh-key list":                              {},
+	"repo sync status":                               {},
+	"reviewer condition list":                        {},
+	"reviewer-group list":                            {},
+	"reviewer-group users":                           {},
+	"search commits":                                 {},
+	"search prs":                                     {},
+	"search repos":                                   {},
+	"ssh-key list":                                   {},
+	"tag list":                                       {},
+	"tag view":                                       {},
+	"webhook get":                                    {},
+	"webhook list":                                   {},
+	"webhook stats":                                  {},
+}
+
+var clientLocalCommands = map[string]struct{}{
+	"ai mcp serve":        {},
+	"ai skill install":    {},
+	"ai skill remove":     {},
+	"auth alias add":      {},
+	"auth alias discover": {},
+	"auth alias list":     {},
+	"auth alias remove":   {},
+	"auth git-credential": {},
+	"auth login":          {},
+	"auth logout":         {},
+	"auth server list":    {},
+	"auth server use":     {},
+	"auth setup-git":      {},
+	"clone":               {},
+	"pr checkout":         {},
+	"repo clone":          {},
+	"update":              {},
+}
+
+func classifyCommand(path string) commandClassification {
+	trimmed := strings.TrimSpace(path)
+	if _, ok := dryRunProfiles[trimmed]; ok {
+		return classificationMutating
+	}
+	if _, ok := readOnlyCommands[trimmed]; ok {
+		return classificationReadOnly
+	}
+	if _, ok := clientLocalCommands[trimmed]; ok {
+		return classificationLocal
+	}
+	return classificationUnknown
 }
 
 func registerGlobalDryRunInterceptors(root *cobra.Command, options *rootOptions) {
@@ -219,7 +358,8 @@ func registerGlobalDryRunInterceptors(root *cobra.Command, options *rootOptions)
 				}
 
 				path := dryRunCommandPath(cmd)
-				if !isServerMutatingPath(path) {
+				category := classifyCommand(path)
+				if category == classificationReadOnly || category == classificationLocal {
 					return originalRun(cmd, args)
 				}
 
@@ -236,31 +376,7 @@ func registerGlobalDryRunInterceptors(root *cobra.Command, options *rootOptions)
 }
 
 func isServerMutatingPath(path string) bool {
-	trimmedPath := strings.TrimSpace(path)
-	if trimmedPath == "" {
-		return false
-	}
-	if strings.EqualFold(trimmedPath, "update") {
-		return false
-	}
-
-	// Local helper and configuration commands are not server mutating
-	if strings.HasPrefix(trimmedPath, "ai ") || strings.HasPrefix(trimmedPath, "auth alias ") {
-		return false
-	}
-
-	parts := strings.Fields(trimmedPath)
-	if len(parts) == 0 {
-		return false
-	}
-
-	last := strings.ToLower(strings.TrimSpace(parts[len(parts)-1]))
-	switch last {
-	case "create", "update", "delete", "set", "grant", "revoke", "enable", "disable", "configure", "merge", "decline", "reopen", "approve", "unapprove", "add", "remove", "fork", "apply":
-		return true
-	default:
-		return false
-	}
+	return classifyCommand(path) == classificationMutating
 }
 
 func dryRunCommandPath(command *cobra.Command) string {
