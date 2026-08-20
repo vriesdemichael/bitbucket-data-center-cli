@@ -224,4 +224,15 @@ func TestRepoCommentCommands(t *testing.T) {
 	if err := cmd.Execute(); err == nil {
 		t.Fatalf("expected validation error when both --commit and --pr are passed")
 	}
+
+}
+
+func TestCommentHelpers(t *testing.T) {
+	if commentIDString(openapigenerated.RestComment{}) != "?" {
+		t.Fatal("expected ? for comment with nil ID")
+	}
+	id := int64(42)
+	if commentIDString(openapigenerated.RestComment{Id: &id}) != "42" {
+		t.Fatal("expected 42 for comment with ID")
+	}
 }

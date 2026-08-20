@@ -337,4 +337,19 @@ func TestDiffValidationErrors(t *testing.T) {
 	if defaultCmd == nil {
 		t.Fatalf("expected default command to be created")
 	}
+
+	repo := "PRJ/repo"
+	prAlias := diffcmd.NewDiffPullRequestCommand(diffcmd.Dependencies{}, &repo)
+	if prAlias == nil {
+		t.Fatalf("expected default pr alias command to be created")
+	}
+}
+
+func TestDiffDefaults(t *testing.T) {
+	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
+	var deps diffcmd.Dependencies
+	cmd := diffcmd.New(deps)
+	if cmd == nil {
+		t.Fatal("expected New to succeed with empty deps")
+	}
 }

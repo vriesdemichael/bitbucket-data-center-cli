@@ -17,6 +17,7 @@ func TestParseBitbucketRemote(t *testing.T) {
 		{"http://localhost:7990/bitbucket/scm/PROJ/repo.git", "localhost", "PROJ", "repo", true},
 		{"git@bitbucket.example.com:PROJ/repo.git", "bitbucket.example.com", "PROJ", "repo", true},
 		{"ssh://git@bitbucket.example.com:7999/PROJ/repo.git", "bitbucket.example.com", "PROJ", "repo", true},
+		{"git@bitbucket.example.com:no-colon", "", "", "", false},
 		{"not-a-valid-url", "", "", "", false},
 		{"", "", "", "", false},
 	}
@@ -45,14 +46,52 @@ func TestBuildBitbucketCloneURL(t *testing.T) {
 	if url != want {
 		t.Fatalf("got %q, want %q", url, want)
 	}
+
+	// Invalid baseURL
+	if _, err := BuildBitbucketCloneURL("invalid-url", "PROJ", "my-repo"); err == nil {
+		t.Fatal("expected error for invalid base URL")
+	}
+
+	// Empty project or slug
+	if _, err := BuildBitbucketCloneURL("https://bitbucket.example.com", "", "my-repo"); err == nil {
+		t.Fatal("expected error for empty project")
+	}
+	if _, err := BuildBitbucketCloneURL("https://bitbucket.example.com", "PROJ", ""); err == nil {
+		t.Fatal("expected error for empty slug")
+	}
+}
+
+func TestNormalizeHTTPCloneHost(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"http://bitbucket.example.com/prefix/scm/PROJ/repo.git", "http://bitbucket.example.com"},
+		{"https://user:token@bitbucket.example.com:7990/context", "https://bitbucket.example.com:7990"},
+		{"ssh://bitbucket.example.com", "https://bitbucket.example.com"},
+		{"invalid host without scheme or colon", "invalid host without scheme or colon"},
+	}
+
+	for _, tt := range tests {
+		got := NormalizeHTTPCloneHost(tt.input)
+		if got != tt.want {
+			t.Errorf("NormalizeHTTPCloneHost(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
 }
 
 func TestIsNonRepositoryError(t *testing.T) {
 	if !IsNonRepositoryError(errors.New("fatal: not a git repository (or any of the parent directories): .git")) {
 		t.Fatalf("expected true for not a git repository")
 	}
+	if !IsNonRepositoryError(errors.New("fatal: this operation must be run in a work tree")) {
+		t.Fatalf("expected true for must be run in a work tree")
+	}
 	if IsNonRepositoryError(errors.New("something else")) {
 		t.Fatalf("expected false for other error")
+	}
+	if IsNonRepositoryError(nil) {
+		t.Fatalf("expected false for nil error")
 	}
 }
 

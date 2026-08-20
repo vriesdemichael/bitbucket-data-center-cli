@@ -519,4 +519,30 @@ func TestRepoSettingsJSONAndDryRunModes(t *testing.T) {
 	if !strings.Contains(buf.String(), "deleted") {
 		t.Fatalf("expected deleted in JSON: %s", buf.String())
 	}
+	jsonEnabled = false
+
+	// 6. Auto-merge & Auto-decline Human modes
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"settings", "auto-merge", "get", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on auto-merge get: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Auto-merge enabled:") {
+		t.Fatalf("expected Auto-merge enabled: in output: %s", buf.String())
+	}
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"settings", "auto-decline", "get", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on auto-decline get: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Auto-decline enabled:") {
+		t.Fatalf("expected Auto-decline enabled: in output: %s", buf.String())
+	}
 }
