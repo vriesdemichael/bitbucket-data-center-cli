@@ -1,12 +1,10 @@
-package tagcmd
+package webhookcmd
 
 import (
 	"testing"
-
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 )
 
-func TestTagDefaults(t *testing.T) {
+func TestWebhookDefaults(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
 	var deps Dependencies
 	d := deps.withDefaults()
@@ -17,8 +15,8 @@ func TestTagDefaults(t *testing.T) {
 	if d.DryRunEnabled == nil || d.DryRunEnabled() {
 		t.Fatal("expected DryRunEnabled to default to false")
 	}
-	if d.WriteJSON == nil || d.WriteJSONList == nil {
-		t.Fatal("expected WriteJSON and WriteJSONList to default to non-nil")
+	if d.WriteJSON == nil {
+		t.Fatal("expected WriteJSON to default to non-nil")
 	}
 	if d.LoadConfig != nil {
 		cfg, err := d.LoadConfig()
@@ -31,20 +29,5 @@ func TestTagDefaults(t *testing.T) {
 		if err != nil || client == nil || cfg.BitbucketURL != "http://localhost:7990" {
 			t.Fatalf("unexpected LoadConfigAndClient: %v", err)
 		}
-	}
-}
-
-func TestTagHelpers(t *testing.T) {
-	if safeString(nil) != "" {
-		t.Fatal("expected empty string for safeString(nil)")
-	}
-	s := "v1.0.0"
-	if safeString(&s) != "v1.0.0" {
-		t.Fatal("expected v1.0.0 for safeString(&s)")
-	}
-
-	cfg := config.AppConfig{ProjectKey: "PRJ"}
-	if _, err := resolveTagRepositoryReference("invalid-selector-no-slash", cfg); err == nil {
-		t.Fatal("expected error for invalid repository selector")
 	}
 }

@@ -329,4 +329,26 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 	})
+
+	t.Run("LoadUpdateCommandHTTPConfig validation errors", func(t *testing.T) {
+		t.Setenv("BB_REQUEST_TIMEOUT", "0s")
+		if _, err := LoadUpdateCommandHTTPConfig(); err == nil {
+			t.Fatal("expected error for 0s timeout")
+		}
+
+		t.Setenv("BB_REQUEST_TIMEOUT", "20s")
+		t.Setenv("BB_INSECURE_SKIP_VERIFY", "not-a-bool")
+		if _, err := LoadUpdateCommandHTTPConfig(); err == nil {
+			t.Fatal("expected error for invalid bool")
+		}
+	})
+
+	t.Run("default UpdateRunnerFactory", func(t *testing.T) {
+		runner := UpdateRunnerFactory("v1.0.0", UpdateCommandHTTPConfig{
+			RequestTimeout: 10 * time.Second,
+		})
+		if runner == nil {
+			t.Fatal("expected non-nil runner from default factory")
+		}
+	})
 }
