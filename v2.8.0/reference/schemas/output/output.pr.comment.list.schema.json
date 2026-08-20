@@ -1,0 +1,273 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.pr.comment.list.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb pr comment list --json`. By default data carries the summarised thread view (comments and tasks together, unresolved first). With --full it carries the raw Bitbucket comment objects under `comments` instead.",
+  "properties": {
+    "data": {
+      "additionalProperties": true,
+      "oneOf": [
+        {
+          "required": [
+            "state",
+            "summary",
+            "threads"
+          ],
+          "title": "summarised thread view (default)"
+        },
+        {
+          "required": [
+            "comments"
+          ],
+          "title": "raw comment payload (--full)"
+        }
+      ],
+      "properties": {
+        "comments": {
+          "description": "Raw Bitbucket comment objects. Only present with --full.",
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "path": {
+          "description": "Path filter in effect, empty when unset.",
+          "type": "string"
+        },
+        "pull_request_id": {
+          "type": "string"
+        },
+        "repository": {
+          "additionalProperties": true,
+          "properties": {
+            "project_key": {
+              "type": "string"
+            },
+            "slug": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "source": {
+          "description": "Which Bitbucket endpoint the comments came from.",
+          "enum": [
+            "activities",
+            "comments",
+            "blocker_comments"
+          ]
+        },
+        "state": {
+          "enum": [
+            "all",
+            "open",
+            "resolved",
+            "pending"
+          ]
+        },
+        "summary": {
+          "additionalProperties": true,
+          "description": "Counts across everything the source returned, before --state and --tasks-only are applied. What that spans depends on `source`: 'activities' is the whole pull request, 'comments' is the requested --path only, and 'blocker_comments' is tasks only. open_tasks is a subset of unresolved, so the two must not be added together.",
+          "properties": {
+            "open_tasks": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "pending": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "resolved": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "resolved_tasks": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "total_threads": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "unresolved": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "unresolved_inline": {
+              "description": "Subset of unresolved anchored to a file.",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "total_threads",
+            "unresolved",
+            "resolved",
+            "pending",
+            "open_tasks",
+            "resolved_tasks"
+          ],
+          "type": "object"
+        },
+        "threads": {
+          "description": "Comment threads, unresolved first. Absent when --full is used.",
+          "items": {
+            "additionalProperties": true,
+            "properties": {
+              "anchor": {
+                "additionalProperties": true,
+                "description": "Location in the diff. Absent for pull-request-level comments.",
+                "properties": {
+                  "line": {
+                    "type": "integer"
+                  },
+                  "line_type": {
+                    "type": "string"
+                  },
+                  "orphaned": {
+                    "description": "True when the anchored line no longer exists in the diff.",
+                    "type": "boolean"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "author": {
+                "type": "string"
+              },
+              "created_date": {
+                "type": "integer"
+              },
+              "has_suggestion": {
+                "description": "True when the comment carries a fenced suggestion block that `bb pr comment apply-suggestion` can apply.",
+                "type": "boolean"
+              },
+              "id": {
+                "description": "Root comment id. Use it to reply to or resolve the thread.",
+                "type": "integer"
+              },
+              "kind": {
+                "description": "Bitbucket models a task as a blocker comment.",
+                "enum": [
+                  "comment",
+                  "task"
+                ]
+              },
+              "last_reply": {
+                "additionalProperties": true,
+                "description": "Most recent reply, useful for telling whether the thread was already addressed.",
+                "properties": {
+                  "author": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "integer"
+                  },
+                  "id": {
+                    "type": "integer"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "replies": {
+                "description": "Full reply bodies. Only populated with --with-replies.",
+                "items": {
+                  "additionalProperties": true,
+                  "properties": {
+                    "author": {
+                      "type": "string"
+                    },
+                    "date": {
+                      "type": "integer"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "reply_count": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "resolved": {
+                "type": "boolean"
+              },
+              "state": {
+                "description": "Resolution state as reported by Bitbucket. May be empty on servers that omit it.",
+                "enum": [
+                  "OPEN",
+                  "RESOLVED",
+                  "PENDING",
+                  ""
+                ]
+              },
+              "text": {
+                "type": "string"
+              },
+              "updated_date": {
+                "type": "integer"
+              },
+              "url": {
+                "description": "Browser link to the thread. Omitted when no host is configured.",
+                "type": "string"
+              },
+              "version": {
+                "description": "Comment version, required for optimistic locking on update.",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "resolved",
+              "reply_count"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "repository",
+        "pull_request_id",
+        "source",
+        "path"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb pr comment list output",
+  "type": "object"
+}
