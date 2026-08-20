@@ -43,6 +43,9 @@ func newMockBranchServer(t *testing.T) *httptest.Server {
 		case r.Method == http.MethodDelete && path == "/rest/branch-utils/latest/projects/PRJ/repos/demo/branches":
 			w.WriteHeader(http.StatusNoContent)
 
+		case r.Method == http.MethodGet && strings.Contains(path, "/branches/info/"):
+			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"refs/heads/main","displayId":"main"}]}`))
+
 		case r.Method == http.MethodGet && path == "/rest/branch-permissions/latest/projects/PRJ/repos/demo/restrictions":
 			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":42,"type":"read-only","matcher":{"id":"refs/heads/main","displayId":"main","type":{"id":"BRANCH"}}}]}`))
 
@@ -95,41 +98,85 @@ func newTestDependencies(t *testing.T, serverURL string, jsonMode bool, dryRun b
 
 func TestBranchList(t *testing.T) {
 	server := newMockBranchServer(t)
-	deps := newTestDependencies(t, server.URL, false, false)
 
+	// Human mode
+	deps := newTestDependencies(t, server.URL, false, false)
 	cmd := branchcmd.New(deps)
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"list"})
-
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if !strings.Contains(buf.String(), "main") {
+		t.Fatalf("expected 'main' in output, got: %s", buf.String())
+	}
 
-	out := buf.String()
-	if !strings.Contains(out, "main") {
-		t.Fatalf("expected 'main' in output, got: %s", out)
+	// JSON mode
+	depsJSON := newTestDependencies(t, server.URL, true, false)
+	cmd = branchcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"list"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on json list: %v", err)
+	}
+	if !strings.Contains(buf.String(), "branches") {
+		t.Fatalf("expected 'branches' in json output, got: %s", buf.String())
 	}
 }
 
-func TestBranchCreate(t *testing.T) {
+func TestBranchCreateAndDelete(t *testing.T) {
 	server := newMockBranchServer(t)
-	deps := newTestDependencies(t, server.URL, false, false)
 
-	cmd := branchcmd.New(deps)
+	// Create dry-run
+	depsDryRun := newTestDependencies(t, server.URL, false, true)
+	cmd := branchcmd.New(depsDryRun)
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"create", "feature-1", "--start-point", "main"})
-
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("unexpected error on create dry-run: %v", err)
 	}
 
-	out := buf.String()
-	if !strings.Contains(out, "Created branch") {
-		t.Fatalf("expected 'Created branch' in output, got: %s", out)
+	// Create real execution
+	deps := newTestDependencies(t, server.URL, false, false)
+	cmd = branchcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "feature-1", "--start-point", "main"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on create: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Created branch") {
+		t.Fatalf("expected 'Created branch' in output, got: %s", buf.String())
+	}
+
+	// Delete dry-run
+	cmd = branchcmd.New(depsDryRun)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "feature-1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete dry-run: %v", err)
+	}
+
+	// Delete real execution
+	cmd = branchcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "feature-1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Deleted branch") {
+		t.Fatalf("expected 'Deleted branch' in output, got: %s", buf.String())
 	}
 }
 
@@ -142,45 +189,201 @@ func TestBranchDefaultGetAndSet(t *testing.T) {
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"default", "get"})
-
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-
-	out := buf.String()
-	if !strings.Contains(out, "main") {
-		t.Fatalf("expected 'main' in output, got: %s", out)
+	if !strings.Contains(buf.String(), "main") {
+		t.Fatalf("expected 'main' in output, got: %s", buf.String())
 	}
 
+	// Set dry-run
+	depsDryRun := newTestDependencies(t, server.URL, false, true)
+	cmd = branchcmd.New(depsDryRun)
 	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"default", "set", "master"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("unexpected error on default set dry-run: %v", err)
+	}
+
+	// Set real execution
+	cmd = branchcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"default", "set", "master"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on default set: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Default branch set to master") {
+		t.Fatalf("expected Default branch set in output: %s", buf.String())
 	}
 }
 
-func TestBranchRestrictionListAndCreate(t *testing.T) {
+func TestBranchModelInspectAndUpdate(t *testing.T) {
 	server := newMockBranchServer(t)
 	deps := newTestDependencies(t, server.URL, false, false)
 
+	// Inspect human mode
+	cmd := branchcmd.New(deps)
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"model", "inspect", "1111111"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on model inspect: %v", err)
+	}
+	if !strings.Contains(buf.String(), "main") {
+		t.Fatalf("expected main in inspect output: %s", buf.String())
+	}
+
+	// Inspect JSON mode
+	depsJSON := newTestDependencies(t, server.URL, true, false)
+	cmd = branchcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"model", "inspect", "1111111"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on model inspect JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "refs") {
+		t.Fatalf("expected refs in json output: %s", buf.String())
+	}
+
+	// Model update dry run
+	depsDryRun := newTestDependencies(t, server.URL, false, true)
+	cmd = branchcmd.New(depsDryRun)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"model", "update", "develop"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on model update dry-run: %v", err)
+	}
+
+	// Model update real execution
+	cmd = branchcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"model", "update", "develop"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on model update: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Branch model default updated to") {
+		t.Fatalf("expected Branch model default updated in output: %s", buf.String())
+	}
+}
+
+func TestBranchRestrictions(t *testing.T) {
+	server := newMockBranchServer(t)
+	deps := newTestDependencies(t, server.URL, false, false)
+
+	// List
 	cmd := branchcmd.New(deps)
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"restriction", "list"})
-
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-
-	out := buf.String()
-	if !strings.Contains(out, "read-only") {
-		t.Fatalf("expected 'read-only' in output, got: %s", out)
+	if !strings.Contains(buf.String(), "read-only") {
+		t.Fatalf("expected 'read-only' in output, got: %s", buf.String())
 	}
 
+	// Get (human and JSON)
+	cmd = branchcmd.New(deps)
 	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"restriction", "get", "42"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on restriction get: %v", err)
+	}
+	if !strings.Contains(buf.String(), "read-only") {
+		t.Fatalf("expected read-only in get output: %s", buf.String())
+	}
+
+	depsJSON := newTestDependencies(t, server.URL, true, false)
+	cmd = branchcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"restriction", "get", "42"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on restriction get JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "restriction") {
+		t.Fatalf("expected restriction in JSON output: %s", buf.String())
+	}
+
+	// Create (dry-run and real)
+	depsDryRun := newTestDependencies(t, server.URL, false, true)
+	cmd = branchcmd.New(depsDryRun)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"restriction", "create", "--type", "read-only", "--matcher-id", "main"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("unexpected error on restriction create dry-run: %v", err)
+	}
+
+	cmd = branchcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"restriction", "create", "--type", "read-only", "--matcher-id", "main"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on restriction create: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Created restriction") {
+		t.Fatalf("expected Created restriction in output: %s", buf.String())
+	}
+
+	// Update (dry-run and real)
+	cmd = branchcmd.New(depsDryRun)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"restriction", "update", "42", "--type", "read-only", "--matcher-id", "main"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on restriction update dry-run: %v", err)
+	}
+
+	cmd = branchcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"restriction", "update", "42", "--type", "read-only", "--matcher-id", "main"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on restriction update: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Updated restriction") {
+		t.Fatalf("expected Updated restriction in output: %s", buf.String())
+	}
+
+	// Delete (dry-run and real)
+	cmd = branchcmd.New(depsDryRun)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"restriction", "delete", "42"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on restriction delete dry-run: %v", err)
+	}
+
+	cmd = branchcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"restriction", "delete", "42"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on restriction delete: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Deleted restriction") {
+		t.Fatalf("expected Deleted restriction in output: %s", buf.String())
 	}
 }
