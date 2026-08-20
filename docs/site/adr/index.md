@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `52`
-- Accepted ADRs: `49`
+- Total ADRs: `53`
+- Accepted ADRs: `50`
 
 ## ADR List
 
@@ -61,4 +61,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 050: Frequently-used commands get a shallow alias, and the deep path stays canonical](050-shallow-aliases-for-deep-command-paths.md) (`architecture`, `accepted`)
 - [ADR 051: bb does not manage server-side hooks](051-no-server-side-hook-management.md) (`architecture`, `accepted`)
 - [ADR 052: Layer-boundary testing policy and HTTP mock elimination](052-layer-boundary-testing-and-mock-elimination.md) (`development`, `accepted`)
+- [ADR 053: Raw API escape hatch for uncovered endpoints and version gaps](053-raw-api-escape-hatch.md) (`architecture`, `accepted`)
 

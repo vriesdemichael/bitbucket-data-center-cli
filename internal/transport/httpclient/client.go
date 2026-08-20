@@ -134,23 +134,54 @@ func (client *Client) doJSON(ctx context.Context, method string, path string, qu
 	return nil
 }
 
-// do issues a request under the client's retry, logging and error-mapping
-// policy and returns the response body together with its headers. It is the
-// single transport path shared by the JSON helpers and by GetRaw so that all
-// callers get identical retry and error semantics.
-func (client *Client) do(ctx context.Context, method string, path string, query map[string]string, payload []byte, acceptJSON bool) ([]byte, http.Header, error) {
+// RequestOptions configures a raw HTTP request.
+type RequestOptions struct {
+	Method  string
+	Path    string
+	Query   url.Values
+	Headers http.Header
+	Body    []byte
+}
+
+// RawResponse represents the raw HTTP response.
+type RawResponse struct {
+	StatusCode int
+	Header     http.Header
+	Body       []byte
+}
+
+// DoRequest performs a HTTP request with full control over method, headers, query, and body,
+// applying the client's retry, backoff, logging, TLS, and auth policies.
+func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawResponse, error) {
 	if client.initErr != nil {
-		return nil, nil, apperrors.New(apperrors.KindValidation, "failed to initialize HTTP transport", client.initErr)
+		return nil, apperrors.New(apperrors.KindValidation, "failed to initialize HTTP transport", client.initErr)
 	}
 
-	requestURL, err := url.Parse(client.baseURL + path)
+	method := strings.ToUpper(strings.TrimSpace(opts.Method))
+	if method == "" {
+		method = http.MethodGet
+	}
+
+	rawPath := opts.Path
+	var requestURL *url.URL
+	var err error
+	if strings.HasPrefix(rawPath, "http://") || strings.HasPrefix(rawPath, "https://") {
+		requestURL, err = url.Parse(rawPath)
+	} else {
+		if !strings.HasPrefix(rawPath, "/") {
+			rawPath = "/" + rawPath
+		}
+		requestURL, err = url.Parse(client.baseURL + rawPath)
+	}
 	if err != nil {
-		return nil, nil, apperrors.New(apperrors.KindValidation, "invalid request URL", err)
+		return nil, apperrors.New(apperrors.KindValidation, "invalid request URL", err)
 	}
 
 	values := requestURL.Query()
-	for key, value := range query {
-		values.Set(key, value)
+	for k, vs := range opts.Query {
+		for _, v := range vs {
+			values.Add(k, v)
+		}
 	}
 	requestURL.RawQuery = values.Encode()
 
@@ -158,22 +189,28 @@ func (client *Client) do(ctx context.Context, method string, path string, query 
 	for attempt := 0; attempt <= client.retries; attempt++ {
 		started := time.Now()
 		var bodyReader io.Reader
-		if payload != nil {
-			bodyReader = bytes.NewReader(payload)
+		if opts.Body != nil {
+			bodyReader = bytes.NewReader(opts.Body)
 		}
 
 		request, err := http.NewRequestWithContext(ctx, method, requestURL.String(), bodyReader)
 		if err != nil {
-			return nil, nil, apperrors.New(apperrors.KindInternal, "failed to build request", err)
+			return nil, apperrors.New(apperrors.KindInternal, "failed to build request", err)
 		}
 
-		if acceptJSON {
-			request.Header.Set("Accept", "application/json")
-		}
-		if payload != nil {
+		if len(opts.Body) > 0 && (opts.Headers == nil || opts.Headers.Get("Content-Type") == "") {
 			request.Header.Set("Content-Type", "application/json")
 		}
-		client.applyAuth(request)
+
+		for k, vs := range opts.Headers {
+			for _, v := range vs {
+				request.Header.Add(k, v)
+			}
+		}
+
+		if request.Header.Get("Authorization") == "" {
+			client.applyAuth(request)
+		}
 
 		response, err := client.http.Do(request)
 		if err != nil {
@@ -189,18 +226,18 @@ func (client *Client) do(ctx context.Context, method string, path string, query 
 			if attempt < client.retries {
 				client.logger.Warn("http request failed", fields)
 				if sleepErr := sleepWithContext(ctx, time.Duration(attempt+1)*client.backoff); sleepErr != nil {
-					return nil, nil, apperrors.New(apperrors.KindTransient, "request canceled while waiting to retry", sleepErr)
+					return nil, apperrors.New(apperrors.KindTransient, "request canceled while waiting to retry", sleepErr)
 				}
 				continue
 			}
 			client.logger.Error("http request failed", fields)
-			return nil, nil, lastErr
+			return nil, lastErr
 		}
 
 		body, readErr := io.ReadAll(response.Body)
 		_ = response.Body.Close()
 		if readErr != nil {
-			return nil, nil, apperrors.New(apperrors.KindTransient, "failed to read response", readErr)
+			return nil, apperrors.New(apperrors.KindTransient, "failed to read response", readErr)
 		}
 
 		if response.StatusCode >= 200 && response.StatusCode < 300 {
@@ -212,7 +249,11 @@ func (client *Client) do(ctx context.Context, method string, path string, query 
 				"retry_count": client.retries,
 				"duration_ms": time.Since(started).Milliseconds(),
 			})
-			return body, response.Header, nil
+			return &RawResponse{
+				StatusCode: response.StatusCode,
+				Header:     response.Header,
+				Body:       body,
+			}, nil
 		}
 
 		mappedErr := openapi.MapStatusError(response.StatusCode, body)
@@ -232,24 +273,48 @@ func (client *Client) do(ctx context.Context, method string, path string, query 
 			if attempt < client.retries {
 				client.logger.Warn("http request returned error status", fields)
 				if sleepErr := sleepWithContext(ctx, retryDelay); sleepErr != nil {
-					return nil, nil, apperrors.New(apperrors.KindTransient, "request canceled while waiting to retry", sleepErr)
+					return nil, apperrors.New(apperrors.KindTransient, "request canceled while waiting to retry", sleepErr)
 				}
 				continue
 			}
 			client.logger.Error("http request returned error status", fields)
-			return nil, nil, lastErr
+			return nil, lastErr
 		}
 
 		client.logger.Error("http request returned error status", fields)
-
-		return nil, nil, mappedErr
+		return nil, mappedErr
 	}
 
 	if lastErr != nil {
-		return nil, nil, lastErr
+		return nil, lastErr
 	}
 
-	return nil, nil, apperrors.New(apperrors.KindTransient, "request failed after retries", nil)
+	return nil, apperrors.New(apperrors.KindTransient, "request failed after retries", nil)
+}
+
+// do issues a request under the client's retry, logging and error-mapping
+// policy and returns the response body together with its headers.
+func (client *Client) do(ctx context.Context, method string, path string, query map[string]string, payload []byte, acceptJSON bool) ([]byte, http.Header, error) {
+	q := make(url.Values)
+	for k, v := range query {
+		q.Set(k, v)
+	}
+	var headers http.Header
+	if acceptJSON {
+		headers = make(http.Header)
+		headers.Set("Accept", "application/json")
+	}
+	resp, err := client.DoRequest(ctx, RequestOptions{
+		Method:  method,
+		Path:    path,
+		Query:   q,
+		Headers: headers,
+		Body:    payload,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return resp.Body, resp.Header, nil
 }
 
 func (client *Client) Health(ctx context.Context) (HealthStatus, error) {

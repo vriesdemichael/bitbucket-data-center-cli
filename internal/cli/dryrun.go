@@ -36,6 +36,8 @@ type dryRunPreview = dryrunpreview.Preview
 // interceptor passes through to it unchanged. Stateful: false means the
 // interceptor generates a static (intent-only) preview using newDryRunPreview.
 var dryRunProfiles = map[string]dryRunProfile{
+	// api (raw REST passthrough escape hatch)
+	"api": {Intent: "api.request", Action: "execute", Stateful: true},
 	// branch
 	"branch delete":             {Intent: "branch.delete", Action: "delete", Stateful: true},
 	"branch create":             {Intent: "branch.create", Action: "create", Stateful: true},

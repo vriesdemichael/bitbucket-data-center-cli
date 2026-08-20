@@ -1,9 +1,9 @@
 {
   "version": 1,
   "summary": {
-    "runnable_commands": 227,
-    "covered_commands": 224,
-    "covered_percent": 98.6784140969163,
+    "runnable_commands": 228,
+    "covered_commands": 225,
+    "covered_percent": 98.68421052631578,
     "masked_commands": 0,
     "uncovered_commands": 3
   },
@@ -12,6 +12,7 @@
     "ai skill install",
     "ai skill remove",
     "ai skill show",
+    "api",
     "auth alias add",
     "auth alias discover",
     "auth alias list",

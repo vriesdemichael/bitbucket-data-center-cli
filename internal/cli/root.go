@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/pflag"
 	admincmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/admin"
 	aicmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/ai"
+	apicmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/api"
 	authcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/auth"
 	branchcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/branch"
 	browsecmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/browse"
@@ -88,6 +89,12 @@ your behalf using the link above.`,
 		Version:    func() string { return rootCmd.Version },
 		LoadConfig: loadConfig,
 		WriteJSON:  writeJSON,
+	}))
+	rootCmd.AddCommand(apicmd.New(apicmd.Dependencies{
+		JSONEnabled:   func() bool { return options.JSON },
+		DryRunEnabled: func() bool { return options.DryRun },
+		LoadConfig:    loadConfig,
+		WriteJSON:     writeJSON,
 	}))
 	rootCmd.AddCommand(authcmd.New(authcmd.Dependencies{
 		JSONEnabled: func() bool { return options.JSON },
