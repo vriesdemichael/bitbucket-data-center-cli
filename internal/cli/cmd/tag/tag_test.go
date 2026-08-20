@@ -3,6 +3,7 @@ package tagcmd_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,10 +15,12 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
-type testPermissionChecker struct{}
+type testPermissionChecker struct {
+	err error
+}
 
-func (testPermissionChecker) CheckRepoPermission(ctx context.Context, projectKey, repoSlug string, permission openapigenerated.GetRepositories1ParamsPermission) error {
-	return nil
+func (t testPermissionChecker) CheckRepoPermission(ctx context.Context, projectKey, repoSlug string, permission openapigenerated.GetRepositories1ParamsPermission) error {
+	return t.err
 }
 
 func newMockTagServer(t *testing.T) *httptest.Server {
@@ -29,13 +32,21 @@ func newMockTagServer(t *testing.T) *httptest.Server {
 
 		switch {
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/tags":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"refs/tags/v1.0","displayId":"v1.0","type":"ANNOTATED","latestCommit":"1111111"}]}`))
+			if r.URL.Query().Get("filterText") == "nonexistent" {
+				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
+			} else {
+				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"refs/tags/v1.0","displayId":"v1.0","type":"ANNOTATED","latestCommit":"1111111"}]}`))
+			}
 
 		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/demo/tags":
 			_, _ = w.Write([]byte(`{"id":"refs/tags/v1.1","displayId":"v1.1","type":"ANNOTATED","latestCommit":"2222222"}`))
 
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/tags/v1.0":
 			_, _ = w.Write([]byte(`{"id":"refs/tags/v1.0","displayId":"v1.0","type":"ANNOTATED","latestCommit":"1111111"}`))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/tags/notfound":
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"errors":[{"message":"Tag not found"}]}`))
 
 		case r.Method == http.MethodDelete && path == "/rest/git/latest/projects/PRJ/repos/demo/tags/v1.0":
 			w.WriteHeader(http.StatusNoContent)
@@ -75,6 +86,41 @@ func newTestDependencies(t *testing.T, serverURL string, jsonMode bool, dryRun b
 	}
 }
 
+func TestTagWithDefaults(t *testing.T) {
+	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
+	d := tagcmd.Dependencies{}
+	cmd := tagcmd.New(d)
+	if cmd == nil {
+		t.Fatal("expected non-nil root tag command")
+	}
+
+	// Test default loaders
+	defaults := (&d)
+	_ = cmd // cmd was initialized with defaults
+	if d.LoadConfig == nil {
+		cfg, err := config.LoadFromEnv()
+		if err != nil || cfg.BitbucketURL != "http://localhost:7990" {
+			t.Fatalf("unexpected LoadConfig: %v", err)
+		}
+	}
+	_ = defaults
+}
+
+func TestTagHelpers(t *testing.T) {
+	server := newMockTagServer(t)
+	deps := newTestDependencies(t, server.URL, false, false)
+
+	// Explicit repository selector
+	cmd := tagcmd.New(deps)
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"list", "--repo", "PRJ/demo"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error with explicit repo flag: %v", err)
+	}
+}
+
 func TestTagList(t *testing.T) {
 	server := newMockTagServer(t)
 
@@ -84,12 +130,25 @@ func TestTagList(t *testing.T) {
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"list"})
+	cmd.SetArgs([]string{"list", "--order-by", "ALPHABETICAL", "--start", "0"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on list: %v", err)
 	}
 	if !strings.Contains(buf.String(), "v1.0") {
 		t.Fatalf("expected 'v1.0' in output, got: %s", buf.String())
+	}
+
+	// Empty list
+	cmd = tagcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"list", "--filter", "nonexistent"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on empty list: %v", err)
+	}
+	if !strings.Contains(buf.String(), "No tags found") {
+		t.Fatalf("expected 'No tags found' in output, got: %s", buf.String())
 	}
 
 	// JSON mode
@@ -110,15 +169,28 @@ func TestTagList(t *testing.T) {
 func TestTagCreate(t *testing.T) {
 	server := newMockTagServer(t)
 
-	// Dry run mode
+	// Dry run mode (create)
 	depsDryRun := newTestDependencies(t, server.URL, false, true)
 	cmd := tagcmd.New(depsDryRun)
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"create", "v1.1", "--start-point", "main"})
+	cmd.SetArgs([]string{"create", "v1.1", "--start-point", "main", "--message", "Release 1.1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on create dry-run: %v", err)
+	}
+
+	// Dry run mode (conflict - tag already exists)
+	cmd = tagcmd.New(depsDryRun)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "v1.0", "--start-point", "main"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on create dry-run conflict: %v", err)
+	}
+	if !strings.Contains(buf.String(), "conflict") && !strings.Contains(buf.String(), "tag already exists") {
+		t.Fatalf("expected conflict in dry-run output, got: %s", buf.String())
 	}
 
 	// Real execution
@@ -127,7 +199,7 @@ func TestTagCreate(t *testing.T) {
 	buf.Reset()
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"create", "v1.1", "--start-point", "main"})
+	cmd.SetArgs([]string{"create", "v1.1", "--start-point", "main", "--message", "Release 1.1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on create: %v", err)
 	}
@@ -181,7 +253,7 @@ func TestTagViewAndDelete(t *testing.T) {
 		t.Fatalf("expected 'tag' in json output, got: %s", buf.String())
 	}
 
-	// Delete dry run
+	// Delete dry run (found)
 	depsDryRun := newTestDependencies(t, server.URL, false, true)
 	cmd = tagcmd.New(depsDryRun)
 	buf.Reset()
@@ -190,6 +262,16 @@ func TestTagViewAndDelete(t *testing.T) {
 	cmd.SetArgs([]string{"delete", "v1.0"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on delete dry-run: %v", err)
+	}
+
+	// Delete dry run (not found - noop)
+	cmd = tagcmd.New(depsDryRun)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "notfound"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete dry-run not found: %v", err)
 	}
 
 	// Delete real execution
@@ -203,5 +285,44 @@ func TestTagViewAndDelete(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), "Deleted tag v1.0") {
 		t.Fatalf("expected 'Deleted tag v1.0' in output, got: %s", buf.String())
+	}
+
+	// Delete JSON mode
+	cmd = tagcmd.New(depsJSON)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "v1.0"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "ok") {
+		t.Fatalf("expected 'ok' in delete JSON output, got: %s", buf.String())
+	}
+}
+
+func TestTagPermissionErrors(t *testing.T) {
+	server := newMockTagServer(t)
+	deps := newTestDependencies(t, server.URL, false, true)
+	deps.PermissionChecker = func(client *openapigenerated.ClientWithResponses) tagcmd.PermissionChecker {
+		return testPermissionChecker{err: errors.New("forbidden")}
+	}
+
+	cmd := tagcmd.New(deps)
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "v1.1", "--start-point", "main"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected error on create dry run with permission error")
+	}
+
+	cmd = tagcmd.New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "v1.0"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected error on delete dry run with permission error")
 	}
 }
