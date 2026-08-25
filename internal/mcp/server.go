@@ -1,7 +1,9 @@
 package mcp
 
 import (
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	mcpgo "github.com/mark3labs/mcp-go/mcp"
@@ -176,10 +178,46 @@ func toSet(items []string) map[string]bool {
 // resultJSON serialises data as a JSON tool result.
 // Serialisation errors are surfaced as error results rather than Go errors
 // because tool handlers report operational errors through the result value.
+//
+// The MCP spec requires result.structuredContent to be a JSON object. Many list
+// handlers pass a slice here, which would otherwise serialise to a JSON array
+// and be rejected by clients with a "structuredContent: expected record" schema
+// error. structuredContentFor wraps non-object payloads under an "items" key so
+// the wire field is always a record; the text content agents read is unaffected
+// and retains the original shape.
 func resultJSON(data any) (*mcpgo.CallToolResult, error) {
-	result, serErr := mcpgo.NewToolResultJSON(data)
-	if serErr != nil {
-		return mcpgo.NewToolResultErrorFromErr("failed to serialize result", serErr), nil
+	b, err := json.Marshal(data)
+	if err != nil {
+		return mcpgo.NewToolResultErrorFromErr("failed to serialize result", err), nil
 	}
-	return result, nil
+	return mcpgo.NewToolResultStructured(structuredContentFor(data), string(b)), nil
+}
+
+// structuredContentFor shapes data for the MCP structuredContent field, which
+// the spec requires to be a JSON object (record). The mapping is:
+//
+//   - nil                 → nil (the field is omitted on the wire)
+//   - map, struct         → returned as-is (already a JSON object)
+//   - pointer to struct   → returned as-is (JSON marshals to an object)
+//   - everything else     → wrapped as {"items": data} (slices, arrays,
+//                           scalars, and pointers to non-structs all
+//                           become a JSON object)
+//
+// The text content in the tool result is unaffected; callers and agents that
+// read the text payload still see the original shape.
+func structuredContentFor(data any) any {
+	if data == nil {
+		return nil
+	}
+	switch reflect.ValueOf(data).Kind() {
+	case reflect.Map, reflect.Struct:
+		return data
+	case reflect.Ptr:
+		if reflect.ValueOf(data).Type().Elem().Kind() == reflect.Struct {
+			return data
+		}
+		return map[string]any{"items": data}
+	default:
+		return map[string]any{"items": data}
+	}
 }
