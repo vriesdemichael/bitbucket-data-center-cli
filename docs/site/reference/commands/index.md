@@ -284,9 +284,9 @@ Usage:
   bb ai skill [command]
 
 Available Commands:
-  install     Write the bb skill to the agent skills directory
-  remove      Remove the installed bb skill file
-  show        Print the bb agent skill to stdout
+  install     Write an agent skill to the agent skills directory
+  remove      Remove an installed agent skill file
+  show        Print an agent skill to stdout
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -305,25 +305,25 @@ Use "bb ai skill [command] --help" for more information about a command.
 
 ## `bb ai skill install`
 
-Write the bb skill to the agent skills directory
+Write an agent skill to the agent skills directory
 
 ```text
-Write the bb agent skill file to the appropriate directory.
+Write an agent skill file to the appropriate directory (defaults to "bb", supports "bulk" / "bb-bulk").
 
 Project scope (default):
-  .agents/skills/bb/SKILL.md
+  .agents/skills/<skill>/SKILL.md
 
 Global scope (--global):
-  ~/.agents/skills/bb/SKILL.md
+  ~/.agents/skills/<skill>/SKILL.md
 
 The skill is embedded in this binary, so no network connection is required.
 Re-run after upgrading bb to keep the skill file current.
 
 Usage:
-  bb ai skill install [flags]
+  bb ai skill install [skill] [flags]
 
 Flags:
-      --global   Install to user-level path (~/.agents/skills/bb/SKILL.md)
+      --global   Install to user-level path (~/.agents/skills/<skill>/SKILL.md)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -340,16 +340,16 @@ Global Flags:
 
 ## `bb ai skill remove`
 
-Remove the installed bb skill file
+Remove an installed agent skill file
 
 ```text
-Remove the installed bb skill file
+Remove an installed agent skill file
 
 Usage:
-  bb ai skill remove [flags]
+  bb ai skill remove [skill] [flags]
 
 Flags:
-      --global   Remove from user-level path (~/.agents/skills/bb/SKILL.md)
+      --global   Remove from user-level path (~/.agents/skills/<skill>/SKILL.md)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -366,10 +366,10 @@ Global Flags:
 
 ## `bb ai skill show`
 
-Print the bb agent skill to stdout
+Print an agent skill to stdout
 
 ```text
-Print the bb agent skill to stdout.
+Print an agent skill to stdout (defaults to "bb", supports "bulk" / "bb-bulk").
 
 The skill is embedded in this binary at compile time, so it works with no
 network connection and without the source repository present.
@@ -377,21 +377,22 @@ network connection and without the source repository present.
 Redirect to the location your coding agent expects:
 
   bb ai skill show > .agents/skills/bb/SKILL.md
+  bb ai skill show bulk > .agents/skills/bb-bulk/SKILL.md
 
 Most agents use .agents/skills/<name>/SKILL.md as the project-scoped path.
 Some use agent-specific paths (e.g. .claude/skills/, .cursor/skills/).
 Consult your agent's documentation if the above path does not work.
 
-A baseline skill (fixed at release time) is also distributed via the open
+Baseline skills (fixed at release time) are also distributed via the open
 agent skills ecosystem and can be installed without bb being present:
 
   npx skills add vriesdemichael/bitbucket-data-center-cli
 
-The npx-installed file is a snapshot from the repository. Use this command
+The npx-installed files are snapshots from the repository. Use this command
 to get a skill that always matches your installed bb version.
 
 Usage:
-  bb ai skill show [flags]
+  bb ai skill show [skill] [flags]
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust

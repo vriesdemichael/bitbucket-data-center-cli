@@ -48,8 +48,10 @@ It is designed to be:
 ## AI-specific resources
 
 - [AI and llms.txt overview](https://vriesdemichael.github.io/bitbucket-server-cli/latest/ai-and-llms/)
-- [bb AI skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-server-cli/blob/main/skills/bb/SKILL.md)
-- Run `bb ai skill show` to print the skill, stamped with the installed binary's version
+- [bb AI core skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-server-cli/blob/main/skills/bb/SKILL.md)
+- [bb bulk governance AI skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-server-cli/blob/main/skills/bb-bulk/SKILL.md)
+- Run `bb ai skill show` (or `bb ai skill show bulk`) to print the skill, stamped with the installed binary's version
+- Run `bb ai skill install` (or `bb ai skill install bulk`) to write the skill to `.agents/skills/`
 - Run `bb ai mcp tools` for the authoritative MCP tool list, including which are withheld without `--yolo`
 - Run `bb ai mcp serve` to expose Bitbucket operations as MCP tools to IDEs and agents
 

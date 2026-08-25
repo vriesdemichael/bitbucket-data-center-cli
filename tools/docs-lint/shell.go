@@ -104,7 +104,12 @@ func splitShellSegments(line string) []string {
 			quote = char
 			current.WriteRune(char)
 			continue
-		case char == '#' && current.Len() == 0:
+		case char == '#' && (current.Len() == 0 || runes[index-1] == ' ' || runes[index-1] == '\t'):
+			// If preceded by whitespace, a hash followed by a digit (e.g. #42) is a PR/issue identifier argument rather than a comment.
+			if current.Len() > 0 && index+1 < len(runes) && runes[index+1] >= '0' && runes[index+1] <= '9' {
+				current.WriteRune(char)
+				continue
+			}
 			// A comment runs to end of line.
 			index = len(runes)
 			continue
