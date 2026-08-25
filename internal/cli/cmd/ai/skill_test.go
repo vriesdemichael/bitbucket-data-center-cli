@@ -12,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	bbskill "github.com/vriesdemichael/bitbucket-server-cli/skills/bb"
+	bbbulkskill "github.com/vriesdemichael/bitbucket-server-cli/skills/bb-bulk"
 )
 
 // testDeps builds a minimal Dependencies for skill tests.
@@ -29,15 +30,32 @@ func testSkillDeps(version string) Dependencies {
 
 // TestBuildSkillStampsVersion ensures the rendered skill names the binary.
 func TestBuildSkillStampsVersion(t *testing.T) {
-	result := buildSkill("1.2.3")
+	skill, err := lookupSkill("bb")
+	if err != nil {
+		t.Fatalf("unexpected lookup error: %v", err)
+	}
+	result := buildSkill(skill, "1.2.3")
 	if !strings.Contains(result, "1.2.3") {
 		t.Fatal("buildSkill did not inject the version string")
+	}
+
+	bulkSkill, err := lookupSkill("bulk")
+	if err != nil {
+		t.Fatalf("unexpected lookup error: %v", err)
+	}
+	bulkResult := buildSkill(bulkSkill, "1.2.3")
+	if !strings.Contains(bulkResult, "1.2.3") {
+		t.Fatal("buildSkill did not inject the version string into bulk skill")
 	}
 }
 
 // TestBuildSkillFallsBackToDev ensures an empty version string yields "dev".
 func TestBuildSkillFallsBackToDev(t *testing.T) {
-	result := buildSkill("")
+	skill, err := lookupSkill("bb")
+	if err != nil {
+		t.Fatalf("unexpected lookup error: %v", err)
+	}
+	result := buildSkill(skill, "")
 	if !strings.Contains(result, "dev") {
 		t.Fatal("buildSkill did not substitute 'dev' for empty version")
 	}
@@ -45,98 +63,229 @@ func TestBuildSkillFallsBackToDev(t *testing.T) {
 
 // TestSkillShowPrintsSkillContent tests that `bb ai skill show` writes skill content to stdout.
 func TestSkillShowPrintsSkillContent(t *testing.T) {
-	cmd := New(testSkillDeps("2.0.0"))
+	tests := []struct {
+		name        string
+		args        []string
+		wantSnippet string
+	}{
+		{
+			name:        "default skill",
+			args:        []string{"skill", "show"},
+			wantSnippet: "# bb — Bitbucket Data Center CLI",
+		},
+		{
+			name:        "explicit bb skill",
+			args:        []string{"skill", "show", "bb"},
+			wantSnippet: "# bb — Bitbucket Data Center CLI",
+		},
+		{
+			name:        "bulk alias",
+			args:        []string{"skill", "show", "bulk"},
+			wantSnippet: "# bb-bulk — Multi-Repository Bulk Governance Skill",
+		},
+		{
+			name:        "bb-bulk alias",
+			args:        []string{"skill", "show", "bb-bulk"},
+			wantSnippet: "# bb-bulk — Multi-Repository Bulk Governance Skill",
+		},
+	}
 
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := New(testSkillDeps("2.0.0"))
+			buf := &bytes.Buffer{}
+			cmd.SetOut(buf)
+			cmd.SetErr(buf)
+			cmd.SetArgs(tt.args)
+
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			out := buf.String()
+			if len(out) == 0 {
+				t.Fatal("skill show produced no output")
+			}
+			if !strings.Contains(out, "2.0.0") {
+				t.Fatalf("skill show output does not contain version '2.0.0': %q", out[:min(200, len(out))])
+			}
+			if !strings.Contains(out, tt.wantSnippet) {
+				t.Fatalf("skill show output does not contain %q: %q", tt.wantSnippet, out[:min(200, len(out))])
+			}
+		})
+	}
+}
+
+// TestSkillShowUnknownSkillRejects ensures invalid skill name reports validation error.
+func TestSkillShowUnknownSkillRejects(t *testing.T) {
+	cmd := New(testSkillDeps("1.0.0"))
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"skill", "show"})
+	cmd.SetArgs([]string{"skill", "show", "nonexistent"})
 
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for unknown skill, got nil")
 	}
+	if !strings.Contains(err.Error(), "unknown skill \"nonexistent\"") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
 
-	out := buf.String()
-	if len(out) == 0 {
-		t.Fatal("skill show produced no output")
+// TestSkillInstallUnknownSkillRejects ensures invalid skill name reports validation error on install.
+func TestSkillInstallUnknownSkillRejects(t *testing.T) {
+	cmd := New(testSkillDeps("1.0.0"))
+	buf := &bytes.Buffer{}
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"skill", "install", "nonexistent"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for unknown skill, got nil")
 	}
-	// Skill content should include the version we passed.
-	if !strings.Contains(out, "2.0.0") {
-		t.Fatalf("skill show output does not contain version '2.0.0': %q", out[:min(200, len(out))])
+	if !strings.Contains(err.Error(), "unknown skill \"nonexistent\"") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+// TestSkillRemoveUnknownSkillRejects ensures invalid skill name reports validation error on remove.
+func TestSkillRemoveUnknownSkillRejects(t *testing.T) {
+	cmd := New(testSkillDeps("1.0.0"))
+	buf := &bytes.Buffer{}
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"skill", "remove", "nonexistent"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for unknown skill, got nil")
+	}
+	if !strings.Contains(err.Error(), "unknown skill \"nonexistent\"") {
+		t.Fatalf("unexpected error message: %v", err)
 	}
 }
 
 // TestSkillInstallWritesFile tests that `bb ai skill install` writes the skill file.
 func TestSkillInstallWritesFile(t *testing.T) {
-	dir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name     string
+		args     []string
+		relPath  string
+		expected string
+	}{
+		{
+			name:     "default skill",
+			args:     []string{"skill", "install"},
+			relPath:  filepath.Join(".agents", "skills", "bb", "SKILL.md"),
+			expected: "# bb — Bitbucket Data Center CLI",
+		},
+		{
+			name:     "bulk skill",
+			args:     []string{"skill", "install", "bulk"},
+			relPath:  filepath.Join(".agents", "skills", "bb-bulk", "SKILL.md"),
+			expected: "# bb-bulk — Multi-Repository Bulk Governance Skill",
+		},
 	}
 
-	cmd := New(testSkillDeps("3.1.0"))
-	buf := &bytes.Buffer{}
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"skill", "install"})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			origDir, err := os.Getwd()
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = os.Chdir(origDir) })
+			if err := os.Chdir(dir); err != nil {
+				t.Fatal(err)
+			}
 
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+			cmd := New(testSkillDeps("3.1.0"))
+			buf := &bytes.Buffer{}
+			cmd.SetOut(buf)
+			cmd.SetErr(buf)
+			cmd.SetArgs(tt.args)
 
-	dest := filepath.Join(dir, skillInstallPath)
-	data, err := os.ReadFile(dest)
-	if err != nil {
-		t.Fatalf("skill file not written: %v", err)
-	}
-	if !strings.Contains(string(data), "3.1.0") {
-		t.Fatal("installed skill file does not contain the expected version")
-	}
-	if !strings.Contains(buf.String(), "Skill installed") {
-		t.Fatalf("unexpected output: %q", buf.String())
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			dest := filepath.Join(dir, tt.relPath)
+			data, err := os.ReadFile(dest)
+			if err != nil {
+				t.Fatalf("skill file not written: %v", err)
+			}
+			if !strings.Contains(string(data), "3.1.0") {
+				t.Fatal("installed skill file does not contain the expected version")
+			}
+			if !strings.Contains(string(data), tt.expected) {
+				t.Fatalf("installed skill file does not contain expected snippet %q", tt.expected)
+			}
+			if !strings.Contains(buf.String(), "Skill installed") {
+				t.Fatalf("unexpected output: %q", buf.String())
+			}
+		})
 	}
 }
 
 // TestSkillRemoveDeletesFile tests that `bb ai skill remove` removes an existing file.
 func TestSkillRemoveDeletesFile(t *testing.T) {
-	dir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-
-	// Pre-create the file.
-	dest := filepath.Join(dir, skillInstallPath)
-	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(dest, []byte("dummy"), 0o644); err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name    string
+		args    []string
+		relPath string
+	}{
+		{
+			name:    "default skill",
+			args:    []string{"skill", "remove"},
+			relPath: filepath.Join(".agents", "skills", "bb", "SKILL.md"),
+		},
+		{
+			name:    "bulk skill",
+			args:    []string{"skill", "remove", "bulk"},
+			relPath: filepath.Join(".agents", "skills", "bb-bulk", "SKILL.md"),
+		},
 	}
 
-	cmd := New(testSkillDeps(""))
-	buf := &bytes.Buffer{}
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"skill", "remove"})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			origDir, err := os.Getwd()
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = os.Chdir(origDir) })
+			if err := os.Chdir(dir); err != nil {
+				t.Fatal(err)
+			}
 
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+			// Pre-create the file.
+			dest := filepath.Join(dir, tt.relPath)
+			if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(dest, []byte("dummy"), 0o644); err != nil {
+				t.Fatal(err)
+			}
 
-	if _, statErr := os.Stat(dest); !os.IsNotExist(statErr) {
-		t.Fatal("expected skill file to be removed, but it still exists")
-	}
-	if !strings.Contains(buf.String(), "Skill removed") {
-		t.Fatalf("unexpected output: %q", buf.String())
+			cmd := New(testSkillDeps(""))
+			buf := &bytes.Buffer{}
+			cmd.SetOut(buf)
+			cmd.SetErr(buf)
+			cmd.SetArgs(tt.args)
+
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if _, statErr := os.Stat(dest); !os.IsNotExist(statErr) {
+				t.Fatal("expected skill file to be removed, but it still exists")
+			}
+			if !strings.Contains(buf.String(), "Skill removed") {
+				t.Fatalf("unexpected output: %q", buf.String())
+			}
+		})
 	}
 }
 
@@ -178,26 +327,48 @@ func TestResolveInstallPathProject(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := resolveInstallPath(false)
+	bbSkill, _ := lookupSkill("bb")
+	got, err := resolveInstallPath(bbSkill, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	want := filepath.Join(dir, skillInstallPath)
+	want := filepath.Join(dir, ".agents", "skills", "bb", "SKILL.md")
 	if got != want {
-		t.Fatalf("project path: got %q, want %q", got, want)
+		t.Fatalf("project path for bb: got %q, want %q", got, want)
+	}
+
+	bulkSkill, _ := lookupSkill("bulk")
+	gotBulk, err := resolveInstallPath(bulkSkill, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	wantBulk := filepath.Join(dir, ".agents", "skills", "bb-bulk", "SKILL.md")
+	if gotBulk != wantBulk {
+		t.Fatalf("project path for bulk: got %q, want %q", gotBulk, wantBulk)
 	}
 }
 
 // TestResolveInstallPathGlobal tests global (home directory) path resolution.
 func TestResolveInstallPathGlobal(t *testing.T) {
-	got, err := resolveInstallPath(true)
+	bbSkill, _ := lookupSkill("bb")
+	got, err := resolveInstallPath(bbSkill, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	home, _ := os.UserHomeDir()
 	want := filepath.Join(home, ".agents", "skills", "bb", "SKILL.md")
 	if got != want {
-		t.Fatalf("global path: got %q, want %q", got, want)
+		t.Fatalf("global path for bb: got %q, want %q", got, want)
+	}
+
+	bulkSkill, _ := lookupSkill("bulk")
+	gotBulk, err := resolveInstallPath(bulkSkill, true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	wantBulk := filepath.Join(home, ".agents", "skills", "bb-bulk", "SKILL.md")
+	if gotBulk != wantBulk {
+		t.Fatalf("global path for bulk: got %q, want %q", gotBulk, wantBulk)
 	}
 }
 
@@ -211,15 +382,15 @@ func TestSkillInstallGlobalWritesFile(t *testing.T) {
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"skill", "install", "--global"})
+	cmd.SetArgs([]string{"skill", "install", "bulk", "--global"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	dest := filepath.Join(home, ".agents", "skills", "bb", "SKILL.md")
+	dest := filepath.Join(home, ".agents", "skills", "bb-bulk", "SKILL.md")
 	if _, err := os.Stat(dest); os.IsNotExist(err) {
-		t.Fatal("expected global skill file to be written")
+		t.Fatal("expected global bulk skill file to be written")
 	}
 }
 
@@ -258,11 +429,17 @@ func min(a, b int) int {
 // instructions reads the file exactly as committed. A template marker left in
 // it ships raw to them.
 func TestCommittedSkillHasNoUnrenderedPlaceholders(t *testing.T) {
-	committed := string(bbskill.Content)
+	skills := map[string][]byte{
+		"bb":      bbskill.Content,
+		"bb-bulk": bbbulkskill.Content,
+	}
 
-	for _, marker := range []string{"{{", "}}"} {
-		if strings.Contains(committed, marker) {
-			t.Errorf("committed SKILL.md contains the template marker %q; it is distributed verbatim by npx", marker)
+	for name, content := range skills {
+		committed := string(content)
+		for _, marker := range []string{"{{", "}}"} {
+			if strings.Contains(committed, marker) {
+				t.Errorf("committed %s/SKILL.md contains the template marker %q; it is distributed verbatim by npx", name, marker)
+			}
 		}
 	}
 }
@@ -272,14 +449,20 @@ func TestCommittedSkillHasNoUnrenderedPlaceholders(t *testing.T) {
 // capabilities of your installed binary", which was never true — it is a static
 // embed with one string substitution.
 func TestCommittedSkillDoesNotClaimToBeGenerated(t *testing.T) {
-	committed := strings.ToLower(string(bbskill.Content))
+	skills := map[string][]byte{
+		"bb":      bbskill.Content,
+		"bb-bulk": bbbulkskill.Content,
+	}
 
-	for _, claim := range []string{
-		"exact capabilities of your installed binary",
-		"version-specific skill",
-	} {
-		if strings.Contains(committed, claim) {
-			t.Errorf("SKILL.md still claims %q, which the static embed does not deliver", claim)
+	for name, content := range skills {
+		committed := strings.ToLower(string(content))
+		for _, claim := range []string{
+			"exact capabilities of your installed binary",
+			"version-specific skill",
+		} {
+			if strings.Contains(committed, claim) {
+				t.Errorf("%s/SKILL.md still claims %q, which the static embed does not deliver", name, claim)
+			}
 		}
 	}
 }

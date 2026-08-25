@@ -1,34 +1,23 @@
 ---
 name: bb
-description: Interact with Bitbucket Data Center from an AI agent. Covers pull requests, build status, branches, tags, commits, repository search, and code insights. Use bb --help to discover all available commands.
+description: Query and mutate Bitbucket Data Center resources from an AI agent. Covers pull requests, review workflows, build statuses, branches, tags, commits, repository search, and code insights.
 ---
 
 # bb — Bitbucket Data Center CLI
 
 `bb` is a CLI for recent versions of Bitbucket for Data Center with a live-behavior-first design. Use it to query and mutate Bitbucket resources during autonomous coding workflows.
 
-> **This document is hand-written guidance, not a generated reference.** Every
-> `bb` command shown in it is checked against the real command tree in CI, so the
-> examples parse — but the authoritative surface for your installed binary is
-> `bb --help` and `bb ai mcp tools`. Prefer those when a command here does not do
-> what you expect.
+> **Authoritative Command Surface**: Built-in CLI help (`bb --help`, `bb <cmd> --help`) and the MCP tool catalogue (`bb ai mcp tools`) reflect the live runtime command tree. Prefer them when a command option or argument signature needs runtime verification.
 
-## Installation
+## Multi-Repository Bulk Governance
+
+This skill focuses on repository-centric developer workflows. For multi-repository
+policy management, declarative schema authoring (`bulk-policy.yaml`), and two-stage
+plan/apply rollouts (`bb bulk plan`, `bb bulk apply`), see the dedicated `bb-bulk` skill:
 
 ```bash
-# From the bb binary — no network access required:
-bb ai skill install          # project scope: .agents/skills/bb/SKILL.md
-bb ai skill install --global # user scope:    ~/.agents/skills/bb/SKILL.md
-bb ai skill show             # same content, to stdout
-
-# From the internet, if you do not have bb yet:
-npx skills add vriesdemichael/bitbucket-data-center-cli
+bb ai skill show bulk
 ```
-
-The skill is embedded in the binary at build time, so `bb ai skill install` works
-in an air-gapped or network-restricted environment and always matches the `bb`
-you are running. Neither copy is derived from your binary's command tree — for
-that, ask `bb --help` or `bb ai mcp tools`.
 
 ## Authentication
 

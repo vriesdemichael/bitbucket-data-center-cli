@@ -184,6 +184,24 @@ func TestSplitShellSegmentsIgnoresOperatorsInsideQuotes(t *testing.T) {
 	}
 }
 
+func TestSplitShellSegmentsTrailingComments(t *testing.T) {
+	segments := splitShellSegments(`bb ai skill install bulk # comment here`)
+
+	if len(segments) != 1 || strings.TrimSpace(segments[0]) != "bb ai skill install bulk" {
+		t.Fatalf("unexpected segments: %+v", segments)
+	}
+
+	prHashRef := splitShellSegments(`bb pr checkout #42`)
+	if len(prHashRef) != 1 || strings.TrimSpace(prHashRef[0]) != "bb pr checkout #42" {
+		t.Fatalf("unexpected segments for PR hash argument: %+v", prHashRef)
+	}
+
+	hashInRef := splitShellSegments(`bb commit compare --repo A/b HEAD#1`)
+	if len(hashInRef) != 1 || strings.TrimSpace(hashInRef[0]) != "bb commit compare --repo A/b HEAD#1" {
+		t.Fatalf("unexpected segments for unspaced hash: %+v", hashInRef)
+	}
+}
+
 func TestSplitFieldsRejectsUnterminatedQuotes(t *testing.T) {
 	if _, ok := splitFields(`bb pr create --title "unterminated`); ok {
 		t.Fatal("expected an unterminated quote to be reported rather than guessed at")

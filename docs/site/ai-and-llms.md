@@ -9,7 +9,8 @@ Use it when you want a compact description of what the CLI is for, what it does 
 - Installation and Quickstart: [Installation and Quickstart](installation-and-quickstart.md)
 - Command Reference: [All Commands](reference/commands/index.md)
 - Machine-readable schemas: [JSON Schemas](reference/schemas.md)
-- AI skill for agents: [SKILL.md on GitHub](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb/SKILL.md)
+- AI core skill for agents: [SKILL.md on GitHub](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb/SKILL.md)
+- AI bulk governance skill for agents: [Bulk SKILL.md on GitHub](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb-bulk/SKILL.md)
 
 ## What it covers
 
