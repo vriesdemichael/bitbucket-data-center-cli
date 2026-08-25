@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -317,122 +316,79 @@ func TestHandlerReturnsToolErrorOnMissingRequiredArg(t *testing.T) {
 	}
 }
 
-// TestStructuredContentFor exercises every branch of structuredContentFor
-// directly: nil, map, struct, pointer-to-struct, pointer-to-non-struct,
-// slice, and scalar. Each case asserts both the Go type of the return
-// value and, where wrapping is expected, the presence of the "items" key.
+// TestStructuredContentFor exercises every branch of structuredContentFor.
+// The function decides on the encoded bytes rather than the Go type, so the
+// cases here are JSON shapes: object, array, each scalar kind, null, and the
+// whitespace-prefixed and empty inputs that guard the indexing.
 func TestStructuredContentFor(t *testing.T) {
-	type repo struct {
-		Name string `json:"name"`
+	cases := []struct {
+		name     string
+		encoded  string
+		wantWire string // "" means the field is omitted (nil returned)
+	}{
+		{"object passes through", `{"name":"demo"}`, `{"name":"demo"}`},
+		{"nested object passes through", `{"a":{"b":[1,2]}}`, `{"a":{"b":[1,2]}}`},
+		// json.Marshal compacts a RawMessage, so the whitespace is dropped on
+		// the wire; what matters is that the payload is not wrapped.
+		{"object with leading whitespace passes through", "  \n\t" + `{"a":1}`, `{"a":1}`},
+		{"array wrapped", `[{"name":"v1"}]`, `{"items":[{"name":"v1"}]}`},
+		{"empty array wrapped", `[]`, `{"items":[]}`},
+		{"number wrapped", `42`, `{"items":42}`},
+		{"string wrapped", `"hello"`, `{"items":"hello"}`},
+		{"bool wrapped", `true`, `{"items":true}`},
+		{"null omits the field", `null`, ""},
+		{"empty input omits the field", ``, ""},
 	}
 
-	t.Run("nil returns nil", func(t *testing.T) {
-		if got := structuredContentFor(nil); got != nil {
-			t.Errorf("structuredContentFor(nil) = %v, want nil", got)
-		}
-	})
-
-	t.Run("map returned as-is", func(t *testing.T) {
-		in := map[string]any{"pull_requests": []string{"a"}}
-		got := structuredContentFor(in)
-		if !reflect.DeepEqual(got, in) {
-			t.Errorf("structuredContentFor(map) = %v, want %v", got, in)
-		}
-	})
-
-	t.Run("struct returned as-is", func(t *testing.T) {
-		in := repo{Name: "demo"}
-		got := structuredContentFor(in)
-		if got != in {
-			t.Errorf("structuredContentFor(struct) = %v, want same instance", got)
-		}
-	})
-
-	t.Run("pointer to struct returned as-is", func(t *testing.T) {
-		in := &repo{Name: "demo"}
-		got := structuredContentFor(in)
-		if got != in {
-			t.Errorf("structuredContentFor(*struct) = %v, want same instance", got)
-		}
-	})
-
-	t.Run("pointer to non-struct wrapped under items", func(t *testing.T) {
-		val := 42
-		got := structuredContentFor(&val)
-		m, ok := got.(map[string]any)
-		if !ok {
-			t.Fatalf("structuredContentFor(*int) = %T, want map[string]any", got)
-		}
-		if m["items"] != &val {
-			t.Errorf("items = %v, want %v", m["items"], &val)
-		}
-	})
-
-	t.Run("slice wrapped under items", func(t *testing.T) {
-		in := []repo{{"a"}, {"b"}}
-		got := structuredContentFor(in)
-		m, ok := got.(map[string]any)
-		if !ok {
-			t.Fatalf("structuredContentFor(slice) = %T, want map[string]any", got)
-		}
-		if m["items"] == nil {
-			t.Error("items key is nil")
-		}
-	})
-
-	t.Run("empty slice wrapped under items", func(t *testing.T) {
-		in := []repo{}
-		got := structuredContentFor(in)
-		m, ok := got.(map[string]any)
-		if !ok {
-			t.Fatalf("structuredContentFor(empty slice) = %T, want map[string]any", got)
-		}
-		items, ok := m["items"].([]repo)
-		if !ok {
-			t.Fatalf("items = %T, want []repo", m["items"])
-		}
-		if len(items) != 0 {
-			t.Errorf("items length = %d, want 0", len(items))
-		}
-	})
-
-	t.Run("nil slice wrapped under items", func(t *testing.T) {
-		var in []repo
-		got := structuredContentFor(in)
-		m, ok := got.(map[string]any)
-		if !ok {
-			t.Fatalf("structuredContentFor(nil slice) = %T, want map[string]any", got)
-		}
-		if m["items"] == nil {
-			t.Error("items key is nil; expected the nil slice to be wrapped")
-		}
-	})
-
-	t.Run("scalar wrapped under items", func(t *testing.T) {
-		got := structuredContentFor(42)
-		m, ok := got.(map[string]any)
-		if !ok {
-			t.Fatalf("structuredContentFor(int) = %T, want map[string]any", got)
-		}
-		if m["items"] != 42 {
-			t.Errorf("items = %v, want 42", m["items"])
-		}
-	})
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := structuredContentFor([]byte(tc.encoded))
+			if tc.wantWire == "" {
+				if got != nil {
+					t.Fatalf("structuredContentFor(%q) = %v, want nil so the field is omitted", tc.encoded, got)
+				}
+				return
+			}
+			if got == nil {
+				t.Fatalf("structuredContentFor(%q) = nil, want %s", tc.encoded, tc.wantWire)
+			}
+			wire, err := json.Marshal(got)
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+			if string(wire) != tc.wantWire {
+				t.Errorf("structuredContentFor(%q) marshalled to %s, want %s", tc.encoded, wire, tc.wantWire)
+			}
+		})
+	}
 }
 
 // TestResultJSONStructuredContentIsAlwaysRecord verifies the single-point guard
-// in resultJSON: structuredContent must serialise as a JSON object regardless
-// of whether the handler passed a slice, scalar, map or struct, while the text
-// content retains the original payload shape. A slice structuredContent is what
-// caused list_pr_comments to be rejected by MCP clients with "expected record".
+// in resultJSON: structuredContent must serialise as a JSON object for every
+// payload a handler can pass, while the text content retains the original
+// shape. A slice structuredContent is what MCP clients validating against a
+// pre-SEP-2106 revision reject with "expected record, received array"; the
+// eight list-style tools (list_tags, list_commits, list_branches, resolve_ref,
+// get_build_status, list_required_builds, compare_refs, search_repositories)
+// all pass a slice.
+//
+// The typed-nil, nil-map and json.RawMessage cases are not reachable from
+// today's handlers — every service returns value structs and non-nil slices —
+// but they are the cases a type-based implementation gets wrong, so they are
+// pinned here to keep the byte-based one honest.
 func TestResultJSONStructuredContentIsAlwaysRecord(t *testing.T) {
 	type tag struct {
 		Name string `json:"name"`
 	}
+	var nilPtr *tag
+	var nilMap map[string]any
+	var nilSlice []tag
+
 	cases := []struct {
-		name     string
-		data     any
-		wantText string
+		name       string
+		data       any
+		wantText   string
+		wantOmitSC bool // structuredContent absent on the wire
 	}{
 		{
 			name:     "slice wrapped under items",
@@ -469,6 +425,39 @@ func TestResultJSONStructuredContentIsAlwaysRecord(t *testing.T) {
 			data:     "hello",
 			wantText: `"hello"`,
 		},
+		{
+			// A struct whose MarshalJSON returns a string: the Go kind says
+			// object, the encoding says string. Only the byte check gets this
+			// right.
+			name:     "struct marshalling to a scalar wrapped under items",
+			data:     time.Date(2026, 8, 25, 12, 0, 0, 0, time.UTC),
+			wantText: `"2026-08-25T12:00:00Z"`,
+		},
+		{
+			// json.RawMessage is a slice whose contents are already an object;
+			// wrapping it would nest the payload one level too deep.
+			name:     "raw message holding an object passed through",
+			data:     json.RawMessage(`{"a":1}`),
+			wantText: `{"a":1}`,
+		},
+		{
+			name:       "typed nil pointer omits structuredContent",
+			data:       nilPtr,
+			wantText:   `null`,
+			wantOmitSC: true,
+		},
+		{
+			name:       "nil map omits structuredContent",
+			data:       nilMap,
+			wantText:   `null`,
+			wantOmitSC: true,
+		},
+		{
+			name:       "nil slice omits structuredContent",
+			data:       nilSlice,
+			wantText:   `null`,
+			wantOmitSC: true,
+		},
 	}
 
 	for _, tc := range cases {
@@ -488,7 +477,7 @@ func TestResultJSONStructuredContentIsAlwaysRecord(t *testing.T) {
 				t.Errorf("text content = %q, want %q", text.Text, tc.wantText)
 			}
 
-			// Marshal the full result and assert structuredContent is a JSON object.
+			// Marshal the full result and inspect what actually reaches a client.
 			wire, mErr := json.Marshal(res)
 			if mErr != nil {
 				t.Fatalf("marshal result: %v", mErr)
@@ -499,19 +488,26 @@ func TestResultJSONStructuredContentIsAlwaysRecord(t *testing.T) {
 			if jErr := json.Unmarshal(wire, &probe); jErr != nil {
 				t.Fatalf("unmarshal wire: %v", jErr)
 			}
+			if tc.wantOmitSC {
+				if len(probe.SC) != 0 {
+					t.Errorf("structuredContent = %s, want the field to be omitted", probe.SC)
+				}
+				return
+			}
 			if len(probe.SC) == 0 {
 				t.Fatal("structuredContent missing on wire")
 			}
 			if probe.SC[0] != '{' {
-				t.Errorf("structuredContent is not a JSON object: %s", string(probe.SC))
+				t.Errorf("structuredContent is not a JSON object: %s", probe.SC)
 			}
 		})
 	}
 }
 
 // TestResultJSONNilOmitsStructuredContent verifies that a nil payload produces
-// a result whose structuredContent is absent or null on the wire, never an
-// array or object — this prevents clients from rejecting empty responses.
+// a result with no structuredContent on the wire, rather than a null or an
+// invented {"items": null} — an absent optional field is unambiguous, a null
+// one is not a record.
 func TestResultJSONNilOmitsStructuredContent(t *testing.T) {
 	res, err := resultJSON(nil)
 	if err != nil {
@@ -527,13 +523,9 @@ func TestResultJSONNilOmitsStructuredContent(t *testing.T) {
 	if jErr := json.Unmarshal(wire, &probe); jErr != nil {
 		t.Fatalf("unmarshal wire: %v", jErr)
 	}
-	if len(probe.SC) == 0 {
-		return
+	if len(probe.SC) != 0 {
+		t.Errorf("structuredContent for nil payload = %s, want absent", probe.SC)
 	}
-	if string(probe.SC) == "null" {
-		return
-	}
-	t.Errorf("structuredContent for nil payload = %s, want absent or null", string(probe.SC))
 }
 
 func TestListPRCommentsHandlerPathScopedAndAggregate(t *testing.T) {

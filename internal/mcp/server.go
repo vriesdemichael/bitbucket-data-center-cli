@@ -1,9 +1,9 @@
 package mcp
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 
 	mcpgo "github.com/mark3labs/mcp-go/mcp"
@@ -179,45 +179,54 @@ func toSet(items []string) map[string]bool {
 // Serialisation errors are surfaced as error results rather than Go errors
 // because tool handlers report operational errors through the result value.
 //
-// The MCP spec requires result.structuredContent to be a JSON object. Many list
-// handlers pass a slice here, which would otherwise serialise to a JSON array
-// and be rejected by clients with a "structuredContent: expected record" schema
-// error. structuredContentFor wraps non-object payloads under an "items" key so
-// the wire field is always a record; the text content agents read is unaffected
-// and retains the original shape.
+// Many list handlers pass a slice here. A bare JSON array in
+// result.structuredContent is rejected by MCP clients that validate the result
+// against a pre-SEP-2106 revision of the spec, with "expected record, received
+// array" — the whole response fails schema validation before the client can
+// fall back to the text content. structuredContentFor therefore wraps
+// non-object payloads under an "items" key. The text content agents read is
+// unaffected and keeps the original shape.
+//
+// SEP-2106 has since relaxed structuredContent to any valid JSON value, so this
+// wrapping is client compatibility rather than spec conformance. Issue #416
+// tracks giving the MCP surface a real output contract — declared output
+// schemas, server-side validation, and a consistent envelope — at which point
+// the key should be named for what it holds instead of the generic "items".
 func resultJSON(data any) (*mcpgo.CallToolResult, error) {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return mcpgo.NewToolResultErrorFromErr("failed to serialize result", err), nil
 	}
-	return mcpgo.NewToolResultStructured(structuredContentFor(data), string(b)), nil
+	return mcpgo.NewToolResultStructured(structuredContentFor(b), string(b)), nil
 }
 
-// structuredContentFor shapes data for the MCP structuredContent field, which
-// the spec requires to be a JSON object (record). The mapping is:
+// structuredContentFor shapes an already-encoded payload for the
+// structuredContent field:
 //
-//   - nil                 → nil (the field is omitted on the wire)
-//   - map, struct         → returned as-is (already a JSON object)
-//   - pointer to struct   → returned as-is (JSON marshals to an object)
-//   - everything else     → wrapped as {"items": data} (slices, arrays,
-//                           scalars, and pointers to non-structs all
-//                           become a JSON object)
+//   - a JSON object      → passed through unchanged
+//   - null (or empty)    → nil, so the optional field is omitted on the wire
+//     rather than sent as a null that is not a record
+//   - anything else      → wrapped as {"items": <payload>}, which covers
+//     arrays, strings, numbers and booleans
 //
-// The text content in the tool result is unaffected; callers and agents that
-// read the text payload still see the original shape.
-func structuredContentFor(data any) any {
-	if data == nil {
+// The decision is made on the encoded bytes, not on the Go type of the value,
+// because a Go kind does not determine the JSON shape: a struct with a
+// MarshalJSON method encodes to whatever that method returns (time.Time
+// encodes to a string), a nil map and a typed nil pointer both encode to null,
+// and a json.RawMessage is a slice that may already hold an object. Inspecting
+// the bytes is correct for every one of those without enumerating types.
+//
+// No list handler can reach the null case: every service builds its result
+// with make([]T, 0), so an empty list encodes to [] and is wrapped as
+// {"items": []}.
+func structuredContentFor(encoded []byte) any {
+	trimmed := bytes.TrimLeft(encoded, " \t\r\n")
+	switch {
+	case len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null")):
 		return nil
-	}
-	switch reflect.ValueOf(data).Kind() {
-	case reflect.Map, reflect.Struct:
-		return data
-	case reflect.Ptr:
-		if reflect.ValueOf(data).Type().Elem().Kind() == reflect.Struct {
-			return data
-		}
-		return map[string]any{"items": data}
+	case trimmed[0] == '{':
+		return json.RawMessage(encoded)
 	default:
-		return map[string]any{"items": data}
+		return map[string]json.RawMessage{"items": json.RawMessage(encoded)}
 	}
 }
