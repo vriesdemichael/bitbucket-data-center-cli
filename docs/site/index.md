@@ -44,6 +44,11 @@ hide:
 		<p>Download a release, verify checksums, install <code>bb</code>, authenticate with a PAT, and run the first useful commands.</p>
 	</article>
 	<article class="bb-card bb-link-card">
+		<p class="bb-card-kicker">Cheatsheet</p>
+		<h2><a href="cheatsheet/">Developer Cheatsheet &amp; Cookbook</a></h2>
+		<p>Scannable reference tables, daily pull request loops, git authentication, and shell autocompletion recipes.</p>
+	</article>
+	<article class="bb-card bb-link-card">
 		<p class="bb-card-kicker">Operate</p>
 		<h2><a href="basic-usage/">Basic Usage</a></h2>
 		<p>Learn the command discovery pattern, repository inference rules, dry-run behavior, and the JSON machine contract.</p>
@@ -67,6 +72,7 @@ hide:
 		<h2>Operator-facing guidance</h2>
 		<ul>
 			<li><a href="installation-and-quickstart/">Installation and Quickstart</a></li>
+			<li><a href="cheatsheet/">Developer Cheatsheet &amp; Cookbook</a></li>
 			<li><a href="basic-usage/">Basic Usage</a></li>
 			<li><a href="advanced/">Advanced Topics</a></li>
 			<li><a href="reference/schemas/">JSON Schemas</a></li>

@@ -139,9 +139,12 @@ bb --json auth status
 }
 ```
 
+**Ready for daily workflows?** See the **[Developer Cheatsheet & Cookbook](docs/site/cheatsheet.md)** for scannable reference tables and top 10 daily developer recipes (PR reviews, local checkout, auto-merge, and IDE setup).
+
 ## Docs
 
 - Full docs site: <https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/>
+- Developer Cheatsheet & Cookbook: [docs/site/cheatsheet.md](docs/site/cheatsheet.md)
 - LLM guide (`llms.txt`): <https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/llms.txt>
 - AI and llms.txt overview: [docs/site/ai-and-llms.md](docs/site/ai-and-llms.md)
 - Installation and Quickstart: [docs/site/installation-and-quickstart.md](docs/site/installation-and-quickstart.md)

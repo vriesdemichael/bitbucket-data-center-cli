@@ -53,6 +53,7 @@ validation:
 nav:
   - Home: index.md
   - Installation and Quickstart: installation-and-quickstart.md
+  - Developer Cheatsheet: cheatsheet.md
   - Basic Usage: basic-usage.md
   - Command Reference:
       - Overview: reference/overview.md
