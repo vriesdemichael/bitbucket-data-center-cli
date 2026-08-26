@@ -1,104 +1,158 @@
 # Fleet Hardening Runbook
 
-A practical, recipe-driven deployment and hardening runbook for platform engineers, systems administrators, and DevOps teams deploying `bb` across corporate fleets.
+A practical, recipe-driven deployment and operational runbook for platform engineers, systems administrators, and DevOps teams deploying and governing `bb` across corporate fleets.
 
-For the formal threat analysis, trust boundaries, and compliance evaluations, see the [Security Architecture and Threat Model](threat-model.md).
-
----
-
-## 1. The 3 Non-Negotiable Hardening Baselines
-
-Apply these three controls across every managed workstation and developer image:
-
-### Baseline 1: Enforce OS Keyring Storage
-Prevent silent degradation to plaintext configuration files (`~/.config/bb/config.yaml`) if an OS keyring daemon is unavailable:
-
-```bash
-export BB_REQUIRE_KEYRING=1
-```
-
-When set, any command requiring credentials hard-fails if the operating system vault is unreachable, ensuring zero secrets reach disk unencrypted ([ADR-047](file:///C:/Users/vries/.gemini/antigravity/worktrees/bitbucket-server-cli/investigate_issue_three_ninety/docs/site/adr/047-credential-input-and-keyring-enforcement.md)).
-
-### Baseline 2: Pipe Tokens via Standard Input
-Never pass tokens via command-line flags (`--token <val>`). Flags are exposed in process tables (`/proc/<pid>/cmdline`, `ps aux`), Windows Task Manager, EDR sensor telemetry, and plaintext shell history files.
-
-```bash
-# Provide the token via pipe
-printf "%s" "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
-
-# Or stream directly from a secure file
-cat /run/secrets/bitbucket_token | bb auth login https://bitbucket.example.com --token-stdin
-```
-
-### Baseline 3: Host-Scoped Git Credential Helper
-Do not write tokens or extra headers into repository configurations (`.git/config`). Configure git to query `bb` dynamically:
-
-```bash
-bb auth setup-git
-```
-
-This writes a single rule into the user's global `~/.gitconfig` scoped strictly to your Bitbucket host ([ADR-044](file:///C:/Users/vries/.gemini/antigravity/worktrees/bitbucket-server-cli/investigate_issue_three_ninety/docs/site/adr/044-git-credential-helper-instead-of-persisted-credentials.md)):
-
-```ini
-[credential "https://bitbucket.example.com"]
-	helper = !"bb" auth git-credential
-```
-
-Credentials are never stored in repositories and are never offered to external remotes (such as GitHub or GitLab).
+For the formal threat model, trust boundaries, and compliance evaluations, see the [Security Architecture and Threat Model](threat-model.md).
 
 ---
 
-## 2. Multi-OS Fleet Deployment Recipes
+## 1. Release Verification (Pre-Deployment)
 
-Enterprise workstation fleets comprise macOS, Linux, and Windows machines. Below are deployment configurations tailored to the management tooling of each operating system.
+Before packaging or mirroring `bb` into internal registries (e.g. Artifactory, Nexus, internal apt/yum/winget repos), verify the authenticity and build provenance of the downloaded release artifacts.
+
+Set the target version (e.g. `2.10.0`):
+
+```bash
+VERSION="2.10.0"
+```
+
+### A. Sigstore Keyless Signature Verification
+Every release publishes keyless OIDC signatures bound to the official GitHub Actions release workflow on `refs/heads/main`:
+
+```bash
+cosign verify-blob \
+  --bundle "bb_${VERSION}_linux_amd64.tar.gz.sigstore.json" \
+  --certificate-identity 'https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  "bb_${VERSION}_linux_amd64.tar.gz"
+```
+
+### B. GitHub Build Provenance Attestation
+Verify that the binary was built on official GitHub-hosted runners directly from the source repository:
+
+```bash
+gh attestation verify "bb_${VERSION}_linux_amd64.tar.gz" \
+  --repo vriesdemichael/bitbucket-data-center-cli
+```
+
+### C. Software Bill of Materials (SPDX 2.3 SBOM)
+Verify that the released archive matches the signed SPDX dependency graph:
+
+```bash
+gh attestation verify "bb_${VERSION}_linux_amd64.tar.gz" \
+  --repo vriesdemichael/bitbucket-data-center-cli \
+  --predicate-type https://spdx.dev/Document
+```
+
+---
+
+## 2. Fleet Security Controls
+
+Distinguish between **enforceable technical controls** (which systems engineers deploy via configuration) and **socialized practices** (which developers and CI authors follow).
+
+### Deployable Fleet Controls
+
+1. **Mandate Keyring Storage**:
+   ```bash
+   export BB_REQUIRE_KEYRING=1
+   ```
+   When set, `bb` hard-refuses to read credentials from or write credentials to the plaintext configuration fallback (`~/.config/bb/config.yaml` on Linux, `~/Library/Application Support/bb/config.yaml` on macOS, or `%AppData%\bb\config.yaml` on Windows). Any command that would otherwise rely on plaintext fallback aborts with an error ([ADR-047](../adr/047-credential-input-and-keyring-enforcement.md)).
+
+2. **Configure Host-Scoped Git Credential Helper**:
+   ```bash
+   bb auth setup-git
+   ```
+   Writes a host-scoped credential helper into the user's global `~/.gitconfig`:
+   ```ini
+   [credential "https://bitbucket.example.com"]
+   	helper = !"/usr/local/bin/bb" auth git-credential
+   ```
+   *Note: `bb` writes the absolute executable path into the git configuration.* Git queries `bb` dynamically on demand for that specific host, ensuring zero credentials are ever written into local repository `.git/config` files and credentials are never offered to external remotes ([ADR-044](../adr/044-git-credential-helper-instead-of-persisted-credentials.md)).
+
+3. **Disable Stored Config for Headless CI**:
+   ```bash
+   export BB_DISABLE_STORED_CONFIG=1
+   ```
+   Ensures that ephemeral CI/CD runners never touch disk or attempt to query desktop keyring daemons, reading authentication strictly from `BITBUCKET_TOKEN`.
+
+### Socialized Developer Practices
+
+1. **Pipe Tokens via Stdin (Never in CLI Flags)**:
+   Avoid `--token <val>` or `--password <val>` flags. Flags are visible to local processes in `ps aux`, `/proc/<pid>/cmdline`, Windows Task Manager, EDR sensors, and shell history files.
+   ```bash
+   # Provide the token via pipe
+   printf "%s" "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
+
+   # Or stream directly from a secure file
+   cat /run/secrets/bitbucket_token | bb auth login https://bitbucket.example.com --token-stdin
+   ```
+
+2. **Clean Up Legacy Clones**:
+   Existing clones made before `bb auth setup-git` may contain plaintext tokens in their local `.git/config`:
+   ```bash
+   git config --local --unset-all http.extraHeader
+   ```
+
+---
+
+## 3. Multi-OS Fleet Deployment Recipes
 
 ### A. macOS (Jamf Pro / Kandji / Intune)
 
-macOS developer laptops authenticate through the **Apple Keychain** (backed by the macOS Security framework). Because macOS defaults to `zsh`, system-wide environment variables must be deployed to `/etc/zshenv` or `/etc/zprofile` (macOS has no `/etc/profile.d/`).
-
-#### 1. Distribute Binary
-Package `bb` via Homebrew (`brew install vriesdemichael/tap/bb`) or distribute the signed universal binary directly to `/usr/local/bin/bb` via your MDM.
-
-#### 2. Deploy Hardened Environment (`/etc/zshenv`)
-Deploy a script via Jamf/Kandji to write managed defaults to `/etc/zshenv`:
+macOS developer workstations authenticate through the **Apple Keychain** (Security framework). Because macOS defaults to `zsh`, system-wide environment variables belong in `/etc/zshenv`.
 
 ```bash
-# /etc/zshenv - Managed by Enterprise MDM
+# 1. Distribute via Homebrew or universal binary
+brew install vriesdemichael/tap/bb
+
+# 2. Deploy Enterprise Root CA to System Keychain
+sudo security add-trusted-cert -d -r trustRoot \
+  -k /Library/Keychains/System.keychain \
+  /Library/Application\ Support/Corporate/Certs/corp-root-ca.pem
+
+# 3. Deploy Managed Environment (/etc/zshenv)
+# IMPORTANT: BB_CA_FILE must point to a file that already exists on disk.
+sudo tee -a /etc/zshenv >/dev/null <<'EOF'
 export BB_REQUIRE_KEYRING=1
 export BB_CA_FILE="/Library/Application Support/Corporate/Certs/corp-root-ca.pem"
-export BITBUCKET_URL="https://bitbucket.corp.internal"
+EOF
 ```
 
-#### 3. Trust Corporate CA in System Keychain
-Ensure the enterprise root CA is installed in the macOS System Keychain:
-
-```bash
-sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain /Library/Application\ Support/Corporate/Certs/corp-root-ca.pem
-```
+!!! warning "GUI Applications and Environment Variables"
+    macOS GUI applications (such as VS Code or Cursor) do not inherit environment variables from `/etc/zshenv` or `/etc/profile.d/`. When configuring IDE MCP servers, provide `BB_CA_FILE` directly in the IDE settings `"env"` block.
 
 ---
 
-### B. Linux Workstations (Ansible / Puppet)
+### B. Linux Workstations (Ansible)
 
-Managed Linux workstations (Ubuntu, Debian, RHEL, Fedora) store credentials via the **Secret Service API over D-Bus** (GNOME Keyring, KWallet, or keepassxc).
-
-#### Ansible Hardening Task
+Linux workstations authenticate through the **Secret Service API over D-Bus** (GNOME Keyring / KWallet).
 
 ```yaml
-- name: Deploy bb enterprise baseline configuration
+- name: Deploy and harden bb across Linux workstations
   hosts: workstations
   become: true
+  vars:
+    bb_version: "2.10.0"
   tasks:
-    - name: Install bb package (Debian/Ubuntu)
-      apt:
-        deb: /tmp/bb_linux_amd64.deb
+    - name: Deploy Corporate Root CA bundle
+      copy:
+        src: files/corp-root-ca.pem
+        dest: /etc/ssl/certs/corp-root-ca.pem
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Download verified bb Debian package
+      get_url:
+        url: "https://artifactory.corp.internal/binaries/bb_{{ bb_version }}_linux_amd64.deb"
+        dest: "/tmp/bb_{{ bb_version }}_linux_amd64.deb"
+        mode: '0644'
       when: ansible_os_family == "Debian"
 
-    - name: Install bb package (RHEL/CentOS)
-      yum:
-        name: /tmp/bb_linux_amd64.rpm
-        state: present
-      when: ansible_os_family == "RedHat"
+    - name: Install bb package (Debian/Ubuntu)
+      apt:
+        deb: "/tmp/bb_{{ bb_version }}_linux_amd64.deb"
+      when: ansible_os_family == "Debian"
 
     - name: Configure system-wide environment variables
       copy:
@@ -107,111 +161,110 @@ Managed Linux workstations (Ubuntu, Debian, RHEL, Fedora) store credentials via 
         content: |
           export BB_REQUIRE_KEYRING=1
           export BB_CA_FILE=/etc/ssl/certs/corp-root-ca.pem
-          export BITBUCKET_URL=https://bitbucket.corp.internal
 ```
-
-> [!NOTE]
-> **D-Bus Requirement**: On Linux desktop sessions, GNOME Keyring unlocks automatically on user login via PAM. In remote SSH sessions or jump hosts, ensure a D-Bus session bus is available (`eval $(dbus-launch --sh-syntax)`) if developers interactively run `bb auth login`.
 
 ---
 
 ### C. Windows Workstations (Microsoft Intune / PowerShell)
 
-Windows workstations authenticate through **Windows Credential Manager** (backed by DPAPI).
-
-#### PowerShell Machine Provisioning Script (Run as Administrator)
+Windows workstations authenticate through **Windows Credential Manager** (DPAPI).
 
 ```powershell
-# 1. Install bb via WinGet (or internal MSI/ZIP)
+# Run as Administrator via Intune or administrative PowerShell
+$Version = "2.10.0"
+
+# 1. Install via WinGet
 winget install --id vriesdemichael.bb --exact --accept-source-agreements --accept-package-agreements
 
-# 2. Set Machine-Level Environment Variables (Persistent across all users)
-[Environment]::SetEnvironmentVariable("BB_REQUIRE_KEYRING", "1", "Machine")
-[Environment]::SetEnvironmentVariable("BB_CA_FILE", "C:\ProgramData\Corporate\corp-root-ca.pem", "Machine")
-[Environment]::SetEnvironmentVariable("BITBUCKET_URL", "https://bitbucket.corp.internal", "Machine")
+# 2. Deploy Corporate Root CA
+$CertDir = "C:\ProgramData\Corporate\Certs"
+New-Item -ItemType Directory -Force -Path $CertDir | Out-Null
+Copy-Item ".\corp-root-ca.pem" -Destination "$CertDir\corp-root-ca.pem"
 
-# 3. Verify System Certificate Store
-# Windows automatically reads the "Trusted Root Certification Authorities" store,
-# but BB_CA_FILE guarantees explicit resolution for Go's x509 crypto pool.
+# 3. Configure Machine-Level Environment Variables
+# IMPORTANT: BB_CA_FILE must exist before setting the variable.
+[Environment]::SetEnvironmentVariable("BB_REQUIRE_KEYRING", "1", "Machine")
+[Environment]::SetEnvironmentVariable("BB_CA_FILE", "$CertDir\corp-root-ca.pem", "Machine")
 ```
 
 ---
 
 ### D. CI/CD & Headless Containers (Docker / Kubernetes)
 
-Headless CI/CD runners and ephemeral build containers do not have desktop session buses (no D-Bus, no Keychain). **Do not use `bb auth login` in container pipelines.**
-
-#### The Hardening Pattern: Direct Environment Injection
-Pass short-lived Personal Access Tokens directly via `BITBUCKET_TOKEN`. When `BITBUCKET_TOKEN` is present, `bb` reads the secret directly from process memory and never touches disk or seeks a keyring daemon:
+Headless runners do not have interactive desktop sessions or D-Bus daemons. Configure runners to read secrets entirely from process memory and bypass disk storage.
 
 ```dockerfile
 # Hardened CI Container Pattern
-FROM alpine:latest
-COPY --from=ghcr.io/vriesdemichael/bb:latest /usr/local/bin/bb /usr/local/bin/bb
+FROM alpine:3.21
 
-# Embed corporate CA
+ARG BB_VERSION=2.10.0
+
+# Install runtime dependencies (ca-certificates and git)
+RUN apk add --no-cache ca-certificates git curl
+
+# Download and install official release binary
+RUN curl -fsSL "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/v${BB_VERSION}/bb_${BB_VERSION}_linux_amd64.tar.gz" \
+    | tar -xz -C /usr/local/bin bb \
+    && chmod +x /usr/local/bin/bb
+
+# Install corporate CA
 COPY corp-root-ca.pem /etc/ssl/certs/corp-root-ca.pem
-ENV BB_CA_FILE=/etc/ssl/certs/corp-root-ca.pem
-ENV BITBUCKET_URL=https://bitbucket.corp.internal
 
-# In CI execution:
-# docker run -e BITBUCKET_TOKEN=$RUNNER_SECRET my-build-image bb repo list
+# Environment flags for headless isolation
+ENV BB_CA_FILE=/etc/ssl/certs/corp-root-ca.pem
+ENV BB_DISABLE_STORED_CONFIG=1
+
+# Execution in CI: pass token via environment, zero disk persistence
+# docker run --rm -e BITBUCKET_TOKEN=$SECRET -e BITBUCKET_URL=https://bitbucket.corp.internal my-image bb repo list
 ```
 
 ---
 
-## 3. Internal PKI & Corporate Forward Proxies
+## 4. Internal PKI, Proxies & Multi-Server Estates
 
-### Internal Certificate Authorities (Custom Root CAs)
-Enterprise Bitbucket Data Center instances typically present certificates issued by an internal CA. Furthermore, corporate forward proxies (Zscaler, Blue Coat, Palo Alto) re-sign outbound traffic.
-
-To trust an internal CA bundle:
-
-```bash
-export BB_CA_FILE=/etc/ssl/certs/corp-root-ca.pem
+### Critical Imaging Order: Deploy CA Before Env Var
+`bb` initializes its TLS transport during client construction. If `BB_CA_FILE` points to a non-existent path, `bb` immediately aborts with:
 ```
+read CA bundle: open /etc/ssl/certs/corp-root-ca.pem: no such file or directory
+```
+Ensure provisioning scripts place the CA certificate on disk **before** exporting `BB_CA_FILE`.
 
-> [!IMPORTANT]
-> **Additive Trust Pool**: `bb` appends your corporate CA bundle to the operating system's default trust pool (`x509.SystemCertPool()`). It does **not** overwrite standard system roots, ensuring that both internal Bitbucket calls and external services (e.g. GitHub release verification) resolve reliably.
+### Additive Trust Pool
+`bb` appends your corporate CA bundle to the system's root certificate pool (`x509.SystemCertPool()`). It does not replace public roots, allowing connections to public services (e.g. GitHub release verification) to succeed alongside internal Bitbucket calls.
 
-### Forward Proxy Configuration
-`bb` natively respects standard proxy environment variables:
-- `HTTPS_PROXY`: Forward proxy for HTTPS traffic (`http://proxy.corp.example:3128`).
-- `HTTP_PROXY`: Forward proxy for HTTP traffic.
-- `NO_PROXY`: Comma-separated domain suffixes that bypass the proxy (`.corp.internal,localhost,127.0.0.1`).
-
+### Corporate Forward Proxies
+Configure standard proxy environment variables:
 ```bash
 export HTTPS_PROXY=http://proxy.corp.example:3128
 export NO_PROXY=.corp.internal,localhost,127.0.0.1
-bb repo list --limit 5
 ```
+
+### Multi-Server Estates (Avoid Blanket `BITBUCKET_URL`)
+!!! warning "Do Not Pin `BITBUCKET_URL` Fleet-Wide in Multi-Server Estates"
+    If your organization operates multiple Bitbucket instances (e.g. post-acquisition environments, production vs. staging), do **not** export a static `BITBUCKET_URL` in `/etc/profile.d/` or `/etc/zshenv`. Setting `BITBUCKET_URL` globally overrides local repository context discovery. Instead, let developers configure server profiles (`bb auth login <host>`) or rely on automatic clone URL discovery ([Repository Discovery and Server Switching](repository-discovery-and-server-switching.md)).
 
 ---
 
-## 4. AI & IDE MCP Server Governance (`bb ai mcp serve`)
+## 5. AI & IDE MCP Server Governance (`bb ai mcp serve`)
 
-`bb` includes a built-in Model Context Protocol (MCP) server for integration with AI developer tools (VS Code Agent, Cursor, Claude Desktop, Copilot). In corporate environments, AI access must be constrained by the Principle of Least Privilege.
+`bb` includes a built-in Model Context Protocol (MCP) server for integration with AI developer tools (VS Code Agent, Cursor, Claude Desktop).
 
 ### Principle 1: Safe vs. Unsafe Tool Isolation
-`bb` divides its MCP tools into two distinct exposure tiers ([ADR-039](file:///C:/Users/vries/.gemini/antigravity/worktrees/bitbucket-server-cli/investigate_issue_three_ninety/docs/site/adr/039-built-in-mcp-server-with-host-scoping-and-token-restriction.md)):
-- **Safe Tools (Enabled by default)**: Read operations, diff inspection, drafting PRs, and posting review comments. Side effects are reversible and low-blast-radius.
-- **Unsafe Tools (Withheld by default)**: Mutating or irreversible operations (such as deleting branches or declining PRs). These are withheld unless `--yolo` (or `--allow-writes`) is explicitly configured.
+`bb` gates mutating and high-blast-radius operations ([ADR-039](../adr/039-built-in-mcp-server-with-host-scoping-and-token-restriction.md)):
+- **Safe Tools (Enabled by default)**: Read operations, diff inspection (`get_pr_diff`), pull request listing (`list_pull_requests`), and comment threads (`list_pr_comments`, `add_pr_comment`).
+- **Unsafe Tools (Withheld by default)**: High-impact operations (`submit_pr_review`, `merge_pull_request`, `enable_auto_merge`, `set_build_status`) are withheld unless `--yolo` (or `--allow-writes`) is explicitly configured. Gating `submit_pr_review` ensures an agent cannot approve its own pull requests.
 
-Inspect the complete catalog and exposure state from your terminal:
-
+Inspect exposed tools and their gating status:
 ```bash
 bb ai mcp tools
 ```
 
 ### Principle 2: Dedicated Read-Only Token Scoping
-Never allow an IDE MCP server to run with full personal administrative privileges. Generate a dedicated read-only Personal Access Token and bind the MCP server directly to it:
+Never run IDE MCP servers under personal developer credentials. Generate a dedicated read-only PAT and bind the MCP server to it:
 
 ```bash
-# Launch the MCP server restricted to a read-only token
 bb ai mcp serve --host https://bitbucket.example.com --token <read-only-pat>
 ```
-
-When `--token` is provided to `bb ai mcp serve`, all tool executions use that token rather than the user's personal credentials stored in the OS keyring.
 
 ### Recommended IDE Configuration (`.vscode/settings.json`)
 
@@ -231,8 +284,11 @@ When `--token` is provided to `bb ai mcp serve`, all tool executions use that to
           "--token",
           "${env:BITBUCKET_RO_TOKEN}",
           "--tools",
-          "get_pull_request,list_pull_requests,get_pull_request_diff,list_pull_request_comments,add_pull_request_comment"
-        ]
+          "get_pull_request,list_pull_requests,get_pr_diff,list_pr_comments,add_pr_comment"
+        ],
+        "env": {
+          "BB_CA_FILE": "/Library/Application Support/Corporate/Certs/corp-root-ca.pem"
+        }
       }
     }
   }
@@ -241,42 +297,62 @@ When `--token` is provided to `bb ai mcp serve`, all tool executions use that to
 
 ---
 
-## 5. Air-Gapped Release Verification Runbook
+## 6. Verification and Troubleshooting
 
-For zero-trust pipelines and air-gapped security validation, every release artifact publishes cryptographic signatures and supply-chain attestations.
-
-### 1. Sigstore Keyless Verification (Cosign)
-Verify the downloaded release archive against the official release workflow on `refs/heads/main`:
+### Verification Audit
+Run the machine-readable auth status check to verify configuration:
 
 ```bash
-cosign verify-blob \
-  --bundle bb_linux_amd64.tar.gz.sigstore.json \
-  --certificate-identity 'https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main' \
-  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-  bb_linux_amd64.tar.gz
+bb auth status --json
 ```
 
-### 2. GitHub Build Provenance Attestation
-Verify that the binary was built on official GitHub-hosted runners directly from the source repository:
+Confirm:
+- `.data.credential_storage`: Must report `keyring` (on workstations) or `environment` (in CI). If it reports `config-file-plaintext`, `BB_REQUIRE_KEYRING=1` is missing.
+- Check active git helper:
+  ```bash
+  git config --global --get credential.helper
+  ```
 
-```bash
-gh attestation verify bb_linux_amd64.tar.gz \
-  --repo vriesdemichael/bitbucket-data-center-cli
-```
+### Helpdesk Troubleshooting Guide
 
-### 3. Software Bill of Materials (SBOM)
-Verify the link between the released binary and its attested SPDX 2.3 dependency SBOM:
+| Symptom / Error Message | Root Cause | Remediation |
+|---|---|---|
+| `read CA bundle: open ...: no such file or directory` | Imaging race condition: `BB_CA_FILE` was set before the CA certificate was written to disk. | Ensure the provisioning script copies the `.pem` file before setting the environment variable. |
+| `keyring is required but unavailable` | Running on a headless Linux host or remote SSH session without an active D-Bus session bus. | Launch a temporary D-Bus session: `eval $(dbus-launch --sh-syntax)` or use `BITBUCKET_TOKEN` for automation. |
+| Git prompts for password on `git push`/`git pull` | Git credential helper is not scoped to the exact URL or scheme used by the remote. | Run `git remote -v` and configure: `bb auth setup-git --host <remote-url>`. |
+| `certificate signed by unknown authority` | `BB_CA_FILE` is not set, or a GUI IDE failed to inherit shell environment variables. | Set `BB_CA_FILE` in the IDE's `"env"` block or export it in `/etc/zshenv` / `/etc/profile.d/bb.sh`. |
 
-```bash
-gh attestation verify bb_linux_amd64.tar.gz \
-  --repo vriesdemichael/bitbucket-data-center-cli \
-  --predicate-type https://spdx.dev/Document
-```
+---
+
+## 7. Day-2 Operations
+
+### PAT Expiration & Rotation
+Personal Access Tokens expire based on enterprise TTL policies (e.g. 90 days). When rotating a token:
+1. Generate a replacement token in Bitbucket Server (`bb auth token create "Dev Token" --expiry-days 90` or via web UI).
+2. Update the stored credential in the OS keyring without downtime:
+   ```bash
+   printf "%s" "$NEW_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
+   ```
+3. Because git queries `bb` dynamically, all local repositories immediately begin using the new token without needing `.git/config` updates.
+
+### Fleet Upgrades & Rollback
+- **Upgrades**: Deploy new packages via system package managers (`apt`, `dnf`, `brew`, `winget`). Stored credentials and git helpers persist across version upgrades.
+- **De-provisioning & Rollback**:
+  ```bash
+  # 1. Log out and remove secrets from the OS Keyring
+  bb auth logout https://bitbucket.example.com
+
+  # 2. Remove git credential helper configuration
+  git config --global --unset-all "credential.https://bitbucket.example.com.helper"
+
+  # 3. Remove package
+  apt remove bb   # or: brew uninstall bb / winget uninstall vriesdemichael.bb
+  ```
 
 ---
 
 ## Related Security Documents
-- [Security Architecture and Threat Model](threat-model.md): Detailed trust boundaries, multi-OS policy enforcement analysis, threat vectors, and honest enterprise gap tracker.
+- [Security Architecture and Threat Model](threat-model.md): Detailed STRIDE methodology, trust boundaries, multi-OS policy analysis, and compliance matrix.
 - [Git Authentication Guide](git-authentication.md): Deep dive into host-scoped credential helper mechanics.
 - [Networks, Proxies and TLS](networks-proxies-and-tls.md): Network diagnosis and connection testing.
 - [Security Policy](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md): Vulnerability reporting and disclosure policy.
