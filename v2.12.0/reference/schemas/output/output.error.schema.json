@@ -1,0 +1,72 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.error.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Emitted on stdout by any bb command that fails while --json is set. The presence of error rather than data marks the run as failed; exit_code matches the process exit status.",
+  "properties": {
+    "error": {
+      "additionalProperties": false,
+      "properties": {
+        "exit_code": {
+          "description": "Process exit status, determined by kind.",
+          "enum": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            10,
+            11
+          ],
+          "type": "integer"
+        },
+        "kind": {
+          "description": "Error classification from the ADR-011 taxonomy.",
+          "enum": [
+            "authentication",
+            "authorization",
+            "validation",
+            "not_found",
+            "conflict",
+            "transient",
+            "permanent",
+            "not_implemented",
+            "internal"
+          ]
+        },
+        "message": {
+          "description": "Human-readable failure description, without the kind prefix shown on stderr.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "message",
+        "exit_code"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "error",
+    "meta"
+  ],
+  "title": "bb command failure",
+  "type": "object"
+}
