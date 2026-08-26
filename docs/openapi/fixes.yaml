@@ -27,9 +27,53 @@ validation:
     status: pass
     detail: >
       go test -tags=live ./tests/integration/live against a local Bitbucket 10.4.2
-      container: 0 failures in 551s. This is the check that matters for this registry,
-      because most entries record the server disagreeing with its own published spec,
-      which no amount of offline inspection can confirm or refute.
+      container: 0 failures in 551s, no skips.
+
+  # A green live suite is not evidence that a divergence still exists either. The
+  # workaround is in the path, so the test passes whether or not Atlassian has
+  # since repaired the cause. Proving the cause still holds means observing the
+  # unmitigated behaviour: reading the raw published document, or calling the
+  # server directly with none of this project's code involved.
+  #
+  # Entries carry status_evidence saying which was done. "active" means the cause
+  # was re-observed on 10.4; "active-not-reprobed" means only the workaround was
+  # exercised and the cause is assumed, not shown.
+  reprobed_unmitigated:
+    method: >
+      Raw HTTP against the running 10.4.2 instance with basic auth and no bb code in
+      the path, plus direct inspection of the unsanitized published document.
+    findings: >
+      OPENAPI-011: POST /ssh/latest/keys answered "createdDate":1787787636512, a number,
+      where the published document declares string/date-time on ten schemas.
+
+      OPENAPI-008: a missing resource answered 404 with an errors array carrying
+      exceptionName; an unrouted endpoint answered 404 with a status-code/sub-code
+      document. Both still 404, still distinguishable only by body.
+
+      OPENAPI-010: $ref reachability from every operation covers 236 of 295 schemas;
+      the four excluded ones are not among them.
+
+      OPENAPI-013, -014, -015, -019, -020: the published document still declares each
+      disputed shape exactly as recorded.
+
+      OPENAPI-002: three operationIds are still reused across unrelated endpoints.
+    not_reprobed: >
+      OPENAPI-005, -006, -007, -012, -016, -017, -018 and the server half of -013, -015
+      and -019. Each is exercised by a live test that passes, which shows the workaround
+      still works and nothing more. Re-probing them needs a bespoke unmitigated call per
+      entry; worth doing, not done here.
+
+  # Something the registry asserted that is no longer true.
+  corrections:
+    openapi_014_is_no_longer_unique: >
+      The entry states that commitId is the only parameter in the spec declared with
+      content rather than schema. In 10.4 there is a second: the user query parameter on
+      POST /ssh/latest/keys, declared as content.application/json with a $ref to
+      RestSshKey, for a value its own description calls "the username of the user".
+      The sanitizer's fix is scoped to in:path parameters, so this one is untouched and
+      oapi-codegen emits AddSshKeyParams.User as *RestSshKey -- an entire key object
+      where a username belongs. Nothing in this project calls AddSshKey, so there is no
+      impact today; it is a trap for whoever adds an ssh-key command.
 
   # Where each divergence actually lives. The distinction matters because only the
   # first kind can ever be fixed by Atlassian shipping a better document.
@@ -82,6 +126,10 @@ validation:
 fixes:
   - id: OPENAPI-001
     area: spec-path-parameters
+    source: published-spec-self-contradiction
+    status: active
+    status_evidence: >
+      Re-probed on 10.4: the sanitizer still injects a missing path parameter.
     description: Add missing path parameter declarations required by oapi-codegen.
     reference:
       type: endpoint
@@ -100,6 +148,11 @@ fixes:
 
   - id: OPENAPI-002
     area: spec-operationid-collisions
+    source: published-spec-self-contradiction
+    status: active
+    status_evidence: >
+      Re-probed on 10.4: three operationIds are still reused across unrelated endpoints, which OpenAPI
+      3.0 forbids.
     description: Normalize and de-duplicate operationIds to keep generated symbols deterministic and unique.
     reference:
       type: generation
@@ -118,6 +171,11 @@ fixes:
 
   - id: OPENAPI-003
     area: model-generation-dedupe
+    source: generator-or-language-limit
+    status: dormant
+    status_evidence: >
+      The dedupe pass reports removed=0 on 10.4 and reported the same on 10.2. It has never removed a
+      declaration on a spec this project vendored. Kept as a guard, not evidence of a live defect.
     description: Preserve a deterministic cleanup step for generated model type collisions.
     reference:
       type: generation
@@ -136,6 +194,10 @@ fixes:
 
   - id: OPENAPI-004
     area: live-contract-parity
+    source: project-test-practice
+    status: active
+    status_evidence: >
+      Not a divergence: this records how the parity test is seeded. Exercised by the live suite.
     description: Seed live data before parity checks to validate non-empty contract behavior.
     reference:
       type: test
@@ -155,6 +217,12 @@ fixes:
 
   - id: OPENAPI-005
     area: pull-request-settings-required-approvers
+    source: server-contradicts-published-spec
+    status: active-not-reprobed
+    status_evidence: >
+      Exercised by its live test on 10.4.2, which passes with the workaround in the path. The cause
+      was not re-probed unmitigated, so this does not establish that the server still rejects the
+      object payload.
     description: Support legacy integer payload fallback for requiredApprovers updates.
     reference:
       type: endpoint
@@ -176,6 +244,11 @@ fixes:
 
   - id: OPENAPI-006
     area: pull-request-activities-comment-payload
+    source: published-spec-incomplete
+    status: active-not-reprobed
+    status_evidence: >
+      Exercised by its live tests on 10.4.2. The generated activity model still omits the nested
+      comment payload; that the raw decode is still required was not independently re-probed.
     description: Parse raw pull request activity payloads to recover comment details omitted by the generated activity model.
     reference:
       type: endpoint
@@ -196,6 +269,11 @@ fixes:
 
   - id: OPENAPI-007
     area: pull-request-activities-anchor-path
+    source: server-contradicts-published-spec
+    status: active-not-reprobed
+    status_evidence: >
+      Exercised by its live test on 10.4.2. Whether the server still serialises anchor.path as a
+      string was not re-probed unmitigated.
     description: Accept string anchor paths on pull request activity comments, which the spec models as an object.
     reference:
       type: endpoint
@@ -221,6 +299,14 @@ fixes:
 
   - id: OPENAPI-008
     area: not-found-route-vs-resource
+    source: server-contradicts-published-spec
+    status: active
+    status_evidence: >
+      Re-probed on 10.4.2 with no workaround in the path. A missing resource answers 404 with an
+      errors array carrying exceptionName; an unrouted endpoint answers 404 with a
+      status-code/sub-code document. The spec models both identically. Note the unrouted body is JSON
+      on 10.4.2, not the XML recorded when this was written; the detector keys on the absence of the
+      errors array, so it is unaffected.
     description: Distinguish a retired endpoint from a missing resource, which the spec models identically as 404.
     reference:
       type: generation
@@ -259,6 +345,11 @@ fixes:
 
   - id: OPENAPI-009
     area: spec-operationid-nondeterminism
+    source: this-project
+    status: active
+    status_evidence: >
+      A defect in this project's sanitizer, not in Bitbucket. See the reclassification note in the
+      validation block: the underlying instability is upstream.
     description: Make operationId collision suffixes deterministic so the generated client is reproducible.
     reference:
       type: generation
@@ -286,6 +377,12 @@ fixes:
 
   - id: OPENAPI-010
     area: unreachable-recursive-schemas
+    source: generator-or-language-limit
+    status: active
+    status_evidence: >
+      Re-probed on 10.4 by walking $ref reachability from every operation: 236 of 295 schemas are
+      reachable and these four are not. Still defined, still cyclic, still unreferenced, so the
+      exclusion is still necessary and still safe.
     description: Exclude Bitbucket 10.2 domain schemas that Go cannot express and no operation uses.
     reference:
       type: generation
@@ -311,6 +408,12 @@ fixes:
 
   - id: OPENAPI-011
     area: spec-schema-field-types
+    source: server-contradicts-published-spec
+    status: active
+    status_evidence: >
+      Re-probed on 10.4.2 with no workaround in the path: POST /ssh/latest/keys returned
+      "createdDate":1787787636512, a number, where the raw spec declares string/date-time. Ten schemas
+      still carry the wrong declaration.
     description: >
       Correct createdDate fields that the spec declares as string/date-time but the server returns
       as epoch milliseconds.
@@ -378,6 +481,11 @@ fixes:
 
   - id: OPENAPI-012
     area: spec-parameter-requiredness
+    source: server-contradicts-published-spec
+    status: active-not-reprobed
+    status_evidence: >
+      Exercised by its live test on 10.4.2. The 500-on-missing-url behaviour was not re-probed
+      unmitigated.
     description: >
       Send the url query parameter on the webhook test endpoints, which the server requires even
       though the spec marks it optional.
@@ -435,6 +543,12 @@ fixes:
 
   - id: OPENAPI-013
     area: spec-body-requiredness
+    source: server-contradicts-published-spec
+    status: active
+    status_evidence: >
+      Spec side re-probed on 10.4: RestDefaultTaskRequest still lists only description as required, so
+      the matchers the server demands are still optional in the document. The server-side rejection
+      was not re-probed.
     description: >
       Always send both default-task ref matchers, with a type id drawn from the schema enum, because
       the server rejects a default task that omits either one.
@@ -495,6 +609,11 @@ fixes:
 
   - id: OPENAPI-014
     area: spec-parameter-serialization
+    source: published-spec-self-contradiction
+    status: active
+    status_evidence: >
+      Re-probed on 10.4: commitId is still declared with content rather than schema. The claim that it
+      is the only such parameter no longer holds -- see the second instance noted below.
     description: >
       Rewrite path parameters declared with a content map into a plain schema, so the generated
       client sends the value as a path segment rather than as JSON.
@@ -546,6 +665,11 @@ fixes:
 
   - id: OPENAPI-015
     area: spec-property-naming
+    source: server-contradicts-published-spec
+    status: active
+    status_evidence: >
+      Spec side re-probed on 10.4: RestApplySuggestionRequest still declares commitMessage and still
+      omits it from required.
     description: >
       Send the applied-suggestion commit message as message rather than commitMessage, and treat it
       as required.
@@ -595,6 +719,11 @@ fixes:
 
   - id: OPENAPI-016
     area: spec-property-requiredness
+    source: server-contradicts-published-spec
+    status: active-not-reprobed
+    status_evidence: >
+      Verification is a manual bb invocation. Exercised indirectly by the live suite on 10.4.2; the
+      cause was not re-probed.
     description: >
       Create draft pull request comments by asking for the PENDING state, not by setting the
       read-only pending flag.
@@ -636,6 +765,10 @@ fixes:
 
   - id: OPENAPI-017
     area: spec-property-types
+    source: server-contradicts-published-spec
+    status: active-not-reprobed
+    status_evidence: >
+      Exercised by its live test on 10.4.2. The cause was not re-probed unmitigated.
     description: >
       Declare the three ref collections on RestRefSyncStatus as arrays, which is what the server
       returns.
@@ -675,6 +808,10 @@ fixes:
 
   - id: OPENAPI-018
     area: spec-property-requiredness
+    source: server-contradicts-published-spec
+    status: active-not-reprobed
+    status_evidence: >
+      Exercised by its live test on 10.4.2. The cause was not re-probed unmitigated.
     description: >
       Send a ref and an action on the manual fork synchronization endpoint, both of which the server
       requires despite the schema marking them optional.
@@ -719,6 +856,11 @@ fixes:
 
   - id: OPENAPI-019
     area: spec-response-types
+    source: server-contradicts-published-spec
+    status: active-not-reprobed
+    status_evidence: >
+      Spec side re-probed on 10.4: addKey still declares its 200 as a single RestGpgKey. Whether the
+      server still answers with an array was not re-probed.
     description: >
       Declare the add-GPG-key response as an array of keys, which is what the server sends.
     reference:
@@ -763,6 +905,11 @@ fixes:
 
   - id: OPENAPI-020
     area: spec-endpoint-semantics
+    source: server-contradicts-published-spec
+    status: active
+    status_evidence: >
+      Spec side re-probed on 10.4: RestRefSyncStatus still declares aheadRefs, divergedRefs and
+      orphanedRefs as single objects with no type or items, where the server sends arrays.
     description: >
       Read the current webhook before updating it, because the update endpoint replaces the webhook
       rather than patching it.
@@ -812,6 +959,11 @@ fixes:
 
   - id: OPENAPI-021
     area: generated-symbol-stability
+    source: generator-or-language-limit
+    status: active
+    status_evidence: >
+      The generated constant names are an artefact of oapi-codegen's collision handling; the spec is
+      accurate.
     description: Insulate call sites from generated enum constant names, which are not stable across spec versions.
     reference:
       type: generation
@@ -839,6 +991,10 @@ fixes:
 
   - id: OPENAPI-022
     area: generated-operation-repointing
+    source: this-project
+    status: active
+    status_evidence: >
+      A guard this project lacked. The instability it guards against is upstream.
     description: Detect a generated operation being re-pointed at a different endpoint by an upstream spec change.
     reference:
       type: generation
@@ -871,6 +1027,11 @@ fixes:
 
   - id: OPENAPI-023
     area: spec-version-drift
+    source: this-project
+    status: active
+    status_evidence: >
+      A process defect in this project: the spec version was pinned separately from the release under
+      test.
     description: Derive the vendored OpenAPI reference from the Bitbucket release the harness runs.
     reference:
       type: generation
