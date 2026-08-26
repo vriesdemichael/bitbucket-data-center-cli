@@ -15,11 +15,14 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/mcp"
 )
 
 // shellLanguages are the fenced-block languages whose contents are shell.
@@ -39,6 +42,12 @@ var shellLanguages = map[string]bool{
 	"shell":   true,
 	"console": true,
 	"zsh":     true,
+}
+
+var configLanguages = map[string]bool{
+	"json": true,
+	"yaml": true,
+	"yml":  true,
 }
 
 type finding struct {
@@ -162,14 +171,75 @@ func collectMarkdownFiles(roots []string) ([]string, error) {
 	return files, nil
 }
 
-// lintMarkdown checks every bb invocation in the shell blocks of one document.
+var unversionedArtifactRegex = regexp.MustCompile(`\bbb_(linux|darwin|windows)_(amd64|arm64|x86_64)\.(tar\.gz|zip|deb|rpm)\b`)
+
+var (
+	validMCPTools     map[string]bool
+	validMCPToolsOnce sync.Once
+)
+
+func isValidMCPTool(name string) bool {
+	validMCPToolsOnce.Do(func() {
+		validMCPTools = make(map[string]bool)
+		for _, spec := range mcp.AllSpecs() {
+			validMCPTools[spec.Tool.Name] = true
+		}
+	})
+	return validMCPTools[name]
+}
+
+// lintMarkdown checks every bb invocation in the shell blocks of one document,
+// as well as markdown dialect rules, release artifact naming, and configuration values.
 func lintMarkdown(file, contents string) ([]finding, int) {
 	var (
 		findings []finding
 		checked  int
 	)
 
-	for _, block := range shellCodeBlocks(contents) {
+	lines := strings.Split(contents, "\n")
+	for i, line := range lines {
+		lineNum := i + 1
+		trimmed := strings.TrimSpace(line)
+
+		// 1. Prohibit file:// links in documentation
+		if strings.Contains(line, "file://") {
+			findings = append(findings, finding{
+				File:    file,
+				Line:    lineNum,
+				Command: line,
+				Problem: "prohibited file:// link; use relative markdown links instead",
+			})
+		}
+
+		// 2. Prohibit GitHub-style callouts
+		if strings.HasPrefix(trimmed, "> [!") {
+			findings = append(findings, finding{
+				File:    file,
+				Line:    lineNum,
+				Command: line,
+				Problem: "prohibited GitHub callout syntax '> [!'; use Material for MkDocs '!!! note' syntax",
+			})
+		}
+
+		// 3. Prohibit unversioned release artifact filenames (e.g. bb_linux_amd64.tar.gz)
+		if match := unversionedArtifactRegex.FindString(line); match != "" {
+			findings = append(findings, finding{
+				File:    file,
+				Line:    lineNum,
+				Command: line,
+				Problem: fmt.Sprintf("release artifact %q is missing a version segment (must match bb_${VERSION}_<os>_<arch>.<ext>)", match),
+			})
+		}
+	}
+
+	// Invocations in shell code blocks & config checks in config blocks
+	shellBlocks, configBlocks := parseCodeBlocks(contents)
+
+	for _, block := range configBlocks {
+		findings = append(findings, lintConfigMCPTools(file, block)...)
+	}
+
+	for _, block := range shellBlocks {
 		for _, invocation := range extractBBInvocations(block.body) {
 			checked++
 
@@ -205,6 +275,67 @@ func lintMarkdown(file, contents string) ([]finding, int) {
 	return findings, checked
 }
 
+func lintConfigMCPTools(file string, block codeBlock) []finding {
+	var findings []finding
+	lines := strings.Split(block.body, "\n")
+
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+		flagName := ""
+		if strings.Contains(line, "--tools") {
+			flagName = "--tools"
+		} else if strings.Contains(line, "--exclude") {
+			flagName = "--exclude"
+		}
+		if flagName == "" {
+			continue
+		}
+
+		raw := extractToolListString(line, flagName)
+		targetLine := block.startLine + i + 1
+		if raw == "" && i+1 < len(lines) {
+			raw = strings.TrimSpace(lines[i+1])
+			targetLine = block.startLine + i + 2
+		}
+
+		raw = strings.Trim(raw, `"'[],`)
+		if raw == "" {
+			continue
+		}
+
+		for _, tool := range strings.Split(raw, ",") {
+			tool = strings.Trim(strings.TrimSpace(tool), `"'`)
+			if tool == "" || strings.HasPrefix(tool, "$") || strings.HasPrefix(tool, "--") {
+				continue
+			}
+			if !isValidMCPTool(tool) {
+				findings = append(findings, finding{
+					File:    file,
+					Line:    targetLine,
+					Command: strings.TrimSpace(line),
+					Problem: fmt.Sprintf("unknown MCP tool %q in %s", tool, flagName),
+				})
+			}
+		}
+	}
+
+	return findings
+}
+
+func extractToolListString(line, flagName string) string {
+	idx := strings.Index(line, flagName)
+	if idx < 0 {
+		return ""
+	}
+	rest := strings.TrimSpace(line[idx+len(flagName):])
+	rest = strings.TrimPrefix(rest, "=")
+	rest = strings.TrimPrefix(rest, ":")
+	rest = strings.TrimSpace(rest)
+	rest = strings.TrimPrefix(rest, ",")
+	rest = strings.TrimSpace(rest)
+	return rest
+}
+
 type codeBlock struct {
 	// startLine is the 1-based line of the fence, so a body line at index n sits
 	// at startLine+n+1 in the file.
@@ -235,14 +366,14 @@ func isDirectiveComment(trimmed, directive string) bool {
 	return inner == directive
 }
 
-func shellCodeBlocks(contents string) []codeBlock {
+func parseCodeBlocks(contents string) (shellBlocks []codeBlock, configBlocks []codeBlock) {
 	var (
-		blocks        []codeBlock
 		body          []string
 		fence         string
 		inBlock       bool
 		start         int
 		shell         bool
+		isConfig      bool
 		expectInvalid bool
 		pending       bool
 	)
@@ -269,6 +400,7 @@ func shellCodeBlocks(contents string) []codeBlock {
 			fence = marker
 			start = index + 1
 			shell = shellLanguages[language]
+			isConfig = configLanguages[language]
 			expectInvalid = pending
 			pending = false
 			body = nil
@@ -277,12 +409,15 @@ func shellCodeBlocks(contents string) []codeBlock {
 		}
 
 		if strings.HasPrefix(trimmed, fence) && strings.TrimSpace(strings.TrimPrefix(trimmed, fence)) == "" {
+			block := codeBlock{
+				startLine:     start,
+				body:          strings.Join(body, "\n"),
+				expectInvalid: expectInvalid,
+			}
 			if shell {
-				blocks = append(blocks, codeBlock{
-					startLine:     start,
-					body:          strings.Join(body, "\n"),
-					expectInvalid: expectInvalid,
-				})
+				shellBlocks = append(shellBlocks, block)
+			} else if isConfig {
+				configBlocks = append(configBlocks, block)
 			}
 			inBlock = false
 
@@ -292,7 +427,7 @@ func shellCodeBlocks(contents string) []codeBlock {
 		body = append(body, line)
 	}
 
-	return blocks
+	return shellBlocks, configBlocks
 }
 
 func openingFence(trimmed string) (marker, language string, ok bool) {
@@ -350,6 +485,25 @@ func validateInvocation(args []string) string {
 		return err.Error()
 	}
 
+	if target.CommandPath() == "bb ai mcp serve" {
+		if flag := target.Flags().Lookup("tools"); flag != nil && flag.Changed {
+			for _, tool := range strings.Split(flag.Value.String(), ",") {
+				tool = strings.TrimSpace(tool)
+				if tool != "" && !strings.HasPrefix(tool, "$") && !isValidMCPTool(tool) {
+					return fmt.Sprintf("unknown MCP tool %q in --tools", tool)
+				}
+			}
+		}
+		if flag := target.Flags().Lookup("exclude"); flag != nil && flag.Changed {
+			for _, tool := range strings.Split(flag.Value.String(), ",") {
+				tool = strings.TrimSpace(tool)
+				if tool != "" && !strings.HasPrefix(tool, "$") && !isValidMCPTool(tool) {
+					return fmt.Sprintf("unknown MCP tool %q in --exclude", tool)
+				}
+			}
+		}
+	}
+
 	if err := validatePositionals(target, target.Flags().Args()); err != nil {
 		return err.Error()
 	}
@@ -365,10 +519,26 @@ func validatePositionals(target *cobra.Command, positionals []string) error {
 		return nil
 	}
 	if target.Args == nil {
+		if !hasPositionalPlaceholder(target.Use) && len(positionals) > 0 {
+			return fmt.Errorf("accepts 0 arg(s), received %d", len(positionals))
+		}
 		return nil
 	}
 
 	return target.Args(target, positionals)
+}
+
+func hasPositionalPlaceholder(use string) bool {
+	parts := strings.Fields(use)
+	if len(parts) <= 1 {
+		return false
+	}
+	for _, p := range parts[1:] {
+		if strings.HasPrefix(p, "<") || strings.HasPrefix(p, "[") {
+			return true
+		}
+	}
+	return false
 }
 
 func helpRequested(target *cobra.Command) bool {

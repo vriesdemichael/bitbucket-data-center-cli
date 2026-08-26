@@ -282,6 +282,7 @@ your behalf using the link above.`,
 	}))
 
 	registerGlobalDryRunInterceptors(rootCmd, options)
+	enforceNoArgsDefaults(rootCmd)
 
 	return rootCmd
 }
@@ -424,4 +425,38 @@ func writeJSON(writer io.Writer, payload any) error {
 // envelope meta whether the result came back at --limit.
 func writeJSONList(writer io.Writer, payload any, limitReached bool) error {
 	return jsonoutput.WriteList(writer, payload, limitReached)
+}
+
+func enforceNoArgsDefaults(root *cobra.Command) {
+	if root == nil {
+		return
+	}
+	var visit func(*cobra.Command)
+	visit = func(cmd *cobra.Command) {
+		if cmd == nil {
+			return
+		}
+		if cmd.Runnable() && cmd.Args == nil {
+			if !hasPositionalPlaceholder(cmd.Use) {
+				cmd.Args = cobra.NoArgs
+			}
+		}
+		for _, child := range cmd.Commands() {
+			visit(child)
+		}
+	}
+	visit(root)
+}
+
+func hasPositionalPlaceholder(use string) bool {
+	parts := strings.Fields(use)
+	if len(parts) <= 1 {
+		return false
+	}
+	for _, p := range parts[1:] {
+		if strings.HasPrefix(p, "<") || strings.HasPrefix(p, "[") {
+			return true
+		}
+	}
+	return false
 }

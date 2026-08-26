@@ -237,6 +237,107 @@ func TestReportExitCodes(t *testing.T) {
 	}
 }
 
+func TestLintMarkdownDialectChecks(t *testing.T) {
+	testCases := []struct {
+		name    string
+		content string
+		problem string
+	}{
+		{
+			name:    "flags file:// uri",
+			content: "See [docs](file:///workspace/repo/README.md) for details.",
+			problem: "prohibited file:// link",
+		},
+		{
+			name:    "flags GitHub callouts",
+			content: "> [!NOTE]\n> Some note here.",
+			problem: "prohibited GitHub callout",
+		},
+		{
+			name:    "flags unversioned release artifact",
+			content: "Download `bb_linux_amd64.tar.gz` from releases.",
+			problem: "missing a version segment",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			findings, _ := lintMarkdown("test.md", tc.content)
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d: %+v", len(findings), findings)
+			}
+			if !strings.Contains(findings[0].Problem, tc.problem) {
+				t.Fatalf("expected problem containing %q, got %q", tc.problem, findings[0].Problem)
+			}
+		})
+	}
+}
+
+func TestLintMarkdownMCPToolsValidation(t *testing.T) {
+	docInvalid := "```bash\nbb ai mcp serve --tools non_existent_tool\n```\n"
+	findings, _ := lintMarkdown("test.md", docInvalid)
+	if len(findings) != 1 || !strings.Contains(findings[0].Problem, `unknown MCP tool "non_existent_tool" in --tools`) {
+		t.Fatalf("expected invalid MCP tool finding, got: %+v", findings)
+	}
+
+	docValid := "```bash\nbb ai mcp serve --tools get_pr_diff,list_pull_requests\n```\n"
+	findings, _ = lintMarkdown("test.md", docValid)
+	if len(findings) != 0 {
+		t.Fatalf("expected valid MCP tools to pass, got: %+v", findings)
+	}
+}
+
+func TestLintConfigMCPToolsValidation(t *testing.T) {
+	docInvalidJSON := "```json\n{\n  \"args\": [\"ai\", \"mcp\", \"serve\", \"--tools\", \"invalid_tool_mcp\"]\n}\n```\n"
+	findings, _ := lintMarkdown("test.md", docInvalidJSON)
+	if len(findings) != 1 || !strings.Contains(findings[0].Problem, `unknown MCP tool "invalid_tool_mcp" in --tools`) {
+		t.Fatalf("expected finding for invalid tool in json block, got: %+v", findings)
+	}
+
+	docValidJSON := "```json\n{\n  \"args\": [\"ai\", \"mcp\", \"serve\", \"--tools\", \"get_pr_diff,list_pull_requests\"]\n}\n```\n"
+	findings, _ = lintMarkdown("test.md", docValidJSON)
+	if len(findings) != 0 {
+		t.Fatalf("expected valid tools in json block to pass, got: %+v", findings)
+	}
+}
+
+func TestLintMarkdownPositionalArityOnZeroArgCommands(t *testing.T) {
+	doc := "```bash\nbb auth logout https://wrong-host.example.com\n```\n"
+	findings, _ := lintMarkdown("test.md", doc)
+	if len(findings) != 1 || (!strings.Contains(findings[0].Problem, "unknown command") && !strings.Contains(findings[0].Problem, "accepts 0 arg(s)")) {
+		t.Fatalf("expected positional arity error on bb auth logout, got: %+v", findings)
+	}
+}
+
+func TestShellRedirectionAndPlaceholders(t *testing.T) {
+	args, ok := parseBBSegment("bb repo archive --repo MYPROJ/payments --format tar.gz -o - > archive.tar.gz")
+	if !ok {
+		t.Fatal("expected successful parse")
+	}
+	expected := []string{"repo", "archive", "--repo", "MYPROJ/payments", "--format", "tar.gz", "-o", "-"}
+	if len(args) != len(expected) {
+		t.Fatalf("expected args %v, got %v", expected, args)
+	}
+
+	diagArgs, ok := parseBBSegment("bb --json --log-level warn auth status 2> diagnostics.jsonl")
+	if !ok {
+		t.Fatal("expected successful parse")
+	}
+	expectedDiag := []string{"--json", "--log-level", "warn", "auth", "status"}
+	if len(diagArgs) != len(expectedDiag) {
+		t.Fatalf("expected args %v, got %v", expectedDiag, diagArgs)
+	}
+
+	placeholderArgs, ok := parseBBSegment("bb bulk status <operation-id>")
+	if !ok {
+		t.Fatal("expected successful parse")
+	}
+	expectedPlaceholder := []string{"bulk", "status", "<operation-id>"}
+	if len(placeholderArgs) != len(expectedPlaceholder) || placeholderArgs[2] != "<operation-id>" {
+		t.Fatalf("expected placeholder preserved, got %v", placeholderArgs)
+	}
+}
+
 // TestRepositoryDocumentationIsValid runs the linter over the real tree, so the
 // check is enforced by `go test` as well as by the task and CI.
 func TestRepositoryDocumentationIsValid(t *testing.T) {

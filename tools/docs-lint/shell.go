@@ -155,11 +155,37 @@ func parseBBSegment(segment string) ([]string, bool) {
 			if head != "bb" && !strings.HasSuffix(head, "/bb") && head != "bb.exe" {
 				return nil, false
 			}
-			return fields[1:], true
+			rawArgs := fields[1:]
+			var cleanArgs []string
+			for i := 0; i < len(rawArgs); i++ {
+				arg := rawArgs[i]
+				if isShellRedirection(arg) {
+					if arg == ">" || arg == ">>" || arg == "<" || arg == "2>" || arg == "2>>" || arg == "&>" {
+						i++
+					}
+					continue
+				}
+				cleanArgs = append(cleanArgs, arg)
+			}
+			return cleanArgs, true
 		}
 	}
 
 	return nil, false
+}
+
+func isShellRedirection(arg string) bool {
+	// A placeholder like <foo> or <commit-sha> or [arg] is not redirection.
+	if strings.HasPrefix(arg, "<") && strings.HasSuffix(arg, ">") {
+		return false
+	}
+	if arg == ">" || arg == ">>" || arg == "<" || arg == "2>" || arg == "2>>" || arg == "&>" {
+		return true
+	}
+	if strings.HasPrefix(arg, ">") || strings.HasPrefix(arg, "2>") {
+		return true
+	}
+	return false
 }
 
 func isEnvironmentAssignment(field string) bool {
