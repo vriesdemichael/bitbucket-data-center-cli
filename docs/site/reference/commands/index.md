@@ -3649,18 +3649,17 @@ Examples:
   bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --no-default-reviewers --no-codeowners
 
 Flags:
-      --codeowners                Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (defaults to true, Bitbucket Data Center 8.14+) (default true)
-      --default-reviewers         Include default reviewers configured on repository/project (defaults to true) (default true)
-      --description string        Pull request description
-      --draft                     Create as a draft pull request (Bitbucket DC 8.0+)
-      --from-ref string           Source branch (name or refs/heads/name)
-      --no-codeowners             Do not include code owners from .bitbucket/CODEOWNERS
-      --no-default-reviewers      Do not include default reviewers
-      --reviewer-group strings    Reviewer group name(s) to expand and add (repeatable or comma-separated, Bitbucket Data Center 7.13+)
-      --reviewer-groups strings   Alias for --reviewer-group
-      --reviewers strings         Reviewer usernames to add (repeatable or comma-separated, accepts @group syntax, e.g. --reviewers alice,@backend-team)
-      --title string              Pull request title
-      --to-ref string             Target branch (name or refs/heads/name)
+      --codeowners               Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (defaults to true, Bitbucket Data Center 8.14+) (default true)
+      --default-reviewers        Include default reviewers configured on repository/project (defaults to true) (default true)
+      --description string       Pull request description
+      --draft                    Create as a draft pull request (Bitbucket DC 8.0+)
+      --from-ref string          Source branch (name or refs/heads/name)
+      --no-codeowners            Do not include code owners from .bitbucket/CODEOWNERS
+      --no-default-reviewers     Do not include default reviewers
+      --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups; Bitbucket Data Center 7.13+)
+      --reviewers strings        Reviewer usernames to add (repeatable or comma-separated, accepts @group syntax, e.g. --reviewers alice,@backend-team)
+      --title string             Pull request title
+      --to-ref string            Target branch (name or refs/heads/name)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -4207,13 +4206,10 @@ Examples:
   bb pr review reviewer add 42 --repo PROJ/repo --codeowners
 
 Flags:
-      --codeowners                Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (Bitbucket Data Center 8.14+)
-      --default-reviewers         Assign default reviewers configured on repository/project for this pull request
-      --reviewer-group strings    Reviewer group name(s) to expand and add (repeatable or comma-separated, Bitbucket Data Center 7.13+)
-      --reviewer-groups strings   Alias for --reviewer-group
-      --reviewers strings         Alias for --user
-      --user strings              Reviewer username(s) (repeatable or comma-separated, accepts @group syntax)
-      --users strings             Alias for --user
+      --codeowners               Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (Bitbucket Data Center 8.14+)
+      --default-reviewers        Assign default reviewers configured on repository/project for this pull request
+      --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups; Bitbucket Data Center 7.13+)
+      --user strings             Reviewer username(s) (repeatable or comma-separated, accepts @group syntax; aliases --users, --reviewers)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust

@@ -462,20 +462,67 @@ func (service *Service) GetDefaultReviewers(ctx context.Context, projectKey, rep
 	return *response.JSON200, nil
 }
 
-// ResolveDefaultReviewers queries matching default reviewer conditions for a source and target ref
-// and resolves both individual reviewers and constituent reviewer group members into usernames.
-func (service *Service) ResolveDefaultReviewers(ctx context.Context, projectKey, repositorySlug, sourceRef, targetRef string) ([]string, error) {
-	var sourceRefPtr, targetRefPtr *string
-	if strings.TrimSpace(sourceRef) != "" {
-		s := strings.TrimSpace(sourceRef)
-		sourceRefPtr = &s
+// NormalizeRefID expands a branch name into the fully qualified ref ID Bitbucket
+// matches default reviewer conditions against. Callers hand this function either
+// a bare branch name ("main"), a pull request display ID ("feature/x"), or an
+// already qualified ref ("refs/heads/main"); the condition matcher only ever
+// understands the last form, so anything else is prefixed.
+func NormalizeRefID(ref string) string {
+	trimmed := strings.TrimSpace(ref)
+	if trimmed == "" {
+		return ""
 	}
-	if strings.TrimSpace(targetRef) != "" {
-		t := strings.TrimSpace(targetRef)
-		targetRefPtr = &t
+	if strings.HasPrefix(trimmed, "refs/") {
+		return trimmed
+	}
+	return "refs/heads/" + trimmed
+}
+
+// RepositoryID resolves the numeric ID Bitbucket uses to identify a repository
+// in default reviewer conditions. It is returned as a string because the
+// condition query takes it as a query parameter.
+func (service *Service) RepositoryID(ctx context.Context, projectKey, repositorySlug string) (string, error) {
+	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repositorySlug) == "" {
+		return "", apperrors.New(apperrors.KindValidation, "project key and repository slug are required", nil)
 	}
 
-	conditions, err := service.GetDefaultReviewers(ctx, projectKey, repositorySlug, nil, nil, sourceRefPtr, targetRefPtr)
+	response, err := service.client.GetRepositoryWithResponse(ctx, projectKey, repositorySlug)
+	if err != nil {
+		return "", apperrors.New(apperrors.KindTransient, "failed to look up repository", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return "", err
+	}
+	if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Id == nil {
+		return "", apperrors.New(apperrors.KindPermanent, "repository response did not include an ID", nil)
+	}
+
+	return strconv.FormatInt(int64(*response.ApplicationjsonCharsetUTF8200.Id), 10), nil
+}
+
+// ResolveDefaultReviewers queries matching default reviewer conditions for a source and target ref
+// and resolves both individual reviewers and constituent reviewer group members into usernames.
+//
+// Branch names are normalized to fully qualified ref IDs, because Bitbucket matches
+// condition ref patterns against "refs/heads/..." and silently returns no conditions
+// for a bare branch name. The repository ID is resolved on a best-effort basis so
+// that repository-scoped conditions match; when it cannot be determined the query
+// still runs without it rather than failing the caller outright.
+func (service *Service) ResolveDefaultReviewers(ctx context.Context, projectKey, repositorySlug, sourceRef, targetRef string) ([]string, error) {
+	var sourceRefPtr, targetRefPtr *string
+	if normalized := NormalizeRefID(sourceRef); normalized != "" {
+		sourceRefPtr = &normalized
+	}
+	if normalized := NormalizeRefID(targetRef); normalized != "" {
+		targetRefPtr = &normalized
+	}
+
+	var repoIDPtr *string
+	if repoID, err := service.RepositoryID(ctx, projectKey, repositorySlug); err == nil && repoID != "" {
+		repoIDPtr = &repoID
+	}
+
+	conditions, err := service.GetDefaultReviewers(ctx, projectKey, repositorySlug, repoIDPtr, repoIDPtr, sourceRefPtr, targetRefPtr)
 	if err != nil {
 		return nil, err
 	}
@@ -521,6 +568,34 @@ func (service *Service) ResolveDefaultReviewers(ctx context.Context, projectKey,
 	return resolved, nil
 }
 
+// namedUser covers the two generated user shapes reviewer groups are returned
+// with: the group payload embeds ApplicationUser while the dedicated members
+// endpoint returns RestApplicationUser. Both carry the username in Name.
+type namedUser interface {
+	openapigenerated.ApplicationUser | openapigenerated.RestApplicationUser
+}
+
+// userNames extracts non-empty usernames from a slice of generated user structs.
+func userNames[T namedUser](users []T) []string {
+	names := make([]string, 0, len(users))
+	for _, user := range users {
+		var name *string
+		switch typed := any(user).(type) {
+		case openapigenerated.ApplicationUser:
+			name = typed.Name
+		case openapigenerated.RestApplicationUser:
+			name = typed.Name
+		}
+		if name == nil {
+			continue
+		}
+		if trimmed := strings.TrimSpace(*name); trimmed != "" {
+			names = append(names, trimmed)
+		}
+	}
+	return names
+}
+
 // ResolveReviewerGroupUsers resolves a reviewer group name to its constituent user usernames.
 // It searches repository-level reviewer groups first (if repositorySlug is non-empty),
 // falling back to project-level reviewer groups. If the server does not support reviewer
@@ -545,31 +620,41 @@ func (service *Service) ResolveReviewerGroupUsers(ctx context.Context, projectKe
 			return nil, err
 		}
 		for _, g := range repoGroups {
-			if g.Name != nil && strings.EqualFold(*g.Name, trimmedGroup) {
-				if g.Id != nil {
-					idStr := fmt.Sprintf("%d", *g.Id)
-					users, err := service.ListRepositoryReviewerGroupUsers(ctx, projectKey, repositorySlug, idStr)
-					if err == nil && len(users) > 0 {
-						names := make([]string, 0, len(users))
-						for _, u := range users {
-							if u.Name != nil && strings.TrimSpace(*u.Name) != "" {
-								names = append(names, strings.TrimSpace(*u.Name))
-							}
-						}
-						return names, nil
-					}
-					if g.Users != nil && len(*g.Users) > 0 {
-						names := make([]string, 0, len(*g.Users))
-						for _, u := range *g.Users {
-							if u.Name != nil && strings.TrimSpace(*u.Name) != "" {
-								names = append(names, strings.TrimSpace(*u.Name))
-							}
-						}
-						return names, nil
-					}
-				}
-				return []string{}, nil
+			if g.Name == nil || !strings.EqualFold(*g.Name, trimmedGroup) {
+				continue
 			}
+
+			var lookupErr error
+			if g.Id != nil {
+				idStr := fmt.Sprintf("%d", *g.Id)
+				users, err := service.ListRepositoryReviewerGroupUsers(ctx, projectKey, repositorySlug, idStr)
+				if err != nil {
+					lookupErr = err
+				} else if names := userNames(users); len(names) > 0 {
+					return names, nil
+				}
+			}
+
+			// Older servers do not expose the dedicated members endpoint but do
+			// embed the members in the group payload, so fall back to those.
+			if g.Users != nil {
+				if names := userNames(*g.Users); len(names) > 0 {
+					return names, nil
+				}
+			}
+
+			if lookupErr != nil {
+				// The group exists but its membership could not be read and no
+				// embedded members were available. Surface that instead of
+				// silently reporting an empty group, which would assign nobody.
+				return nil, apperrors.New(
+					apperrors.KindTransient,
+					fmt.Sprintf("failed to list members of reviewer group %q in repository %s/%s", trimmedGroup, projectKey, repositorySlug),
+					lookupErr,
+				)
+			}
+
+			return []string{}, nil
 		}
 	}
 
@@ -582,31 +667,42 @@ func (service *Service) ResolveReviewerGroupUsers(ctx context.Context, projectKe
 		return nil, err
 	}
 	for _, g := range projGroups {
-		if g.Name != nil && strings.EqualFold(*g.Name, trimmedGroup) {
-			if g.Id != nil {
-				idStr := fmt.Sprintf("%d", *g.Id)
-				groupDetail, err := service.GetProjectReviewerGroup(ctx, projectKey, idStr)
-				if err == nil && groupDetail.Users != nil && len(*groupDetail.Users) > 0 {
-					names := make([]string, 0, len(*groupDetail.Users))
-					for _, u := range *groupDetail.Users {
-						if u.Name != nil && strings.TrimSpace(*u.Name) != "" {
-							names = append(names, strings.TrimSpace(*u.Name))
-						}
-					}
+		if g.Name == nil || !strings.EqualFold(*g.Name, trimmedGroup) {
+			continue
+		}
+
+		var lookupErr error
+		if g.Id != nil {
+			idStr := fmt.Sprintf("%d", *g.Id)
+			groupDetail, err := service.GetProjectReviewerGroup(ctx, projectKey, idStr)
+			if err != nil {
+				lookupErr = err
+			} else if groupDetail.Users != nil {
+				if names := userNames(*groupDetail.Users); len(names) > 0 {
 					return names, nil
 				}
 			}
-			if g.Users != nil && len(*g.Users) > 0 {
-				names := make([]string, 0, len(*g.Users))
-				for _, u := range *g.Users {
-					if u.Name != nil && strings.TrimSpace(*u.Name) != "" {
-						names = append(names, strings.TrimSpace(*u.Name))
-					}
-				}
+		}
+
+		// Older servers embed the members in the listing payload instead.
+		if g.Users != nil {
+			if names := userNames(*g.Users); len(names) > 0 {
 				return names, nil
 			}
-			return []string{}, nil
 		}
+
+		if lookupErr != nil {
+			// The group exists but its membership could not be read and no
+			// embedded members were available. Surface that instead of
+			// silently reporting an empty group.
+			return nil, apperrors.New(
+				apperrors.KindTransient,
+				fmt.Sprintf("failed to read reviewer group %q in project %s", trimmedGroup, projectKey),
+				lookupErr,
+			)
+		}
+
+		return []string{}, nil
 	}
 
 	if strings.TrimSpace(repositorySlug) != "" {

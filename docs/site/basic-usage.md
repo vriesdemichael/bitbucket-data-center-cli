@@ -134,7 +134,16 @@ When creating pull requests or attaching reviewers to open pull requests, `bb` p
 ### Automated Reviewers on PR Creation
 Mirroring the Bitbucket Data Center web interface, `bb pr create` automatically resolves and includes:
 1. **Default Reviewers** configured on the repository and project for the branch pair (`--default-reviewers` defaults to `true`).
-2. **CODEOWNERS** matching the PR diff from `.bitbucket/CODEOWNERS` (or `CODEOWNERS`) on the target branch or local workspace (`--codeowners` defaults to `true`). If the repository does not use CODEOWNERS, it is silently skipped.
+2. **CODEOWNERS** matching the PR diff from `.bitbucket/CODEOWNERS` (or `CODEOWNERS`) on the target branch (`--codeowners` defaults to `true`). If the repository does not use CODEOWNERS, it is silently skipped.
+
+The working copy is consulted before the server, but only when it is a checkout of
+the repository being targeted — a `CODEOWNERS` file in an unrelated checkout is
+never used to pick reviewers for another repository.
+
+Because both behaviours are on by default, a lookup that fails for a reason other
+than "not configured" prints a warning on stderr and the pull request is still
+created. Pass `--default-reviewers` or `--codeowners` explicitly to make such a
+failure fatal instead.
 
 You can opt out of either or both automation behaviors using `--no-default-reviewers` and `--no-codeowners`:
 
@@ -190,7 +199,7 @@ Native `CODEOWNERS` support was introduced in **Bitbucket Data Center 8.14** (vi
   - `@group:all` (default for groups): Assigns all members of the group.
   - `@group:random(N)`: Selects `N` random members from the group.
   - `@group:least_busy(N)`: Selects `N` members from the group who are currently assigned as reviewers on the fewest open pull requests.
-- **Escaped Spaces in Group Names**: In Bitbucket Data Center 9.0+, reviewer group names with spaces are escaped with backslashes (e.g. `@backend\\ engineers:random(2)`).
+- **Escaped Spaces**: In Bitbucket Data Center 9.0+, spaces are escaped with backslashes on both sides of a rule — in reviewer group names (e.g. `@backend\\ engineers:random(2)`) and in path patterns (e.g. `design\\ assets/ @design`).
 - **Multi-Owner Rules**: Lines can combine direct users, emails, and groups with strategies (e.g. `*.go @lead user@example.com @backend-team:random(2)`).
 - **Precedence**: Rules evaluate bottom-to-top (last-match-wins per file), allowing specific path overrides lower in the file.
 - **Author Filtering**: The pull request author is filtered out prior to applying selection strategies, ensuring that `N` actual eligible reviewers are selected.
