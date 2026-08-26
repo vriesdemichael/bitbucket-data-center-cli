@@ -500,29 +500,46 @@ func (service *Service) RepositoryID(ctx context.Context, projectKey, repository
 	return strconv.FormatInt(int64(*response.ApplicationjsonCharsetUTF8200.Id), 10), nil
 }
 
+// DefaultReviewerQuery describes the pull request a default reviewer lookup is
+// for. SourceProjectKey and SourceSlug are only needed for a fork pull request;
+// leaving them empty means the source branch lives in the target repository.
+type DefaultReviewerQuery struct {
+	SourceRef string
+	TargetRef string
+
+	SourceProjectKey string
+	SourceSlug       string
+}
+
 // ResolveDefaultReviewers queries matching default reviewer conditions for a source and target ref
 // and resolves both individual reviewers and constituent reviewer group members into usernames.
 //
 // Branch names are normalized to fully qualified ref IDs, because Bitbucket matches
 // condition ref patterns against "refs/heads/..." and silently returns no conditions
-// for a bare branch name. The repository ID is resolved on a best-effort basis so
-// that repository-scoped conditions match; when it cannot be determined the query
-// still runs without it rather than failing the caller outright.
-func (service *Service) ResolveDefaultReviewers(ctx context.Context, projectKey, repositorySlug, sourceRef, targetRef string) ([]string, error) {
+// for a bare branch name. Repository IDs are resolved on a best-effort basis so that
+// repository-scoped conditions match; when one cannot be determined the query still
+// runs without it rather than failing the caller outright.
+func (service *Service) ResolveDefaultReviewers(ctx context.Context, projectKey, repositorySlug string, query DefaultReviewerQuery) ([]string, error) {
 	var sourceRefPtr, targetRefPtr *string
-	if normalized := NormalizeRefID(sourceRef); normalized != "" {
+	if normalized := NormalizeRefID(query.SourceRef); normalized != "" {
 		sourceRefPtr = &normalized
 	}
-	if normalized := NormalizeRefID(targetRef); normalized != "" {
+	if normalized := NormalizeRefID(query.TargetRef); normalized != "" {
 		targetRefPtr = &normalized
 	}
 
-	var repoIDPtr *string
-	if repoID, err := service.RepositoryID(ctx, projectKey, repositorySlug); err == nil && repoID != "" {
-		repoIDPtr = &repoID
+	targetRepoIDPtr := service.optionalRepositoryID(ctx, projectKey, repositorySlug)
+
+	// A fork pull request has its source branch in a different repository, and
+	// telling Bitbucket the target repository for both would describe a pull
+	// request that does not exist.
+	sourceRepoIDPtr := targetRepoIDPtr
+	if query.SourceProjectKey != "" && query.SourceSlug != "" &&
+		!(strings.EqualFold(query.SourceProjectKey, projectKey) && strings.EqualFold(query.SourceSlug, repositorySlug)) {
+		sourceRepoIDPtr = service.optionalRepositoryID(ctx, query.SourceProjectKey, query.SourceSlug)
 	}
 
-	conditions, err := service.GetDefaultReviewers(ctx, projectKey, repositorySlug, repoIDPtr, repoIDPtr, sourceRefPtr, targetRefPtr)
+	conditions, err := service.GetDefaultReviewers(ctx, projectKey, repositorySlug, sourceRepoIDPtr, targetRepoIDPtr, sourceRefPtr, targetRefPtr)
 	if err != nil {
 		return nil, err
 	}
@@ -566,6 +583,17 @@ func (service *Service) ResolveDefaultReviewers(ctx context.Context, projectKey,
 	}
 
 	return resolved, nil
+}
+
+// optionalRepositoryID resolves a repository ID for a condition query, yielding
+// nil when it cannot be determined. The ID sharpens condition matching but is
+// not required to ask the question, so a failure here must not fail the lookup.
+func (service *Service) optionalRepositoryID(ctx context.Context, projectKey, repositorySlug string) *string {
+	repoID, err := service.RepositoryID(ctx, projectKey, repositorySlug)
+	if err != nil || repoID == "" {
+		return nil
+	}
+	return &repoID
 }
 
 // namedUser covers the two generated user shapes reviewer groups are returned
