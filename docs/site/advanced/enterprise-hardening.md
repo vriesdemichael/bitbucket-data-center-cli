@@ -73,7 +73,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    ```bash
    export BB_DISABLE_STORED_CONFIG=1
    ```
-   Ensures that ephemeral CI/CD runners never touch disk or attempt to query desktop keyring daemons, reading authentication strictly from `BITBUCKET_TOKEN`.
+   Ensures that ephemeral CI/CD runners read authentication strictly from `BITBUCKET_TOKEN`, guaranteeing that no stored credential profile is read and no desktop keyring daemon is contacted.
 
 ### Socialized Developer Practices
 
@@ -308,9 +308,9 @@ bb auth status --json
 
 Confirm:
 - `.data.credential_storage`: Must report `keyring` (on workstations) or `environment` (in CI). If it reports `config-file-plaintext`, `BB_REQUIRE_KEYRING=1` is missing.
-- Check active git helper:
+- Check active git helper for your Bitbucket host:
   ```bash
-  git config --global --get credential.helper
+  git config --global --get "credential.https://bitbucket.example.com.helper"
   ```
 
 ### Helpdesk Troubleshooting Guide
@@ -318,7 +318,7 @@ Confirm:
 | Symptom / Error Message | Root Cause | Remediation |
 |---|---|---|
 | `read CA bundle: open ...: no such file or directory` | Imaging race condition: `BB_CA_FILE` was set before the CA certificate was written to disk. | Ensure the provisioning script copies the `.pem` file before setting the environment variable. |
-| `keyring is required but unavailable` | Running on a headless Linux host or remote SSH session without an active D-Bus session bus. | Launch a temporary D-Bus session: `eval $(dbus-launch --sh-syntax)` or use `BITBUCKET_TOKEN` for automation. |
+| `OS keyring is unavailable and keyring-backed storage is required` | Running on a headless Linux host or remote SSH session without an active D-Bus session bus. | Launch a temporary D-Bus session: `eval $(dbus-launch --sh-syntax)` or supply credentials via `BITBUCKET_TOKEN`. |
 | Git prompts for password on `git push`/`git pull` | Git credential helper is not scoped to the exact URL or scheme used by the remote. | Run `git remote -v` and configure: `bb auth setup-git --host <remote-url>`. |
 | `certificate signed by unknown authority` | `BB_CA_FILE` is not set, or a GUI IDE failed to inherit shell environment variables. | Set `BB_CA_FILE` in the IDE's `"env"` block or export it in `/etc/zshenv` / `/etc/profile.d/bb.sh`. |
 
@@ -340,7 +340,7 @@ Personal Access Tokens expire based on enterprise TTL policies (e.g. 90 days). W
 - **De-provisioning & Rollback**:
   ```bash
   # 1. Log out and remove secrets from the OS Keyring
-  bb auth logout https://bitbucket.example.com
+  bb auth logout --host https://bitbucket.example.com
 
   # 2. Remove git credential helper configuration
   git config --global --unset-all "credential.https://bitbucket.example.com.helper"
