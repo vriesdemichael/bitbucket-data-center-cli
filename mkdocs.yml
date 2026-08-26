@@ -62,6 +62,8 @@ nav:
       - Environment Variables: reference/environment.md
   - Advanced Topics:
       - Overview: advanced/index.md
+      - Enterprise Hardening: advanced/enterprise-hardening.md
+      - Security Architecture & Threat Model: advanced/threat-model.md
       - Repository Discovery and Server Switching: advanced/repository-discovery-and-server-switching.md
       - Bulk Operations: advanced/bulk-operations.md
       - Dry-Run Planning: advanced/dry-run-planning.md

@@ -1,7 +1,9 @@
 # Advanced Topics
 
-This section covers safety and automation topics beyond basic command usage.
+This section covers safety, enterprise governance, and automation topics beyond basic command usage.
 
+- [Enterprise Hardening](enterprise-hardening.md): fleet-wide deployment, enforced keyring storage, internal PKI, proxy traversal, and AI/MCP governance
+- [Security Architecture & Threat Model](threat-model.md): trust boundaries, threat vectors, mitigations, and honest enterprise gap tracker
 - [Repository Discovery and Server Switching](repository-discovery-and-server-switching.md): remote-based repo inference, precedence, and multi-server workflows
 - [Bulk Operations](bulk-operations.md): reviewed multi-repository policy workflows
 - [Dry-Run Planning](dry-run-planning.md): mutation previews, capability signaling, and safety guarantees
