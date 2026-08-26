@@ -428,14 +428,8 @@ func writeJSONList(writer io.Writer, payload any, limitReached bool) error {
 }
 
 func enforceNoArgsDefaults(root *cobra.Command) {
-	if root == nil {
-		return
-	}
 	var visit func(*cobra.Command)
 	visit = func(cmd *cobra.Command) {
-		if cmd == nil {
-			return
-		}
 		if cmd.Runnable() && cmd.Args == nil {
 			if !hasPositionalPlaceholder(cmd.Use) {
 				cmd.Args = cobra.NoArgs
