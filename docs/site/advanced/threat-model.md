@@ -2,50 +2,92 @@
 
 A formal security architecture, trust boundary analysis, and threat model for Chief Information Security Officers (CISOs), enterprise security architects, and compliance auditors evaluating `bb` (Bitbucket Data Center CLI).
 
-This document details:
-1. **Trust boundaries** across the developer workstation, local git repositories, enterprise network, and AI tooling.
-2. **Operating system policy enforcement realities** across macOS, Linux, and Windows.
-3. **Threat domains** evaluated through a **Threat $\leftrightarrow$ Mitigation $\leftrightarrow$ Audit $\leftrightarrow$ Residual Gap** triad.
-4. **Compliance matrix and risk treatment plan**, transparently linking to tracked GitHub issues.
+---
+
+## Document Metadata
+
+| Field | Value |
+|---|---|
+| **Document Version** | 1.1.0 |
+| **Target System** | `bb` (Bitbucket Data Center CLI) v2.10.x+ |
+| **Classification** | Public Security & Threat Analysis Whitepaper |
+| **Methodology** | STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege) |
+| **Effective Date** | August 2026 |
+| **Review Cadence** | Annual, or upon major architectural revision |
+
+### Scope & System Boundaries
+
+- **In-Scope**: The `bb` compiled binary runtime, local process execution, operating system keyring integration, Git credential helper protocol, local repository manipulation, network transport (TLS 1.2+, proxy traversal, custom CA handling), built-in MCP server (`bb ai mcp serve`), and release artifact distribution.
+- **Out-of-Scope**: Bitbucket Data Center server-side zero-day vulnerabilities, host operating system kernel compromise / rootkit, and the external data handling / privacy practices of third-party cloud LLM providers connected to developer IDEs.
 
 ---
 
-## 1. System Overview & Trust Boundaries
+## 1. Asset Inventory & Adversary Model
 
-`bb` operates as a client-side CLI and Model Context Protocol (MCP) server communicating directly with self-hosted Bitbucket Data Center instances.
+### Assets to Protect
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ DEVELOPER WORKSTATION / CI RUNNER (TRUST BOUNDARY 1)                        │
-│                                                                             │
-│  ┌──────────────┐   stdin pipe    ┌───────────────────────────────────────┐ │
-│  │ Shell / User │ ──────────────> │ bb CLI Process                        │ │
-│  └──────────────┘                 │                                       │ │
-│                                   │  - Argument parser (Cobra)            │ │
-│  ┌──────────────┐   stdio pipe    │  - Input validator (Fail-fast)        │ │
-│  │ IDE / Agent  │ <─────────────> │  - MCP Server (bb ai mcp serve)       │ │
-│  └──────────────┘                 │  - HTTP Transport (network.SafeClient)│ │
-│                                   └───────┬───────────────────────┬───────┘ │
-│                                           │                       │         │
-│                        D-Bus / DPAPI /    │                       │ git -c  │
-│                        Keychain API       │                       │ helper  │
-│                                           ▼                       ▼         │
-│                         ┌───────────────────────┐   ┌─────────────────────┐ │
-│                         │ OS Keyring Store      │   │ Git Engine (execgit)│ │
-│                         │ (TRUST BOUNDARY 2)    │   │ (TRUST BOUNDARY 3)  │ │
-│                         └───────────────────────┘   └─────────────┬───────┘ │
-└───────────────────────────────────────────────────────────────────┼─────────┘
-                                                                    │
-      HTTPS / REST API (TLS 1.2+)                                   │ Git-over-
-      (TRUST BOUNDARY 4)                                            │ HTTP/SSH
-                                                                    │
-                                    ▼                               ▼
-                 ┌──────────────────────────────────────────────────────┐
-                 │ BITBUCKET DATA CENTER ENTERPRISE INSTANCE            │
-                 │                                                      │
-                 │  - Reverse Proxy / Load Balancer (Internal PKI / CA) │
-                 │  - Bitbucket Core REST API & Git Services            │
-                 └──────────────────────────────────────────────────────┘
+| Asset ID | Asset Name | Description | Sensitivity |
+|---|---|---|---|
+| **A-1** | **Authentication Credentials** | Personal Access Tokens (PATs) and HTTP Basic credentials used to authenticate API and Git operations. | **Critical** (Confidentiality & Integrity) |
+| **A-2** | **Source Code & Working Trees** | Proprietary source code in cloned repositories, working tree diffs, pull request comments, and file contents. | **High** (Confidentiality & Integrity) |
+| **A-3** | **Repository Gate Integrity** | Pull request review approvals, branch merge gates, and commit history on the Bitbucket server. | **High** (Integrity) |
+| **A-4** | **Executable Integrity** | Authenticity and provenance of the compiled `bb` binary running on developer workstations. | **Critical** (Integrity) |
+
+### Adversary Profiles
+
+| Adversary | Description | Access Level & Capabilities |
+|---|---|---|
+| **ADV-1: Local Unprivileged User** | Multi-user jump host user, malicious developer, or unprivileged local background process. | Can read `/proc/<pid>/cmdline`, process table (`ps aux`), unencrypted filesystem paths, and user environment variables. |
+| **ADV-2: Network Interceptor** | Man-in-the-Middle (MitM) attacker on local network, untrusted forward proxy, or compromised DNS. | Can intercept, inspect, or tamper with outbound network traffic if TLS validation is absent or compromised. |
+| **ADV-3: Prompt-Injected AI Agent** | Autonomous AI developer tool (Cursor, VS Code Agent) manipulated via indirect prompt injection in pull request diffs or comments. | Can invoke exposed Model Context Protocol (MCP) tools over stdio to read data or trigger mutations. |
+| **ADV-4: Upstream Supply Chain Attacker** | Adversary targeting upstream dependencies, build runners, or release distribution channels. | Can attempt to inject malicious code into dependencies or tamper with published release archives. |
+
+---
+
+## 2. System Architecture & Trust Boundaries
+
+The following architecture diagram models all six trust boundaries across the workstation, local repositories, corporate network, IDE AI integration, and build pipeline:
+
+```mermaid
+flowchart TB
+    subgraph TB1["TB-1: Process & Terminal Environment"]
+        User["Developer / Shell"]
+        CLI["bb Process (Cobra / Transport)"]
+        User -- "stdin pipe (--token-stdin)" --> CLI
+    end
+
+    subgraph TB2["TB-2: OS Keyring Store"]
+        Vault[("OS Keyring: DPAPI / Keychain / Secret Service")]
+        CLI -- "Store / Retrieve Secret" --> Vault
+    end
+
+    subgraph TB3["TB-3: Git Working Tree"]
+        GitEngine["Git Engine (child process)"]
+        RepoConfig[".git/config (Local Clone)"]
+        CLI -- "Dynamic Credential" --> GitEngine
+        GitEngine --> RepoConfig
+    end
+
+    subgraph TB4["TB-4: Network Perimeter"]
+        Proxy["Corporate Forward Proxy"]
+        BBServer["Bitbucket Data Center Instance"]
+        CLI -- "REST API (TLS 1.2+ / Internal CA)" --> Proxy --> BBServer
+        GitEngine -- "Git-over-HTTP" --> Proxy --> BBServer
+    end
+
+    subgraph TB5["TB-5: IDE & AI Agent Surface"]
+        IDE["IDE / Agent (VS Code, Cursor)"]
+        LLMProvider["LLM Cloud API (External)"]
+        CLI -- "MCP stdio pipe (bb ai mcp serve)" --> IDE
+        IDE -. "Everyday Flow: Diff & Code Snippets" .-> LLMProvider
+    end
+
+    subgraph TB6["TB-6: Software Supply Chain"]
+        GHA["GitHub Actions Release Workflow"]
+        Sigstore[("Sigstore / Cosign OIDC")]
+        GHA -- "Keyless Sign & Attest" --> Sigstore
+        Sigstore -. "Verify Binary Provenance" .-> CLI
+    end
 ```
 
 ### Trust Boundary Definitions
@@ -53,196 +95,211 @@ This document details:
 | Boundary | Components | Trust Level | Security Invariants |
 |---|---|---|---|
 | **TB-1: Process & Terminal** | `bb` runtime process, memory, arguments, stdout/stderr | Trusted Local User | Zero secret leakage in process argument table (`/proc/<pid>/cmdline`). Zero telemetry. |
-| **TB-2: OS Keyring Store** | Windows Credential Manager, macOS Keychain, Linux Secret Service | System Security Enclave | Secrets held encrypted at rest. Immediate failure if keyring is missing when `BB_REQUIRE_KEYRING=1` is set. |
+| **TB-2: OS Keyring Store** | Windows Credential Manager, macOS Keychain, Linux Secret Service | System Security Enclave | Secrets held encrypted at rest. Immediate failure if plaintext fallback is needed when `BB_REQUIRE_KEYRING=1` is set. |
 | **TB-3: Git Working Tree** | Local git clone, `.git/config`, `git` CLI child processes | Semi-Trusted Filesystem | Zero credentials persisted into repository `.git/config`. Host-scoped credential querying. |
 | **TB-4: Network Perimeter** | Corporate forward proxies, internal enterprise PKI, Bitbucket DC | Untrusted / Inspected Network | Minimum TLS 1.2. Additive corporate CA trust pool. Strict non-interactive timeout enforcement. |
-| **TB-5: AI / MCP Surface** | IDE agent (Cursor, VS Code, Claude Desktop), stdio RPC pipe | Constrained Automation | Safe-by-default tool gating. Unsafe tools withheld without explicit `--yolo`. Capability allowlisting. |
+| **TB-5: AI / MCP Surface** | IDE agent (Cursor, VS Code, Claude Desktop), stdio RPC pipe | Constrained Automation | Safe-by-default tool gating. Unsafe tools withheld without explicit `--yolo`. Dedicated read-only tokens. |
 | **TB-6: Supply Chain** | GitHub Actions builder, release packaging, Sigstore/Cosign | Cryptographic Verification | Keyless OIDC signatures, SLSA build provenance attestations, attested SPDX 2.3 SBOM. |
 
 ---
 
-## 2. Multi-OS Policy Enforcement Realities
+## 3. The Everyday Source-Code-to-LLM Data Flow
 
-Security auditors must understand how enterprise policy enforcement mechanisms vary across the three primary operating systems in developer fleets:
+A primary question in enterprise security evaluations of AI-enabled developer tooling is: **what proprietary data leaves the workstation, and to whom is it transmitted?**
 
-| Operating System | Fleet Management Tooling | Native Policy Channel | Credential Enclave | Enforcement Reality & Hardening Level |
-|---|---|---|---|---|
-| **Windows** | Microsoft Intune, SCCM, Active Directory Group Policy (GPO) | **Windows Registry (`HKLM\Software\Policies\bb`)** | Windows Credential Manager (DPAPI) | **Highest**. Standard enterprise users lack permissions to write to `HKLM`. Policies enforced via GPO/Registry are tamper-proof against unprivileged users. |
-| **macOS** | Jamf Pro, Kandji, Microsoft Intune for Mac, Apple MDM | **Configuration Profiles (`/Library/Managed Preferences/`)** or `/etc/zshenv` | Apple Keychain (`security` framework) | **High**. Managed Preferences deployed via MDM are root-owned and cannot be modified by non-admin users. Shell variables deployed to `/etc/zshenv` apply system-wide across all zsh sessions. |
-| **Linux (Workstations)** | Ansible, Puppet, SaltStack, Chef, Red Hat Satellite | **Root-owned `/etc/bb/config.yaml`** or `/etc/profile.d/bb.sh` | Secret Service D-Bus (GNOME Keyring / KWallet) | **Moderate to High**. On multi-user jump boxes where developers lack `sudo`, root-owned configs are immutable. On developer laptops where engineers have `sudo`, environment-based enforcement is advisory without root-owned config files. |
-| **Linux (CI Runners)** | Kubernetes, Docker, GitHub Actions / GitLab Runners | Container Environment (`BITBUCKET_TOKEN`) | Ephemeral Process Memory (`/dev/shm`) | **Special Case**. Headless runners lack desktop D-Bus daemons. Forcing desktop keyrings in CI fails; `BITBUCKET_TOKEN` must be injected into memory, bypassing disk entirely. |
+### The MCP Channel Architecture
+When `bb ai mcp serve` runs, it communicates strictly over standard input/output (`stdio`) with the local IDE process (e.g. VS Code, Cursor). 
+
+```
+[Bitbucket DC] ──(HTTPS/Internal CA)──> [bb CLI (Local)] ──(stdio RPC)──> [Local IDE] ──(HTTPS/IDE Config)──> [Cloud LLM]
+```
+
+1. **Local CLI Boundary**: `bb` sends **zero external telemetry** and initiates no network requests to AI providers. Its network calls are strictly directed to your Bitbucket server.
+2. **The Stdio Pipe**: When an AI agent executes tools like `get_pr_diff`, `get_pull_request`, or `list_pr_comments`, `bb` fetches the data from Bitbucket and prints structured JSON to `stdout`.
+3. **The IDE & Cloud LLM Transmission**: The IDE consumes this output and includes the source code diffs in prompt contexts sent to the developer's configured LLM provider (e.g. OpenAI, Anthropic, or internal corporate Ollama/vLLM endpoints).
+
+### Hardening the By-Design Flow
+To govern this everyday flow:
+- **Dedicated Read-Only Token**: Bind `bb ai mcp serve` to a service token with read-only rights (`--token <ro-pat>`), ensuring the agent cannot execute mutations on the Bitbucket server even if prompted.
+- **Explicit Tool Allowlists**: Constrain exposed tools using `--tools get_pull_request,list_pull_requests,get_pr_diff,list_pr_comments,add_pr_comment`.
+- **Egress Governance**: Outbound LLM network traffic is managed at the IDE layer (via corporate proxy, DLP filtering, or private Azure OpenAI / AWS Bedrock VPC endpoints).
 
 ---
 
-## 3. Threat Domain Analysis
+## 4. Multi-OS Policy Enforcement Realities
 
-Every security domain is evaluated using the **Threat $\leftrightarrow$ Mitigation $\leftrightarrow$ Audit $\leftrightarrow$ Residual Gap** triad.
+Enterprise policy enforcement mechanisms differ fundamentally across operating systems:
+
+| Operating System | Fleet Tooling | Policy Channel (Today) | Planned Policy Channel ([#420](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420)) | Enforcement Posture Today |
+|---|---|---|---|---|
+| **Windows** | Microsoft Intune / SCCM / Active Directory GPO | System Environment Variables (`[Environment]::SetEnvironmentVariable(..., "Machine")`) | **Windows Registry (`HKLM\Software\Policies\bb`)** | **Advisory**. While unprivileged users cannot edit `HKLM`, setting machine environment variables can be overridden if a developer defines the same variable at `"User"` scope. True enforcement requires reading `HKLM` directly. |
+| **macOS** | Jamf Pro, Kandji, Apple MDM | System Shell Profiles (`/etc/zshenv`) | **Managed Preferences (`/Library/Managed Preferences/com.corp.bb.plist`)** | **Advisory**. Root-owned `/etc/zshenv` applies to terminal sessions, but macOS GUI applications do not inherit it. |
+| **Linux (Workstations)** | Ansible, Puppet, SaltStack, Red Hat Satellite | Shell Environment (`/etc/profile.d/bb.sh`) | **Root-owned `/etc/bb/config.yaml` (`chmod 644 root:root`)** | **Advisory on developer laptops** where engineers possess `sudo` privileges; **High on multi-user jump hosts** where non-admin users cannot alter root files. |
+| **Linux (CI Runners)** | Kubernetes, Docker, Runner Daemons | Ephemeral Environment Variables (`BITBUCKET_TOKEN`, `BB_DISABLE_STORED_CONFIG=1`) | Container Image Environment | **High**. Containers lack desktop keyrings; `BB_DISABLE_STORED_CONFIG=1` guarantees disk storage is never touched. |
+
+---
+
+## 5. STRIDE Threat Domain Analysis
+
+Each domain is analyzed using the **Threat (STRIDE) ↔ Architectural Mitigation ↔ Audit Test Procedure ↔ Residual Gap** triad.
 
 ---
 
 ### Domain 1: Secret Hygiene & Storage at Rest (TB-1 & TB-2)
 
-#### 1. Threat & Attacker Vector
-On shared jump hosts, terminal servers, or developer laptops, unprivileged local users or malicious processes run `ps aux` or inspect `/proc/<pid>/cmdline` to harvest tokens passed as flags (`--token <val>`). EDR sensors and shell history files (`~/.bash_history`) record arguments in plaintext. Additionally, if an OS keyring is unavailable, tools may silently fall back to unencrypted files on disk (`~/.config/bb/config.yaml`), leaving credentials vulnerable to info-stealer malware.
+#### 1. Threat Analysis (STRIDE: Information Disclosure)
+- **Attacker Vector (ADV-1)**: Unprivileged local users, compromised background processes, or EDR agents scrape secrets passed via CLI flags (`--token <val>`) through `ps aux` or `/proc/<pid>/cmdline`.
+- **Plaintext Fallback Risk**: If an OS keyring is unavailable, CLI tools may silently fall back to unencrypted disk files:
+  - Linux: `~/.config/bb/config.yaml`
+  - macOS: `~/Library/Application Support/bb/config.yaml`
+  - Windows: `%AppData%\bb\config.yaml`
 
-#### 2. Current Architectural Mitigations
-- **Mandatory Stdin Piping**: `bb auth login` supports `--token-stdin` and `--password-stdin`, ingesting secrets strictly from standard input.
-- **Process Table Warnings**: Supplying `--token` or `--password` as CLI flags prints an explicit warning to `stderr` highlighting process-table exposure ([ADR-047](file:///C:/Users/vries/.gemini/antigravity/worktrees/bitbucket-server-cli/investigate_issue_three_ninety/docs/site/adr/047-credential-input-and-keyring-enforcement.md)).
-- **Enforced Keyring Storage**: Setting `BB_REQUIRE_KEYRING=1` converts any keyring failure into a fatal error before writing or reading secrets, preventing silent fallback to plaintext files.
-- **Headless CI Exemption**: In CI/CD pipelines, `BITBUCKET_TOKEN` is read directly from the process environment and never written to disk.
+#### 2. Architectural Mitigations
+- **Mandatory Stdin Ingestion**: `bb auth login` supports `--token-stdin` and `--password-stdin`, reading secrets strictly over standard input.
+- **Process Table Warning**: Supplying `--token` or `--password` as CLI flags prints an explicit warning to `stderr` alerting the operator ([ADR-047](../adr/047-credential-input-and-keyring-enforcement.md)).
+- **Enforced Keyring Storage**: Setting `BB_REQUIRE_KEYRING=1` causes `bb` to hard-refuse to read from or write to the plaintext configuration fallback.
+- **Headless Disabling**: Setting `BB_DISABLE_STORED_CONFIG=1` in CI/CD completely skips stored config reads and keyring access, reading solely from `BITBUCKET_TOKEN`.
 
-#### 3. Audit & Verification Command
-Inspect the credential storage mechanism currently in use:
-
+#### 3. Audit Test Procedure
 ```bash
 bb auth status --json
 ```
+*Audit Assertion*: Verify that `.data.credential_storage` equals `keyring` (on workstations) or `environment` (in CI runners), and never `config-file-plaintext`.
 
-Assert that `.data.credential_storage` equals `keyring` (on workstations) or `environment` (in CI runners), and never `config-file-plaintext`.
-
-#### 4. Residual Gap & Tracked Issue
-- **The "Advisory" Environment Limitation**: Currently, `BB_REQUIRE_KEYRING=1` is an environment variable. A local user can unset it (`unset BB_REQUIRE_KEYRING`) to bypass the check. True enterprise enforcement requires a system-level configuration tier (`/etc/bb/config.yaml` or Windows Registry `HKLM\Software\Policies\bb`) that cannot be modified by unprivileged users.
+#### 4. Residual Gap & Tracking
+- **Limitation**: `BB_REQUIRE_KEYRING=1` is an environment variable that can be unset by a local user. True enterprise enforcement requires a system-level configuration tier.
 - **Tracked Issue**: **[Issue #420: feat: system-wide configuration and policy enforcement](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420)**.
 
 ---
 
 ### Domain 2: Git Transport & Repository Boundaries (TB-3)
 
-#### 1. Threat & Attacker Vector
-Traditional git tools frequently persist authentication tokens directly into local repository configurations (`.git/config` via `http.extraHeader`). When repositories are archived, copied, or pushed, those tokens leak. Furthermore, an unscoped `http.extraHeader` in `.git/config` is attached to every HTTP request, sending Bitbucket credentials to third-party remotes (e.g. GitHub or public mirrors).
+#### 1. Threat Analysis (STRIDE: Information Disclosure, Elevation of Privilege)
+- **Attacker Vector (ADV-1, ADV-2)**: Persisting tokens into `.git/config` (via legacy `http.extraHeader`) leaks credentials whenever repositories are archived, copied, or pushed. Furthermore, an unscoped `http.extraHeader` is transmitted to any HTTP remote, leaking internal Bitbucket tokens to external remotes.
 
-#### 2. Current Architectural Mitigations
-- **Host-Scoped Credential Helper**: `bb auth setup-git` writes a credential helper rule scoped strictly to the Bitbucket hostname into the global `~/.gitconfig` ([ADR-044](file:///C:/Users/vries/.gemini/antigravity/worktrees/bitbucket-server-cli/investigate_issue_three_ninety/docs/site/adr/044-git-credential-helper-instead-of-persisted-credentials.md)):
+#### 2. Architectural Mitigations
+- **Host-Scoped Credential Helper**: `bb auth setup-git` writes a credential helper rule scoped strictly to the Bitbucket hostname into the global `~/.gitconfig` ([ADR-044](../adr/044-git-credential-helper-instead-of-persisted-credentials.md)):
   ```ini
   [credential "https://bitbucket.example.com"]
-  	helper = !"bb" auth git-credential
+  	helper = !"/usr/local/bin/bb" auth git-credential
   ```
-- **Zero Repository Storage**: Cloned repositories contain zero credentials or tokens in `.git/config`.
-- **Instant Revocation**: If a token is revoked in Bitbucket or removed via `bb auth logout`, all local clones immediately lose access without requiring repository cleanup.
+- **Zero Repository Footprint**: Cloned repositories contain zero credentials or tokens in their local `.git/config`.
+- **Instant Revocation**: If a token is revoked in Bitbucket or removed via `bb auth logout`, all local clones immediately lose access without requiring manual git cleanup.
 
-#### 3. Audit & Verification Command
-Verify that a repository contains no persisted extra headers:
-
+#### 3. Audit Test Procedure
 ```bash
 git config --local --get http.extraHeader
 ```
-
-A properly configured repository returns an empty result (exit code 1).
+*Audit Assertion*: Command exits with non-zero status (no extra headers found).
 
 ---
 
 ### Domain 3: Network Perimeter, Proxies & Internal PKI (TB-4)
 
-#### 1. Threat & Attacker Vector
-Corporate forward proxies (Zscaler, Blue Coat, Palo Alto) inspect outbound HTTPS traffic by generating certificates signed by an internal enterprise root CA. Tools that verify certificates only against public Mozilla trust roots fail with `x509: certificate signed by unknown authority`. Developers under deadline pressure may attempt to bypass verification by disabling TLS checks.
+#### 1. Threat Analysis (STRIDE: Information Disclosure, Tampering)
+- **Attacker Vector (ADV-2)**: Interception proxies re-signing traffic using internal enterprise root CAs cause certificate trust failures. Developers may attempt to bypass errors using `--insecure-skip-verify`.
 
-#### 2. Current Architectural Mitigations
-- **Additive Corporate CA Trust Pool**: `BB_CA_FILE` / `--ca-file` appends the internal root CA bundle directly to the operating system's trust pool (`x509.SystemCertPool()`). Public roots remain valid (ensuring release verification against GitHub continues to work) while trusting the internal Bitbucket host.
-- **Corporate Proxy Support**: Natively honors `HTTPS_PROXY`, `HTTP_PROXY`, and `NO_PROXY` via Go's cloned `http.DefaultTransport`.
-- **Minimum TLS 1.2 Enforced**: Hardcoded `tlsConfig.MinVersion = tls.VersionTLS12`.
-- **Zero External Telemetry**: Architectural invariant documented in [SECURITY.md](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md). `bb` makes zero network calls to telemetry or analytics services.
+#### 2. Architectural Mitigations
+- **Additive Corporate CA Trust Pool**: `BB_CA_FILE` appends the internal CA bundle to `x509.SystemCertPool()`, preserving public root verification while trusting the internal Bitbucket host.
+- **Proxy Traversal**: Inherits `HTTPS_PROXY`, `HTTP_PROXY`, and `NO_PROXY` directly from Go's `http.DefaultTransport`.
+- **TLS 1.2+ Enforced**: Pinned minimum version `tlsConfig.MinVersion = tls.VersionTLS12`.
+- **Zero Telemetry**: Guaranteed zero external analytics or metrics calls ([SECURITY.md](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md)).
 
-#### 3. Audit & Verification Command
-Inspect the active TLS configuration and proxy routing:
-
+#### 3. Audit Test Procedure
 ```bash
 bb --log-level debug --log-format jsonl repo list --limit 1
 ```
+*Audit Assertion*: Verify that the connection succeeds over TLS 1.2+ and routes through the designated `HTTPS_PROXY`.
 
-#### 4. Residual Gap & Tracked Issue
-- **Lack of Mutual TLS (mTLS) Client Certificates**: In zero-trust networks where reverse proxies require client certificates at the TLS layer before granting ingress, `bb` cannot authenticate because it lacks `--client-cert` and `--client-key` support.
+#### 4. Residual Gap & Tracking
+- **Limitation**: In zero-trust networks requiring client certificates at the TLS layer before reverse proxy ingress, `bb` cannot authenticate because it lacks mutual TLS (mTLS) client certificate support.
 - **Tracked Issue**: **[Issue #422: feat: mutual TLS (mTLS) client certificate support](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/422)**.
 
 ---
 
 ### Domain 4: Autonomous AI & MCP Server Governance (TB-5)
 
-#### 1. Threat & Attacker Vector
-When autonomous AI agents (Cursor, VS Code Agent, Claude Desktop) are integrated via `bb ai mcp serve`, prompt injection vulnerabilities in untrusted source code could trick the agent into performing destructive actions (e.g. deleting repositories, declining pull requests, or exfiltrating confidential source code across unrelated projects).
+#### 1. Threat Analysis (STRIDE: Tampering, Elevation of Privilege, Information Disclosure)
+- **Attacker Vector (ADV-3)**: Prompt injection in pull request diffs or comments manipulates an AI agent into performing destructive mutations (approving unauthorized PRs, merging unvetted code, modifying build status) or querying sensitive repositories across unrelated projects.
 
-#### 2. Current Architectural Mitigations
-- **Safe vs. Unsafe Tool Isolation**: Mutating and destructive operations (deleting branches, declining PRs) are withheld by default ([ADR-039](file:///C:/Users/vries/.gemini/antigravity/worktrees/bitbucket-server-cli/investigate_issue_three_ninety/docs/site/adr/039-built-in-mcp-server-with-host-scoping-and-token-restriction.md)). Only safe, low-blast-radius tools are exposed unless `--yolo` / `--allow-writes` is explicitly configured.
-- **Dedicated Read-Only Token Scoping**: Running `bb ai mcp serve --token <ro-pat>` forces the MCP server to run under a dedicated token with read-only permissions on Bitbucket Server, completely decoupled from the developer's personal credentials.
-- **Explicit Capability Allowlists**: Administrators can constrain the exposed MCP surface via `--tools` or `--exclude`.
-- **Multi-Host Safety**: `bb ai mcp serve` refuses to start without an explicit `--host` parameter if multiple Bitbucket instances are configured, preventing accidental execution against production.
+#### 2. Architectural Mitigations
+- **Safe vs. Unsafe Tool Isolation**: High-impact mutating operations (`submit_pr_review`, `merge_pull_request`, `enable_auto_merge`, `set_build_status`) are withheld by default ([ADR-039](../adr/039-built-in-mcp-server-with-host-scoping-and-token-restriction.md)). Crucially, withholding `submit_pr_review` prevents an agent from self-approving its own pull requests.
+- **Dedicated Read-Only Token Scoping**: Running `bb ai mcp serve --token <ro-pat>` forces the MCP server to execute under a service token with read-only server rights.
+- **Explicit Capability Allowlists**: Constraining exposed tools via `--tools` or `--exclude`.
 
-#### 3. Audit & Verification Command
-Inspect exposed MCP tools and gating status:
-
+#### 3. Audit Test Procedure
 ```bash
 bb ai mcp tools
 ```
+*Audit Assertion*: Confirm that unsafe tools are marked as withheld unless explicitly authorized.
 
-#### 4. Residual Gap & Tracked Issue
-- **Instance-Wide Blast Radius & Lack of Audit Logs**: Currently, `--host` scopes to the entire Bitbucket instance. An agent with `list_repositories` can inspect any repository the token can reach across the company. Additionally, MCP stdio communication lacks a structured JSONL audit stream for enterprise SIEM ingestion.
+#### 4. Residual Gap & Tracking
+- **Limitation**: `bb ai mcp serve` scopes to the entire Bitbucket server instance. Agents cannot be restricted to a single project or repository, and stdio RPC lacks a dedicated SIEM audit stream.
 - **Tracked Issue**: **[Issue #423: feat: MCP server workspace scoping and audit logging](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/423)**.
 
 ---
 
 ### Domain 5: Supply Chain & Software Distribution (TB-6)
 
-#### 1. Threat & Attacker Vector
-Compromised dependencies, tampered release archives, or rogue in-place updates on developer workstations could introduce malicious code into the development lifecycle.
+#### 1. Threat Analysis (STRIDE: Tampering)
+- **Attacker Vector (ADV-4)**: Compromised build runners, malicious upstream dependencies, or tampered release packages could introduce backdoors into developer environments. Additionally, running `bb update` on managed machines bypasses package managers and change approval boards.
 
-#### 2. Current Architectural Mitigations
-- **Sigstore / Cosign Keyless Signing**: Every release archive is signed via OIDC identity bound directly to `.github/workflows/release.yml@refs/heads/main`.
-- **GitHub Build Provenance Attestations**: Build origin is verifiable via `gh attestation verify`.
-- **Attested SPDX 2.3 SBOM**: Every release publishes `sbom.spdx.json`, attested against each released binary.
-- **Update Verification**: `bb update` cryptographically verifies the Sigstore bundle before replacing the running binary.
+#### 2. Architectural Mitigations
+- **Sigstore / Cosign Keyless Signing**: Releases are signed via OIDC identity bound to `.github/workflows/release.yml@refs/heads/main`.
+- **GitHub Build Provenance**: Provenance attestations verifiable via `gh attestation verify`.
+- **Attested SPDX 2.3 SBOM**: Every release publishes `sbom.spdx.json`, attested against each compiled binary.
 
-#### 3. Audit & Verification Command
-Verify release integrity using Cosign:
-
+#### 3. Audit Test Procedure
 ```bash
+VERSION="2.10.0"
 cosign verify-blob \
-  --bundle bb_linux_amd64.tar.gz.sigstore.json \
+  --bundle "bb_${VERSION}_linux_amd64.tar.gz.sigstore.json" \
   --certificate-identity 'https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main' \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-  bb_linux_amd64.tar.gz
+  "bb_${VERSION}_linux_amd64.tar.gz"
 ```
 
-#### 4. Residual Gap & Tracked Issue
-- **Self-Update Kill-Switch & Mirror Support**: Managed workstation fleets require disabling `bb update` so users cannot bypass package managers (`apt`, `dnf`, WinGet) or change approval boards. Additionally, air-gapped networks require pointing updates to internal mirrors (Artifactory/Nexus).
+#### 4. Residual Gap & Tracking
+- **Limitation**: `bb update` lacks an administrative killswitch (`BB_DISABLE_UPDATE=1`) and cannot be pointed to internal air-gapped mirrors.
 - **Tracked Issue**: **[Issue #421: feat: enterprise update controls and mirror support](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/421)**.
 
 ---
 
 ### Domain 6: Enterprise Identity & Federation (SSO)
 
-#### 1. Threat & Attacker Vector
-Static personal access tokens with indefinite lifespans present risk if users depart or credentials leak. Organizations seek centralized Single Sign-On (SSO) and immediate token revocation through identity providers (Okta, Microsoft Entra ID, PingFederate).
+#### 1. Threat Analysis (STRIDE: Spoofing, Elevation of Privilege)
+- **Attacker Vector (ADV-1)**: Static personal access tokens with infinite lifespans escape centralized IdP lifecycle de-provisioning.
 
-#### 2. Current Architectural Mitigations
-- **Fine-Grained Scoping & TTL**: `bb auth token create` supports explicit expiration dates (`--expiry-days`) and project-level permission boundaries.
-- **Immediate Server-Side Revocation**: Tokens revoked in Bitbucket Server immediately invalidate all CLI and git helper access.
+#### 2. Architectural Mitigations
+- **Scoped TTL Tokens**: `bb auth token create --expiry-days <N>` supports time-bound tokens.
+- **Immediate Invalidation**: Tokens revoked in Bitbucket Server immediately invalidate all CLI and git operations.
 
-#### 3. Audit & Verification Command
-List active Personal Access Tokens and their expiration status:
-
+#### 3. Audit Test Procedure
 ```bash
 bb auth token list
 ```
 
-#### 4. Residual Gap & Tracked Issue
-- **Bitbucket Data Center OAuth 2.0 Architectural Constraints**: Unlike GitHub.com (which provides a centralized OAuth App ID), Bitbucket Data Center instances ship with **zero configured OAuth clients**. Non-admin users cannot create clients (`POST /rest/oauth2/latest/client` returns `401 Unauthorized`), and dynamic registration (RFC 7591) is unsupported. Supporting a browser login flow requires extensive server-administrator changes (provisioning an Incoming Link / OAuth consumer and distributing the `client_id`). Headless agents and CI runners must continue to use PATs or `BITBUCKET_TOKEN`.
+#### 4. Residual Gap & Tracking
+- **Limitation**: Bitbucket Data Center ships with zero configured OAuth clients, and non-admin users cannot create them. Enabling a browser OAuth flow requires extensive server-administrator changes.
 - **Tracked Issue**: **[Issue #424: feat: opt-in OAuth 2.0 browser login for enterprise SSO](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/424)**.
 
 ---
 
-## 4. Compliance Matrix & Risk Treatment Plan
+## 6. Compliance Matrix & Risk Treatment Plan
 
-| Security Control Requirement | Regulatory Framework | Current Implementation State | Tracked Backlog Issue |
-|---|---|---|---|
-| **System-Wide Policy Locking** | CIS Benchmark §1.1, NIST SP 800-53 AC-3 | Supported via user env (`BB_REQUIRE_KEYRING=1`); needs root-owned `/etc/bb` / Windows Registry GPO hierarchy. | [#420](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420) |
-| **Controlled Fleet Software Updates** | NIST SP 800-53 SI-2, ISO 27001 A.12.5.1 | Cryptographically verified via Sigstore; needs `BB_DISABLE_UPDATE=1` killswitch for managed fleets. | [#421](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/421) |
-| **Mutual TLS (mTLS) Ingress** | Zero Trust Architecture (NIST SP 800-207) | Internal root CAs supported via `BB_CA_FILE`; client certificates currently unsupported. | [#422](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/422) |
-| **AI Agent Least Privilege & Audit** | OWASP Top 10 for LLM (LLM01 / LLM06) | Safe/unsafe tool gating and `--token` scoping supported; needs `--project`/`--repo` scoping and JSONL audit stream. | [#423](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/423) |
-| **Centralized Identity Federation** | NIST SP 800-63B, CIS Benchmark §5.2 | Scoped PATs with TTL supported; browser OAuth flow requires Bitbucket DC admin consumer provisioning. | [#424](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/424) |
+| Threat ID | Threat Description | Regulatory Mapping | Residual Risk | Risk Treatment | Test Procedure | Tracked Issue |
+|---|---|---|---|---|---|---|
+| **T-1** | Process table secret sniffing & plaintext disk fallback | SOC 2 CC6.1, ISO 27001:2022 A.8.24, NIST SP 800-53 AC-3 | **Medium** | Mitigate via Keyring enforcement & stdin piping; full resolution requires system config tier. | `bb auth status --json` | [#420](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420) |
+| **T-2** | Repository secret bleed & cross-remote credential leakage | SOC 2 CC6.6, ISO 27001:2022 A.8.12 | **Low** | Mitigated via host-scoped Git credential helper (`bb auth setup-git`). | `git config --local --get http.extraHeader` | — |
+| **T-3** | Inability to traverse mutual TLS (mTLS) ingress | NIST SP 800-207 (Zero Trust Architecture), SC-8 | **Medium** | Backlog feature; requires client cert/key flags in transport. | `bb repo list` behind mTLS | [#422](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/422) |
+| **T-4** | Prompt-injected AI agent executing unauthorized mutations | OWASP Top 10 LLM (2025 LLM01, LLM06), SOC 2 CC6.8 | **Medium** | Mitigate via safe/unsafe tool withholding; requires workspace bounding & audit logging. | `bb ai mcp tools` | [#423](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/423) |
+| **T-5** | Unmanaged binary updates breaking package manager state | ISO 27001:2022 A.8.19, NIST SP 800-53 SI-2 | **Low** | Backlog feature; requires `BB_DISABLE_UPDATE=1` killswitch for fleets. | `bb update` on managed machine | [#421](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/421) |
+| **T-6** | Unfederated static token lifecycle management | CIS Controls v8 5.2, NIST SP 800-63B | **Medium** | Mitigate via scoped TTL PATs; browser flow requires Bitbucket DC admin configuration. | `bb auth token list` | [#424](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/424) |
 
 ---
 
-## 5. Security Invariants Summary
+## 7. Security Invariants Summary
 
-- **Strict Non-Interactive CLI Contract ([ADR-054](file:///C:/Users/vries/.gemini/antigravity/worktrees/bitbucket-server-cli/investigate_issue_three_ninety/docs/site/adr/054-strict-non-interactive-cli-contract.md))**: `bb` never prompts on stdin for confirmation or interactive surveys, guaranteeing zero hanging processes in automation or CI/CD pipelines.
+- **Strict Non-Interactive CLI Contract ([ADR-054](../adr/054-strict-non-interactive-cli-contract.md))**: `bb` never prompts on stdin for confirmation or surveys, guaranteeing zero hanging processes in automation or CI/CD pipelines.
 - **Zero External Telemetry ([SECURITY.md](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md))**: `bb` sends no telemetry, metrics, or usage statistics to any third-party server.
-- **Structured Error Taxonomy ([ADR-011](file:///C:/Users/vries/.gemini/antigravity/worktrees/bitbucket-server-cli/investigate_issue_three_ninety/docs/site/adr/011-error-taxonomy-and-cli-exit-contract.md), [ADR-046](file:///C:/Users/vries/.gemini/antigravity/worktrees/bitbucket-server-cli/investigate_issue_three_ninety/docs/site/adr/046-json-error-envelope-on-the-failure-path.md))**: Fatal failures emit a predictable JSON error envelope with categorized error taxonomy (`validation`, `auth`, `not_found`, `conflict`, `system`).
+- **Structured Error Taxonomy ([ADR-011](../adr/011-error-taxonomy-and-cli-exit-contract.md), [ADR-046](../adr/046-json-error-envelope-on-the-failure-path.md))**: Fatal failures emit a predictable JSON error envelope with categorized error taxonomy (`validation`, `auth`, `not_found`, `conflict`, `system`).
