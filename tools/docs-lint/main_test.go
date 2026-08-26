@@ -258,6 +258,11 @@ func TestLintMarkdownDialectChecks(t *testing.T) {
 			content: "Download `bb_linux_amd64.tar.gz` from releases.",
 			problem: "missing a version segment",
 		},
+		{
+			name:    "flags unrendered LaTeX math",
+			content: "Threat $\\leftrightarrow$ Mitigation $\\leftrightarrow$ Audit",
+			problem: "unrendered LaTeX math",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -271,6 +276,22 @@ func TestLintMarkdownDialectChecks(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("accepts escaped dollar and inline code", func(t *testing.T) {
+		content := "Cost is \\$100, schema is `$schema`, and subshell is `eval $(dbus-launch)`.\n"
+		findings, _ := lintMarkdown("test.md", content)
+		if len(findings) != 0 {
+			t.Fatalf("expected 0 findings, got %+v", findings)
+		}
+	})
+
+	t.Run("honours expect-invalid directive for dialect check", func(t *testing.T) {
+		content := "<!-- docs-lint: expect-invalid -->\nThreat $\\leftrightarrow$ Mitigation\n"
+		findings, _ := lintMarkdown("test.md", content)
+		if len(findings) != 0 {
+			t.Fatalf("expected expect-invalid dialect check to pass, got %+v", findings)
+		}
+	})
 }
 
 func TestLintMarkdownMCPToolsValidation(t *testing.T) {
@@ -298,6 +319,26 @@ func TestLintConfigMCPToolsValidation(t *testing.T) {
 	findings, _ = lintMarkdown("test.md", docValidJSON)
 	if len(findings) != 0 {
 		t.Fatalf("expected valid tools in json block to pass, got: %+v", findings)
+	}
+
+	docCompactValid := "```json\n{\"args\":[\"ai\",\"mcp\",\"serve\",\"--tools\",\"get_pull_request,add_pr_comment\"]}\n```\n"
+	findings, _ = lintMarkdown("test.md", docCompactValid)
+	if len(findings) != 0 {
+		t.Fatalf("expected compact JSON with valid tools to pass, got: %+v", findings)
+	}
+
+	docCompactInvalid := "```json\n{\"args\":[\"ai\",\"mcp\",\"serve\",\"--tools\",\"get_pull_request,bad_tool_name\"]}\n```\n"
+	findings, _ = lintMarkdown("test.md", docCompactInvalid)
+	if len(findings) != 1 || !strings.Contains(findings[0].Problem, `unknown MCP tool "bad_tool_name" in --tools`) {
+		t.Fatalf("expected compact JSON with invalid tool to fail, got: %+v", findings)
+	}
+}
+
+func TestLintMermaidValidation(t *testing.T) {
+	docMermaid := "```mermaid\nflowchart TD\n  A --> B\n```\n"
+	findings, _ := lintMarkdown("test.md", docMermaid)
+	if len(findings) != 0 {
+		t.Fatalf("expected valid mermaid block with mkdocs.yml configured to pass, got: %+v", findings)
 	}
 }
 
