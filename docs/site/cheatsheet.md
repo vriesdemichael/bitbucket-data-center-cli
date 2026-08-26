@@ -21,6 +21,7 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 | Goal | Command | Notes |
 |---|---|---|
 | Clone a repository | `bb repo clone PROJ/my-repo` | Infers clone URL using authenticated credentials |
+| Clone via browser URL | `bb repo clone https://bitbucket.example.com/projects/PROJ/repos/my-repo` | Paste web URL directly from address bar |
 | Fork a repository | `bb repo fork --name my-fork --repo PROJ/my-repo` | Creates personal fork under your account |
 | Search repositories | `bb search repos "payment"` | Searches across projects |
 | Open repo in browser | `bb browse` | Standing in local git clone |
@@ -48,11 +49,24 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 | List open PRs | `bb pr list --repo PROJ/my-repo --with-review-status` | Shows action items, blockers, and reviewer states |
 | Check out a PR locally | `bb pr checkout 42` | Fetches PR branch (including forks) and switches to it |
 | Check out into custom branch | `bb pr checkout 42 --branch review-42` | Avoids local branch collisions |
+| Target via browser URL | `bb pr checkout https://bitbucket.example.com/projects/PROJ/repos/my-repo/pull-requests/42` | No `--repo` flag or local clone needed |
+| Target via branch name | `bb pr checkout feature/retry` | Resolves the open PR for that branch |
+| Target via hash shorthand | `bb pr checkout #42` | Convenient hash notation |
 | View PR diff in terminal | `bb pr diff 42` | Unified patch against target branch |
 | View PR status & blockers | `bb pr get 42` | Summary of approvals, tasks, and CI checks |
 | Create a pull request | `bb pr create --repo PROJ/my-repo --from-ref feature/my-work --to-ref main --title "Add retries"` | Opens new pull request |
 | Create as draft | `bb pr create --repo PROJ/my-repo --from-ref feature/my-work --to-ref main --title "WIP" --draft` | Bitbucket DC 8.0+ |
 | Assign reviewers | `bb pr create ... --reviewers alice,bob` | Comma-separated or repeatable |
+
+!!! tip "Zero-Config Target & URL Resolution (`gh`-style ergonomics)"
+    Commands that accept a pull request (`bb pr checkout`, `bb pr diff`, `bb pr get`, `bb pr build status`, `bb pr merge`, etc.) accept four target formats interchangeably:
+
+    - **Full Browser URL**: `https://bitbucket.example.com/projects/PROJ/repos/my-repo/pull-requests/42` (also supports personal repositories `~username` and `/diff`, `/commits`, subpaths). `bb` automatically extracts the project, repo, and PR number so **no `--repo` flag and no prior git clone are needed**.
+    - **Source Branch Name**: `feature/retry` (resolves active PR on that branch).
+    - **Hash Shorthand**: `#42`.
+    - **Numeric ID**: `42`.
+
+    Likewise, `bb repo clone` directly accepts full Bitbucket repository browser URLs from your address bar.
 
 ### 5. Code Review & Feedback
 

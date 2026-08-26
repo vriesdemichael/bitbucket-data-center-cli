@@ -51,6 +51,39 @@ bb pr --help
 bb pr get --help
 ```
 
+## Flexible Target & URL Resolution
+
+Commands that operate on pull requests (`bb pr get`, `bb pr checkout`, `bb pr diff`, `bb pr build status`, `bb pr review`, `bb pr comment`, `bb pr merge`, etc.) accept flexible targets interchangeably:
+
+1. **Full Bitbucket Browser URLs (Zero Configuration)**:
+   When a user pastes a full Bitbucket browser PR URL in a prompt or ticket, pass it directly as the target argument:
+   ```bash
+   bb pr get https://bitbucket.example.com/projects/MYPROJ/repos/payments/pull-requests/42
+   bb pr checkout https://bitbucket.example.com/projects/MYPROJ/repos/payments/pull-requests/42
+   bb pr diff https://bitbucket.example.com/projects/MYPROJ/repos/payments/pull-requests/42
+   bb pr build status https://bitbucket.example.com/projects/MYPROJ/repos/payments/pull-requests/42
+   ```
+   `bb` automatically extracts the project key, repository slug, and pull request ID from the URL (including `/diff`, `/commits`, subpaths, and personal user repositories `~user`). **No `--repo` flag and no prior git clone are needed.**
+
+2. **Branch Names**:
+   Pass a source branch name directly to resolve the active pull request for that branch:
+   ```bash
+   bb pr checkout feature/my-work
+   bb pr diff feature/my-work
+   ```
+
+3. **Numeric IDs & Hash Shorthand**:
+   Pass `42` or `#42` (infers repository from local git remotes, or explicit `--repo PROJ/repo`):
+   ```bash
+   bb pr checkout 42
+   bb pr checkout #42
+   ```
+
+`bb repo clone` also directly accepts full Bitbucket repository browser URLs:
+```bash
+bb repo clone https://bitbucket.example.com/projects/MYPROJ/repos/payments
+```
+
 ## Common Workflows
 
 ### 1. Start a feature or check out a pull request
