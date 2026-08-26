@@ -14,6 +14,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -59,9 +60,32 @@ type finding struct {
 
 func main() {
 	roots := flag.String("roots", "README.md,AGENTS.md,CONTRIBUTING.md,SECURITY.md,docs,skills", "Comma-separated files and directories to scan")
+	updateVersion := flag.Bool("update-version", false, "Update stale version strings across documentation in-place")
+	versionFlag := flag.String("version", "", "Target release version to enforce or update (defaults to latest git tag)")
 	flag.Parse()
 
-	findings, checked, err := lintPaths(splitCSV(*roots))
+	targetVer := resolveTargetVersion(*versionFlag)
+
+	if *updateVersion {
+		if targetVer == "" {
+			fmt.Fprintln(os.Stderr, "docs-lint: error: unable to determine target release version for -update-version")
+			os.Exit(1)
+		}
+		updatedCount, err := updateDocumentationVersions(splitCSV(*roots), targetVer)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "docs-lint: error: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("docs-lint: updated release version to %s in %d file(s)\n", targetVer, updatedCount)
+		return
+	}
+
+	if targetVer == "" {
+		fmt.Fprintln(os.Stderr, "docs-lint: error: unable to resolve target release version from git tags (ensure tags are fetched, or specify -version or BB_RELEASE_VERSION)")
+		os.Exit(1)
+	}
+
+	findings, checked, err := lintPathsWithVersion(splitCSV(*roots), targetVer)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -70,6 +94,46 @@ func main() {
 	if code := report(os.Stdout, findings, checked); code != 0 {
 		os.Exit(code)
 	}
+}
+
+func resolveTargetVersion(explicit string) string {
+	if explicit != "" {
+		return strings.TrimPrefix(strings.TrimSpace(explicit), "v")
+	}
+	if envVer := os.Getenv("BB_RELEASE_VERSION"); envVer != "" {
+		return strings.TrimPrefix(strings.TrimSpace(envVer), "v")
+	}
+
+	if ver := findLocalGitTag(); ver != "" {
+		return ver
+	}
+
+	// In shallow clones (e.g. CI environments with fetch-depth: 1), tags may not be present locally.
+	// Attempt fetching tags from origin if available.
+	fetchCmd := exec.Command("git", "fetch", "--tags", "origin")
+	_ = fetchCmd.Run()
+
+	return findLocalGitTag()
+}
+
+func findLocalGitTag() string {
+	cmd := exec.Command("git", "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*.[0-9]*.[0-9]*")
+	out, err := cmd.Output()
+	if err == nil {
+		tag := strings.TrimSpace(string(out))
+		if tag != "" {
+			return strings.TrimPrefix(tag, "v")
+		}
+	}
+	cmd = exec.Command("git", "tag", "-l", "--sort=-v:refname", "v[0-9]*.[0-9]*.[0-9]*")
+	out, err = cmd.Output()
+	if err == nil {
+		lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+		if len(lines) > 0 && strings.TrimSpace(lines[0]) != "" {
+			return strings.TrimPrefix(strings.TrimSpace(lines[0]), "v")
+		}
+	}
+	return ""
 }
 
 func report(writer io.Writer, findings []finding, checked int) int {
@@ -87,6 +151,10 @@ func report(writer io.Writer, findings []finding, checked int) int {
 }
 
 func lintPaths(roots []string) ([]finding, int, error) {
+	return lintPathsWithVersion(roots, resolveTargetVersion(""))
+}
+
+func lintPathsWithVersion(roots []string, targetVer string) ([]finding, int, error) {
 	files, err := collectMarkdownFiles(roots)
 	if err != nil {
 		return nil, 0, err
@@ -109,7 +177,7 @@ func lintPaths(roots []string) ([]finding, int, error) {
 		// editing correct documentation.
 		normalised := strings.ReplaceAll(string(contents), "\r\n", "\n")
 
-		fileFindings, fileChecked := lintMarkdown(filepath.ToSlash(file), normalised)
+		fileFindings, fileChecked := lintMarkdownWithVersion(filepath.ToSlash(file), normalised, targetVer)
 		findings = append(findings, fileFindings...)
 		checked += fileChecked
 	}
@@ -176,6 +244,18 @@ var (
 	unrenderedLaTeXRegex     = regexp.MustCompile(`\$[^\$\n]+?\$`)
 	mcpToolListRe            = regexp.MustCompile(`--(?:tools|exclude)\b["']?[\s:=,]*["']?([a-zA-Z0-9_.-]+(?:\s*,\s*[a-zA-Z0-9_.-]+)*)`)
 	mcpToolValueOnlyRe       = regexp.MustCompile(`^["']?([a-zA-Z0-9_.-]+(?:\s*,\s*[a-zA-Z0-9_.-]+)*)`)
+
+	shellVersionRe  = regexp.MustCompile(`^(?:export\s+)?VERSION=["']?(v?[0-9]+\.[0-9]+\.[0-9]+)["']?$`)
+	pwshVersionRe   = regexp.MustCompile(`^\$Version\s*=\s*["']?(v?[0-9]+\.[0-9]+\.[0-9]+)["']?$`)
+	dockerVersionRe = regexp.MustCompile(`^ARG\s+BB_VERSION=(v?[0-9]+\.[0-9]+\.[0-9]+)$`)
+	yamlVersionRe   = regexp.MustCompile(`^\s*bb_version:\s*["']?(v?[0-9]+\.[0-9]+\.[0-9]+)["']?$`)
+	proseVersionRe  = regexp.MustCompile(`(?i)\b(?:target|release)\s+version\s*\((?:e\.g\.|example:)\s*[\x60"]?(v?[0-9]+\.[0-9]+\.[0-9]+)[\x60"]?\)`)
+
+	updateShellVersionRe  = regexp.MustCompile(`(?m)^((?:export\s+)?VERSION=["']?)(v?)[0-9]+\.[0-9]+\.[0-9]+(["']?)$`)
+	updatePwshVersionRe   = regexp.MustCompile(`(?m)^(\$Version\s*=\s*["']?)(v?)[0-9]+\.[0-9]+\.[0-9]+(["']?)$`)
+	updateDockerVersionRe = regexp.MustCompile(`(?m)^(ARG\s+BB_VERSION=)(v?)[0-9]+\.[0-9]+\.[0-9]+$`)
+	updateYamlVersionRe   = regexp.MustCompile(`(?m)^(\s*bb_version:\s*["']?)(v?)[0-9]+\.[0-9]+\.[0-9]+(["']?)$`)
+	updateProseVersionRe  = regexp.MustCompile(`(?i)\b((?:target|release)\s+version\s*\((?:e\.g\.|example:)\s*[\x60"]?)(v?)[0-9]+\.[0-9]+\.[0-9]+([\x60"]?\))`)
 )
 
 var (
@@ -240,6 +320,10 @@ func removeInlineCode(line string) string {
 // lintMarkdown checks every bb invocation in the shell blocks of one document,
 // as well as markdown dialect rules, release artifact naming, and configuration values.
 func lintMarkdown(file, contents string) ([]finding, int) {
+	return lintMarkdownWithVersion(file, contents, resolveTargetVersion(""))
+}
+
+func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) {
 	var (
 		findings []finding
 		checked  int
@@ -324,6 +408,21 @@ func lintMarkdown(file, contents string) ([]finding, int) {
 			})
 		}
 
+		// 5. Check prose release version examples (e.g. "Select a release version (example: `v0.1.0`).")
+		if targetVer != "" {
+			if m := proseVersionRe.FindStringSubmatch(line); len(m) > 1 {
+				extracted := strings.TrimPrefix(m[1], "v")
+				if extracted != targetVer {
+					lineFindings = append(lineFindings, finding{
+						File:    file,
+						Line:    lineNum,
+						Command: strings.TrimSpace(line),
+						Problem: fmt.Sprintf("stale release version %q; must match current release version %q", m[1], targetVer),
+					})
+				}
+			}
+		}
+
 		if expectFail {
 			if len(lineFindings) == 0 {
 				findings = append(findings, finding{
@@ -339,6 +438,11 @@ func lintMarkdown(file, contents string) ([]finding, int) {
 	}
 
 	shellBlocks, configBlocks, otherBlocks := parseCodeBlocks(contents)
+
+	allBlocks := append(append(shellBlocks, configBlocks...), otherBlocks...)
+	for _, block := range allBlocks {
+		findings = append(findings, lintCodeBlockVersions(file, block, targetVer)...)
+	}
 
 	// Verify mermaid custom_fences configuration
 	for _, block := range otherBlocks {
@@ -389,6 +493,151 @@ func lintMarkdown(file, contents string) ([]finding, int) {
 	}
 
 	return findings, checked
+}
+
+func lintCodeBlockVersions(file string, block codeBlock, targetVer string) []finding {
+	if targetVer == "" {
+		return nil
+	}
+
+	var findings []finding
+	hasVersionDeclaration := false
+	lines := strings.Split(block.body, "\n")
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		var ver string
+
+		if m := shellVersionRe.FindStringSubmatch(trimmed); len(m) > 1 {
+			ver = m[1]
+		} else if m := pwshVersionRe.FindStringSubmatch(trimmed); len(m) > 1 {
+			ver = m[1]
+		} else if m := dockerVersionRe.FindStringSubmatch(trimmed); len(m) > 1 {
+			ver = m[1]
+		} else if m := yamlVersionRe.FindStringSubmatch(trimmed); len(m) > 1 {
+			ver = m[1]
+		}
+
+		if ver == "" {
+			continue
+		}
+
+		hasVersionDeclaration = true
+		normVer := strings.TrimPrefix(ver, "v")
+		if normVer != targetVer {
+			findings = append(findings, finding{
+				File:    file,
+				Line:    block.startLine + i + 1,
+				Command: trimmed,
+				Problem: fmt.Sprintf("stale release version %q in code block; must match current release version %q", ver, targetVer),
+			})
+		}
+	}
+
+	if !hasVersionDeclaration {
+		return nil
+	}
+
+	if block.expectInvalid {
+		if len(findings) == 0 {
+			return []finding{
+				{
+					File:    file,
+					Line:    block.startLine,
+					Command: block.body,
+					Problem: "block is marked " + expectInvalidDirective + " but this block has current release version",
+				},
+			}
+		}
+		return nil
+	}
+
+	return findings
+}
+
+func updateDocumentationVersions(roots []string, targetVer string) (int, error) {
+	files, err := collectMarkdownFiles(roots)
+	if err != nil {
+		return 0, err
+	}
+
+	updatedCount := 0
+	for _, file := range files {
+		contents, err := os.ReadFile(file)
+		if err != nil {
+			return 0, fmt.Errorf("read %s: %w", file, err)
+		}
+
+		original := string(contents)
+		updated := updateContentVersions(original, targetVer)
+		if updated != original {
+			normalised := strings.ReplaceAll(updated, "\r\n", "\n")
+			if err := os.WriteFile(file, []byte(normalised), 0644); err != nil {
+				return 0, fmt.Errorf("write %s: %w", file, err)
+			}
+			updatedCount++
+		}
+	}
+
+	return updatedCount, nil
+}
+
+func updateContentVersions(content, targetVersion string) string {
+	content = updateShellVersionRe.ReplaceAllStringFunc(content, func(m string) string {
+		sub := updateShellVersionRe.FindStringSubmatch(m)
+		prefix := sub[1]
+		hasV := sub[2] == "v"
+		suffix := sub[3]
+		if hasV {
+			return prefix + "v" + targetVersion + suffix
+		}
+		return prefix + targetVersion + suffix
+	})
+
+	content = updatePwshVersionRe.ReplaceAllStringFunc(content, func(m string) string {
+		sub := updatePwshVersionRe.FindStringSubmatch(m)
+		prefix := sub[1]
+		hasV := sub[2] == "v"
+		suffix := sub[3]
+		if hasV {
+			return prefix + "v" + targetVersion + suffix
+		}
+		return prefix + targetVersion + suffix
+	})
+
+	content = updateDockerVersionRe.ReplaceAllStringFunc(content, func(m string) string {
+		sub := updateDockerVersionRe.FindStringSubmatch(m)
+		prefix := sub[1]
+		hasV := sub[2] == "v"
+		if hasV {
+			return prefix + "v" + targetVersion
+		}
+		return prefix + targetVersion
+	})
+
+	content = updateYamlVersionRe.ReplaceAllStringFunc(content, func(m string) string {
+		sub := updateYamlVersionRe.FindStringSubmatch(m)
+		prefix := sub[1]
+		hasV := sub[2] == "v"
+		suffix := sub[3]
+		if hasV {
+			return prefix + "v" + targetVersion + suffix
+		}
+		return prefix + targetVersion + suffix
+	})
+
+	content = updateProseVersionRe.ReplaceAllStringFunc(content, func(m string) string {
+		sub := updateProseVersionRe.FindStringSubmatch(m)
+		prefix := sub[1]
+		hasV := sub[2] == "v"
+		suffix := sub[3]
+		if hasV {
+			return prefix + "v" + targetVersion + suffix
+		}
+		return prefix + targetVersion + suffix
+	})
+
+	return content
 }
 
 func lintConfigMCPTools(file string, block codeBlock) []finding {

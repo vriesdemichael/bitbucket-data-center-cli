@@ -30,7 +30,7 @@ yay -S bb-bin
 Download the `.deb` or `.rpm` for your architecture from GitHub Releases and install it:
 
 ```bash
-VERSION=v1.0.0
+VERSION=v2.11.0
 # Debian/Ubuntu
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.deb"
 sudo dpkg -i "bb_${VERSION#v}_linux_amd64.deb"
@@ -41,14 +41,14 @@ sudo rpm -i "bb_${VERSION#v}_linux_amd64.rpm"
 
 ## Install from release artifacts
 
-1. Select a release version (example: `v0.1.0`).
+1. Select a release version (example: `v2.11.0`).
 2. Download the platform archive, `sha256sums.txt`, and `sha256sums.txt.sigstore.json` from GitHub Releases.
 3. Verify the signed checksum manifest with Cosign, then verify checksums and run `bb --help`.
 
 Linux amd64 example:
 
 ```bash
-VERSION=v0.1.0
+VERSION=v2.11.0
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.tar.gz"
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sha256sums.txt"
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sha256sums.txt.sigstore.json"
@@ -67,12 +67,13 @@ bb --help
 Archive-level provenance verification remains available when you want to inspect a specific artifact directly:
 
 ```bash
+VERSION=v2.11.0
 cosign verify-blob \
 	--bundle "bb_${VERSION#v}_linux_amd64.tar.gz.sigstore.json" \
 	--certificate-identity "https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main" \
 	--certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
 	"bb_${VERSION#v}_linux_amd64.tar.gz"
-gh attestation verify bb_${VERSION#v}_linux_amd64.tar.gz --repo vriesdemichael/bitbucket-data-center-cli
+gh attestation verify "bb_${VERSION#v}_linux_amd64.tar.gz" --repo vriesdemichael/bitbucket-data-center-cli
 ```
 
 `bb update` now requires the signed checksum bundle. If Sigstore verification is unavailable or fails, self-update stops and you should use WinGet, Scoop, or manual release installation instead.
@@ -84,7 +85,7 @@ graph. It is covered by `sha256sums.txt` and Sigstore-signed like every other
 artifact:
 
 ```bash
-VERSION=v0.1.0
+VERSION=v2.11.0
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sbom.spdx.json"
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sbom.spdx.json.sigstore.json"
 cosign verify-blob \
@@ -99,7 +100,8 @@ stronger claim: not just "here is an SBOM" but "this SBOM describes that
 binary", signed by the workflow that built both.
 
 ```bash
-gh attestation verify bb_${VERSION#v}_linux_amd64.tar.gz \
+VERSION=v2.11.0
+gh attestation verify "bb_${VERSION#v}_linux_amd64.tar.gz" \
 	--repo vriesdemichael/bitbucket-data-center-cli \
 	--predicate-type https://spdx.dev/Document
 ```

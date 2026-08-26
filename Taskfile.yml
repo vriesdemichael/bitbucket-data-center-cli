@@ -78,6 +78,11 @@ tasks:
       - task: docs:generate
       - git diff --exit-code -- docs/site/reference/commands/index.md docs/site/adr docs/reference/schemas docs/site/reference/schemas
 
+  docs:sync-version:
+    desc: Sync documented release versions across markdown files to match latest git tag (or VERSION)
+    cmds:
+      - go run ./tools/docs-lint -update-version {{if .VERSION}}-version '{{.VERSION}}'{{end}}
+
   docs:serve:
     desc: Serve MkDocs site locally
     cmds:
@@ -89,6 +94,8 @@ tasks:
       vars:
         - VERSION
     cmds:
+      - task: docs:sync-version
+        vars: { VERSION: '{{.VERSION}}' }
       - uv run --project '{{.DOCS_PROJECT_DIR}}' mike deploy --push --update-aliases {{.VERSION}} latest
       - uv run --project '{{.DOCS_PROJECT_DIR}}' mike set-default --push latest
 
