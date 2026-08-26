@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -470,7 +471,12 @@ func New(deps Dependencies) *cobra.Command {
 			warn := cmd.ErrOrStderr()
 
 			if createDefaultReviewers && !createNoDefaultReviewers {
-				defaults, err := reviewerSvc.ResolveDefaultReviewers(cmd.Context(), repo.ProjectKey, repo.Slug, createFromRef, createToRef)
+				// `bb pr create` always opens the pull request within one
+				// repository, so the source repository needs no separate entry.
+				defaults, err := reviewerSvc.ResolveDefaultReviewers(cmd.Context(), repo.ProjectKey, repo.Slug, reviewerservice.DefaultReviewerQuery{
+					SourceRef: createFromRef,
+					TargetRef: createToRef,
+				})
 				if err != nil {
 					// Default reviewers are frequently mandatory approvers, so a
 					// failed lookup must never pass unnoticed. When the user asked
@@ -1188,11 +1194,18 @@ func New(deps Dependencies) *cobra.Command {
 			allGroups = append(allGroups, reviewerGroups...)
 
 			if reviewerDefaultReviewers {
-				defaults, err := reviewerSvc.ResolveDefaultReviewers(
-					cmd.Context(),
-					repo.ProjectKey, repo.Slug,
-					current.SourceBranch, current.TargetBranch,
-				)
+				query := reviewerservice.DefaultReviewerQuery{
+					SourceRef: current.SourceBranch,
+					TargetRef: current.TargetBranch,
+				}
+				// A fork pull request has its source branch elsewhere, and the
+				// conditions are matched against that repository.
+				if current.SourceRepository != nil {
+					query.SourceProjectKey = current.SourceRepository.ProjectKey
+					query.SourceSlug = current.SourceRepository.Slug
+				}
+
+				defaults, err := reviewerSvc.ResolveDefaultReviewers(cmd.Context(), repo.ProjectKey, repo.Slug, query)
 				if err != nil {
 					return err
 				}
@@ -1329,20 +1342,21 @@ func New(deps Dependencies) *cobra.Command {
 			latestPR := current
 
 			if deps.JSONEnabled() {
-				payload := map[string]any{
+				// Under --json stdout carries exactly one document: a success
+				// envelope, or the failure envelope the entry point writes when
+				// this returns an error. Emitting both would produce two.
+				// So on a partial failure the outcome goes into the error itself.
+				if len(addErrs) > 0 {
+					return partialReviewerAddError(addedReviewers, failedReviewers, addErrs)
+				}
+
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
 					"repository":      repo,
 					"pull_request":    latestPR,
 					"added":           addedReviewers,
 					"skipped_author":  skippedAuthor,
 					"already_present": alreadyPresent,
-				}
-				if len(failedReviewers) > 0 {
-					payload["failed"] = failedReviewers
-				}
-				if err := deps.WriteJSON(cmd.OutOrStdout(), payload); err != nil {
-					return err
-				}
-				return errors.Join(addErrs...)
+				})
 			}
 
 			if len(addedReviewers) > 0 {
@@ -1355,7 +1369,7 @@ func New(deps Dependencies) *cobra.Command {
 				fmt.Fprintf(cmd.OutOrStdout(), "Reviewers already present: %s\n", strings.Join(alreadyPresent, ", "))
 			}
 			if len(addErrs) > 0 {
-				return errors.Join(addErrs...)
+				return partialReviewerAddError(addedReviewers, failedReviewers, addErrs)
 			}
 			if len(addedReviewers) == 0 && len(skippedAuthor) == 0 && len(alreadyPresent) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "No eligible reviewers to add")
@@ -2987,24 +3001,29 @@ func resolveReviewersAndGroups(
 // repositories carrying a root-level file.
 var codeOwnersCandidatePaths = []string{".bitbucket/CODEOWNERS", "CODEOWNERS"}
 
-// localCheckoutMatches reports whether the git repository in the current working
-// directory has a Bitbucket remote pointing at projectKey/repoSlug.
+// matchingCheckoutRoot returns the root of the git repository containing the
+// current working directory, but only when one of its remotes points at
+// projectKey/repoSlug.
 //
 // The CODEOWNERS lookup consults the working copy before the server, and that is
 // only sound when the working copy IS the repository being targeted. Without this
 // check, running `bb pr create --repo OTHER/repo` from any checkout that happens
 // to contain a CODEOWNERS file would assign reviewers taken from an unrelated
 // repository.
-func localCheckoutMatches(ctx context.Context, projectKey, repoSlug string) bool {
+func matchingCheckoutRoot(ctx context.Context, projectKey, repoSlug string) (string, bool) {
 	backend := execgit.New()
 	root, err := backend.RepositoryRoot(ctx, ".")
-	if err != nil || strings.TrimSpace(root) == "" {
-		return false
+	if err != nil {
+		return "", false
+	}
+	root = strings.TrimSpace(root)
+	if root == "" {
+		return "", false
 	}
 
 	remotes, err := backend.ListRemotes(ctx, root)
 	if err != nil {
-		return false
+		return "", false
 	}
 
 	for _, remote := range remotes {
@@ -3013,22 +3032,27 @@ func localCheckoutMatches(ctx context.Context, projectKey, repoSlug string) bool
 			continue
 		}
 		if strings.EqualFold(remoteProject, projectKey) && strings.EqualFold(remoteSlug, repoSlug) {
-			return true
+			return root, true
 		}
 	}
 
-	return false
+	return "", false
 }
 
 // readLocalCodeOwners returns the CODEOWNERS file from the working copy, but only
 // when that working copy is a checkout of the target repository.
+//
+// Candidates are resolved against the repository root rather than the working
+// directory, so the lookup does not depend on which subdirectory bb was invoked
+// from.
 func readLocalCodeOwners(ctx context.Context, projectKey, repoSlug string) (string, bool) {
-	if !localCheckoutMatches(ctx, projectKey, repoSlug) {
+	root, ok := matchingCheckoutRoot(ctx, projectKey, repoSlug)
+	if !ok {
 		return "", false
 	}
 
 	for _, candidate := range codeOwnersCandidatePaths {
-		if data, err := os.ReadFile(candidate); err == nil && len(data) > 0 {
+		if data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(candidate))); err == nil && len(data) > 0 {
 			return string(data), true
 		}
 	}
@@ -3220,6 +3244,27 @@ func writeWarning(warn io.Writer, message string) {
 		return
 	}
 	fmt.Fprintf(warn, "warning: %s\n", message)
+}
+
+// partialReviewerAddError describes the outcome of a reviewer add that only
+// partly succeeded.
+//
+// Reviewers are attached one request at a time, so the reviewers added before
+// the failure stay on the pull request. The message names them, because under
+// --json the failure envelope carries no payload and this message is the only
+// place that record can live.
+func partialReviewerAddError(added, failed []string, causes []error) error {
+	var detail strings.Builder
+	detail.WriteString("failed to add ")
+	detail.WriteString(strings.Join(failed, ", "))
+	if len(added) > 0 {
+		detail.WriteString("; already added ")
+		detail.WriteString(strings.Join(added, ", "))
+	}
+	detail.WriteString(": ")
+	detail.WriteString(errors.Join(causes...).Error())
+
+	return apperrors.New(apperrors.KindOf(causes[0]), detail.String(), errors.Join(causes...))
 }
 
 // resolveAuthorUsername determines the username Bitbucket will record as the

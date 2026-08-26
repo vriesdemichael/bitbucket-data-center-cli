@@ -64,6 +64,11 @@ func executePrSplit(t *testing.T, serverURL string, args ...string) (stdout stri
 	}
 
 	root := New(deps)
+	// The real root command silences these, and a test that asserts on stdout
+	// has to see the same stdout production does.
+	root.SilenceUsage = true
+	root.SilenceErrors = true
+
 	outBuffer := &bytes.Buffer{}
 	errBuffer := &bytes.Buffer{}
 	root.SetOut(outBuffer)
@@ -341,7 +346,7 @@ func TestPRCreateSkipsAbsentCodeOwnersQuietly(t *testing.T) {
 	if !strings.Contains(stdout, "Created pull request #43") {
 		t.Fatalf("expected the pull request to be created, got:\n%s", stdout)
 	}
-	if strings.Contains(stderr, "warning:") {
+	if strings.Contains(stderr, "Warning:") {
 		t.Fatalf("an absent CODEOWNERS file should not warn, got:\n%s", stderr)
 	}
 }
@@ -758,5 +763,88 @@ func TestCodeOwnersGroupMembershipFailureIsNotTreatedAsAUsername(t *testing.T) {
 	}
 	if strings.Contains(out, "core-team") {
 		t.Fatalf("the group name must not be assigned as a username, got:\n%s", out)
+	}
+}
+
+// The working copy lookup resolves candidates against the repository root, so it
+// does not depend on which subdirectory bb was invoked from.
+func TestCodeOwnersReadsLocalFileFromRepositoryRoot(t *testing.T) {
+	server := newMockPRServer(t)
+
+	dir := t.TempDir()
+	initGitRepoWithRemote(t, dir, "PRJ", "demo")
+	writeLocalCodeOwners(t, dir, "*.go alice\n")
+
+	nested := filepath.Join(dir, "internal", "deep")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatalf("failed to create nested directory: %v", err)
+	}
+	t.Chdir(nested)
+
+	out, _, err := executePrSplit(t, server.URL, "--json", "create",
+		"--from-ref", "feature/y",
+		"--to-ref", "main",
+		"--title", "Created PR",
+		"--no-default-reviewers",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, "alice") {
+		t.Fatalf("expected the repository root CODEOWNERS to be found from a subdirectory, got:\n%s", out)
+	}
+}
+
+// Under --json stdout is a machine contract carrying exactly one document. A
+// partial failure must not emit a success envelope on top of the failure
+// envelope the entry point writes.
+func TestPRReviewerAddPartialFailureEmitsOneJSONDocument(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		path := r.URL.Path
+
+		switch {
+		case r.Method == http.MethodGet && path == "/rest/api/latest/users":
+			w.Header().Set("X-AUSERNAME", "currentuser")
+			_, _ = w.Write([]byte(`{"values":[]}`))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42":
+			_, _ = w.Write([]byte(`{"id":42,"title":"Test PR","state":"OPEN","open":true,"version":1,"author":{"user":{"name":"authoruser"}}}`))
+
+		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/participants":
+			var payload struct {
+				User struct {
+					Name string `json:"name"`
+				} `json:"user"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&payload)
+			if payload.User.Name == "charlie" {
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(`{"errors":[{"message":"charlie is not a valid user"}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"user":{"name":"` + payload.User.Name + `"},"role":"REVIEWER"}`))
+
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	stdout, _, err := executePrSplit(t, server.URL, "--json",
+		"review", "reviewer", "add", "42",
+		"--user", "bob", "--user", "charlie",
+	)
+
+	if err == nil {
+		t.Fatal("expected an error for the reviewer that could not be added")
+	}
+	if strings.TrimSpace(stdout) != "" {
+		t.Fatalf("stdout must be left to the failure envelope, got:\n%s", stdout)
+	}
+	// The reviewers that were already applied are only recoverable from the
+	// message, because the failure envelope carries no payload.
+	if !strings.Contains(err.Error(), "bob") || !strings.Contains(err.Error(), "charlie") {
+		t.Fatalf("error should name both the added and the failed reviewer, got: %v", err)
 	}
 }

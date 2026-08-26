@@ -127,82 +127,53 @@ invocation and never written into the repository.
 Pushing afterwards is plain `git`, which does not go through `bb` — run `bb auth setup-git`
 once to let it authenticate. See [Git Authentication](advanced/git-authentication.md).
 
-## Default Reviewers, Reviewer Groups, and CODEOWNERS
+## Reviewers
 
-When creating pull requests or attaching reviewers to open pull requests, `bb` provides comprehensive reviewer automation matching the Bitbucket Data Center web interface:
-
-### Automated Reviewers on PR Creation
-Mirroring the Bitbucket Data Center web interface, `bb pr create` automatically resolves and includes:
-1. **Default Reviewers** configured on the repository and project for the branch pair (`--default-reviewers` defaults to `true`).
-2. **CODEOWNERS** matching the PR diff from `.bitbucket/CODEOWNERS` (or `CODEOWNERS`) on the target branch (`--codeowners` defaults to `true`). If the repository does not use CODEOWNERS, it is silently skipped.
-
-The working copy is consulted before the server, but only when it is a checkout of
-the repository being targeted — a `CODEOWNERS` file in an unrelated checkout is
-never used to pick reviewers for another repository.
-
-Because both behaviours are on by default, a lookup that fails for a reason other
-than "not configured" prints a warning on stderr and the pull request is still
-created. Pass `--default-reviewers` or `--codeowners` explicitly to make such a
-failure fatal instead.
-
-You can opt out of either or both automation behaviors using `--no-default-reviewers` and `--no-codeowners`:
+`bb pr create` pre-fills reviewers the same way the web interface does: default
+reviewer conditions for the branch pair, plus code owners matching the diff from
+`.bitbucket/CODEOWNERS`. Both are on by default and are skipped without comment
+when the repository does not configure them.
 
 ```bash
-# Default reviewers and CODEOWNERS are automatically assigned by default
+# Default reviewers and code owners are applied automatically
 bb pr create --from-ref feature/login --to-ref main --title "Add login"
 
-# Opt out of default reviewers or CODEOWNERS
-bb pr create --from-ref feature/login --to-ref main --title "Add login" --no-default-reviewers
-bb pr create --from-ref feature/login --to-ref main --title "Add login" --no-codeowners
+# Opt out of either or both
 bb pr create --from-ref feature/login --to-ref main --title "Add login" --no-default-reviewers --no-codeowners
-```
 
-### Reviewer Groups and Multiple Reviewers
-Assign individual users and Reviewer Groups on `bb pr create` and `bb pr review reviewer add`:
-
-```bash
-# Assign reviewers and reviewer groups during PR creation
+# Name reviewers and reviewer groups explicitly (repeatable or comma-separated)
 bb pr create --from-ref feature/login --to-ref main --title "Add login" --reviewers alice,bob --reviewer-group backend-team
 
-# Or use the @group shorthand syntax in --reviewers
+# @group works anywhere a reviewer is accepted
 bb pr create --from-ref feature/login --to-ref main --title "Add login" --reviewers alice,@backend-team
-
-# Add multiple reviewers and reviewer groups to an existing PR (repeatable or comma-separated)
-bb pr review reviewer add 42 --user alice --user bob --reviewer-group core-team
-bb pr review reviewer add 42 --users alice,bob --user @core-team
 ```
 
-When expanding reviewer groups:
-- Reviewer group members are resolved from the repository scope first, falling back to the project scope.
-- If the PR author belongs to an assigned group, they are automatically excluded (as Bitbucket Data Center rejects the PR author as a reviewer).
-- Any group members who are already reviewers on the PR are skipped gracefully without error.
-- Reviewer group assignment requires Bitbucket Data Center 7.13 or later.
-
-### Attaching Automated Reviewers to an Open PR
-To attach configured default reviewers or matching code owners to an existing PR:
+The same automation is available for a pull request that already exists, where it
+is opt-in rather than default:
 
 ```bash
-# Add default reviewers configured for this PR's branch pair
-bb pr review reviewer add 42 --default-reviewers
-
-# Add code owners matching this PR's diff from .bitbucket/CODEOWNERS
-bb pr review reviewer add 42 --codeowners
-
-# Add both default reviewers and code owners
+bb pr review reviewer add 42 --user alice --user bob --reviewer-group core-team
 bb pr review reviewer add 42 --default-reviewers --codeowners
 ```
 
-### Fine-Grained CODEOWNERS Controls
-Native `CODEOWNERS` support was introduced in **Bitbucket Data Center 8.14** (via `.bitbucket/CODEOWNERS` in the repository root). When evaluating `.bitbucket/CODEOWNERS`, `bb` supports full Atlassian syntax and fine-grained controls:
+Reviewer groups need Bitbucket Data Center 7.13+, `.bitbucket/CODEOWNERS` needs
+8.14+, and `bb` reads both with the syntax and precedence Bitbucket documents —
+including the `:all`, `:random(N)` and `:least_busy(N)` group selectors. Where it
+necessarily differs from the browser:
 
-- **Group Selection Strategies**:
-  - `@group:all` (default for groups): Assigns all members of the group.
-  - `@group:random(N)`: Selects `N` random members from the group.
-  - `@group:least_busy(N)`: Selects `N` members from the group who are currently assigned as reviewers on the fewest open pull requests.
-- **Escaped Spaces**: In Bitbucket Data Center 9.0+, spaces are escaped with backslashes on both sides of a rule — in reviewer group names (e.g. `@backend\\ engineers:random(2)`) and in path patterns (e.g. `design\\ assets/ @design`).
-- **Multi-Owner Rules**: Lines can combine direct users, emails, and groups with strategies (e.g. `*.go @lead user@example.com @backend-team:random(2)`).
-- **Precedence**: Rules evaluate bottom-to-top (last-match-wins per file), allowing specific path overrides lower in the file.
-- **Author Filtering**: The pull request author is filtered out prior to applying selection strategies, ensuring that `N` actual eligible reviewers are selected.
+- Reviewers are resolved on the client, because `POST /pull-requests` does not
+  evaluate conditions or CODEOWNERS server-side. Everything is decided before the
+  pull request is created.
+- A `CODEOWNERS` file in your working copy is used in preference to the server's
+  copy, but only when that working copy is a checkout of the repository you are
+  targeting.
+- `least_busy(N)` ranks candidates by their open unapproved reviews **in the
+  target repository only**. The browser has no equivalent to fall back on, so when
+  that ranking cannot be computed `bb` warns and assigns in group order instead.
+- Because both behaviours are on by default, a lookup that fails for a reason
+  other than "not configured" warns on stderr and the pull request is still
+  created. Pass `--default-reviewers` or `--codeowners` explicitly to make such a
+  failure fatal.
 
 ## Repository context behavior
 

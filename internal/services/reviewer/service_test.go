@@ -673,7 +673,7 @@ func TestResolveDefaultReviewers(t *testing.T) {
 	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
 	service := NewService(client)
 
-	reviewers, err := service.ResolveDefaultReviewers(context.Background(), "PRJ", "demo", "feature/1", "main")
+	reviewers, err := service.ResolveDefaultReviewers(context.Background(), "PRJ", "demo", DefaultReviewerQuery{SourceRef: "feature/1", TargetRef: "main"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

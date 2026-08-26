@@ -59,7 +59,7 @@ func TestResolveDefaultReviewersSendsQualifiedRefsAndRepositoryID(t *testing.T) 
 		t.Fatalf("failed to build client: %v", err)
 	}
 
-	resolved, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", "feature/x", "main")
+	resolved, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", DefaultReviewerQuery{SourceRef: "feature/x", TargetRef: "main"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -100,7 +100,7 @@ func TestResolveDefaultReviewersPassesQualifiedRefsThrough(t *testing.T) {
 	defer server.Close()
 
 	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-	if _, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", "refs/heads/feature/x", "refs/heads/main"); err != nil {
+	if _, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", DefaultReviewerQuery{SourceRef: "refs/heads/feature/x", TargetRef: "refs/heads/main"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -132,7 +132,7 @@ func TestResolveDefaultReviewersToleratesMissingRepositoryID(t *testing.T) {
 
 	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
 
-	resolved, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", "feature/x", "main")
+	resolved, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", DefaultReviewerQuery{SourceRef: "feature/x", TargetRef: "main"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -351,4 +351,81 @@ func TestSelectMembers(t *testing.T) {
 			}
 		}
 	})
+}
+
+// A fork pull request has its source branch in a different repository. Sending
+// the target repository as both source and target would describe a pull request
+// that does not exist, so the source repository is resolved separately.
+func TestResolveDefaultReviewersUsesForkSourceRepository(t *testing.T) {
+	var conditionQuery url.Values
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/rest/api/latest/projects/PRJ/repos/demo":
+			_, _ = w.Write([]byte(`{"id":77,"slug":"demo"}`))
+		case "/rest/api/latest/projects/~alice/repos/demo":
+			_, _ = w.Write([]byte(`{"id":91,"slug":"demo"}`))
+		case "/rest/default-reviewers/latest/projects/PRJ/repos/demo/reviewers":
+			conditionQuery = r.URL.Query()
+			_, _ = w.Write([]byte(`[]`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+
+	_, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", DefaultReviewerQuery{
+		SourceRef:        "feature/x",
+		TargetRef:        "main",
+		SourceProjectKey: "~alice",
+		SourceSlug:       "demo",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got := conditionQuery.Get("sourceRepoId"); got != "91" {
+		t.Fatalf("sourceRepoId = %q, want the fork's ID %q", got, "91")
+	}
+	if got := conditionQuery.Get("targetRepoId"); got != "77" {
+		t.Fatalf("targetRepoId = %q, want %q", got, "77")
+	}
+}
+
+// A same-repository pull request must not pay for a second repository lookup.
+func TestResolveDefaultReviewersLooksUpSameRepositoryOnce(t *testing.T) {
+	repositoryLookups := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/rest/api/latest/projects/PRJ/repos/demo":
+			repositoryLookups++
+			_, _ = w.Write([]byte(`{"id":77,"slug":"demo"}`))
+		case "/rest/default-reviewers/latest/projects/PRJ/repos/demo/reviewers":
+			_, _ = w.Write([]byte(`[]`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+
+	// Naming the source repository explicitly, but as the target repository.
+	if _, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", DefaultReviewerQuery{
+		SourceRef:        "feature/x",
+		TargetRef:        "main",
+		SourceProjectKey: "prj",
+		SourceSlug:       "DEMO",
+	}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if repositoryLookups != 1 {
+		t.Fatalf("repository was looked up %d times, want 1", repositoryLookups)
+	}
 }
