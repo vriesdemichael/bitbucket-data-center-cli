@@ -35,13 +35,16 @@ func IsRouteMissing(err error) bool {
 //	            "exceptionName":"com.atlassian.bitbucket.pull.NoSuchPullRequestException"}]}
 //
 // A route the application never registered never reaches that layer, so the
-// servlet container answers instead with a status document:
+// servlet container answers instead with a status document. On 10.2.1 that was
+// XML; on 10.4.2 it is JSON:
 //
-//	<status><status-code>404</status-code><message>HTTP 404 Not Found</message></status>
+//	{"message":"HTTP 404 Not Found","status-code":404,"sub-code":-1}
 //
-// Anything that is not a Bitbucket error envelope is therefore treated as the
-// route being absent. Verified against Bitbucket Data Center 10.2.1 for removed
-// endpoints, unknown routes, missing pull requests and missing repositories.
+// The encoding is therefore not something to key on. Anything that is not a
+// Bitbucket error envelope is treated as the route being absent, which holds for
+// both forms. Verified against Bitbucket Data Center 10.2.1 and re-probed
+// against 10.4.2 for removed endpoints, unknown routes, missing pull requests
+// and missing repositories.
 func isRouteMissingBody(body []byte) bool {
 	trimmed := strings.TrimSpace(string(body))
 	if trimmed == "" {
