@@ -294,7 +294,9 @@ func (service *Service) DeleteRepositoryReviewerGroup(ctx context.Context, proje
 		return apperrors.New(apperrors.KindValidation, "project key, repository slug, and ID are required", nil)
 	}
 
-	response, err := service.client.Delete7WithResponse(ctx, projectKey, repositorySlug, id)
+	// Delete9, not Delete7: these names are collision suffixes assigned in spec
+	// order, so upstream additions renumber them. Pinned by TestGeneratedOperationPaths.
+	response, err := service.client.Delete9WithResponse(ctx, projectKey, repositorySlug, id)
 	if err != nil {
 		return apperrors.New(apperrors.KindTransient, "failed to delete repository reviewer group", err)
 	}
@@ -428,7 +430,8 @@ func (service *Service) DeleteProjectReviewerGroup(ctx context.Context, projectK
 		return apperrors.New(apperrors.KindValidation, "project key and ID are required", nil)
 	}
 
-	response, err := service.client.Delete6WithResponse(ctx, projectKey, id)
+	// Delete8, not Delete6: see the note on DeleteRepositoryReviewerGroup.
+	response, err := service.client.Delete8WithResponse(ctx, projectKey, id)
 	if err != nil {
 		return apperrors.New(apperrors.KindTransient, "failed to delete project reviewer group", err)
 	}

@@ -209,6 +209,7 @@ const (
 // Defines values for RestAutoMergeProcessingResultPullRequestAuthorRole.
 const (
 	RestAutoMergeProcessingResultPullRequestAuthorRoleAUTHOR      RestAutoMergeProcessingResultPullRequestAuthorRole = "AUTHOR"
+	RestAutoMergeProcessingResultPullRequestAuthorRoleCREATOR     RestAutoMergeProcessingResultPullRequestAuthorRole = "CREATOR"
 	RestAutoMergeProcessingResultPullRequestAuthorRolePARTICIPANT RestAutoMergeProcessingResultPullRequestAuthorRole = "PARTICIPANT"
 	RestAutoMergeProcessingResultPullRequestAuthorRoleREVIEWER    RestAutoMergeProcessingResultPullRequestAuthorRole = "REVIEWER"
 )
@@ -224,6 +225,27 @@ const (
 const (
 	RestAutoMergeProcessingResultPullRequestAuthorUserTypeNORMAL  RestAutoMergeProcessingResultPullRequestAuthorUserType = "NORMAL"
 	RestAutoMergeProcessingResultPullRequestAuthorUserTypeSERVICE RestAutoMergeProcessingResultPullRequestAuthorUserType = "SERVICE"
+)
+
+// Defines values for RestAutoMergeProcessingResultPullRequestCreatorRole.
+const (
+	RestAutoMergeProcessingResultPullRequestCreatorRoleAUTHOR      RestAutoMergeProcessingResultPullRequestCreatorRole = "AUTHOR"
+	RestAutoMergeProcessingResultPullRequestCreatorRoleCREATOR     RestAutoMergeProcessingResultPullRequestCreatorRole = "CREATOR"
+	RestAutoMergeProcessingResultPullRequestCreatorRolePARTICIPANT RestAutoMergeProcessingResultPullRequestCreatorRole = "PARTICIPANT"
+	RestAutoMergeProcessingResultPullRequestCreatorRoleREVIEWER    RestAutoMergeProcessingResultPullRequestCreatorRole = "REVIEWER"
+)
+
+// Defines values for RestAutoMergeProcessingResultPullRequestCreatorStatus.
+const (
+	RestAutoMergeProcessingResultPullRequestCreatorStatusAPPROVED   RestAutoMergeProcessingResultPullRequestCreatorStatus = "APPROVED"
+	RestAutoMergeProcessingResultPullRequestCreatorStatusNEEDSWORK  RestAutoMergeProcessingResultPullRequestCreatorStatus = "NEEDS_WORK"
+	RestAutoMergeProcessingResultPullRequestCreatorStatusUNAPPROVED RestAutoMergeProcessingResultPullRequestCreatorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestAutoMergeProcessingResultPullRequestCreatorUserType.
+const (
+	RestAutoMergeProcessingResultPullRequestCreatorUserTypeNORMAL  RestAutoMergeProcessingResultPullRequestCreatorUserType = "NORMAL"
+	RestAutoMergeProcessingResultPullRequestCreatorUserTypeSERVICE RestAutoMergeProcessingResultPullRequestCreatorUserType = "SERVICE"
 )
 
 // Defines values for RestAutoMergeProcessingResultPullRequestFromRefRepositoryOriginProjectType.
@@ -413,6 +435,27 @@ const (
 	RestChangeTypeUNKNOWN RestChangeType = "UNKNOWN"
 )
 
+// Defines values for RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction.
+const (
+	RestChangePullRequestAuthorProjectSettingsRequestRestrictionActionCREATE RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction = "CREATE"
+	RestChangePullRequestAuthorProjectSettingsRequestRestrictionActionDELETE RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction = "DELETE"
+	RestChangePullRequestAuthorProjectSettingsRequestRestrictionActionNONE   RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction = "NONE"
+)
+
+// Defines values for RestChangePullRequestAuthorRestrictedSettingsRestrictionState.
+const (
+	RestChangePullRequestAuthorRestrictedSettingsRestrictionStateNONE                   RestChangePullRequestAuthorRestrictedSettingsRestrictionState = "NONE"
+	RestChangePullRequestAuthorRestrictedSettingsRestrictionStateRESTRICTEDMODIFIABLE   RestChangePullRequestAuthorRestrictedSettingsRestrictionState = "RESTRICTED_MODIFIABLE"
+	RestChangePullRequestAuthorRestrictedSettingsRestrictionStateRESTRICTEDUNMODIFIABLE RestChangePullRequestAuthorRestrictedSettingsRestrictionState = "RESTRICTED_UNMODIFIABLE"
+)
+
+// Defines values for RestChangePullRequestAuthorRestrictedSettingsScopeType.
+const (
+	RestChangePullRequestAuthorRestrictedSettingsScopeTypeGLOBAL     RestChangePullRequestAuthorRestrictedSettingsScopeType = "GLOBAL"
+	RestChangePullRequestAuthorRestrictedSettingsScopeTypePROJECT    RestChangePullRequestAuthorRestrictedSettingsScopeType = "PROJECT"
+	RestChangePullRequestAuthorRestrictedSettingsScopeTypeREPOSITORY RestChangePullRequestAuthorRestrictedSettingsScopeType = "REPOSITORY"
+)
+
 // Defines values for RestChangesetRepositoryOriginProjectType.
 const (
 	RestChangesetRepositoryOriginProjectTypeNORMAL   RestChangesetRepositoryOriginProjectType = "NORMAL"
@@ -471,6 +514,7 @@ const (
 // Defines values for RestCommentAnchorPullRequestAuthorRole.
 const (
 	RestCommentAnchorPullRequestAuthorRoleAUTHOR      RestCommentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestCommentAnchorPullRequestAuthorRoleCREATOR     RestCommentAnchorPullRequestAuthorRole = "CREATOR"
 	RestCommentAnchorPullRequestAuthorRolePARTICIPANT RestCommentAnchorPullRequestAuthorRole = "PARTICIPANT"
 	RestCommentAnchorPullRequestAuthorRoleREVIEWER    RestCommentAnchorPullRequestAuthorRole = "REVIEWER"
 )
@@ -486,6 +530,27 @@ const (
 const (
 	RestCommentAnchorPullRequestAuthorUserTypeNORMAL  RestCommentAnchorPullRequestAuthorUserType = "NORMAL"
 	RestCommentAnchorPullRequestAuthorUserTypeSERVICE RestCommentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
+// Defines values for RestCommentAnchorPullRequestCreatorRole.
+const (
+	RestCommentAnchorPullRequestCreatorRoleAUTHOR      RestCommentAnchorPullRequestCreatorRole = "AUTHOR"
+	RestCommentAnchorPullRequestCreatorRoleCREATOR     RestCommentAnchorPullRequestCreatorRole = "CREATOR"
+	RestCommentAnchorPullRequestCreatorRolePARTICIPANT RestCommentAnchorPullRequestCreatorRole = "PARTICIPANT"
+	RestCommentAnchorPullRequestCreatorRoleREVIEWER    RestCommentAnchorPullRequestCreatorRole = "REVIEWER"
+)
+
+// Defines values for RestCommentAnchorPullRequestCreatorStatus.
+const (
+	RestCommentAnchorPullRequestCreatorStatusAPPROVED   RestCommentAnchorPullRequestCreatorStatus = "APPROVED"
+	RestCommentAnchorPullRequestCreatorStatusNEEDSWORK  RestCommentAnchorPullRequestCreatorStatus = "NEEDS_WORK"
+	RestCommentAnchorPullRequestCreatorStatusUNAPPROVED RestCommentAnchorPullRequestCreatorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestCommentAnchorPullRequestCreatorUserType.
+const (
+	RestCommentAnchorPullRequestCreatorUserTypeNORMAL  RestCommentAnchorPullRequestCreatorUserType = "NORMAL"
+	RestCommentAnchorPullRequestCreatorUserTypeSERVICE RestCommentAnchorPullRequestCreatorUserType = "SERVICE"
 )
 
 // Defines values for RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType.
@@ -599,6 +664,7 @@ const (
 // Defines values for RestCommentParentAnchorPullRequestAuthorRole.
 const (
 	RestCommentParentAnchorPullRequestAuthorRoleAUTHOR      RestCommentParentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestCommentParentAnchorPullRequestAuthorRoleCREATOR     RestCommentParentAnchorPullRequestAuthorRole = "CREATOR"
 	RestCommentParentAnchorPullRequestAuthorRolePARTICIPANT RestCommentParentAnchorPullRequestAuthorRole = "PARTICIPANT"
 	RestCommentParentAnchorPullRequestAuthorRoleREVIEWER    RestCommentParentAnchorPullRequestAuthorRole = "REVIEWER"
 )
@@ -614,6 +680,27 @@ const (
 const (
 	RestCommentParentAnchorPullRequestAuthorUserTypeNORMAL  RestCommentParentAnchorPullRequestAuthorUserType = "NORMAL"
 	RestCommentParentAnchorPullRequestAuthorUserTypeSERVICE RestCommentParentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
+// Defines values for RestCommentParentAnchorPullRequestCreatorRole.
+const (
+	RestCommentParentAnchorPullRequestCreatorRoleAUTHOR      RestCommentParentAnchorPullRequestCreatorRole = "AUTHOR"
+	RestCommentParentAnchorPullRequestCreatorRoleCREATOR     RestCommentParentAnchorPullRequestCreatorRole = "CREATOR"
+	RestCommentParentAnchorPullRequestCreatorRolePARTICIPANT RestCommentParentAnchorPullRequestCreatorRole = "PARTICIPANT"
+	RestCommentParentAnchorPullRequestCreatorRoleREVIEWER    RestCommentParentAnchorPullRequestCreatorRole = "REVIEWER"
+)
+
+// Defines values for RestCommentParentAnchorPullRequestCreatorStatus.
+const (
+	RestCommentParentAnchorPullRequestCreatorStatusAPPROVED   RestCommentParentAnchorPullRequestCreatorStatus = "APPROVED"
+	RestCommentParentAnchorPullRequestCreatorStatusNEEDSWORK  RestCommentParentAnchorPullRequestCreatorStatus = "NEEDS_WORK"
+	RestCommentParentAnchorPullRequestCreatorStatusUNAPPROVED RestCommentParentAnchorPullRequestCreatorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestCommentParentAnchorPullRequestCreatorUserType.
+const (
+	RestCommentParentAnchorPullRequestCreatorUserTypeNORMAL  RestCommentParentAnchorPullRequestCreatorUserType = "NORMAL"
+	RestCommentParentAnchorPullRequestCreatorUserTypeSERVICE RestCommentParentAnchorPullRequestCreatorUserType = "SERVICE"
 )
 
 // Defines values for RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType.
@@ -737,15 +824,6 @@ const (
 	RestDefaultReviewersRequestSourceMatcherTypeIdPATTERN       RestDefaultReviewersRequestSourceMatcherTypeId = "PATTERN"
 )
 
-// Defines values for RestDefaultReviewersRequestTargetMatcherTypeId.
-const (
-	RestDefaultReviewersRequestTargetMatcherTypeIdANYREF        RestDefaultReviewersRequestTargetMatcherTypeId = "ANY_REF"
-	RestDefaultReviewersRequestTargetMatcherTypeIdBRANCH        RestDefaultReviewersRequestTargetMatcherTypeId = "BRANCH"
-	RestDefaultReviewersRequestTargetMatcherTypeIdMODELBRANCH   RestDefaultReviewersRequestTargetMatcherTypeId = "MODEL_BRANCH"
-	RestDefaultReviewersRequestTargetMatcherTypeIdMODELCATEGORY RestDefaultReviewersRequestTargetMatcherTypeId = "MODEL_CATEGORY"
-	RestDefaultReviewersRequestTargetMatcherTypeIdPATTERN       RestDefaultReviewersRequestTargetMatcherTypeId = "PATTERN"
-)
-
 // Defines values for RestDefaultTaskRequestSourceMatcherTypeId.
 const (
 	RestDefaultTaskRequestSourceMatcherTypeIdANYREF        RestDefaultTaskRequestSourceMatcherTypeId = "ANY_REF"
@@ -753,15 +831,6 @@ const (
 	RestDefaultTaskRequestSourceMatcherTypeIdMODELBRANCH   RestDefaultTaskRequestSourceMatcherTypeId = "MODEL_BRANCH"
 	RestDefaultTaskRequestSourceMatcherTypeIdMODELCATEGORY RestDefaultTaskRequestSourceMatcherTypeId = "MODEL_CATEGORY"
 	RestDefaultTaskRequestSourceMatcherTypeIdPATTERN       RestDefaultTaskRequestSourceMatcherTypeId = "PATTERN"
-)
-
-// Defines values for RestDefaultTaskRequestTargetMatcherTypeId.
-const (
-	RestDefaultTaskRequestTargetMatcherTypeIdANYREF        RestDefaultTaskRequestTargetMatcherTypeId = "ANY_REF"
-	RestDefaultTaskRequestTargetMatcherTypeIdBRANCH        RestDefaultTaskRequestTargetMatcherTypeId = "BRANCH"
-	RestDefaultTaskRequestTargetMatcherTypeIdMODELBRANCH   RestDefaultTaskRequestTargetMatcherTypeId = "MODEL_BRANCH"
-	RestDefaultTaskRequestTargetMatcherTypeIdMODELCATEGORY RestDefaultTaskRequestTargetMatcherTypeId = "MODEL_CATEGORY"
-	RestDefaultTaskRequestTargetMatcherTypeIdPATTERN       RestDefaultTaskRequestTargetMatcherTypeId = "PATTERN"
 )
 
 // Defines values for RestDeploymentRepositoryOriginProjectType.
@@ -1106,6 +1175,7 @@ const (
 // Defines values for RestPullRequestAuthorRole.
 const (
 	RestPullRequestAuthorRoleAUTHOR      RestPullRequestAuthorRole = "AUTHOR"
+	RestPullRequestAuthorRoleCREATOR     RestPullRequestAuthorRole = "CREATOR"
 	RestPullRequestAuthorRolePARTICIPANT RestPullRequestAuthorRole = "PARTICIPANT"
 	RestPullRequestAuthorRoleREVIEWER    RestPullRequestAuthorRole = "REVIEWER"
 )
@@ -1121,6 +1191,27 @@ const (
 const (
 	RestPullRequestAuthorUserTypeNORMAL  RestPullRequestAuthorUserType = "NORMAL"
 	RestPullRequestAuthorUserTypeSERVICE RestPullRequestAuthorUserType = "SERVICE"
+)
+
+// Defines values for RestPullRequestCreatorRole.
+const (
+	RestPullRequestCreatorRoleAUTHOR      RestPullRequestCreatorRole = "AUTHOR"
+	RestPullRequestCreatorRoleCREATOR     RestPullRequestCreatorRole = "CREATOR"
+	RestPullRequestCreatorRolePARTICIPANT RestPullRequestCreatorRole = "PARTICIPANT"
+	RestPullRequestCreatorRoleREVIEWER    RestPullRequestCreatorRole = "REVIEWER"
+)
+
+// Defines values for RestPullRequestCreatorStatus.
+const (
+	RestPullRequestCreatorStatusAPPROVED   RestPullRequestCreatorStatus = "APPROVED"
+	RestPullRequestCreatorStatusNEEDSWORK  RestPullRequestCreatorStatus = "NEEDS_WORK"
+	RestPullRequestCreatorStatusUNAPPROVED RestPullRequestCreatorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestPullRequestCreatorUserType.
+const (
+	RestPullRequestCreatorUserTypeNORMAL  RestPullRequestCreatorUserType = "NORMAL"
+	RestPullRequestCreatorUserTypeSERVICE RestPullRequestCreatorUserType = "SERVICE"
 )
 
 // Defines values for RestPullRequestFromRefRepositoryOriginProjectType.
@@ -1229,6 +1320,7 @@ const (
 // Defines values for RestPullRequestAssignParticipantRoleRequestRole.
 const (
 	RestPullRequestAssignParticipantRoleRequestRoleAUTHOR      RestPullRequestAssignParticipantRoleRequestRole = "AUTHOR"
+	RestPullRequestAssignParticipantRoleRequestRoleCREATOR     RestPullRequestAssignParticipantRoleRequestRole = "CREATOR"
 	RestPullRequestAssignParticipantRoleRequestRolePARTICIPANT RestPullRequestAssignParticipantRoleRequestRole = "PARTICIPANT"
 	RestPullRequestAssignParticipantRoleRequestRoleREVIEWER    RestPullRequestAssignParticipantRoleRequestRole = "REVIEWER"
 )
@@ -1281,6 +1373,7 @@ const (
 // Defines values for RestPullRequestParticipantRole.
 const (
 	RestPullRequestParticipantRoleAUTHOR      RestPullRequestParticipantRole = "AUTHOR"
+	RestPullRequestParticipantRoleCREATOR     RestPullRequestParticipantRole = "CREATOR"
 	RestPullRequestParticipantRolePARTICIPANT RestPullRequestParticipantRole = "PARTICIPANT"
 	RestPullRequestParticipantRoleREVIEWER    RestPullRequestParticipantRole = "REVIEWER"
 )
@@ -1612,9 +1705,9 @@ const (
 
 // Defines values for RestSecretScanningRuleScopeType.
 const (
-	RestSecretScanningRuleScopeTypeGLOBAL     RestSecretScanningRuleScopeType = "GLOBAL"
-	RestSecretScanningRuleScopeTypePROJECT    RestSecretScanningRuleScopeType = "PROJECT"
-	RestSecretScanningRuleScopeTypeREPOSITORY RestSecretScanningRuleScopeType = "REPOSITORY"
+	GLOBAL     RestSecretScanningRuleScopeType = "GLOBAL"
+	PROJECT    RestSecretScanningRuleScopeType = "PROJECT"
+	REPOSITORY RestSecretScanningRuleScopeType = "REPOSITORY"
 )
 
 // Defines values for RestSshAccessKeyPermission.
@@ -1725,6 +1818,7 @@ const (
 // Defines values for RestUserReactionCommentAnchorPullRequestAuthorRole.
 const (
 	RestUserReactionCommentAnchorPullRequestAuthorRoleAUTHOR      RestUserReactionCommentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestUserReactionCommentAnchorPullRequestAuthorRoleCREATOR     RestUserReactionCommentAnchorPullRequestAuthorRole = "CREATOR"
 	RestUserReactionCommentAnchorPullRequestAuthorRolePARTICIPANT RestUserReactionCommentAnchorPullRequestAuthorRole = "PARTICIPANT"
 	RestUserReactionCommentAnchorPullRequestAuthorRoleREVIEWER    RestUserReactionCommentAnchorPullRequestAuthorRole = "REVIEWER"
 )
@@ -1740,6 +1834,27 @@ const (
 const (
 	RestUserReactionCommentAnchorPullRequestAuthorUserTypeNORMAL  RestUserReactionCommentAnchorPullRequestAuthorUserType = "NORMAL"
 	RestUserReactionCommentAnchorPullRequestAuthorUserTypeSERVICE RestUserReactionCommentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
+// Defines values for RestUserReactionCommentAnchorPullRequestCreatorRole.
+const (
+	RestUserReactionCommentAnchorPullRequestCreatorRoleAUTHOR      RestUserReactionCommentAnchorPullRequestCreatorRole = "AUTHOR"
+	RestUserReactionCommentAnchorPullRequestCreatorRoleCREATOR     RestUserReactionCommentAnchorPullRequestCreatorRole = "CREATOR"
+	RestUserReactionCommentAnchorPullRequestCreatorRolePARTICIPANT RestUserReactionCommentAnchorPullRequestCreatorRole = "PARTICIPANT"
+	RestUserReactionCommentAnchorPullRequestCreatorRoleREVIEWER    RestUserReactionCommentAnchorPullRequestCreatorRole = "REVIEWER"
+)
+
+// Defines values for RestUserReactionCommentAnchorPullRequestCreatorStatus.
+const (
+	RestUserReactionCommentAnchorPullRequestCreatorStatusAPPROVED   RestUserReactionCommentAnchorPullRequestCreatorStatus = "APPROVED"
+	RestUserReactionCommentAnchorPullRequestCreatorStatusNEEDSWORK  RestUserReactionCommentAnchorPullRequestCreatorStatus = "NEEDS_WORK"
+	RestUserReactionCommentAnchorPullRequestCreatorStatusUNAPPROVED RestUserReactionCommentAnchorPullRequestCreatorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestUserReactionCommentAnchorPullRequestCreatorUserType.
+const (
+	RestUserReactionCommentAnchorPullRequestCreatorUserTypeNORMAL  RestUserReactionCommentAnchorPullRequestCreatorUserType = "NORMAL"
+	RestUserReactionCommentAnchorPullRequestCreatorUserTypeSERVICE RestUserReactionCommentAnchorPullRequestCreatorUserType = "SERVICE"
 )
 
 // Defines values for RestUserReactionCommentAnchorPullRequestFromRefRepositoryOriginProjectType.
@@ -1853,6 +1968,7 @@ const (
 // Defines values for RestUserReactionCommentParentAnchorPullRequestAuthorRole.
 const (
 	RestUserReactionCommentParentAnchorPullRequestAuthorRoleAUTHOR      RestUserReactionCommentParentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestUserReactionCommentParentAnchorPullRequestAuthorRoleCREATOR     RestUserReactionCommentParentAnchorPullRequestAuthorRole = "CREATOR"
 	RestUserReactionCommentParentAnchorPullRequestAuthorRolePARTICIPANT RestUserReactionCommentParentAnchorPullRequestAuthorRole = "PARTICIPANT"
 	RestUserReactionCommentParentAnchorPullRequestAuthorRoleREVIEWER    RestUserReactionCommentParentAnchorPullRequestAuthorRole = "REVIEWER"
 )
@@ -1868,6 +1984,27 @@ const (
 const (
 	RestUserReactionCommentParentAnchorPullRequestAuthorUserTypeNORMAL  RestUserReactionCommentParentAnchorPullRequestAuthorUserType = "NORMAL"
 	RestUserReactionCommentParentAnchorPullRequestAuthorUserTypeSERVICE RestUserReactionCommentParentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
+// Defines values for RestUserReactionCommentParentAnchorPullRequestCreatorRole.
+const (
+	RestUserReactionCommentParentAnchorPullRequestCreatorRoleAUTHOR      RestUserReactionCommentParentAnchorPullRequestCreatorRole = "AUTHOR"
+	RestUserReactionCommentParentAnchorPullRequestCreatorRoleCREATOR     RestUserReactionCommentParentAnchorPullRequestCreatorRole = "CREATOR"
+	RestUserReactionCommentParentAnchorPullRequestCreatorRolePARTICIPANT RestUserReactionCommentParentAnchorPullRequestCreatorRole = "PARTICIPANT"
+	RestUserReactionCommentParentAnchorPullRequestCreatorRoleREVIEWER    RestUserReactionCommentParentAnchorPullRequestCreatorRole = "REVIEWER"
+)
+
+// Defines values for RestUserReactionCommentParentAnchorPullRequestCreatorStatus.
+const (
+	RestUserReactionCommentParentAnchorPullRequestCreatorStatusAPPROVED   RestUserReactionCommentParentAnchorPullRequestCreatorStatus = "APPROVED"
+	RestUserReactionCommentParentAnchorPullRequestCreatorStatusNEEDSWORK  RestUserReactionCommentParentAnchorPullRequestCreatorStatus = "NEEDS_WORK"
+	RestUserReactionCommentParentAnchorPullRequestCreatorStatusUNAPPROVED RestUserReactionCommentParentAnchorPullRequestCreatorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestUserReactionCommentParentAnchorPullRequestCreatorUserType.
+const (
+	RestUserReactionCommentParentAnchorPullRequestCreatorUserTypeNORMAL  RestUserReactionCommentParentAnchorPullRequestCreatorUserType = "NORMAL"
+	RestUserReactionCommentParentAnchorPullRequestCreatorUserTypeSERVICE RestUserReactionCommentParentAnchorPullRequestCreatorUserType = "SERVICE"
 )
 
 // Defines values for RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType.
@@ -2041,6 +2178,13 @@ const (
 	SetPermissionForUserParamsPermissionREPOWRITE SetPermissionForUserParamsPermission = "REPO_WRITE"
 )
 
+// Defines values for GetRelatedRepositoriesParamsPermission.
+const (
+	GetRelatedRepositoriesParamsPermissionREPOADMIN GetRelatedRepositoriesParamsPermission = "REPO_ADMIN"
+	GetRelatedRepositoriesParamsPermissionREPOREAD  GetRelatedRepositoriesParamsPermission = "REPO_READ"
+	GetRelatedRepositoriesParamsPermissionREPOWRITE GetRelatedRepositoriesParamsPermission = "REPO_WRITE"
+)
+
 // Defines values for Search2ParamsOrder.
 const (
 	Search2ParamsOrderNAMEASC  Search2ParamsOrder = "NAME_ASC"
@@ -2091,9 +2235,9 @@ const (
 
 // Defines values for GetRepositories1ParamsPermission.
 const (
-	REPOADMIN GetRepositories1ParamsPermission = "REPO_ADMIN"
-	REPOREAD  GetRepositories1ParamsPermission = "REPO_READ"
-	REPOWRITE GetRepositories1ParamsPermission = "REPO_WRITE"
+	GetRepositories1ParamsPermissionREPOADMIN GetRepositories1ParamsPermission = "REPO_ADMIN"
+	GetRepositories1ParamsPermissionREPOREAD  GetRepositories1ParamsPermission = "REPO_READ"
+	GetRepositories1ParamsPermissionREPOWRITE GetRepositories1ParamsPermission = "REPO_WRITE"
 )
 
 // Defines values for GetRepositories1ParamsState.
@@ -2156,15 +2300,6 @@ const (
 	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdMODELBRANCH   UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "MODEL_BRANCH"
 	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdMODELCATEGORY UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "MODEL_CATEGORY"
 	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdPATTERN       UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "PATTERN"
-)
-
-// Defines values for UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId.
-const (
-	ANYREF        UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId = "ANY_REF"
-	BRANCH        UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId = "BRANCH"
-	MODELBRANCH   UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId = "MODEL_BRANCH"
-	MODELCATEGORY UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId = "MODEL_CATEGORY"
-	PATTERN       UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId = "PATTERN"
 )
 
 // Defines values for GetAllReposForProjectParamsIncludeDefaultBranch.
@@ -2888,9 +3023,26 @@ type RestAutoMergeProcessingResult struct {
 				Type         RestAutoMergeProcessingResultPullRequestAuthorUserType `json:"type"`
 			} `json:"user,omitempty"`
 		} `json:"author,omitempty"`
-		Closed            *bool   `json:"closed,omitempty"`
-		ClosedDate        *int64  `json:"closedDate,omitempty"`
-		CreatedDate       *int64  `json:"createdDate,omitempty"`
+		Closed      *bool  `json:"closed,omitempty"`
+		ClosedDate  *int64 `json:"closedDate,omitempty"`
+		CreatedDate *int64 `json:"createdDate,omitempty"`
+		Creator     *struct {
+			Approved           *bool                                                  `json:"approved,omitempty"`
+			LastReviewedCommit *string                                                `json:"lastReviewedCommit,omitempty"`
+			Role               *RestAutoMergeProcessingResultPullRequestCreatorRole   `json:"role,omitempty"`
+			Status             *RestAutoMergeProcessingResultPullRequestCreatorStatus `json:"status,omitempty"`
+			User               *struct {
+				Active       *bool                                                   `json:"active,omitempty"`
+				AvatarUrl    *string                                                 `json:"avatarUrl,omitempty"`
+				DisplayName  string                                                  `json:"displayName"`
+				EmailAddress *string                                                 `json:"emailAddress,omitempty"`
+				Id           *int32                                                  `json:"id,omitempty"`
+				Links        *map[string]interface{}                                 `json:"links,omitempty"`
+				Name         string                                                  `json:"name"`
+				Slug         string                                                  `json:"slug"`
+				Type         RestAutoMergeProcessingResultPullRequestCreatorUserType `json:"type"`
+			} `json:"user,omitempty"`
+		} `json:"creator,omitempty"`
 		Description       *string `json:"description,omitempty"`
 		DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 		Draft             *bool   `json:"draft,omitempty"`
@@ -3051,6 +3203,15 @@ type RestAutoMergeProcessingResultPullRequestAuthorStatus string
 
 // RestAutoMergeProcessingResultPullRequestAuthorUserType defines model for RestAutoMergeProcessingResult.PullRequest.Author.User.Type.
 type RestAutoMergeProcessingResultPullRequestAuthorUserType string
+
+// RestAutoMergeProcessingResultPullRequestCreatorRole defines model for RestAutoMergeProcessingResult.PullRequest.Creator.Role.
+type RestAutoMergeProcessingResultPullRequestCreatorRole string
+
+// RestAutoMergeProcessingResultPullRequestCreatorStatus defines model for RestAutoMergeProcessingResult.PullRequest.Creator.Status.
+type RestAutoMergeProcessingResultPullRequestCreatorStatus string
+
+// RestAutoMergeProcessingResultPullRequestCreatorUserType defines model for RestAutoMergeProcessingResult.PullRequest.Creator.User.Type.
+type RestAutoMergeProcessingResultPullRequestCreatorUserType string
 
 // RestAutoMergeProcessingResultPullRequestFromRefRepositoryOriginProjectType defines model for RestAutoMergeProcessingResult.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestAutoMergeProcessingResultPullRequestFromRefRepositoryOriginProjectType string
@@ -3432,6 +3593,42 @@ type RestChangeNodeType string
 // RestChangeType defines model for RestChange.Type.
 type RestChangeType string
 
+// RestChangePullRequestAuthorProjectSettingsRequest defines model for RestChangePullRequestAuthorProjectSettingsRequest.
+type RestChangePullRequestAuthorProjectSettingsRequest struct {
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// RestrictionAction The restriction action to apply to repositories in this project.
+	RestrictionAction *RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction `json:"restrictionAction,omitempty"`
+}
+
+// RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction The restriction action to apply to repositories in this project.
+type RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction string
+
+// RestChangePullRequestAuthorRestrictedSettings defines model for RestChangePullRequestAuthorRestrictedSettings.
+type RestChangePullRequestAuthorRestrictedSettings struct {
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// RestrictionState The restriction state of this scope's project.
+	RestrictionState *RestChangePullRequestAuthorRestrictedSettingsRestrictionState `json:"restrictionState,omitempty"`
+
+	// Scope The scope that these settings apply to.
+	Scope *struct {
+		ResourceId int32                                                  `json:"resourceId"`
+		Type       RestChangePullRequestAuthorRestrictedSettingsScopeType `json:"type"`
+	} `json:"scope,omitempty"`
+}
+
+// RestChangePullRequestAuthorRestrictedSettingsRestrictionState The restriction state of this scope's project.
+type RestChangePullRequestAuthorRestrictedSettingsRestrictionState string
+
+// RestChangePullRequestAuthorRestrictedSettingsScopeType defines model for RestChangePullRequestAuthorRestrictedSettings.Scope.Type.
+type RestChangePullRequestAuthorRestrictedSettingsScopeType string
+
+// RestChangePullRequestAuthorSettingsRequest defines model for RestChangePullRequestAuthorSettingsRequest.
+type RestChangePullRequestAuthorSettingsRequest struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
 // RestChangeset defines model for RestChangeset.
 type RestChangeset struct {
 	Changes *struct {
@@ -3619,9 +3816,26 @@ type RestComment struct {
 					Type         RestCommentAnchorPullRequestAuthorUserType `json:"type"`
 				} `json:"user,omitempty"`
 			} `json:"author,omitempty"`
-			Closed            *bool   `json:"closed,omitempty"`
-			ClosedDate        *int64  `json:"closedDate,omitempty"`
-			CreatedDate       *int64  `json:"createdDate,omitempty"`
+			Closed      *bool  `json:"closed,omitempty"`
+			ClosedDate  *int64 `json:"closedDate,omitempty"`
+			CreatedDate *int64 `json:"createdDate,omitempty"`
+			Creator     *struct {
+				Approved           *bool                                      `json:"approved,omitempty"`
+				LastReviewedCommit *string                                    `json:"lastReviewedCommit,omitempty"`
+				Role               *RestCommentAnchorPullRequestCreatorRole   `json:"role,omitempty"`
+				Status             *RestCommentAnchorPullRequestCreatorStatus `json:"status,omitempty"`
+				User               *struct {
+					Active       *bool                                       `json:"active,omitempty"`
+					AvatarUrl    *string                                     `json:"avatarUrl,omitempty"`
+					DisplayName  string                                      `json:"displayName"`
+					EmailAddress *string                                     `json:"emailAddress,omitempty"`
+					Id           *int32                                      `json:"id,omitempty"`
+					Links        *map[string]interface{}                     `json:"links,omitempty"`
+					Name         string                                      `json:"name"`
+					Slug         string                                      `json:"slug"`
+					Type         RestCommentAnchorPullRequestCreatorUserType `json:"type"`
+				} `json:"user,omitempty"`
+			} `json:"creator,omitempty"`
 			Description       *string `json:"description,omitempty"`
 			DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 			Draft             *bool   `json:"draft,omitempty"`
@@ -3844,9 +4058,26 @@ type RestComment struct {
 						Type         RestCommentParentAnchorPullRequestAuthorUserType `json:"type"`
 					} `json:"user,omitempty"`
 				} `json:"author,omitempty"`
-				Closed            *bool   `json:"closed,omitempty"`
-				ClosedDate        *int64  `json:"closedDate,omitempty"`
-				CreatedDate       *int64  `json:"createdDate,omitempty"`
+				Closed      *bool  `json:"closed,omitempty"`
+				ClosedDate  *int64 `json:"closedDate,omitempty"`
+				CreatedDate *int64 `json:"createdDate,omitempty"`
+				Creator     *struct {
+					Approved           *bool                                            `json:"approved,omitempty"`
+					LastReviewedCommit *string                                          `json:"lastReviewedCommit,omitempty"`
+					Role               *RestCommentParentAnchorPullRequestCreatorRole   `json:"role,omitempty"`
+					Status             *RestCommentParentAnchorPullRequestCreatorStatus `json:"status,omitempty"`
+					User               *struct {
+						Active       *bool                                             `json:"active,omitempty"`
+						AvatarUrl    *string                                           `json:"avatarUrl,omitempty"`
+						DisplayName  string                                            `json:"displayName"`
+						EmailAddress *string                                           `json:"emailAddress,omitempty"`
+						Id           *int32                                            `json:"id,omitempty"`
+						Links        *map[string]interface{}                           `json:"links,omitempty"`
+						Name         string                                            `json:"name"`
+						Slug         string                                            `json:"slug"`
+						Type         RestCommentParentAnchorPullRequestCreatorUserType `json:"type"`
+					} `json:"user,omitempty"`
+				} `json:"creator,omitempty"`
 				Description       *string `json:"description,omitempty"`
 				DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 				Draft             *bool   `json:"draft,omitempty"`
@@ -4112,6 +4343,15 @@ type RestCommentAnchorPullRequestAuthorStatus string
 // RestCommentAnchorPullRequestAuthorUserType defines model for RestComment.Anchor.PullRequest.Author.User.Type.
 type RestCommentAnchorPullRequestAuthorUserType string
 
+// RestCommentAnchorPullRequestCreatorRole defines model for RestComment.Anchor.PullRequest.Creator.Role.
+type RestCommentAnchorPullRequestCreatorRole string
+
+// RestCommentAnchorPullRequestCreatorStatus defines model for RestComment.Anchor.PullRequest.Creator.Status.
+type RestCommentAnchorPullRequestCreatorStatus string
+
+// RestCommentAnchorPullRequestCreatorUserType defines model for RestComment.Anchor.PullRequest.Creator.User.Type.
+type RestCommentAnchorPullRequestCreatorUserType string
+
 // RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestComment.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType string
 
@@ -4168,6 +4408,15 @@ type RestCommentParentAnchorPullRequestAuthorStatus string
 
 // RestCommentParentAnchorPullRequestAuthorUserType defines model for RestComment.Parent.Anchor.PullRequest.Author.User.Type.
 type RestCommentParentAnchorPullRequestAuthorUserType string
+
+// RestCommentParentAnchorPullRequestCreatorRole defines model for RestComment.Parent.Anchor.PullRequest.Creator.Role.
+type RestCommentParentAnchorPullRequestCreatorRole string
+
+// RestCommentParentAnchorPullRequestCreatorStatus defines model for RestComment.Parent.Anchor.PullRequest.Creator.Status.
+type RestCommentParentAnchorPullRequestCreatorStatus string
+
+// RestCommentParentAnchorPullRequestCreatorUserType defines model for RestComment.Parent.Anchor.PullRequest.Creator.User.Type.
+type RestCommentParentAnchorPullRequestCreatorUserType string
 
 // RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestComment.Parent.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType string
@@ -4284,21 +4533,11 @@ type RestDefaultReviewersRequest struct {
 			Name string                                         `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceMatcher,omitempty"`
-	TargetMatcher *struct {
-		DisplayId *string `json:"displayId,omitempty"`
-		Id        *string `json:"id,omitempty"`
-		Type      *struct {
-			Id   RestDefaultReviewersRequestTargetMatcherTypeId `json:"id"`
-			Name string                                         `json:"name"`
-		} `json:"type,omitempty"`
-	} `json:"targetMatcher,omitempty"`
+	TargetMatcher *RestRefMatcher `json:"targetMatcher,omitempty"`
 }
 
 // RestDefaultReviewersRequestSourceMatcherTypeId defines model for RestDefaultReviewersRequest.SourceMatcher.Type.Id.
 type RestDefaultReviewersRequestSourceMatcherTypeId string
-
-// RestDefaultReviewersRequestTargetMatcherTypeId defines model for RestDefaultReviewersRequest.TargetMatcher.Type.Id.
-type RestDefaultReviewersRequestTargetMatcherTypeId string
 
 // RestDefaultTask defines model for RestDefaultTask.
 type RestDefaultTask struct {
@@ -4318,21 +4557,11 @@ type RestDefaultTaskRequest struct {
 			Name string                                    `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceMatcher,omitempty"`
-	TargetMatcher *struct {
-		DisplayId *string `json:"displayId,omitempty"`
-		Id        *string `json:"id,omitempty"`
-		Type      *struct {
-			Id   RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
-			Name string                                    `json:"name"`
-		} `json:"type,omitempty"`
-	} `json:"targetMatcher,omitempty"`
+	TargetMatcher *RestRefMatcher `json:"targetMatcher,omitempty"`
 }
 
 // RestDefaultTaskRequestSourceMatcherTypeId defines model for RestDefaultTaskRequest.SourceMatcher.Type.Id.
 type RestDefaultTaskRequestSourceMatcherTypeId string
-
-// RestDefaultTaskRequestTargetMatcherTypeId defines model for RestDefaultTaskRequest.TargetMatcher.Type.Id.
-type RestDefaultTaskRequestTargetMatcherTypeId string
 
 // RestDelayedSyncRepository defines model for RestDelayedSyncRepository.
 type RestDelayedSyncRepository struct {
@@ -4747,6 +4976,12 @@ type RestIndexingWorkerRestartRequest struct {
 
 	// WaitForRestart Should the response wait until the worker has been restarted
 	WaitForRestart *bool `json:"waitForRestart,omitempty"`
+}
+
+// RestIndexingWorkerThreadsRequest defines model for RestIndexingWorkerThreadsRequest.
+type RestIndexingWorkerThreadsRequest struct {
+	// DesiredCount The desired number of indexing worker threads
+	DesiredCount int32 `json:"desiredCount"`
 }
 
 // RestInsightAnnotation defines model for RestInsightAnnotation.
@@ -5351,9 +5586,26 @@ type RestPullRequest struct {
 			Type         RestPullRequestAuthorUserType `json:"type"`
 		} `json:"user,omitempty"`
 	} `json:"author,omitempty"`
-	Closed            *bool   `json:"closed,omitempty"`
-	ClosedDate        *int64  `json:"closedDate,omitempty"`
-	CreatedDate       *int64  `json:"createdDate,omitempty"`
+	Closed      *bool  `json:"closed,omitempty"`
+	ClosedDate  *int64 `json:"closedDate,omitempty"`
+	CreatedDate *int64 `json:"createdDate,omitempty"`
+	Creator     *struct {
+		Approved           *bool                         `json:"approved,omitempty"`
+		LastReviewedCommit *string                       `json:"lastReviewedCommit,omitempty"`
+		Role               *RestPullRequestCreatorRole   `json:"role,omitempty"`
+		Status             *RestPullRequestCreatorStatus `json:"status,omitempty"`
+		User               *struct {
+			Active       *bool                          `json:"active,omitempty"`
+			AvatarUrl    *string                        `json:"avatarUrl,omitempty"`
+			DisplayName  string                         `json:"displayName"`
+			EmailAddress *string                        `json:"emailAddress,omitempty"`
+			Id           *int32                         `json:"id,omitempty"`
+			Links        *map[string]interface{}        `json:"links,omitempty"`
+			Name         string                         `json:"name"`
+			Slug         string                         `json:"slug"`
+			Type         RestPullRequestCreatorUserType `json:"type"`
+		} `json:"user,omitempty"`
+	} `json:"creator,omitempty"`
 	Description       *string `json:"description,omitempty"`
 	DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 	Draft             *bool   `json:"draft,omitempty"`
@@ -5510,6 +5762,15 @@ type RestPullRequestAuthorStatus string
 
 // RestPullRequestAuthorUserType defines model for RestPullRequest.Author.User.Type.
 type RestPullRequestAuthorUserType string
+
+// RestPullRequestCreatorRole defines model for RestPullRequest.Creator.Role.
+type RestPullRequestCreatorRole string
+
+// RestPullRequestCreatorStatus defines model for RestPullRequest.Creator.Status.
+type RestPullRequestCreatorStatus string
+
+// RestPullRequestCreatorUserType defines model for RestPullRequest.Creator.User.Type.
+type RestPullRequestCreatorUserType string
 
 // RestPullRequestFromRefRepositoryOriginProjectType defines model for RestPullRequest.FromRef.Repository.Origin.Project.Type.
 type RestPullRequestFromRefRepositoryOriginProjectType string
@@ -6857,9 +7118,26 @@ type RestUserReaction struct {
 						Type         RestUserReactionCommentAnchorPullRequestAuthorUserType `json:"type"`
 					} `json:"user,omitempty"`
 				} `json:"author,omitempty"`
-				Closed            *bool   `json:"closed,omitempty"`
-				ClosedDate        *int64  `json:"closedDate,omitempty"`
-				CreatedDate       *int64  `json:"createdDate,omitempty"`
+				Closed      *bool  `json:"closed,omitempty"`
+				ClosedDate  *int64 `json:"closedDate,omitempty"`
+				CreatedDate *int64 `json:"createdDate,omitempty"`
+				Creator     *struct {
+					Approved           *bool                                                  `json:"approved,omitempty"`
+					LastReviewedCommit *string                                                `json:"lastReviewedCommit,omitempty"`
+					Role               *RestUserReactionCommentAnchorPullRequestCreatorRole   `json:"role,omitempty"`
+					Status             *RestUserReactionCommentAnchorPullRequestCreatorStatus `json:"status,omitempty"`
+					User               *struct {
+						Active       *bool                                                   `json:"active,omitempty"`
+						AvatarUrl    *string                                                 `json:"avatarUrl,omitempty"`
+						DisplayName  string                                                  `json:"displayName"`
+						EmailAddress *string                                                 `json:"emailAddress,omitempty"`
+						Id           *int32                                                  `json:"id,omitempty"`
+						Links        *map[string]interface{}                                 `json:"links,omitempty"`
+						Name         string                                                  `json:"name"`
+						Slug         string                                                  `json:"slug"`
+						Type         RestUserReactionCommentAnchorPullRequestCreatorUserType `json:"type"`
+					} `json:"user,omitempty"`
+				} `json:"creator,omitempty"`
 				Description       *string `json:"description,omitempty"`
 				DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 				Draft             *bool   `json:"draft,omitempty"`
@@ -7082,9 +7360,26 @@ type RestUserReaction struct {
 							Type         RestUserReactionCommentParentAnchorPullRequestAuthorUserType `json:"type"`
 						} `json:"user,omitempty"`
 					} `json:"author,omitempty"`
-					Closed            *bool   `json:"closed,omitempty"`
-					ClosedDate        *int64  `json:"closedDate,omitempty"`
-					CreatedDate       *int64  `json:"createdDate,omitempty"`
+					Closed      *bool  `json:"closed,omitempty"`
+					ClosedDate  *int64 `json:"closedDate,omitempty"`
+					CreatedDate *int64 `json:"createdDate,omitempty"`
+					Creator     *struct {
+						Approved           *bool                                                        `json:"approved,omitempty"`
+						LastReviewedCommit *string                                                      `json:"lastReviewedCommit,omitempty"`
+						Role               *RestUserReactionCommentParentAnchorPullRequestCreatorRole   `json:"role,omitempty"`
+						Status             *RestUserReactionCommentParentAnchorPullRequestCreatorStatus `json:"status,omitempty"`
+						User               *struct {
+							Active       *bool                                                         `json:"active,omitempty"`
+							AvatarUrl    *string                                                       `json:"avatarUrl,omitempty"`
+							DisplayName  string                                                        `json:"displayName"`
+							EmailAddress *string                                                       `json:"emailAddress,omitempty"`
+							Id           *int32                                                        `json:"id,omitempty"`
+							Links        *map[string]interface{}                                       `json:"links,omitempty"`
+							Name         string                                                        `json:"name"`
+							Slug         string                                                        `json:"slug"`
+							Type         RestUserReactionCommentParentAnchorPullRequestCreatorUserType `json:"type"`
+						} `json:"user,omitempty"`
+					} `json:"creator,omitempty"`
 					Description       *string `json:"description,omitempty"`
 					DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 					Draft             *bool   `json:"draft,omitempty"`
@@ -7367,6 +7662,15 @@ type RestUserReactionCommentAnchorPullRequestAuthorStatus string
 // RestUserReactionCommentAnchorPullRequestAuthorUserType defines model for RestUserReaction.Comment.Anchor.PullRequest.Author.User.Type.
 type RestUserReactionCommentAnchorPullRequestAuthorUserType string
 
+// RestUserReactionCommentAnchorPullRequestCreatorRole defines model for RestUserReaction.Comment.Anchor.PullRequest.Creator.Role.
+type RestUserReactionCommentAnchorPullRequestCreatorRole string
+
+// RestUserReactionCommentAnchorPullRequestCreatorStatus defines model for RestUserReaction.Comment.Anchor.PullRequest.Creator.Status.
+type RestUserReactionCommentAnchorPullRequestCreatorStatus string
+
+// RestUserReactionCommentAnchorPullRequestCreatorUserType defines model for RestUserReaction.Comment.Anchor.PullRequest.Creator.User.Type.
+type RestUserReactionCommentAnchorPullRequestCreatorUserType string
+
 // RestUserReactionCommentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestUserReaction.Comment.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestUserReactionCommentAnchorPullRequestFromRefRepositoryOriginProjectType string
 
@@ -7423,6 +7727,15 @@ type RestUserReactionCommentParentAnchorPullRequestAuthorStatus string
 
 // RestUserReactionCommentParentAnchorPullRequestAuthorUserType defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Author.User.Type.
 type RestUserReactionCommentParentAnchorPullRequestAuthorUserType string
+
+// RestUserReactionCommentParentAnchorPullRequestCreatorRole defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Creator.Role.
+type RestUserReactionCommentParentAnchorPullRequestCreatorRole string
+
+// RestUserReactionCommentParentAnchorPullRequestCreatorStatus defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Creator.Status.
+type RestUserReactionCommentParentAnchorPullRequestCreatorStatus string
+
+// RestUserReactionCommentParentAnchorPullRequestCreatorUserType defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Creator.User.Type.
+type RestUserReactionCommentParentAnchorPullRequestCreatorUserType string
 
 // RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType string
@@ -9245,12 +9558,18 @@ type FindBranchesParams struct {
 
 // GetRelatedRepositoriesParams defines parameters for GetRelatedRepositories.
 type GetRelatedRepositoriesParams struct {
+	// Permission If specified, only repositories for which the authenticated user has the supplied permission will be returned.
+	Permission *GetRelatedRepositoriesParamsPermission `form:"permission,omitempty" json:"permission,omitempty"`
+
 	// Start Start number for the page (inclusive). If not passed, first page is assumed.
 	Start *float32 `form:"start,omitempty" json:"start,omitempty"`
 
 	// Limit Number of items to return. If not passed, a page size of 25 is used.
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// GetRelatedRepositoriesParamsPermission defines parameters for GetRelatedRepositories.
+type GetRelatedRepositoriesParamsPermission string
 
 // Search2Params defines parameters for Search2.
 type Search2Params struct {
@@ -9437,8 +9756,8 @@ type Search1Params struct {
 // Search1ParamsOrder defines parameters for Search1.
 type Search1ParamsOrder string
 
-// Delete9Params defines parameters for Delete9.
-type Delete9Params struct {
+// Delete11Params defines parameters for Delete11.
+type Delete11Params struct {
 	// Namespace A namespace used to identify the provider of the feature
 	Namespace string `form:"namespace" json:"namespace"`
 
@@ -9449,8 +9768,8 @@ type Delete9Params struct {
 	FeatureKey string `form:"featureKey" json:"featureKey"`
 }
 
-// Get7Params defines parameters for Get7.
-type Get7Params struct {
+// Get9Params defines parameters for Get9.
+type Get9Params struct {
 	// Namespace The namespace used to identify the provider of the feature
 	Namespace string `form:"namespace" json:"namespace"`
 
@@ -9758,21 +10077,11 @@ type UpdatePullRequestCondition1JSONBody struct {
 			Name string                                                 `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceMatcher,omitempty"`
-	TargetMatcher *struct {
-		DisplayId *string `json:"displayId,omitempty"`
-		Id        *string `json:"id,omitempty"`
-		Type      *struct {
-			Id   UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId `json:"id"`
-			Name string                                                 `json:"name"`
-		} `json:"type,omitempty"`
-	} `json:"targetMatcher,omitempty"`
+	TargetMatcher *RestRefMatcher `json:"targetMatcher,omitempty"`
 }
 
 // UpdatePullRequestCondition1JSONBodySourceMatcherTypeId defines parameters for UpdatePullRequestCondition1.
 type UpdatePullRequestCondition1JSONBodySourceMatcherTypeId string
-
-// UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId defines parameters for UpdatePullRequestCondition1.
-type UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId string
 
 // GetReviewersParams defines parameters for GetReviewers.
 type GetReviewersParams struct {
@@ -10186,11 +10495,11 @@ type SetMergeConfigJSONRequestBody = RestPullRequestSettings
 // SetSettings3JSONRequestBody defines body for SetSettings3 for application/json ContentType.
 type SetSettings3JSONRequestBody = RestRateLimitSettings
 
-// Set2JSONRequestBody defines body for Set2 for application/json ContentType.
-type Set2JSONRequestBody = RestBulkUserRateLimitSettingsUpdateRequest
+// Set4JSONRequestBody defines body for Set4 for application/json ContentType.
+type Set4JSONRequestBody = RestBulkUserRateLimitSettingsUpdateRequest
 
-// Set3JSONRequestBody defines body for Set3 for application/json ContentType.
-type Set3JSONRequestBody = RestUserRateLimitSettingsUpdateRequest
+// Set5JSONRequestBody defines body for Set5 for application/json ContentType.
+type Set5JSONRequestBody = RestUserRateLimitSettingsUpdateRequest
 
 // UpdateUserDetailsJSONRequestBody defines body for UpdateUserDetails for application/json ContentType.
 type UpdateUserDetailsJSONRequestBody = UserUpdate
@@ -10327,6 +10636,9 @@ type SetAutoDeclineSettings1JSONRequestBody = RestAutoDeclineSettingsRequest
 // Set1JSONRequestBody defines body for Set1 for application/json ContentType.
 type Set1JSONRequestBody = RestAutoMergeSettingsRequest
 
+// Set3JSONRequestBody defines body for Set3 for application/json ContentType.
+type Set3JSONRequestBody = RestChangePullRequestAuthorSettingsRequest
+
 // SetSettings1JSONRequestBody defines body for SetSettings1 for application/json ContentType.
 type SetSettings1JSONRequestBody = ExampleSettings
 
@@ -10362,6 +10674,9 @@ type SetAutoDeclineSettingsJSONRequestBody = RestAutoDeclineSettingsRequest
 
 // SetJSONRequestBody defines body for Set for application/json ContentType.
 type SetJSONRequestBody = RestAutoMergeProjectSettingsRequest
+
+// Set2JSONRequestBody defines body for Set2 for application/json ContentType.
+type Set2JSONRequestBody = RestChangePullRequestAuthorProjectSettingsRequest
 
 // SetSettingsJSONRequestBody defines body for SetSettings for application/json ContentType.
 type SetSettingsJSONRequestBody = ExampleSettings
@@ -10473,6 +10788,9 @@ type ReindexRepositoriesJSONRequestBody = ReindexRepositoriesJSONBody
 
 // RestartIndexingThreadWorkerJSONRequestBody defines body for RestartIndexingThreadWorker for application/json ContentType.
 type RestartIndexingThreadWorkerJSONRequestBody = RestIndexingWorkerRestartRequest
+
+// SetWorkerThreadCountJSONRequestBody defines body for SetWorkerThreadCount for application/json ContentType.
+type SetWorkerThreadCountJSONRequestBody = RestIndexingWorkerThreadsRequest
 
 // SetACodeInsightsReportJSONRequestBody defines body for SetACodeInsightsReport for application/json ContentType.
 type SetACodeInsightsReportJSONRequestBody = RestSetInsightReportRequest
@@ -10961,21 +11279,21 @@ type ClientInterface interface {
 	// GetAllRateLimitSettings request
 	GetAllRateLimitSettings(ctx context.Context, params *GetAllRateLimitSettingsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Set2WithBody request with any body
-	Set2WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Set4WithBody request with any body
+	Set4WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	Set2(ctx context.Context, body Set2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	Set4(ctx context.Context, body Set4JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete8 request
-	Delete8(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete10 request
+	Delete10(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get6 request
-	Get6(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get8 request
+	Get8(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Set3WithBody request with any body
-	Set3WithBody(ctx context.Context, userSlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Set5WithBody request with any body
+	Set5WithBody(ctx context.Context, userSlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	Set3(ctx context.Context, userSlug string, body Set3JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	Set5(ctx context.Context, userSlug string, body Set5JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetUserDirectories request
 	GetUserDirectories(ctx context.Context, params *GetUserDirectoriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11727,6 +12045,17 @@ type ClientInterface interface {
 
 	Set1(ctx context.Context, projectKey string, repositorySlug string, body Set1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// Delete7 request
+	Delete7(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// Get7 request
+	Get7(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// Set3WithBody request with any body
+	Set3WithBody(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	Set3(ctx context.Context, projectKey string, repositorySlug string, body Set3JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetRepositoryHooks1 request
 	GetRepositoryHooks1(ctx context.Context, projectKey string, repositorySlug string, params *GetRepositoryHooks1Params, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -11766,8 +12095,8 @@ type ClientInterface interface {
 
 	Create2(ctx context.Context, projectKey string, repositorySlug string, body Create2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete7 request
-	Delete7(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete9 request
+	Delete9(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetReviewerGroup1 request
 	GetReviewerGroup1(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11871,11 +12200,11 @@ type ClientInterface interface {
 	// EditRuleWithBody request with any body
 	EditRuleWithBody(ctx context.Context, projectKey string, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete9 request
-	Delete9(ctx context.Context, projectKey string, params *Delete9Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete11 request
+	Delete11(ctx context.Context, projectKey string, params *Delete11Params, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get7 request
-	Get7(ctx context.Context, projectKey string, params *Get7Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get9 request
+	Get9(ctx context.Context, projectKey string, params *Get9Params, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Create3WithBody request with any body
 	Create3WithBody(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11906,6 +12235,17 @@ type ClientInterface interface {
 	SetWithBody(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	Set(ctx context.Context, projectKey string, body SetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// Delete6 request
+	Delete6(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// Get6 request
+	Get6(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// Set2WithBody request with any body
+	Set2WithBody(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	Set2(ctx context.Context, projectKey string, body Set2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetRepositoryHooks request
 	GetRepositoryHooks(ctx context.Context, projectKey string, params *GetRepositoryHooksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11943,8 +12283,8 @@ type ClientInterface interface {
 
 	Create1(ctx context.Context, projectKey string, body Create1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete6 request
-	Delete6(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete8 request
+	Delete8(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetReviewerGroup request
 	GetReviewerGroup(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -12103,8 +12443,8 @@ type ClientInterface interface {
 
 	UpdateConfig(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get8 request
-	Get8(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get10 request
+	Get10(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PutWithBody request with any body
 	PutWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -12312,6 +12652,11 @@ type ClientInterface interface {
 
 	// GetIndexingThreadSnapshot request
 	GetIndexingThreadSnapshot(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetWorkerThreadCountWithBody request with any body
+	SetWorkerThreadCountWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetWorkerThreadCount(ctx context.Context, body SetWorkerThreadCountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAnnotations1 request
 	GetAnnotations1(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetAnnotations1Params, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -13707,8 +14052,8 @@ func (c *Client) GetAllRateLimitSettings(ctx context.Context, params *GetAllRate
 	return c.Client.Do(req)
 }
 
-func (c *Client) Set2WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSet2RequestWithBody(c.Server, contentType, body)
+func (c *Client) Set4WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSet4RequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13719,8 +14064,8 @@ func (c *Client) Set2WithBody(ctx context.Context, contentType string, body io.R
 	return c.Client.Do(req)
 }
 
-func (c *Client) Set2(ctx context.Context, body Set2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSet2Request(c.Server, body)
+func (c *Client) Set4(ctx context.Context, body Set4JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSet4Request(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13731,8 +14076,8 @@ func (c *Client) Set2(ctx context.Context, body Set2JSONRequestBody, reqEditors 
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete8(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete8Request(c.Server, userSlug)
+func (c *Client) Delete10(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete10Request(c.Server, userSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -13743,8 +14088,8 @@ func (c *Client) Delete8(ctx context.Context, userSlug string, reqEditors ...Req
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get6(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet6Request(c.Server, userSlug)
+func (c *Client) Get8(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet8Request(c.Server, userSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -13755,8 +14100,8 @@ func (c *Client) Get6(ctx context.Context, userSlug string, reqEditors ...Reques
 	return c.Client.Do(req)
 }
 
-func (c *Client) Set3WithBody(ctx context.Context, userSlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSet3RequestWithBody(c.Server, userSlug, contentType, body)
+func (c *Client) Set5WithBody(ctx context.Context, userSlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSet5RequestWithBody(c.Server, userSlug, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13767,8 +14112,8 @@ func (c *Client) Set3WithBody(ctx context.Context, userSlug string, contentType 
 	return c.Client.Do(req)
 }
 
-func (c *Client) Set3(ctx context.Context, userSlug string, body Set3JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSet3Request(c.Server, userSlug, body)
+func (c *Client) Set5(ctx context.Context, userSlug string, body Set5JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSet5Request(c.Server, userSlug, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16947,6 +17292,54 @@ func (c *Client) Set1(ctx context.Context, projectKey string, repositorySlug str
 	return c.Client.Do(req)
 }
 
+func (c *Client) Delete7(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete7Request(c.Server, projectKey, repositorySlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) Get7(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet7Request(c.Server, projectKey, repositorySlug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) Set3WithBody(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSet3RequestWithBody(c.Server, projectKey, repositorySlug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) Set3(ctx context.Context, projectKey string, repositorySlug string, body Set3JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSet3Request(c.Server, projectKey, repositorySlug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetRepositoryHooks1(ctx context.Context, projectKey string, repositorySlug string, params *GetRepositoryHooks1Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRepositoryHooks1Request(c.Server, projectKey, repositorySlug, params)
 	if err != nil {
@@ -17115,8 +17508,8 @@ func (c *Client) Create2(ctx context.Context, projectKey string, repositorySlug 
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete7(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete7Request(c.Server, projectKey, repositorySlug, id)
+func (c *Client) Delete9(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete9Request(c.Server, projectKey, repositorySlug, id)
 	if err != nil {
 		return nil, err
 	}
@@ -17559,8 +17952,8 @@ func (c *Client) EditRuleWithBody(ctx context.Context, projectKey string, id str
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete9(ctx context.Context, projectKey string, params *Delete9Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete9Request(c.Server, projectKey, params)
+func (c *Client) Delete11(ctx context.Context, projectKey string, params *Delete11Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete11Request(c.Server, projectKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17571,8 +17964,8 @@ func (c *Client) Delete9(ctx context.Context, projectKey string, params *Delete9
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get7(ctx context.Context, projectKey string, params *Get7Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet7Request(c.Server, projectKey, params)
+func (c *Client) Get9(ctx context.Context, projectKey string, params *Get9Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet9Request(c.Server, projectKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17705,6 +18098,54 @@ func (c *Client) SetWithBody(ctx context.Context, projectKey string, contentType
 
 func (c *Client) Set(ctx context.Context, projectKey string, body SetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetRequest(c.Server, projectKey, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) Delete6(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete6Request(c.Server, projectKey)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) Get6(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet6Request(c.Server, projectKey)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) Set2WithBody(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSet2RequestWithBody(c.Server, projectKey, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) Set2(ctx context.Context, projectKey string, body Set2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSet2Request(c.Server, projectKey, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17871,8 +18312,8 @@ func (c *Client) Create1(ctx context.Context, projectKey string, body Create1JSO
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete6(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete6Request(c.Server, projectKey, id)
+func (c *Client) Delete8(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete8Request(c.Server, projectKey, id)
 	if err != nil {
 		return nil, err
 	}
@@ -18555,8 +18996,8 @@ func (c *Client) UpdateConfig(ctx context.Context, body UpdateConfigJSONRequestB
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get8(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet8Request(c.Server)
+func (c *Client) Get10(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet10Request(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -19469,6 +19910,30 @@ func (c *Client) GetBrokenIndexStatusRepos(ctx context.Context, params *GetBroke
 
 func (c *Client) GetIndexingThreadSnapshot(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetIndexingThreadSnapshotRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetWorkerThreadCountWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetWorkerThreadCountRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetWorkerThreadCount(ctx context.Context, body SetWorkerThreadCountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetWorkerThreadCountRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -24193,19 +24658,19 @@ func NewGetAllRateLimitSettingsRequest(server string, params *GetAllRateLimitSet
 	return req, nil
 }
 
-// NewSet2Request calls the generic Set2 builder with application/json body
-func NewSet2Request(server string, body Set2JSONRequestBody) (*http.Request, error) {
+// NewSet4Request calls the generic Set4 builder with application/json body
+func NewSet4Request(server string, body Set4JSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewSet2RequestWithBody(server, "application/json", bodyReader)
+	return NewSet4RequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewSet2RequestWithBody generates requests for Set2 with any type of body
-func NewSet2RequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewSet4RequestWithBody generates requests for Set4 with any type of body
+func NewSet4RequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -24233,8 +24698,8 @@ func NewSet2RequestWithBody(server string, contentType string, body io.Reader) (
 	return req, nil
 }
 
-// NewDelete8Request generates requests for Delete8
-func NewDelete8Request(server string, userSlug string) (*http.Request, error) {
+// NewDelete10Request generates requests for Delete10
+func NewDelete10Request(server string, userSlug string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24267,8 +24732,8 @@ func NewDelete8Request(server string, userSlug string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewGet6Request generates requests for Get6
-func NewGet6Request(server string, userSlug string) (*http.Request, error) {
+// NewGet8Request generates requests for Get8
+func NewGet8Request(server string, userSlug string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24301,19 +24766,19 @@ func NewGet6Request(server string, userSlug string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewSet3Request calls the generic Set3 builder with application/json body
-func NewSet3Request(server string, userSlug string, body Set3JSONRequestBody) (*http.Request, error) {
+// NewSet5Request calls the generic Set5 builder with application/json body
+func NewSet5Request(server string, userSlug string, body Set5JSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewSet3RequestWithBody(server, userSlug, "application/json", bodyReader)
+	return NewSet5RequestWithBody(server, userSlug, "application/json", bodyReader)
 }
 
-// NewSet3RequestWithBody generates requests for Set3 with any type of body
-func NewSet3RequestWithBody(server string, userSlug string, contentType string, body io.Reader) (*http.Request, error) {
+// NewSet5RequestWithBody generates requests for Set5 with any type of body
+func NewSet5RequestWithBody(server string, userSlug string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -39180,6 +39645,22 @@ func NewGetRelatedRepositoriesRequest(server string, projectKey string, reposito
 	if params != nil {
 		queryValues := queryURL.Query()
 
+		if params.Permission != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "permission", runtime.ParamLocationQuery, *params.Permission); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
 		if params.Start != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "start", runtime.ParamLocationQuery, *params.Start); err != nil {
@@ -40218,6 +40699,142 @@ func NewSet1RequestWithBody(server string, projectKey string, repositorySlug str
 	return req, nil
 }
 
+// NewDelete7Request generates requests for Delete7
+func NewDelete7Request(server string, projectKey string, repositorySlug string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "projectKey", runtime.ParamLocationPath, projectKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repositorySlug", runtime.ParamLocationPath, repositorySlug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/latest/projects/%s/repos/%s/settings/change-author", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGet7Request generates requests for Get7
+func NewGet7Request(server string, projectKey string, repositorySlug string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "projectKey", runtime.ParamLocationPath, projectKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repositorySlug", runtime.ParamLocationPath, repositorySlug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/latest/projects/%s/repos/%s/settings/change-author", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSet3Request calls the generic Set3 builder with application/json body
+func NewSet3Request(server string, projectKey string, repositorySlug string, body Set3JSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSet3RequestWithBody(server, projectKey, repositorySlug, "application/json", bodyReader)
+}
+
+// NewSet3RequestWithBody generates requests for Set3 with any type of body
+func NewSet3RequestWithBody(server string, projectKey string, repositorySlug string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "projectKey", runtime.ParamLocationPath, projectKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repositorySlug", runtime.ParamLocationPath, repositorySlug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/latest/projects/%s/repos/%s/settings/change-author", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetRepositoryHooks1Request generates requests for GetRepositoryHooks1
 func NewGetRepositoryHooks1Request(server string, projectKey string, repositorySlug string, params *GetRepositoryHooks1Params) (*http.Request, error) {
 	var err error
@@ -40857,8 +41474,8 @@ func NewCreate2RequestWithBody(server string, projectKey string, repositorySlug 
 	return req, nil
 }
 
-// NewDelete7Request generates requests for Delete7
-func NewDelete7Request(server string, projectKey string, repositorySlug string, id string) (*http.Request, error) {
+// NewDelete9Request generates requests for Delete9
+func NewDelete9Request(server string, projectKey string, repositorySlug string, id string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -42743,8 +43360,8 @@ func NewEditRuleRequestWithBody(server string, projectKey string, id string, con
 	return req, nil
 }
 
-// NewDelete9Request generates requests for Delete9
-func NewDelete9Request(server string, projectKey string, params *Delete9Params) (*http.Request, error) {
+// NewDelete11Request generates requests for Delete11
+func NewDelete11Request(server string, projectKey string, params *Delete11Params) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -42823,8 +43440,8 @@ func NewDelete9Request(server string, projectKey string, params *Delete9Params) 
 	return req, nil
 }
 
-// NewGet7Request generates requests for Get7
-func NewGet7Request(server string, projectKey string, params *Get7Params) (*http.Request, error) {
+// NewGet9Request generates requests for Get9
+func NewGet9Request(server string, projectKey string, params *Get9Params) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -43257,6 +43874,121 @@ func NewSetRequestWithBody(server string, projectKey string, contentType string,
 	}
 
 	operationPath := fmt.Sprintf("/api/latest/projects/%s/settings/auto-merge", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDelete6Request generates requests for Delete6
+func NewDelete6Request(server string, projectKey string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "projectKey", runtime.ParamLocationPath, projectKey)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/latest/projects/%s/settings/change-author", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGet6Request generates requests for Get6
+func NewGet6Request(server string, projectKey string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "projectKey", runtime.ParamLocationPath, projectKey)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/latest/projects/%s/settings/change-author", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSet2Request calls the generic Set2 builder with application/json body
+func NewSet2Request(server string, projectKey string, body Set2JSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSet2RequestWithBody(server, projectKey, "application/json", bodyReader)
+}
+
+// NewSet2RequestWithBody generates requests for Set2 with any type of body
+func NewSet2RequestWithBody(server string, projectKey string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "projectKey", runtime.ParamLocationPath, projectKey)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/latest/projects/%s/settings/change-author", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -43811,8 +44543,8 @@ func NewCreate1RequestWithBody(server string, projectKey string, contentType str
 	return req, nil
 }
 
-// NewDelete6Request generates requests for Delete6
-func NewDelete6Request(server string, projectKey string, id string) (*http.Request, error) {
+// NewDelete8Request generates requests for Delete8
+func NewDelete8Request(server string, projectKey string, id string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -46053,8 +46785,8 @@ func NewUpdateConfigRequestWithBody(server string, contentType string, body io.R
 	return req, nil
 }
 
-// NewGet8Request generates requests for Get8
-func NewGet8Request(server string) (*http.Request, error) {
+// NewGet10Request generates requests for Get10
+func NewGet10Request(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -49141,6 +49873,46 @@ func NewGetIndexingThreadSnapshotRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewSetWorkerThreadCountRequest calls the generic SetWorkerThreadCount builder with application/json body
+func NewSetWorkerThreadCountRequest(server string, body SetWorkerThreadCountJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetWorkerThreadCountRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSetWorkerThreadCountRequestWithBody generates requests for SetWorkerThreadCount with any type of body
+func NewSetWorkerThreadCountRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/indexing/latest/threads")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -54546,21 +55318,21 @@ type ClientWithResponsesInterface interface {
 	// GetAllRateLimitSettingsWithResponse request
 	GetAllRateLimitSettingsWithResponse(ctx context.Context, params *GetAllRateLimitSettingsParams, reqEditors ...RequestEditorFn) (*GetAllRateLimitSettingsResponse, error)
 
-	// Set2WithBodyWithResponse request with any body
-	Set2WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set2Response, error)
+	// Set4WithBodyWithResponse request with any body
+	Set4WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set4Response, error)
 
-	Set2WithResponse(ctx context.Context, body Set2JSONRequestBody, reqEditors ...RequestEditorFn) (*Set2Response, error)
+	Set4WithResponse(ctx context.Context, body Set4JSONRequestBody, reqEditors ...RequestEditorFn) (*Set4Response, error)
 
-	// Delete8WithResponse request
-	Delete8WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Delete8Response, error)
+	// Delete10WithResponse request
+	Delete10WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Delete10Response, error)
 
-	// Get6WithResponse request
-	Get6WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Get6Response, error)
+	// Get8WithResponse request
+	Get8WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Get8Response, error)
 
-	// Set3WithBodyWithResponse request with any body
-	Set3WithBodyWithResponse(ctx context.Context, userSlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set3Response, error)
+	// Set5WithBodyWithResponse request with any body
+	Set5WithBodyWithResponse(ctx context.Context, userSlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set5Response, error)
 
-	Set3WithResponse(ctx context.Context, userSlug string, body Set3JSONRequestBody, reqEditors ...RequestEditorFn) (*Set3Response, error)
+	Set5WithResponse(ctx context.Context, userSlug string, body Set5JSONRequestBody, reqEditors ...RequestEditorFn) (*Set5Response, error)
 
 	// GetUserDirectoriesWithResponse request
 	GetUserDirectoriesWithResponse(ctx context.Context, params *GetUserDirectoriesParams, reqEditors ...RequestEditorFn) (*GetUserDirectoriesResponse, error)
@@ -55312,6 +56084,17 @@ type ClientWithResponsesInterface interface {
 
 	Set1WithResponse(ctx context.Context, projectKey string, repositorySlug string, body Set1JSONRequestBody, reqEditors ...RequestEditorFn) (*Set1Response, error)
 
+	// Delete7WithResponse request
+	Delete7WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Delete7Response, error)
+
+	// Get7WithResponse request
+	Get7WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Get7Response, error)
+
+	// Set3WithBodyWithResponse request with any body
+	Set3WithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set3Response, error)
+
+	Set3WithResponse(ctx context.Context, projectKey string, repositorySlug string, body Set3JSONRequestBody, reqEditors ...RequestEditorFn) (*Set3Response, error)
+
 	// GetRepositoryHooks1WithResponse request
 	GetRepositoryHooks1WithResponse(ctx context.Context, projectKey string, repositorySlug string, params *GetRepositoryHooks1Params, reqEditors ...RequestEditorFn) (*GetRepositoryHooks1Response, error)
 
@@ -55351,8 +56134,8 @@ type ClientWithResponsesInterface interface {
 
 	Create2WithResponse(ctx context.Context, projectKey string, repositorySlug string, body Create2JSONRequestBody, reqEditors ...RequestEditorFn) (*Create2Response, error)
 
-	// Delete7WithResponse request
-	Delete7WithResponse(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*Delete7Response, error)
+	// Delete9WithResponse request
+	Delete9WithResponse(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*Delete9Response, error)
 
 	// GetReviewerGroup1WithResponse request
 	GetReviewerGroup1WithResponse(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*GetReviewerGroup1Response, error)
@@ -55456,11 +56239,11 @@ type ClientWithResponsesInterface interface {
 	// EditRuleWithBodyWithResponse request with any body
 	EditRuleWithBodyWithResponse(ctx context.Context, projectKey string, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EditRuleResponse, error)
 
-	// Delete9WithResponse request
-	Delete9WithResponse(ctx context.Context, projectKey string, params *Delete9Params, reqEditors ...RequestEditorFn) (*Delete9Response, error)
+	// Delete11WithResponse request
+	Delete11WithResponse(ctx context.Context, projectKey string, params *Delete11Params, reqEditors ...RequestEditorFn) (*Delete11Response, error)
 
-	// Get7WithResponse request
-	Get7WithResponse(ctx context.Context, projectKey string, params *Get7Params, reqEditors ...RequestEditorFn) (*Get7Response, error)
+	// Get9WithResponse request
+	Get9WithResponse(ctx context.Context, projectKey string, params *Get9Params, reqEditors ...RequestEditorFn) (*Get9Response, error)
 
 	// Create3WithBodyWithResponse request with any body
 	Create3WithBodyWithResponse(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Create3Response, error)
@@ -55491,6 +56274,17 @@ type ClientWithResponsesInterface interface {
 	SetWithBodyWithResponse(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetResponse, error)
 
 	SetWithResponse(ctx context.Context, projectKey string, body SetJSONRequestBody, reqEditors ...RequestEditorFn) (*SetResponse, error)
+
+	// Delete6WithResponse request
+	Delete6WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Delete6Response, error)
+
+	// Get6WithResponse request
+	Get6WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Get6Response, error)
+
+	// Set2WithBodyWithResponse request with any body
+	Set2WithBodyWithResponse(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set2Response, error)
+
+	Set2WithResponse(ctx context.Context, projectKey string, body Set2JSONRequestBody, reqEditors ...RequestEditorFn) (*Set2Response, error)
 
 	// GetRepositoryHooksWithResponse request
 	GetRepositoryHooksWithResponse(ctx context.Context, projectKey string, params *GetRepositoryHooksParams, reqEditors ...RequestEditorFn) (*GetRepositoryHooksResponse, error)
@@ -55528,8 +56322,8 @@ type ClientWithResponsesInterface interface {
 
 	Create1WithResponse(ctx context.Context, projectKey string, body Create1JSONRequestBody, reqEditors ...RequestEditorFn) (*Create1Response, error)
 
-	// Delete6WithResponse request
-	Delete6WithResponse(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*Delete6Response, error)
+	// Delete8WithResponse request
+	Delete8WithResponse(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*Delete8Response, error)
 
 	// GetReviewerGroupWithResponse request
 	GetReviewerGroupWithResponse(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*GetReviewerGroupResponse, error)
@@ -55688,8 +56482,8 @@ type ClientWithResponsesInterface interface {
 
 	UpdateConfigWithResponse(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateConfigResponse, error)
 
-	// Get8WithResponse request
-	Get8WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get8Response, error)
+	// Get10WithResponse request
+	Get10WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get10Response, error)
 
 	// PutWithBodyWithResponse request with any body
 	PutWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutResponse, error)
@@ -55897,6 +56691,11 @@ type ClientWithResponsesInterface interface {
 
 	// GetIndexingThreadSnapshotWithResponse request
 	GetIndexingThreadSnapshotWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetIndexingThreadSnapshotResponse, error)
+
+	// SetWorkerThreadCountWithBodyWithResponse request with any body
+	SetWorkerThreadCountWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetWorkerThreadCountResponse, error)
+
+	SetWorkerThreadCountWithResponse(ctx context.Context, body SetWorkerThreadCountJSONRequestBody, reqEditors ...RequestEditorFn) (*SetWorkerThreadCountResponse, error)
 
 	// GetAnnotations1WithResponse request
 	GetAnnotations1WithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetAnnotations1Params, reqEditors ...RequestEditorFn) (*GetAnnotations1Response, error)
@@ -58124,7 +58923,7 @@ func (r GetAllRateLimitSettingsResponse) StatusCode() int {
 	return 0
 }
 
-type Set2Response struct {
+type Set4Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestUserRateLimitSettings
@@ -58137,7 +58936,7 @@ type Set2Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Set2Response) Status() string {
+func (r Set4Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -58145,14 +58944,14 @@ func (r Set2Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Set2Response) StatusCode() int {
+func (r Set4Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type Delete8Response struct {
+type Delete10Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *struct {
@@ -58164,7 +58963,7 @@ type Delete8Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete8Response) Status() string {
+func (r Delete10Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -58172,14 +58971,14 @@ func (r Delete8Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete8Response) StatusCode() int {
+func (r Delete10Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type Get6Response struct {
+type Get8Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestUserRateLimitSettings
@@ -58192,7 +58991,7 @@ type Get6Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Get6Response) Status() string {
+func (r Get8Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -58200,14 +58999,14 @@ func (r Get6Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get6Response) StatusCode() int {
+func (r Get8Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type Set3Response struct {
+type Set5Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestUserRateLimitSettings
@@ -58220,7 +59019,7 @@ type Set3Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Set3Response) Status() string {
+func (r Set5Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -58228,7 +59027,7 @@ func (r Set3Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Set3Response) StatusCode() int {
+func (r Set5Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -64461,6 +65260,9 @@ type GetRelatedRepositoriesResponse struct {
 		Start         *int32            `json:"start,omitempty"`
 		Values        *[]RestRepository `json:"values,omitempty"`
 	}
+	JSON400 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
 	JSON401 *struct {
 		Errors *[]RestErrorMessage `json:"errors,omitempty"`
 	}
@@ -65024,6 +65826,98 @@ func (r Set1Response) StatusCode() int {
 	return 0
 }
 
+type Delete7Response struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON403 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON404 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r Delete7Response) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r Delete7Response) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type Get7Response struct {
+	Body                          []byte
+	HTTPResponse                  *http.Response
+	ApplicationjsonCharsetUTF8200 *RestChangePullRequestAuthorRestrictedSettings
+	JSON401                       *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON404 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r Get7Response) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r Get7Response) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type Set3Response struct {
+	Body                          []byte
+	HTTPResponse                  *http.Response
+	ApplicationjsonCharsetUTF8200 *RestChangePullRequestAuthorRestrictedSettings
+	JSON400                       *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON401 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON403 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON404 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r Set3Response) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r Set3Response) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetRepositoryHooks1Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
@@ -65360,7 +66254,7 @@ func (r Create2Response) StatusCode() int {
 	return 0
 }
 
-type Delete7Response struct {
+type Delete9Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *struct {
@@ -65372,7 +66266,7 @@ type Delete7Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete7Response) Status() string {
+func (r Delete9Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -65380,7 +66274,7 @@ func (r Delete7Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete7Response) StatusCode() int {
+func (r Delete9Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -66240,7 +67134,7 @@ func (r EditRuleResponse) StatusCode() int {
 	return 0
 }
 
-type Delete9Response struct {
+type Delete11Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON400      *struct {
@@ -66255,7 +67149,7 @@ type Delete9Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete9Response) Status() string {
+func (r Delete11Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -66263,14 +67157,14 @@ func (r Delete9Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete9Response) StatusCode() int {
+func (r Delete11Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type Get7Response struct {
+type Get9Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestProjectSettingsRestriction
@@ -66286,7 +67180,7 @@ type Get7Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Get7Response) Status() string {
+func (r Get9Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -66294,7 +67188,7 @@ func (r Get7Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get7Response) StatusCode() int {
+func (r Get9Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -66539,6 +67433,92 @@ func (r SetResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r SetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type Delete6Response struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON404 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r Delete6Response) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r Delete6Response) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type Get6Response struct {
+	Body                          []byte
+	HTTPResponse                  *http.Response
+	ApplicationjsonCharsetUTF8200 *RestChangePullRequestAuthorRestrictedSettings
+	JSON401                       *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON404 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r Get6Response) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r Get6Response) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type Set2Response struct {
+	Body                          []byte
+	HTTPResponse                  *http.Response
+	ApplicationjsonCharsetUTF8200 *RestChangePullRequestAuthorRestrictedSettings
+	JSON400                       *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON401 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON404 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r Set2Response) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r Set2Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -66854,7 +67834,7 @@ func (r Create1Response) StatusCode() int {
 	return 0
 }
 
-type Delete6Response struct {
+type Delete8Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *struct {
@@ -66866,7 +67846,7 @@ type Delete6Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete6Response) Status() string {
+func (r Delete8Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -66874,7 +67854,7 @@ func (r Delete6Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete6Response) StatusCode() int {
+func (r Delete8Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -68088,14 +69068,14 @@ func (r UpdateConfigResponse) StatusCode() int {
 	return 0
 }
 
-type Get8Response struct {
+type Get10Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *BasicAuthConfigEntity
 }
 
 // Status returns HTTPResponse.Status
-func (r Get8Response) Status() string {
+func (r Get10Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -68103,7 +69083,7 @@ func (r Get8Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get8Response) StatusCode() int {
+func (r Get10Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -69624,6 +70604,33 @@ func (r GetIndexingThreadSnapshotResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetIndexingThreadSnapshotResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SetWorkerThreadCountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON401 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r SetWorkerThreadCountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetWorkerThreadCountResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -73261,56 +74268,56 @@ func (c *ClientWithResponses) GetAllRateLimitSettingsWithResponse(ctx context.Co
 	return ParseGetAllRateLimitSettingsResponse(rsp)
 }
 
-// Set2WithBodyWithResponse request with arbitrary body returning *Set2Response
-func (c *ClientWithResponses) Set2WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set2Response, error) {
-	rsp, err := c.Set2WithBody(ctx, contentType, body, reqEditors...)
+// Set4WithBodyWithResponse request with arbitrary body returning *Set4Response
+func (c *ClientWithResponses) Set4WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set4Response, error) {
+	rsp, err := c.Set4WithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSet2Response(rsp)
+	return ParseSet4Response(rsp)
 }
 
-func (c *ClientWithResponses) Set2WithResponse(ctx context.Context, body Set2JSONRequestBody, reqEditors ...RequestEditorFn) (*Set2Response, error) {
-	rsp, err := c.Set2(ctx, body, reqEditors...)
+func (c *ClientWithResponses) Set4WithResponse(ctx context.Context, body Set4JSONRequestBody, reqEditors ...RequestEditorFn) (*Set4Response, error) {
+	rsp, err := c.Set4(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSet2Response(rsp)
+	return ParseSet4Response(rsp)
 }
 
-// Delete8WithResponse request returning *Delete8Response
-func (c *ClientWithResponses) Delete8WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Delete8Response, error) {
-	rsp, err := c.Delete8(ctx, userSlug, reqEditors...)
+// Delete10WithResponse request returning *Delete10Response
+func (c *ClientWithResponses) Delete10WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Delete10Response, error) {
+	rsp, err := c.Delete10(ctx, userSlug, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete8Response(rsp)
+	return ParseDelete10Response(rsp)
 }
 
-// Get6WithResponse request returning *Get6Response
-func (c *ClientWithResponses) Get6WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Get6Response, error) {
-	rsp, err := c.Get6(ctx, userSlug, reqEditors...)
+// Get8WithResponse request returning *Get8Response
+func (c *ClientWithResponses) Get8WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Get8Response, error) {
+	rsp, err := c.Get8(ctx, userSlug, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet6Response(rsp)
+	return ParseGet8Response(rsp)
 }
 
-// Set3WithBodyWithResponse request with arbitrary body returning *Set3Response
-func (c *ClientWithResponses) Set3WithBodyWithResponse(ctx context.Context, userSlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set3Response, error) {
-	rsp, err := c.Set3WithBody(ctx, userSlug, contentType, body, reqEditors...)
+// Set5WithBodyWithResponse request with arbitrary body returning *Set5Response
+func (c *ClientWithResponses) Set5WithBodyWithResponse(ctx context.Context, userSlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set5Response, error) {
+	rsp, err := c.Set5WithBody(ctx, userSlug, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSet3Response(rsp)
+	return ParseSet5Response(rsp)
 }
 
-func (c *ClientWithResponses) Set3WithResponse(ctx context.Context, userSlug string, body Set3JSONRequestBody, reqEditors ...RequestEditorFn) (*Set3Response, error) {
-	rsp, err := c.Set3(ctx, userSlug, body, reqEditors...)
+func (c *ClientWithResponses) Set5WithResponse(ctx context.Context, userSlug string, body Set5JSONRequestBody, reqEditors ...RequestEditorFn) (*Set5Response, error) {
+	rsp, err := c.Set5(ctx, userSlug, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSet3Response(rsp)
+	return ParseSet5Response(rsp)
 }
 
 // GetUserDirectoriesWithResponse request returning *GetUserDirectoriesResponse
@@ -75647,6 +76654,41 @@ func (c *ClientWithResponses) Set1WithResponse(ctx context.Context, projectKey s
 	return ParseSet1Response(rsp)
 }
 
+// Delete7WithResponse request returning *Delete7Response
+func (c *ClientWithResponses) Delete7WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Delete7Response, error) {
+	rsp, err := c.Delete7(ctx, projectKey, repositorySlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDelete7Response(rsp)
+}
+
+// Get7WithResponse request returning *Get7Response
+func (c *ClientWithResponses) Get7WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Get7Response, error) {
+	rsp, err := c.Get7(ctx, projectKey, repositorySlug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGet7Response(rsp)
+}
+
+// Set3WithBodyWithResponse request with arbitrary body returning *Set3Response
+func (c *ClientWithResponses) Set3WithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set3Response, error) {
+	rsp, err := c.Set3WithBody(ctx, projectKey, repositorySlug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSet3Response(rsp)
+}
+
+func (c *ClientWithResponses) Set3WithResponse(ctx context.Context, projectKey string, repositorySlug string, body Set3JSONRequestBody, reqEditors ...RequestEditorFn) (*Set3Response, error) {
+	rsp, err := c.Set3(ctx, projectKey, repositorySlug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSet3Response(rsp)
+}
+
 // GetRepositoryHooks1WithResponse request returning *GetRepositoryHooks1Response
 func (c *ClientWithResponses) GetRepositoryHooks1WithResponse(ctx context.Context, projectKey string, repositorySlug string, params *GetRepositoryHooks1Params, reqEditors ...RequestEditorFn) (*GetRepositoryHooks1Response, error) {
 	rsp, err := c.GetRepositoryHooks1(ctx, projectKey, repositorySlug, params, reqEditors...)
@@ -75770,13 +76812,13 @@ func (c *ClientWithResponses) Create2WithResponse(ctx context.Context, projectKe
 	return ParseCreate2Response(rsp)
 }
 
-// Delete7WithResponse request returning *Delete7Response
-func (c *ClientWithResponses) Delete7WithResponse(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*Delete7Response, error) {
-	rsp, err := c.Delete7(ctx, projectKey, repositorySlug, id, reqEditors...)
+// Delete9WithResponse request returning *Delete9Response
+func (c *ClientWithResponses) Delete9WithResponse(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*Delete9Response, error) {
+	rsp, err := c.Delete9(ctx, projectKey, repositorySlug, id, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete7Response(rsp)
+	return ParseDelete9Response(rsp)
 }
 
 // GetReviewerGroup1WithResponse request returning *GetReviewerGroup1Response
@@ -76097,22 +77139,22 @@ func (c *ClientWithResponses) EditRuleWithBodyWithResponse(ctx context.Context, 
 	return ParseEditRuleResponse(rsp)
 }
 
-// Delete9WithResponse request returning *Delete9Response
-func (c *ClientWithResponses) Delete9WithResponse(ctx context.Context, projectKey string, params *Delete9Params, reqEditors ...RequestEditorFn) (*Delete9Response, error) {
-	rsp, err := c.Delete9(ctx, projectKey, params, reqEditors...)
+// Delete11WithResponse request returning *Delete11Response
+func (c *ClientWithResponses) Delete11WithResponse(ctx context.Context, projectKey string, params *Delete11Params, reqEditors ...RequestEditorFn) (*Delete11Response, error) {
+	rsp, err := c.Delete11(ctx, projectKey, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete9Response(rsp)
+	return ParseDelete11Response(rsp)
 }
 
-// Get7WithResponse request returning *Get7Response
-func (c *ClientWithResponses) Get7WithResponse(ctx context.Context, projectKey string, params *Get7Params, reqEditors ...RequestEditorFn) (*Get7Response, error) {
-	rsp, err := c.Get7(ctx, projectKey, params, reqEditors...)
+// Get9WithResponse request returning *Get9Response
+func (c *ClientWithResponses) Get9WithResponse(ctx context.Context, projectKey string, params *Get9Params, reqEditors ...RequestEditorFn) (*Get9Response, error) {
+	rsp, err := c.Get9(ctx, projectKey, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet7Response(rsp)
+	return ParseGet9Response(rsp)
 }
 
 // Create3WithBodyWithResponse request with arbitrary body returning *Create3Response
@@ -76209,6 +77251,41 @@ func (c *ClientWithResponses) SetWithResponse(ctx context.Context, projectKey st
 		return nil, err
 	}
 	return ParseSetResponse(rsp)
+}
+
+// Delete6WithResponse request returning *Delete6Response
+func (c *ClientWithResponses) Delete6WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Delete6Response, error) {
+	rsp, err := c.Delete6(ctx, projectKey, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDelete6Response(rsp)
+}
+
+// Get6WithResponse request returning *Get6Response
+func (c *ClientWithResponses) Get6WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Get6Response, error) {
+	rsp, err := c.Get6(ctx, projectKey, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGet6Response(rsp)
+}
+
+// Set2WithBodyWithResponse request with arbitrary body returning *Set2Response
+func (c *ClientWithResponses) Set2WithBodyWithResponse(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set2Response, error) {
+	rsp, err := c.Set2WithBody(ctx, projectKey, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSet2Response(rsp)
+}
+
+func (c *ClientWithResponses) Set2WithResponse(ctx context.Context, projectKey string, body Set2JSONRequestBody, reqEditors ...RequestEditorFn) (*Set2Response, error) {
+	rsp, err := c.Set2(ctx, projectKey, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSet2Response(rsp)
 }
 
 // GetRepositoryHooksWithResponse request returning *GetRepositoryHooksResponse
@@ -76325,13 +77402,13 @@ func (c *ClientWithResponses) Create1WithResponse(ctx context.Context, projectKe
 	return ParseCreate1Response(rsp)
 }
 
-// Delete6WithResponse request returning *Delete6Response
-func (c *ClientWithResponses) Delete6WithResponse(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*Delete6Response, error) {
-	rsp, err := c.Delete6(ctx, projectKey, id, reqEditors...)
+// Delete8WithResponse request returning *Delete8Response
+func (c *ClientWithResponses) Delete8WithResponse(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*Delete8Response, error) {
+	rsp, err := c.Delete8(ctx, projectKey, id, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete6Response(rsp)
+	return ParseDelete8Response(rsp)
 }
 
 // GetReviewerGroupWithResponse request returning *GetReviewerGroupResponse
@@ -76827,13 +77904,13 @@ func (c *ClientWithResponses) UpdateConfigWithResponse(ctx context.Context, body
 	return ParseUpdateConfigResponse(rsp)
 }
 
-// Get8WithResponse request returning *Get8Response
-func (c *ClientWithResponses) Get8WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get8Response, error) {
-	rsp, err := c.Get8(ctx, reqEditors...)
+// Get10WithResponse request returning *Get10Response
+func (c *ClientWithResponses) Get10WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get10Response, error) {
+	rsp, err := c.Get10(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet8Response(rsp)
+	return ParseGet10Response(rsp)
 }
 
 // PutWithBodyWithResponse request with arbitrary body returning *PutResponse
@@ -77497,6 +78574,23 @@ func (c *ClientWithResponses) GetIndexingThreadSnapshotWithResponse(ctx context.
 		return nil, err
 	}
 	return ParseGetIndexingThreadSnapshotResponse(rsp)
+}
+
+// SetWorkerThreadCountWithBodyWithResponse request with arbitrary body returning *SetWorkerThreadCountResponse
+func (c *ClientWithResponses) SetWorkerThreadCountWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetWorkerThreadCountResponse, error) {
+	rsp, err := c.SetWorkerThreadCountWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetWorkerThreadCountResponse(rsp)
+}
+
+func (c *ClientWithResponses) SetWorkerThreadCountWithResponse(ctx context.Context, body SetWorkerThreadCountJSONRequestBody, reqEditors ...RequestEditorFn) (*SetWorkerThreadCountResponse, error) {
+	rsp, err := c.SetWorkerThreadCount(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetWorkerThreadCountResponse(rsp)
 }
 
 // GetAnnotations1WithResponse request returning *GetAnnotations1Response
@@ -81423,15 +82517,15 @@ func ParseGetAllRateLimitSettingsResponse(rsp *http.Response) (*GetAllRateLimitS
 	return response, nil
 }
 
-// ParseSet2Response parses an HTTP response from a Set2WithResponse call
-func ParseSet2Response(rsp *http.Response) (*Set2Response, error) {
+// ParseSet4Response parses an HTTP response from a Set4WithResponse call
+func ParseSet4Response(rsp *http.Response) (*Set4Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Set2Response{
+	response := &Set4Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -81467,15 +82561,15 @@ func ParseSet2Response(rsp *http.Response) (*Set2Response, error) {
 	return response, nil
 }
 
-// ParseDelete8Response parses an HTTP response from a Delete8WithResponse call
-func ParseDelete8Response(rsp *http.Response) (*Delete8Response, error) {
+// ParseDelete10Response parses an HTTP response from a Delete10WithResponse call
+func ParseDelete10Response(rsp *http.Response) (*Delete10Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete8Response{
+	response := &Delete10Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -81504,15 +82598,15 @@ func ParseDelete8Response(rsp *http.Response) (*Delete8Response, error) {
 	return response, nil
 }
 
-// ParseGet6Response parses an HTTP response from a Get6WithResponse call
-func ParseGet6Response(rsp *http.Response) (*Get6Response, error) {
+// ParseGet8Response parses an HTTP response from a Get8WithResponse call
+func ParseGet8Response(rsp *http.Response) (*Get8Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get6Response{
+	response := &Get8Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -81548,15 +82642,15 @@ func ParseGet6Response(rsp *http.Response) (*Get6Response, error) {
 	return response, nil
 }
 
-// ParseSet3Response parses an HTTP response from a Set3WithResponse call
-func ParseSet3Response(rsp *http.Response) (*Set3Response, error) {
+// ParseSet5Response parses an HTTP response from a Set5WithResponse call
+func ParseSet5Response(rsp *http.Response) (*Set5Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Set3Response{
+	response := &Set5Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -91220,6 +92314,15 @@ func ParseGetRelatedRepositoriesResponse(rsp *http.Response) (*GetRelatedReposit
 		}
 		response.ApplicationjsonCharsetUTF8200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest struct {
 			Errors *[]RestErrorMessage `json:"errors,omitempty"`
@@ -92044,6 +93147,158 @@ func ParseSet1Response(rsp *http.Response) (*Set1Response, error) {
 	return response, nil
 }
 
+// ParseDelete7Response parses an HTTP response from a Delete7WithResponse call
+func ParseDelete7Response(rsp *http.Response) (*Delete7Response, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Delete7Response{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGet7Response parses an HTTP response from a Get7WithResponse call
+func ParseGet7Response(rsp *http.Response) (*Get7Response, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Get7Response{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RestChangePullRequestAuthorRestrictedSettings
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationjsonCharsetUTF8200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSet3Response parses an HTTP response from a Set3WithResponse call
+func ParseSet3Response(rsp *http.Response) (*Set3Response, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Set3Response{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RestChangePullRequestAuthorRestrictedSettings
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationjsonCharsetUTF8200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetRepositoryHooks1Response parses an HTTP response from a GetRepositoryHooks1WithResponse call
 func ParseGetRepositoryHooks1Response(rsp *http.Response) (*GetRepositoryHooks1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -92580,15 +93835,15 @@ func ParseCreate2Response(rsp *http.Response) (*Create2Response, error) {
 	return response, nil
 }
 
-// ParseDelete7Response parses an HTTP response from a Delete7WithResponse call
-func ParseDelete7Response(rsp *http.Response) (*Delete7Response, error) {
+// ParseDelete9Response parses an HTTP response from a Delete9WithResponse call
+func ParseDelete9Response(rsp *http.Response) (*Delete9Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete7Response{
+	response := &Delete9Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -93896,15 +95151,15 @@ func ParseEditRuleResponse(rsp *http.Response) (*EditRuleResponse, error) {
 	return response, nil
 }
 
-// ParseDelete9Response parses an HTTP response from a Delete9WithResponse call
-func ParseDelete9Response(rsp *http.Response) (*Delete9Response, error) {
+// ParseDelete11Response parses an HTTP response from a Delete11WithResponse call
+func ParseDelete11Response(rsp *http.Response) (*Delete11Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete9Response{
+	response := &Delete11Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -93942,15 +95197,15 @@ func ParseDelete9Response(rsp *http.Response) (*Delete9Response, error) {
 	return response, nil
 }
 
-// ParseGet7Response parses an HTTP response from a Get7WithResponse call
-func ParseGet7Response(rsp *http.Response) (*Get7Response, error) {
+// ParseGet9Response parses an HTTP response from a Get9WithResponse call
+func ParseGet9Response(rsp *http.Response) (*Get9Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get7Response{
+	response := &Get9Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -94348,6 +95603,140 @@ func ParseSetResponse(rsp *http.Response) (*SetResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest RestAutoMergeRestrictedSettings
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationjsonCharsetUTF8200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDelete6Response parses an HTTP response from a Delete6WithResponse call
+func ParseDelete6Response(rsp *http.Response) (*Delete6Response, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Delete6Response{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGet6Response parses an HTTP response from a Get6WithResponse call
+func ParseGet6Response(rsp *http.Response) (*Get6Response, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Get6Response{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RestChangePullRequestAuthorRestrictedSettings
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationjsonCharsetUTF8200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSet2Response parses an HTTP response from a Set2WithResponse call
+func ParseSet2Response(rsp *http.Response) (*Set2Response, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Set2Response{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RestChangePullRequestAuthorRestrictedSettings
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -94884,15 +96273,15 @@ func ParseCreate1Response(rsp *http.Response) (*Create1Response, error) {
 	return response, nil
 }
 
-// ParseDelete6Response parses an HTTP response from a Delete6WithResponse call
-func ParseDelete6Response(rsp *http.Response) (*Delete6Response, error) {
+// ParseDelete8Response parses an HTTP response from a Delete8WithResponse call
+func ParseDelete8Response(rsp *http.Response) (*Delete8Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete6Response{
+	response := &Delete8Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -96638,15 +98027,15 @@ func ParseUpdateConfigResponse(rsp *http.Response) (*UpdateConfigResponse, error
 	return response, nil
 }
 
-// ParseGet8Response parses an HTTP response from a Get8WithResponse call
-func ParseGet8Response(rsp *http.Response) (*Get8Response, error) {
+// ParseGet10Response parses an HTTP response from a Get10WithResponse call
+func ParseGet10Response(rsp *http.Response) (*Get10Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get8Response{
+	response := &Get10Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -98832,6 +100221,43 @@ func ParseGetIndexingThreadSnapshotResponse(rsp *http.Response) (*GetIndexingThr
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest RestErrors
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetWorkerThreadCountResponse parses an HTTP response from a SetWorkerThreadCountWithResponse call
+func ParseSetWorkerThreadCountResponse(rsp *http.Response) (*SetWorkerThreadCountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetWorkerThreadCountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

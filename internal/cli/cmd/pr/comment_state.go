@@ -7,7 +7,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prsel"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
 )
 
@@ -78,7 +78,7 @@ func newCommentStateCommand(
 
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(client)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
 

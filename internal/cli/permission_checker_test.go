@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 )
@@ -48,10 +49,10 @@ func TestPermissionCheckerCheckRepoPermission(t *testing.T) {
 			_, _ = w.Write([]byte(`{"values":[{"slug":"demo","name":"Repository Display Name","project":{"key":"PRJ"}}],"isLastPage":true}`))
 		})
 
-		if err := checker.CheckRepoPermission(testContext, "PRJ", "demo", openapigenerated.REPOADMIN); err != nil {
+		if err := checker.CheckRepoPermission(testContext, "PRJ", "demo", openapi.RepoAdmin); err != nil {
 			t.Fatalf("expected success, got: %v", err)
 		}
-		if err := checker.CheckRepoPermission(testContext, "PRJ", "demo", openapigenerated.REPOADMIN); err != nil {
+		if err := checker.CheckRepoPermission(testContext, "PRJ", "demo", openapi.RepoAdmin); err != nil {
 			t.Fatalf("expected cached success, got: %v", err)
 		}
 		if calls.Load() != 1 {
@@ -66,7 +67,7 @@ func TestPermissionCheckerCheckRepoPermission(t *testing.T) {
 			_, _ = w.Write([]byte(`{"values":[{"slug":"other-repo","name":"Other"}],"isLastPage":true}`))
 		})
 
-		err := checker.CheckRepoPermission(context.Background(), "PRJ", "demo", openapigenerated.REPOWRITE)
+		err := checker.CheckRepoPermission(context.Background(), "PRJ", "demo", openapi.RepoWrite)
 		if !apperrors.IsKind(err, apperrors.KindAuthorization) {
 			t.Fatalf("expected authorization error, got: %v", err)
 		}
@@ -78,7 +79,7 @@ func TestPermissionCheckerCheckRepoPermission(t *testing.T) {
 			_, _ = w.Write([]byte(`{"values":[],"isLastPage":true}`))
 		})
 
-		err := checker.CheckRepoPermission(testContext, "PRJ", "demo", openapigenerated.REPOWRITE)
+		err := checker.CheckRepoPermission(testContext, "PRJ", "demo", openapi.RepoWrite)
 		if !apperrors.IsKind(err, apperrors.KindAuthorization) {
 			t.Fatalf("expected authorization error, got: %v", err)
 		}
@@ -90,7 +91,7 @@ func TestPermissionCheckerCheckRepoPermission(t *testing.T) {
 			_, _ = w.Write([]byte(`{"values":[{"slug":"other","project":{"key":"PRJ"}}],"isLastPage":true}`))
 		})
 
-		err := checker.CheckRepoPermission(testContext, "PRJ", "demo", openapigenerated.REPOWRITE)
+		err := checker.CheckRepoPermission(testContext, "PRJ", "demo", openapi.RepoWrite)
 		if !apperrors.IsKind(err, apperrors.KindAuthorization) {
 			t.Fatalf("expected authorization error, got: %v", err)
 		}
@@ -108,7 +109,7 @@ func TestPermissionCheckerCheckRepoPermission(t *testing.T) {
 			}
 		})
 
-		if err := checker.CheckRepoPermission(context.Background(), "PRJ", "demo", openapigenerated.REPOREAD); err != nil {
+		if err := checker.CheckRepoPermission(context.Background(), "PRJ", "demo", openapi.RepoRead); err != nil {
 			t.Fatalf("expected success on second page, got: %v", err)
 		}
 		if calls.Load() != 2 {
@@ -122,7 +123,7 @@ func TestPermissionCheckerCheckRepoPermission(t *testing.T) {
 			_, _ = w.Write([]byte("forbidden"))
 		})
 
-		err := checker.CheckRepoPermission(testContext, "PRJ", "demo", openapigenerated.REPOREAD)
+		err := checker.CheckRepoPermission(testContext, "PRJ", "demo", openapi.RepoRead)
 		if !apperrors.IsKind(err, apperrors.KindAuthorization) {
 			t.Fatalf("expected authorization error, got: %v", err)
 		}

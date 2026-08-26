@@ -158,7 +158,7 @@ func New(deps Dependencies) *cobra.Command {
 					if d.PermissionChecker != nil {
 						checker := d.PermissionChecker(client)
 						if checker != nil {
-							if err := checker.CheckRepoPermission(cmd.Context(), pk, slug, openapigenerated.REPOADMIN); err != nil {
+							if err := checker.CheckRepoPermission(cmd.Context(), pk, slug, openapi.RepoAdmin); err != nil {
 								return err
 							}
 						}
@@ -311,7 +311,7 @@ func New(deps Dependencies) *cobra.Command {
 					if d.PermissionChecker != nil {
 						checker := d.PermissionChecker(client)
 						if checker != nil {
-							if err := checker.CheckRepoPermission(cmd.Context(), pk, slug, openapigenerated.REPOADMIN); err != nil {
+							if err := checker.CheckRepoPermission(cmd.Context(), pk, slug, openapi.RepoAdmin); err != nil {
 								return err
 							}
 						}
@@ -481,7 +481,7 @@ func New(deps Dependencies) *cobra.Command {
 					if d.PermissionChecker != nil {
 						checker := d.PermissionChecker(client)
 						if checker != nil {
-							if err := checker.CheckRepoPermission(cmd.Context(), pk, slug, openapigenerated.REPOADMIN); err != nil {
+							if err := checker.CheckRepoPermission(cmd.Context(), pk, slug, openapi.RepoAdmin); err != nil {
 								return err
 							}
 						}

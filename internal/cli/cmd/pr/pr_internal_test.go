@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
@@ -111,7 +112,7 @@ func TestNormalizeEmoticon(t *testing.T) {
 
 func TestCheckRepoPermission(t *testing.T) {
 	checker := nopPermissionChecker{}
-	if err := checker.CheckRepoPermission(context.Background(), "PRJ", "repo1", openapigenerated.REPOREAD); err != nil {
+	if err := checker.CheckRepoPermission(context.Background(), "PRJ", "repo1", openapi.RepoRead); err != nil {
 		t.Fatalf("unexpected error from nopPermissionChecker: %v", err)
 	}
 }

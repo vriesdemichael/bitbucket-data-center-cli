@@ -401,7 +401,7 @@ func New(deps Dependencies) *cobra.Command {
 				if d.PermissionChecker != nil {
 					checker := d.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 							return err
 						}
 					}
@@ -463,7 +463,7 @@ func New(deps Dependencies) *cobra.Command {
 				if d.PermissionChecker != nil {
 					checker := d.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 							return err
 						}
 					}
@@ -519,7 +519,7 @@ func New(deps Dependencies) *cobra.Command {
 				if d.PermissionChecker != nil {
 					checker := d.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 							return err
 						}
 					}
@@ -602,7 +602,7 @@ func New(deps Dependencies) *cobra.Command {
 				if d.PermissionChecker != nil {
 					checker := d.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 							return err
 						}
 					}
@@ -725,7 +725,7 @@ func New(deps Dependencies) *cobra.Command {
 				if d.PermissionChecker != nil {
 					checker := d.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 							return err
 						}
 					}

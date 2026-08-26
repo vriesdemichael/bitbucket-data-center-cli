@@ -30,14 +30,11 @@ type DefaultTaskSourceMatcher = struct {
 }
 
 // DefaultTaskTargetMatcher is the targetMatcher field of a default-task request.
-type DefaultTaskTargetMatcher = struct {
-	DisplayId *string `json:"displayId,omitempty"`
-	Id        *string `json:"id,omitempty"`
-	Type      *struct {
-		Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
-		Name string                                                     `json:"name"`
-	} `json:"type,omitempty"`
-}
+//
+// Bitbucket 10.4 replaced the inline schema this used to be with a $ref to
+// RestRefMatcher, while leaving the sourceMatcher side inline. The two are
+// structurally identical; only the generated name differs.
+type DefaultTaskTargetMatcher = openapigenerated.RestRefMatcher
 
 // inferRefMatcher derives the matcher type from the ref itself, because the ref
 // already determines it: a glob can only be a pattern and anything else can only
@@ -84,10 +81,10 @@ func NewDefaultTaskTargetMatcher(ref *string) *DefaultTaskTargetMatcher {
 		Id:        &id,
 		DisplayId: &id,
 		Type: &struct {
-			Id   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
-			Name string                                                     `json:"name"`
+			Id   openapigenerated.RestRefMatcherTypeId `json:"id"`
+			Name string                                `json:"name"`
 		}{
-			Id:   openapigenerated.RestDefaultTaskRequestTargetMatcherTypeId(typeID),
+			Id:   openapigenerated.RestRefMatcherTypeId(typeID),
 			Name: typeName,
 		},
 	}

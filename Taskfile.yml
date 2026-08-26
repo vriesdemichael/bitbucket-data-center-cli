@@ -2,10 +2,11 @@ version: '3'
 
 vars:
   OAPI_CODEGEN_VERSION: v2.4.1
-  BITBUCKET_OPENAPI_URL: https://dac-static.atlassian.com/server/bitbucket/10.2.swagger.v3.json
-  BITBUCKET_OPENAPI_TARGET: docs/reference/atlassian/bitbucket-10.2-openapi.json
-  BITBUCKET_OPENAPI_TMP: .tmp/bitbucket-10.2-openapi.json
-  BITBUCKET_OPENAPI_SANITIZED_TMP: .tmp/bitbucket-10.2-openapi.sanitized.json
+  # The Bitbucket release under test lives in exactly one place, the harness base
+  # image tag (ADR-042). The vendored OpenAPI reference is derived from it rather
+  # than pinned separately, so the two cannot drift apart.
+  BITBUCKET_OPENAPI_SPEC: docs/reference/atlassian/bitbucket-openapi.json
+  BITBUCKET_OPENAPI_SANITIZED_TMP: .tmp/bitbucket-openapi.sanitized.json
   DOCS_PROJECT_DIR: docs
   COVERAGE_BASE_REF: origin/main
   COVERAGE_MIN_GLOBAL_COMBINED: "85"
@@ -19,13 +20,25 @@ tasks:
     desc: Show available tasks
     cmd: task --list
 
-  docs:refresh-openapi:
-    desc: Refresh vendored Atlassian Bitbucket 10.2 OpenAPI reference
+  openapi:refresh:
+    desc: Vendor the Atlassian OpenAPI reference for the Bitbucket release the harness runs
     cmds:
-      - mkdir -p .tmp docs/reference/atlassian
-      - curl -fsSL '{{.BITBUCKET_OPENAPI_URL}}' -o '{{.BITBUCKET_OPENAPI_TMP}}'
-      - python3 -c "import json; d=json.load(open('.tmp/bitbucket-10.2-openapi.json', 'r', encoding='utf-8')); assert d.get('openapi') == '3.0.1', 'unexpected openapi version'; assert d.get('info', {}).get('version') == '10.2', 'unexpected API version'; print('validated openapi paths=' + str(len(d.get('paths', {}))))"
-      - cp '{{.BITBUCKET_OPENAPI_TMP}}' '{{.BITBUCKET_OPENAPI_TARGET}}'
+      - go run ./tools/openapi-spec -refresh -spec '{{.BITBUCKET_OPENAPI_SPEC}}'
+
+  openapi:verify:
+    desc: Verify the vendored OpenAPI reference matches the Bitbucket release the harness runs
+    cmds:
+      - go run ./tools/openapi-spec -spec '{{.BITBUCKET_OPENAPI_SPEC}}'
+
+  openapi:operation-paths:
+    desc: Record which endpoint each generated operation this project calls targets
+    cmds:
+      - go run ./tools/openapi-operation-paths
+
+  openapi:operation-paths:verify:
+    desc: Verify no generated operation this project calls has been re-pointed at another endpoint
+    cmds:
+      - go run ./tools/openapi-operation-paths -verify
 
   docs:build:
     desc: Build MkDocs site with strict checks
@@ -108,10 +121,10 @@ tasks:
       - task docs:deploy-version VERSION={{.VERSION}}
 
   models:generate:
-    desc: Generate Go models from vendored Bitbucket 10.2 OpenAPI spec
+    desc: Generate Go models from the vendored Bitbucket OpenAPI spec
     cmds:
       - mkdir -p internal/models/generated
-      - go run ./tools/openapi-sanitize -in docs/reference/atlassian/bitbucket-10.2-openapi.json -out {{.BITBUCKET_OPENAPI_SANITIZED_TMP}}
+      - go run ./tools/openapi-sanitize -in {{.BITBUCKET_OPENAPI_SPEC}} -out {{.BITBUCKET_OPENAPI_SANITIZED_TMP}}
       - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{.OAPI_CODEGEN_VERSION}} -config tools/oapi-codegen/bitbucket-types.yaml {{.BITBUCKET_OPENAPI_SANITIZED_TMP}}
       - go run ./tools/oapi-fix-generated -file internal/models/generated/bitbucket_types.gen.go
       - gofmt -w internal/models/generated/bitbucket_types.gen.go
@@ -123,10 +136,10 @@ tasks:
       - git diff --exit-code -- internal/models/generated/bitbucket_types.gen.go
 
   client:generate:
-    desc: Generate Go OpenAPI client from vendored Bitbucket 10.2 OpenAPI spec
+    desc: Generate Go OpenAPI client from the vendored Bitbucket OpenAPI spec
     cmds:
       - mkdir -p internal/openapi/generated
-      - go run ./tools/openapi-sanitize -in docs/reference/atlassian/bitbucket-10.2-openapi.json -out {{.BITBUCKET_OPENAPI_SANITIZED_TMP}}
+      - go run ./tools/openapi-sanitize -in {{.BITBUCKET_OPENAPI_SPEC}} -out {{.BITBUCKET_OPENAPI_SANITIZED_TMP}}
       - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{.OAPI_CODEGEN_VERSION}} -config tools/oapi-codegen/bitbucket-client.yaml {{.BITBUCKET_OPENAPI_SANITIZED_TMP}}
       - gofmt -w internal/openapi/generated/bitbucket_client.gen.go
 
@@ -176,6 +189,8 @@ tasks:
   quality:verify:
     desc: Run every quality gate that needs no Bitbucket instance (fast; matches what CI checks before the live job)
     cmds:
+      - task: openapi:verify
+      - task: openapi:operation-paths:verify
       - task: quality:format:verify
       - task: quality:line-endings:verify
       - task: quality:validate-decisions
