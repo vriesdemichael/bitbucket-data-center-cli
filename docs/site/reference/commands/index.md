@@ -3633,22 +3633,34 @@ Usage:
   bb pr create [flags]
 
 Examples:
-  # Create a pull request
+  # Create a pull request (automatically includes default reviewers and CODEOWNERS)
   bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change"
 
   # Create a draft pull request (Bitbucket DC 8.0+)
   bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --draft
 
-  # Create a pull request and assign reviewers (repeatable or comma-separated)
+  # Create a pull request and assign explicit reviewers (repeatable or comma-separated)
   bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --reviewers alice,bob
 
+  # Create a pull request with reviewers and reviewer groups (Bitbucket DC 7.13+)
+  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --reviewers alice,@backend-team --reviewer-group qa-team
+
+  # Create a pull request without default reviewers or CODEOWNERS
+  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --no-default-reviewers --no-codeowners
+
 Flags:
-      --description string   Pull request description
-      --draft                Create as a draft pull request (Bitbucket DC 8.0+)
-      --from-ref string      Source branch (name or refs/heads/name)
-      --reviewers strings    Reviewer usernames to add (repeatable or comma-separated, e.g. --reviewers alice,bob)
-      --title string         Pull request title
-      --to-ref string        Target branch (name or refs/heads/name)
+      --codeowners                Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (defaults to true, Bitbucket Data Center 8.14+) (default true)
+      --default-reviewers         Include default reviewers configured on repository/project (defaults to true) (default true)
+      --description string        Pull request description
+      --draft                     Create as a draft pull request (Bitbucket DC 8.0+)
+      --from-ref string           Source branch (name or refs/heads/name)
+      --no-codeowners             Do not include code owners from .bitbucket/CODEOWNERS
+      --no-default-reviewers      Do not include default reviewers
+      --reviewer-group strings    Reviewer group name(s) to expand and add (repeatable or comma-separated, Bitbucket Data Center 7.13+)
+      --reviewer-groups strings   Alias for --reviewer-group
+      --reviewers strings         Reviewer usernames to add (repeatable or comma-separated, accepts @group syntax, e.g. --reviewers alice,@backend-team)
+      --title string              Pull request title
+      --to-ref string             Target branch (name or refs/heads/name)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -4147,7 +4159,7 @@ Usage:
   bb pr review reviewer [command]
 
 Available Commands:
-  add         Add a reviewer
+  add         Add reviewers to a pull request
   remove      Remove a reviewer
 
 Global Flags:
@@ -4168,16 +4180,40 @@ Use "bb pr review reviewer [command] --help" for more information about a comman
 
 ## `bb pr review reviewer add`
 
-Add a reviewer
+Add reviewers to a pull request
 
 ```text
-Add a reviewer
+Add reviewers to a pull request
 
 Usage:
   bb pr review reviewer add <id> [flags]
 
+Examples:
+  # Add a single reviewer
+  bb pr review reviewer add 42 --repo PROJ/repo --user alice
+
+  # Add multiple reviewers (repeatable or comma-separated)
+  bb pr review reviewer add 42 --repo PROJ/repo --user alice --user bob
+  bb pr review reviewer add 42 --repo PROJ/repo --users alice,bob
+
+  # Add a reviewer group (Bitbucket DC 7.13+)
+  bb pr review reviewer add 42 --repo PROJ/repo --reviewer-group core-team
+  bb pr review reviewer add 42 --repo PROJ/repo --user @core-team
+
+  # Add default reviewers configured on repository/project
+  bb pr review reviewer add 42 --repo PROJ/repo --default-reviewers
+
+  # Add reviewers matching .bitbucket/CODEOWNERS (Bitbucket DC 8.14+)
+  bb pr review reviewer add 42 --repo PROJ/repo --codeowners
+
 Flags:
-      --user string   Reviewer username
+      --codeowners                Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (Bitbucket Data Center 8.14+)
+      --default-reviewers         Assign default reviewers configured on repository/project for this pull request
+      --reviewer-group strings    Reviewer group name(s) to expand and add (repeatable or comma-separated, Bitbucket Data Center 7.13+)
+      --reviewer-groups strings   Alias for --reviewer-group
+      --reviewers strings         Alias for --user
+      --user strings              Reviewer username(s) (repeatable or comma-separated, accepts @group syntax)
+      --users strings             Alias for --user
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -8122,7 +8158,9 @@ Global Flags:
 Manage default reviewers
 
 ```text
-Manage default reviewers
+Manage default reviewer conditions.
+
+Note on CODEOWNERS: Native CODEOWNERS support was introduced in Bitbucket Data Center 8.14 (via .bitbucket/CODEOWNERS in the repository root). Because it is a git-tracked file rather than a REST endpoint, it is managed through repository contents. For automated reviewer rules, default-reviewer conditions (bb reviewer condition) and Reviewer Groups (bb reviewer-group) provide server-level configuration, while bb pr create and bb pr review reviewer add expand groups directly.
 
 Usage:
   bb reviewer [command]

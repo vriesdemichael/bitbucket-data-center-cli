@@ -127,6 +127,74 @@ invocation and never written into the repository.
 Pushing afterwards is plain `git`, which does not go through `bb` — run `bb auth setup-git`
 once to let it authenticate. See [Git Authentication](advanced/git-authentication.md).
 
+## Default Reviewers, Reviewer Groups, and CODEOWNERS
+
+When creating pull requests or attaching reviewers to open pull requests, `bb` provides comprehensive reviewer automation matching the Bitbucket Data Center web interface:
+
+### Automated Reviewers on PR Creation
+Mirroring the Bitbucket Data Center web interface, `bb pr create` automatically resolves and includes:
+1. **Default Reviewers** configured on the repository and project for the branch pair (`--default-reviewers` defaults to `true`).
+2. **CODEOWNERS** matching the PR diff from `.bitbucket/CODEOWNERS` (or `CODEOWNERS`) on the target branch or local workspace (`--codeowners` defaults to `true`). If the repository does not use CODEOWNERS, it is silently skipped.
+
+You can opt out of either or both automation behaviors using `--no-default-reviewers` and `--no-codeowners`:
+
+```bash
+# Default reviewers and CODEOWNERS are automatically assigned by default
+bb pr create --from-ref feature/login --to-ref main --title "Add login"
+
+# Opt out of default reviewers or CODEOWNERS
+bb pr create --from-ref feature/login --to-ref main --title "Add login" --no-default-reviewers
+bb pr create --from-ref feature/login --to-ref main --title "Add login" --no-codeowners
+bb pr create --from-ref feature/login --to-ref main --title "Add login" --no-default-reviewers --no-codeowners
+```
+
+### Reviewer Groups and Multiple Reviewers
+Assign individual users and Reviewer Groups on `bb pr create` and `bb pr review reviewer add`:
+
+```bash
+# Assign reviewers and reviewer groups during PR creation
+bb pr create --from-ref feature/login --to-ref main --title "Add login" --reviewers alice,bob --reviewer-group backend-team
+
+# Or use the @group shorthand syntax in --reviewers
+bb pr create --from-ref feature/login --to-ref main --title "Add login" --reviewers alice,@backend-team
+
+# Add multiple reviewers and reviewer groups to an existing PR (repeatable or comma-separated)
+bb pr review reviewer add 42 --user alice --user bob --reviewer-group core-team
+bb pr review reviewer add 42 --users alice,bob --user @core-team
+```
+
+When expanding reviewer groups:
+- Reviewer group members are resolved from the repository scope first, falling back to the project scope.
+- If the PR author belongs to an assigned group, they are automatically excluded (as Bitbucket Data Center rejects the PR author as a reviewer).
+- Any group members who are already reviewers on the PR are skipped gracefully without error.
+- Reviewer group assignment requires Bitbucket Data Center 7.13 or later.
+
+### Attaching Automated Reviewers to an Open PR
+To attach configured default reviewers or matching code owners to an existing PR:
+
+```bash
+# Add default reviewers configured for this PR's branch pair
+bb pr review reviewer add 42 --default-reviewers
+
+# Add code owners matching this PR's diff from .bitbucket/CODEOWNERS
+bb pr review reviewer add 42 --codeowners
+
+# Add both default reviewers and code owners
+bb pr review reviewer add 42 --default-reviewers --codeowners
+```
+
+### Fine-Grained CODEOWNERS Controls
+Native `CODEOWNERS` support was introduced in **Bitbucket Data Center 8.14** (via `.bitbucket/CODEOWNERS` in the repository root). When evaluating `.bitbucket/CODEOWNERS`, `bb` supports full Atlassian syntax and fine-grained controls:
+
+- **Group Selection Strategies**:
+  - `@group:all` (default for groups): Assigns all members of the group.
+  - `@group:random(N)`: Selects `N` random members from the group.
+  - `@group:least_busy(N)`: Selects `N` members from the group who are currently assigned as reviewers on the fewest open pull requests.
+- **Escaped Spaces in Group Names**: In Bitbucket Data Center 9.0+, reviewer group names with spaces are escaped with backslashes (e.g. `@backend\\ engineers:random(2)`).
+- **Multi-Owner Rules**: Lines can combine direct users, emails, and groups with strategies (e.g. `*.go @lead user@example.com @backend-team:random(2)`).
+- **Precedence**: Rules evaluate bottom-to-top (last-match-wins per file), allowing specific path overrides lower in the file.
+- **Author Filtering**: The pull request author is filtered out prior to applying selection strategies, ensuring that `N` actual eligible reviewers are selected.
+
 ## Repository context behavior
 
 - `--repo PROJECT/slug` has highest precedence. `--repo` also accepts full Bitbucket repository URLs (`https://bitbucket.acme.corp/projects/PRJ/repos/demo`) and personal user repositories (`~username/slug`).

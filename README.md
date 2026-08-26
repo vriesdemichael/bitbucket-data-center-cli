@@ -56,7 +56,7 @@ yay -S bb-bin
 Install on Debian/Ubuntu or RHEL/Fedora from the release `.deb`/`.rpm`:
 
 ```bash
-VERSION=v2.11.0
+VERSION=v2.12.0
 # Debian/Ubuntu
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.deb"
 sudo dpkg -i "bb_${VERSION#v}_linux_amd64.deb"
@@ -68,7 +68,7 @@ sudo rpm -i "bb_${VERSION#v}_linux_amd64.rpm"
 Install from Releases (Linux amd64 example):
 
 ```bash
-VERSION=v2.11.0
+VERSION=v2.12.0
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.tar.gz"
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sha256sums.txt"
 sha256sum -c sha256sums.txt --ignore-missing

@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `55`
-- Accepted ADRs: `52`
+- Total ADRs: `56`
+- Accepted ADRs: `53`
 
 ## ADR List
 
@@ -64,4 +64,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 053: Raw API escape hatch for uncovered endpoints and version gaps](053-raw-api-escape-hatch.md) (`architecture`, `accepted`)
 - [ADR 054: Strict non-interactive CLI contract and fail-fast validation invariant](054-strict-non-interactive-cli-contract.md) (`architecture`, `accepted`)
 - [ADR 055: Documented release versions are validated and synchronized](055-documented-release-versions-are-validated-and-synchronized.md) (`development`, `accepted`)
+- [ADR 056: Pull request reviewer automation, default reviewers, and CODEOWNERS](056-pull-request-reviewer-automation-and-codeowners.md) (`architecture`, `accepted`)
 

@@ -3,6 +3,7 @@ package prcmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -32,10 +33,63 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":42,"title":"Test PR","state":"OPEN","open":true,"fromRef":{"displayId":"feature/x"},"toRef":{"displayId":"main"}}]}`))
 
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42":
-			_, _ = w.Write([]byte(`{"id":42,"title":"Test PR","description":"Desc","state":"OPEN","open":true,"version":1,"fromRef":{"displayId":"feature/x","latestCommit":"c123"},"toRef":{"displayId":"main"},"reviewers":[{"user":{"name":"alice","displayName":"Alice"},"approved":false,"status":"UNAPPROVED"}]}`))
+			_, _ = w.Write([]byte(`{"id":42,"title":"Test PR","description":"Desc","state":"OPEN","open":true,"version":1,"author":{"user":{"name":"authoruser","displayName":"Author User"}},"fromRef":{"displayId":"feature/x","latestCommit":"c123"},"toRef":{"displayId":"main"},"reviewers":[{"user":{"name":"alice","displayName":"Alice"},"approved":false,"status":"UNAPPROVED"}]}`))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups":
+			_, _ = w.Write([]byte(`{"values":[{"id":10,"name":"core-team"},{"id":30,"name":"go-team"}]}`))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups/10/users":
+			_, _ = w.Write([]byte(`[{"name":"bob"},{"name":"charlie"}]`))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups/30/users":
+			_, _ = w.Write([]byte(`[{"name":"gopher"}]`))
+
+		case r.Method == http.MethodGet && strings.Contains(path, "/raw/.bitbucket/CODEOWNERS"):
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = w.Write([]byte("*.go @go-team\n"))
+
+		case r.Method == http.MethodGet && (strings.HasSuffix(path, "/diff") || strings.Contains(path, "/diff/")):
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = w.Write([]byte("diff --git a/main.go b/main.go\n--- a/main.go\n+++ b/main.go\n@@ -1 +1 @@\n"))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/settings/reviewer-groups":
+			_, _ = w.Write([]byte(`{"values":[{"id":20,"name":"arch-team"}]}`))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/settings/reviewer-groups/20":
+			_, _ = w.Write([]byte(`{"id":20,"name":"arch-team","users":[{"name":"david"}]}`))
+
+		case r.Method == http.MethodGet && path == "/rest/api/latest/users":
+			w.Header().Set("X-AUSERNAME", "currentuser")
+			_, _ = w.Write([]byte(`{"values":[]}`))
 
 		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests":
-			_, _ = w.Write([]byte(`{"id":43,"title":"Created PR","state":"OPEN","open":true,"fromRef":{"displayId":"feature/y"},"toRef":{"displayId":"main"}}`))
+			var payload struct {
+				Title     string `json:"title"`
+				Reviewers []struct {
+					User struct {
+						Name string `json:"name"`
+					} `json:"user"`
+				} `json:"reviewers"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&payload)
+			var respReviewers []map[string]any
+			for _, rev := range payload.Reviewers {
+				respReviewers = append(respReviewers, map[string]any{
+					"user":   map[string]any{"name": rev.User.Name, "displayName": rev.User.Name},
+					"role":   "REVIEWER",
+					"status": "UNAPPROVED",
+				})
+			}
+			resp := map[string]any{
+				"id":        43,
+				"title":     payload.Title,
+				"state":     "OPEN",
+				"open":      true,
+				"fromRef":   map[string]any{"displayId": "feature/y"},
+				"toRef":     map[string]any{"displayId": "main"},
+				"reviewers": respReviewers,
+			}
+			_ = json.NewEncoder(w).Encode(resp)
 
 		case r.Method == http.MethodPut && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42":
 			_, _ = w.Write([]byte(`{"id":42,"title":"Updated PR","description":"New Desc","state":"OPEN","open":true,"version":2,"fromRef":{"displayId":"feature/x"},"toRef":{"displayId":"main"}}`))
@@ -94,7 +148,7 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 
 		case r.Method == http.MethodGet && (strings.HasSuffix(path, "42.patch") || strings.HasSuffix(path, "/patch")):
 			w.Header().Set("Content-Type", "text/plain")
-			_, _ = w.Write([]byte("From c123\nSubject: Patch\n---\n"))
+			_, _ = w.Write([]byte("From c123\nSubject: Patch\n---\ndiff --git a/main.go b/main.go\n--- a/main.go\n+++ b/main.go\n@@ -1 +1 @@\n"))
 
 		case r.Method == http.MethodGet && strings.Contains(path, "diff-stats-summary"):
 			_, _ = w.Write([]byte(`{"linesAdded":10,"linesRemoved":2,"filesChanged":1,"files":[{"path":"file1.go","linesAdded":10,"linesRemoved":2}]}`))
@@ -1215,6 +1269,228 @@ func TestPRURLAndBranchResolution(t *testing.T) {
 		}
 		if !strings.Contains(out, "#42") {
 			t.Fatalf("unexpected output for branch name: %s", out)
+		}
+	})
+}
+
+func TestPRCreateReviewerGroups(t *testing.T) {
+	server := newMockPRServer(t)
+
+	t.Run("create with reviewer group flag", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "create", "--from-ref", "feature/y", "--to-ref", "main", "--title", "Created PR", "--reviewer-group", "core-team")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, "Created pull request #43") {
+			t.Fatalf("unexpected output: %s", out)
+		}
+	})
+
+	t.Run("create with @group syntax in reviewers flag", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "create", "--from-ref", "feature/y", "--to-ref", "main", "--title", "Created PR", "--reviewers", "alice,@arch-team")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, "Created pull request #43") {
+			t.Fatalf("unexpected output: %s", out)
+		}
+	})
+
+	t.Run("create dry-run with group expansion", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "--dry-run", "--json", "create", "--from-ref", "feature/y", "--to-ref", "main", "--title", "Created PR", "--reviewer-group", "core-team")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, "bob") || !strings.Contains(out, "charlie") {
+			t.Fatalf("expected expanded reviewers in dry run output: %s", out)
+		}
+	})
+
+	t.Run("create with nonexistent reviewer group fails", func(t *testing.T) {
+		_, err := executePr(t, server.URL, "create", "--from-ref", "feature/y", "--to-ref", "main", "--title", "Created PR", "--reviewer-group", "nonexistent-team")
+		if err == nil {
+			t.Fatal("expected error for nonexistent group")
+		}
+		if !strings.Contains(err.Error(), "nonexistent-team") {
+			t.Fatalf("expected nonexistent-team in error: %v", err)
+		}
+	})
+}
+
+func TestPRReviewerAddEnhanced(t *testing.T) {
+	server := newMockPRServer(t)
+
+	t.Run("validation error when no user or group provided", func(t *testing.T) {
+		_, err := executePr(t, server.URL, "review", "reviewer", "add", "42")
+		if err == nil {
+			t.Fatal("expected validation error")
+		}
+	})
+
+	t.Run("repeatable user flag", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "review", "reviewer", "add", "42", "--user", "bob", "--user", "charlie")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, "bob") || !strings.Contains(out, "charlie") {
+			t.Fatalf("expected both users in output: %s", out)
+		}
+	})
+
+	t.Run("users comma-separated", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "review", "reviewer", "add", "42", "--users", "bob,charlie")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, "bob") || !strings.Contains(out, "charlie") {
+			t.Fatalf("expected both users in output: %s", out)
+		}
+	})
+
+	t.Run("reviewer group expansion skipping already present reviewer", func(t *testing.T) {
+		// PR 42 already has alice. core-team has bob and charlie.
+		out, err := executePr(t, server.URL, "review", "reviewer", "add", "42", "--reviewer-group", "core-team", "--user", "alice")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, "Added reviewers") {
+			t.Fatalf("expected Added reviewers in output: %s", out)
+		}
+		if !strings.Contains(out, "already present: alice") {
+			t.Fatalf("expected already present note in output: %s", out)
+		}
+	})
+
+	t.Run("skip pull request author", func(t *testing.T) {
+		// PR 42 author is "authoruser"
+		out, err := executePr(t, server.URL, "review", "reviewer", "add", "42", "--user", "authoruser", "--user", "bob")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, "Skipped authoruser (pull request author)") {
+			t.Fatalf("expected skipped author message: %s", out)
+		}
+		if !strings.Contains(out, "Added reviewer bob") {
+			t.Fatalf("expected bob added: %s", out)
+		}
+	})
+
+	t.Run("dry-run preview with mixed states", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "--dry-run", "review", "reviewer", "add", "42", "--user", "alice", "--user", "authoruser", "--user", "bob")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, "reviewer already present") {
+			t.Fatalf("expected reviewer already present in dry run: %s", out)
+		}
+		if !strings.Contains(out, "pull request author cannot be reviewer") {
+			t.Fatalf("expected author cannot be reviewer in dry run: %s", out)
+		}
+		if !strings.Contains(out, "reviewer will be added") {
+			t.Fatalf("expected reviewer will be added in dry run: %s", out)
+		}
+	})
+
+	t.Run("at-group shorthand", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "review", "reviewer", "add", "42", "--user", "@arch-team")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, "Added reviewer david") {
+			t.Fatalf("expected david added: %s", out)
+		}
+	})
+}
+
+func TestPRDefaultReviewersAndCodeOwners(t *testing.T) {
+	server := newMockPRServer(t)
+
+	t.Run("pr create includes default reviewers and codeowners by default", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "--json", "create",
+			"--from-ref", "feature/x",
+			"--to-ref", "main",
+			"--title", "Feature PR",
+		)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, `"name": "bob"`) {
+			t.Fatalf("expected default reviewer bob to be included: %s", out)
+		}
+		if !strings.Contains(out, `"name": "gopher"`) {
+			t.Fatalf("expected codeowner gopher to be included by default: %s", out)
+		}
+	})
+
+	t.Run("pr create excludes default reviewers with --no-default-reviewers", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "--json", "create",
+			"--from-ref", "feature/x",
+			"--to-ref", "main",
+			"--title", "Feature PR",
+			"--no-default-reviewers",
+		)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if strings.Contains(out, `"name": "bob"`) {
+			t.Fatalf("expected bob NOT to be included: %s", out)
+		}
+		if !strings.Contains(out, `"name": "gopher"`) {
+			t.Fatalf("expected codeowner gopher to still be included: %s", out)
+		}
+	})
+
+	t.Run("pr create excludes code owners with --no-codeowners", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "--json", "create",
+			"--from-ref", "feature/x",
+			"--to-ref", "main",
+			"--title", "Feature PR",
+			"--no-codeowners",
+		)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, `"name": "bob"`) {
+			t.Fatalf("expected default reviewer bob to still be included: %s", out)
+		}
+		if strings.Contains(out, `"name": "gopher"`) {
+			t.Fatalf("expected codeowner gopher NOT to be included: %s", out)
+		}
+	})
+
+	t.Run("pr create excludes both with --no-default-reviewers and --no-codeowners", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "--json", "create",
+			"--from-ref", "feature/x",
+			"--to-ref", "main",
+			"--title", "Feature PR",
+			"--no-default-reviewers",
+			"--no-codeowners",
+		)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if strings.Contains(out, `"name": "bob"`) || strings.Contains(out, `"name": "gopher"`) {
+			t.Fatalf("expected no reviewers to be included: %s", out)
+		}
+	})
+
+	t.Run("reviewer add with --default-reviewers assigns default reviewers", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "review", "reviewer", "add", "42", "--default-reviewers")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, "Added reviewer bob to pull request #42") {
+			t.Fatalf("expected bob added: %s", out)
+		}
+	})
+
+	t.Run("reviewer add with --codeowners assigns code owners", func(t *testing.T) {
+		out, err := executePr(t, server.URL, "review", "reviewer", "add", "42", "--codeowners")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(out, "Added reviewer gopher to pull request #42") {
+			t.Fatalf("expected gopher added: %s", out)
 		}
 	})
 }

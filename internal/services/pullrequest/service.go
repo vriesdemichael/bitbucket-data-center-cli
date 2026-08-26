@@ -46,6 +46,7 @@ type PullRequest struct {
 	SourceRepository *RepositoryRef `json:"source_repository,omitempty"`
 	Version          int            `json:"version,omitempty"`
 	Author           string         `json:"author,omitempty"`
+	AuthorUsername   string         `json:"author_username,omitempty"`
 	SourceBranch     string         `json:"source_branch,omitempty"`
 	TargetBranch     string         `json:"target_branch,omitempty"`
 	SourceCommit     string         `json:"source_commit,omitempty"`
@@ -855,29 +856,32 @@ func normalizeBranch(branch string) string {
 
 func mapPullRequest(raw pullRequestValue) PullRequest {
 	author := ""
+	authorUsername := ""
 	if raw.Author != nil && raw.Author.User != nil {
+		authorUsername = strings.TrimSpace(raw.Author.User.Name)
 		author = strings.TrimSpace(raw.Author.User.DisplayName)
 		if author == "" {
-			author = strings.TrimSpace(raw.Author.User.Name)
+			author = authorUsername
 		}
 	}
 
 	pr := PullRequest{
-		ID:           raw.ID,
-		Title:        raw.Title,
-		Description:  strings.TrimSpace(raw.Description),
-		State:        strings.TrimSpace(raw.State),
-		Open:         raw.Open,
-		Closed:       raw.Closed,
-		Draft:        raw.Draft,
-		Version:      raw.Version,
-		Author:       author,
-		SourceBranch: branchDisplayName(raw.FromRef),
-		TargetBranch: branchDisplayName(raw.ToRef),
-		SourceCommit: sourceCommit(raw.FromRef),
-		CreatedDate:  raw.CreatedDate,
-		UpdatedDate:  raw.UpdatedDate,
-		Reviewers:    mapReviewers(raw.Participants, raw.Reviewers),
+		ID:             raw.ID,
+		Title:          raw.Title,
+		Description:    strings.TrimSpace(raw.Description),
+		State:          strings.TrimSpace(raw.State),
+		Open:           raw.Open,
+		Closed:         raw.Closed,
+		Draft:          raw.Draft,
+		Version:        raw.Version,
+		Author:         author,
+		AuthorUsername: authorUsername,
+		SourceBranch:   branchDisplayName(raw.FromRef),
+		TargetBranch:   branchDisplayName(raw.ToRef),
+		SourceCommit:   sourceCommit(raw.FromRef),
+		CreatedDate:    raw.CreatedDate,
+		UpdatedDate:    raw.UpdatedDate,
+		Reviewers:      mapReviewers(raw.Participants, raw.Reviewers),
 	}
 
 	if raw.ToRef != nil && raw.ToRef.Repository != nil {

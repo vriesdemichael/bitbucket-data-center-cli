@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 
@@ -20,6 +21,8 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/execgit"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	browseservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/browse"
+	codeowners "github.com/vriesdemichael/bitbucket-server-cli/internal/services/codeowners"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
 	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
 	jiraservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/jira"
@@ -411,16 +414,25 @@ func New(deps Dependencies) *cobra.Command {
 	var createTitle string
 	var createDescription string
 	var createReviewers []string
+	var createReviewerGroups []string
+	var createDefaultReviewers bool
+	var createNoDefaultReviewers bool
+	var createCodeOwners bool
+	var createNoCodeOwners bool
 	var createDraft bool
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a pull request",
-		Example: "  # Create a pull request\n" +
+		Example: "  # Create a pull request (automatically includes default reviewers and CODEOWNERS)\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\"\n\n" +
 			"  # Create a draft pull request (Bitbucket DC 8.0+)\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --draft\n\n" +
-			"  # Create a pull request and assign reviewers (repeatable or comma-separated)\n" +
-			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --reviewers alice,bob",
+			"  # Create a pull request and assign explicit reviewers (repeatable or comma-separated)\n" +
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --reviewers alice,bob\n\n" +
+			"  # Create a pull request with reviewers and reviewer groups (Bitbucket DC 7.13+)\n" +
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --reviewers alice,@backend-team --reviewer-group qa-team\n\n" +
+			"  # Create a pull request without default reviewers or CODEOWNERS\n" +
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --no-default-reviewers --no-codeowners",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -433,13 +445,77 @@ func New(deps Dependencies) *cobra.Command {
 			}
 			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
 
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err
 				}
+			}
 
+			rawClient := httpclient.NewFromConfig(cfg)
+			service := pullrequestservice.NewService(rawClient)
+
+			author := strings.TrimSpace(cfg.BitbucketUsername)
+			if author == "" {
+				if slug, err := rawClient.CurrentUserSlug(cmd.Context()); err == nil {
+					author = strings.TrimSpace(slug)
+				}
+			}
+
+			reviewerSvc := reviewerservice.NewService(apiClient)
+
+			var allReviewers []string
+			var allGroups []string
+			allReviewers = append(allReviewers, createReviewers...)
+			allGroups = append(allGroups, createReviewerGroups...)
+
+			if createDefaultReviewers && !createNoDefaultReviewers {
+				defaults, err := reviewerSvc.ResolveDefaultReviewers(cmd.Context(), repo.ProjectKey, repo.Slug, createFromRef, createToRef)
+				if err == nil {
+					allReviewers = append(allReviewers, defaults...)
+				}
+			}
+
+			if createCodeOwners && !createNoCodeOwners {
+				codeOwners, err := resolveCodeOwnersReviewers(
+					cmd.Context(),
+					apiClient,
+					cfg,
+					reviewerSvc,
+					repo.ProjectKey, repo.Slug,
+					createFromRef, createToRef,
+					"",
+					author,
+				)
+				if err == nil {
+					allReviewers = append(allReviewers, codeOwners...)
+				} else if !apperrors.IsKind(err, apperrors.KindNotFound) && !openapi.IsRouteMissing(err) {
+					return err
+				}
+			}
+
+			resolvedReviewers, err := resolveReviewersAndGroups(
+				cmd.Context(),
+				reviewerSvc,
+				repo.ProjectKey, repo.Slug,
+				allReviewers,
+				allGroups,
+				author,
+			)
+			if err != nil {
+				return err
+			}
+
+			var filtered []string
+			for _, r := range resolvedReviewers {
+				if author != "" && strings.EqualFold(r, author) {
+					continue
+				}
+				filtered = append(filtered, r)
+			}
+			resolvedReviewers = filtered
+
+			if deps.DryRunEnabled() {
 				existing, err := service.List(cmd.Context(), repo, pullrequestservice.ListOptions{
 					State:        "open",
 					Limit:        200,
@@ -467,7 +543,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "from_ref": createFromRef, "to_ref": createToRef, "title": createTitle, "reviewers": createReviewers, "draft": createDraft},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "from_ref": createFromRef, "to_ref": createToRef, "title": createTitle, "reviewers": resolvedReviewers, "draft": createDraft},
 						Action:          "create",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -497,7 +573,7 @@ func New(deps Dependencies) *cobra.Command {
 				ToRef:       createToRef,
 				Title:       createTitle,
 				Description: createDescription,
-				Reviewers:   createReviewers,
+				Reviewers:   resolvedReviewers,
 				Draft:       createDraft,
 			})
 			if err != nil {
@@ -516,7 +592,13 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd.Flags().StringVar(&createToRef, "to-ref", "", "Target branch (name or refs/heads/name)")
 	createCmd.Flags().StringVar(&createTitle, "title", "", "Pull request title")
 	createCmd.Flags().StringVar(&createDescription, "description", "", "Pull request description")
-	createCmd.Flags().StringSliceVar(&createReviewers, "reviewers", nil, "Reviewer usernames to add (repeatable or comma-separated, e.g. --reviewers alice,bob)")
+	createCmd.Flags().StringSliceVar(&createReviewers, "reviewers", nil, "Reviewer usernames to add (repeatable or comma-separated, accepts @group syntax, e.g. --reviewers alice,@backend-team)")
+	createCmd.Flags().StringSliceVar(&createReviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated, Bitbucket Data Center 7.13+)")
+	createCmd.Flags().StringSliceVar(&createReviewerGroups, "reviewer-groups", nil, "Alias for --reviewer-group")
+	createCmd.Flags().BoolVar(&createDefaultReviewers, "default-reviewers", true, "Include default reviewers configured on repository/project (defaults to true)")
+	createCmd.Flags().BoolVar(&createNoDefaultReviewers, "no-default-reviewers", false, "Do not include default reviewers")
+	createCmd.Flags().BoolVar(&createCodeOwners, "codeowners", true, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (defaults to true, Bitbucket Data Center 8.14+)")
+	createCmd.Flags().BoolVar(&createNoCodeOwners, "no-codeowners", false, "Do not include code owners from .bitbucket/CODEOWNERS")
 	createCmd.Flags().BoolVar(&createDraft, "draft", false, "Create as a draft pull request (Bitbucket DC 8.0+)")
 	_ = createCmd.MarkFlagRequired("from-ref")
 	_ = createCmd.MarkFlagRequired("to-ref")
@@ -1029,12 +1111,31 @@ func New(deps Dependencies) *cobra.Command {
 	reviewCmd.AddCommand(reviewUnapproveCmd)
 
 	reviewerCmd := &cobra.Command{Use: "reviewer", Short: "Manage pull request reviewers"}
-	var reviewerUsername string
+	var reviewerUsers []string
+	var reviewerGroups []string
+	var reviewerDefaultReviewers bool
+	var reviewerCodeOwners bool
 	reviewerAddCmd := &cobra.Command{
 		Use:   "add <id>",
-		Short: "Add a reviewer",
-		Args:  cobra.ExactArgs(1),
+		Short: "Add reviewers to a pull request",
+		Example: "  # Add a single reviewer\n" +
+			"  bb pr review reviewer add 42 --repo PROJ/repo --user alice\n\n" +
+			"  # Add multiple reviewers (repeatable or comma-separated)\n" +
+			"  bb pr review reviewer add 42 --repo PROJ/repo --user alice --user bob\n" +
+			"  bb pr review reviewer add 42 --repo PROJ/repo --users alice,bob\n\n" +
+			"  # Add a reviewer group (Bitbucket DC 7.13+)\n" +
+			"  bb pr review reviewer add 42 --repo PROJ/repo --reviewer-group core-team\n" +
+			"  bb pr review reviewer add 42 --repo PROJ/repo --user @core-team\n\n" +
+			"  # Add default reviewers configured on repository/project\n" +
+			"  bb pr review reviewer add 42 --repo PROJ/repo --default-reviewers\n\n" +
+			"  # Add reviewers matching .bitbucket/CODEOWNERS (Bitbucket DC 8.14+)\n" +
+			"  bb pr review reviewer add 42 --repo PROJ/repo --codeowners",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(reviewerUsers) == 0 && len(reviewerGroups) == 0 && !reviewerDefaultReviewers && !reviewerCodeOwners {
+				return apperrors.New(apperrors.KindValidation, "at least one reviewer (--user), reviewer group (--reviewer-group), --default-reviewers, or --codeowners is required", nil)
+			}
+
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -1052,59 +1153,190 @@ func New(deps Dependencies) *cobra.Command {
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
 					return err
 				}
+			}
 
-				current, err := service.Get(cmd.Context(), repo, target.PullRequestID)
+			current, err := service.Get(cmd.Context(), repo, target.PullRequestID)
+			if err != nil {
+				return err
+			}
+
+			author := current.AuthorUsername
+			if author == "" {
+				author = current.Author
+			}
+
+			reviewerSvc := reviewerservice.NewService(apiClient)
+
+			var allUsers []string
+			var allGroups []string
+			allUsers = append(allUsers, reviewerUsers...)
+			allGroups = append(allGroups, reviewerGroups...)
+
+			if reviewerDefaultReviewers {
+				defaults, err := reviewerSvc.ResolveDefaultReviewers(
+					cmd.Context(),
+					repo.ProjectKey, repo.Slug,
+					current.SourceBranch, current.TargetBranch,
+				)
 				if err != nil {
 					return err
 				}
-				predicted := "update"
-				reason := "reviewer will be added"
-				if hasReviewer(current.Reviewers, reviewerUsername) {
-					predicted = "no-op"
-					reason = "reviewer already present"
+				allUsers = append(allUsers, defaults...)
+			}
+
+			if reviewerCodeOwners {
+				codeOwners, err := resolveCodeOwnersReviewers(
+					cmd.Context(),
+					apiClient,
+					cfg,
+					reviewerSvc,
+					repo.ProjectKey, repo.Slug,
+					current.SourceBranch, current.TargetBranch,
+					target.PullRequestID,
+					author,
+				)
+				if err != nil {
+					return err
+				}
+				allUsers = append(allUsers, codeOwners...)
+			}
+
+			resolvedReviewers, err := resolveReviewersAndGroups(
+				cmd.Context(),
+				reviewerSvc,
+				repo.ProjectKey, repo.Slug,
+				allUsers,
+				allGroups,
+				author,
+			)
+			if err != nil {
+				return err
+			}
+
+			if deps.DryRunEnabled() {
+				if len(resolvedReviewers) == 0 {
+					preview := dryrunpreview.Preview{
+						DryRun:       true,
+						PlanningMode: dryrunpreview.PlanningModeStateful,
+						Capability:   dryrunpreview.CapabilityFull,
+						Items: []dryrunpreview.Item{{
+							Intent:          "pr.review.reviewer.add",
+							Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
+							Action:          "update",
+							PredictedAction: "no-op",
+							Supported:       true,
+							Reason:          "no eligible reviewers to add",
+							Confidence:      dryrunpreview.CapabilityFull,
+							RequiredState:   []string{"pull request"},
+						}},
+						Summary: dryrunpreview.Summary{Total: 1, Supported: 1, NoopCount: 1},
+					}
+					return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
+				var items []dryrunpreview.Item
+				updateCount := 0
+				noopCount := 0
+
+				for _, u := range resolvedReviewers {
+					predicted := "update"
+					reason := "reviewer will be added"
+					if isAuthor(current.Author, current.AuthorUsername, u) {
+						predicted = "no-op"
+						reason = "pull request author cannot be reviewer"
+						noopCount++
+					} else if hasReviewer(current.Reviewers, u) {
+						predicted = "no-op"
+						reason = "reviewer already present"
+						noopCount++
+					} else {
+						updateCount++
+					}
+
+					items = append(items, dryrunpreview.Item{
 						Intent:          "pr.review.reviewer.add",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "user": reviewerUsername},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "user": u},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
 						Reason:          reason,
 						Confidence:      dryrunpreview.CapabilityFull,
 						RequiredState:   []string{"pull request"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				if predicted == "update" {
-					preview.Summary.UpdateCount = 1
-				} else {
-					preview.Summary.NoopCount = 1
+					})
 				}
 
+				preview := dryrunpreview.Preview{
+					DryRun:       true,
+					PlanningMode: dryrunpreview.PlanningModeStateful,
+					Capability:   dryrunpreview.CapabilityFull,
+					Items:        items,
+					Summary: dryrunpreview.Summary{
+						Total:       len(items),
+						Supported:   len(items),
+						UpdateCount: updateCount,
+						NoopCount:   noopCount,
+					},
+				}
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
-			pullRequest, err := service.AddReviewer(cmd.Context(), repo, target.PullRequestID, reviewerUsername)
-			if err != nil {
-				return err
+
+			var addedReviewers []string
+			var skippedAuthor []string
+			var alreadyPresent []string
+			latestPR := current
+
+			for _, u := range resolvedReviewers {
+				if isAuthor(current.Author, current.AuthorUsername, u) {
+					skippedAuthor = append(skippedAuthor, u)
+					continue
+				}
+				if hasReviewer(current.Reviewers, u) {
+					alreadyPresent = append(alreadyPresent, u)
+					continue
+				}
+				pr, err := service.AddReviewer(cmd.Context(), repo, target.PullRequestID, u)
+				if err != nil {
+					return err
+				}
+				latestPR = pr
+				addedReviewers = append(addedReviewers, u)
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request": pullRequest})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
+					"repository":      repo,
+					"pull_request":    latestPR,
+					"added":           addedReviewers,
+					"skipped_author":  skippedAuthor,
+					"already_present": alreadyPresent,
+				})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Added reviewer %s to pull request #%d\n", reviewerUsername, pullRequest.ID)
+			if len(addedReviewers) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "Added %s to pull request #%d\n", formatReviewerList(addedReviewers), latestPR.ID)
+			}
+			if len(skippedAuthor) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "Skipped %s (pull request author)\n", strings.Join(skippedAuthor, ", "))
+			}
+			if len(alreadyPresent) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "Reviewers already present: %s\n", strings.Join(alreadyPresent, ", "))
+			}
+			if len(addedReviewers) == 0 && len(skippedAuthor) == 0 && len(alreadyPresent) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "No eligible reviewers to add")
+			}
 			return nil
 		},
 	}
-	reviewerAddCmd.Flags().StringVar(&reviewerUsername, "user", "", "Reviewer username")
-	_ = reviewerAddCmd.MarkFlagRequired("user")
+	reviewerAddCmd.Flags().StringSliceVar(&reviewerUsers, "user", nil, "Reviewer username(s) (repeatable or comma-separated, accepts @group syntax)")
+	reviewerAddCmd.Flags().StringSliceVar(&reviewerUsers, "users", nil, "Alias for --user")
+	reviewerAddCmd.Flags().StringSliceVar(&reviewerUsers, "reviewers", nil, "Alias for --user")
+	reviewerAddCmd.Flags().StringSliceVar(&reviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated, Bitbucket Data Center 7.13+)")
+	reviewerAddCmd.Flags().StringSliceVar(&reviewerGroups, "reviewer-groups", nil, "Alias for --reviewer-group")
+	reviewerAddCmd.Flags().BoolVar(&reviewerDefaultReviewers, "default-reviewers", false, "Assign default reviewers configured on repository/project for this pull request")
+	reviewerAddCmd.Flags().BoolVar(&reviewerCodeOwners, "codeowners", false, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (Bitbucket Data Center 8.14+)")
 	reviewerCmd.AddCommand(reviewerAddCmd)
 
+	var removeReviewerUsername string
 	reviewerRemoveCmd := &cobra.Command{
 		Use:   "remove <id>",
 		Short: "Remove a reviewer",
@@ -1134,7 +1366,7 @@ func New(deps Dependencies) *cobra.Command {
 				}
 				predicted := "delete"
 				reason := "reviewer will be removed"
-				if !hasReviewer(current.Reviewers, reviewerUsername) {
+				if !hasReviewer(current.Reviewers, removeReviewerUsername) {
 					predicted = "no-op"
 					reason = "reviewer is not present"
 				}
@@ -1145,7 +1377,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.review.reviewer.remove",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "user": reviewerUsername},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "user": removeReviewerUsername},
 						Action:          "delete",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -1163,7 +1395,7 @@ func New(deps Dependencies) *cobra.Command {
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
-			pullRequest, err := service.RemoveReviewer(cmd.Context(), repo, target.PullRequestID, reviewerUsername)
+			pullRequest, err := service.RemoveReviewer(cmd.Context(), repo, target.PullRequestID, removeReviewerUsername)
 			if err != nil {
 				return err
 			}
@@ -1172,11 +1404,11 @@ func New(deps Dependencies) *cobra.Command {
 				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request": pullRequest})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Removed reviewer %s from pull request #%d\n", reviewerUsername, pullRequest.ID)
+			fmt.Fprintf(cmd.OutOrStdout(), "Removed reviewer %s from pull request #%d\n", removeReviewerUsername, pullRequest.ID)
 			return nil
 		},
 	}
-	reviewerRemoveCmd.Flags().StringVar(&reviewerUsername, "user", "", "Reviewer username")
+	reviewerRemoveCmd.Flags().StringVar(&removeReviewerUsername, "user", "", "Reviewer username")
 	_ = reviewerRemoveCmd.MarkFlagRequired("user")
 	reviewerCmd.AddCommand(reviewerRemoveCmd)
 
@@ -2600,4 +2832,244 @@ func writeDiffResult(writer io.Writer, asJSON bool, mode diffservice.OutputKind,
 		}
 		return nil
 	}
+}
+
+// resolveReviewersAndGroups expands individual reviewer usernames and reviewer group names into a deduplicated
+// slice of reviewer usernames, excluding the PR author from expanded groups.
+func resolveReviewersAndGroups(
+	ctx context.Context,
+	reviewerSvc *reviewerservice.Service,
+	projectKey, repoSlug string,
+	reviewers []string,
+	reviewerGroups []string,
+	author string,
+) ([]string, error) {
+	var directUsers []string
+	var groupsToResolve []string
+	explicitGroups := make(map[string]bool)
+
+	for _, r := range reviewers {
+		trimmed := strings.TrimSpace(r)
+		if trimmed == "" {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "@") {
+			groupsToResolve = append(groupsToResolve, strings.TrimPrefix(trimmed, "@"))
+		} else {
+			directUsers = append(directUsers, trimmed)
+		}
+	}
+
+	for _, g := range reviewerGroups {
+		trimmed := strings.TrimPrefix(strings.TrimSpace(g), "@")
+		if trimmed != "" {
+			groupsToResolve = append(groupsToResolve, trimmed)
+			explicitGroups[trimmed] = true
+		}
+	}
+
+	seenUsers := make(map[string]bool)
+	var finalReviewers []string
+
+	// Direct users
+	for _, u := range directUsers {
+		lower := strings.ToLower(u)
+		if !seenUsers[lower] {
+			seenUsers[lower] = true
+			finalReviewers = append(finalReviewers, u)
+		}
+	}
+
+	// Group members (or @username fallback): exclude author
+	for _, groupName := range groupsToResolve {
+		members, err := reviewerSvc.ResolveReviewerGroupUsers(ctx, projectKey, repoSlug, groupName)
+		if err != nil {
+			if explicitGroups[groupName] {
+				return nil, err
+			}
+			// If not a group, treat as a direct username
+			if author != "" && strings.EqualFold(groupName, strings.TrimSpace(author)) {
+				continue
+			}
+			lower := strings.ToLower(groupName)
+			if !seenUsers[lower] {
+				seenUsers[lower] = true
+				finalReviewers = append(finalReviewers, groupName)
+			}
+			continue
+		}
+		for _, member := range members {
+			trimmedMember := strings.TrimSpace(member)
+			if trimmedMember == "" {
+				continue
+			}
+			if author != "" && strings.EqualFold(trimmedMember, strings.TrimSpace(author)) {
+				continue
+			}
+			lower := strings.ToLower(trimmedMember)
+			if !seenUsers[lower] {
+				seenUsers[lower] = true
+				finalReviewers = append(finalReviewers, trimmedMember)
+			}
+		}
+	}
+
+	return finalReviewers, nil
+}
+
+func fetchCodeOwnersContent(ctx context.Context, apiClient *openapigenerated.ClientWithResponses, cfg config.AppConfig, projectKey, repoSlug, targetRef string) (string, error) {
+	if data, err := os.ReadFile(".bitbucket/CODEOWNERS"); err == nil && len(data) > 0 {
+		return string(data), nil
+	}
+	if data, err := os.ReadFile("CODEOWNERS"); err == nil && len(data) > 0 {
+		return string(data), nil
+	}
+
+	browseSvc := browseservice.NewService(apiClient, httpclient.NewFromConfig(cfg))
+	rawBytes, err := browseSvc.Raw(ctx, browseservice.RepositoryRef{ProjectKey: projectKey, Slug: repoSlug}, ".bitbucket/CODEOWNERS", targetRef)
+	if err == nil && len(rawBytes) > 0 {
+		return string(rawBytes), nil
+	}
+
+	rawBytes, err = browseSvc.Raw(ctx, browseservice.RepositoryRef{ProjectKey: projectKey, Slug: repoSlug}, "CODEOWNERS", targetRef)
+	if err == nil && len(rawBytes) > 0 {
+		return string(rawBytes), nil
+	}
+
+	return "", apperrors.New(apperrors.KindNotFound, ".bitbucket/CODEOWNERS not found in repository or target branch", nil)
+}
+
+func fetchChangedFiles(ctx context.Context, apiClient *openapigenerated.ClientWithResponses, projectKey, repoSlug, fromRef, toRef, prID string) ([]string, error) {
+	diffSvc := diffservice.NewService(apiClient)
+	if prID != "" {
+		res, err := diffSvc.DiffPR(ctx, diffservice.DiffPRInput{
+			Repository:    diffservice.RepositoryRef{ProjectKey: projectKey, Slug: repoSlug},
+			PullRequestID: prID,
+			Output:        diffservice.OutputKindNameOnly,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return res.Names, nil
+	}
+
+	res, err := diffSvc.DiffRefs(ctx, diffservice.DiffRefsInput{
+		Repository: diffservice.RepositoryRef{ProjectKey: projectKey, Slug: repoSlug},
+		From:       toRef,
+		To:         fromRef,
+		Output:     diffservice.OutputKindNameOnly,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res.Names, nil
+}
+
+func resolveCodeOwnersReviewers(
+	ctx context.Context,
+	apiClient *openapigenerated.ClientWithResponses,
+	cfg config.AppConfig,
+	reviewerSvc *reviewerservice.Service,
+	projectKey, repoSlug string,
+	fromRef, toRef string,
+	prID string,
+	author string,
+) ([]string, error) {
+	content, err := fetchCodeOwnersContent(ctx, apiClient, cfg, projectKey, repoSlug, toRef)
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := fetchChangedFiles(ctx, apiClient, projectKey, repoSlug, fromRef, toRef, prID)
+	if err != nil {
+		return nil, err
+	}
+
+	co := codeowners.Parse(content)
+	refs := co.MatchFileRefsUnion(files)
+
+	var busyCounts map[string]int
+	for _, ref := range refs {
+		if ref.IsGroup && ref.Strategy == codeowners.StrategyLeastBusy {
+			busyCounts = fetchBusyCounts(ctx, cfg, projectKey, repoSlug)
+			break
+		}
+	}
+
+	var finalUsers []string
+	seen := make(map[string]bool)
+
+	for _, ref := range refs {
+		if !ref.IsGroup {
+			if author != "" && strings.EqualFold(ref.Name, strings.TrimSpace(author)) {
+				continue
+			}
+			lower := strings.ToLower(ref.Name)
+			if !seen[lower] {
+				seen[lower] = true
+				finalUsers = append(finalUsers, ref.Name)
+			}
+			continue
+		}
+
+		members, err := reviewerSvc.ResolveReviewerGroupUsers(ctx, projectKey, repoSlug, ref.Name)
+		if err != nil {
+			if author != "" && strings.EqualFold(ref.Name, strings.TrimSpace(author)) {
+				continue
+			}
+			lower := strings.ToLower(ref.Name)
+			if !seen[lower] {
+				seen[lower] = true
+				finalUsers = append(finalUsers, ref.Name)
+			}
+			continue
+		}
+
+		selected := reviewerservice.SelectMembers(members, author, string(ref.Strategy), ref.Count, busyCounts)
+		for _, m := range selected {
+			lower := strings.ToLower(m)
+			if !seen[lower] {
+				seen[lower] = true
+				finalUsers = append(finalUsers, m)
+			}
+		}
+	}
+
+	return finalUsers, nil
+}
+
+func fetchBusyCounts(ctx context.Context, cfg config.AppConfig, projectKey, repoSlug string) map[string]int {
+	counts := make(map[string]int)
+	service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+	list, err := service.List(ctx, pullrequestservice.RepositoryRef{ProjectKey: projectKey, Slug: repoSlug}, pullrequestservice.ListOptions{
+		State: "OPEN",
+		Limit: 50,
+	})
+	if err != nil || len(list) == 0 {
+		return counts
+	}
+	for _, pr := range list {
+		for _, r := range pr.Reviewers {
+			if !r.Approved {
+				counts[strings.ToLower(r.Name)]++
+			}
+		}
+	}
+	return counts
+}
+
+func formatReviewerList(users []string) string {
+	if len(users) == 1 {
+		return fmt.Sprintf("reviewer %s", users[0])
+	}
+	return fmt.Sprintf("reviewers %s", strings.Join(users, ", "))
+}
+
+func isAuthor(author, authorUsername, username string) bool {
+	u := strings.TrimSpace(username)
+	if u == "" {
+		return false
+	}
+	return (author != "" && strings.EqualFold(u, strings.TrimSpace(author))) ||
+		(authorUsername != "" && strings.EqualFold(u, strings.TrimSpace(authorUsername)))
 }
