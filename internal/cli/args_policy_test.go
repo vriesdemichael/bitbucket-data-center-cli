@@ -73,3 +73,44 @@ func TestZeroArgCommandsRejectPositionalArguments(t *testing.T) {
 		})
 	}
 }
+
+func TestHasPositionalPlaceholder(t *testing.T) {
+	testCases := []struct {
+		use      string
+		expected bool
+	}{
+		{"logout", false},
+		{"get <id>", true},
+		{"list [filter]", true},
+		{"view", false},
+		{"clone <repo> [dir]", true},
+		{"status", false},
+		{"cmd flag-only", false},
+	}
+	for _, tc := range testCases {
+		if got := hasPositionalPlaceholder(tc.use); got != tc.expected {
+			t.Errorf("hasPositionalPlaceholder(%q) = %v, want %v", tc.use, got, tc.expected)
+		}
+	}
+}
+
+func TestEnforceNoArgsDefaults(t *testing.T) {
+	cmdWithPos := &cobra.Command{
+		Use: "foo <bar>",
+		Run: func(*cobra.Command, []string) {},
+	}
+	cmdZero := &cobra.Command{
+		Use: "bar",
+		Run: func(*cobra.Command, []string) {},
+	}
+	parent := &cobra.Command{Use: "root"}
+	parent.AddCommand(cmdWithPos, cmdZero)
+	enforceNoArgsDefaults(parent)
+
+	if cmdZero.Args == nil {
+		t.Errorf("expected cmdZero.Args to be set to NoArgs")
+	}
+	if cmdWithPos.Args != nil {
+		t.Errorf("expected cmdWithPos.Args to remain nil")
+	}
+}
