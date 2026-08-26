@@ -135,7 +135,7 @@ Enterprise policy enforcement mechanisms differ fundamentally across operating s
 | **Windows** | Microsoft Intune / SCCM / Active Directory GPO | System Environment Variables (`[Environment]::SetEnvironmentVariable(..., "Machine")`) | **Windows Registry (`HKLM\Software\Policies\bb`)** | **Advisory**. While unprivileged users cannot edit `HKLM`, setting machine environment variables can be overridden if a developer defines the same variable at `"User"` scope. True enforcement requires reading `HKLM` directly. |
 | **macOS** | Jamf Pro, Kandji, Apple MDM | System Shell Profiles (`/etc/zshenv`) | **Managed Preferences (`/Library/Managed Preferences/com.corp.bb.plist`)** | **Advisory**. Root-owned `/etc/zshenv` applies to terminal sessions, but macOS GUI applications do not inherit it. |
 | **Linux (Workstations)** | Ansible, Puppet, SaltStack, Red Hat Satellite | Shell Environment (`/etc/profile.d/bb.sh`) | **Root-owned `/etc/bb/config.yaml` (`chmod 644 root:root`)** | **Advisory on developer laptops** where engineers possess `sudo` privileges; **High on multi-user jump hosts** where non-admin users cannot alter root files. |
-| **Linux (CI Runners)** | Kubernetes, Docker, Runner Daemons | Ephemeral Environment Variables (`BITBUCKET_TOKEN`, `BB_DISABLE_STORED_CONFIG=1`) | Container Image Environment | **High**. Containers lack desktop keyrings; `BB_DISABLE_STORED_CONFIG=1` guarantees disk storage is never touched. |
+| **Linux (CI Runners)** | Kubernetes, Docker, Runner Daemons | Ephemeral Environment Variables (`BITBUCKET_TOKEN`, `BB_DISABLE_STORED_CONFIG=1`) | Container Image Environment | **High**. Containers lack desktop keyrings; `BB_DISABLE_STORED_CONFIG=1` guarantees no stored credential profile is read and no keyring daemon is contacted. |
 
 ---
 
@@ -294,7 +294,7 @@ bb auth token list
 | **T-3** | Inability to traverse mutual TLS (mTLS) ingress | NIST SP 800-207 (Zero Trust Architecture), SC-8 | **Medium** | Backlog feature; requires client cert/key flags in transport. | `bb repo list` behind mTLS | [#422](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/422) |
 | **T-4** | Prompt-injected AI agent executing unauthorized mutations | OWASP Top 10 LLM (2025 LLM01, LLM06), SOC 2 CC6.8 | **Medium** | Mitigate via safe/unsafe tool withholding; requires workspace bounding & audit logging. | `bb ai mcp tools` | [#423](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/423) |
 | **T-5** | Unmanaged binary updates breaking package manager state | ISO 27001:2022 A.8.19, NIST SP 800-53 SI-2 | **Low** | Backlog feature; requires `BB_DISABLE_UPDATE=1` killswitch for fleets. | `bb update` on managed machine | [#421](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/421) |
-| **T-6** | Unfederated static token lifecycle management | CIS Controls v8 5.2, NIST SP 800-63B | **Medium** | Mitigate via scoped TTL PATs; browser flow requires Bitbucket DC admin configuration. | `bb auth token list` | [#424](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/424) |
+| **T-6** | Unfederated static token lifecycle management | CIS Controls v8 5.4 / 6.1, NIST SP 800-63B | **Medium** | Mitigate via scoped TTL PATs; browser flow requires Bitbucket DC admin configuration. | `bb auth token list` | [#424](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/424) |
 
 ---
 
