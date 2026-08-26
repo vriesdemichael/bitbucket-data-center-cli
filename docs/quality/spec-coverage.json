@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-10.2-openapi.json",
-  "covered": 209,
+  "covered": 210,
   "total": 565,
-  "coverage_percent": 36.991150442477874,
+  "coverage_percent": 37.16814159292036,
   "by_tag": [
     {
       "tag": "",
@@ -67,7 +67,7 @@
     },
     {
       "tag": "Project",
-      "covered": 32,
+      "covered": 33,
       "total": 73
     },
     {
@@ -833,12 +833,6 @@
       "path": "/api/latest/projects/{projectKey}/repos",
       "tag": "Project",
       "summary": "Get repositories for project"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}",
-      "tag": "Project",
-      "summary": "Get repository"
     },
     {
       "method": "GET",
