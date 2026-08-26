@@ -78,7 +78,7 @@ func report(writer io.Writer, findings []finding, checked int) int {
 		return 0
 	}
 
-	fmt.Fprintf(writer, "docs-lint: %d of %d documented bb invocations are invalid\n\n", len(findings), checked)
+	fmt.Fprintf(writer, "docs-lint: %d problem(s) found (%d documented bb invocations checked)\n\n", len(findings), checked)
 	for _, item := range findings {
 		fmt.Fprintf(writer, "  %s:%d\n    %s\n    %s\n\n", item.File, item.Line, item.Command, item.Problem)
 	}
@@ -171,7 +171,12 @@ func collectMarkdownFiles(roots []string) ([]string, error) {
 	return files, nil
 }
 
-var unversionedArtifactRegex = regexp.MustCompile(`\bbb_(linux|darwin|windows)_(amd64|arm64|x86_64)\.(tar\.gz|zip|deb|rpm)\b`)
+var (
+	unversionedArtifactRegex = regexp.MustCompile(`\bbb_(linux|darwin|windows)_(amd64|arm64|x86_64)\.(tar\.gz|zip|deb|rpm)\b`)
+	unrenderedLaTeXRegex     = regexp.MustCompile(`\$[^\$\n]+?\$`)
+	mcpToolListRe            = regexp.MustCompile(`--(?:tools|exclude)\b["']?[\s:=,]*["']?([a-zA-Z0-9_.-]+(?:\s*,\s*[a-zA-Z0-9_.-]+)*)`)
+	mcpToolValueOnlyRe       = regexp.MustCompile(`^["']?([a-zA-Z0-9_.-]+(?:\s*,\s*[a-zA-Z0-9_.-]+)*)`)
+)
 
 var (
 	validMCPTools     map[string]bool
@@ -188,6 +193,50 @@ func isValidMCPTool(name string) bool {
 	return validMCPTools[name]
 }
 
+var (
+	mkdocsMermaidOK   bool
+	mkdocsMermaidOnce sync.Once
+)
+
+func checkMkdocsMermaidConfig() bool {
+	mkdocsMermaidOnce.Do(func() {
+		data, err := findMkDocsConfig()
+		if err != nil {
+			return
+		}
+		content := string(data)
+		if strings.Contains(content, "custom_fences") && strings.Contains(content, "name: mermaid") {
+			mkdocsMermaidOK = true
+		}
+	})
+	return mkdocsMermaidOK
+}
+
+func findMkDocsConfig() ([]byte, error) {
+	for _, candidate := range []string{"mkdocs.yml", "../../mkdocs.yml"} {
+		if data, err := os.ReadFile(candidate); err == nil {
+			return data, nil
+		}
+	}
+	return nil, errors.New("mkdocs.yml not found")
+}
+
+func removeInlineCode(line string) string {
+	var b strings.Builder
+	inCode := false
+	runes := []rune(line)
+	for i := 0; i < len(runes); i++ {
+		if runes[i] == '`' {
+			inCode = !inCode
+			continue
+		}
+		if !inCode {
+			b.WriteRune(runes[i])
+		}
+	}
+	return b.String()
+}
+
 // lintMarkdown checks every bb invocation in the shell blocks of one document,
 // as well as markdown dialect rules, release artifact naming, and configuration values.
 func lintMarkdown(file, contents string) ([]finding, int) {
@@ -197,13 +246,45 @@ func lintMarkdown(file, contents string) ([]finding, int) {
 	)
 
 	lines := strings.Split(contents, "\n")
+	var (
+		inFence        bool
+		fenceMarker    string
+		pendingInvalid bool
+	)
+
 	for i, line := range lines {
 		lineNum := i + 1
 		trimmed := strings.TrimSpace(line)
 
+		if !inFence {
+			if isDirectiveComment(trimmed, expectInvalidDirective) {
+				pendingInvalid = true
+				continue
+			}
+
+			if marker, _, ok := openingFence(trimmed); ok {
+				inFence = true
+				fenceMarker = marker
+				pendingInvalid = false
+				continue
+			}
+		} else {
+			if strings.HasPrefix(trimmed, fenceMarker) && strings.TrimSpace(strings.TrimPrefix(trimmed, fenceMarker)) == "" {
+				inFence = false
+			}
+			continue
+		}
+
+		expectFail := pendingInvalid
+		if trimmed != "" {
+			pendingInvalid = false
+		}
+
+		var lineFindings []finding
+
 		// 1. Prohibit file:// links in documentation
 		if strings.Contains(line, "file://") {
-			findings = append(findings, finding{
+			lineFindings = append(lineFindings, finding{
 				File:    file,
 				Line:    lineNum,
 				Command: line,
@@ -213,7 +294,7 @@ func lintMarkdown(file, contents string) ([]finding, int) {
 
 		// 2. Prohibit GitHub-style callouts
 		if strings.HasPrefix(trimmed, "> [!") {
-			findings = append(findings, finding{
+			lineFindings = append(lineFindings, finding{
 				File:    file,
 				Line:    lineNum,
 				Command: line,
@@ -223,17 +304,55 @@ func lintMarkdown(file, contents string) ([]finding, int) {
 
 		// 3. Prohibit unversioned release artifact filenames (e.g. bb_linux_amd64.tar.gz)
 		if match := unversionedArtifactRegex.FindString(line); match != "" {
-			findings = append(findings, finding{
+			lineFindings = append(lineFindings, finding{
 				File:    file,
 				Line:    lineNum,
 				Command: line,
 				Problem: fmt.Sprintf("release artifact %q is missing a version segment (must match bb_${VERSION}_<os>_<arch>.<ext>)", match),
 			})
 		}
+
+		// 4. Prohibit unrendered LaTeX math syntax outside code blocks
+		proseLine := removeInlineCode(line)
+		proseLine = strings.ReplaceAll(proseLine, `\$`, "")
+		if unrenderedLaTeXRegex.MatchString(proseLine) || strings.Contains(proseLine, `$\`) {
+			lineFindings = append(lineFindings, finding{
+				File:    file,
+				Line:    lineNum,
+				Command: strings.TrimSpace(line),
+				Problem: "unrendered LaTeX math found outside code block; write in words or configure arithmatex",
+			})
+		}
+
+		if expectFail {
+			if len(lineFindings) == 0 {
+				findings = append(findings, finding{
+					File:    file,
+					Line:    lineNum,
+					Command: line,
+					Problem: "line is marked " + expectInvalidDirective + " but this line is valid",
+				})
+			}
+		} else {
+			findings = append(findings, lineFindings...)
+		}
 	}
 
-	// Invocations in shell code blocks & config checks in config blocks
-	shellBlocks, configBlocks := parseCodeBlocks(contents)
+	shellBlocks, configBlocks, otherBlocks := parseCodeBlocks(contents)
+
+	// Verify mermaid custom_fences configuration
+	for _, block := range otherBlocks {
+		if block.language == "mermaid" {
+			if !checkMkdocsMermaidConfig() {
+				findings = append(findings, finding{
+					File:    file,
+					Line:    block.startLine,
+					Command: "```mermaid",
+					Problem: "mermaid diagram requires pymdownx.superfences custom_fences configuration for mermaid in mkdocs.yml",
+				})
+			}
+		}
+	}
 
 	for _, block := range configBlocks {
 		findings = append(findings, lintConfigMCPTools(file, block)...)
@@ -246,9 +365,6 @@ func lintMarkdown(file, contents string) ([]finding, int) {
 			problem := validateInvocation(invocation.Args)
 
 			if block.expectInvalid {
-				// Inverted: the block documents what a malformed invocation
-				// looks like, so a command that now parses means the example no
-				// longer demonstrates what the prose says it does.
 				if problem == "" {
 					findings = append(findings, finding{
 						File:    file,
@@ -291,20 +407,24 @@ func lintConfigMCPTools(file string, block codeBlock) []finding {
 			continue
 		}
 
-		raw := extractToolListString(line, flagName)
+		var toolsStr string
 		targetLine := block.startLine + i + 1
-		if raw == "" && i+1 < len(lines) {
-			raw = strings.TrimSpace(lines[i+1])
-			targetLine = block.startLine + i + 2
+
+		if m := mcpToolListRe.FindStringSubmatch(line); len(m) > 1 {
+			toolsStr = m[1]
+		} else if i+1 < len(lines) {
+			if mNext := mcpToolValueOnlyRe.FindStringSubmatch(strings.TrimSpace(lines[i+1])); len(mNext) > 1 {
+				toolsStr = mNext[1]
+				targetLine = block.startLine + i + 2
+			}
 		}
 
-		raw = strings.Trim(raw, `"'[],`)
-		if raw == "" {
+		if toolsStr == "" {
 			continue
 		}
 
-		for _, tool := range strings.Split(raw, ",") {
-			tool = strings.Trim(strings.TrimSpace(tool), `"'`)
+		for _, tool := range strings.Split(toolsStr, ",") {
+			tool = strings.TrimSpace(tool)
 			if tool == "" || strings.HasPrefix(tool, "$") || strings.HasPrefix(tool, "--") {
 				continue
 			}
@@ -319,30 +439,27 @@ func lintConfigMCPTools(file string, block codeBlock) []finding {
 		}
 	}
 
+	if block.expectInvalid {
+		if len(findings) == 0 {
+			return []finding{
+				{
+					File:    file,
+					Line:    block.startLine,
+					Command: block.body,
+					Problem: "block is marked " + expectInvalidDirective + " but this configuration is valid",
+				},
+			}
+		}
+		return nil
+	}
+
 	return findings
 }
 
-func extractToolListString(line, flagName string) string {
-	idx := strings.Index(line, flagName)
-	if idx < 0 {
-		return ""
-	}
-	rest := strings.TrimSpace(line[idx+len(flagName):])
-	rest = strings.TrimPrefix(rest, "=")
-	rest = strings.TrimPrefix(rest, ":")
-	rest = strings.TrimSpace(rest)
-	rest = strings.TrimPrefix(rest, ",")
-	rest = strings.TrimSpace(rest)
-	return rest
-}
-
 type codeBlock struct {
-	// startLine is the 1-based line of the fence, so a body line at index n sits
-	// at startLine+n+1 in the file.
-	startLine int
-	body      string
-	// expectInvalid inverts the check for this block, for documentation that
-	// deliberately shows a malformed invocation.
+	startLine     int
+	language      string
+	body          string
 	expectInvalid bool
 }
 
@@ -366,16 +483,17 @@ func isDirectiveComment(trimmed, directive string) bool {
 	return inner == directive
 }
 
-func parseCodeBlocks(contents string) (shellBlocks []codeBlock, configBlocks []codeBlock) {
+func parseCodeBlocks(contents string) (shellBlocks []codeBlock, configBlocks []codeBlock, otherBlocks []codeBlock) {
 	var (
-		body          []string
-		fence         string
-		inBlock       bool
-		start         int
-		shell         bool
-		isConfig      bool
-		expectInvalid bool
-		pending       bool
+		body            []string
+		fence           string
+		inBlock         bool
+		start           int
+		currentLanguage string
+		shell           bool
+		isConfig        bool
+		expectInvalid   bool
+		pending         bool
 	)
 
 	for index, line := range strings.Split(contents, "\n") {
@@ -399,6 +517,7 @@ func parseCodeBlocks(contents string) (shellBlocks []codeBlock, configBlocks []c
 			inBlock = true
 			fence = marker
 			start = index + 1
+			currentLanguage = language
 			shell = shellLanguages[language]
 			isConfig = configLanguages[language]
 			expectInvalid = pending
@@ -411,6 +530,7 @@ func parseCodeBlocks(contents string) (shellBlocks []codeBlock, configBlocks []c
 		if strings.HasPrefix(trimmed, fence) && strings.TrimSpace(strings.TrimPrefix(trimmed, fence)) == "" {
 			block := codeBlock{
 				startLine:     start,
+				language:      currentLanguage,
 				body:          strings.Join(body, "\n"),
 				expectInvalid: expectInvalid,
 			}
@@ -418,6 +538,8 @@ func parseCodeBlocks(contents string) (shellBlocks []codeBlock, configBlocks []c
 				shellBlocks = append(shellBlocks, block)
 			} else if isConfig {
 				configBlocks = append(configBlocks, block)
+			} else {
+				otherBlocks = append(otherBlocks, block)
 			}
 			inBlock = false
 
@@ -427,7 +549,7 @@ func parseCodeBlocks(contents string) (shellBlocks []codeBlock, configBlocks []c
 		body = append(body, line)
 	}
 
-	return shellBlocks, configBlocks
+	return shellBlocks, configBlocks, otherBlocks
 }
 
 func openingFence(trimmed string) (marker, language string, ok bool) {
