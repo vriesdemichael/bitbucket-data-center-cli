@@ -3649,8 +3649,8 @@ Examples:
   bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --no-default-reviewers --no-codeowners
 
 Flags:
-      --codeowners               Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (defaults to true, Bitbucket Data Center 8.14+) (default true)
-      --default-reviewers        Include default reviewers configured on repository/project (defaults to true) (default true)
+      --codeowners               Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (Bitbucket Data Center 8.14+); a failed lookup warns, unless this flag is passed explicitly, which makes it fatal (default true)
+      --default-reviewers        Include default reviewers configured on repository/project; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal (default true)
       --description string       Pull request description
       --draft                    Create as a draft pull request (Bitbucket DC 8.0+)
       --from-ref string          Source branch (name or refs/heads/name)

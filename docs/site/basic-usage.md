@@ -129,10 +129,10 @@ once to let it authenticate. See [Git Authentication](advanced/git-authenticatio
 
 ## Reviewers
 
-`bb pr create` pre-fills reviewers the same way the web interface does: default
-reviewer conditions for the branch pair, plus code owners matching the diff from
-`.bitbucket/CODEOWNERS`. Both are on by default and are skipped without comment
-when the repository does not configure them.
+`bb pr create` fills in reviewers exactly as the web interface does: the default
+reviewer conditions for the branch pair, plus the code owners matching the diff.
+Reviewer groups and the full `.bitbucket/CODEOWNERS` syntax are supported. If a
+lookup fails, `bb` says so and still creates the pull request.
 
 ```bash
 # Default reviewers and code owners are applied automatically
@@ -148,32 +148,15 @@ bb pr create --from-ref feature/login --to-ref main --title "Add login" --review
 bb pr create --from-ref feature/login --to-ref main --title "Add login" --reviewers alice,@backend-team
 ```
 
-The same automation is available for a pull request that already exists, where it
-is opt-in rather than default:
+For a pull request that already exists the same automation is available, opt-in:
 
 ```bash
 bb pr review reviewer add 42 --user alice --user bob --reviewer-group core-team
 bb pr review reviewer add 42 --default-reviewers --codeowners
 ```
 
-Reviewer groups need Bitbucket Data Center 7.13+, `.bitbucket/CODEOWNERS` needs
-8.14+, and `bb` reads both with the syntax and precedence Bitbucket documents —
-including the `:all`, `:random(N)` and `:least_busy(N)` group selectors. Where it
-necessarily differs from the browser:
-
-- Reviewers are resolved on the client, because `POST /pull-requests` does not
-  evaluate conditions or CODEOWNERS server-side. Everything is decided before the
-  pull request is created.
-- A `CODEOWNERS` file in your working copy is used in preference to the server's
-  copy, but only when that working copy is a checkout of the repository you are
-  targeting.
-- `least_busy(N)` ranks candidates by their open unapproved reviews **in the
-  target repository only**. The browser has no equivalent to fall back on, so when
-  that ranking cannot be computed `bb` warns and assigns in group order instead.
-- Because both behaviours are on by default, a lookup that fails for a reason
-  other than "not configured" warns on stderr and the pull request is still
-  created. Pass `--default-reviewers` or `--codeowners` explicitly to make such a
-  failure fatal.
+Reviewer groups need Bitbucket Data Center 7.13+ and `.bitbucket/CODEOWNERS`
+needs 8.14+.
 
 ## Repository context behavior
 
