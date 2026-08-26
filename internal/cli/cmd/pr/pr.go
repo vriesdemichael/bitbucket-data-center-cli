@@ -433,7 +433,7 @@ func New(deps Dependencies) *cobra.Command {
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --draft\n\n" +
 			"  # Create a pull request and assign explicit reviewers (repeatable or comma-separated)\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --reviewers alice,bob\n\n" +
-			"  # Create a pull request with reviewers and reviewer groups (Bitbucket DC 7.13+)\n" +
+			"  # Create a pull request with reviewers and reviewer groups\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --reviewers alice,@backend-team --reviewer-group qa-team\n\n" +
 			"  # Create a pull request without default reviewers or CODEOWNERS\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --no-default-reviewers --no-codeowners",
@@ -614,11 +614,11 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd.Flags().StringVar(&createTitle, "title", "", "Pull request title")
 	createCmd.Flags().StringVar(&createDescription, "description", "", "Pull request description")
 	createCmd.Flags().StringSliceVar(&createReviewers, "reviewers", nil, "Reviewer usernames to add (repeatable or comma-separated, accepts @group syntax, e.g. --reviewers alice,@backend-team)")
-	createCmd.Flags().StringSliceVar(&createReviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups; Bitbucket Data Center 7.13+)")
+	createCmd.Flags().StringSliceVar(&createReviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups)")
 	createCmd.Flags().SetNormalizeFunc(createReviewerFlagAliases)
 	createCmd.Flags().BoolVar(&createDefaultReviewers, "default-reviewers", true, "Include default reviewers configured on repository/project; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal")
 	createCmd.Flags().BoolVar(&createNoDefaultReviewers, "no-default-reviewers", false, "Do not include default reviewers")
-	createCmd.Flags().BoolVar(&createCodeOwners, "codeowners", true, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (Bitbucket Data Center 8.14+); a failed lookup warns, unless this flag is passed explicitly, which makes it fatal")
+	createCmd.Flags().BoolVar(&createCodeOwners, "codeowners", true, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal")
 	createCmd.Flags().BoolVar(&createNoCodeOwners, "no-codeowners", false, "Do not include code owners from .bitbucket/CODEOWNERS")
 	createCmd.Flags().BoolVar(&createDraft, "draft", false, "Create as a draft pull request (Bitbucket DC 8.0+)")
 	_ = createCmd.MarkFlagRequired("from-ref")
@@ -1144,12 +1144,12 @@ func New(deps Dependencies) *cobra.Command {
 			"  # Add multiple reviewers (repeatable or comma-separated)\n" +
 			"  bb pr review reviewer add 42 --repo PROJ/repo --user alice --user bob\n" +
 			"  bb pr review reviewer add 42 --repo PROJ/repo --users alice,bob\n\n" +
-			"  # Add a reviewer group (Bitbucket DC 7.13+)\n" +
+			"  # Add a reviewer group\n" +
 			"  bb pr review reviewer add 42 --repo PROJ/repo --reviewer-group core-team\n" +
 			"  bb pr review reviewer add 42 --repo PROJ/repo --user @core-team\n\n" +
 			"  # Add default reviewers configured on repository/project\n" +
 			"  bb pr review reviewer add 42 --repo PROJ/repo --default-reviewers\n\n" +
-			"  # Add reviewers matching .bitbucket/CODEOWNERS (Bitbucket DC 8.14+)\n" +
+			"  # Add reviewers matching .bitbucket/CODEOWNERS\n" +
 			"  bb pr review reviewer add 42 --repo PROJ/repo --codeowners",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1378,10 +1378,10 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	reviewerAddCmd.Flags().StringSliceVar(&reviewerUsers, "user", nil, "Reviewer username(s) (repeatable or comma-separated, accepts @group syntax; aliases --users, --reviewers)")
-	reviewerAddCmd.Flags().StringSliceVar(&reviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups; Bitbucket Data Center 7.13+)")
+	reviewerAddCmd.Flags().StringSliceVar(&reviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups)")
 	reviewerAddCmd.Flags().SetNormalizeFunc(reviewerAddFlagAliases)
 	reviewerAddCmd.Flags().BoolVar(&reviewerDefaultReviewers, "default-reviewers", false, "Assign default reviewers configured on repository/project for this pull request")
-	reviewerAddCmd.Flags().BoolVar(&reviewerCodeOwners, "codeowners", false, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (Bitbucket Data Center 8.14+)")
+	reviewerAddCmd.Flags().BoolVar(&reviewerCodeOwners, "codeowners", false, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS")
 	reviewerCmd.AddCommand(reviewerAddCmd)
 
 	var removeReviewerUsername string

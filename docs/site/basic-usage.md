@@ -155,9 +155,6 @@ bb pr review reviewer add 42 --user alice --user bob --reviewer-group core-team
 bb pr review reviewer add 42 --default-reviewers --codeowners
 ```
 
-Reviewer groups need Bitbucket Data Center 7.13+ and `.bitbucket/CODEOWNERS`
-needs 8.14+.
-
 ## Repository context behavior
 
 - `--repo PROJECT/slug` has highest precedence. `--repo` also accepts full Bitbucket repository URLs (`https://bitbucket.acme.corp/projects/PRJ/repos/demo`) and personal user repositories (`~username/slug`).

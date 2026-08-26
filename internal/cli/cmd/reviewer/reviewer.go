@@ -79,7 +79,7 @@ func New(deps Dependencies) *cobra.Command {
 		Use:   "reviewer",
 		Short: "Manage default reviewers",
 		Long: "Manage default reviewer conditions.\n\n" +
-			"Note on CODEOWNERS: Native CODEOWNERS support was introduced in Bitbucket Data Center 8.14 (via .bitbucket/CODEOWNERS in the repository root). Because it is a git-tracked file rather than a REST endpoint, it is managed through repository contents. For automated reviewer rules, default-reviewer conditions (bb reviewer condition) and Reviewer Groups (bb reviewer-group) provide server-level configuration, while bb pr create and bb pr review reviewer add expand groups directly.",
+			"Note on CODEOWNERS: .bitbucket/CODEOWNERS is a git-tracked file rather than a REST resource, so it is managed through repository contents and not by this command. For server-level reviewer rules use default-reviewer conditions (bb reviewer condition) and reviewer groups (bb reviewer-group); bb pr create and bb pr review reviewer add read CODEOWNERS and expand groups directly.",
 	}
 
 	reviewerCmd.PersistentFlags().StringVar(&projectKey, "project", "", "Project key")
