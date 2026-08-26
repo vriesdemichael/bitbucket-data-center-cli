@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	reposervice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
@@ -166,7 +166,7 @@ func newRepoForkCommand(deps Dependencies, repositorySelector *string, isAlias b
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 							return err
 						}
 						if forkProject != "" {
@@ -261,7 +261,7 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 							return err
 						}
 					}
@@ -345,7 +345,7 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 							return err
 						}
 					}

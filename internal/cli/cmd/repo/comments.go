@@ -12,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
 )
@@ -153,7 +154,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), target.Repository.ProjectKey, target.Repository.Slug, openapigenerated.REPOREAD); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), target.Repository.ProjectKey, target.Repository.Slug, openapi.RepoRead); err != nil {
 							return err
 						}
 					}
@@ -217,7 +218,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), target.Repository.ProjectKey, target.Repository.Slug, openapigenerated.REPOREAD); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), target.Repository.ProjectKey, target.Repository.Slug, openapi.RepoRead); err != nil {
 							return err
 						}
 					}
@@ -315,7 +316,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), target.Repository.ProjectKey, target.Repository.Slug, openapigenerated.REPOREAD); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), target.Repository.ProjectKey, target.Repository.Slug, openapi.RepoRead); err != nil {
 							return err
 						}
 					}

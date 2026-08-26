@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
@@ -44,17 +45,17 @@ func TestPermissionCheckerRepoPermission(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. REPO_ADMIN permission is granted on page 2
-	if err := checker.CheckRepoPermission(ctx, "PRJ", "repo1", openapigenerated.REPOADMIN); err != nil {
+	if err := checker.CheckRepoPermission(ctx, "PRJ", "repo1", openapi.RepoAdmin); err != nil {
 		t.Fatalf("expected REPO_ADMIN to be allowed, got error: %v", err)
 	}
 
 	// 2. Cached check should return nil without extra network call
-	if err := checker.CheckRepoPermission(ctx, "PRJ", "repo1", openapigenerated.REPOADMIN); err != nil {
+	if err := checker.CheckRepoPermission(ctx, "PRJ", "repo1", openapi.RepoAdmin); err != nil {
 		t.Fatalf("expected cached REPO_ADMIN to be allowed, got error: %v", err)
 	}
 
 	// 3. REPO_WRITE permission not present in returned repos -> returns authorization error
-	err = checker.CheckRepoPermission(ctx, "PRJ", "repo1", openapigenerated.REPOWRITE)
+	err = checker.CheckRepoPermission(ctx, "PRJ", "repo1", openapi.RepoWrite)
 	if err == nil {
 		t.Fatalf("expected error for ungranted REPO_WRITE permission")
 	}

@@ -253,9 +253,9 @@ func (p *PermissionChecker) CheckProjectRead(ctx context.Context, projectKey str
 // given repository and returns a map of permission name to granted bool.
 func (p *PermissionChecker) InspectRepoPermissions(ctx context.Context, projectKey, repoSlug string) (map[string]bool, error) {
 	levels := []openapigenerated.GetRepositories1ParamsPermission{
-		openapigenerated.REPOREAD,
-		openapigenerated.REPOWRITE,
-		openapigenerated.REPOADMIN,
+		openapi.RepoRead,
+		openapi.RepoWrite,
+		openapi.RepoAdmin,
 	}
 
 	result := make(map[string]bool, len(levels))

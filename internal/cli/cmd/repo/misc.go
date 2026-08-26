@@ -82,7 +82,7 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 							return err
 						}
 					}
@@ -134,7 +134,7 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 							return err
 						}
 					}
@@ -194,7 +194,7 @@ func newRepoWatchCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 							return err
 						}
 					}
@@ -251,7 +251,7 @@ func newRepoUnwatchCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOREAD); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 							return err
 						}
 					}
@@ -375,7 +375,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 							return err
 						}
 					}
@@ -443,7 +443,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 							return err
 						}
 					}
@@ -500,7 +500,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 							return err
 						}
 					}
@@ -564,7 +564,7 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 							return err
 						}
 					}
@@ -670,7 +670,7 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 							return err
 						}
 					}
@@ -725,7 +725,7 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 							return err
 						}
 					}
@@ -844,7 +844,7 @@ func newRepoEditCommand(deps Dependencies) *cobra.Command {
 				if deps.PermissionChecker != nil {
 					checker := deps.PermissionChecker(client)
 					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOWRITE); err != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 							return err
 						}
 					}

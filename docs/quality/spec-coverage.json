@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "spec": "docs/reference/atlassian/bitbucket-10.2-openapi.json",
+  "spec": "docs/reference/atlassian/bitbucket-openapi.json",
   "covered": 210,
-  "total": 565,
-  "coverage_percent": 37.16814159292036,
+  "total": 572,
+  "coverage_percent": 36.71328671328671,
   "by_tag": [
     {
       "tag": "",
@@ -68,7 +68,7 @@
     {
       "tag": "Project",
       "covered": 33,
-      "total": 73
+      "total": 76
     },
     {
       "tag": "Pull Requests",
@@ -78,7 +78,7 @@
     {
       "tag": "Repository",
       "covered": 55,
-      "total": 96
+      "total": 99
     },
     {
       "tag": "SAML certificate configuration",
@@ -88,7 +88,7 @@
     {
       "tag": "Search",
       "covered": 0,
-      "total": 7
+      "total": 8
     },
     {
       "tag": "Security",
@@ -1195,6 +1195,24 @@
       "summary": "Edit an existing repository secret scanning rule"
     },
     {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/change-author",
+      "tag": "Repository",
+      "summary": "Delete pull request change-author settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/change-author",
+      "tag": "Repository",
+      "summary": "Get pull request change-author settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/change-author",
+      "tag": "Repository",
+      "summary": "Create or update the pull request change-author settings"
+    },
+    {
       "method": "GET",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks",
       "tag": "Repository",
@@ -1367,6 +1385,24 @@
       "path": "/api/latest/projects/{projectKey}/settings/auto-merge",
       "tag": "Project",
       "summary": "Create or update the pull request auto-merge settings"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/projects/{projectKey}/settings/change-author",
+      "tag": "Project",
+      "summary": "Delete pull request change-author settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/settings/change-author",
+      "tag": "Project",
+      "summary": "Get pull request change-author settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/projects/{projectKey}/settings/change-author",
+      "tag": "Project",
+      "summary": "Create or update the pull request change-author settings"
     },
     {
       "method": "GET",
@@ -1725,6 +1761,12 @@
       "path": "/indexing/latest/support-info/indexing-thread-snapshot",
       "tag": "Search",
       "summary": "Retrieve a snapshot of the indexing thread details."
+    },
+    {
+      "method": "PUT",
+      "path": "/indexing/latest/threads",
+      "tag": "Search",
+      "summary": "Sets the desired number of indexing worker threads"
     },
     {
       "method": "DELETE",

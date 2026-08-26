@@ -1,6 +1,84 @@
 version: 1
-updated_at: "2026-08-18"
-source_openapi: docs/reference/atlassian/bitbucket-10.2-openapi.json
+updated_at: "2026-08-27"
+source_openapi: docs/reference/atlassian/bitbucket-openapi.json
+
+# The registry had never been exercised end to end. It was, during the bump from
+# Bitbucket 10.2 to 10.4.
+validation:
+  date: "2026-08-27"
+  bitbucket_version: "10.4.2"
+
+  # A verification command passing means the workaround still works. It does not
+  # mean the workaround is still needed: the command exercises code with the fix
+  # applied, so it passes just as well after Atlassian repairs the underlying
+  # defect. ADR-028 asks for an entry to be removed once upstream improves, and a
+  # green command is not evidence for that either way.
+  #
+  # Whether a fix is still needed is a separate question, answered per entry
+  # under still_required below.
+  commands:
+    status: pass
+    detail: >
+      Every verification command in the registry was run against 10.4.2 and passed.
+      The offline ones (task models:verify, task client:verify, task openapi:verify,
+      go build, and each named go test) ran directly. The -tags live ones ran against
+      a local SDK-licensed 10.4.2 instance as part of the full suite.
+  live_suite:
+    status: pass
+    detail: >
+      go test -tags=live ./tests/integration/live against a local Bitbucket 10.4.2
+      container: 0 failures in 551s. This is the check that matters for this registry,
+      because most entries record the server disagreeing with its own published spec,
+      which no amount of offline inspection can confirm or refute.
+
+  # Where each divergence actually lives. The distinction matters because only the
+  # first kind can ever be fixed by Atlassian shipping a better document.
+  divergence_sources:
+    published_spec_contradicts_itself: >
+      OPENAPI-001 (path placeholders present in the URL template but undeclared) and
+      OPENAPI-002 (operationIds reused across unrelated endpoints, which OpenAPI 3.0
+      forbids outright). Both still present in 10.4: the sanitizer reports
+      "fixed path params=1 renamed operationIds=3" on this spec.
+    published_spec_contradicts_the_server: >
+      The large majority. OPENAPI-005, -007, -008, -011 through -020 all record the
+      server returning something the document says it will not: epoch millis where a
+      date-time string is declared, a string where an object is declared, an integer
+      body where an object is declared, and so on. These are only discoverable by
+      calling the server, which is why the live suite is the real gate here.
+      Every one of them still reproduces on 10.4 -- the sanitizer still rewrites
+      11 schema fields, 1 property, 3 array properties and 1 array response.
+    generator_or_language_limit: >
+      OPENAPI-003, -010 and -021. The spec is accurate; Go or oapi-codegen cannot
+      express it. OPENAPI-010's four schemas form a required, non-nullable value
+      cycle Go cannot size.
+    our_own_tooling: >
+      OPENAPI-009, -022 and -023 record defects in this project rather than in
+      Bitbucket: nondeterministic suffix assignment, no guard against an operation
+      silently changing endpoint, and a spec version pinned separately from the
+      release under test.
+
+  still_required:
+    confirmed_still_needed: >
+      OPENAPI-001, -002, -005, -007, -008, -010, -011 through -020. Each underlying
+      condition was checked against the 10.4 document or reproduced by the live suite.
+      OPENAPI-010 in particular: the four excluded schemas are still defined, still
+      cyclic, and still unreachable from any operation (236 of 295 schemas are
+      reachable; these four are not), so the exclusion remains both necessary and safe.
+    no_longer_fires: >
+      OPENAPI-003. The post-generation dedupe pass reports "removed=0" on 10.4 and
+      reported the same on 10.2, so it has not removed a declaration on either spec
+      this project has vendored. It is retained as a guard rather than deleted,
+      because the collision it defends against is a property of the input spec and
+      costs one pass to keep, but it should not be read as evidence of a live defect.
+    reclassified: >
+      OPENAPI-009 understated the problem. Suffix numbering was assumed to be a
+      consequence of this project canonicalising operationIds before re-suffixing.
+      It is not: Atlassian's own operationIds re-point between releases. Comparing
+      10.2 to 10.4, 11 upstream operationIds now name a different endpoint, including
+      delete_6 and delete_7, which moved from the reviewer-group endpoints to the new
+      change-author ones. Preserving upstream ids verbatim would not have helped.
+      OPENAPI-022 exists because nothing else can catch this.
+
 fixes:
   - id: OPENAPI-001
     area: spec-path-parameters
@@ -731,3 +809,94 @@ fixes:
       commands:
         - go test ./internal/services/reposettings/ ./internal/services/project/
         - go test -tags live -run "TestLiveRepositoryWebhookLifecycle|TestLiveProjectWebhookLifecycle" ./tests/integration/live/
+
+  - id: OPENAPI-021
+    area: generated-symbol-stability
+    description: Insulate call sites from generated enum constant names, which are not stable across spec versions.
+    reference:
+      type: generation
+      value: openapigenerated.GetRepositories1ParamsPermission
+      upstream_issue: oapi-codegen qualifies an enum constant only once another value name collides with it
+    change:
+      files:
+        - internal/openapi/permissions.go
+      detail: >
+        oapi-codegen emits a bare REPOWRITE while that value name is unique in the spec and a
+        qualified GetRepositories1ParamsPermissionREPOWRITE once anything collides with it. The
+        10.2 to 10.4 bump crossed that threshold and renamed all three repository permission
+        constants with no change in meaning, breaking ninety-one call sites across twenty files.
+
+        internal/openapi now exports RepoRead, RepoWrite and RepoAdmin, and everything else refers
+        to those. The next rename of this kind is three lines rather than ninety-one.
+
+        The type itself, GetRepositories1ParamsPermission, is aliased as RepositoryPermission for
+        the same reason: its name records which operation the generator happened to derive the enum
+        from, which is not a fact any call site should depend on.
+    verification:
+      commands:
+        - go build ./...
+        - go test ./internal/cli/... ./internal/services/...
+
+  - id: OPENAPI-022
+    area: generated-operation-repointing
+    description: Detect a generated operation being re-pointed at a different endpoint by an upstream spec change.
+    reference:
+      type: generation
+      value: docs/quality/generated-operation-paths.json
+      upstream_issue: collision-suffixed operationIds are numbered in spec order, so upstream additions renumber them
+    change:
+      files:
+        - tools/openapi-operation-paths/main.go
+        - docs/quality/generated-operation-paths.json
+        - Taskfile.yml
+      detail: >
+        OPENAPI-009 made suffix assignment deterministic for a given spec. It is still not stable
+        across specs, and the cause is upstream rather than local: Atlassian's own operationIds
+        re-point between releases. Eleven of them name a different endpoint in 10.4 than in 10.2,
+        so preserving upstream ids verbatim instead of canonicalising would not have helped. Delete7 was the
+        repository reviewer-group delete in 10.2 and something else in 10.4; Delete6 became
+        Delete8. The same renumbering moved getStatus during the 10.2 bump, which is why
+        forksync carries a comment naming GetStatus over GetStatus2.
+
+        Each of those was caught only because the arity changed too and the build broke. Two
+        endpoints with the same shape would have swapped silently and the CLI would have called
+        the wrong URL with no signal at all.
+
+        tools/openapi-operation-paths records the endpoint behind every generated operation this
+        project calls, into a committed file. A spec bump that re-points one now shows up as a
+        diff a reviewer has to accept, rather than as luck.
+    verification:
+      commands:
+        - task openapi:operation-paths:verify
+
+  - id: OPENAPI-023
+    area: spec-version-drift
+    description: Derive the vendored OpenAPI reference from the Bitbucket release the harness runs.
+    reference:
+      type: generation
+      value: docs/reference/atlassian/bitbucket-openapi.json
+      upstream_issue: the spec version was pinned separately from the version under test and drifted two minors behind it
+    change:
+      files:
+        - tools/openapi-spec/main.go
+        - Taskfile.yml
+        - .github/dependabot.yml
+      detail: >
+        ADR-042 records the version under test in exactly one place, the harness base image tag,
+        so nothing can drift from it. The vendored spec kept a second copy of that fact in four
+        Taskfile variables and in its own filename, and drifted: the harness moved to 10.4.x while
+        the spec stayed at 10.2.
+
+        tools/openapi-spec derives the API version from the image tag instead. Refresh mode
+        downloads the matching spec, verify mode fails when the two have parted ways, and the
+        vendored file lost the version from its name so there is nothing left to update by hand.
+
+        Dependabot no longer ignores atlassian/bitbucket. It was held back while the test licence
+        capped the provisionable version; licences are now provisioned per run for the current
+        release. A bump remains a proposal that the live suite accepts or rejects, and it has to
+        carry the matching task openapi:refresh.
+    verification:
+      commands:
+        - task openapi:verify
+        - task models:verify
+        - task client:verify

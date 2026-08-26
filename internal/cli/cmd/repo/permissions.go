@@ -9,6 +9,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	reposettings "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reposettings"
 )
@@ -248,7 +249,7 @@ func runPermissionGrantDryRun(
 	if deps.PermissionChecker != nil {
 		checker := deps.PermissionChecker(client)
 		if checker != nil {
-			if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+			if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 				return err
 			}
 		}
@@ -313,7 +314,7 @@ func runPermissionRevokeDryRun(
 	if deps.PermissionChecker != nil {
 		checker := deps.PermissionChecker(client)
 		if checker != nil {
-			if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapigenerated.REPOADMIN); err != nil {
+			if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 				return err
 			}
 		}

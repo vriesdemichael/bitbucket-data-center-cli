@@ -202,6 +202,7 @@ const (
 // Defines values for RestAutoMergeProcessingResultPullRequestAuthorRole.
 const (
 	RestAutoMergeProcessingResultPullRequestAuthorRoleAUTHOR      RestAutoMergeProcessingResultPullRequestAuthorRole = "AUTHOR"
+	RestAutoMergeProcessingResultPullRequestAuthorRoleCREATOR     RestAutoMergeProcessingResultPullRequestAuthorRole = "CREATOR"
 	RestAutoMergeProcessingResultPullRequestAuthorRolePARTICIPANT RestAutoMergeProcessingResultPullRequestAuthorRole = "PARTICIPANT"
 	RestAutoMergeProcessingResultPullRequestAuthorRoleREVIEWER    RestAutoMergeProcessingResultPullRequestAuthorRole = "REVIEWER"
 )
@@ -217,6 +218,27 @@ const (
 const (
 	RestAutoMergeProcessingResultPullRequestAuthorUserTypeNORMAL  RestAutoMergeProcessingResultPullRequestAuthorUserType = "NORMAL"
 	RestAutoMergeProcessingResultPullRequestAuthorUserTypeSERVICE RestAutoMergeProcessingResultPullRequestAuthorUserType = "SERVICE"
+)
+
+// Defines values for RestAutoMergeProcessingResultPullRequestCreatorRole.
+const (
+	RestAutoMergeProcessingResultPullRequestCreatorRoleAUTHOR      RestAutoMergeProcessingResultPullRequestCreatorRole = "AUTHOR"
+	RestAutoMergeProcessingResultPullRequestCreatorRoleCREATOR     RestAutoMergeProcessingResultPullRequestCreatorRole = "CREATOR"
+	RestAutoMergeProcessingResultPullRequestCreatorRolePARTICIPANT RestAutoMergeProcessingResultPullRequestCreatorRole = "PARTICIPANT"
+	RestAutoMergeProcessingResultPullRequestCreatorRoleREVIEWER    RestAutoMergeProcessingResultPullRequestCreatorRole = "REVIEWER"
+)
+
+// Defines values for RestAutoMergeProcessingResultPullRequestCreatorStatus.
+const (
+	RestAutoMergeProcessingResultPullRequestCreatorStatusAPPROVED   RestAutoMergeProcessingResultPullRequestCreatorStatus = "APPROVED"
+	RestAutoMergeProcessingResultPullRequestCreatorStatusNEEDSWORK  RestAutoMergeProcessingResultPullRequestCreatorStatus = "NEEDS_WORK"
+	RestAutoMergeProcessingResultPullRequestCreatorStatusUNAPPROVED RestAutoMergeProcessingResultPullRequestCreatorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestAutoMergeProcessingResultPullRequestCreatorUserType.
+const (
+	RestAutoMergeProcessingResultPullRequestCreatorUserTypeNORMAL  RestAutoMergeProcessingResultPullRequestCreatorUserType = "NORMAL"
+	RestAutoMergeProcessingResultPullRequestCreatorUserTypeSERVICE RestAutoMergeProcessingResultPullRequestCreatorUserType = "SERVICE"
 )
 
 // Defines values for RestAutoMergeProcessingResultPullRequestFromRefRepositoryOriginProjectType.
@@ -406,6 +428,27 @@ const (
 	RestChangeTypeUNKNOWN RestChangeType = "UNKNOWN"
 )
 
+// Defines values for RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction.
+const (
+	RestChangePullRequestAuthorProjectSettingsRequestRestrictionActionCREATE RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction = "CREATE"
+	RestChangePullRequestAuthorProjectSettingsRequestRestrictionActionDELETE RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction = "DELETE"
+	RestChangePullRequestAuthorProjectSettingsRequestRestrictionActionNONE   RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction = "NONE"
+)
+
+// Defines values for RestChangePullRequestAuthorRestrictedSettingsRestrictionState.
+const (
+	RestChangePullRequestAuthorRestrictedSettingsRestrictionStateNONE                   RestChangePullRequestAuthorRestrictedSettingsRestrictionState = "NONE"
+	RestChangePullRequestAuthorRestrictedSettingsRestrictionStateRESTRICTEDMODIFIABLE   RestChangePullRequestAuthorRestrictedSettingsRestrictionState = "RESTRICTED_MODIFIABLE"
+	RestChangePullRequestAuthorRestrictedSettingsRestrictionStateRESTRICTEDUNMODIFIABLE RestChangePullRequestAuthorRestrictedSettingsRestrictionState = "RESTRICTED_UNMODIFIABLE"
+)
+
+// Defines values for RestChangePullRequestAuthorRestrictedSettingsScopeType.
+const (
+	RestChangePullRequestAuthorRestrictedSettingsScopeTypeGLOBAL     RestChangePullRequestAuthorRestrictedSettingsScopeType = "GLOBAL"
+	RestChangePullRequestAuthorRestrictedSettingsScopeTypePROJECT    RestChangePullRequestAuthorRestrictedSettingsScopeType = "PROJECT"
+	RestChangePullRequestAuthorRestrictedSettingsScopeTypeREPOSITORY RestChangePullRequestAuthorRestrictedSettingsScopeType = "REPOSITORY"
+)
+
 // Defines values for RestChangesetRepositoryOriginProjectType.
 const (
 	RestChangesetRepositoryOriginProjectTypeNORMAL   RestChangesetRepositoryOriginProjectType = "NORMAL"
@@ -464,6 +507,7 @@ const (
 // Defines values for RestCommentAnchorPullRequestAuthorRole.
 const (
 	RestCommentAnchorPullRequestAuthorRoleAUTHOR      RestCommentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestCommentAnchorPullRequestAuthorRoleCREATOR     RestCommentAnchorPullRequestAuthorRole = "CREATOR"
 	RestCommentAnchorPullRequestAuthorRolePARTICIPANT RestCommentAnchorPullRequestAuthorRole = "PARTICIPANT"
 	RestCommentAnchorPullRequestAuthorRoleREVIEWER    RestCommentAnchorPullRequestAuthorRole = "REVIEWER"
 )
@@ -479,6 +523,27 @@ const (
 const (
 	RestCommentAnchorPullRequestAuthorUserTypeNORMAL  RestCommentAnchorPullRequestAuthorUserType = "NORMAL"
 	RestCommentAnchorPullRequestAuthorUserTypeSERVICE RestCommentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
+// Defines values for RestCommentAnchorPullRequestCreatorRole.
+const (
+	RestCommentAnchorPullRequestCreatorRoleAUTHOR      RestCommentAnchorPullRequestCreatorRole = "AUTHOR"
+	RestCommentAnchorPullRequestCreatorRoleCREATOR     RestCommentAnchorPullRequestCreatorRole = "CREATOR"
+	RestCommentAnchorPullRequestCreatorRolePARTICIPANT RestCommentAnchorPullRequestCreatorRole = "PARTICIPANT"
+	RestCommentAnchorPullRequestCreatorRoleREVIEWER    RestCommentAnchorPullRequestCreatorRole = "REVIEWER"
+)
+
+// Defines values for RestCommentAnchorPullRequestCreatorStatus.
+const (
+	RestCommentAnchorPullRequestCreatorStatusAPPROVED   RestCommentAnchorPullRequestCreatorStatus = "APPROVED"
+	RestCommentAnchorPullRequestCreatorStatusNEEDSWORK  RestCommentAnchorPullRequestCreatorStatus = "NEEDS_WORK"
+	RestCommentAnchorPullRequestCreatorStatusUNAPPROVED RestCommentAnchorPullRequestCreatorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestCommentAnchorPullRequestCreatorUserType.
+const (
+	RestCommentAnchorPullRequestCreatorUserTypeNORMAL  RestCommentAnchorPullRequestCreatorUserType = "NORMAL"
+	RestCommentAnchorPullRequestCreatorUserTypeSERVICE RestCommentAnchorPullRequestCreatorUserType = "SERVICE"
 )
 
 // Defines values for RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType.
@@ -592,6 +657,7 @@ const (
 // Defines values for RestCommentParentAnchorPullRequestAuthorRole.
 const (
 	RestCommentParentAnchorPullRequestAuthorRoleAUTHOR      RestCommentParentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestCommentParentAnchorPullRequestAuthorRoleCREATOR     RestCommentParentAnchorPullRequestAuthorRole = "CREATOR"
 	RestCommentParentAnchorPullRequestAuthorRolePARTICIPANT RestCommentParentAnchorPullRequestAuthorRole = "PARTICIPANT"
 	RestCommentParentAnchorPullRequestAuthorRoleREVIEWER    RestCommentParentAnchorPullRequestAuthorRole = "REVIEWER"
 )
@@ -607,6 +673,27 @@ const (
 const (
 	RestCommentParentAnchorPullRequestAuthorUserTypeNORMAL  RestCommentParentAnchorPullRequestAuthorUserType = "NORMAL"
 	RestCommentParentAnchorPullRequestAuthorUserTypeSERVICE RestCommentParentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
+// Defines values for RestCommentParentAnchorPullRequestCreatorRole.
+const (
+	RestCommentParentAnchorPullRequestCreatorRoleAUTHOR      RestCommentParentAnchorPullRequestCreatorRole = "AUTHOR"
+	RestCommentParentAnchorPullRequestCreatorRoleCREATOR     RestCommentParentAnchorPullRequestCreatorRole = "CREATOR"
+	RestCommentParentAnchorPullRequestCreatorRolePARTICIPANT RestCommentParentAnchorPullRequestCreatorRole = "PARTICIPANT"
+	RestCommentParentAnchorPullRequestCreatorRoleREVIEWER    RestCommentParentAnchorPullRequestCreatorRole = "REVIEWER"
+)
+
+// Defines values for RestCommentParentAnchorPullRequestCreatorStatus.
+const (
+	RestCommentParentAnchorPullRequestCreatorStatusAPPROVED   RestCommentParentAnchorPullRequestCreatorStatus = "APPROVED"
+	RestCommentParentAnchorPullRequestCreatorStatusNEEDSWORK  RestCommentParentAnchorPullRequestCreatorStatus = "NEEDS_WORK"
+	RestCommentParentAnchorPullRequestCreatorStatusUNAPPROVED RestCommentParentAnchorPullRequestCreatorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestCommentParentAnchorPullRequestCreatorUserType.
+const (
+	RestCommentParentAnchorPullRequestCreatorUserTypeNORMAL  RestCommentParentAnchorPullRequestCreatorUserType = "NORMAL"
+	RestCommentParentAnchorPullRequestCreatorUserTypeSERVICE RestCommentParentAnchorPullRequestCreatorUserType = "SERVICE"
 )
 
 // Defines values for RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType.
@@ -730,15 +817,6 @@ const (
 	RestDefaultReviewersRequestSourceMatcherTypeIdPATTERN       RestDefaultReviewersRequestSourceMatcherTypeId = "PATTERN"
 )
 
-// Defines values for RestDefaultReviewersRequestTargetMatcherTypeId.
-const (
-	RestDefaultReviewersRequestTargetMatcherTypeIdANYREF        RestDefaultReviewersRequestTargetMatcherTypeId = "ANY_REF"
-	RestDefaultReviewersRequestTargetMatcherTypeIdBRANCH        RestDefaultReviewersRequestTargetMatcherTypeId = "BRANCH"
-	RestDefaultReviewersRequestTargetMatcherTypeIdMODELBRANCH   RestDefaultReviewersRequestTargetMatcherTypeId = "MODEL_BRANCH"
-	RestDefaultReviewersRequestTargetMatcherTypeIdMODELCATEGORY RestDefaultReviewersRequestTargetMatcherTypeId = "MODEL_CATEGORY"
-	RestDefaultReviewersRequestTargetMatcherTypeIdPATTERN       RestDefaultReviewersRequestTargetMatcherTypeId = "PATTERN"
-)
-
 // Defines values for RestDefaultTaskRequestSourceMatcherTypeId.
 const (
 	RestDefaultTaskRequestSourceMatcherTypeIdANYREF        RestDefaultTaskRequestSourceMatcherTypeId = "ANY_REF"
@@ -746,15 +824,6 @@ const (
 	RestDefaultTaskRequestSourceMatcherTypeIdMODELBRANCH   RestDefaultTaskRequestSourceMatcherTypeId = "MODEL_BRANCH"
 	RestDefaultTaskRequestSourceMatcherTypeIdMODELCATEGORY RestDefaultTaskRequestSourceMatcherTypeId = "MODEL_CATEGORY"
 	RestDefaultTaskRequestSourceMatcherTypeIdPATTERN       RestDefaultTaskRequestSourceMatcherTypeId = "PATTERN"
-)
-
-// Defines values for RestDefaultTaskRequestTargetMatcherTypeId.
-const (
-	RestDefaultTaskRequestTargetMatcherTypeIdANYREF        RestDefaultTaskRequestTargetMatcherTypeId = "ANY_REF"
-	RestDefaultTaskRequestTargetMatcherTypeIdBRANCH        RestDefaultTaskRequestTargetMatcherTypeId = "BRANCH"
-	RestDefaultTaskRequestTargetMatcherTypeIdMODELBRANCH   RestDefaultTaskRequestTargetMatcherTypeId = "MODEL_BRANCH"
-	RestDefaultTaskRequestTargetMatcherTypeIdMODELCATEGORY RestDefaultTaskRequestTargetMatcherTypeId = "MODEL_CATEGORY"
-	RestDefaultTaskRequestTargetMatcherTypeIdPATTERN       RestDefaultTaskRequestTargetMatcherTypeId = "PATTERN"
 )
 
 // Defines values for RestDeploymentRepositoryOriginProjectType.
@@ -1099,6 +1168,7 @@ const (
 // Defines values for RestPullRequestAuthorRole.
 const (
 	RestPullRequestAuthorRoleAUTHOR      RestPullRequestAuthorRole = "AUTHOR"
+	RestPullRequestAuthorRoleCREATOR     RestPullRequestAuthorRole = "CREATOR"
 	RestPullRequestAuthorRolePARTICIPANT RestPullRequestAuthorRole = "PARTICIPANT"
 	RestPullRequestAuthorRoleREVIEWER    RestPullRequestAuthorRole = "REVIEWER"
 )
@@ -1114,6 +1184,27 @@ const (
 const (
 	RestPullRequestAuthorUserTypeNORMAL  RestPullRequestAuthorUserType = "NORMAL"
 	RestPullRequestAuthorUserTypeSERVICE RestPullRequestAuthorUserType = "SERVICE"
+)
+
+// Defines values for RestPullRequestCreatorRole.
+const (
+	RestPullRequestCreatorRoleAUTHOR      RestPullRequestCreatorRole = "AUTHOR"
+	RestPullRequestCreatorRoleCREATOR     RestPullRequestCreatorRole = "CREATOR"
+	RestPullRequestCreatorRolePARTICIPANT RestPullRequestCreatorRole = "PARTICIPANT"
+	RestPullRequestCreatorRoleREVIEWER    RestPullRequestCreatorRole = "REVIEWER"
+)
+
+// Defines values for RestPullRequestCreatorStatus.
+const (
+	RestPullRequestCreatorStatusAPPROVED   RestPullRequestCreatorStatus = "APPROVED"
+	RestPullRequestCreatorStatusNEEDSWORK  RestPullRequestCreatorStatus = "NEEDS_WORK"
+	RestPullRequestCreatorStatusUNAPPROVED RestPullRequestCreatorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestPullRequestCreatorUserType.
+const (
+	RestPullRequestCreatorUserTypeNORMAL  RestPullRequestCreatorUserType = "NORMAL"
+	RestPullRequestCreatorUserTypeSERVICE RestPullRequestCreatorUserType = "SERVICE"
 )
 
 // Defines values for RestPullRequestFromRefRepositoryOriginProjectType.
@@ -1222,6 +1313,7 @@ const (
 // Defines values for RestPullRequestAssignParticipantRoleRequestRole.
 const (
 	RestPullRequestAssignParticipantRoleRequestRoleAUTHOR      RestPullRequestAssignParticipantRoleRequestRole = "AUTHOR"
+	RestPullRequestAssignParticipantRoleRequestRoleCREATOR     RestPullRequestAssignParticipantRoleRequestRole = "CREATOR"
 	RestPullRequestAssignParticipantRoleRequestRolePARTICIPANT RestPullRequestAssignParticipantRoleRequestRole = "PARTICIPANT"
 	RestPullRequestAssignParticipantRoleRequestRoleREVIEWER    RestPullRequestAssignParticipantRoleRequestRole = "REVIEWER"
 )
@@ -1274,6 +1366,7 @@ const (
 // Defines values for RestPullRequestParticipantRole.
 const (
 	RestPullRequestParticipantRoleAUTHOR      RestPullRequestParticipantRole = "AUTHOR"
+	RestPullRequestParticipantRoleCREATOR     RestPullRequestParticipantRole = "CREATOR"
 	RestPullRequestParticipantRolePARTICIPANT RestPullRequestParticipantRole = "PARTICIPANT"
 	RestPullRequestParticipantRoleREVIEWER    RestPullRequestParticipantRole = "REVIEWER"
 )
@@ -1605,9 +1698,9 @@ const (
 
 // Defines values for RestSecretScanningRuleScopeType.
 const (
-	RestSecretScanningRuleScopeTypeGLOBAL     RestSecretScanningRuleScopeType = "GLOBAL"
-	RestSecretScanningRuleScopeTypePROJECT    RestSecretScanningRuleScopeType = "PROJECT"
-	RestSecretScanningRuleScopeTypeREPOSITORY RestSecretScanningRuleScopeType = "REPOSITORY"
+	GLOBAL     RestSecretScanningRuleScopeType = "GLOBAL"
+	PROJECT    RestSecretScanningRuleScopeType = "PROJECT"
+	REPOSITORY RestSecretScanningRuleScopeType = "REPOSITORY"
 )
 
 // Defines values for RestSshAccessKeyPermission.
@@ -1718,6 +1811,7 @@ const (
 // Defines values for RestUserReactionCommentAnchorPullRequestAuthorRole.
 const (
 	RestUserReactionCommentAnchorPullRequestAuthorRoleAUTHOR      RestUserReactionCommentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestUserReactionCommentAnchorPullRequestAuthorRoleCREATOR     RestUserReactionCommentAnchorPullRequestAuthorRole = "CREATOR"
 	RestUserReactionCommentAnchorPullRequestAuthorRolePARTICIPANT RestUserReactionCommentAnchorPullRequestAuthorRole = "PARTICIPANT"
 	RestUserReactionCommentAnchorPullRequestAuthorRoleREVIEWER    RestUserReactionCommentAnchorPullRequestAuthorRole = "REVIEWER"
 )
@@ -1733,6 +1827,27 @@ const (
 const (
 	RestUserReactionCommentAnchorPullRequestAuthorUserTypeNORMAL  RestUserReactionCommentAnchorPullRequestAuthorUserType = "NORMAL"
 	RestUserReactionCommentAnchorPullRequestAuthorUserTypeSERVICE RestUserReactionCommentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
+// Defines values for RestUserReactionCommentAnchorPullRequestCreatorRole.
+const (
+	RestUserReactionCommentAnchorPullRequestCreatorRoleAUTHOR      RestUserReactionCommentAnchorPullRequestCreatorRole = "AUTHOR"
+	RestUserReactionCommentAnchorPullRequestCreatorRoleCREATOR     RestUserReactionCommentAnchorPullRequestCreatorRole = "CREATOR"
+	RestUserReactionCommentAnchorPullRequestCreatorRolePARTICIPANT RestUserReactionCommentAnchorPullRequestCreatorRole = "PARTICIPANT"
+	RestUserReactionCommentAnchorPullRequestCreatorRoleREVIEWER    RestUserReactionCommentAnchorPullRequestCreatorRole = "REVIEWER"
+)
+
+// Defines values for RestUserReactionCommentAnchorPullRequestCreatorStatus.
+const (
+	RestUserReactionCommentAnchorPullRequestCreatorStatusAPPROVED   RestUserReactionCommentAnchorPullRequestCreatorStatus = "APPROVED"
+	RestUserReactionCommentAnchorPullRequestCreatorStatusNEEDSWORK  RestUserReactionCommentAnchorPullRequestCreatorStatus = "NEEDS_WORK"
+	RestUserReactionCommentAnchorPullRequestCreatorStatusUNAPPROVED RestUserReactionCommentAnchorPullRequestCreatorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestUserReactionCommentAnchorPullRequestCreatorUserType.
+const (
+	RestUserReactionCommentAnchorPullRequestCreatorUserTypeNORMAL  RestUserReactionCommentAnchorPullRequestCreatorUserType = "NORMAL"
+	RestUserReactionCommentAnchorPullRequestCreatorUserTypeSERVICE RestUserReactionCommentAnchorPullRequestCreatorUserType = "SERVICE"
 )
 
 // Defines values for RestUserReactionCommentAnchorPullRequestFromRefRepositoryOriginProjectType.
@@ -1846,6 +1961,7 @@ const (
 // Defines values for RestUserReactionCommentParentAnchorPullRequestAuthorRole.
 const (
 	RestUserReactionCommentParentAnchorPullRequestAuthorRoleAUTHOR      RestUserReactionCommentParentAnchorPullRequestAuthorRole = "AUTHOR"
+	RestUserReactionCommentParentAnchorPullRequestAuthorRoleCREATOR     RestUserReactionCommentParentAnchorPullRequestAuthorRole = "CREATOR"
 	RestUserReactionCommentParentAnchorPullRequestAuthorRolePARTICIPANT RestUserReactionCommentParentAnchorPullRequestAuthorRole = "PARTICIPANT"
 	RestUserReactionCommentParentAnchorPullRequestAuthorRoleREVIEWER    RestUserReactionCommentParentAnchorPullRequestAuthorRole = "REVIEWER"
 )
@@ -1861,6 +1977,27 @@ const (
 const (
 	RestUserReactionCommentParentAnchorPullRequestAuthorUserTypeNORMAL  RestUserReactionCommentParentAnchorPullRequestAuthorUserType = "NORMAL"
 	RestUserReactionCommentParentAnchorPullRequestAuthorUserTypeSERVICE RestUserReactionCommentParentAnchorPullRequestAuthorUserType = "SERVICE"
+)
+
+// Defines values for RestUserReactionCommentParentAnchorPullRequestCreatorRole.
+const (
+	RestUserReactionCommentParentAnchorPullRequestCreatorRoleAUTHOR      RestUserReactionCommentParentAnchorPullRequestCreatorRole = "AUTHOR"
+	RestUserReactionCommentParentAnchorPullRequestCreatorRoleCREATOR     RestUserReactionCommentParentAnchorPullRequestCreatorRole = "CREATOR"
+	RestUserReactionCommentParentAnchorPullRequestCreatorRolePARTICIPANT RestUserReactionCommentParentAnchorPullRequestCreatorRole = "PARTICIPANT"
+	RestUserReactionCommentParentAnchorPullRequestCreatorRoleREVIEWER    RestUserReactionCommentParentAnchorPullRequestCreatorRole = "REVIEWER"
+)
+
+// Defines values for RestUserReactionCommentParentAnchorPullRequestCreatorStatus.
+const (
+	RestUserReactionCommentParentAnchorPullRequestCreatorStatusAPPROVED   RestUserReactionCommentParentAnchorPullRequestCreatorStatus = "APPROVED"
+	RestUserReactionCommentParentAnchorPullRequestCreatorStatusNEEDSWORK  RestUserReactionCommentParentAnchorPullRequestCreatorStatus = "NEEDS_WORK"
+	RestUserReactionCommentParentAnchorPullRequestCreatorStatusUNAPPROVED RestUserReactionCommentParentAnchorPullRequestCreatorStatus = "UNAPPROVED"
+)
+
+// Defines values for RestUserReactionCommentParentAnchorPullRequestCreatorUserType.
+const (
+	RestUserReactionCommentParentAnchorPullRequestCreatorUserTypeNORMAL  RestUserReactionCommentParentAnchorPullRequestCreatorUserType = "NORMAL"
+	RestUserReactionCommentParentAnchorPullRequestCreatorUserTypeSERVICE RestUserReactionCommentParentAnchorPullRequestCreatorUserType = "SERVICE"
 )
 
 // Defines values for RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType.
@@ -2034,6 +2171,13 @@ const (
 	SetPermissionForUserParamsPermissionREPOWRITE SetPermissionForUserParamsPermission = "REPO_WRITE"
 )
 
+// Defines values for GetRelatedRepositoriesParamsPermission.
+const (
+	GetRelatedRepositoriesParamsPermissionREPOADMIN GetRelatedRepositoriesParamsPermission = "REPO_ADMIN"
+	GetRelatedRepositoriesParamsPermissionREPOREAD  GetRelatedRepositoriesParamsPermission = "REPO_READ"
+	GetRelatedRepositoriesParamsPermissionREPOWRITE GetRelatedRepositoriesParamsPermission = "REPO_WRITE"
+)
+
 // Defines values for Search2ParamsOrder.
 const (
 	Search2ParamsOrderNAMEASC  Search2ParamsOrder = "NAME_ASC"
@@ -2084,9 +2228,9 @@ const (
 
 // Defines values for GetRepositories1ParamsPermission.
 const (
-	REPOADMIN GetRepositories1ParamsPermission = "REPO_ADMIN"
-	REPOREAD  GetRepositories1ParamsPermission = "REPO_READ"
-	REPOWRITE GetRepositories1ParamsPermission = "REPO_WRITE"
+	GetRepositories1ParamsPermissionREPOADMIN GetRepositories1ParamsPermission = "REPO_ADMIN"
+	GetRepositories1ParamsPermissionREPOREAD  GetRepositories1ParamsPermission = "REPO_READ"
+	GetRepositories1ParamsPermissionREPOWRITE GetRepositories1ParamsPermission = "REPO_WRITE"
 )
 
 // Defines values for GetRepositories1ParamsState.
@@ -2149,15 +2293,6 @@ const (
 	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdMODELBRANCH   UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "MODEL_BRANCH"
 	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdMODELCATEGORY UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "MODEL_CATEGORY"
 	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdPATTERN       UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "PATTERN"
-)
-
-// Defines values for UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId.
-const (
-	ANYREF        UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId = "ANY_REF"
-	BRANCH        UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId = "BRANCH"
-	MODELBRANCH   UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId = "MODEL_BRANCH"
-	MODELCATEGORY UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId = "MODEL_CATEGORY"
-	PATTERN       UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId = "PATTERN"
 )
 
 // Defines values for GetAllReposForProjectParamsIncludeDefaultBranch.
@@ -2881,9 +3016,26 @@ type RestAutoMergeProcessingResult struct {
 				Type         RestAutoMergeProcessingResultPullRequestAuthorUserType `json:"type"`
 			} `json:"user,omitempty"`
 		} `json:"author,omitempty"`
-		Closed            *bool   `json:"closed,omitempty"`
-		ClosedDate        *int64  `json:"closedDate,omitempty"`
-		CreatedDate       *int64  `json:"createdDate,omitempty"`
+		Closed      *bool  `json:"closed,omitempty"`
+		ClosedDate  *int64 `json:"closedDate,omitempty"`
+		CreatedDate *int64 `json:"createdDate,omitempty"`
+		Creator     *struct {
+			Approved           *bool                                                  `json:"approved,omitempty"`
+			LastReviewedCommit *string                                                `json:"lastReviewedCommit,omitempty"`
+			Role               *RestAutoMergeProcessingResultPullRequestCreatorRole   `json:"role,omitempty"`
+			Status             *RestAutoMergeProcessingResultPullRequestCreatorStatus `json:"status,omitempty"`
+			User               *struct {
+				Active       *bool                                                   `json:"active,omitempty"`
+				AvatarUrl    *string                                                 `json:"avatarUrl,omitempty"`
+				DisplayName  string                                                  `json:"displayName"`
+				EmailAddress *string                                                 `json:"emailAddress,omitempty"`
+				Id           *int32                                                  `json:"id,omitempty"`
+				Links        *map[string]interface{}                                 `json:"links,omitempty"`
+				Name         string                                                  `json:"name"`
+				Slug         string                                                  `json:"slug"`
+				Type         RestAutoMergeProcessingResultPullRequestCreatorUserType `json:"type"`
+			} `json:"user,omitempty"`
+		} `json:"creator,omitempty"`
 		Description       *string `json:"description,omitempty"`
 		DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 		Draft             *bool   `json:"draft,omitempty"`
@@ -3044,6 +3196,15 @@ type RestAutoMergeProcessingResultPullRequestAuthorStatus string
 
 // RestAutoMergeProcessingResultPullRequestAuthorUserType defines model for RestAutoMergeProcessingResult.PullRequest.Author.User.Type.
 type RestAutoMergeProcessingResultPullRequestAuthorUserType string
+
+// RestAutoMergeProcessingResultPullRequestCreatorRole defines model for RestAutoMergeProcessingResult.PullRequest.Creator.Role.
+type RestAutoMergeProcessingResultPullRequestCreatorRole string
+
+// RestAutoMergeProcessingResultPullRequestCreatorStatus defines model for RestAutoMergeProcessingResult.PullRequest.Creator.Status.
+type RestAutoMergeProcessingResultPullRequestCreatorStatus string
+
+// RestAutoMergeProcessingResultPullRequestCreatorUserType defines model for RestAutoMergeProcessingResult.PullRequest.Creator.User.Type.
+type RestAutoMergeProcessingResultPullRequestCreatorUserType string
 
 // RestAutoMergeProcessingResultPullRequestFromRefRepositoryOriginProjectType defines model for RestAutoMergeProcessingResult.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestAutoMergeProcessingResultPullRequestFromRefRepositoryOriginProjectType string
@@ -3425,6 +3586,42 @@ type RestChangeNodeType string
 // RestChangeType defines model for RestChange.Type.
 type RestChangeType string
 
+// RestChangePullRequestAuthorProjectSettingsRequest defines model for RestChangePullRequestAuthorProjectSettingsRequest.
+type RestChangePullRequestAuthorProjectSettingsRequest struct {
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// RestrictionAction The restriction action to apply to repositories in this project.
+	RestrictionAction *RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction `json:"restrictionAction,omitempty"`
+}
+
+// RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction The restriction action to apply to repositories in this project.
+type RestChangePullRequestAuthorProjectSettingsRequestRestrictionAction string
+
+// RestChangePullRequestAuthorRestrictedSettings defines model for RestChangePullRequestAuthorRestrictedSettings.
+type RestChangePullRequestAuthorRestrictedSettings struct {
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// RestrictionState The restriction state of this scope's project.
+	RestrictionState *RestChangePullRequestAuthorRestrictedSettingsRestrictionState `json:"restrictionState,omitempty"`
+
+	// Scope The scope that these settings apply to.
+	Scope *struct {
+		ResourceId int32                                                  `json:"resourceId"`
+		Type       RestChangePullRequestAuthorRestrictedSettingsScopeType `json:"type"`
+	} `json:"scope,omitempty"`
+}
+
+// RestChangePullRequestAuthorRestrictedSettingsRestrictionState The restriction state of this scope's project.
+type RestChangePullRequestAuthorRestrictedSettingsRestrictionState string
+
+// RestChangePullRequestAuthorRestrictedSettingsScopeType defines model for RestChangePullRequestAuthorRestrictedSettings.Scope.Type.
+type RestChangePullRequestAuthorRestrictedSettingsScopeType string
+
+// RestChangePullRequestAuthorSettingsRequest defines model for RestChangePullRequestAuthorSettingsRequest.
+type RestChangePullRequestAuthorSettingsRequest struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
 // RestChangeset defines model for RestChangeset.
 type RestChangeset struct {
 	Changes *struct {
@@ -3612,9 +3809,26 @@ type RestComment struct {
 					Type         RestCommentAnchorPullRequestAuthorUserType `json:"type"`
 				} `json:"user,omitempty"`
 			} `json:"author,omitempty"`
-			Closed            *bool   `json:"closed,omitempty"`
-			ClosedDate        *int64  `json:"closedDate,omitempty"`
-			CreatedDate       *int64  `json:"createdDate,omitempty"`
+			Closed      *bool  `json:"closed,omitempty"`
+			ClosedDate  *int64 `json:"closedDate,omitempty"`
+			CreatedDate *int64 `json:"createdDate,omitempty"`
+			Creator     *struct {
+				Approved           *bool                                      `json:"approved,omitempty"`
+				LastReviewedCommit *string                                    `json:"lastReviewedCommit,omitempty"`
+				Role               *RestCommentAnchorPullRequestCreatorRole   `json:"role,omitempty"`
+				Status             *RestCommentAnchorPullRequestCreatorStatus `json:"status,omitempty"`
+				User               *struct {
+					Active       *bool                                       `json:"active,omitempty"`
+					AvatarUrl    *string                                     `json:"avatarUrl,omitempty"`
+					DisplayName  string                                      `json:"displayName"`
+					EmailAddress *string                                     `json:"emailAddress,omitempty"`
+					Id           *int32                                      `json:"id,omitempty"`
+					Links        *map[string]interface{}                     `json:"links,omitempty"`
+					Name         string                                      `json:"name"`
+					Slug         string                                      `json:"slug"`
+					Type         RestCommentAnchorPullRequestCreatorUserType `json:"type"`
+				} `json:"user,omitempty"`
+			} `json:"creator,omitempty"`
 			Description       *string `json:"description,omitempty"`
 			DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 			Draft             *bool   `json:"draft,omitempty"`
@@ -3837,9 +4051,26 @@ type RestComment struct {
 						Type         RestCommentParentAnchorPullRequestAuthorUserType `json:"type"`
 					} `json:"user,omitempty"`
 				} `json:"author,omitempty"`
-				Closed            *bool   `json:"closed,omitempty"`
-				ClosedDate        *int64  `json:"closedDate,omitempty"`
-				CreatedDate       *int64  `json:"createdDate,omitempty"`
+				Closed      *bool  `json:"closed,omitempty"`
+				ClosedDate  *int64 `json:"closedDate,omitempty"`
+				CreatedDate *int64 `json:"createdDate,omitempty"`
+				Creator     *struct {
+					Approved           *bool                                            `json:"approved,omitempty"`
+					LastReviewedCommit *string                                          `json:"lastReviewedCommit,omitempty"`
+					Role               *RestCommentParentAnchorPullRequestCreatorRole   `json:"role,omitempty"`
+					Status             *RestCommentParentAnchorPullRequestCreatorStatus `json:"status,omitempty"`
+					User               *struct {
+						Active       *bool                                             `json:"active,omitempty"`
+						AvatarUrl    *string                                           `json:"avatarUrl,omitempty"`
+						DisplayName  string                                            `json:"displayName"`
+						EmailAddress *string                                           `json:"emailAddress,omitempty"`
+						Id           *int32                                            `json:"id,omitempty"`
+						Links        *map[string]interface{}                           `json:"links,omitempty"`
+						Name         string                                            `json:"name"`
+						Slug         string                                            `json:"slug"`
+						Type         RestCommentParentAnchorPullRequestCreatorUserType `json:"type"`
+					} `json:"user,omitempty"`
+				} `json:"creator,omitempty"`
 				Description       *string `json:"description,omitempty"`
 				DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 				Draft             *bool   `json:"draft,omitempty"`
@@ -4105,6 +4336,15 @@ type RestCommentAnchorPullRequestAuthorStatus string
 // RestCommentAnchorPullRequestAuthorUserType defines model for RestComment.Anchor.PullRequest.Author.User.Type.
 type RestCommentAnchorPullRequestAuthorUserType string
 
+// RestCommentAnchorPullRequestCreatorRole defines model for RestComment.Anchor.PullRequest.Creator.Role.
+type RestCommentAnchorPullRequestCreatorRole string
+
+// RestCommentAnchorPullRequestCreatorStatus defines model for RestComment.Anchor.PullRequest.Creator.Status.
+type RestCommentAnchorPullRequestCreatorStatus string
+
+// RestCommentAnchorPullRequestCreatorUserType defines model for RestComment.Anchor.PullRequest.Creator.User.Type.
+type RestCommentAnchorPullRequestCreatorUserType string
+
 // RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestComment.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestCommentAnchorPullRequestFromRefRepositoryOriginProjectType string
 
@@ -4161,6 +4401,15 @@ type RestCommentParentAnchorPullRequestAuthorStatus string
 
 // RestCommentParentAnchorPullRequestAuthorUserType defines model for RestComment.Parent.Anchor.PullRequest.Author.User.Type.
 type RestCommentParentAnchorPullRequestAuthorUserType string
+
+// RestCommentParentAnchorPullRequestCreatorRole defines model for RestComment.Parent.Anchor.PullRequest.Creator.Role.
+type RestCommentParentAnchorPullRequestCreatorRole string
+
+// RestCommentParentAnchorPullRequestCreatorStatus defines model for RestComment.Parent.Anchor.PullRequest.Creator.Status.
+type RestCommentParentAnchorPullRequestCreatorStatus string
+
+// RestCommentParentAnchorPullRequestCreatorUserType defines model for RestComment.Parent.Anchor.PullRequest.Creator.User.Type.
+type RestCommentParentAnchorPullRequestCreatorUserType string
 
 // RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestComment.Parent.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType string
@@ -4277,21 +4526,11 @@ type RestDefaultReviewersRequest struct {
 			Name string                                         `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceMatcher,omitempty"`
-	TargetMatcher *struct {
-		DisplayId *string `json:"displayId,omitempty"`
-		Id        *string `json:"id,omitempty"`
-		Type      *struct {
-			Id   RestDefaultReviewersRequestTargetMatcherTypeId `json:"id"`
-			Name string                                         `json:"name"`
-		} `json:"type,omitempty"`
-	} `json:"targetMatcher,omitempty"`
+	TargetMatcher *RestRefMatcher `json:"targetMatcher,omitempty"`
 }
 
 // RestDefaultReviewersRequestSourceMatcherTypeId defines model for RestDefaultReviewersRequest.SourceMatcher.Type.Id.
 type RestDefaultReviewersRequestSourceMatcherTypeId string
-
-// RestDefaultReviewersRequestTargetMatcherTypeId defines model for RestDefaultReviewersRequest.TargetMatcher.Type.Id.
-type RestDefaultReviewersRequestTargetMatcherTypeId string
 
 // RestDefaultTask defines model for RestDefaultTask.
 type RestDefaultTask struct {
@@ -4311,21 +4550,11 @@ type RestDefaultTaskRequest struct {
 			Name string                                    `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceMatcher,omitempty"`
-	TargetMatcher *struct {
-		DisplayId *string `json:"displayId,omitempty"`
-		Id        *string `json:"id,omitempty"`
-		Type      *struct {
-			Id   RestDefaultTaskRequestTargetMatcherTypeId `json:"id"`
-			Name string                                    `json:"name"`
-		} `json:"type,omitempty"`
-	} `json:"targetMatcher,omitempty"`
+	TargetMatcher *RestRefMatcher `json:"targetMatcher,omitempty"`
 }
 
 // RestDefaultTaskRequestSourceMatcherTypeId defines model for RestDefaultTaskRequest.SourceMatcher.Type.Id.
 type RestDefaultTaskRequestSourceMatcherTypeId string
-
-// RestDefaultTaskRequestTargetMatcherTypeId defines model for RestDefaultTaskRequest.TargetMatcher.Type.Id.
-type RestDefaultTaskRequestTargetMatcherTypeId string
 
 // RestDelayedSyncRepository defines model for RestDelayedSyncRepository.
 type RestDelayedSyncRepository struct {
@@ -4740,6 +4969,12 @@ type RestIndexingWorkerRestartRequest struct {
 
 	// WaitForRestart Should the response wait until the worker has been restarted
 	WaitForRestart *bool `json:"waitForRestart,omitempty"`
+}
+
+// RestIndexingWorkerThreadsRequest defines model for RestIndexingWorkerThreadsRequest.
+type RestIndexingWorkerThreadsRequest struct {
+	// DesiredCount The desired number of indexing worker threads
+	DesiredCount int32 `json:"desiredCount"`
 }
 
 // RestInsightAnnotation defines model for RestInsightAnnotation.
@@ -5344,9 +5579,26 @@ type RestPullRequest struct {
 			Type         RestPullRequestAuthorUserType `json:"type"`
 		} `json:"user,omitempty"`
 	} `json:"author,omitempty"`
-	Closed            *bool   `json:"closed,omitempty"`
-	ClosedDate        *int64  `json:"closedDate,omitempty"`
-	CreatedDate       *int64  `json:"createdDate,omitempty"`
+	Closed      *bool  `json:"closed,omitempty"`
+	ClosedDate  *int64 `json:"closedDate,omitempty"`
+	CreatedDate *int64 `json:"createdDate,omitempty"`
+	Creator     *struct {
+		Approved           *bool                         `json:"approved,omitempty"`
+		LastReviewedCommit *string                       `json:"lastReviewedCommit,omitempty"`
+		Role               *RestPullRequestCreatorRole   `json:"role,omitempty"`
+		Status             *RestPullRequestCreatorStatus `json:"status,omitempty"`
+		User               *struct {
+			Active       *bool                          `json:"active,omitempty"`
+			AvatarUrl    *string                        `json:"avatarUrl,omitempty"`
+			DisplayName  string                         `json:"displayName"`
+			EmailAddress *string                        `json:"emailAddress,omitempty"`
+			Id           *int32                         `json:"id,omitempty"`
+			Links        *map[string]interface{}        `json:"links,omitempty"`
+			Name         string                         `json:"name"`
+			Slug         string                         `json:"slug"`
+			Type         RestPullRequestCreatorUserType `json:"type"`
+		} `json:"user,omitempty"`
+	} `json:"creator,omitempty"`
 	Description       *string `json:"description,omitempty"`
 	DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 	Draft             *bool   `json:"draft,omitempty"`
@@ -5503,6 +5755,15 @@ type RestPullRequestAuthorStatus string
 
 // RestPullRequestAuthorUserType defines model for RestPullRequest.Author.User.Type.
 type RestPullRequestAuthorUserType string
+
+// RestPullRequestCreatorRole defines model for RestPullRequest.Creator.Role.
+type RestPullRequestCreatorRole string
+
+// RestPullRequestCreatorStatus defines model for RestPullRequest.Creator.Status.
+type RestPullRequestCreatorStatus string
+
+// RestPullRequestCreatorUserType defines model for RestPullRequest.Creator.User.Type.
+type RestPullRequestCreatorUserType string
 
 // RestPullRequestFromRefRepositoryOriginProjectType defines model for RestPullRequest.FromRef.Repository.Origin.Project.Type.
 type RestPullRequestFromRefRepositoryOriginProjectType string
@@ -6850,9 +7111,26 @@ type RestUserReaction struct {
 						Type         RestUserReactionCommentAnchorPullRequestAuthorUserType `json:"type"`
 					} `json:"user,omitempty"`
 				} `json:"author,omitempty"`
-				Closed            *bool   `json:"closed,omitempty"`
-				ClosedDate        *int64  `json:"closedDate,omitempty"`
-				CreatedDate       *int64  `json:"createdDate,omitempty"`
+				Closed      *bool  `json:"closed,omitempty"`
+				ClosedDate  *int64 `json:"closedDate,omitempty"`
+				CreatedDate *int64 `json:"createdDate,omitempty"`
+				Creator     *struct {
+					Approved           *bool                                                  `json:"approved,omitempty"`
+					LastReviewedCommit *string                                                `json:"lastReviewedCommit,omitempty"`
+					Role               *RestUserReactionCommentAnchorPullRequestCreatorRole   `json:"role,omitempty"`
+					Status             *RestUserReactionCommentAnchorPullRequestCreatorStatus `json:"status,omitempty"`
+					User               *struct {
+						Active       *bool                                                   `json:"active,omitempty"`
+						AvatarUrl    *string                                                 `json:"avatarUrl,omitempty"`
+						DisplayName  string                                                  `json:"displayName"`
+						EmailAddress *string                                                 `json:"emailAddress,omitempty"`
+						Id           *int32                                                  `json:"id,omitempty"`
+						Links        *map[string]interface{}                                 `json:"links,omitempty"`
+						Name         string                                                  `json:"name"`
+						Slug         string                                                  `json:"slug"`
+						Type         RestUserReactionCommentAnchorPullRequestCreatorUserType `json:"type"`
+					} `json:"user,omitempty"`
+				} `json:"creator,omitempty"`
 				Description       *string `json:"description,omitempty"`
 				DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 				Draft             *bool   `json:"draft,omitempty"`
@@ -7075,9 +7353,26 @@ type RestUserReaction struct {
 							Type         RestUserReactionCommentParentAnchorPullRequestAuthorUserType `json:"type"`
 						} `json:"user,omitempty"`
 					} `json:"author,omitempty"`
-					Closed            *bool   `json:"closed,omitempty"`
-					ClosedDate        *int64  `json:"closedDate,omitempty"`
-					CreatedDate       *int64  `json:"createdDate,omitempty"`
+					Closed      *bool  `json:"closed,omitempty"`
+					ClosedDate  *int64 `json:"closedDate,omitempty"`
+					CreatedDate *int64 `json:"createdDate,omitempty"`
+					Creator     *struct {
+						Approved           *bool                                                        `json:"approved,omitempty"`
+						LastReviewedCommit *string                                                      `json:"lastReviewedCommit,omitempty"`
+						Role               *RestUserReactionCommentParentAnchorPullRequestCreatorRole   `json:"role,omitempty"`
+						Status             *RestUserReactionCommentParentAnchorPullRequestCreatorStatus `json:"status,omitempty"`
+						User               *struct {
+							Active       *bool                                                         `json:"active,omitempty"`
+							AvatarUrl    *string                                                       `json:"avatarUrl,omitempty"`
+							DisplayName  string                                                        `json:"displayName"`
+							EmailAddress *string                                                       `json:"emailAddress,omitempty"`
+							Id           *int32                                                        `json:"id,omitempty"`
+							Links        *map[string]interface{}                                       `json:"links,omitempty"`
+							Name         string                                                        `json:"name"`
+							Slug         string                                                        `json:"slug"`
+							Type         RestUserReactionCommentParentAnchorPullRequestCreatorUserType `json:"type"`
+						} `json:"user,omitempty"`
+					} `json:"creator,omitempty"`
 					Description       *string `json:"description,omitempty"`
 					DescriptionAsHtml *string `json:"descriptionAsHtml,omitempty"`
 					Draft             *bool   `json:"draft,omitempty"`
@@ -7360,6 +7655,15 @@ type RestUserReactionCommentAnchorPullRequestAuthorStatus string
 // RestUserReactionCommentAnchorPullRequestAuthorUserType defines model for RestUserReaction.Comment.Anchor.PullRequest.Author.User.Type.
 type RestUserReactionCommentAnchorPullRequestAuthorUserType string
 
+// RestUserReactionCommentAnchorPullRequestCreatorRole defines model for RestUserReaction.Comment.Anchor.PullRequest.Creator.Role.
+type RestUserReactionCommentAnchorPullRequestCreatorRole string
+
+// RestUserReactionCommentAnchorPullRequestCreatorStatus defines model for RestUserReaction.Comment.Anchor.PullRequest.Creator.Status.
+type RestUserReactionCommentAnchorPullRequestCreatorStatus string
+
+// RestUserReactionCommentAnchorPullRequestCreatorUserType defines model for RestUserReaction.Comment.Anchor.PullRequest.Creator.User.Type.
+type RestUserReactionCommentAnchorPullRequestCreatorUserType string
+
 // RestUserReactionCommentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestUserReaction.Comment.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestUserReactionCommentAnchorPullRequestFromRefRepositoryOriginProjectType string
 
@@ -7416,6 +7720,15 @@ type RestUserReactionCommentParentAnchorPullRequestAuthorStatus string
 
 // RestUserReactionCommentParentAnchorPullRequestAuthorUserType defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Author.User.Type.
 type RestUserReactionCommentParentAnchorPullRequestAuthorUserType string
+
+// RestUserReactionCommentParentAnchorPullRequestCreatorRole defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Creator.Role.
+type RestUserReactionCommentParentAnchorPullRequestCreatorRole string
+
+// RestUserReactionCommentParentAnchorPullRequestCreatorStatus defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Creator.Status.
+type RestUserReactionCommentParentAnchorPullRequestCreatorStatus string
+
+// RestUserReactionCommentParentAnchorPullRequestCreatorUserType defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.Creator.User.Type.
+type RestUserReactionCommentParentAnchorPullRequestCreatorUserType string
 
 // RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType defines model for RestUserReaction.Comment.Parent.Anchor.PullRequest.FromRef.Repository.Origin.Project.Type.
 type RestUserReactionCommentParentAnchorPullRequestFromRefRepositoryOriginProjectType string
@@ -9238,12 +9551,18 @@ type FindBranchesParams struct {
 
 // GetRelatedRepositoriesParams defines parameters for GetRelatedRepositories.
 type GetRelatedRepositoriesParams struct {
+	// Permission If specified, only repositories for which the authenticated user has the supplied permission will be returned.
+	Permission *GetRelatedRepositoriesParamsPermission `form:"permission,omitempty" json:"permission,omitempty"`
+
 	// Start Start number for the page (inclusive). If not passed, first page is assumed.
 	Start *float32 `form:"start,omitempty" json:"start,omitempty"`
 
 	// Limit Number of items to return. If not passed, a page size of 25 is used.
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// GetRelatedRepositoriesParamsPermission defines parameters for GetRelatedRepositories.
+type GetRelatedRepositoriesParamsPermission string
 
 // Search2Params defines parameters for Search2.
 type Search2Params struct {
@@ -9430,8 +9749,8 @@ type Search1Params struct {
 // Search1ParamsOrder defines parameters for Search1.
 type Search1ParamsOrder string
 
-// Delete9Params defines parameters for Delete9.
-type Delete9Params struct {
+// Delete11Params defines parameters for Delete11.
+type Delete11Params struct {
 	// Namespace A namespace used to identify the provider of the feature
 	Namespace string `form:"namespace" json:"namespace"`
 
@@ -9442,8 +9761,8 @@ type Delete9Params struct {
 	FeatureKey string `form:"featureKey" json:"featureKey"`
 }
 
-// Get7Params defines parameters for Get7.
-type Get7Params struct {
+// Get9Params defines parameters for Get9.
+type Get9Params struct {
 	// Namespace The namespace used to identify the provider of the feature
 	Namespace string `form:"namespace" json:"namespace"`
 
@@ -9751,21 +10070,11 @@ type UpdatePullRequestCondition1JSONBody struct {
 			Name string                                                 `json:"name"`
 		} `json:"type,omitempty"`
 	} `json:"sourceMatcher,omitempty"`
-	TargetMatcher *struct {
-		DisplayId *string `json:"displayId,omitempty"`
-		Id        *string `json:"id,omitempty"`
-		Type      *struct {
-			Id   UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId `json:"id"`
-			Name string                                                 `json:"name"`
-		} `json:"type,omitempty"`
-	} `json:"targetMatcher,omitempty"`
+	TargetMatcher *RestRefMatcher `json:"targetMatcher,omitempty"`
 }
 
 // UpdatePullRequestCondition1JSONBodySourceMatcherTypeId defines parameters for UpdatePullRequestCondition1.
 type UpdatePullRequestCondition1JSONBodySourceMatcherTypeId string
-
-// UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId defines parameters for UpdatePullRequestCondition1.
-type UpdatePullRequestCondition1JSONBodyTargetMatcherTypeId string
 
 // GetReviewersParams defines parameters for GetReviewers.
 type GetReviewersParams struct {
@@ -10179,11 +10488,11 @@ type SetMergeConfigJSONRequestBody = RestPullRequestSettings
 // SetSettings3JSONRequestBody defines body for SetSettings3 for application/json ContentType.
 type SetSettings3JSONRequestBody = RestRateLimitSettings
 
-// Set2JSONRequestBody defines body for Set2 for application/json ContentType.
-type Set2JSONRequestBody = RestBulkUserRateLimitSettingsUpdateRequest
+// Set4JSONRequestBody defines body for Set4 for application/json ContentType.
+type Set4JSONRequestBody = RestBulkUserRateLimitSettingsUpdateRequest
 
-// Set3JSONRequestBody defines body for Set3 for application/json ContentType.
-type Set3JSONRequestBody = RestUserRateLimitSettingsUpdateRequest
+// Set5JSONRequestBody defines body for Set5 for application/json ContentType.
+type Set5JSONRequestBody = RestUserRateLimitSettingsUpdateRequest
 
 // UpdateUserDetailsJSONRequestBody defines body for UpdateUserDetails for application/json ContentType.
 type UpdateUserDetailsJSONRequestBody = UserUpdate
@@ -10320,6 +10629,9 @@ type SetAutoDeclineSettings1JSONRequestBody = RestAutoDeclineSettingsRequest
 // Set1JSONRequestBody defines body for Set1 for application/json ContentType.
 type Set1JSONRequestBody = RestAutoMergeSettingsRequest
 
+// Set3JSONRequestBody defines body for Set3 for application/json ContentType.
+type Set3JSONRequestBody = RestChangePullRequestAuthorSettingsRequest
+
 // SetSettings1JSONRequestBody defines body for SetSettings1 for application/json ContentType.
 type SetSettings1JSONRequestBody = ExampleSettings
 
@@ -10355,6 +10667,9 @@ type SetAutoDeclineSettingsJSONRequestBody = RestAutoDeclineSettingsRequest
 
 // SetJSONRequestBody defines body for Set for application/json ContentType.
 type SetJSONRequestBody = RestAutoMergeProjectSettingsRequest
+
+// Set2JSONRequestBody defines body for Set2 for application/json ContentType.
+type Set2JSONRequestBody = RestChangePullRequestAuthorProjectSettingsRequest
 
 // SetSettingsJSONRequestBody defines body for SetSettings for application/json ContentType.
 type SetSettingsJSONRequestBody = ExampleSettings
@@ -10466,6 +10781,9 @@ type ReindexRepositoriesJSONRequestBody = ReindexRepositoriesJSONBody
 
 // RestartIndexingThreadWorkerJSONRequestBody defines body for RestartIndexingThreadWorker for application/json ContentType.
 type RestartIndexingThreadWorkerJSONRequestBody = RestIndexingWorkerRestartRequest
+
+// SetWorkerThreadCountJSONRequestBody defines body for SetWorkerThreadCount for application/json ContentType.
+type SetWorkerThreadCountJSONRequestBody = RestIndexingWorkerThreadsRequest
 
 // SetACodeInsightsReportJSONRequestBody defines body for SetACodeInsightsReport for application/json ContentType.
 type SetACodeInsightsReportJSONRequestBody = RestSetInsightReportRequest

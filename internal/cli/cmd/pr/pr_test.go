@@ -894,7 +894,7 @@ func TestPRDefaultDependencies(t *testing.T) {
 		t.Fatal("expected New to return command with default dependencies")
 	}
 	checker := nopPermissionChecker{}
-	if err := checker.CheckRepoPermission(context.Background(), "PRJ", "demo", openapigenerated.REPOREAD); err != nil {
+	if err := checker.CheckRepoPermission(context.Background(), "PRJ", "demo", openapi.RepoRead); err != nil {
 		t.Fatalf("expected nop checker to return nil error: %v", err)
 	}
 }
