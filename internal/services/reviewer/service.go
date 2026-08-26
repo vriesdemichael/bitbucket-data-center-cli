@@ -626,9 +626,8 @@ func userNames[T namedUser](users []T) []string {
 
 // ResolveReviewerGroupUsers resolves a reviewer group name to its constituent user usernames.
 // It searches repository-level reviewer groups first (if repositorySlug is non-empty),
-// falling back to project-level reviewer groups. If the server does not support reviewer
-// groups (e.g. Bitbucket Data Center < 7.13), a descriptive error indicating that
-// Bitbucket Data Center 7.13+ is required is returned.
+// falling back to project-level reviewer groups. A server with no reviewer groups API at
+// all yields a descriptive error rather than an opaque 404.
 func (service *Service) ResolveReviewerGroupUsers(ctx context.Context, projectKey, repositorySlug, groupName string) ([]string, error) {
 	trimmedGroup := strings.TrimPrefix(strings.TrimSpace(groupName), "@")
 	if trimmedGroup == "" {
@@ -643,7 +642,7 @@ func (service *Service) ResolveReviewerGroupUsers(ctx context.Context, projectKe
 		repoGroups, err := service.ListRepositoryReviewerGroups(ctx, projectKey, repositorySlug)
 		if err != nil {
 			if openapi.IsRouteMissing(err) || (apperrors.IsKind(err, apperrors.KindNotFound) && strings.Contains(err.Error(), "404")) {
-				return nil, apperrors.New(apperrors.KindPermanent, "reviewer groups require Bitbucket Data Center 7.13 or later (server returned 404 for reviewer groups endpoint)", err)
+				return nil, apperrors.New(apperrors.KindPermanent, "this server does not provide the reviewer groups API (it returned 404 for the reviewer groups endpoint)", err)
 			}
 			return nil, err
 		}
@@ -690,7 +689,7 @@ func (service *Service) ResolveReviewerGroupUsers(ctx context.Context, projectKe
 	projGroups, err := service.ListProjectReviewerGroups(ctx, projectKey)
 	if err != nil {
 		if openapi.IsRouteMissing(err) || (apperrors.IsKind(err, apperrors.KindNotFound) && strings.Contains(err.Error(), "404")) {
-			return nil, apperrors.New(apperrors.KindPermanent, "reviewer groups require Bitbucket Data Center 7.13 or later (server returned 404 for reviewer groups endpoint)", err)
+			return nil, apperrors.New(apperrors.KindPermanent, "this server does not provide the reviewer groups API (it returned 404 for the reviewer groups endpoint)", err)
 		}
 		return nil, err
 	}

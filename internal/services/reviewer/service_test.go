@@ -642,8 +642,8 @@ func TestResolveReviewerGroupUsers(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error for 404")
 		}
-		if !strings.Contains(err.Error(), "Bitbucket Data Center 7.13") {
-			t.Fatalf("expected version error message, got: %v", err)
+		if !strings.Contains(err.Error(), "does not provide the reviewer groups API") {
+			t.Fatalf("expected a missing-API error message, got: %v", err)
 		}
 	})
 }

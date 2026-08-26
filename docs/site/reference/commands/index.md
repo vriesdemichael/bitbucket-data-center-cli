@@ -3642,21 +3642,21 @@ Examples:
   # Create a pull request and assign explicit reviewers (repeatable or comma-separated)
   bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --reviewers alice,bob
 
-  # Create a pull request with reviewers and reviewer groups (Bitbucket DC 7.13+)
+  # Create a pull request with reviewers and reviewer groups
   bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --reviewers alice,@backend-team --reviewer-group qa-team
 
   # Create a pull request without default reviewers or CODEOWNERS
   bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --no-default-reviewers --no-codeowners
 
 Flags:
-      --codeowners               Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (Bitbucket Data Center 8.14+); a failed lookup warns, unless this flag is passed explicitly, which makes it fatal (default true)
+      --codeowners               Assign code owners matching pull request diff from .bitbucket/CODEOWNERS; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal (default true)
       --default-reviewers        Include default reviewers configured on repository/project; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal (default true)
       --description string       Pull request description
       --draft                    Create as a draft pull request (Bitbucket DC 8.0+)
       --from-ref string          Source branch (name or refs/heads/name)
       --no-codeowners            Do not include code owners from .bitbucket/CODEOWNERS
       --no-default-reviewers     Do not include default reviewers
-      --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups; Bitbucket Data Center 7.13+)
+      --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups)
       --reviewers strings        Reviewer usernames to add (repeatable or comma-separated, accepts @group syntax, e.g. --reviewers alice,@backend-team)
       --title string             Pull request title
       --to-ref string            Target branch (name or refs/heads/name)
@@ -4195,20 +4195,20 @@ Examples:
   bb pr review reviewer add 42 --repo PROJ/repo --user alice --user bob
   bb pr review reviewer add 42 --repo PROJ/repo --users alice,bob
 
-  # Add a reviewer group (Bitbucket DC 7.13+)
+  # Add a reviewer group
   bb pr review reviewer add 42 --repo PROJ/repo --reviewer-group core-team
   bb pr review reviewer add 42 --repo PROJ/repo --user @core-team
 
   # Add default reviewers configured on repository/project
   bb pr review reviewer add 42 --repo PROJ/repo --default-reviewers
 
-  # Add reviewers matching .bitbucket/CODEOWNERS (Bitbucket DC 8.14+)
+  # Add reviewers matching .bitbucket/CODEOWNERS
   bb pr review reviewer add 42 --repo PROJ/repo --codeowners
 
 Flags:
-      --codeowners               Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (Bitbucket Data Center 8.14+)
+      --codeowners               Assign code owners matching pull request diff from .bitbucket/CODEOWNERS
       --default-reviewers        Assign default reviewers configured on repository/project for this pull request
-      --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups; Bitbucket Data Center 7.13+)
+      --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups)
       --user strings             Reviewer username(s) (repeatable or comma-separated, accepts @group syntax; aliases --users, --reviewers)
 
 Global Flags:
@@ -8156,7 +8156,7 @@ Manage default reviewers
 ```text
 Manage default reviewer conditions.
 
-Note on CODEOWNERS: Native CODEOWNERS support was introduced in Bitbucket Data Center 8.14 (via .bitbucket/CODEOWNERS in the repository root). Because it is a git-tracked file rather than a REST endpoint, it is managed through repository contents. For automated reviewer rules, default-reviewer conditions (bb reviewer condition) and Reviewer Groups (bb reviewer-group) provide server-level configuration, while bb pr create and bb pr review reviewer add expand groups directly.
+Note on CODEOWNERS: .bitbucket/CODEOWNERS is a git-tracked file rather than a REST resource, so it is managed through repository contents and not by this command. For server-level reviewer rules use default-reviewer conditions (bb reviewer condition) and reviewer groups (bb reviewer-group); bb pr create and bb pr review reviewer add read CODEOWNERS and expand groups directly.
 
 Usage:
   bb reviewer [command]
