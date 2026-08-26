@@ -2,6 +2,7 @@ package codeowners
 
 import (
 	"bufio"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -25,7 +26,7 @@ type OwnerRef struct {
 	Name     string            // unescaped username or group name without '@' or strategy, e.g. "backend engineers"
 	IsGroup  bool              // true if prefixed with '@'
 	Strategy SelectionStrategy // all, random, least_busy
-	Count    int               // N for random(N) or least_busy(N); 0 if not specified (means all)
+	Count    int               // N for random(N) or least_busy(N); always 0 for StrategyAll
 }
 
 // Rule represents a single pattern and its assigned owners.
@@ -42,6 +43,8 @@ type CodeOwners struct {
 }
 
 // Parse parses the content of a CODEOWNERS file into a CodeOwners struct.
+// Lines whose pattern cannot be compiled, or which carry no resolvable owners,
+// are skipped so that a single malformed line never invalidates the whole file.
 func Parse(content string) *CodeOwners {
 	var rules []Rule
 	scanner := bufio.NewScanner(strings.NewReader(content))
@@ -69,11 +72,7 @@ func Parse(content string) *CodeOwners {
 			ref := parseOwnerRef(cleaned)
 			if ref.Name != "" {
 				ownerRefs = append(ownerRefs, ref)
-				if ref.IsGroup {
-					owners = append(owners, "@"+ref.Name)
-				} else {
-					owners = append(owners, ref.Name)
-				}
+				owners = append(owners, ref.Display())
 			}
 		}
 
@@ -97,23 +96,39 @@ func Parse(content string) *CodeOwners {
 	return &CodeOwners{Rules: rules}
 }
 
+// Display renders the owner reference the way it is written in a CODEOWNERS
+// file: groups keep their leading at-sign, individual users do not.
+func (o OwnerRef) Display() string {
+	if o.IsGroup {
+		return "@" + o.Name
+	}
+	return o.Name
+}
+
+// key returns the deduplication key for an owner reference. Groups and users
+// occupy separate namespaces, so a user "alice" never collides with a reviewer
+// group "@alice".
+func (o OwnerRef) key() string {
+	if o.IsGroup {
+		return "@" + strings.ToLower(o.Name)
+	}
+	return strings.ToLower(o.Name)
+}
+
 // MatchFile returns the owner names matching a single file path.
 // Rules are evaluated from top to bottom; the last matching rule wins.
 func (c *CodeOwners) MatchFile(filePath string) []string {
 	refs := c.MatchFileRefs(filePath)
 	var result []string
 	for _, ref := range refs {
-		if ref.IsGroup {
-			result = append(result, "@"+ref.Name)
-		} else {
-			result = append(result, ref.Name)
-		}
+		result = append(result, ref.Display())
 	}
 	return result
 }
 
 // MatchFileRefs returns the rich OwnerRef objects matching a single file path.
-// The last matching rule in the file wins.
+// The last matching rule in the file wins. The returned slice is a copy, so
+// callers may mutate it without corrupting the parsed rule set.
 func (c *CodeOwners) MatchFileRefs(filePath string) []OwnerRef {
 	cleanPath := normalizePath(filePath)
 	if cleanPath == "" {
@@ -127,52 +142,56 @@ func (c *CodeOwners) MatchFileRefs(filePath string) []OwnerRef {
 		}
 	}
 
-	return matched
+	if matched == nil {
+		return nil
+	}
+
+	out := make([]OwnerRef, len(matched))
+	copy(out, matched)
+	return out
 }
 
 // MatchFiles matches a slice of file paths and returns the deduplicated union
 // of owner strings across all matched files.
 func (c *CodeOwners) MatchFiles(filePaths []string) []string {
-	seen := make(map[string]bool)
 	var result []string
-
 	for _, ref := range c.MatchFileRefsUnion(filePaths) {
-		key := strings.ToLower(ref.Name)
-		if !seen[key] {
-			seen[key] = true
-			if ref.IsGroup {
-				result = append(result, "@"+ref.Name)
-			} else {
-				result = append(result, ref.Name)
-			}
-		}
+		result = append(result, ref.Display())
 	}
-
 	return result
 }
 
 // MatchFileRefsUnion matches a slice of file paths and returns the deduplicated union
 // of OwnerRef structures across all matched files, combining group strategies appropriately.
+//
+// When the same group is reached through several rules the widest selection wins:
+// an ":all" reference beats any bounded selection, and between two bounded
+// selections the larger count wins.
 func (c *CodeOwners) MatchFileRefsUnion(filePaths []string) []OwnerRef {
-	seen := make(map[string]int) // lowercase name -> index in result
+	seen := make(map[string]int) // owner key -> index in result
 	var result []OwnerRef
 
 	for _, path := range filePaths {
 		refs := c.MatchFileRefs(path)
 		for _, ref := range refs {
-			key := strings.ToLower(ref.Name)
-			if idx, ok := seen[key]; ok {
-				// If a group was previously specified with random(N) or least_busy(N)
-				// but another matching rule specifies :all (or higher count), upgrade it.
-				if ref.Strategy == StrategyAll {
-					result[idx].Strategy = StrategyAll
-					result[idx].Count = 0
-				} else if result[idx].Strategy != StrategyAll && ref.Count > result[idx].Count {
-					result[idx].Count = ref.Count
-				}
-			} else {
+			key := ref.key()
+			idx, ok := seen[key]
+			if !ok {
 				seen[key] = len(result)
 				result = append(result, ref)
+				continue
+			}
+			if result[idx].Strategy == StrategyAll {
+				continue
+			}
+			if ref.Strategy == StrategyAll {
+				result[idx].Strategy = StrategyAll
+				result[idx].Count = 0
+				continue
+			}
+			if ref.Count > result[idx].Count {
+				result[idx].Strategy = ref.Strategy
+				result[idx].Count = ref.Count
 			}
 		}
 	}
@@ -214,6 +233,18 @@ func splitFieldsPreservingEscapes(line string) []string {
 	return fields
 }
 
+// unescapeToken resolves the backslash escapes CODEOWNERS uses to embed spaces
+// in a path pattern or a reviewer group name. It is shared by the pattern and
+// the owner parsers so that "docs\ site/" and "@backend\ engineers" unescape
+// identically.
+func unescapeToken(token string) string {
+	out := strings.ReplaceAll(token, `\\ `, " ")
+	out = strings.ReplaceAll(out, `\ `, " ")
+	out = strings.ReplaceAll(out, `\\`, "")
+	out = strings.ReplaceAll(out, `\`, "")
+	return out
+}
+
 func parseOwnerRef(token string) OwnerRef {
 	raw := strings.TrimSpace(token)
 	strategy := StrategyAll
@@ -222,17 +253,18 @@ func parseOwnerRef(token string) OwnerRef {
 
 	if idx := strings.LastIndex(raw, ":"); idx != -1 {
 		modifier := raw[idx+1:]
-		if modifier == "all" {
+		switch {
+		case modifier == "all":
 			strategy = StrategyAll
 			base = raw[:idx]
-		} else if strings.HasPrefix(modifier, "random(") && strings.HasSuffix(modifier, ")") {
+		case strings.HasPrefix(modifier, "random(") && strings.HasSuffix(modifier, ")"):
 			strategy = StrategyRandom
 			nStr := strings.TrimSuffix(strings.TrimPrefix(modifier, "random("), ")")
 			if n, err := strconv.Atoi(nStr); err == nil && n > 0 {
 				count = n
 			}
 			base = raw[:idx]
-		} else if strings.HasPrefix(modifier, "least_busy(") && strings.HasSuffix(modifier, ")") {
+		case strings.HasPrefix(modifier, "least_busy(") && strings.HasSuffix(modifier, ")"):
 			strategy = StrategyLeastBusy
 			nStr := strings.TrimSuffix(strings.TrimPrefix(modifier, "least_busy("), ")")
 			if n, err := strconv.Atoi(nStr); err == nil && n > 0 {
@@ -242,14 +274,15 @@ func parseOwnerRef(token string) OwnerRef {
 		}
 	}
 
-	isGroup := strings.HasPrefix(base, "@")
-	name := strings.TrimPrefix(base, "@")
+	// A bounded strategy without a usable positive count selects everyone, so
+	// normalize it to StrategyAll rather than carrying an ambiguous count of 0.
+	if strategy != StrategyAll && count <= 0 {
+		strategy = StrategyAll
+		count = 0
+	}
 
-	// Unescape backslash-escaped spaces (e.g. "backend\\ engineers" or "backend\ engineers")
-	name = strings.ReplaceAll(name, `\\ `, " ")
-	name = strings.ReplaceAll(name, `\ `, " ")
-	name = strings.ReplaceAll(name, `\\`, "")
-	name = strings.ReplaceAll(name, `\`, "")
+	isGroup := strings.HasPrefix(base, "@")
+	name := unescapeToken(strings.TrimPrefix(base, "@"))
 
 	return OwnerRef{
 		Raw:      raw,
@@ -268,19 +301,25 @@ func normalizePath(p string) string {
 }
 
 func compilePattern(pattern string) (*regexp.Regexp, error) {
-	p := normalizePath(pattern)
+	// Resolve escaped spaces before anything else: a pattern such as
+	// "docs\ site/*.md" targets the directory "docs site", and the backslash
+	// must never reach the regular expression.
+	unescaped := unescapeToken(pattern)
+
+	p := strings.TrimPrefix(unescaped, "/")
+	p = strings.TrimSuffix(p, "/")
 	if p == "" {
-		return nil, nil
+		return nil, fmt.Errorf("codeowners: pattern %q is empty", pattern)
 	}
 
 	anchored := false
-	if strings.HasPrefix(pattern, "/") {
+	if strings.HasPrefix(unescaped, "/") {
 		anchored = true
-	} else if strings.Contains(strings.TrimSuffix(pattern, "/"), "/") {
+	} else if strings.Contains(strings.TrimSuffix(unescaped, "/"), "/") {
 		anchored = true
 	}
 
-	matchesDir := strings.HasSuffix(pattern, "/")
+	matchesDir := strings.HasSuffix(unescaped, "/")
 
 	var sb strings.Builder
 	sb.WriteString("^")

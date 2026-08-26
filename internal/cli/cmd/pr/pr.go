@@ -2,6 +2,7 @@ package prcmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -9,7 +10,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prsel"
@@ -455,12 +458,7 @@ func New(deps Dependencies) *cobra.Command {
 			rawClient := httpclient.NewFromConfig(cfg)
 			service := pullrequestservice.NewService(rawClient)
 
-			author := strings.TrimSpace(cfg.BitbucketUsername)
-			if author == "" {
-				if slug, err := rawClient.CurrentUserSlug(cmd.Context()); err == nil {
-					author = strings.TrimSpace(slug)
-				}
-			}
+			author := resolveAuthorUsername(cmd.Context(), rawClient, cfg)
 
 			reviewerSvc := reviewerservice.NewService(apiClient)
 
@@ -469,9 +467,20 @@ func New(deps Dependencies) *cobra.Command {
 			allReviewers = append(allReviewers, createReviewers...)
 			allGroups = append(allGroups, createReviewerGroups...)
 
+			warn := cmd.ErrOrStderr()
+
 			if createDefaultReviewers && !createNoDefaultReviewers {
 				defaults, err := reviewerSvc.ResolveDefaultReviewers(cmd.Context(), repo.ProjectKey, repo.Slug, createFromRef, createToRef)
-				if err == nil {
+				if err != nil {
+					// Default reviewers are frequently mandatory approvers, so a
+					// failed lookup must never pass unnoticed. When the user asked
+					// for them the command fails; when they are only on by default
+					// the pull request is still created, but loudly.
+					if cmd.Flags().Changed("default-reviewers") {
+						return err
+					}
+					writeWarning(warn, fmt.Sprintf("could not resolve default reviewers (%v); creating the pull request without them", err))
+				} else {
 					allReviewers = append(allReviewers, defaults...)
 				}
 			}
@@ -482,15 +491,21 @@ func New(deps Dependencies) *cobra.Command {
 					apiClient,
 					cfg,
 					reviewerSvc,
+					warn,
 					repo.ProjectKey, repo.Slug,
 					createFromRef, createToRef,
 					"",
 					author,
 				)
-				if err == nil {
+				switch {
+				case err == nil:
 					allReviewers = append(allReviewers, codeOwners...)
-				} else if !apperrors.IsKind(err, apperrors.KindNotFound) && !openapi.IsRouteMissing(err) {
+				case isMissingResource(err):
+					// The repository simply does not use CODEOWNERS.
+				case cmd.Flags().Changed("codeowners"):
 					return err
+				default:
+					writeWarning(warn, fmt.Sprintf("could not resolve code owners (%v); creating the pull request without them", err))
 				}
 			}
 
@@ -593,8 +608,8 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd.Flags().StringVar(&createTitle, "title", "", "Pull request title")
 	createCmd.Flags().StringVar(&createDescription, "description", "", "Pull request description")
 	createCmd.Flags().StringSliceVar(&createReviewers, "reviewers", nil, "Reviewer usernames to add (repeatable or comma-separated, accepts @group syntax, e.g. --reviewers alice,@backend-team)")
-	createCmd.Flags().StringSliceVar(&createReviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated, Bitbucket Data Center 7.13+)")
-	createCmd.Flags().StringSliceVar(&createReviewerGroups, "reviewer-groups", nil, "Alias for --reviewer-group")
+	createCmd.Flags().StringSliceVar(&createReviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups; Bitbucket Data Center 7.13+)")
+	createCmd.Flags().SetNormalizeFunc(createReviewerFlagAliases)
 	createCmd.Flags().BoolVar(&createDefaultReviewers, "default-reviewers", true, "Include default reviewers configured on repository/project (defaults to true)")
 	createCmd.Flags().BoolVar(&createNoDefaultReviewers, "no-default-reviewers", false, "Do not include default reviewers")
 	createCmd.Flags().BoolVar(&createCodeOwners, "codeowners", true, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (defaults to true, Bitbucket Data Center 8.14+)")
@@ -1190,6 +1205,7 @@ func New(deps Dependencies) *cobra.Command {
 					apiClient,
 					cfg,
 					reviewerSvc,
+					cmd.ErrOrStderr(),
 					repo.ProjectKey, repo.Slug,
 					current.SourceBranch, current.TargetBranch,
 					target.PullRequestID,
@@ -1283,7 +1299,8 @@ func New(deps Dependencies) *cobra.Command {
 			var addedReviewers []string
 			var skippedAuthor []string
 			var alreadyPresent []string
-			latestPR := current
+			var failedReviewers []string
+			var addErrs []error
 
 			for _, u := range resolvedReviewers {
 				if isAuthor(current.Author, current.AuthorUsername, u) {
@@ -1294,22 +1311,38 @@ func New(deps Dependencies) *cobra.Command {
 					alreadyPresent = append(alreadyPresent, u)
 					continue
 				}
-				pr, err := service.AddReviewer(cmd.Context(), repo, target.PullRequestID, u)
-				if err != nil {
-					return err
+				// Reviewers are added one request at a time, so a failure partway
+				// through leaves earlier reviewers on the pull request. Keep going
+				// and report the whole outcome rather than aborting and hiding
+				// what already succeeded.
+				if _, err := service.AddReviewer(cmd.Context(), repo, target.PullRequestID, u); err != nil {
+					failedReviewers = append(failedReviewers, u)
+					addErrs = append(addErrs, fmt.Errorf("%s: %w", u, err))
+					continue
 				}
-				latestPR = pr
 				addedReviewers = append(addedReviewers, u)
 			}
 
+			// Adding a participant returns the participant, not the pull request,
+			// so the response cannot stand in for the pull request. Report the one
+			// that was actually fetched.
+			latestPR := current
+
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
+				payload := map[string]any{
 					"repository":      repo,
 					"pull_request":    latestPR,
 					"added":           addedReviewers,
 					"skipped_author":  skippedAuthor,
 					"already_present": alreadyPresent,
-				})
+				}
+				if len(failedReviewers) > 0 {
+					payload["failed"] = failedReviewers
+				}
+				if err := deps.WriteJSON(cmd.OutOrStdout(), payload); err != nil {
+					return err
+				}
+				return errors.Join(addErrs...)
 			}
 
 			if len(addedReviewers) > 0 {
@@ -1321,17 +1354,18 @@ func New(deps Dependencies) *cobra.Command {
 			if len(alreadyPresent) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "Reviewers already present: %s\n", strings.Join(alreadyPresent, ", "))
 			}
+			if len(addErrs) > 0 {
+				return errors.Join(addErrs...)
+			}
 			if len(addedReviewers) == 0 && len(skippedAuthor) == 0 && len(alreadyPresent) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "No eligible reviewers to add")
 			}
 			return nil
 		},
 	}
-	reviewerAddCmd.Flags().StringSliceVar(&reviewerUsers, "user", nil, "Reviewer username(s) (repeatable or comma-separated, accepts @group syntax)")
-	reviewerAddCmd.Flags().StringSliceVar(&reviewerUsers, "users", nil, "Alias for --user")
-	reviewerAddCmd.Flags().StringSliceVar(&reviewerUsers, "reviewers", nil, "Alias for --user")
-	reviewerAddCmd.Flags().StringSliceVar(&reviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated, Bitbucket Data Center 7.13+)")
-	reviewerAddCmd.Flags().StringSliceVar(&reviewerGroups, "reviewer-groups", nil, "Alias for --reviewer-group")
+	reviewerAddCmd.Flags().StringSliceVar(&reviewerUsers, "user", nil, "Reviewer username(s) (repeatable or comma-separated, accepts @group syntax; aliases --users, --reviewers)")
+	reviewerAddCmd.Flags().StringSliceVar(&reviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups; Bitbucket Data Center 7.13+)")
+	reviewerAddCmd.Flags().SetNormalizeFunc(reviewerAddFlagAliases)
 	reviewerAddCmd.Flags().BoolVar(&reviewerDefaultReviewers, "default-reviewers", false, "Assign default reviewers configured on repository/project for this pull request")
 	reviewerAddCmd.Flags().BoolVar(&reviewerCodeOwners, "codeowners", false, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (Bitbucket Data Center 8.14+)")
 	reviewerCmd.AddCommand(reviewerAddCmd)
@@ -2834,6 +2868,33 @@ func writeDiffResult(writer io.Writer, asJSON bool, mode diffservice.OutputKind,
 	}
 }
 
+// Registering an alias as a second flag bound to the same slice does not work:
+// pflag tracks "has this flag been set" per flag, so the first use of each
+// spelling replaces the slice instead of appending to it, and
+// "--user alice --reviewers bob" silently drops alice. Normalizing the name
+// during parsing routes every spelling to one flag, which appends correctly.
+
+// createReviewerFlagAliases resolves the alias spellings accepted by `pr create`,
+// where the canonical reviewer flag is --reviewers.
+func createReviewerFlagAliases(_ *pflag.FlagSet, name string) pflag.NormalizedName {
+	if name == "reviewer-groups" {
+		name = "reviewer-group"
+	}
+	return pflag.NormalizedName(name)
+}
+
+// reviewerAddFlagAliases resolves the alias spellings accepted by
+// `pr review reviewer add`, where the canonical reviewer flag is --user.
+func reviewerAddFlagAliases(_ *pflag.FlagSet, name string) pflag.NormalizedName {
+	switch name {
+	case "users", "reviewers":
+		name = "user"
+	case "reviewer-groups":
+		name = "reviewer-group"
+	}
+	return pflag.NormalizedName(name)
+}
+
 // resolveReviewersAndGroups expands individual reviewer usernames and reviewer group names into a deduplicated
 // slice of reviewer usernames, excluding the PR author from expanded groups.
 func resolveReviewersAndGroups(
@@ -2884,10 +2945,13 @@ func resolveReviewersAndGroups(
 	for _, groupName := range groupsToResolve {
 		members, err := reviewerSvc.ResolveReviewerGroupUsers(ctx, projectKey, repoSlug, groupName)
 		if err != nil {
-			if explicitGroups[groupName] {
+			// --reviewer-group names a group explicitly, so any failure to
+			// resolve it is fatal. The "@name" shorthand is ambiguous, but only
+			// a genuine "no such group" justifies rereading it as a username;
+			// a transport or permission failure must not be papered over.
+			if explicitGroups[groupName] || !isMissingResource(err) {
 				return nil, err
 			}
-			// If not a group, treat as a direct username
 			if author != "" && strings.EqualFold(groupName, strings.TrimSpace(author)) {
 				continue
 			}
@@ -2917,26 +2981,97 @@ func resolveReviewersAndGroups(
 	return finalReviewers, nil
 }
 
-func fetchCodeOwnersContent(ctx context.Context, apiClient *openapigenerated.ClientWithResponses, cfg config.AppConfig, projectKey, repoSlug, targetRef string) (string, error) {
-	if data, err := os.ReadFile(".bitbucket/CODEOWNERS"); err == nil && len(data) > 0 {
-		return string(data), nil
+// codeOwnersCandidatePaths lists the in-repository locations a CODEOWNERS file
+// may live at, most specific first. Bitbucket Data Center only reads
+// .bitbucket/CODEOWNERS; the bare path is accepted as a convenience for
+// repositories carrying a root-level file.
+var codeOwnersCandidatePaths = []string{".bitbucket/CODEOWNERS", "CODEOWNERS"}
+
+// localCheckoutMatches reports whether the git repository in the current working
+// directory has a Bitbucket remote pointing at projectKey/repoSlug.
+//
+// The CODEOWNERS lookup consults the working copy before the server, and that is
+// only sound when the working copy IS the repository being targeted. Without this
+// check, running `bb pr create --repo OTHER/repo` from any checkout that happens
+// to contain a CODEOWNERS file would assign reviewers taken from an unrelated
+// repository.
+func localCheckoutMatches(ctx context.Context, projectKey, repoSlug string) bool {
+	backend := execgit.New()
+	root, err := backend.RepositoryRoot(ctx, ".")
+	if err != nil || strings.TrimSpace(root) == "" {
+		return false
 	}
-	if data, err := os.ReadFile("CODEOWNERS"); err == nil && len(data) > 0 {
-		return string(data), nil
+
+	remotes, err := backend.ListRemotes(ctx, root)
+	if err != nil {
+		return false
+	}
+
+	for _, remote := range remotes {
+		_, remoteProject, remoteSlug, ok := giturl.ParseBitbucketRemote(remote.URL)
+		if !ok {
+			continue
+		}
+		if strings.EqualFold(remoteProject, projectKey) && strings.EqualFold(remoteSlug, repoSlug) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// readLocalCodeOwners returns the CODEOWNERS file from the working copy, but only
+// when that working copy is a checkout of the target repository.
+func readLocalCodeOwners(ctx context.Context, projectKey, repoSlug string) (string, bool) {
+	if !localCheckoutMatches(ctx, projectKey, repoSlug) {
+		return "", false
+	}
+
+	for _, candidate := range codeOwnersCandidatePaths {
+		if data, err := os.ReadFile(candidate); err == nil && len(data) > 0 {
+			return string(data), true
+		}
+	}
+
+	return "", false
+}
+
+// fetchCodeOwnersContent locates the CODEOWNERS file for the target repository.
+//
+// A repository that simply has no CODEOWNERS file yields KindNotFound, which
+// callers treat as "nothing to do". Any other failure (permissions, an outage,
+// a malformed response) is returned as-is so it is never mistaken for an absent
+// file and silently ignored.
+func fetchCodeOwnersContent(ctx context.Context, apiClient *openapigenerated.ClientWithResponses, cfg config.AppConfig, projectKey, repoSlug, targetRef string) (string, error) {
+	if content, ok := readLocalCodeOwners(ctx, projectKey, repoSlug); ok {
+		return content, nil
 	}
 
 	browseSvc := browseservice.NewService(apiClient, httpclient.NewFromConfig(cfg))
-	rawBytes, err := browseSvc.Raw(ctx, browseservice.RepositoryRef{ProjectKey: projectKey, Slug: repoSlug}, ".bitbucket/CODEOWNERS", targetRef)
-	if err == nil && len(rawBytes) > 0 {
-		return string(rawBytes), nil
-	}
+	repo := browseservice.RepositoryRef{ProjectKey: projectKey, Slug: repoSlug}
 
-	rawBytes, err = browseSvc.Raw(ctx, browseservice.RepositoryRef{ProjectKey: projectKey, Slug: repoSlug}, "CODEOWNERS", targetRef)
-	if err == nil && len(rawBytes) > 0 {
-		return string(rawBytes), nil
+	for _, candidate := range codeOwnersCandidatePaths {
+		rawBytes, err := browseSvc.Raw(ctx, repo, candidate, targetRef)
+		if err == nil {
+			if len(rawBytes) > 0 {
+				return string(rawBytes), nil
+			}
+			continue
+		}
+		if isMissingResource(err) {
+			continue
+		}
+		return "", err
 	}
 
 	return "", apperrors.New(apperrors.KindNotFound, ".bitbucket/CODEOWNERS not found in repository or target branch", nil)
+}
+
+// isMissingResource reports whether an error means "this does not exist here"
+// as opposed to "the request failed". Both a Bitbucket 404 envelope and an
+// unrouted endpoint on an older server count as missing.
+func isMissingResource(err error) bool {
+	return err != nil && (apperrors.IsKind(err, apperrors.KindNotFound) || openapi.IsRouteMissing(err))
 }
 
 func fetchChangedFiles(ctx context.Context, apiClient *openapigenerated.ClientWithResponses, projectKey, repoSlug, fromRef, toRef, prID string) ([]string, error) {
@@ -2970,6 +3105,7 @@ func resolveCodeOwnersReviewers(
 	apiClient *openapigenerated.ClientWithResponses,
 	cfg config.AppConfig,
 	reviewerSvc *reviewerservice.Service,
+	warn io.Writer,
 	projectKey, repoSlug string,
 	fromRef, toRef string,
 	prID string,
@@ -2991,7 +3127,7 @@ func resolveCodeOwnersReviewers(
 	var busyCounts map[string]int
 	for _, ref := range refs {
 		if ref.IsGroup && ref.Strategy == codeowners.StrategyLeastBusy {
-			busyCounts = fetchBusyCounts(ctx, cfg, projectKey, repoSlug)
+			busyCounts = fetchBusyCounts(ctx, cfg, warn, projectKey, repoSlug)
 			break
 		}
 	}
@@ -2999,54 +3135,73 @@ func resolveCodeOwnersReviewers(
 	var finalUsers []string
 	seen := make(map[string]bool)
 
+	addUser := func(name string) {
+		trimmed := strings.TrimSpace(name)
+		if trimmed == "" {
+			return
+		}
+		if author != "" && strings.EqualFold(trimmed, strings.TrimSpace(author)) {
+			return
+		}
+		lower := strings.ToLower(trimmed)
+		if !seen[lower] {
+			seen[lower] = true
+			finalUsers = append(finalUsers, trimmed)
+		}
+	}
+
 	for _, ref := range refs {
 		if !ref.IsGroup {
-			if author != "" && strings.EqualFold(ref.Name, strings.TrimSpace(author)) {
-				continue
-			}
-			lower := strings.ToLower(ref.Name)
-			if !seen[lower] {
-				seen[lower] = true
-				finalUsers = append(finalUsers, ref.Name)
-			}
+			addUser(ref.Name)
 			continue
 		}
 
 		members, err := reviewerSvc.ResolveReviewerGroupUsers(ctx, projectKey, repoSlug, ref.Name)
 		if err != nil {
-			if author != "" && strings.EqualFold(ref.Name, strings.TrimSpace(author)) {
-				continue
+			if !isMissingResource(err) {
+				// The group exists but could not be read. Assigning nobody, or
+				// silently treating the group name as a username, would hide a
+				// real failure behind an incomplete reviewer list.
+				return nil, err
 			}
-			lower := strings.ToLower(ref.Name)
-			if !seen[lower] {
-				seen[lower] = true
-				finalUsers = append(finalUsers, ref.Name)
-			}
+			// No such reviewer group: CODEOWNERS also permits "@name" to denote
+			// an individual user, so fall back to that reading.
+			addUser(ref.Name)
 			continue
 		}
 
-		selected := reviewerservice.SelectMembers(members, author, string(ref.Strategy), ref.Count, busyCounts)
-		for _, m := range selected {
-			lower := strings.ToLower(m)
-			if !seen[lower] {
-				seen[lower] = true
-				finalUsers = append(finalUsers, m)
-			}
+		for _, member := range reviewerservice.SelectMembers(members, author, string(ref.Strategy), ref.Count, busyCounts) {
+			addUser(member)
 		}
 	}
 
 	return finalUsers, nil
 }
 
-func fetchBusyCounts(ctx context.Context, cfg config.AppConfig, projectKey, repoSlug string) map[string]int {
+// busyCountsPullRequestLimit bounds how many open pull requests are inspected to
+// rank reviewers for least_busy(N). It is high enough to cover the whole open
+// queue of any realistic repository; when it is reached the caller is told that
+// the ranking is based on a partial view rather than being left to assume it is
+// complete.
+const busyCountsPullRequestLimit = 1000
+
+// fetchBusyCounts counts the unapproved review assignments each user currently
+// holds across the repository's open pull requests. Failures degrade the
+// least_busy strategy to plain group order rather than failing the command, so
+// they are reported on the warning writer instead of being swallowed.
+func fetchBusyCounts(ctx context.Context, cfg config.AppConfig, warn io.Writer, projectKey, repoSlug string) map[string]int {
 	counts := make(map[string]int)
 	service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 	list, err := service.List(ctx, pullrequestservice.RepositoryRef{ProjectKey: projectKey, Slug: repoSlug}, pullrequestservice.ListOptions{
-		State: "OPEN",
-		Limit: 50,
+		State: "open",
+		Limit: busyCountsPullRequestLimit,
 	})
-	if err != nil || len(list) == 0 {
+	if err != nil {
+		writeWarning(warn, fmt.Sprintf("could not read open pull requests to rank least_busy reviewers (%v); falling back to reviewer group order", err))
 		return counts
+	}
+	if len(list) >= busyCountsPullRequestLimit {
+		writeWarning(warn, fmt.Sprintf("least_busy ranking considered only the first %d open pull requests; the result may be incomplete", busyCountsPullRequestLimit))
 	}
 	for _, pr := range list {
 		for _, r := range pr.Reviewers {
@@ -3056,6 +3211,32 @@ func fetchBusyCounts(ctx context.Context, cfg config.AppConfig, projectKey, repo
 		}
 	}
 	return counts
+}
+
+// writeWarning emits a non-fatal diagnostic. Warnings go to stderr so they never
+// contaminate --json output on stdout.
+func writeWarning(warn io.Writer, message string) {
+	if warn == nil {
+		return
+	}
+	fmt.Fprintf(warn, "warning: %s\n", message)
+}
+
+// resolveAuthorUsername determines the username Bitbucket will record as the
+// pull request author, so it can be filtered out of the reviewer list.
+//
+// The server's own slug is preferred over the configured username: the latter
+// is whatever the user typed when configuring the CLI and may be an email
+// address or differ in case, and a mismatch means the author survives the filter
+// and Bitbucket rejects the whole create with "author cannot be a reviewer".
+func resolveAuthorUsername(ctx context.Context, client *httpclient.Client, cfg config.AppConfig) string {
+	if slug, err := client.CurrentUserSlug(ctx); err == nil {
+		if trimmed := strings.TrimSpace(slug); trimmed != "" {
+			return trimmed
+		}
+	}
+
+	return strings.TrimSpace(cfg.BitbucketUsername)
 }
 
 func formatReviewerList(users []string) string {

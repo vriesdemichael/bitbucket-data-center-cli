@@ -110,7 +110,16 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte(`{"id":42,"title":"Test PR","state":"OPEN","open":true,"reviewers":[{"user":{"name":"alice"},"approved":false,"status":"UNAPPROVED"}]}`))
 
 		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/participants":
-			_, _ = w.Write([]byte(`{"id":42,"title":"Test PR","state":"OPEN","open":true,"reviewers":[{"user":{"name":"bob","displayName":"Bob"},"role":"REVIEWER","status":"UNAPPROVED"}]}`))
+			// Bitbucket answers this endpoint with a RestPullRequestParticipant,
+			// not with the pull request. Mirroring that here keeps the command
+			// honest about where it gets the pull request it reports on.
+			var payload struct {
+				User struct {
+					Name string `json:"name"`
+				} `json:"user"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&payload)
+			_, _ = w.Write([]byte(`{"user":{"name":"` + payload.User.Name + `","displayName":"` + payload.User.Name + `"},"role":"REVIEWER","approved":false,"status":"UNAPPROVED"}`))
 
 		case r.Method == http.MethodDelete && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/participants/bob":
 			_, _ = w.Write([]byte(`{"id":42,"title":"Test PR","state":"OPEN","open":true}`))
