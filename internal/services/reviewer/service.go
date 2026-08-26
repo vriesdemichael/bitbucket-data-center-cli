@@ -3,11 +3,14 @@ package reviewer
 import (
 	"context"
 	"encoding/json"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
+	"fmt"
+	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
@@ -457,4 +460,208 @@ func (service *Service) GetDefaultReviewers(ctx context.Context, projectKey, rep
 	}
 
 	return *response.JSON200, nil
+}
+
+// ResolveDefaultReviewers queries matching default reviewer conditions for a source and target ref
+// and resolves both individual reviewers and constituent reviewer group members into usernames.
+func (service *Service) ResolveDefaultReviewers(ctx context.Context, projectKey, repositorySlug, sourceRef, targetRef string) ([]string, error) {
+	var sourceRefPtr, targetRefPtr *string
+	if strings.TrimSpace(sourceRef) != "" {
+		s := strings.TrimSpace(sourceRef)
+		sourceRefPtr = &s
+	}
+	if strings.TrimSpace(targetRef) != "" {
+		t := strings.TrimSpace(targetRef)
+		targetRefPtr = &t
+	}
+
+	conditions, err := service.GetDefaultReviewers(ctx, projectKey, repositorySlug, nil, nil, sourceRefPtr, targetRefPtr)
+	if err != nil {
+		return nil, err
+	}
+
+	seen := make(map[string]bool)
+	var resolved []string
+
+	for _, cond := range conditions {
+		if cond.Reviewers != nil {
+			for _, r := range *cond.Reviewers {
+				name := ""
+				if r.Name != nil {
+					name = *r.Name
+				}
+				if name != "" && !seen[strings.ToLower(name)] {
+					seen[strings.ToLower(name)] = true
+					resolved = append(resolved, name)
+				}
+			}
+		}
+		if cond.ReviewerGroups != nil {
+			for _, g := range *cond.ReviewerGroups {
+				groupName := ""
+				if g.Name != nil {
+					groupName = *g.Name
+				}
+				if groupName != "" {
+					members, err := service.ResolveReviewerGroupUsers(ctx, projectKey, repositorySlug, groupName)
+					if err != nil {
+						return nil, err
+					}
+					for _, m := range members {
+						if m != "" && !seen[strings.ToLower(m)] {
+							seen[strings.ToLower(m)] = true
+							resolved = append(resolved, m)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return resolved, nil
+}
+
+// ResolveReviewerGroupUsers resolves a reviewer group name to its constituent user usernames.
+// It searches repository-level reviewer groups first (if repositorySlug is non-empty),
+// falling back to project-level reviewer groups. If the server does not support reviewer
+// groups (e.g. Bitbucket Data Center < 7.13), a descriptive error indicating that
+// Bitbucket Data Center 7.13+ is required is returned.
+func (service *Service) ResolveReviewerGroupUsers(ctx context.Context, projectKey, repositorySlug, groupName string) ([]string, error) {
+	trimmedGroup := strings.TrimPrefix(strings.TrimSpace(groupName), "@")
+	if trimmedGroup == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "reviewer group name is required", nil)
+	}
+	if strings.TrimSpace(projectKey) == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
+	}
+
+	// 1. If repository slug is provided, search repository-level reviewer groups first.
+	if strings.TrimSpace(repositorySlug) != "" {
+		repoGroups, err := service.ListRepositoryReviewerGroups(ctx, projectKey, repositorySlug)
+		if err != nil {
+			if openapi.IsRouteMissing(err) || (apperrors.IsKind(err, apperrors.KindNotFound) && strings.Contains(err.Error(), "404")) {
+				return nil, apperrors.New(apperrors.KindPermanent, "reviewer groups require Bitbucket Data Center 7.13 or later (server returned 404 for reviewer groups endpoint)", err)
+			}
+			return nil, err
+		}
+		for _, g := range repoGroups {
+			if g.Name != nil && strings.EqualFold(*g.Name, trimmedGroup) {
+				if g.Id != nil {
+					idStr := fmt.Sprintf("%d", *g.Id)
+					users, err := service.ListRepositoryReviewerGroupUsers(ctx, projectKey, repositorySlug, idStr)
+					if err == nil && len(users) > 0 {
+						names := make([]string, 0, len(users))
+						for _, u := range users {
+							if u.Name != nil && strings.TrimSpace(*u.Name) != "" {
+								names = append(names, strings.TrimSpace(*u.Name))
+							}
+						}
+						return names, nil
+					}
+					if g.Users != nil && len(*g.Users) > 0 {
+						names := make([]string, 0, len(*g.Users))
+						for _, u := range *g.Users {
+							if u.Name != nil && strings.TrimSpace(*u.Name) != "" {
+								names = append(names, strings.TrimSpace(*u.Name))
+							}
+						}
+						return names, nil
+					}
+				}
+				return []string{}, nil
+			}
+		}
+	}
+
+	// 2. Search project-level reviewer groups.
+	projGroups, err := service.ListProjectReviewerGroups(ctx, projectKey)
+	if err != nil {
+		if openapi.IsRouteMissing(err) || (apperrors.IsKind(err, apperrors.KindNotFound) && strings.Contains(err.Error(), "404")) {
+			return nil, apperrors.New(apperrors.KindPermanent, "reviewer groups require Bitbucket Data Center 7.13 or later (server returned 404 for reviewer groups endpoint)", err)
+		}
+		return nil, err
+	}
+	for _, g := range projGroups {
+		if g.Name != nil && strings.EqualFold(*g.Name, trimmedGroup) {
+			if g.Id != nil {
+				idStr := fmt.Sprintf("%d", *g.Id)
+				groupDetail, err := service.GetProjectReviewerGroup(ctx, projectKey, idStr)
+				if err == nil && groupDetail.Users != nil && len(*groupDetail.Users) > 0 {
+					names := make([]string, 0, len(*groupDetail.Users))
+					for _, u := range *groupDetail.Users {
+						if u.Name != nil && strings.TrimSpace(*u.Name) != "" {
+							names = append(names, strings.TrimSpace(*u.Name))
+						}
+					}
+					return names, nil
+				}
+			}
+			if g.Users != nil && len(*g.Users) > 0 {
+				names := make([]string, 0, len(*g.Users))
+				for _, u := range *g.Users {
+					if u.Name != nil && strings.TrimSpace(*u.Name) != "" {
+						names = append(names, strings.TrimSpace(*u.Name))
+					}
+				}
+				return names, nil
+			}
+			return []string{}, nil
+		}
+	}
+
+	if strings.TrimSpace(repositorySlug) != "" {
+		return nil, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("reviewer group %q not found in repository %s/%s or project %s", trimmedGroup, projectKey, repositorySlug, projectKey), nil)
+	}
+	return nil, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("reviewer group %q not found in project %s", trimmedGroup, projectKey), nil)
+}
+
+// SelectMembers applies reviewer group selection strategies (:all, :random(N), :least_busy(N)),
+// excluding the PR author from selection.
+func SelectMembers(
+	members []string,
+	author string,
+	strategy string,
+	count int,
+	busyCounts map[string]int,
+) []string {
+	var eligible []string
+	for _, m := range members {
+		trimmed := strings.TrimSpace(m)
+		if trimmed == "" {
+			continue
+		}
+		if author != "" && strings.EqualFold(trimmed, strings.TrimSpace(author)) {
+			continue
+		}
+		eligible = append(eligible, trimmed)
+	}
+
+	if count <= 0 || len(eligible) <= count {
+		return eligible
+	}
+
+	switch strategy {
+	case "random":
+		shuffled := make([]string, len(eligible))
+		copy(shuffled, eligible)
+		rand.Shuffle(len(shuffled), func(i, j int) {
+			shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+		})
+		return shuffled[:count]
+	case "least_busy":
+		sorted := make([]string, len(eligible))
+		copy(sorted, eligible)
+		sort.SliceStable(sorted, func(i, j int) bool {
+			countI := 0
+			countJ := 0
+			if busyCounts != nil {
+				countI = busyCounts[strings.ToLower(sorted[i])]
+				countJ = busyCounts[strings.ToLower(sorted[j])]
+			}
+			return countI < countJ
+		})
+		return sorted[:count]
+	default:
+		return eligible
+	}
 }

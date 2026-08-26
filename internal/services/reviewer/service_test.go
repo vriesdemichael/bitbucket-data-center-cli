@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"strings"
 	"testing"
 
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
@@ -481,4 +483,204 @@ func TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks(t *testing.T)
 	}
 
 	_, _ = service.CreateProjectReviewerGroup(ctx, "PRJ", "group", "")
+}
+
+func TestResolveReviewerGroupUsers(t *testing.T) {
+	t.Run("validation errors", func(t *testing.T) {
+		service := NewService(nil)
+		ctx := context.Background()
+
+		if _, err := service.ResolveReviewerGroupUsers(ctx, "PRJ", "repo", ""); err == nil {
+			t.Fatal("expected error for empty group name")
+		}
+		if _, err := service.ResolveReviewerGroupUsers(ctx, "", "repo", "team"); err == nil {
+			t.Fatal("expected error for empty project key")
+		}
+	})
+
+	t.Run("repository group found via users endpoint", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.URL.Path {
+			case "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups":
+				_, _ = w.Write([]byte(`{"values":[{"id":10,"name":"core-team"}]}`))
+			case "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups/10/users":
+				_, _ = w.Write([]byte(`[{"name":"alice"},{"name":"bob"}]`))
+			default:
+				http.NotFound(w, r)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+		service := NewService(client)
+
+		users, err := service.ResolveReviewerGroupUsers(context.Background(), "PRJ", "demo", "@core-team")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(users) != 2 || users[0] != "alice" || users[1] != "bob" {
+			t.Fatalf("unexpected users: %v", users)
+		}
+	})
+
+	t.Run("repository group found via embedded users fallback", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.URL.Path {
+			case "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups":
+				_, _ = w.Write([]byte(`{"values":[{"id":10,"name":"core-team","users":[{"name":"charlie"}]}]}`))
+			case "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups/10/users":
+				w.WriteHeader(http.StatusNotFound)
+			default:
+				http.NotFound(w, r)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+		service := NewService(client)
+
+		users, err := service.ResolveReviewerGroupUsers(context.Background(), "PRJ", "demo", "core-team")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(users) != 1 || users[0] != "charlie" {
+			t.Fatalf("unexpected users: %v", users)
+		}
+	})
+
+	t.Run("project group fallback when not in repo", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.URL.Path {
+			case "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups":
+				_, _ = w.Write([]byte(`{"values":[]}`))
+			case "/rest/api/latest/projects/PRJ/settings/reviewer-groups":
+				_, _ = w.Write([]byte(`{"values":[{"id":20,"name":"arch-team"}]}`))
+			case "/rest/api/latest/projects/PRJ/settings/reviewer-groups/20":
+				_, _ = w.Write([]byte(`{"id":20,"name":"arch-team","users":[{"name":"david"},{"name":"eve"}]}`))
+			default:
+				http.NotFound(w, r)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+		service := NewService(client)
+
+		users, err := service.ResolveReviewerGroupUsers(context.Background(), "PRJ", "demo", "arch-team")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(users) != 2 || users[0] != "david" || users[1] != "eve" {
+			t.Fatalf("unexpected users: %v", users)
+		}
+	})
+
+	t.Run("project scope only without repo", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.URL.Path {
+			case "/rest/api/latest/projects/PRJ/settings/reviewer-groups":
+				_, _ = w.Write([]byte(`{"values":[{"id":30,"name":"lead-team","users":[{"name":"frank"}]}]}`))
+			case "/rest/api/latest/projects/PRJ/settings/reviewer-groups/30":
+				_, _ = w.Write([]byte(`{"id":30,"name":"lead-team","users":[{"name":"frank"}]}`))
+			default:
+				http.NotFound(w, r)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+		service := NewService(client)
+
+		users, err := service.ResolveReviewerGroupUsers(context.Background(), "PRJ", "", "lead-team")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(users) != 1 || users[0] != "frank" {
+			t.Fatalf("unexpected users: %v", users)
+		}
+	})
+
+	t.Run("group not found", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.URL.Path {
+			case "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups":
+				_, _ = w.Write([]byte(`{"values":[]}`))
+			case "/rest/api/latest/projects/PRJ/settings/reviewer-groups":
+				_, _ = w.Write([]byte(`{"values":[]}`))
+			default:
+				http.NotFound(w, r)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+		service := NewService(client)
+
+		_, err := service.ResolveReviewerGroupUsers(context.Background(), "PRJ", "demo", "missing-group")
+		if err == nil {
+			t.Fatal("expected error for missing group")
+		}
+	})
+
+	t.Run("older Bitbucket version 404 endpoint returns descriptive error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`<html><body>404 Not Found</body></html>`))
+		}))
+		defer server.Close()
+
+		client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+		service := NewService(client)
+
+		_, err := service.ResolveReviewerGroupUsers(context.Background(), "PRJ", "demo", "any-group")
+		if err == nil {
+			t.Fatal("expected error for 404")
+		}
+		if !strings.Contains(err.Error(), "Bitbucket Data Center 7.13") {
+			t.Fatalf("expected version error message, got: %v", err)
+		}
+	})
+}
+
+func TestResolveDefaultReviewers(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/default-reviewers/latest/projects/PRJ/repos/demo/reviewers":
+			_, _ = w.Write([]byte(`[
+				{
+					"id": 1,
+					"reviewers": [{"name": "alice"}, {"name": "bob"}],
+					"reviewerGroups": [{"name": "core-team"}]
+				}
+			]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups":
+			_, _ = w.Write([]byte(`{
+				"values": [{"id": 10, "name": "core-team", "users": [{"name": "charlie"}, {"name": "alice"}]}]
+			}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	service := NewService(client)
+
+	reviewers, err := service.ResolveDefaultReviewers(context.Background(), "PRJ", "demo", "feature/1", "main")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Should contain alice, bob, charlie (deduplicated)
+	expected := []string{"alice", "bob", "charlie"}
+	if !reflect.DeepEqual(reviewers, expected) {
+		t.Fatalf("expected %v, got %v", expected, reviewers)
+	}
 }
