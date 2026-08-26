@@ -8,18 +8,13 @@ For the formal threat model, trust boundaries, and compliance evaluations, see t
 
 ## 1. Release Verification (Pre-Deployment)
 
-Before packaging or mirroring `bb` into internal registries (e.g. Artifactory, Nexus, internal apt/yum/winget repos), verify the authenticity and build provenance of the downloaded release artifacts.
-
-Set the target version (e.g. `2.10.0`):
-
-```bash
-VERSION="2.10.0"
-```
+Before packaging or mirroring `bb` into internal registries (e.g. Artifactory, Nexus, internal apt/yum/winget repos), verify the authenticity and build provenance of the downloaded release artifacts. Set the target version (e.g. `2.11.0`) in your verification environment:
 
 ### A. Sigstore Keyless Signature Verification
 Every release publishes keyless OIDC signatures bound to the official GitHub Actions release workflow on `refs/heads/main`:
 
 ```bash
+VERSION="2.11.0"
 cosign verify-blob \
   --bundle "bb_${VERSION}_linux_amd64.tar.gz.sigstore.json" \
   --certificate-identity 'https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main' \
@@ -31,6 +26,7 @@ cosign verify-blob \
 Verify that the binary was built on official GitHub-hosted runners directly from the source repository:
 
 ```bash
+VERSION="2.11.0"
 gh attestation verify "bb_${VERSION}_linux_amd64.tar.gz" \
   --repo vriesdemichael/bitbucket-data-center-cli
 ```
@@ -39,6 +35,7 @@ gh attestation verify "bb_${VERSION}_linux_amd64.tar.gz" \
 Verify that the released archive matches the signed SPDX dependency graph:
 
 ```bash
+VERSION="2.11.0"
 gh attestation verify "bb_${VERSION}_linux_amd64.tar.gz" \
   --repo vriesdemichael/bitbucket-data-center-cli \
   --predicate-type https://spdx.dev/Document
@@ -132,7 +129,7 @@ Linux workstations authenticate through the **Secret Service API over D-Bus** (G
   hosts: workstations
   become: true
   vars:
-    bb_version: "2.10.0"
+    bb_version: "2.11.0"
   tasks:
     - name: Deploy Corporate Root CA bundle
       copy:
@@ -171,10 +168,10 @@ Windows workstations authenticate through **Windows Credential Manager** (DPAPI)
 
 ```powershell
 # Run as Administrator via Intune or administrative PowerShell
-$Version = "2.10.0"
+$Version = "2.11.0"
 
 # 1. Install via WinGet
-winget install --id vriesdemichael.bb --exact --accept-source-agreements --accept-package-agreements
+winget install --id vriesdemichael.bb --exact --version $Version --accept-source-agreements --accept-package-agreements
 
 # 2. Deploy Corporate Root CA
 $CertDir = "C:\ProgramData\Corporate\Certs"
@@ -197,7 +194,7 @@ Headless runners do not have interactive desktop sessions or D-Bus daemons. Conf
 # Hardened CI Container Pattern
 FROM alpine:3.21
 
-ARG BB_VERSION=2.10.0
+ARG BB_VERSION=2.11.0
 
 # Install runtime dependencies (ca-certificates and git)
 RUN apk add --no-cache ca-certificates git curl

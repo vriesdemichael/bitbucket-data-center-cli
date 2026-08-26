@@ -403,3 +403,154 @@ func TestRepositoryDocumentationIsValid(t *testing.T) {
 		t.Fatalf("documentation contains invalid bb invocations:\n%s", buffer.String())
 	}
 }
+
+func TestLintMarkdownCatchesStaleReleaseVersions(t *testing.T) {
+	targetVersion := "2.11.0"
+
+	testCases := []struct {
+		name    string
+		content string
+		problem string
+		valid   bool
+	}{
+		{
+			name:    "flags stale shell version assignment",
+			content: "```bash\nVERSION=\"2.10.0\"\ncurl -LO \"https://example.com/bb_${VERSION}_linux_amd64.tar.gz\"\n```\n",
+			problem: `stale release version "2.10.0" in code block; must match current release version "2.11.0"`,
+		},
+		{
+			name:    "flags stale shell version assignment with v prefix",
+			content: "```bash\nVERSION=v1.0.0\ncurl -LO \"https://example.com/bb_${VERSION#v}_linux_amd64.deb\"\n```\n",
+			problem: `stale release version "v1.0.0" in code block; must match current release version "2.11.0"`,
+		},
+		{
+			name:    "flags stale powershell version assignment",
+			content: "```powershell\n$Version = \"2.10.0\"\nwinget install vriesdemichael.bb\n```\n",
+			problem: `stale release version "2.10.0" in code block; must match current release version "2.11.0"`,
+		},
+		{
+			name:    "flags stale dockerfile ARG assignment",
+			content: "```dockerfile\nFROM alpine:3.21\nARG BB_VERSION=2.10.0\nRUN curl -fsSL ...\n```\n",
+			problem: `stale release version "2.10.0" in code block; must match current release version "2.11.0"`,
+		},
+		{
+			name:    "flags stale yaml config version assignment",
+			content: "```yaml\nvars:\n  bb_version: \"2.10.0\"\n```\n",
+			problem: `stale release version "2.10.0" in code block; must match current release version "2.11.0"`,
+		},
+		{
+			name:    "flags stale prose parenthetical example",
+			content: "Set the target version (e.g. `2.10.0`):\n",
+			problem: `stale release version "2.10.0"; must match current release version "2.11.0"`,
+		},
+		{
+			name:    "accepts current shell version",
+			content: "```bash\nVERSION=\"2.11.0\"\n```\n",
+			valid:   true,
+		},
+		{
+			name:    "accepts current shell version with v prefix",
+			content: "```bash\nVERSION=v2.11.0\n```\n",
+			valid:   true,
+		},
+		{
+			name:    "accepts dynamic shell version assignments",
+			content: "```bash\nVERSION=\"${BB_VERSION}\"\nLATEST=$(curl -s https://example.com)\n```\n",
+			valid:   true,
+		},
+		{
+			name:    "ignores unrelated version numbers",
+			content: "FROM alpine:3.21\nPython 3.10 and Bitbucket 10.2 OpenAPI\n",
+			valid:   true,
+		},
+		{
+			name:    "honours expect-invalid for stale versions",
+			content: "<!-- docs-lint: expect-invalid -->\n```bash\nVERSION=\"2.0.0\"\n```\n",
+			valid:   true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			findings, _ := lintMarkdownWithVersion("test.md", tc.content, targetVersion)
+			if tc.valid {
+				if len(findings) != 0 {
+					t.Fatalf("expected valid content to have 0 findings, got: %+v", findings)
+				}
+				return
+			}
+
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d: %+v", len(findings), findings)
+			}
+			if !strings.Contains(findings[0].Problem, tc.problem) {
+				t.Fatalf("expected problem %q, got %q", tc.problem, findings[0].Problem)
+			}
+		})
+	}
+}
+
+func TestUpdateContentVersions(t *testing.T) {
+	input := `# Install Guide
+
+Set the target version (e.g. ` + "`" + `2.10.0` + "`" + `):
+
+` + "```bash" + `
+VERSION="2.10.0"
+curl -LO "https://example.com/releases/download/v${VERSION}/bb_${VERSION}_linux_amd64.tar.gz"
+` + "```" + `
+
+` + "```bash" + `
+VERSION=v1.0.0
+curl -LO "https://example.com/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.deb"
+` + "```" + `
+
+` + "```powershell" + `
+$Version = "2.10.0"
+` + "```" + `
+
+` + "```dockerfile" + `
+FROM alpine:3.21
+ARG BB_VERSION=2.10.0
+` + "```" + `
+
+` + "```yaml" + `
+vars:
+  bb_version: "2.10.0"
+` + "```" + `
+`
+
+	expected := `# Install Guide
+
+Set the target version (e.g. ` + "`" + `2.12.0` + "`" + `):
+
+` + "```bash" + `
+VERSION="2.12.0"
+curl -LO "https://example.com/releases/download/v${VERSION}/bb_${VERSION}_linux_amd64.tar.gz"
+` + "```" + `
+
+` + "```bash" + `
+VERSION=v2.12.0
+curl -LO "https://example.com/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.deb"
+` + "```" + `
+
+` + "```powershell" + `
+$Version = "2.12.0"
+` + "```" + `
+
+` + "```dockerfile" + `
+FROM alpine:3.21
+ARG BB_VERSION=2.12.0
+` + "```" + `
+
+` + "```yaml" + `
+vars:
+  bb_version: "2.12.0"
+` + "```" + `
+`
+
+	actual := updateContentVersions(input, "2.12.0")
+	if actual != expected {
+		t.Fatalf("updateContentVersions mismatch:\nExpected:\n%s\nActual:\n%s", expected, actual)
+	}
+}

@@ -251,7 +251,7 @@ bb ai mcp tools
 
 #### 3. Audit Test Procedure
 ```bash
-VERSION="2.10.0"
+VERSION="2.11.0"
 cosign verify-blob \
   --bundle "bb_${VERSION}_linux_amd64.tar.gz.sigstore.json" \
   --certificate-identity 'https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main' \

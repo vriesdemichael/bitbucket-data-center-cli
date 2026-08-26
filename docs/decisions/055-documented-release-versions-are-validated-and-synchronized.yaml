@@ -1,0 +1,51 @@
+number: 55
+title: Documented release versions are validated and synchronized
+category: development
+status: accepted
+decision: >
+  Documentation examples across the repository must never pin stale release versions.
+  All install, download, provenance verification, and hardening code blocks must define
+  the target release version via variables (`VERSION=...`, `ARG BB_VERSION=...`, `bb_version: ...`,
+  `$Version = ...`), and every code snippet demonstrating release artifact usage must be
+  self-contained so readers can execute it independently without relying on shell state from
+  prior blocks.
+
+  1. Static Linter Enforcement: `tools/docs-lint` validates all documented CLI release versions
+     against the project's latest git tag (via `git tag -l --sort=-v:refname`) during `task docs:lint`
+     and `task quality:verify`. Any hardcoded version older than the active release fails the build.
+     Blocks demonstrating malformed or historical versions must use `<!-- docs-lint: expect-invalid -->`.
+
+  2. Automated In-Place Synchronization: `task docs:sync-version` (backed by `tools/docs-lint -update-version`)
+     updates all matching version declarations in-place across markdown files while preserving quotes,
+     `v` prefixes, and LF line endings.
+
+  3. Release Automation Integration: During post-merge release publication in `.github/workflows/release.yml`,
+     `task docs:deploy-version` runs `task docs:sync-version` before deploying versioned documentation to GitHub Pages,
+     guaranteeing published documentation is always aligned with the release version.
+agent_instructions: >
+  When adding or editing documentation snippets that demonstrate binary downloads, checksums,
+  signatures, or container builds, always declare the version as a self-contained variable
+  (e.g. `VERSION=v2.11.0` or `VERSION="2.11.0"`) at the top of the block rather than hardcoding
+  version strings inline.
+  Ensure each code block is independently runnable without assuming prior blocks ran in the same shell.
+  Run `task docs:lint` and `task quality:verify` to confirm version currency.
+  When tagging or cutting a release, run `task docs:sync-version` to synchronize all documented
+  versions with the new release tag.
+rationale: >
+  Manual maintenance of literal version numbers across documentation is prone to silent drift,
+  misleading users into downloading older binaries or verifying stale checksums.
+  Furthermore, fragmented code blocks that assume a previously exported shell variable fail when
+  users copy individual recipes from the documentation site.
+  Enforcing currency through static analysis in `tools/docs-lint` catches drift in CI, while
+  automated synchronization eliminates manual maintenance toil during release operations.
+rejected_alternatives:
+  - alternative: Manual review and manual version bumping on each release
+    reason: >
+      Historical review failed to prevent documentation drift: multiple install snippets remained
+      pinned to v0.1.0 and v1.0.0 while the project was at v2.11.0.
+  - alternative: Dynamic runtime template substitution in MkDocs (e.g. mkdocs-macros-plugin)
+    reason: >
+      Template tags like `{{ bb_version }}` are not evaluated when markdown files like README.md
+      are rendered directly on GitHub, leading to raw template syntax visible to readers. Pinned
+      literals validated by static tooling work everywhere.
+provenance: guided-ai
