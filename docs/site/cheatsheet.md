@@ -54,28 +54,27 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 | Create as draft | `bb pr create --repo PROJ/my-repo --from-ref feature/my-work --to-ref main --title "WIP" --draft` | Bitbucket DC 8.0+ |
 | Assign reviewers | `bb pr create ... --reviewers alice,bob` | Comma-separated or repeatable |
 
-### 5. Code Review, Feedback & Tasks
+### 5. Code Review & Feedback
 
 | Goal | Command | Notes |
 |---|---|---|
-| Approve a PR | `bb pr review approve 42 --repo PROJ/my-repo` | Submits approval |
-| Request changes | `bb pr review complete 42 --repo PROJ/my-repo --status NEEDS_WORK` | Marks PR as needing work |
-| List open comments & tasks | `bb pr comment list 42 --repo PROJ/my-repo --unresolved` | Unresolved discussion threads |
+| Open PR in browser for review | `bb browse 42` | Fastest way to write inline review comments in Web UI |
+| Quick terminal approval | `bb pr review approve 42 --repo PROJ/my-repo` | Submits approval once verified locally |
+| List open comments & tasks | `bb pr comment list 42 --repo PROJ/my-repo --unresolved` | Shows what feedback is still pending |
 | List only blocking tasks | `bb pr comment list 42 --repo PROJ/my-repo --tasks-only --unresolved` | Merge-blocking tasks |
-| Add a comment | `bb pr comment add 42 --repo PROJ/my-repo --text "Please add a test"` | Posts top-level or reply comment |
-| Apply code suggestion | `bb pr comment apply-suggestion 42 118 --repo PROJ/my-repo` | Applies reviewer's markdown suggestion block |
-| Resolve a comment or task | `bb pr comment resolve 42 118 --repo PROJ/my-repo` | Marks task or thread as resolved |
-| Reopen a comment or task | `bb pr comment reopen 42 118 --repo PROJ/my-repo` | Re-opens thread if feedback was incomplete |
+| Add a quick PR comment | `bb pr comment add 42 --repo PROJ/my-repo --text "LGTM, verified locally"` | Posts top-level note |
 
 ### 6. Merging & CI Checks
 
 | Goal | Command | Notes |
 |---|---|---|
-| Inspect CI build status | `bb build status get 1a2b3c4` | Status of all CI builds on commit |
-| List required build checks | `bb build required list --repo PROJ/my-repo` | Checks that must pass before merging |
-| Enable auto-merge | `bb pr auto-merge enable 42 --repo PROJ/my-repo --strategy rebase-ff-only` | Merges as soon as checks pass and approvals arrive |
+| Check CI builds on PR | `bb pr build status 42` | Direct status of all CI builds on the PR's source commit |
+| Check CI builds on commit | `bb build status get 1a2b3c4` | Status of all CI builds on a specific commit SHA |
+| Check merge blockers & state | `bb pr get 42` | Displays approvals, blocker tasks, and merge readiness |
+| List required build checks | `bb build required list --repo PROJ/my-repo` | Checks mandated by repository branch permissions |
+| Enable auto-merge | `bb pr auto-merge enable 42 --repo PROJ/my-repo --strategy rebase-ff-only` | Merges automatically once checks pass and approvals arrive |
 | Cancel auto-merge | `bb pr auto-merge disable 42 --repo PROJ/my-repo` | Disables pending auto-merge |
-| Merge immediately | `bb pr merge 42 --repo PROJ/my-repo --strategy rebase-ff-only` | Executes merge if checks pass |
+| Merge immediately | `bb pr merge 42 --repo PROJ/my-repo` | Executes merge if checks pass |
 
 ### 7. Releases & Tags
 
@@ -120,15 +119,11 @@ bb pr diff 42
 # 3. Check unresolved comments or open blocker tasks
 bb pr comment list 42 --repo PROJ/my-repo --unresolved
 
-# 4. Approve when satisfied
+# 4. If all tests pass, quickly approve directly from terminal:
 bb pr review approve 42 --repo PROJ/my-repo
-```
 
-If changes are required, mark it as needing work and add a comment:
-
-```bash
-bb pr comment add 42 --repo PROJ/my-repo --text "Tests pass, but please add retry handling for 503 responses."
-bb pr review complete 42 --repo PROJ/my-repo --status NEEDS_WORK
+# 5. If detailed line-by-line feedback or discussion is needed, open the Web UI:
+bb browse 42
 ```
 
 ---
@@ -141,8 +136,8 @@ When your branch is ready:
 # Open as a draft PR while preparing documentation
 bb pr create --repo PROJ/my-repo --from-ref feature/my-work --to-ref main --title "Add payment retries" --draft
 
-# Check that CI builds passed
-bb build status get 1a2b3c4
+# Check CI build statuses directly on the PR
+bb pr build status 42
 
 # When ready for team review, mark ready and assign reviewers
 bb pr update 42 --repo PROJ/my-repo --version 3 --draft=false
@@ -155,28 +150,34 @@ bb pr update 42 --repo PROJ/my-repo --version 3 --draft=false
 When reviewers leave comments or blocker tasks on your pull request:
 
 ```bash
-# 1. View all open tasks and unresolved threads
+# 1. Check review blockers, approvals, and open item counts
+bb pr get 42
+
+# 2. View all open tasks and unresolved threads in your terminal
 bb pr comment list 42 --repo PROJ/my-repo --unresolved
 
-# 2. If a reviewer left a markdown code suggestion, apply it directly:
-bb pr comment apply-suggestion 42 118 --repo PROJ/my-repo
-
-# 3. Resolve addressed tasks:
-bb pr comment resolve 42 118 --repo PROJ/my-repo
-
-# 4. Confirm the review blocker count has cleared:
-bb pr get 42
+# 3. Open the pull request in your browser to view inline context and respond:
+bb browse 42
 ```
 
 ---
 
-### Recipe 5: Auto-Merging Clean Changes
+### Recipe 5: Checking Merge Readiness & Merging Clean Changes
 
-Instead of waiting for long-running CI pipelines to finish before merging manually, enable auto-merge:
+Check merge status and merge via auto-merge or direct merge:
 
 ```bash
-# Enable auto-merge with rebase fast-forward strategy
+# 1. Inspect merge readiness and review blockers
+bb pr get 42
+
+# 2. Check required merge checks for the repository
+bb build required list --repo PROJ/my-repo
+
+# 3. Enable auto-merge with rebase fast-forward strategy (merges when green)
 bb pr auto-merge enable 42 --repo PROJ/my-repo --strategy rebase-ff-only
+
+# Or merge directly from terminal once all checks are satisfied
+bb pr merge 42 --repo PROJ/my-repo
 ```
 
 Bitbucket Data Center automatically merges the pull request as soon as required reviewers approve and CI checks report green.

@@ -53,7 +53,7 @@ bb pr get --help
 
 ## Common Workflows
 
-### 1. Start a feature
+### 1. Start a feature or check out a pull request
 
 ```bash
 # Find the right repository
@@ -62,14 +62,35 @@ bb search repos "payment"
 # Check the default branch exists
 bb ref resolve --repo MYPROJ/payments main
 
-# Clone it
+# Clone the repository
 bb repo clone MYPROJ/payments
 
 # Check for an existing branch
 bb branch list --repo MYPROJ/payments --filter feature/my-work
+
+# Or check out an existing pull request locally to build, test, or modify
+bb pr checkout 42
+bb pr checkout 42 --branch review-42
 ```
 
-### 2. Open a pull request (optionally as a draft)
+`bb pr checkout` automatically resolves source branches across both same-repository branches and personal forks, fetching the commits and configuring tracking.
+
+### 2. Inspect pull request changes and diffs
+
+When reviewing a pull request or verifying behavior, inspect the unified diff and commit history without needing to fetch manually:
+
+```bash
+# View unified patch against target branch
+bb pr diff 42
+
+# List commits included in the pull request
+bb pr commits 42
+
+# List changed files
+bb pr files 42
+```
+
+### 3. Open a pull request (optionally as a draft)
 
 ```bash
 # Open a normal PR
@@ -93,15 +114,22 @@ bb pr update 42 --repo MYPROJ/payments --version 3 --draft=false
 bb pr update 42 --repo MYPROJ/payments --version 3 --draft
 ```
 
-### 3. Check whether a PR is ready to merge
+### 4. Retrieve build status, mergeable state, and wait for CI
 
-`bb pr get` is the single call that answers "is anything waiting on me?". Its
-`review_summary` reports unresolved comment threads, open tasks and reviewers who
-requested changes; `action_required` is `true` whenever any of those is outstanding.
+Before merging or approving, verify CI build statuses and merge readiness:
 
 ```bash
-# Approval status, merge state and outstanding review feedback
+# Check CI build statuses directly on the pull request (all pipeline stages)
+bb pr build status 42
+
+# Inspect approval status, merge state, and outstanding review blockers
 bb pr get --repo MYPROJ/payments 42
+
+# Check CI build status for a specific commit SHA
+bb build status get <commit-sha>
+
+# Check which CI builds are mandated by repository merge-check rules
+bb build required list --repo MYPROJ/payments
 ```
 
 ```
@@ -114,43 +142,31 @@ Needs work: carol
 ```bash
 # Machine-readable: one field to branch on
 bb pr get --repo MYPROJ/payments 42 --json | jq .data.review_summary.action_required
+
+# Check if any PR builds are still INPROGRESS or FAILED
+bb pr build status 42 --json | jq '.data[] | {key, state}'
 ```
 
 `bb pr list` shows the same signal per pull request, so you can spot which of your
-open PRs need attention before opening any of them.
+open PRs need attention before opening any of them:
 
 ```bash
 bb pr list --repo MYPROJ/payments --with-review-status
 ```
 
-```bash
-# Check CI status on HEAD commit
-bb build status get <commit-sha>
+### 5. Conduct code reviews and submit feedback
 
-# Know what CI must pass before merging
-bb build required list --repo MYPROJ/payments
-```
-
-### 4. Merge automatically once checks pass
-
-Auto-merge lets Bitbucket complete the merge as soon as required builds pass and
-all approvals are in, instead of polling and merging manually (Bitbucket DC 8.0+).
-Only enable it after review feedback is addressed and required checks are green.
+As an autonomous agent performing code reviews or addressing comments:
 
 ```bash
-# Inspect current auto-merge configuration
-bb pr auto-merge get --repo MYPROJ/payments 42
+# Submit an approval once verified
+bb pr review approve 42 --repo MYPROJ/payments
 
-# Enable auto-merge (default strategy: no-ff). Prefer a rebase strategy for linear history.
-bb pr auto-merge enable --repo MYPROJ/payments 42 --strategy rebase-ff-only
-
-# Cancel auto-merge
-bb pr auto-merge disable --repo MYPROJ/payments 42
+# Request changes with a summary note if issues were found
+bb pr review complete 42 --repo MYPROJ/payments --status NEEDS_WORK --comment "Unit tests failed in payment_test.go"
 ```
 
-Valid `--strategy` values: `no-ff`, `ff-only`, `rebase-no-ff`, `rebase-ff-only`, `squash`, `squash-ff-only`.
-
-### 5. Address review feedback
+### 6. Address review feedback and tasks
 
 Bitbucket models a task as a blocker comment, so `bb pr comment list` returns
 reviewer comments *and* tasks in one view, unresolved first, each with its file
@@ -211,7 +227,27 @@ bb pr comment apply-suggestion --repo MYPROJ/payments 42 118
 `--json` returns the same thread view without Bitbucket's nested pull request
 payload. Use `--full` if you need the raw Bitbucket comment objects instead.
 
-### 6. Diagnose a CI failure
+### 7. Merge pull requests (auto-merge or direct merge)
+
+Auto-merge lets Bitbucket complete the merge as soon as required builds pass and
+all approvals are in, instead of polling and merging manually (Bitbucket DC 8.0+).
+Only enable it after review feedback is addressed and required checks are green.
+
+```bash
+# Inspect current auto-merge configuration
+bb pr auto-merge get --repo MYPROJ/payments 42
+
+# Enable auto-merge (default strategy: no-ff). Prefer a rebase strategy for linear history.
+bb pr auto-merge enable --repo MYPROJ/payments 42 --strategy rebase-ff-only
+
+# Cancel auto-merge
+bb pr auto-merge disable --repo MYPROJ/payments 42
+
+# Or merge directly once all checks are green
+bb pr merge 42 --repo MYPROJ/payments
+```
+
+### 8. Diagnose a CI failure
 
 ```bash
 # Get build statuses for a specific commit
@@ -224,7 +260,7 @@ bb commit get --repo MYPROJ/payments <commit-sha>
 bb commit compare <green-sha> <failing-sha> --repo MYPROJ/payments
 ```
 
-### 7. Release tagging
+### 9. Release tagging
 
 ```bash
 # Find the current latest tag
@@ -234,7 +270,7 @@ bb tag list --repo MYPROJ/payments
 bb tag create v1.2.3 --repo MYPROJ/payments --start-point main
 ```
 
-### 8. File browse/edit, comparison and archives
+### 10. File browse/edit, comparison and archives
 
 Read or edit repository files over REST without cloning, compare refs/branches, or download repository archives:
 
@@ -258,14 +294,14 @@ bb repo archive --repo MYPROJ/payments --at main --output payments-main.zip
 bb repo archive --repo MYPROJ/payments --format tar.gz -o - > archive.tar.gz
 ```
 
-### 9. Server-side hooks
+### 11. Server-side hooks
 
 `bb` does not manage plugin hooks or hook scripts. Both configure code that runs
 inside Bitbucket on every push, and neither belongs in a CLI workflow — see
 [Server-Side Hooks](advanced/server-side-hooks.md). Use `webhook` to have
 Bitbucket call out to a service you control instead.
 
-### 10. SSH keys and HTTP Access Tokens
+### 12. SSH keys and HTTP Access Tokens
 
 Manage personal SSH keys or repository/project-level SSH access keys, and create/manage HTTP access tokens:
 
@@ -294,7 +330,7 @@ bb auth token create "CI Token" --project MYPROJ --permission PROJECT_READ --exp
 bb auth token revoke token-id-123
 ```
 
-### 11. Scoped builds and deployments
+### 13. Scoped builds and deployments
 
 Associate builds and deployments with specific commits, or view statistics across multiple commits (Bitbucket DC 7.4+):
 
