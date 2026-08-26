@@ -1,0 +1,69 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.bulk.status.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb bulk status --json`. Data is a bulk apply-status artifact. Full artifact schema: reference/schemas/bulk-apply-status.schema.json.",
+  "properties": {
+    "data": {
+      "additionalProperties": true,
+      "properties": {
+        "apiVersion": {
+          "type": "string"
+        },
+        "kind": {
+          "const": "BulkApplyStatus"
+        },
+        "operationId": {
+          "type": "string"
+        },
+        "planHash": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "success",
+            "failed",
+            "partial_failure"
+          ],
+          "type": "string"
+        },
+        "summary": {
+          "type": "object"
+        },
+        "targets": {
+          "type": "array"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "operationId",
+        "planHash",
+        "status"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb bulk status output",
+  "type": "object"
+}
