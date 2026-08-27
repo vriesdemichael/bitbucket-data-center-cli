@@ -1,7 +1,8 @@
 number: 55
 title: Documented release versions are validated and synchronized
 category: development
-status: accepted
+status: superseded
+superseded_by: 57
 decision: >
   Documentation examples across the repository must never pin stale release versions.
   All install, download, provenance verification, and hardening code blocks must define

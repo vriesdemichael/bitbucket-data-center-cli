@@ -8,13 +8,13 @@ For the formal threat model, trust boundaries, and compliance evaluations, see t
 
 ## 1. Release Verification (Pre-Deployment)
 
-Before packaging or mirroring `bb` into internal registries (e.g. Artifactory, Nexus, internal apt/yum/winget repos), verify the authenticity and build provenance of the downloaded release artifacts. Set the target version (e.g. `2.13.0`) in your verification environment:
+Before packaging or mirroring `bb` into internal registries (e.g. Artifactory, Nexus, internal apt/yum/winget repos), verify the authenticity and build provenance of the downloaded release artifacts. Set the target version (e.g. `[[ bb_version ]]`) in your verification environment:
 
 ### A. Sigstore Keyless Signature Verification
 Every release publishes keyless OIDC signatures bound to the official GitHub Actions release workflow on `refs/heads/main`:
 
 ```bash
-VERSION="2.13.0"
+VERSION="[[ bb_version ]]"
 cosign verify-blob \
   --bundle "bb_${VERSION}_linux_amd64.tar.gz.sigstore.json" \
   --certificate-identity 'https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main' \
@@ -26,7 +26,7 @@ cosign verify-blob \
 Verify that the binary was built on official GitHub-hosted runners directly from the source repository:
 
 ```bash
-VERSION="2.13.0"
+VERSION="[[ bb_version ]]"
 gh attestation verify "bb_${VERSION}_linux_amd64.tar.gz" \
   --repo vriesdemichael/bitbucket-data-center-cli
 ```
@@ -35,7 +35,7 @@ gh attestation verify "bb_${VERSION}_linux_amd64.tar.gz" \
 Verify that the released archive matches the signed SPDX dependency graph:
 
 ```bash
-VERSION="2.13.0"
+VERSION="[[ bb_version ]]"
 gh attestation verify "bb_${VERSION}_linux_amd64.tar.gz" \
   --repo vriesdemichael/bitbucket-data-center-cli \
   --predicate-type https://spdx.dev/Document
@@ -129,7 +129,7 @@ Linux workstations authenticate through the **Secret Service API over D-Bus** (G
   hosts: workstations
   become: true
   vars:
-    bb_version: "2.13.0"
+    bb_version: "[[ bb_version ]]"
   tasks:
     - name: Deploy Corporate Root CA bundle
       copy:
@@ -168,7 +168,7 @@ Windows workstations authenticate through **Windows Credential Manager** (DPAPI)
 
 ```powershell
 # Run as Administrator via Intune or administrative PowerShell
-$Version = "2.13.0"
+$Version = "[[ bb_version ]]"
 
 # 1. Install via WinGet
 winget install --id vriesdemichael.bb --exact --version $Version --accept-source-agreements --accept-package-agreements
@@ -194,7 +194,7 @@ Headless runners do not have interactive desktop sessions or D-Bus daemons. Conf
 # Hardened CI Container Pattern
 FROM alpine:3.21
 
-ARG BB_VERSION=2.13.0
+ARG BB_VERSION=[[ bb_version ]]
 
 # Install runtime dependencies (ca-certificates and git)
 RUN apk add --no-cache ca-certificates git curl

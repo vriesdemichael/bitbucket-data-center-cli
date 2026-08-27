@@ -1,0 +1,69 @@
+number: 57
+title: Documented release version is injected at build time
+category: development
+status: accepted
+supersedes: 55
+decision: >
+  No source file pins a release version. The documentation site resolves it once, when the site is
+  built, and the README does not state one at all.
+
+  1. Build-time Injection: `docs/main.py` supplies `bb_version` and `bb_version_tag` to
+     mkdocs-macros, reading `BB_DOCS_VERSION` when set, otherwise the newest git tag, otherwise the
+     placeholder `X.Y.Z`. `task docs:deploy-version` passes the release version through that
+     variable, so each published snapshot renders the release it was built for.
+
+  2. Non-colliding Delimiters: the macros plugin uses double square brackets rather than its default double
+     braces, because the documentation shows Ansible and Taskfile snippets containing literal
+     Jinja that must reach the reader unevaluated. `enterprise-hardening.md` already carries an
+     Ansible `{{ bb_version }}` belonging to the reader's own playbook run.
+
+  3. The README States No Version: it is rendered by GitHub, not built by MkDocs, so no substitution
+     can reach it. Its install snippets set `VERSION=v0.0.0` with an instruction to replace it and a
+     link to the releases page. A reader picks the release; the file cannot go stale.
+
+  4. Static Validation Is Retained: `tools/docs-lint` still fails any literal version older than the
+     newest tag, and `task docs:sync-version` still rewrites one. Nothing currently pins a version,
+     so both are guards against a future hardcoding rather than part of the release path.
+agent_instructions: >
+  Never write a literal release version into documentation. In pages built by MkDocs use the bb_version macro (bare, for asset
+  filenames) or bb_version_tag (v-prefixed, for release tags), in double square brackets. In the README, and anywhere else rendered outside MkDocs, do not state a version at all --
+  point the reader at the releases page.
+  When a documentation snippet must show literal Jinja for another tool, write it as `{{ ... }}` and
+  it will pass through untouched.
+rationale: >
+  ADR-055 pinned literals and kept them current with `task docs:sync-version`, run by the release
+  workflow before publishing. The rewrite reached the built site but never reached the repository:
+  `mike deploy` pushes the built output to gh-pages and the modified markdown was discarded.
+
+  So every release left the checked-in documentation a version behind, `docs-lint` failed on a clean
+  checkout of main, and the next contributor's push was blocked by a release they had nothing to do
+  with. This happened twice within a single afternoon, across v2.12.0 and v2.13.0.
+
+  Committing the rewrite back would fix it, but main is protected and rebase-only, so the release
+  workflow would have to open a pull request against itself -- a CI overhaul out of proportion to the
+  problem. Injecting at build time removes the class of failure instead: with nothing pinned, there
+  is nothing to go stale, and the release workflow already knows the version to inject.
+
+  ADR-055 rejected this approach because template tags are not evaluated when markdown renders on
+  GitHub. That objection was correct and is answered rather than ignored: the only file GitHub
+  renders directly, the README, now states no version at all.
+rejected_alternatives:
+  - alternative: Commit the synchronized markdown back to main from the release workflow
+    reason: >
+      main is protected and rebase-only, so the workflow would have to raise and merge a pull request
+      against itself. That is a substantial change to release automation to keep a mechanism whose
+      only job is preventing staleness that build-time injection makes impossible.
+  - alternative: Keep ADR-055 and move the version check out of the pre-push and quality gates
+    reason: >
+      Stops contributors being blocked but leaves the published README and site advertising an old
+      release until someone notices, which is the failure ADR-055 existed to prevent.
+  - alternative: Link the README install snippets at /releases/latest/download/
+    reason: >
+      GitHub resolves that path for the newest release, but the release assets embed the version in
+      their filenames (bb_2.13.0_linux_amd64.deb), so the reader still has to know the version. It
+      would only work if the release also published version-less asset aliases.
+  - alternative: Use the macros plugin with its default double-brace delimiters
+    reason: >
+      The documentation shows Ansible and Taskfile snippets whose literal Jinja must survive to the
+      reader. Default delimiters would evaluate them and silently corrupt working examples.
+provenance: human

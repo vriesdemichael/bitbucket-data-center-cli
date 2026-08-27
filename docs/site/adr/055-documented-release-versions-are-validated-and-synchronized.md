@@ -5,7 +5,8 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `055`
 - Title: `Documented release versions are validated and synchronized`
 - Category: `development`
-- Status: `accepted`
+- Status: `superseded`
+- Superseded By: `057`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/055-documented-release-versions-are-validated-and-synchronized.yaml`
 

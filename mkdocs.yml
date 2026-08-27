@@ -31,6 +31,19 @@ theme:
       primary: blue grey
       accent: deep orange
 
+plugins:
+  # Declaring plugins replaces the default list, so search has to be named again.
+  - search
+  # Supplies the release version at build time from docs/main.py. Nothing in the
+  # sources pins a version, so no committed file can go stale between releases.
+  - macros:
+      module_name: docs/main
+      # The default {{ }} would eat the Ansible and Taskfile snippets the docs
+      # show verbatim -- enterprise-hardening.md already contains a literal
+      # {{ bb_version }} that belongs to the reader's Ansible run, not to us.
+      j2_variable_start_string: "[["
+      j2_variable_end_string: "]]"
+
 extra:
   version:
     provider: mike
