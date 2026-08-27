@@ -240,10 +240,13 @@ func collectMarkdownFiles(roots []string) ([]string, error) {
 }
 
 var (
-	unversionedArtifactRegex = regexp.MustCompile(`\bbb_(linux|darwin|windows)_(amd64|arm64|x86_64)\.(tar\.gz|zip|deb|rpm)\b`)
-	unrenderedLaTeXRegex     = regexp.MustCompile(`\$[^\$\n]+?\$`)
-	mcpToolListRe            = regexp.MustCompile(`--(?:tools|exclude)\b["']?[\s:=,]*["']?([a-zA-Z0-9_.-]+(?:\s*,\s*[a-zA-Z0-9_.-]+)*)`)
-	mcpToolValueOnlyRe       = regexp.MustCompile(`^["']?([a-zA-Z0-9_.-]+(?:\s*,\s*[a-zA-Z0-9_.-]+)*)`)
+	// A rule once rejected release filenames with no version segment, because
+	// nothing was published under such a name and the URL would 404. Releases
+	// now publish version-less aliases on purpose (ADR-057), so the shape it
+	// enforced is valid and the rule is gone.
+	unrenderedLaTeXRegex = regexp.MustCompile(`\$[^\$\n]+?\$`)
+	mcpToolListRe        = regexp.MustCompile(`--(?:tools|exclude)\b["']?[\s:=,]*["']?([a-zA-Z0-9_.-]+(?:\s*,\s*[a-zA-Z0-9_.-]+)*)`)
+	mcpToolValueOnlyRe   = regexp.MustCompile(`^["']?([a-zA-Z0-9_.-]+(?:\s*,\s*[a-zA-Z0-9_.-]+)*)`)
 
 	shellVersionRe  = regexp.MustCompile(`^(?:export\s+)?VERSION=["']?(v?[0-9]+\.[0-9]+\.[0-9]+)["']?$`)
 	pwshVersionRe   = regexp.MustCompile(`^\$Version\s*=\s*["']?(v?[0-9]+\.[0-9]+\.[0-9]+)["']?$`)
@@ -386,17 +389,7 @@ func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) 
 			})
 		}
 
-		// 3. Prohibit unversioned release artifact filenames (e.g. bb_linux_amd64.tar.gz)
-		if match := unversionedArtifactRegex.FindString(line); match != "" {
-			lineFindings = append(lineFindings, finding{
-				File:    file,
-				Line:    lineNum,
-				Command: line,
-				Problem: fmt.Sprintf("release artifact %q is missing a version segment (must match bb_${VERSION}_<os>_<arch>.<ext>)", match),
-			})
-		}
-
-		// 4. Prohibit unrendered LaTeX math syntax outside code blocks
+		// 3. Prohibit unrendered LaTeX math syntax outside code blocks
 		proseLine := removeInlineCode(line)
 		proseLine = strings.ReplaceAll(proseLine, `\$`, "")
 		if unrenderedLaTeXRegex.MatchString(proseLine) || strings.Contains(proseLine, `$\`) {

@@ -520,6 +520,36 @@ jobs:
           upload-artifact: false
           upload-release-assets: false
 
+      # Every download asset carries the version in its filename, so a reader has
+      # to know the version before they can build a URL -- which is why the
+      # install instructions used to pin one, and why the pin went stale.
+      #
+      # Each one also gets a copy without the version, so
+      # /releases/latest/download/bb_linux_amd64.deb resolves for anyone who just
+      # wants the current release. The versioned names stay exactly as they were:
+      # Homebrew, AUR, WinGet and Scoop all reference them, as does anyone
+      # pinning a release.
+      #
+      # Created before the checksum step on purpose, so both names appear in
+      # sha256sums.txt and `sha256sum -c --ignore-missing` verifies whichever the
+      # reader downloaded. The signing step's globs pick the copies up too.
+      - name: Add version-less asset aliases
+        env:
+          VERSION: ${{ needs.determine-version.outputs.version }}
+        run: |
+          set -euo pipefail
+          version_no_v="${VERSION#v}"
+          for file in dist/bb_"${version_no_v}"_*; do
+            [[ -f "$file" ]] || continue
+            alias_name="${file/_${version_no_v}_/_}"
+            if [[ "$alias_name" == "$file" ]]; then
+              echo "refusing to alias $file: version segment not found" >&2
+              exit 1
+            fi
+            cp -- "$file" "$alias_name"
+          done
+          ls -1 dist/
+
       - name: Generate checksums
         run: |
           set -euo pipefail

@@ -254,11 +254,6 @@ func TestLintMarkdownDialectChecks(t *testing.T) {
 			problem: "prohibited GitHub callout",
 		},
 		{
-			name:    "flags unversioned release artifact",
-			content: "Download `bb_linux_amd64.tar.gz` from releases.",
-			problem: "missing a version segment",
-		},
-		{
 			name:    "flags unrendered LaTeX math",
 			content: "Threat $\\leftrightarrow$ Mitigation $\\leftrightarrow$ Audit",
 			problem: "unrendered LaTeX math",

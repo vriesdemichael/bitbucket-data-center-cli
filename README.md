@@ -53,30 +53,30 @@ Install on Arch Linux from the AUR:
 yay -S bb-bin
 ```
 
-Install on Debian/Ubuntu or RHEL/Fedora from the release `.deb`/`.rpm`. Set
-`VERSION` to the release you want from
-[Releases](https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest):
+Install on Debian/Ubuntu or RHEL/Fedora from the release `.deb`/`.rpm`:
 
 ```bash
-VERSION=v0.0.0  # replace with the release you are installing
 # Debian/Ubuntu
-curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.deb"
-sudo dpkg -i "bb_${VERSION#v}_linux_amd64.deb"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_linux_amd64.deb"
+sudo dpkg -i bb_linux_amd64.deb
 # RHEL/Fedora
-curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.rpm"
-sudo rpm -i "bb_${VERSION#v}_linux_amd64.rpm"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_linux_amd64.rpm"
+sudo rpm -i bb_linux_amd64.rpm
 ```
 
 Install from Releases (Linux amd64 example):
 
 ```bash
-VERSION=v0.0.0  # replace with the release you are installing
-curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.tar.gz"
-curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sha256sums.txt"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_linux_amd64.tar.gz"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/sha256sums.txt"
 sha256sum -c sha256sums.txt --ignore-missing
-tar -xzf "bb_${VERSION#v}_linux_amd64.tar.gz"
+tar -xzf bb_linux_amd64.tar.gz
 install -m 0755 bb /usr/local/bin/bb
 ```
+
+Every release also publishes the same files with the version in the name
+(`bb_1.2.3_linux_amd64.tar.gz`). Use those to pin a release; `sha256sums.txt`
+covers both spellings, so the checksum step above works either way.
 
 **Authenticate** — store a token for your Bitbucket instance:
 

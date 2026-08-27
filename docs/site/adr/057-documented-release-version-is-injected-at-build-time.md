@@ -23,11 +23,24 @@ No source file pins a release version. The documentation site resolves it once, 
    Jinja that must reach the reader unevaluated. `enterprise-hardening.md` already carries an
    Ansible `{{ bb_version }}` belonging to the reader's own playbook run.
 
-3. The README States No Version: it is rendered by GitHub, not built by MkDocs, so no substitution
-   can reach it. Its install snippets set `VERSION=v0.0.0` with an instruction to replace it and a
-   link to the releases page. A reader picks the release; the file cannot go stale.
+3. Version-less Asset Aliases: every release publishes each download twice, once as
+   `bb_1.2.3_linux_amd64.deb` and once as `bb_linux_amd64.deb`. The second name is reachable at
+   `/releases/latest/download/`, so an install snippet needs no version at all. The aliases are
+   created before the checksum step, so `sha256sums.txt` lists both names and
+   `sha256sum -c --ignore-missing` verifies whichever was downloaded; the signing step's globs
+   cover them too. The versioned names are unchanged, because Homebrew, AUR, WinGet and Scoop all
+   reference them.
 
-4. Static Validation Is Retained: `tools/docs-lint` still fails any literal version older than the
+4. Instructions That Install the Newest Release Name No Version: the README and the quickstart use
+   the `latest/download` URLs. The README is rendered by GitHub, so no substitution can reach it,
+   and it now needs none.
+
+5. Instructions That Pin Deliberately Keep the Version: the enterprise hardening and threat model
+   pages mirror into internal registries, pin a Dockerfile ARG, pass `--version` to WinGet and
+   verify one named artifact. Pinning is the point there, so those keep the build-time macro, which
+   renders a concrete current release as a worked example.
+
+6. Static Validation Is Retained: `tools/docs-lint` still fails any literal version older than the
    newest tag, and `task docs:sync-version` still rewrites one. Nothing currently pins a version,
    so both are guards against a future hardcoding rather than part of the release path.
 
@@ -46,5 +59,7 @@ ADR-055 rejected this approach because template tags are not evaluated when mark
 
 - `Commit the synchronized markdown back to main from the release workflow`: main is protected and rebase-only, so the workflow would have to raise and merge a pull request against itself. That is a substantial change to release automation to keep a mechanism whose only job is preventing staleness that build-time injection makes impossible.
 - `Keep ADR-055 and move the version check out of the pre-push and quality gates`: Stops contributors being blocked but leaves the published README and site advertising an old release until someone notices, which is the failure ADR-055 existed to prevent.
-- `Link the README install snippets at /releases/latest/download/`: GitHub resolves that path for the newest release, but the release assets embed the version in their filenames (bb_2.13.0_linux_amd64.deb), so the reader still has to know the version. It would only work if the release also published version-less asset aliases.
+- `Publish a VERSION.txt asset for the README to read`: Its filename carries no version, so /releases/latest/download/VERSION.txt would resolve and a snippet could read the current release from it. Rejected because it still leaves the reader making two requests and carrying a shell variable, and a failed fetch leaves that variable empty and builds a nonsense URL. Aliasing the assets removes the variable entirely.
+- `Read the version from the existing changelog.json asset`: It is already published at a version-less path and its first field is the version, so no new asset would be needed. Rejected for the same reason as VERSION.txt, and because parsing it in a copy-paste snippet needs jq, which is not reliably present, or a brittle grep of JSON.
+- `Publish only version-less names and drop the versioned ones`: Homebrew, AUR, WinGet and Scoop all reference the versioned filenames, and anyone pinning a release depends on them. Publishing both costs duplicate assets and nothing else.
 - `Use the macros plugin with its default double-brace delimiters`: The documentation shows Ansible and Taskfile snippets whose literal Jinja must survive to the reader. Default delimiters would evaluate them and silently corrupt working examples.
