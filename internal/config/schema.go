@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -140,7 +141,32 @@ func ConfigJSONSchema() map[string]any {
 	}
 }
 
-// ValidateConfigYAML validates YAML bytes against the configuration JSON schema.
+var getCompiledConfigSchema = sync.OnceValue(func() *jsonschema.Schema {
+	var schemaDoc any
+	schemaBytes, err := json.Marshal(ConfigJSONSchema())
+	if err != nil {
+		panic(fmt.Sprintf("failed to serialize builtin config schema: %v", err))
+	}
+	if err := json.Unmarshal(schemaBytes, &schemaDoc); err != nil {
+		panic(fmt.Sprintf("failed to parse builtin config schema: %v", err))
+	}
+
+	compiler := jsonschema.NewCompiler()
+	schemaURL := "config.schema.json"
+	if err := compiler.AddResource(schemaURL, schemaDoc); err != nil {
+		panic(fmt.Sprintf("failed to register builtin config schema: %v", err))
+	}
+
+	compiled, err := compiler.Compile(schemaURL)
+	if err != nil {
+		panic(fmt.Sprintf("failed to compile builtin config schema: %v", err))
+	}
+
+	return compiled
+})
+
+// ValidateConfigYAML validates raw YAML bytes against the configuration JSON Schema.
+// Returns nil if the configuration satisfies the schema, or a KindValidation error if it does not.
 func ValidateConfigYAML(rawYAML []byte) error {
 	trimmed := bytes.TrimSpace(rawYAML)
 	if len(trimmed) == 0 {
@@ -166,27 +192,8 @@ func ValidateConfigYAML(rawYAML []byte) error {
 		return apperrors.New(apperrors.KindValidation, "failed to decode configuration for schema validation", err)
 	}
 
-	var schemaDoc any
-	schemaBytes, err := json.Marshal(ConfigJSONSchema())
-	if err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to serialize configuration schema", err)
-	}
-	if err := json.Unmarshal(schemaBytes, &schemaDoc); err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to parse configuration schema", err)
-	}
-
-	compiler := jsonschema.NewCompiler()
-	schemaURL := "config.schema.json"
-	if err := compiler.AddResource(schemaURL, schemaDoc); err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to register configuration schema", err)
-	}
-
-	compiled, err := compiler.Compile(schemaURL)
-	if err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to compile configuration schema", err)
-	}
-
-	if err := compiled.Validate(data); err != nil {
+	schema := getCompiledConfigSchema()
+	if err := schema.Validate(data); err != nil {
 		return apperrors.New(apperrors.KindValidation, fmt.Sprintf("configuration does not match schema: %v", err), err)
 	}
 

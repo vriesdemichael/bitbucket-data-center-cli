@@ -1798,3 +1798,230 @@ func TestLoadSystemConfigRejectsSchemaViolations(t *testing.T) {
 		t.Fatalf("unexpected error message: %v", err)
 	}
 }
+
+func TestLoadFromEnvPolicyError(t *testing.T) {
+	tempDir := t.TempDir()
+	sysPath := filepath.Join(tempDir, "invalid.yaml")
+	if err := os.WriteFile(sysPath, []byte("policy:\n  require_keyring: [broken"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+
+	_, err := LoadFromEnv()
+	if err == nil {
+		t.Fatal("expected LoadFromEnv to fail when policy loading fails")
+	}
+}
+
+func TestLoadFromEnvSystemCAFile(t *testing.T) {
+	tempDir := t.TempDir()
+	sysPath := filepath.Join(tempDir, "sys.yaml")
+	caPath := filepath.Join(tempDir, "sys-ca.crt")
+	if err := os.WriteFile(caPath, []byte("-----BEGIN CERTIFICATE-----\nfake\n-----END CERTIFICATE-----\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(sysPath, []byte(fmt.Sprintf("ca_file: %q\n", filepath.ToSlash(caPath))), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+	t.Setenv("BB_CA_FILE", "")
+	t.Setenv("BITBUCKET_URL", "https://bb.example.local")
+
+	cfg, err := LoadFromEnv()
+	if err != nil {
+		t.Fatalf("LoadFromEnv failed: %v", err)
+	}
+	if filepath.Clean(cfg.CAFile) != filepath.Clean(caPath) {
+		t.Fatalf("expected ca_file from system config %s, got %s", caPath, cfg.CAFile)
+	}
+}
+
+func TestLoadFromEnvWorkspaceCredentials(t *testing.T) {
+	tempDir := t.TempDir()
+	wsPath := filepath.Join(tempDir, "workspace.yaml")
+	wsYAML := `
+hosts:
+  https://bb.example.local:
+    url: https://bb.example.local
+    username: ws-user
+`
+	if err := os.WriteFile(wsPath, []byte(wsYAML), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BB_WORKSPACE_CONFIG_PATH", wsPath)
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user-empty.yaml"))
+	t.Setenv("BITBUCKET_URL", "https://bb.example.local")
+	t.Setenv("BITBUCKET_TOKEN", "test-token")
+	t.Setenv("BITBUCKET_USERNAME", "")
+	t.Setenv("BITBUCKET_USER", "")
+	t.Setenv("ADMIN_USER", "")
+	t.Setenv("BITBUCKET_PASSWORD", "")
+	t.Setenv("ADMIN_PASSWORD", "")
+
+	cfg, err := LoadFromEnv()
+	if err != nil {
+		t.Fatalf("LoadFromEnv failed: %v", err)
+	}
+	if cfg.BitbucketUsername != "ws-user" {
+		t.Fatalf("expected ws-user username from workspace, got %s", cfg.BitbucketUsername)
+	}
+}
+
+func TestSaveLoginPolicyAllowedHostsRejection(t *testing.T) {
+	tempDir := t.TempDir()
+	sysPath := filepath.Join(tempDir, "sys.yaml")
+	if err := os.WriteFile(sysPath, []byte("allowed_hosts:\n  - https://allowed.internal\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+
+	_, err := SaveLogin(LoginInput{
+		Host:     "https://disallowed.internal",
+		Username: "admin",
+		Token:    "secret",
+	})
+	if err == nil {
+		t.Fatal("expected SaveLogin to reject disallowed host")
+	}
+	if !apperrors.IsKind(err, apperrors.KindAuthorization) {
+		t.Fatalf("expected KindAuthorization, got %v", err)
+	}
+}
+
+func TestSaveLoginPolicyError(t *testing.T) {
+	tempDir := t.TempDir()
+	sysPath := filepath.Join(tempDir, "invalid.yaml")
+	if err := os.WriteFile(sysPath, []byte("policies: [invalid"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+
+	_, err := SaveLogin(LoginInput{
+		Host:     "https://bb.internal",
+		Username: "admin",
+		Token:    "secret",
+	})
+	if err == nil {
+		t.Fatal("expected SaveLogin to fail on policy error")
+	}
+}
+
+func TestSystemConfigPathDefault(t *testing.T) {
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", "")
+	p, err := SystemConfigPath()
+	if err != nil {
+		t.Fatalf("SystemConfigPath error: %v", err)
+	}
+	if p == "" {
+		t.Fatal("expected non-empty system config path")
+	}
+}
+
+func TestWorkspaceConfigPathDiscovery(t *testing.T) {
+	tempDir := t.TempDir()
+	bbDir := filepath.Join(tempDir, ".bb")
+	if err := os.MkdirAll(bbDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cfgFile := filepath.Join(bbDir, "config.yaml")
+	if err := os.WriteFile(cfgFile, []byte("default_host: https://bb.local\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("BB_WORKSPACE_CONFIG_PATH", cfgFile)
+	found, err := WorkspaceConfigPath()
+	if err != nil || found != cfgFile {
+		t.Fatalf("expected %s, got %s, err: %v", cfgFile, found, err)
+	}
+}
+
+func TestMergePolicyAllFields(t *testing.T) {
+	tr := true
+	fl := false
+	p1 := PolicyConfig{}
+	p2 := PolicyConfig{
+		RequireKeyring:          &tr,
+		CAFile:                  "/ca.crt",
+		AllowedHosts:            []string{"https://bb.local"},
+		AllowInsecureSkipVerify: &fl,
+		DisableUpdate:           &tr,
+		UpdateBaseURL:           "https://mirror.local",
+	}
+
+	mergePolicy(&p1, p2)
+	if p1.RequireKeyring == nil || !*p1.RequireKeyring {
+		t.Errorf("RequireKeyring not merged")
+	}
+	if p1.CAFile != "/ca.crt" {
+		t.Errorf("CAFile not merged")
+	}
+	if len(p1.AllowedHosts) != 1 || p1.AllowedHosts[0] != "https://bb.local" {
+		t.Errorf("AllowedHosts not merged")
+	}
+	if p1.AllowInsecureSkipVerify == nil || *p1.AllowInsecureSkipVerify {
+		t.Errorf("AllowInsecureSkipVerify not merged")
+	}
+	if p1.DisableUpdate == nil || !*p1.DisableUpdate {
+		t.Errorf("DisableUpdate not merged")
+	}
+	if p1.UpdateBaseURL != "https://mirror.local" {
+		t.Errorf("UpdateBaseURL not merged")
+	}
+}
+
+func TestIsHostAllowedEdgeCases(t *testing.T) {
+	if !IsHostAllowed("https://bb.local", nil) {
+		t.Error("nil allowed hosts should allow all")
+	}
+	if !IsHostAllowed("https://bb.local", []string{}) {
+		t.Error("empty allowed hosts should allow all")
+	}
+	if IsHostAllowed("https://bb.local", []string{"", "   ", "https://other.local"}) {
+		t.Error("whitespace and other host should not match bb.local")
+	}
+	if !IsHostAllowed("https://bb.local", []string{"bb.local"}) {
+		t.Error("hostname without scheme should match")
+	}
+}
+
+func TestResolveUpdateBaseURLPoliciesVariants(t *testing.T) {
+	tempDir := t.TempDir()
+	sysPath := filepath.Join(tempDir, "sys.yaml")
+
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+	t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(tempDir, "ws.yaml"))
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+	t.Setenv("BB_UPDATE_BASE_URL", "")
+
+	// 1. In policies block
+	if err := os.WriteFile(sysPath, []byte("policies:\n  update_base_url: https://policies-mirror.local\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	url, err := ResolveUpdateBaseURL("")
+	if err != nil || url != "https://policies-mirror.local" {
+		t.Fatalf("expected policies-mirror, got %s, err: %v", url, err)
+	}
+
+	// 2. In policy singular block
+	if err := os.WriteFile(sysPath, []byte("policy:\n  update_base_url: https://policy-singular-mirror.local\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	url, err = ResolveUpdateBaseURL("")
+	if err != nil || url != "https://policy-singular-mirror.local" {
+		t.Fatalf("expected policy-singular-mirror, got %s, err: %v", url, err)
+	}
+
+	// 3. Error on invalid URL
+	_, err = ResolveUpdateBaseURL(":\x7finvalid")
+	if err == nil {
+		t.Fatal("expected error on invalid URL")
+	}
+}
+
+func TestValidateConfigYAMLCommentsOnly(t *testing.T) {
+	err := ValidateConfigYAML([]byte("# just a comment\n# another comment\n"))
+	if err != nil {
+		t.Fatalf("comments-only YAML should be valid, got: %v", err)
+	}
+}

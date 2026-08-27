@@ -11,6 +11,12 @@ import (
 
 const registryPolicyKey = `Software\Policies\bb`
 
+type registryReader interface {
+	GetIntegerValue(name string) (uint64, uint32, error)
+	GetStringValue(name string) (string, uint32, error)
+	GetStringsValue(name string) ([]string, uint32, error)
+}
+
 func loadPlatformPolicy() PolicyConfig {
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, registryPolicyKey, registry.QUERY_VALUE)
 	if err != nil {
@@ -18,6 +24,10 @@ func loadPlatformPolicy() PolicyConfig {
 	}
 	defer k.Close()
 
+	return parseRegistryPolicy(k)
+}
+
+func parseRegistryPolicy(k registryReader) PolicyConfig {
 	var policy PolicyConfig
 
 	if val, _, err := k.GetIntegerValue("RequireKeyring"); err == nil {

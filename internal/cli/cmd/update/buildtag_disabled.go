@@ -2,4 +2,4 @@
 
 package updatecmd
 
-const BuildDisablesSelfUpdate = true
+var BuildDisablesSelfUpdate = true
