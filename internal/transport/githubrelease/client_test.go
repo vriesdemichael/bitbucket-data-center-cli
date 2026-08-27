@@ -2,6 +2,7 @@ package githubrelease
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -196,4 +197,64 @@ func (errReadCloser) Read([]byte) (int, error) {
 
 func (errReadCloser) Close() error {
 	return nil
+}
+
+func TestClientMirrorFallback(t *testing.T) {
+	// Server responds 404 to /repos/o/r/releases/latest, but 200 to /releases/latest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/owner/repo/releases/latest":
+			http.NotFound(w, r)
+		case "/releases/latest":
+			_ = json.NewEncoder(w).Encode(Release{TagName: "v2.0.0", HTMLURL: "https://mirror/release"})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, server.Client(), "test-agent")
+	rel, err := client.Latest(context.Background(), "owner", "repo")
+	if err != nil {
+		t.Fatalf("expected fallback to succeed, got: %v", err)
+	}
+	if rel.TagName != "v2.0.0" {
+		t.Fatalf("expected v2.0.0, got: %s", rel.TagName)
+	}
+}
+
+func TestClientDownloadRelativeAndMirrorFallback(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/assets/bb_linux_amd64.tar.gz":
+			w.Header().Set("Content-Type", "application/octet-stream")
+			_, _ = w.Write([]byte("binary-content"))
+		case "/bb_linux_amd64.tar.gz":
+			w.Header().Set("Content-Type", "application/octet-stream")
+			_, _ = w.Write([]byte("mirror-fallback-content"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, server.Client(), "test-agent")
+
+	// 1. Relative URL resolves against mirror baseURL
+	data, err := client.Download(context.Background(), "/assets/bb_linux_amd64.tar.gz")
+	if err != nil {
+		t.Fatalf("download relative: %v", err)
+	}
+	if string(data) != "binary-content" {
+		t.Fatalf("unexpected content: %s", string(data))
+	}
+
+	// 2. Firewalled / failed external github.com URL falls back to mirror baseURL/{assetName}
+	data2, err := client.Download(context.Background(), "https://unreachable-github.test/releases/download/v1.0.0/bb_linux_amd64.tar.gz")
+	if err != nil {
+		t.Fatalf("download fallback: %v", err)
+	}
+	if string(data2) != "mirror-fallback-content" {
+		t.Fatalf("unexpected content from fallback: %s", string(data2))
+	}
 }

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -72,7 +74,21 @@ func (client *Client) Latest(ctx context.Context, owner, repo string) (Release, 
 	requestURL := fmt.Sprintf("%s/repos/%s/%s/releases/latest", client.baseURL, owner, repo)
 
 	var release Release
-	if err := client.do(ctx, http.MethodGet, requestURL, &release); err != nil {
+	err := client.do(ctx, http.MethodGet, requestURL, &release)
+	if err != nil {
+		if apperrors.IsKind(err, apperrors.KindNotFound) && client.baseURL != defaultBaseURL {
+			// Fallback paths on custom mirrors (e.g. Artifactory / Nexus endpoints)
+			fallbackURLs := []string{
+				fmt.Sprintf("%s/releases/latest", client.baseURL),
+				fmt.Sprintf("%s/latest", client.baseURL),
+			}
+			for _, fallbackURL := range fallbackURLs {
+				var fallbackRelease Release
+				if fbErr := client.do(ctx, http.MethodGet, fallbackURL, &fallbackRelease); fbErr == nil && fallbackRelease.TagName != "" {
+					return fallbackRelease, nil
+				}
+			}
+		}
 		return Release{}, err
 	}
 
@@ -89,6 +105,32 @@ func (client *Client) Download(ctx context.Context, assetURL string) ([]byte, er
 		return nil, apperrors.New(apperrors.KindValidation, "asset URL is required", nil)
 	}
 
+	// Resolve relative URLs against baseURL
+	parsed, parseErr := url.Parse(resolvedURL)
+	if parseErr == nil && parsed.Scheme == "" {
+		baseURLParsed, baseErr := url.Parse(client.baseURL)
+		if baseErr == nil {
+			resolvedURL = baseURLParsed.ResolveReference(parsed).String()
+		}
+	}
+
+	body, err := client.fetchAsset(ctx, resolvedURL)
+	if err != nil && client.baseURL != defaultBaseURL {
+		// If custom mirror is configured and fetching from the asset's URL failed
+		// (e.g. firewalled github.com URL from mirrored manifest), try fetching from the mirror directly
+		assetName := path.Base(resolvedURL)
+		if assetName != "" && assetName != "." && assetName != "/" {
+			mirrorFallbackURL := fmt.Sprintf("%s/%s", client.baseURL, assetName)
+			if mirrorBody, mirrorErr := client.fetchAsset(ctx, mirrorFallbackURL); mirrorErr == nil {
+				return mirrorBody, nil
+			}
+		}
+	}
+
+	return body, err
+}
+
+func (client *Client) fetchAsset(ctx context.Context, resolvedURL string) ([]byte, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, resolvedURL, nil)
 	if err != nil {
 		return nil, apperrors.New(apperrors.KindInternal, "failed to build release download request", err)

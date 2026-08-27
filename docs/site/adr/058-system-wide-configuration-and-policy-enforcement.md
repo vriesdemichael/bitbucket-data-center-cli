@@ -1,0 +1,57 @@
+# ADR 058: System-wide configuration and administrative policy enforcement
+
+This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
+
+- Number: `058`
+- Title: `System-wide configuration and administrative policy enforcement`
+- Category: `architecture`
+- Status: `accepted`
+- Provenance: `guided-ai`
+- Source: `docs/decisions/058-system-wide-configuration-and-policy-enforcement.yaml`
+
+## Decision
+
+Establish a multi-tiered configuration hierarchy and machine-level administrative policy enforcement for enterprise fleet management across Linux, macOS, and Windows.
+1. Multi-Tiered Precedence: CLI Flags > Environment Variables > Workspace Configuration
+   (`.bb/config.yaml`) > User Configuration (`~/.config/bb/config.yaml` or `%APPDATA%\bb\config.yaml`) >
+   System Configuration (`/etc/bb/config.yaml` or `%ProgramData%\bb\config.yaml`) > Built-in Defaults.
+   Workspace configuration is located by traversing up from the working directory towards the repository
+   root (`.git` or `go.mod`). Environment variables `BB_SYSTEM_CONFIG_PATH` and `BB_WORKSPACE_CONFIG_PATH`
+   allow deterministic overriding in tests and automation.
+
+2. Administrative Policy Invariants: System administrators can mandate security policies either via
+   system configuration YAML (`/etc/bb/config.yaml` or `%ProgramData%\bb\config.yaml`) or native Windows
+   Registry policy keys (`HKLM\Software\Policies\bb`). These policies take immutable precedence over
+   user and workspace configurations:
+   - `require_keyring: true`: Mandates OS keyring-backed credential storage machine-wide. Refuses fallback
+      to plaintext config storage. Unsetting user environment variables cannot bypass this policy. If
+      `BB_REQUIRE_KEYRING=0` is passed in user environment, a warning is printed to stderr and policy
+      remains enforced.
+   - `ca_file: <path>`: Mandates a corporate Root CA bundle. Defaulting to this CA when unspecified, and
+      rejecting user attempts to supply a conflicting CA file.
+   - `allowed_hosts: [...]`: Whitelists permitted Bitbucket Server / Data Center instances by URL or
+      hostname. Connection attempts and login storage for unlisted hosts are rejected.
+   - `allow_insecure_skip_verify: false`: Prohibits disabling TLS verification. Any attempt to pass
+      `--insecure-skip-verify` or `BB_INSECURE_SKIP_VERIFY=true` is rejected.
+
+3. Schema Validation: All configuration files (`/etc/bb/config.yaml`, `%ProgramData%\bb\config.yaml`,
+   `.bb/config.yaml`, and user config) are validated against a versioned JSON Schema (`config.schema.json`)
+   exported to `docs/reference/schemas/` to ensure syntax, types, and supported properties are strictly checked.
+
+4. Error Handling Contract: All administrative policy violations are classified as `KindAuthorization`
+   (exit code 3) or `KindPermanent` (exit code 1 for storage policy) with actionable guidance indicating
+   that settings are governed by administrative policy.
+
+## Agent Instructions
+
+When evaluating configuration and options, always adhere to the 6-tier hierarchy (Flags > Env > Workspace > User > System > Defaults). Enforce administrative policies unconditionally before executing network or credential operations. Policy refusal errors must return KindAuthorization or KindPermanent with descriptive, actionable explanations.
+
+## Rationale
+
+In enterprise deployments, IT security teams require authoritative control over CLI behavior across workstations and CI/CD agents. Previously, configuration was loaded strictly from the environment or the user's home directory (`~/.config/bb/config.yaml`), allowing operators to bypass corporate CA bundles, disable TLS verification via `BB_INSECURE_SKIP_VERIFY=true`, or store credentials insecurely when the OS keyring failed.
+By supporting system-wide configuration (`/etc/bb/config.yaml`, `%ProgramData%\bb\config.yaml`) and Windows Group Policy (`HKLM\Software\Policies\bb`), organizations deploying via Ansible, Jamf, Intune, or GPO can enforce non-negotiable security postures without interfering with team-level workspace settings or user convenience profiles.
+
+## Rejected Alternatives
+
+- `Only support environment variables for policy overrides`: Environment variables can be easily overwritten or unset by unprivileged users in user-space shells, defeating fleet-wide security enforcement.
+- `Rely exclusively on system-level configuration files without Windows Registry support`: Windows enterprise fleet management relies heavily on Group Policy Objects (GPO) and Intune CSPs targeting HKLM\Software\Policies. Restricting policy to flat files would require custom scripting rather than standard GPO.

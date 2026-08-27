@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	githubrelease "github.com/vriesdemichael/bitbucket-server-cli/internal/transport/githubrelease"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/network"
@@ -24,6 +25,7 @@ const defaultUpdateRequestTimeout = 20 * time.Second
 type UpdateCommandHTTPConfig struct {
 	RequestTimeout time.Duration
 	TLSOptions     network.TLSOptions
+	UpdateBaseURL  string
 }
 
 var UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
@@ -32,8 +34,13 @@ var UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfi
 		transport = &network.SafeTransport{}
 	}
 
+	baseURL := strings.TrimSpace(httpConfig.UpdateBaseURL)
+	if baseURL == "" {
+		baseURL = "https://api.github.com"
+	}
+
 	client := githubrelease.NewClient(
-		"https://api.github.com",
+		baseURL,
 		&http.Client{Timeout: httpConfig.RequestTimeout, Transport: transport},
 		fmt.Sprintf("bb/%s", strings.TrimSpace(version)),
 	)
@@ -48,7 +55,7 @@ var UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfi
 	})
 }
 
-func LoadUpdateCommandHTTPConfig() (UpdateCommandHTTPConfig, error) {
+func LoadUpdateCommandHTTPConfig(optionalBaseURL ...string) (UpdateCommandHTTPConfig, error) {
 	requestTimeout := defaultUpdateRequestTimeout
 	if raw := strings.TrimSpace(os.Getenv("BB_REQUEST_TIMEOUT")); raw != "" {
 		parsed, err := time.ParseDuration(raw)
@@ -70,12 +77,22 @@ func LoadUpdateCommandHTTPConfig() (UpdateCommandHTTPConfig, error) {
 		insecureSkipVerify = parsed
 	}
 
+	flagVal := ""
+	if len(optionalBaseURL) > 0 {
+		flagVal = optionalBaseURL[0]
+	}
+	baseURL, err := config.ResolveUpdateBaseURL(flagVal)
+	if err != nil {
+		return UpdateCommandHTTPConfig{}, err
+	}
+
 	return UpdateCommandHTTPConfig{
 		RequestTimeout: requestTimeout,
 		TLSOptions: network.TLSOptions{
 			CAFile:             strings.TrimSpace(os.Getenv("BB_CA_FILE")),
 			InsecureSkipVerify: insecureSkipVerify,
 		},
+		UpdateBaseURL: baseURL,
 	}, nil
 }
 
@@ -102,13 +119,24 @@ func (d Dependencies) withDefaults() Dependencies {
 
 func New(deps Dependencies) *cobra.Command {
 	d := deps.withDefaults()
+	var baseURL string
 
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Check for and install the latest bb release",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			httpConfig, err := LoadUpdateCommandHTTPConfig()
+			if BuildDisablesSelfUpdate {
+				return apperrors.New(apperrors.KindAuthorization, "self-update is disabled in this build; update bb using your system package manager", nil)
+			}
+
+			if disabled, msg, err := config.IsUpdateDisabled(); err != nil {
+				return err
+			} else if disabled {
+				return apperrors.New(apperrors.KindAuthorization, msg, nil)
+			}
+
+			httpConfig, err := LoadUpdateCommandHTTPConfig(baseURL)
 			if err != nil {
 				return err
 			}
@@ -127,6 +155,10 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&baseURL, "base-url", "", "Custom release mirror base URL")
+
+	return cmd
 }
 
 func writeUpdateHuman(cmd *cobra.Command, result updateworkflow.Result) {

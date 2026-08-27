@@ -1,0 +1,74 @@
+//go:build windows
+
+package config
+
+import (
+	"strconv"
+	"strings"
+
+	"golang.org/x/sys/windows/registry"
+)
+
+const registryPolicyKey = `Software\Policies\bb`
+
+func loadPlatformPolicy() PolicyConfig {
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, registryPolicyKey, registry.QUERY_VALUE)
+	if err != nil {
+		return PolicyConfig{}
+	}
+	defer k.Close()
+
+	var policy PolicyConfig
+
+	if val, _, err := k.GetIntegerValue("RequireKeyring"); err == nil {
+		b := val != 0
+		policy.RequireKeyring = &b
+	} else if strVal, _, err := k.GetStringValue("RequireKeyring"); err == nil {
+		if b, parseErr := strconv.ParseBool(strings.TrimSpace(strVal)); parseErr == nil {
+			policy.RequireKeyring = &b
+		}
+	}
+
+	if val, _, err := k.GetStringValue("CAFile"); err == nil && strings.TrimSpace(val) != "" {
+		policy.CAFile = strings.TrimSpace(val)
+	}
+
+	if vals, _, err := k.GetStringsValue("AllowedHosts"); err == nil && len(vals) > 0 {
+		policy.AllowedHosts = vals
+	} else if strVal, _, err := k.GetStringValue("AllowedHosts"); err == nil && strings.TrimSpace(strVal) != "" {
+		parts := strings.Split(strVal, ",")
+		cleaned := make([]string, 0, len(parts))
+		for _, p := range parts {
+			if t := strings.TrimSpace(p); t != "" {
+				cleaned = append(cleaned, t)
+			}
+		}
+		if len(cleaned) > 0 {
+			policy.AllowedHosts = cleaned
+		}
+	}
+
+	if val, _, err := k.GetIntegerValue("AllowInsecureSkipVerify"); err == nil {
+		b := val != 0
+		policy.AllowInsecureSkipVerify = &b
+	} else if strVal, _, err := k.GetStringValue("AllowInsecureSkipVerify"); err == nil {
+		if b, parseErr := strconv.ParseBool(strings.TrimSpace(strVal)); parseErr == nil {
+			policy.AllowInsecureSkipVerify = &b
+		}
+	}
+
+	if val, _, err := k.GetIntegerValue("DisableUpdate"); err == nil {
+		b := val != 0
+		policy.DisableUpdate = &b
+	} else if strVal, _, err := k.GetStringValue("DisableUpdate"); err == nil {
+		if b, parseErr := strconv.ParseBool(strings.TrimSpace(strVal)); parseErr == nil {
+			policy.DisableUpdate = &b
+		}
+	}
+
+	if val, _, err := k.GetStringValue("UpdateBaseURL"); err == nil && strings.TrimSpace(val) != "" {
+		policy.UpdateBaseURL = strings.TrimSpace(val)
+	}
+
+	return policy
+}

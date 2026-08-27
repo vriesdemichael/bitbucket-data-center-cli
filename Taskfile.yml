@@ -69,6 +69,12 @@ tasks:
       - cp docs/reference/schemas/bulk-plan.schema.json docs/site/reference/schemas/bulk-plan.schema.json
       - cp docs/reference/schemas/bulk-apply-status.schema.json docs/site/reference/schemas/bulk-apply-status.schema.json
 
+  docs:publish-config-schema:
+    desc: Publish config JSON schema file into MkDocs docs directory
+    cmds:
+      - mkdir -p docs/site/reference/schemas
+      - cp docs/reference/schemas/config.schema.json docs/site/reference/schemas/config.schema.json
+
   docs:publish-output-schemas:
     desc: Publish per-command output JSON schema files into MkDocs docs directory
     cmds:
@@ -82,6 +88,8 @@ tasks:
       - task: docs:export-adr-markdown
       - task: docs:export-bulk-schemas
       - task: docs:publish-bulk-schemas
+      - task: docs:export-config-schema
+      - task: docs:publish-config-schema
       - task: docs:export-output-schemas
       - task: docs:publish-output-schemas
 
@@ -159,6 +167,10 @@ tasks:
   docs:export-bulk-schemas:
     desc: Export JSON Schemas for bulk policy artifacts
     cmd: go run ./tools/bulk-schema-export -out docs/reference/schemas
+
+  docs:export-config-schema:
+    desc: Export JSON Schema for bb configuration and policy files
+    cmd: go run ./tools/config-schema-export -out docs/reference/schemas
 
   docs:export-output-schemas:
     desc: Export per-command JSON output schemas for the bb.machine v2 envelope

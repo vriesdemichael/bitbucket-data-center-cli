@@ -1,0 +1,45 @@
+number: 59
+title: Enterprise update controls and release mirror support
+category: architecture
+status: accepted
+decision: >
+  Provide centralized control over CLI updates for enterprise and air-gapped environments, including
+  update disabling mechanisms and internal release mirror resolution.
+
+  1. Disabling Self-Update:
+     - Runtime Policy: An administrator can disable self-updates machine-wide by setting `disable_update: true`
+       in the system configuration file or by setting `BB_DISABLE_UPDATE=1`. When disabled, `bb update` terminates
+       immediately with exit code 3 (`KindAuthorization`) and the message:
+       `self-update is disabled by administrative policy; update bb using your system package manager`.
+     - Compile-time Tag: Distributions packaged for managed OS repositories (e.g. RPM, DEB, Homebrew, WinGet)
+       can compile with `-tags no_self_update` to eliminate update execution entirely, reporting:
+       `self-update is disabled in this build; update bb using your system package manager`.
+
+  2. Release Mirror Resolution:
+     - The CLI supports querying internal artifact mirrors (such as JFrog Artifactory, Sonatype Nexus, or internal
+       release caches) instead of hardcoding `https://api.github.com`.
+     - Mirror precedence: `--base-url` flag > `BB_UPDATE_BASE_URL` > Workspace Config > User Config > System Config >
+       Default (`https://api.github.com`).
+     - When querying custom mirrors, relative asset URLs are resolved against the configured base URL. In air-gapped
+       networks where release manifests reference firewalled `github.com` URLs, the client falls back to downloading
+       assets directly from `{baseURL}/{assetName}`.
+agent_instructions: >
+  Do not allow `bb update` to execute when `BB_DISABLE_UPDATE=1`, `disable_update: true` is configured in system policy,
+  or when compiled with `-tags no_self_update`. Always resolve release manifests and binary downloads via the
+  configured release mirror base URL when specified.
+rationale: >
+  Enterprise fleets governed by centralized endpoint management (e.g. SCCM, Intune, Munki, Jamf) mandate that
+  software updates be deployed through approved packaging pipelines rather than individual user workstations invoking
+  in-place binary self-updates. Furthermore, air-gapped and high-security enterprise enclaves block outbound access to
+  `api.github.com` and `github.com`, requiring releases, checksums, and Sigstore verification bundles to be mirrored
+  internally.
+rejected_alternatives:
+  - alternative: Remove the update command entirely for all builds
+    reason: >
+      Standalone binary users and developer workstation environments benefit greatly from automated self-updates
+      with Sigstore cryptographic verification. Disabling update must be opt-in per organization or package distribution.
+  - alternative: Only support environment variables for mirror configuration
+    reason: >
+      Fleet administrators need system-wide configuration files to set company-wide mirrors without expecting individual
+      developers to configure shell profiles.
+provenance: guided-ai

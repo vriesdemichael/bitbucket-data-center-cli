@@ -49,13 +49,36 @@ Distinguish between **enforceable technical controls** (which systems engineers 
 
 ### Deployable Fleet Controls
 
-1. **Mandate Keyring Storage**:
+1. **System Configuration and Immutable Administrative Policies ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md))**:
+   Deploy a machine-level configuration file (`/etc/bb/config.yaml` on Linux/macOS, `%ProgramData%\bb\config.yaml` on Windows) or native Windows Registry policy keys (`HKLM\Software\Policies\bb`). Policies defined at this tier are immutable and cannot be overridden by user shell environment variables, user config files, or repository workspace configs:
+   ```yaml
+   # yaml-language-server: $schema=https://raw.githubusercontent.com/vriesdemichael/bitbucket-data-center-cli/main/docs/reference/schemas/config.schema.json
+   $schema: https://raw.githubusercontent.com/vriesdemichael/bitbucket-data-center-cli/main/docs/reference/schemas/config.schema.json
+   require_keyring: true
+   ca_file: /etc/ssl/certs/corp-root-ca.pem
+   allowed_hosts:
+     - https://bitbucket.corp.internal
+   allow_insecure_skip_verify: false
+   disable_update: true
+   update_base_url: https://artifactory.corp.internal/artifactory/bb-releases
+   ```
+   - **JSON Schema Validation**: All configuration files are validated against [`config.schema.json`](../reference/schemas/config.schema.json). Supplying the `$schema` directive enables live linting and autocompletion in VS Code, IntelliJ, and CI pipelines (e.g. `check-jsonschema`).
+   - `require_keyring: true`: Enforces OS keyring storage machine-wide; refuses fallback to plaintext files even if `BB_REQUIRE_KEYRING` is unset or set to `0`. If a user sets `BB_REQUIRE_KEYRING=0`, `bb` outputs an explicit warning to `stderr` and continues enforcing keyring policy.
+   - `ca_file: <path>`: Mandates corporate Root CA bundle. Attempts to pass a conflicting CA file abort with an authorization error.
+   - `allowed_hosts: [...]`: Whitelists permitted Bitbucket Server / Data Center instances. Connection attempts to unlisted hosts abort with an authorization error.
+   - `allow_insecure_skip_verify: false`: Hard-refuses `--insecure-skip-verify` and `BB_INSECURE_SKIP_VERIFY=true`.
+
+2. **Enterprise Update Controls and Release Mirrors ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md))**:
+   - **Disabling In-Place Self-Updates**: On managed corporate machines where software must be installed exclusively through IT package managers (e.g. Jamf, Ansible, Intune, SCCM), disable `bb update` by setting `disable_update: true` in system configuration or `export BB_DISABLE_UPDATE=1`. Alternatively, install builds compiled with `-tags no_self_update`.
+   - **Internal Release Mirrors**: In firewalled or air-gapped enterprise enclaves, configure `bb update` to query internal mirrors (e.g. JFrog Artifactory, Sonatype Nexus) instead of `api.github.com` via `--base-url <url>`, `BB_UPDATE_BASE_URL`, or `update_base_url` in system/user config.
+
+3. **Mandate Keyring Storage (Advisory / User Tier)**:
    ```bash
    export BB_REQUIRE_KEYRING=1
    ```
-   When set, `bb` hard-refuses to read credentials from or write credentials to the plaintext configuration fallback (`~/.config/bb/config.yaml` on Linux, `~/Library/Application Support/bb/config.yaml` on macOS, or `%AppData%\bb\config.yaml` on Windows). Any command that would otherwise rely on plaintext fallback aborts with an error ([ADR-047](../adr/047-credential-input-and-keyring-enforcement.md)).
+   When set in user environments where system policy is not yet deployed, `bb` refuses to read credentials from or write credentials to the plaintext configuration fallback (`~/.config/bb/config.yaml` on Linux, `~/Library/Application Support/bb/config.yaml` on macOS, or `%AppData%\bb\config.yaml` on Windows). Any command that would otherwise rely on plaintext fallback aborts with an error ([ADR-047](../adr/047-credential-input-and-keyring-enforcement.md)).
 
-2. **Configure Host-Scoped Git Credential Helper**:
+4. **Configure Host-Scoped Git Credential Helper**:
    ```bash
    bb auth setup-git
    ```
@@ -66,7 +89,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    ```
    *Note: `bb` writes the absolute executable path into the git configuration.* Git queries `bb` dynamically on demand for that specific host, ensuring zero credentials are ever written into local repository `.git/config` files and credentials are never offered to external remotes ([ADR-044](../adr/044-git-credential-helper-instead-of-persisted-credentials.md)).
 
-3. **Disable Stored Config for Headless CI**:
+5. **Disable Stored Config for Headless CI**:
    ```bash
    export BB_DISABLE_STORED_CONFIG=1
    ```
@@ -96,7 +119,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
 
 ### A. macOS (Jamf Pro / Kandji / Intune)
 
-macOS developer workstations authenticate through the **Apple Keychain** (Security framework). Because macOS defaults to `zsh`, system-wide environment variables belong in `/etc/zshenv`.
+macOS developer workstations authenticate through the **Apple Keychain** (Security framework). Deploy system configuration to `/etc/bb/config.yaml` so that all terminal sessions and GUI applications (like VS Code or Cursor invoking MCP servers) automatically inherit policy without relying on shell environment inheritance:
 
 ```bash
 # 1. Distribute via Homebrew or universal binary
@@ -107,22 +130,25 @@ sudo security add-trusted-cert -d -r trustRoot \
   -k /Library/Keychains/System.keychain \
   /Library/Application\ Support/Corporate/Certs/corp-root-ca.pem
 
-# 3. Deploy Managed Environment (/etc/zshenv)
-# IMPORTANT: BB_CA_FILE must point to a file that already exists on disk.
-sudo tee -a /etc/zshenv >/dev/null <<'EOF'
-export BB_REQUIRE_KEYRING=1
-export BB_CA_FILE="/Library/Application Support/Corporate/Certs/corp-root-ca.pem"
+# 3. Deploy Immutable System Configuration (/etc/bb/config.yaml)
+# Note: Unlike /etc/zshenv, /etc/bb/config.yaml is read directly by bb in GUI IDEs as well.
+sudo mkdir -p /etc/bb
+sudo tee /etc/bb/config.yaml >/dev/null <<'EOF'
+require_keyring: true
+ca_file: /Library/Application Support/Corporate/Certs/corp-root-ca.pem
+allowed_hosts:
+  - https://bitbucket.corp.internal
+allow_insecure_skip_verify: false
+disable_update: true
 EOF
+sudo chmod 644 /etc/bb/config.yaml
 ```
-
-!!! warning "GUI Applications and Environment Variables"
-    macOS GUI applications (such as VS Code or Cursor) do not inherit environment variables from `/etc/zshenv` or `/etc/profile.d/`. When configuring IDE MCP servers, provide `BB_CA_FILE` directly in the IDE settings `"env"` block.
 
 ---
 
 ### B. Linux Workstations (Ansible)
 
-Linux workstations authenticate through the **Secret Service API over D-Bus** (GNOME Keyring / KWallet).
+Linux workstations authenticate through the **Secret Service API over D-Bus** (GNOME Keyring / KWallet). Deploy `/etc/bb/config.yaml` to enforce security postures across all local users:
 
 ```yaml
 - name: Deploy and harden bb across Linux workstations
@@ -151,20 +177,27 @@ Linux workstations authenticate through the **Secret Service API over D-Bus** (G
         deb: "/tmp/bb_{{ bb_version }}_linux_amd64.deb"
       when: ansible_os_family == "Debian"
 
-    - name: Configure system-wide environment variables
+    - name: Deploy system-wide policy configuration
       copy:
-        dest: /etc/profile.d/bb.sh
+        dest: /etc/bb/config.yaml
+        owner: root
+        group: root
         mode: '0644'
         content: |
-          export BB_REQUIRE_KEYRING=1
-          export BB_CA_FILE=/etc/ssl/certs/corp-root-ca.pem
+          require_keyring: true
+          ca_file: /etc/ssl/certs/corp-root-ca.pem
+          allowed_hosts:
+            - https://bitbucket.corp.internal
+          allow_insecure_skip_verify: false
+          disable_update: true
+          update_base_url: https://artifactory.corp.internal/artifactory/bb-releases
 ```
 
 ---
 
-### C. Windows Workstations (Microsoft Intune / PowerShell)
+### C. Windows Workstations (Microsoft Intune / PowerShell / GPO)
 
-Windows workstations authenticate through **Windows Credential Manager** (DPAPI).
+Windows workstations authenticate through **Windows Credential Manager** (DPAPI). Administrators can deploy system configuration via `%ProgramData%\bb\config.yaml` or through native Windows Group Policy / Intune CSP targeting the Windows Registry (`HKLM\Software\Policies\bb`):
 
 ```powershell
 # Run as Administrator via Intune or administrative PowerShell
@@ -178,10 +211,27 @@ $CertDir = "C:\ProgramData\Corporate\Certs"
 New-Item -ItemType Directory -Force -Path $CertDir | Out-Null
 Copy-Item ".\corp-root-ca.pem" -Destination "$CertDir\corp-root-ca.pem"
 
-# 3. Configure Machine-Level Environment Variables
-# IMPORTANT: BB_CA_FILE must exist before setting the variable.
-[Environment]::SetEnvironmentVariable("BB_REQUIRE_KEYRING", "1", "Machine")
-[Environment]::SetEnvironmentVariable("BB_CA_FILE", "$CertDir\corp-root-ca.pem", "Machine")
+# 3. Option A: Deploy System Configuration File (%ProgramData%\bb\config.yaml)
+$ConfigDir = "C:\ProgramData\bb"
+New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
+@"
+require_keyring: true
+ca_file: $CertDir\corp-root-ca.pem
+allowed_hosts:
+  - https://bitbucket.corp.internal
+allow_insecure_skip_verify: false
+disable_update: true
+update_base_url: https://artifactory.corp.internal/artifactory/bb-releases
+"@ | Set-Content -Path "$ConfigDir\config.yaml" -Encoding UTF8
+
+# 4. Option B: Native Windows Registry GPO Policies (HKLM\Software\Policies\bb)
+$RegPath = "HKLM:\Software\Policies\bb"
+if (!(Test-Path $RegPath)) { New-Item -Path $RegPath -Force | Out-Null }
+Set-ItemProperty -Path $RegPath -Name "RequireKeyring" -Value 1 -Type DWord
+Set-ItemProperty -Path $RegPath -Name "CAFile" -Value "$CertDir\corp-root-ca.pem" -Type String
+Set-ItemProperty -Path $RegPath -Name "AllowedHosts" -Value "https://bitbucket.corp.internal" -Type String
+Set-ItemProperty -Path $RegPath -Name "AllowInsecureSkipVerify" -Value 0 -Type DWord
+Set-ItemProperty -Path $RegPath -Name "DisableUpdate" -Value 1 -Type DWord
 ```
 
 ---
@@ -318,6 +368,10 @@ Confirm:
 | `OS keyring is unavailable and keyring-backed storage is required` | Running on a headless Linux host or remote SSH session without an active D-Bus session bus. | Launch a temporary D-Bus session: `eval $(dbus-launch --sh-syntax)` or supply credentials via `BITBUCKET_TOKEN`. |
 | Git prompts for password on `git push`/`git pull` | Git credential helper is not scoped to the exact URL or scheme used by the remote. | Run `git remote -v` and configure: `bb auth setup-git --host <remote-url>`. |
 | `certificate signed by unknown authority` | `BB_CA_FILE` is not set, or a GUI IDE failed to inherit shell environment variables. | Set `BB_CA_FILE` in the IDE's `"env"` block or export it in `/etc/zshenv` / `/etc/profile.d/bb.sh`. |
+| `host "..." is not permitted by administrative policy` | Target Bitbucket instance is not listed in `allowed_hosts` in system configuration or registry policy. | Connect only to approved corporate hosts, or request security to add the instance to `allowed_hosts`. |
+| `insecure TLS verification is disabled by administrative policy` | Attempted `--insecure-skip-verify` when prohibited by `allow_insecure_skip_verify: false` in system policy. | Configure the corporate CA certificate rather than disabling TLS verification. |
+| `overriding CA bundle is disabled by administrative policy` | Attempted to override mandated corporate CA bundle with a conflicting custom certificate. | Remove user-level `BB_CA_FILE` override and use the mandated corporate CA. |
+| `self-update is disabled by administrative policy` | Self-update is disabled machine-wide (`disable_update: true` or `BB_DISABLE_UPDATE=1`). | Update `bb` through your IT system package manager (`apt`, `dnf`, `brew`, `winget`). |
 
 ---
 

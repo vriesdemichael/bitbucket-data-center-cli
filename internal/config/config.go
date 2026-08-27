@@ -2,9 +2,11 @@ package config
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -57,6 +59,58 @@ type StoredConfig struct {
 	DefaultHost     string                   `yaml:"default_host,omitempty"`
 	Hosts           map[string]StoredProfile `yaml:"hosts,omitempty"`
 	InsecureSecrets map[string]StoredSecret  `yaml:"insecure_secrets,omitempty"`
+	UpdateBaseURL   string                   `yaml:"update_base_url,omitempty"`
+}
+
+type PolicyConfig struct {
+	RequireKeyring          *bool    `yaml:"require_keyring,omitempty"`
+	CAFile                  string   `yaml:"ca_file,omitempty"`
+	AllowedHosts            []string `yaml:"allowed_hosts,omitempty"`
+	AllowInsecureSkipVerify *bool    `yaml:"allow_insecure_skip_verify,omitempty"`
+	DisableUpdate           *bool    `yaml:"disable_update,omitempty"`
+	UpdateBaseURL           string   `yaml:"update_base_url,omitempty"`
+}
+
+type SystemConfigFile struct {
+	DefaultHost             string                   `yaml:"default_host,omitempty"`
+	ProjectKey              string                   `yaml:"project_key,omitempty"`
+	Hosts                   map[string]StoredProfile `yaml:"hosts,omitempty"`
+	InsecureSecrets         map[string]StoredSecret  `yaml:"insecure_secrets,omitempty"`
+	RequireKeyring          *bool                    `yaml:"require_keyring,omitempty"`
+	CAFile                  string                   `yaml:"ca_file,omitempty"`
+	AllowedHosts            []string                 `yaml:"allowed_hosts,omitempty"`
+	AllowInsecureSkipVerify *bool                    `yaml:"allow_insecure_skip_verify,omitempty"`
+	DisableUpdate           *bool                    `yaml:"disable_update,omitempty"`
+	UpdateBaseURL           string                   `yaml:"update_base_url,omitempty"`
+	Policies                *PolicyConfig            `yaml:"policies,omitempty"`
+	Policy                  *PolicyConfig            `yaml:"policy,omitempty"`
+}
+
+func (sys SystemConfigFile) StoredConfig() StoredConfig {
+	return StoredConfig{
+		DefaultHost:     sys.DefaultHost,
+		Hosts:           sys.Hosts,
+		InsecureSecrets: sys.InsecureSecrets,
+		UpdateBaseURL:   sys.UpdateBaseURL,
+	}
+}
+
+func (sys SystemConfigFile) PolicyConfig() PolicyConfig {
+	return PolicyConfig{
+		RequireKeyring:          sys.RequireKeyring,
+		CAFile:                  sys.CAFile,
+		AllowedHosts:            sys.AllowedHosts,
+		AllowInsecureSkipVerify: sys.AllowInsecureSkipVerify,
+		DisableUpdate:           sys.DisableUpdate,
+		UpdateBaseURL:           sys.UpdateBaseURL,
+	}
+}
+
+type WorkspaceConfigFile struct {
+	DefaultHost   string                   `yaml:"default_host,omitempty"`
+	ProjectKey    string                   `yaml:"project_key,omitempty"`
+	Hosts         map[string]StoredProfile `yaml:"hosts,omitempty"`
+	UpdateBaseURL string                   `yaml:"update_base_url,omitempty"`
 }
 
 type StoredProfile struct {
@@ -105,11 +159,22 @@ type AliasMatch struct {
 
 func LoadFromEnv() (AppConfig, error) {
 	loadDotEnv()
+
+	policy, err := LoadPolicy()
+	if err != nil {
+		return AppConfig{}, err
+	}
+
+	sysConfig, _ := LoadSystemConfig()
+	workspaceConfig, _ := LoadWorkspaceConfig()
 	storedConfig, _ := LoadStoredConfig()
 
 	insecureSkipVerify, err := envBoolOrDefault("BB_INSECURE_SKIP_VERIFY", false)
 	if err != nil {
 		return AppConfig{}, apperrors.New(apperrors.KindValidation, "BB_INSECURE_SKIP_VERIFY must be a boolean", err)
+	}
+	if policy.AllowInsecureSkipVerify != nil && !*policy.AllowInsecureSkipVerify && insecureSkipVerify {
+		return AppConfig{}, apperrors.New(apperrors.KindAuthorization, "insecure TLS verification is disabled by administrative policy", nil)
 	}
 
 	requestTimeout, err := envDurationOrDefault("BB_REQUEST_TIMEOUT", defaultRequestTimeout)
@@ -145,23 +210,56 @@ func LoadFromEnv() (AppConfig, error) {
 	resolvedURL := ""
 	if envHost != "" {
 		resolvedURL = normalizeURL(envHost)
+	} else if workspaceConfig.DefaultHost != "" {
+		resolvedURL = resolveDefaultHostURL(workspaceConfig.DefaultHost, workspaceConfig.Hosts, storedConfig.Hosts, sysConfig.Hosts)
 	} else if storedConfig.DefaultHost != "" {
-		if profile, ok := storedConfig.Hosts[storedConfig.DefaultHost]; ok {
-			resolvedURL = normalizeURL(profile.URL)
-		}
+		resolvedURL = resolveDefaultHostURL(storedConfig.DefaultHost, storedConfig.Hosts, sysConfig.Hosts, workspaceConfig.Hosts)
+	} else if sysConfig.DefaultHost != "" {
+		resolvedURL = resolveDefaultHostURL(sysConfig.DefaultHost, sysConfig.Hosts, storedConfig.Hosts, workspaceConfig.Hosts)
 	}
 	if resolvedURL == "" {
 		return AppConfig{}, apperrors.New(apperrors.KindValidation, "no Bitbucket host configured: set BITBUCKET_URL or run 'bb auth login <host>'", nil)
 	}
 
+	if len(policy.AllowedHosts) > 0 && !IsHostAllowed(resolvedURL, policy.AllowedHosts) {
+		return AppConfig{}, apperrors.New(
+			apperrors.KindAuthorization,
+			fmt.Sprintf("host %q is not permitted by administrative policy; allowed hosts: %s", resolvedURL, strings.Join(policy.AllowedHosts, ", ")),
+			nil,
+		)
+	}
+
+	caFile := strings.TrimSpace(os.Getenv("BB_CA_FILE"))
+	if policy.CAFile != "" {
+		if caFile == "" {
+			caFile = policy.CAFile
+		} else if filepath.Clean(caFile) != filepath.Clean(policy.CAFile) {
+			return AppConfig{}, apperrors.New(
+				apperrors.KindAuthorization,
+				fmt.Sprintf("overriding CA bundle is disabled by administrative policy; mandated CA file: %s", policy.CAFile),
+				nil,
+			)
+		}
+	} else if caFile == "" && sysConfig.CAFile != "" {
+		caFile = sysConfig.CAFile
+	}
+
+	projectKey := envOrDefault("BITBUCKET_PROJECT_KEY", "")
+	if projectKey == "" {
+		projectKey = workspaceConfig.ProjectKey
+	}
+	if projectKey == "" {
+		projectKey = defaultProjectKey
+	}
+
 	config := AppConfig{
 		BitbucketURL:           resolvedURL,
 		BitbucketVersionTarget: envOrDefault("BITBUCKET_VERSION_TARGET", defaultBitbucketVersionTarget),
-		ProjectKey:             envOrDefault("BITBUCKET_PROJECT_KEY", defaultProjectKey),
+		ProjectKey:             projectKey,
 		BitbucketToken:         envOrDefault("BITBUCKET_TOKEN", ""),
 		BitbucketUsername:      envOrDefault("BITBUCKET_USERNAME", envOrDefault("BITBUCKET_USER", envOrDefault("ADMIN_USER", ""))),
 		BitbucketPassword:      envOrDefault("BITBUCKET_PASSWORD", envOrDefault("ADMIN_PASSWORD", "")),
-		CAFile:                 strings.TrimSpace(os.Getenv("BB_CA_FILE")),
+		CAFile:                 caFile,
 		InsecureSkipVerify:     insecureSkipVerify,
 		RequestTimeout:         requestTimeout,
 		RetryCount:             retryCount,
@@ -174,6 +272,12 @@ func LoadFromEnv() (AppConfig, error) {
 
 	if os.Getenv("BB_DISABLE_STORED_CONFIG") != "1" {
 		stored, foundStored := resolveStoredCredentials(storedConfig, config.BitbucketURL)
+		if !foundStored && len(workspaceConfig.Hosts) > 0 {
+			stored, foundStored = resolveStoredCredentials(StoredConfig{Hosts: workspaceConfig.Hosts}, config.BitbucketURL)
+		}
+		if !foundStored && len(sysConfig.Hosts) > 0 {
+			stored, foundStored = resolveStoredCredentials(sysConfig.StoredConfig(), config.BitbucketURL)
+		}
 		if foundStored {
 			adoptedStoredSecret := false
 
@@ -193,24 +297,14 @@ func LoadFromEnv() (AppConfig, error) {
 			}
 
 			// Tracks the secret actually in use, not the label on AuthSource.
-			// Deciding this from AuthSource would let any unrelated auth
-			// environment variable — ADMIN_USER on a CI runner, say — relabel the
-			// source as "env" and silently suppress both the warning and the
-			// BB_REQUIRE_KEYRING check for a credential that really did come
-			// from the plaintext file.
 			config.UsedInsecureStorage = adoptedStoredSecret && stored.UsedInsecureStorage
 		}
 
-		// AuthSource is a coarse label: it says the environment supplied
-		// something, not that the environment supplied the credential in use.
 		if os.Getenv("BITBUCKET_TOKEN") != "" || os.Getenv("BITBUCKET_USERNAME") != "" || os.Getenv("BITBUCKET_USER") != "" || os.Getenv("BITBUCKET_PASSWORD") != "" || os.Getenv("ADMIN_USER") != "" || os.Getenv("ADMIN_PASSWORD") != "" {
 			config.AuthSource = "env"
 		}
 	}
 
-	// Enforcing only at login would let a config written before the policy was
-	// set keep serving plaintext credentials indefinitely, which is exactly what
-	// an operator mandating keyring storage is trying to prevent.
 	if config.UsedInsecureStorage {
 		requireKeyring, err := RequireKeyring()
 		if err != nil {
@@ -298,10 +392,34 @@ func hasRepositoryMarker(directory string) bool {
 	return false
 }
 
+func resolveDefaultHostURL(defaultHost string, hostMaps ...map[string]StoredProfile) string {
+	for _, hosts := range hostMaps {
+		if profile, ok := hosts[defaultHost]; ok && profile.URL != "" {
+			return normalizeURL(profile.URL)
+		}
+	}
+	if strings.HasPrefix(defaultHost, "http://") || strings.HasPrefix(defaultHost, "https://") {
+		return normalizeURL(defaultHost)
+	}
+	return ""
+}
+
 func SaveLogin(input LoginInput) (LoginResult, error) {
 	host := normalizeURL(strings.TrimSpace(input.Host))
 	if host == "" {
 		return LoginResult{}, apperrors.New(apperrors.KindValidation, "host is required", nil)
+	}
+
+	policy, err := LoadPolicy()
+	if err != nil {
+		return LoginResult{}, err
+	}
+	if len(policy.AllowedHosts) > 0 && !IsHostAllowed(host, policy.AllowedHosts) {
+		return LoginResult{}, apperrors.New(
+			apperrors.KindAuthorization,
+			fmt.Sprintf("host %q is not permitted by administrative policy; allowed hosts: %s", host, strings.Join(policy.AllowedHosts, ", ")),
+			nil,
+		)
 	}
 
 	aliases, err := normalizeAliases(input.Aliases)
@@ -649,6 +767,10 @@ func LoadStoredConfig() (StoredConfig, error) {
 		return StoredConfig{}, err
 	}
 
+	if err := ValidateConfigYAML(raw); err != nil {
+		return StoredConfig{}, err
+	}
+
 	var stored StoredConfig
 	if err := yaml.Unmarshal(raw, &stored); err != nil {
 		return StoredConfig{}, err
@@ -692,6 +814,236 @@ func ConfigPath() (string, error) {
 	}
 
 	return filepath.Join(baseDir, "bb", "config.yaml"), nil
+}
+
+func SystemConfigPath() (string, error) {
+	if custom := strings.TrimSpace(os.Getenv("BB_SYSTEM_CONFIG_PATH")); custom != "" {
+		return custom, nil
+	}
+
+	if runtime.GOOS == "windows" {
+		programData := os.Getenv("ProgramData")
+		if programData == "" {
+			programData = `C:\ProgramData`
+		}
+		return filepath.Join(programData, "bb", "config.yaml"), nil
+	}
+
+	return "/etc/bb/config.yaml", nil
+}
+
+func WorkspaceConfigPath() (string, error) {
+	if custom := strings.TrimSpace(os.Getenv("BB_WORKSPACE_CONFIG_PATH")); custom != "" {
+		return custom, nil
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	searchRoot := cwd
+	if detected, found := findRepositoryRoot(cwd); found {
+		searchRoot = detected
+	}
+
+	for directory := cwd; ; directory = filepath.Dir(directory) {
+		candidate := filepath.Join(directory, ".bb", "config.yaml")
+		if info, statErr := os.Stat(candidate); statErr == nil && !info.IsDir() {
+			return candidate, nil
+		}
+
+		parent := filepath.Dir(directory)
+		if parent == directory || directory == searchRoot {
+			break
+		}
+	}
+
+	return "", nil
+}
+
+func LoadSystemConfig() (SystemConfigFile, error) {
+	path, err := SystemConfigPath()
+	if err != nil {
+		return SystemConfigFile{}, err
+	}
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return SystemConfigFile{
+				Hosts:           map[string]StoredProfile{},
+				InsecureSecrets: map[string]StoredSecret{},
+			}, nil
+		}
+		return SystemConfigFile{}, err
+	}
+
+	if err := ValidateConfigYAML(raw); err != nil {
+		return SystemConfigFile{}, err
+	}
+
+	var sys SystemConfigFile
+	if err := yaml.Unmarshal(raw, &sys); err != nil {
+		return SystemConfigFile{}, err
+	}
+	if sys.Hosts == nil {
+		sys.Hosts = map[string]StoredProfile{}
+	}
+	if sys.InsecureSecrets == nil {
+		sys.InsecureSecrets = map[string]StoredSecret{}
+	}
+
+	return sys, nil
+}
+
+func LoadWorkspaceConfig() (WorkspaceConfigFile, error) {
+	path, err := WorkspaceConfigPath()
+	if err != nil || path == "" {
+		return WorkspaceConfigFile{Hosts: map[string]StoredProfile{}}, err
+	}
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return WorkspaceConfigFile{Hosts: map[string]StoredProfile{}}, nil
+		}
+		return WorkspaceConfigFile{Hosts: map[string]StoredProfile{}}, err
+	}
+
+	if err := ValidateConfigYAML(raw); err != nil {
+		return WorkspaceConfigFile{Hosts: map[string]StoredProfile{}}, err
+	}
+
+	var ws WorkspaceConfigFile
+	if err := yaml.Unmarshal(raw, &ws); err != nil {
+		return WorkspaceConfigFile{Hosts: map[string]StoredProfile{}}, err
+	}
+	if ws.Hosts == nil {
+		ws.Hosts = map[string]StoredProfile{}
+	}
+
+	return ws, nil
+}
+
+func LoadPolicy() (PolicyConfig, error) {
+	sys, err := LoadSystemConfig()
+	if err != nil {
+		return PolicyConfig{}, err
+	}
+
+	policy := sys.PolicyConfig()
+	if sys.Policies != nil {
+		mergePolicy(&policy, *sys.Policies)
+	}
+	if sys.Policy != nil {
+		mergePolicy(&policy, *sys.Policy)
+	}
+
+	platformPolicy := loadPlatformPolicy()
+	mergePolicy(&policy, platformPolicy)
+
+	return policy, nil
+}
+
+func mergePolicy(target *PolicyConfig, source PolicyConfig) {
+	if source.RequireKeyring != nil {
+		target.RequireKeyring = source.RequireKeyring
+	}
+	if strings.TrimSpace(source.CAFile) != "" {
+		target.CAFile = strings.TrimSpace(source.CAFile)
+	}
+	if len(source.AllowedHosts) > 0 {
+		target.AllowedHosts = source.AllowedHosts
+	}
+	if source.AllowInsecureSkipVerify != nil {
+		target.AllowInsecureSkipVerify = source.AllowInsecureSkipVerify
+	}
+	if source.DisableUpdate != nil {
+		target.DisableUpdate = source.DisableUpdate
+	}
+	if strings.TrimSpace(source.UpdateBaseURL) != "" {
+		target.UpdateBaseURL = strings.TrimSpace(source.UpdateBaseURL)
+	}
+}
+
+func IsHostAllowed(targetURL string, allowedHosts []string) bool {
+	if len(allowedHosts) == 0 {
+		return true
+	}
+
+	trimmedTarget := strings.TrimSpace(targetURL)
+	normTarget := normalizeURL(trimmedTarget)
+	targetParsed, err := url.Parse(normTarget)
+	targetHost := ""
+	if err == nil {
+		targetHost = strings.ToLower(targetParsed.Hostname())
+	}
+
+	for _, allowed := range allowedHosts {
+		trimmedAllowed := strings.TrimSpace(allowed)
+		if trimmedAllowed == "" {
+			continue
+		}
+		normAllowed := normalizeURL(trimmedAllowed)
+		if normAllowed == normTarget {
+			return true
+		}
+		allowedParsed, parseErr := url.Parse(normAllowed)
+		if parseErr == nil && strings.ToLower(allowedParsed.Hostname()) == targetHost {
+			return true
+		}
+		if strings.EqualFold(trimmedAllowed, targetHost) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func ResolveUpdateBaseURL(flagValue string) (string, error) {
+	if trimmed := strings.TrimSpace(flagValue); trimmed != "" {
+		return normalizeURL(trimmed), nil
+	}
+	if envVal := strings.TrimSpace(os.Getenv("BB_UPDATE_BASE_URL")); envVal != "" {
+		return normalizeURL(envVal), nil
+	}
+	if ws, err := LoadWorkspaceConfig(); err == nil && strings.TrimSpace(ws.UpdateBaseURL) != "" {
+		return normalizeURL(ws.UpdateBaseURL), nil
+	}
+	if stored, err := LoadStoredConfig(); err == nil && strings.TrimSpace(stored.UpdateBaseURL) != "" {
+		return normalizeURL(stored.UpdateBaseURL), nil
+	}
+	if sys, err := LoadSystemConfig(); err == nil {
+		if strings.TrimSpace(sys.UpdateBaseURL) != "" {
+			return normalizeURL(sys.UpdateBaseURL), nil
+		}
+		if sys.Policies != nil && strings.TrimSpace(sys.Policies.UpdateBaseURL) != "" {
+			return normalizeURL(sys.Policies.UpdateBaseURL), nil
+		}
+		if sys.Policy != nil && strings.TrimSpace(sys.Policy.UpdateBaseURL) != "" {
+			return normalizeURL(sys.Policy.UpdateBaseURL), nil
+		}
+	}
+	policy, err := LoadPolicy()
+	if err == nil && strings.TrimSpace(policy.UpdateBaseURL) != "" {
+		return normalizeURL(policy.UpdateBaseURL), nil
+	}
+	return "https://api.github.com", nil
+}
+
+func IsUpdateDisabled() (bool, string, error) {
+	policy, err := LoadPolicy()
+	if err != nil {
+		return false, "", err
+	}
+	if policy.DisableUpdate != nil && *policy.DisableUpdate {
+		return true, "self-update is disabled by administrative policy; update bb using your system package manager", nil
+	}
+	if envVal := strings.TrimSpace(os.Getenv("BB_DISABLE_UPDATE")); envVal == "1" || strings.EqualFold(envVal, "true") {
+		return true, "self-update is disabled by administrative policy; update bb using your system package manager", nil
+	}
+	return false, "", nil
 }
 
 // matchStoredHost finds the stored profile that genuinely corresponds to
@@ -807,13 +1159,28 @@ var (
 	keyringDelete = keyring.Delete
 )
 
+var policyWarningWriter io.Writer = os.Stderr
+
 // RequireKeyring reports whether the operator has mandated keyring-backed
-// credential storage via BB_REQUIRE_KEYRING.
+// credential storage via BB_REQUIRE_KEYRING or administrative policy.
 func RequireKeyring() (bool, error) {
 	return requireKeyringPolicy(false)
 }
 
 func requireKeyringPolicy(requestedByFlag bool) (bool, error) {
+	policy, err := LoadPolicy()
+	if err != nil {
+		return false, err
+	}
+	if policy.RequireKeyring != nil && *policy.RequireKeyring {
+		if raw := strings.TrimSpace(os.Getenv("BB_REQUIRE_KEYRING")); raw != "" {
+			if b, parseErr := strconv.ParseBool(raw); parseErr == nil && !b {
+				fmt.Fprintf(policyWarningWriter, "warning: BB_REQUIRE_KEYRING=%s is ignored; keyring-backed storage is mandated by administrative policy\n", raw)
+			}
+		}
+		return true, nil
+	}
+
 	fromEnv, err := envBoolOrDefault("BB_REQUIRE_KEYRING", false)
 	if err != nil {
 		return false, apperrors.New(apperrors.KindValidation, "BB_REQUIRE_KEYRING must be a boolean", err)
@@ -827,6 +1194,15 @@ func requireKeyringPolicy(requestedByFlag bool) (bool, error) {
 // Classified permanent rather than transient: retrying the same command on the
 // same host changes nothing, and a caller should surface it rather than loop.
 func keyringUnavailableError(cause error) error {
+	policy, _ := LoadPolicy()
+	if policy.RequireKeyring != nil && *policy.RequireKeyring {
+		return apperrors.New(
+			apperrors.KindPermanent,
+			"OS keyring is unavailable and keyring-backed storage is required by administrative policy; supply credentials through BITBUCKET_TOKEN instead of storing them",
+			cause,
+		)
+	}
+
 	return apperrors.New(
 		apperrors.KindPermanent,
 		"OS keyring is unavailable and keyring-backed storage is required; unset BB_REQUIRE_KEYRING or drop --require-keyring to allow the plaintext config fallback, or supply credentials through BITBUCKET_TOKEN instead of storing them",
