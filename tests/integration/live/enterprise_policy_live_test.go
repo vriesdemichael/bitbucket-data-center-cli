@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -322,15 +321,7 @@ func TestLiveEnterprisePolicyRawAPIEscapeHatch(t *testing.T) {
 func TestLiveEnterprisePolicyKeyringWarningOnLiveCommand(t *testing.T) {
 	harness := newLiveHarness(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
-	if err != nil {
-		t.Fatalf("seed project failed: %v", err)
-	}
-	repo := seeded.Repos[0]
-	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+	configureLiveCLIEnv(t, harness, "PROJ", "repo")
 
 	tempDir := t.TempDir()
 	policyPath := filepath.Join(tempDir, "policy.yaml")
