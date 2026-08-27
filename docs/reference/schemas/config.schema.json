@@ -1,0 +1,171 @@
+{
+  "$id": "https://raw.githubusercontent.com/vriesdemichael/bitbucket-data-center-cli/main/docs/reference/schemas/config.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Schema for bb system, workspace, and user configuration files (/etc/bb/config.yaml, %ProgramData%\\bb\\config.yaml, .bb/config.yaml, and ~/.config/bb/config.yaml).",
+  "properties": {
+    "$schema": {
+      "description": "JSON schema reference URI.",
+      "type": "string"
+    },
+    "allow_insecure_skip_verify": {
+      "description": "Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.",
+      "type": "boolean"
+    },
+    "allowed_hosts": {
+      "description": "Whitelist of permitted Bitbucket Server / Data Center instance URLs or hostnames.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "ca_file": {
+      "description": "Absolute or relative path to PEM Root CA certificate bundle.",
+      "type": "string"
+    },
+    "default_host": {
+      "description": "Default Bitbucket Server / Data Center instance URL or alias.",
+      "type": "string"
+    },
+    "disable_update": {
+      "description": "Disable CLI self-update command (bb update) machine-wide.",
+      "type": "boolean"
+    },
+    "hosts": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "aliases": {
+            "description": "Host aliases for remote URL matching.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "auth_mode": {
+            "description": "Authentication mechanism for the host.",
+            "enum": [
+              "token",
+              "basic"
+            ],
+            "type": "string"
+          },
+          "url": {
+            "description": "Bitbucket Server or Data Center base URL.",
+            "type": "string"
+          },
+          "username": {
+            "description": "Username when using HTTP basic authentication.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "type": "object"
+      },
+      "description": "Configured Bitbucket host profiles.",
+      "type": "object"
+    },
+    "insecure_secrets": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "password": {
+            "description": "Plaintext password storage fallback.",
+            "type": "string"
+          },
+          "token": {
+            "description": "Plaintext token storage fallback.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "description": "Plaintext fallback secrets store.",
+      "type": "object"
+    },
+    "policies": {
+      "additionalProperties": false,
+      "description": "Administrative policy block.",
+      "properties": {
+        "allow_insecure_skip_verify": {
+          "description": "Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.",
+          "type": "boolean"
+        },
+        "allowed_hosts": {
+          "description": "Whitelist of permitted Bitbucket Server / Data Center instance URLs or hostnames.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "ca_file": {
+          "description": "Absolute or relative path to PEM Root CA certificate bundle.",
+          "type": "string"
+        },
+        "disable_update": {
+          "description": "Disable CLI self-update command (bb update) machine-wide.",
+          "type": "boolean"
+        },
+        "require_keyring": {
+          "description": "Mandate OS keyring storage for credentials and prohibit plaintext config file fallback.",
+          "type": "boolean"
+        },
+        "update_base_url": {
+          "description": "Base URL of internal release manifest and asset mirror.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "policy": {
+      "additionalProperties": false,
+      "description": "Administrative policy block (alias).",
+      "properties": {
+        "allow_insecure_skip_verify": {
+          "description": "Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.",
+          "type": "boolean"
+        },
+        "allowed_hosts": {
+          "description": "Whitelist of permitted Bitbucket Server / Data Center instance URLs or hostnames.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "ca_file": {
+          "description": "Absolute or relative path to PEM Root CA certificate bundle.",
+          "type": "string"
+        },
+        "disable_update": {
+          "description": "Disable CLI self-update command (bb update) machine-wide.",
+          "type": "boolean"
+        },
+        "require_keyring": {
+          "description": "Mandate OS keyring storage for credentials and prohibit plaintext config file fallback.",
+          "type": "boolean"
+        },
+        "update_base_url": {
+          "description": "Base URL of internal release manifest and asset mirror.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "project_key": {
+      "description": "Default project key for repository operations.",
+      "type": "string"
+    },
+    "require_keyring": {
+      "description": "Mandate OS keyring storage for credentials and prohibit plaintext config file fallback.",
+      "type": "boolean"
+    },
+    "update_base_url": {
+      "description": "Base URL of internal release manifest and asset mirror.",
+      "type": "string"
+    }
+  },
+  "title": "Bitbucket Server CLI Configuration",
+  "type": "object"
+}

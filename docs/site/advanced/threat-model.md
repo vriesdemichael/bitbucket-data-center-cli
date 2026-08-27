@@ -128,14 +128,14 @@ To govern this everyday flow:
 
 ## 4. Multi-OS Policy Enforcement Realities
 
-Enterprise policy enforcement mechanisms differ fundamentally across operating systems:
+Enterprise policy enforcement mechanisms differ across operating systems, unified under the multi-tier hierarchy ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)):
 
-| Operating System | Fleet Tooling | Policy Channel (Today) | Planned Policy Channel ([#420](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420)) | Enforcement Posture Today |
+| Operating System | Fleet Tooling | Primary Policy Channel | Fallback Policy Channel | Enforcement Posture |
 |---|---|---|---|---|
-| **Windows** | Microsoft Intune / SCCM / Active Directory GPO | System Environment Variables (`[Environment]::SetEnvironmentVariable(..., "Machine")`) | **Windows Registry (`HKLM\Software\Policies\bb`)** | **Advisory**. While unprivileged users cannot edit `HKLM`, setting machine environment variables can be overridden if a developer defines the same variable at `"User"` scope. True enforcement requires reading `HKLM` directly. |
-| **macOS** | Jamf Pro, Kandji, Apple MDM | System Shell Profiles (`/etc/zshenv`) | **Managed Preferences (`/Library/Managed Preferences/com.corp.bb.plist`)** | **Advisory**. Root-owned `/etc/zshenv` applies to terminal sessions, but macOS GUI applications do not inherit it. |
-| **Linux (Workstations)** | Ansible, Puppet, SaltStack, Red Hat Satellite | Shell Environment (`/etc/profile.d/bb.sh`) | **Root-owned `/etc/bb/config.yaml` (`chmod 644 root:root`)** | **Advisory on developer laptops** where engineers possess `sudo` privileges; **High on multi-user jump hosts** where non-admin users cannot alter root files. |
-| **Linux (CI Runners)** | Kubernetes, Docker, Runner Daemons | Ephemeral Environment Variables (`BITBUCKET_TOKEN`, `BB_DISABLE_STORED_CONFIG=1`) | Container Image Environment | **High**. Containers lack desktop keyrings; `BB_DISABLE_STORED_CONFIG=1` guarantees no stored credential profile is read and no keyring daemon is contacted. |
+| **Windows** | Microsoft Intune / SCCM / Active Directory GPO | **Windows Registry (`HKLM\Software\Policies\bb`)** | System Config (`%ProgramData%\bb\config.yaml`) | **High**. Unprivileged users cannot modify `HKLM\Software\Policies`. Registry policy takes immutable precedence over user environment variables and user configuration files. |
+| **macOS** | Jamf Pro, Kandji, Apple MDM | **System Config (`/etc/bb/config.yaml`, `chmod 644 root:wheel`)** | System Shell Profiles (`/etc/zshenv`) | **High**. Read directly by the `bb` binary across both terminal shells and GUI parent processes (such as IDE-launched MCP servers). |
+| **Linux (Workstations)** | Ansible, Puppet, SaltStack, Red Hat Satellite | **System Config (`/etc/bb/config.yaml`, `chmod 644 root:root`)** | Shell Environment (`/etc/profile.d/bb.sh`) | **High**. Standard root-owned system configuration. Immutable by non-root users on developer workstations and multi-user jump hosts. |
+| **Linux (CI Runners)** | Kubernetes, Docker, Runner Daemons | Ephemeral Environment Variables (`BITBUCKET_TOKEN`, `BB_DISABLE_STORED_CONFIG=1`, `BB_DISABLE_UPDATE=1`) | Baked Container Image `/etc/bb/config.yaml` | **High**. Containers lack desktop keyrings; `BB_DISABLE_STORED_CONFIG=1` guarantees zero stored credential reads and zero keyring daemon access. |
 
 ---
 
@@ -157,7 +157,7 @@ Each domain is analyzed using the **Threat (STRIDE) ↔ Architectural Mitigation
 #### 2. Architectural Mitigations
 - **Mandatory Stdin Ingestion**: `bb auth login` supports `--token-stdin` and `--password-stdin`, reading secrets strictly over standard input.
 - **Process Table Warning**: Supplying `--token` or `--password` as CLI flags prints an explicit warning to `stderr` alerting the operator ([ADR-047](../adr/047-credential-input-and-keyring-enforcement.md)).
-- **Enforced Keyring Storage**: Setting `BB_REQUIRE_KEYRING=1` causes `bb` to hard-refuse to read from or write to the plaintext configuration fallback.
+- **Enforced Keyring Storage**: Setting `require_keyring: true` in system configuration or Windows Registry `HKLM\Software\Policies\bb` hard-refuses plaintext fallback machine-wide and cannot be bypassed by unprivileged users unsetting environment variables ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)). Advisory `BB_REQUIRE_KEYRING=1` remains supported for ad-hoc user environments.
 - **Headless Disabling**: Setting `BB_DISABLE_STORED_CONFIG=1` in CI/CD completely skips stored config reads and keyring access, reading solely from `BITBUCKET_TOKEN`.
 
 #### 3. Audit Test Procedure
@@ -167,8 +167,7 @@ bb auth status --json
 *Audit Assertion*: Verify that `.data.credential_storage` equals `keyring` (on workstations) or `environment` (in CI runners), and never `config-file-plaintext`.
 
 #### 4. Residual Gap & Tracking
-- **Limitation**: `BB_REQUIRE_KEYRING=1` is an environment variable that can be unset by a local user. True enterprise enforcement requires a system-level configuration tier.
-- **Tracked Issue**: **[Issue #420: feat: system-wide configuration and policy enforcement](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420)**.
+- **Resolution**: Fully resolved via system-wide configuration (`/etc/bb/config.yaml`, `%ProgramData%\bb\config.yaml`) and Windows Registry policy (`HKLM\Software\Policies\bb`) with `require_keyring: true` ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md), [Issue #420](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420)). Plaintext fallback cannot occur when mandated by machine policy.
 
 ---
 
@@ -260,8 +259,7 @@ cosign verify-blob \
 ```
 
 #### 4. Residual Gap & Tracking
-- **Limitation**: `bb update` lacks an administrative killswitch (`BB_DISABLE_UPDATE=1`) and cannot be pointed to internal air-gapped mirrors.
-- **Tracked Issue**: **[Issue #421: feat: enterprise update controls and mirror support](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/421)**.
+- **Resolution**: Fully resolved via administrative killswitches (`BB_DISABLE_UPDATE=1`, `disable_update: true` in system configuration), compile-time removal (`-tags no_self_update`), and custom release mirror support (`--base-url`, `BB_UPDATE_BASE_URL`, `update_base_url`) ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md), [Issue #421](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/421)).
 
 ---
 
@@ -289,11 +287,11 @@ bb auth token list
 
 | Threat ID | Threat Description | Regulatory Mapping | Residual Risk | Risk Treatment | Test Procedure | Tracked Issue |
 |---|---|---|---|---|---|---|
-| **T-1** | Process table secret sniffing & plaintext disk fallback | SOC 2 CC6.1, ISO 27001:2022 A.8.24, NIST SP 800-53 AC-3 | **Medium** | Mitigate via Keyring enforcement & stdin piping; full resolution requires system config tier. | `bb auth status --json` | [#420](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420) |
+| **T-1** | Process table secret sniffing & plaintext disk fallback | SOC 2 CC6.1, ISO 27001:2022 A.8.24, NIST SP 800-53 AC-3 | **Low** | Fully mitigated via mandatory Keyring policy enforcement (`require_keyring: true`), system configuration tier, and stdin ingestion. | `bb auth status --json` | [#420](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420) ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)) |
 | **T-2** | Repository secret bleed & cross-remote credential leakage | SOC 2 CC6.6, ISO 27001:2022 A.8.12 | **Low** | Mitigated via host-scoped Git credential helper (`bb auth setup-git`). | `git config --local --get http.extraHeader` | — |
 | **T-3** | Inability to traverse mutual TLS (mTLS) ingress | NIST SP 800-207 (Zero Trust Architecture), SC-8 | **Medium** | Backlog feature; requires client cert/key flags in transport. | `bb repo list` behind mTLS | [#422](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/422) |
 | **T-4** | Prompt-injected AI agent executing unauthorized mutations | OWASP Top 10 LLM (2025 LLM01, LLM06), SOC 2 CC6.8 | **Medium** | Mitigate via safe/unsafe tool withholding; requires workspace bounding & audit logging. | `bb ai mcp tools` | [#423](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/423) |
-| **T-5** | Unmanaged binary updates breaking package manager state | ISO 27001:2022 A.8.19, NIST SP 800-53 SI-2 | **Low** | Backlog feature; requires `BB_DISABLE_UPDATE=1` killswitch for fleets. | `bb update` on managed machine | [#421](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/421) |
+| **T-5** | Unmanaged binary updates breaking package manager state | ISO 27001:2022 A.8.19, NIST SP 800-53 SI-2 | **Low** | Fully mitigated via `BB_DISABLE_UPDATE=1`, system config `disable_update: true`, build tag `no_self_update`, and internal release mirror resolution. | `bb update` on managed machine | [#421](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/421) ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)) |
 | **T-6** | Unfederated static token lifecycle management | CIS Controls v8 5.4 / 6.1, NIST SP 800-63B | **Medium** | Mitigate via scoped TTL PATs; browser flow requires Bitbucket DC admin configuration. | `bb auth token list` | [#424](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/424) |
 
 ---

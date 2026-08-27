@@ -13,6 +13,7 @@ import (
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/execgit"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
@@ -473,6 +474,7 @@ func initGitRepoWithRemote(t *testing.T, dir, projectKey, slug string) {
 	for _, args := range commands {
 		cmd := exec.Command("git", args...)
 		cmd.Dir = dir
+		cmd.Env = execgit.ScopeFreeEnv()
 		if output, err := cmd.CombinedOutput(); err != nil {
 			t.Skipf("git %v failed: %v (%s)", args, err, output)
 		}

@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -47,6 +50,10 @@ func releaseAssetsWithBundle(assets []githubrelease.Asset) []githubrelease.Asset
 }
 
 func TestUpdateCommandJSONDryRun(t *testing.T) {
+	if BuildDisablesSelfUpdate {
+		t.Skip("skipping in no_self_update build")
+	}
+
 	t.Setenv("BB_REQUEST_TIMEOUT", "")
 	t.Setenv("BB_CA_FILE", "")
 	t.Setenv("BB_INSECURE_SKIP_VERIFY", "")
@@ -127,6 +134,10 @@ func TestUpdateCommandJSONDryRun(t *testing.T) {
 }
 
 func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
+	if BuildDisablesSelfUpdate {
+		t.Skip("skipping in no_self_update build")
+	}
+
 	t.Setenv("BB_REQUEST_TIMEOUT", "")
 	t.Setenv("BB_CA_FILE", "")
 	t.Setenv("BB_INSECURE_SKIP_VERIFY", "")
@@ -351,4 +362,141 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 			t.Fatal("expected non-nil runner from default factory")
 		}
 	})
+}
+
+func TestUpdateCommandDisabledInBuild(t *testing.T) {
+	if !BuildDisablesSelfUpdate {
+		t.Skip("skipping test meant for no_self_update tag")
+	}
+
+	root := &cobra.Command{Use: "bb", Version: "v1.1.0"}
+	root.AddCommand(New(Dependencies{}))
+	buffer := &bytes.Buffer{}
+	root.SetOut(buffer)
+	root.SetErr(buffer)
+	root.SetArgs([]string{"update"})
+
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected error when BuildDisablesSelfUpdate is true, got nil")
+	}
+	if !apperrors.IsKind(err, apperrors.KindAuthorization) {
+		t.Fatalf("expected KindAuthorization, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "self-update is disabled in this build; update bb using your system package manager") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func TestUpdateCommandDisabledByPolicy(t *testing.T) {
+	if BuildDisablesSelfUpdate {
+		t.Skip("skipping in no_self_update build")
+	}
+
+	tempDir := t.TempDir()
+	sysPath := filepath.Join(tempDir, "system-config.yaml")
+
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+	t.Setenv("BB_DISABLE_UPDATE", "")
+
+	// 1. Via environment variable BB_DISABLE_UPDATE=1
+	t.Setenv("BB_DISABLE_UPDATE", "1")
+	root := &cobra.Command{Use: "bb", Version: "v1.1.0"}
+	root.AddCommand(New(Dependencies{}))
+	buf := &bytes.Buffer{}
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs([]string{"update"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected error with BB_DISABLE_UPDATE=1, got nil")
+	}
+	if !apperrors.IsKind(err, apperrors.KindAuthorization) {
+		t.Fatalf("expected KindAuthorization, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "self-update is disabled by administrative policy; update bb using your system package manager") {
+		t.Fatalf("unexpected message: %v", err)
+	}
+
+	// 2. Via system config policy disable_update: true
+	t.Setenv("BB_DISABLE_UPDATE", "")
+	if err := os.WriteFile(sysPath, []byte("disable_update: true\n"), 0o600); err != nil {
+		t.Fatalf("write sys: %v", err)
+	}
+	root2 := &cobra.Command{Use: "bb", Version: "v1.1.0"}
+	root2.AddCommand(New(Dependencies{}))
+	buf2 := &bytes.Buffer{}
+	root2.SetOut(buf2)
+	root2.SetErr(buf2)
+	root2.SetArgs([]string{"update"})
+	err2 := root2.Execute()
+	if err2 == nil {
+		t.Fatal("expected error with disable_update: true in system config, got nil")
+	}
+	if !apperrors.IsKind(err2, apperrors.KindAuthorization) {
+		t.Fatalf("expected KindAuthorization, got %v", err2)
+	}
+	if !strings.Contains(err2.Error(), "self-update is disabled by administrative policy; update bb using your system package manager") {
+		t.Fatalf("unexpected message: %v", err2)
+	}
+}
+
+func TestUpdateCommandCustomBaseURLFlagAndEnv(t *testing.T) {
+	if BuildDisablesSelfUpdate {
+		t.Skip("skipping in no_self_update build")
+	}
+
+	originalFactory := UpdateRunnerFactory
+	defer func() {
+		UpdateRunnerFactory = originalFactory
+	}()
+
+	capturedBaseURL := ""
+	UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
+		capturedBaseURL = httpConfig.UpdateBaseURL
+		return updateworkflow.NewRunner(updateworkflow.Dependencies{
+			Releases: updateCommandReleaseClient{
+				release: githubrelease.Release{
+					TagName: "v1.1.0",
+					HTMLURL: "https://example.test/release",
+				},
+			},
+			RepositoryOwner: "vriesdemichael",
+			RepositoryName:  "bitbucket-data-center-cli",
+			CurrentVersion:  func() string { return "v1.1.0" },
+			ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
+			Platform:        func() (string, string) { return "linux", "amd64" },
+		})
+	}
+
+	// 1. Via flag --base-url
+	t.Setenv("BB_DISABLE_UPDATE", "")
+	root := &cobra.Command{Use: "bb", Version: "v1.1.0"}
+	root.AddCommand(New(Dependencies{}))
+	buf := &bytes.Buffer{}
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs([]string{"update", "--base-url", "https://mirror.internal/releases"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("execute error: %v", err)
+	}
+	if capturedBaseURL != "https://mirror.internal/releases" {
+		t.Fatalf("expected mirror base URL from flag, got: %s", capturedBaseURL)
+	}
+
+	// 2. Via BB_UPDATE_BASE_URL env var
+	t.Setenv("BB_UPDATE_BASE_URL", "https://env-mirror.internal/releases")
+	root2 := &cobra.Command{Use: "bb", Version: "v1.1.0"}
+	root2.AddCommand(New(Dependencies{}))
+	buf2 := &bytes.Buffer{}
+	root2.SetOut(buf2)
+	root2.SetErr(buf2)
+	root2.SetArgs([]string{"update"})
+	if err := root2.Execute(); err != nil {
+		t.Fatalf("execute error: %v", err)
+	}
+	if capturedBaseURL != "https://env-mirror.internal/releases" {
+		t.Fatalf("expected mirror base URL from env, got: %s", capturedBaseURL)
+	}
 }

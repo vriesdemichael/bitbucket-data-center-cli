@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `57`
-- Accepted ADRs: `53`
+- Total ADRs: `59`
+- Accepted ADRs: `55`
 
 ## ADR List
 
@@ -66,4 +66,6 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 055: Documented release versions are validated and synchronized](055-documented-release-versions-are-validated-and-synchronized.md) (`development`, `superseded`)
 - [ADR 056: Pull request reviewer automation, default reviewers, and CODEOWNERS](056-pull-request-reviewer-automation-and-codeowners.md) (`architecture`, `accepted`)
 - [ADR 057: Documented release version is injected at build time](057-documented-release-version-is-injected-at-build-time.md) (`development`, `accepted`)
+- [ADR 058: System-wide configuration and administrative policy enforcement](058-system-wide-configuration-and-policy-enforcement.md) (`architecture`, `accepted`)
+- [ADR 059: Enterprise update controls and release mirror support](059-enterprise-update-controls-and-release-mirrors.md) (`architecture`, `accepted`)
 

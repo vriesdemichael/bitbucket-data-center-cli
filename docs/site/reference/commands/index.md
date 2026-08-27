@@ -8889,6 +8889,9 @@ Check for and install the latest bb release
 Usage:
   bb update [flags]
 
+Flags:
+      --base-url string   Custom release mirror base URL
+
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --dry-run                  Preview server mutations without applying them
