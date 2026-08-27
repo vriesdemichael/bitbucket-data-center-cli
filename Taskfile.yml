@@ -106,9 +106,12 @@ tasks:
     requires:
       vars:
         - VERSION
+    # The version reaches the pages through BB_DOCS_VERSION, which docs/main.py
+    # reads at build time. Nothing is rewritten on disk, so a release no longer
+    # leaves the checked-in sources a version behind.
+    env:
+      BB_DOCS_VERSION: '{{.VERSION}}'
     cmds:
-      - task: docs:sync-version
-        vars: { VERSION: '{{.VERSION}}' }
       - uv run --project '{{.DOCS_PROJECT_DIR}}' mike deploy --push --update-aliases {{.VERSION}} latest
       - uv run --project '{{.DOCS_PROJECT_DIR}}' mike set-default --push latest
 

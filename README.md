@@ -53,10 +53,12 @@ Install on Arch Linux from the AUR:
 yay -S bb-bin
 ```
 
-Install on Debian/Ubuntu or RHEL/Fedora from the release `.deb`/`.rpm`:
+Install on Debian/Ubuntu or RHEL/Fedora from the release `.deb`/`.rpm`. Set
+`VERSION` to the release you want from
+[Releases](https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest):
 
 ```bash
-VERSION=v2.13.0
+VERSION=v0.0.0  # replace with the release you are installing
 # Debian/Ubuntu
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.deb"
 sudo dpkg -i "bb_${VERSION#v}_linux_amd64.deb"
@@ -68,7 +70,7 @@ sudo rpm -i "bb_${VERSION#v}_linux_amd64.rpm"
 Install from Releases (Linux amd64 example):
 
 ```bash
-VERSION=v2.13.0
+VERSION=v0.0.0  # replace with the release you are installing
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/bb_${VERSION#v}_linux_amd64.tar.gz"
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/${VERSION}/sha256sums.txt"
 sha256sum -c sha256sums.txt --ignore-missing

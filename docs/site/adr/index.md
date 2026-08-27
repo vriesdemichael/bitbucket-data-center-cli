@@ -4,7 +4,7 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `56`
+- Total ADRs: `57`
 - Accepted ADRs: `53`
 
 ## ADR List
@@ -63,6 +63,7 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 052: Layer-boundary testing policy and HTTP mock elimination](052-layer-boundary-testing-and-mock-elimination.md) (`development`, `accepted`)
 - [ADR 053: Raw API escape hatch for uncovered endpoints and version gaps](053-raw-api-escape-hatch.md) (`architecture`, `accepted`)
 - [ADR 054: Strict non-interactive CLI contract and fail-fast validation invariant](054-strict-non-interactive-cli-contract.md) (`architecture`, `accepted`)
-- [ADR 055: Documented release versions are validated and synchronized](055-documented-release-versions-are-validated-and-synchronized.md) (`development`, `accepted`)
+- [ADR 055: Documented release versions are validated and synchronized](055-documented-release-versions-are-validated-and-synchronized.md) (`development`, `superseded`)
 - [ADR 056: Pull request reviewer automation, default reviewers, and CODEOWNERS](056-pull-request-reviewer-automation-and-codeowners.md) (`architecture`, `accepted`)
+- [ADR 057: Documented release version is injected at build time](057-documented-release-version-is-injected-at-build-time.md) (`development`, `accepted`)
 
