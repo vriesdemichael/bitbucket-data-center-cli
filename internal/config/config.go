@@ -1003,6 +1003,9 @@ func IsHostAllowed(targetURL string, allowedHosts []string) bool {
 
 func ResolveUpdateBaseURL(flagValue string) (string, error) {
 	if trimmed := strings.TrimSpace(flagValue); trimmed != "" {
+		if _, err := url.Parse(trimmed); err != nil {
+			return "", apperrors.New(apperrors.KindValidation, fmt.Sprintf("invalid update base URL %q: %v", trimmed, err), err)
+		}
 		return normalizeURL(trimmed), nil
 	}
 	if envVal := strings.TrimSpace(os.Getenv("BB_UPDATE_BASE_URL")); envVal != "" {

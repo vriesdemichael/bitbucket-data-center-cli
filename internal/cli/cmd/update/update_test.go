@@ -500,3 +500,57 @@ func TestUpdateCommandCustomBaseURLFlagAndEnv(t *testing.T) {
 		t.Fatalf("expected mirror base URL from env, got: %s", capturedBaseURL)
 	}
 }
+
+func TestUpdateCommandDisabledInBuildToggle(t *testing.T) {
+	orig := BuildDisablesSelfUpdate
+	BuildDisablesSelfUpdate = true
+	defer func() { BuildDisablesSelfUpdate = orig }()
+
+	root := &cobra.Command{Use: "bb", Version: "v1.1.0"}
+	root.AddCommand(New(Dependencies{}))
+	buf := &bytes.Buffer{}
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs([]string{"update"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected error when self-update is disabled in build")
+	}
+	if !apperrors.IsKind(err, apperrors.KindAuthorization) {
+		t.Fatalf("expected KindAuthorization, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "self-update is disabled in this build; update bb using your system package manager") {
+		t.Fatalf("unexpected message: %v", err)
+	}
+}
+
+func TestUpdateCommandPolicyError(t *testing.T) {
+	if BuildDisablesSelfUpdate {
+		t.Skip("skipping in no_self_update build")
+	}
+
+	dir := t.TempDir()
+	badConfig := filepath.Join(dir, "invalid.yaml")
+	if err := os.WriteFile(badConfig, []byte("policies:\n  require_keyring: [invalid"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", badConfig)
+
+	root := &cobra.Command{Use: "bb", Version: "v1.1.0"}
+	root.AddCommand(New(Dependencies{}))
+	buf := &bytes.Buffer{}
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs([]string{"update"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected error with corrupted system config")
+	}
+}
+
+func TestLoadUpdateCommandHTTPConfigInvalidBaseURL(t *testing.T) {
+	_, err := LoadUpdateCommandHTTPConfig(":\x7finvalid-url")
+	if err == nil {
+		t.Fatal("expected error for control characters in base URL")
+	}
+}
