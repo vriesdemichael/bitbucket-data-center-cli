@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
 
@@ -341,27 +342,15 @@ func TestLiveEnterprisePolicyKeyringWarningOnLiveCommand(t *testing.T) {
 		t.Fatalf("write policy: %v", err)
 	}
 
-	// Capture stderr
-	oldStderr := os.Stderr
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("pipe: %v", err)
-	}
-	os.Stderr = w
+	var warnBuf bytes.Buffer
+	config.SetPolicyWarningWriter(&warnBuf)
+	t.Cleanup(func() { config.SetPolicyWarningWriter(nil) })
 
 	output, cmdErr := executeLiveCLI(t, "--json", "project", "list", "--limit", "1")
-
-	_ = w.Close()
-	os.Stderr = oldStderr
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	_ = r.Close()
-
 	if cmdErr != nil {
 		t.Fatalf("command failed: %v\noutput: %s", cmdErr, output)
 	}
-	if !strings.Contains(buf.String(), "warning: BB_REQUIRE_KEYRING=0 is ignored") {
-		t.Fatalf("expected warning on stderr when user attempts to disable require_keyring policy, got: %s", buf.String())
+	if !strings.Contains(warnBuf.String(), "warning: BB_REQUIRE_KEYRING=0 is ignored") {
+		t.Fatalf("expected warning when user attempts to disable require_keyring policy, got: %s", warnBuf.String())
 	}
 }
