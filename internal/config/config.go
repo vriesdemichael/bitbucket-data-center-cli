@@ -1162,7 +1162,20 @@ var (
 	keyringDelete = keyring.Delete
 )
 
-var policyWarningWriter io.Writer = os.Stderr
+var policyWarningWriter io.Writer
+
+func getPolicyWarningWriter() io.Writer {
+	if policyWarningWriter != nil {
+		return policyWarningWriter
+	}
+	return os.Stderr
+}
+
+// SetPolicyWarningWriter sets an explicit destination for administrative policy warnings.
+// Passing nil restores writing to os.Stderr.
+func SetPolicyWarningWriter(w io.Writer) {
+	policyWarningWriter = w
+}
 
 // RequireKeyring reports whether the operator has mandated keyring-backed
 // credential storage via BB_REQUIRE_KEYRING or administrative policy.
@@ -1178,7 +1191,7 @@ func requireKeyringPolicy(requestedByFlag bool) (bool, error) {
 	if policy.RequireKeyring != nil && *policy.RequireKeyring {
 		if raw := strings.TrimSpace(os.Getenv("BB_REQUIRE_KEYRING")); raw != "" {
 			if b, parseErr := strconv.ParseBool(raw); parseErr == nil && !b {
-				fmt.Fprintf(policyWarningWriter, "warning: BB_REQUIRE_KEYRING=%s is ignored; keyring-backed storage is mandated by administrative policy\n", raw)
+				fmt.Fprintf(getPolicyWarningWriter(), "warning: BB_REQUIRE_KEYRING=%s is ignored; keyring-backed storage is mandated by administrative policy\n", raw)
 			}
 		}
 		return true, nil
