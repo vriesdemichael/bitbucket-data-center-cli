@@ -3,9 +3,11 @@
 package live_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -225,5 +227,141 @@ func TestLiveEnterpriseUpdateControls(t *testing.T) {
 		if !strings.Contains(err.Error(), "sha256sums.txt.sigstore.json") {
 			t.Fatalf("unexpected error contacting mirror: %v", err)
 		}
+	}
+}
+
+// TestLiveEnterprisePolicyAuthLoginAllowedHosts asserts that `bb auth login`
+// enforces machine-level allowed_hosts policy against live hosts.
+func TestLiveEnterprisePolicyAuthLoginAllowedHosts(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	tempDir := t.TempDir()
+	policyPath := filepath.Join(tempDir, "policy.yaml")
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", policyPath)
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+
+	// 1. Policy allows only the live harness host
+	allowedYAML := fmt.Sprintf("allowed_hosts:\n  - %q\n", harness.config.BitbucketURL)
+	if err := os.WriteFile(policyPath, []byte(allowedYAML), 0o600); err != nil {
+		t.Fatalf("write policy: %v", err)
+	}
+
+	// Login to an unlisted external host must be blocked by policy
+	output, err := executeLiveCLI(t, "auth", "login", "https://unauthorized-bitbucket.corp.local", "--token", "fake-token", "--discover-aliases=false")
+	if err == nil {
+		t.Fatalf("expected login to unlisted host to be blocked by policy, got output: %s", output)
+	}
+	if !apperrors.IsKind(err, apperrors.KindAuthorization) {
+		t.Fatalf("expected KindAuthorization, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "is not permitted by administrative policy") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+
+	// Login to the allowed live host must succeed
+	output, err = executeLiveCLI(t, "auth", "login", harness.config.BitbucketURL, "--username", harness.config.BitbucketUsername, "--password", harness.config.BitbucketPassword, "--discover-aliases=false")
+	if err != nil {
+		t.Fatalf("expected login to allowed live host to succeed: %v\noutput: %s", err, output)
+	}
+}
+
+// TestLiveEnterprisePolicyRawAPIEscapeHatch asserts that the raw api command (`bb api`)
+// strictly respects administrative allowed_hosts policy.
+func TestLiveEnterprisePolicyRawAPIEscapeHatch(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	tempDir := t.TempDir()
+	policyPath := filepath.Join(tempDir, "policy.yaml")
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", policyPath)
+
+	// 1. Allowed host: bb api succeeds against live Bitbucket
+	allowedYAML := fmt.Sprintf("allowed_hosts:\n  - %q\n", harness.config.BitbucketURL)
+	if err := os.WriteFile(policyPath, []byte(allowedYAML), 0o600); err != nil {
+		t.Fatalf("write policy: %v", err)
+	}
+
+	output, err := executeLiveCLI(t, "api", "/rest/api/latest/projects")
+	if err != nil {
+		t.Fatalf("expected bb api to succeed with allowed host policy: %v\noutput: %s", err, output)
+	}
+	if !strings.Contains(output, seeded.Key) {
+		t.Fatalf("expected live project key in api output: %s", output)
+	}
+
+	// 2. Disallowed host: bb api is rejected with KindAuthorization before reaching network
+	disallowedYAML := "allowed_hosts:\n  - \"https://different-host.corp.internal\"\n"
+	if err := os.WriteFile(policyPath, []byte(disallowedYAML), 0o600); err != nil {
+		t.Fatalf("write policy: %v", err)
+	}
+
+	output, err = executeLiveCLI(t, "api", "/rest/api/latest/projects")
+	if err == nil {
+		t.Fatalf("expected bb api to be rejected by administrative policy, but it succeeded\noutput: %s", output)
+	}
+	if !apperrors.IsKind(err, apperrors.KindAuthorization) {
+		t.Fatalf("expected KindAuthorization, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "is not permitted by administrative policy") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+// TestLiveEnterprisePolicyKeyringWarningOnLiveCommand asserts that attempting to
+// bypass require_keyring policy via BB_REQUIRE_KEYRING=0 produces a warning on stderr.
+func TestLiveEnterprisePolicyKeyringWarningOnLiveCommand(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	tempDir := t.TempDir()
+	policyPath := filepath.Join(tempDir, "policy.yaml")
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", policyPath)
+	t.Setenv("BB_REQUIRE_KEYRING", "0")
+
+	policyYAML := "require_keyring: true\n"
+	if err := os.WriteFile(policyPath, []byte(policyYAML), 0o600); err != nil {
+		t.Fatalf("write policy: %v", err)
+	}
+
+	// Capture stderr
+	oldStderr := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe: %v", err)
+	}
+	os.Stderr = w
+
+	output, cmdErr := executeLiveCLI(t, "--json", "project", "list", "--limit", "1")
+
+	_ = w.Close()
+	os.Stderr = oldStderr
+
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	_ = r.Close()
+
+	if cmdErr != nil {
+		t.Fatalf("command failed: %v\noutput: %s", cmdErr, output)
+	}
+	if !strings.Contains(buf.String(), "warning: BB_REQUIRE_KEYRING=0 is ignored") {
+		t.Fatalf("expected warning on stderr when user attempts to disable require_keyring policy, got: %s", buf.String())
 	}
 }
