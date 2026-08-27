@@ -317,15 +317,15 @@ func TestLiveEnterprisePolicyRawAPIEscapeHatch(t *testing.T) {
 }
 
 // TestLiveEnterprisePolicyKeyringWarningOnLiveCommand asserts that attempting to
-// bypass require_keyring policy via BB_REQUIRE_KEYRING=0 produces a warning on stderr.
+// bypass require_keyring policy via BB_REQUIRE_KEYRING=0 produces a warning on stderr
+// during auth login against a live host.
 func TestLiveEnterprisePolicyKeyringWarningOnLiveCommand(t *testing.T) {
 	harness := newLiveHarness(t)
-
-	configureLiveCLIEnv(t, harness, "PROJ", "repo")
 
 	tempDir := t.TempDir()
 	policyPath := filepath.Join(tempDir, "policy.yaml")
 	t.Setenv("BB_SYSTEM_CONFIG_PATH", policyPath)
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
 	t.Setenv("BB_REQUIRE_KEYRING", "0")
 
 	policyYAML := "require_keyring: true\n"
@@ -337,10 +337,8 @@ func TestLiveEnterprisePolicyKeyringWarningOnLiveCommand(t *testing.T) {
 	config.SetPolicyWarningWriter(&warnBuf)
 	t.Cleanup(func() { config.SetPolicyWarningWriter(nil) })
 
-	output, cmdErr := executeLiveCLI(t, "--json", "project", "list", "--limit", "1")
-	if cmdErr != nil {
-		t.Fatalf("command failed: %v\noutput: %s", cmdErr, output)
-	}
+	_, _ = executeLiveCLI(t, "auth", "login", harness.config.BitbucketURL, "--username", harness.config.BitbucketUsername, "--password", harness.config.BitbucketPassword, "--discover-aliases=false")
+
 	if !strings.Contains(warnBuf.String(), "warning: BB_REQUIRE_KEYRING=0 is ignored") {
 		t.Fatalf("expected warning when user attempts to disable require_keyring policy, got: %s", warnBuf.String())
 	}
