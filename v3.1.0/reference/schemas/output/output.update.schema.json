@@ -1,0 +1,116 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.update.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb update --json`. Data describes the current version, latest release, selected artifact, checksum status, and whether an update was applied or only previewed.",
+  "properties": {
+    "data": {
+      "additionalProperties": false,
+      "properties": {
+        "applied": {
+          "type": "boolean"
+        },
+        "asset_name": {
+          "type": "string"
+        },
+        "asset_url": {
+          "type": "string"
+        },
+        "checksum_asset_name": {
+          "type": "string"
+        },
+        "checksum_available": {
+          "type": "boolean"
+        },
+        "checksum_verified": {
+          "type": "boolean"
+        },
+        "comparison": {
+          "type": "string"
+        },
+        "current_version": {
+          "type": "string"
+        },
+        "current_version_comparable": {
+          "type": "boolean"
+        },
+        "dry_run": {
+          "type": "boolean"
+        },
+        "install_path": {
+          "type": "string"
+        },
+        "latest_version": {
+          "type": "string"
+        },
+        "latest_version_comparable": {
+          "type": "boolean"
+        },
+        "planned_action": {
+          "type": "string"
+        },
+        "release_url": {
+          "type": "string"
+        },
+        "scheduled": {
+          "type": "boolean"
+        },
+        "staged": {
+          "type": "boolean"
+        },
+        "staged_path": {
+          "type": "string"
+        },
+        "swap_result_path": {
+          "type": "string"
+        },
+        "target_platform": {
+          "type": "string"
+        },
+        "up_to_date": {
+          "type": "boolean"
+        },
+        "update_available": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "current_version",
+        "latest_version",
+        "update_available",
+        "up_to_date",
+        "applied",
+        "scheduled",
+        "staged",
+        "dry_run",
+        "checksum_available",
+        "checksum_verified",
+        "current_version_comparable",
+        "latest_version_comparable"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb update output",
+  "type": "object"
+}
