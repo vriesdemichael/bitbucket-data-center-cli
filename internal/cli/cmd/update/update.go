@@ -143,50 +143,14 @@ func writeUpdateHuman(cmd *cobra.Command, result updateworkflow.Result) {
 	case result.UpToDate:
 		fmt.Fprintf(writer, "%s %s\n", style.Success.Render("bb is up to date"), style.Resource.Render(result.CurrentVersion))
 	case result.Scheduled:
-		fmt.Fprintf(writer, "%s %s %s %s\n", style.Updated.Render("Scheduled bb update"), style.Secondary.Render(result.CurrentVersion), style.Secondary.Render("->"), style.Resource.Render(result.LatestVersion))
+		fmt.Fprintf(writer, "%s %s %s %s\n", style.Success.Render("Scheduled bb update"), style.Secondary.Render(result.CurrentVersion), style.Secondary.Render("->"), style.Resource.Render(result.LatestVersion))
 	case result.Staged:
-		fmt.Fprintf(writer, "%s %s %s %s\n", style.Updated.Render("Staged bb update"), style.Secondary.Render(result.CurrentVersion), style.Secondary.Render("->"), style.Resource.Render(result.LatestVersion))
+		fmt.Fprintf(writer, "%s %s %s %s\n", style.Success.Render("Staged bb update"), style.Secondary.Render(result.CurrentVersion), style.Secondary.Render("->"), style.Resource.Render(result.LatestVersion))
 	case result.Applied:
-		fmt.Fprintf(writer, "%s %s %s %s\n", style.Updated.Render("Updated bb"), style.Secondary.Render(result.CurrentVersion), style.Secondary.Render("->"), style.Resource.Render(result.LatestVersion))
+		fmt.Fprintf(writer, "%s %s %s %s\n", style.Success.Render("Updated bb"), style.Secondary.Render(result.CurrentVersion), style.Secondary.Render("->"), style.Resource.Render(result.LatestVersion))
 	case result.UpdateAvailable:
 		fmt.Fprintf(writer, "%s %s %s %s\n", style.Warning.Render("Update available"), style.Secondary.Render(result.CurrentVersion), style.Secondary.Render("->"), style.Resource.Render(result.LatestVersion))
 	default:
 		fmt.Fprintf(writer, "%s %s\n", style.Secondary.Render("Current version"), style.Resource.Render(result.CurrentVersion))
-	}
-
-	if result.AssetName != "" {
-		fmt.Fprintf(writer, "%s %s\n", style.Secondary.Render("artifact"), result.AssetName)
-	}
-	if result.InstallPath != "" {
-		fmt.Fprintf(writer, "%s %s\n", style.Secondary.Render("install_path"), result.InstallPath)
-	}
-	if result.StagedPath != "" {
-		fmt.Fprintf(writer, "%s %s\n", style.Secondary.Render("staged_path"), result.StagedPath)
-	}
-	if result.SwapResultPath != "" {
-		fmt.Fprintf(writer, "%s %s\n", style.Secondary.Render("swap_result_path"), result.SwapResultPath)
-	}
-	if result.ChecksumAssetName != "" {
-		status := "available"
-		if result.ChecksumVerified {
-			status = "verified"
-		}
-		fmt.Fprintf(writer, "%s %s (%s)\n", style.Secondary.Render("checksum"), result.ChecksumAssetName, status)
-	}
-	if result.SignatureBundleAssetName != "" {
-		status := "available"
-		if result.SignatureVerified {
-			status = "verified via sigstore keyless + rekor"
-		}
-		fmt.Fprintf(writer, "%s %s (%s)\n", style.Secondary.Render("provenance"), result.SignatureBundleAssetName, status)
-	}
-	if result.SignatureIdentity != "" {
-		fmt.Fprintf(writer, "%s %s\n", style.Secondary.Render("signed_by"), result.SignatureIdentity)
-	}
-	if result.ReleaseURL != "" {
-		fmt.Fprintf(writer, "%s %s\n", style.Secondary.Render("release"), result.ReleaseURL)
-	}
-	if result.PlannedAction != "" && (result.DryRun || result.Staged || result.Scheduled) {
-		fmt.Fprintf(writer, "%s %s\n", style.Secondary.Render("planned_action"), result.PlannedAction)
 	}
 }

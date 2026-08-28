@@ -184,8 +184,11 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 		}
 
 		output := buffer.String()
-		if !bytes.Contains(buffer.Bytes(), []byte("Dry-run (static, capability=full)")) || !bytes.Contains(buffer.Bytes(), []byte("Update available")) || !bytes.Contains(buffer.Bytes(), []byte("planned_action replace")) {
+		if !bytes.Contains(buffer.Bytes(), []byte("Dry-run (static, capability=full)")) || !bytes.Contains(buffer.Bytes(), []byte("Update available")) {
 			t.Fatalf("unexpected human output: %s", output)
+		}
+		if bytes.Contains(buffer.Bytes(), []byte("artifact")) || bytes.Contains(buffer.Bytes(), []byte("planned_action")) {
+			t.Fatalf("human output should not contain raw metadata fields: %s", output)
 		}
 	})
 
@@ -204,8 +207,11 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 		command := &cobra.Command{}
 		command.SetOut(buffer)
 		writeUpdateHuman(command, updateworkflow.Result{CurrentVersion: "v1.1.0", LatestVersion: "v1.2.0", Applied: true, AssetName: "bb.tgz", InstallPath: "/tmp/bb", ChecksumAssetName: "sha256sums.txt", ChecksumVerified: true, SignatureBundleAssetName: "sha256sums.txt.sigstore.json", SignatureVerified: true, SignatureIdentity: "https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main", ReleaseURL: "https://example.test/releases/v1.2.0"})
-		if !bytes.Contains(buffer.Bytes(), []byte("Updated bb")) || !bytes.Contains(buffer.Bytes(), []byte("checksum sha256sums.txt (verified)")) || !bytes.Contains(buffer.Bytes(), []byte("provenance sha256sums.txt.sigstore.json (verified via sigstore keyless + rekor)")) || !bytes.Contains(buffer.Bytes(), []byte("signed_by https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main")) {
+		if !bytes.Contains(buffer.Bytes(), []byte("Updated bb")) {
 			t.Fatalf("unexpected human output: %s", buffer.String())
+		}
+		if bytes.Contains(buffer.Bytes(), []byte("sha256sums.txt")) || bytes.Contains(buffer.Bytes(), []byte("/tmp/bb")) {
+			t.Fatalf("human output should not contain raw metadata fields: %s", buffer.String())
 		}
 	})
 
@@ -214,18 +220,11 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 		command := &cobra.Command{}
 		command.SetOut(buffer)
 		writeUpdateHuman(command, updateworkflow.Result{CurrentVersion: "v1.1.0", LatestVersion: "v1.2.0", Scheduled: true, Staged: true, InstallPath: "C:/tools/bb.exe", StagedPath: "C:/tools/bb.exe.new", SwapResultPath: "C:/tools/bb.exe.update-result.json", PlannedAction: "schedule_background_replace_after_exit"})
-		if !bytes.Contains(buffer.Bytes(), []byte("Scheduled bb update")) || !bytes.Contains(buffer.Bytes(), []byte("staged_path C:/tools/bb.exe.new")) || !bytes.Contains(buffer.Bytes(), []byte("swap_result_path C:/tools/bb.exe.update-result.json")) || !bytes.Contains(buffer.Bytes(), []byte("planned_action schedule_background_replace_after_exit")) {
+		if !bytes.Contains(buffer.Bytes(), []byte("Scheduled bb update")) {
 			t.Fatalf("unexpected human output: %s", buffer.String())
 		}
-	})
-
-	t.Run("provenance available without verification output", func(t *testing.T) {
-		buffer := &bytes.Buffer{}
-		command := &cobra.Command{}
-		command.SetOut(buffer)
-		writeUpdateHuman(command, updateworkflow.Result{CurrentVersion: "v1.1.0", LatestVersion: "v1.2.0", Applied: true, AssetName: "bb.tgz", InstallPath: "/tmp/bb", SignatureBundleAssetName: "sha256sums.txt.sigstore.json"})
-		if !bytes.Contains(buffer.Bytes(), []byte("provenance sha256sums.txt.sigstore.json (available)")) {
-			t.Fatalf("unexpected human output: %s", buffer.String())
+		if bytes.Contains(buffer.Bytes(), []byte("C:/tools/bb.exe.new")) {
+			t.Fatalf("human output should not contain raw metadata fields: %s", buffer.String())
 		}
 	})
 
