@@ -29,7 +29,7 @@ def load_hashes(sums_path: Path) -> dict[str, str]:
 
 
 def hash_for(hashes: dict[str, str], version: str, target: str) -> str:
-    filename = f"bb_{version}_{target}.tar.gz"
+    filename = f"bb_{version}_{target}_noupdate.tar.gz"
     try:
         return hashes[filename]
     except KeyError:
@@ -51,22 +51,22 @@ def render_formula(version: str, repository: str, hashes: dict[str, str]) -> str
 
   on_macos do
     on_arm do
-      url "{base_url}/bb_{version}_darwin_arm64.tar.gz"
+      url "{base_url}/bb_{version}_darwin_arm64_noupdate.tar.gz"
       sha256 "{darwin_arm}"
     end
     on_intel do
-      url "{base_url}/bb_{version}_darwin_amd64.tar.gz"
+      url "{base_url}/bb_{version}_darwin_amd64_noupdate.tar.gz"
       sha256 "{darwin_amd}"
     end
   end
 
   on_linux do
     on_arm do
-      url "{base_url}/bb_{version}_linux_arm64.tar.gz"
+      url "{base_url}/bb_{version}_linux_arm64_noupdate.tar.gz"
       sha256 "{linux_arm}"
     end
     on_intel do
-      url "{base_url}/bb_{version}_linux_amd64.tar.gz"
+      url "{base_url}/bb_{version}_linux_amd64_noupdate.tar.gz"
       sha256 "{linux_amd}"
     end
   end
