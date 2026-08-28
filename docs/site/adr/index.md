@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `59`
-- Accepted ADRs: `55`
+- Total ADRs: `60`
+- Accepted ADRs: `56`
 
 ## ADR List
 
@@ -68,4 +68,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 057: Documented release version is injected at build time](057-documented-release-version-is-injected-at-build-time.md) (`development`, `accepted`)
 - [ADR 058: System-wide configuration and administrative policy enforcement](058-system-wide-configuration-and-policy-enforcement.md) (`architecture`, `accepted`)
 - [ADR 059: Enterprise update controls and release mirror support](059-enterprise-update-controls-and-release-mirrors.md) (`architecture`, `accepted`)
+- [ADR 060: Mutual TLS (mTLS) client certificate authentication](060-mutual-tls-client-certificate-authentication.md) (`architecture`, `accepted`)
 

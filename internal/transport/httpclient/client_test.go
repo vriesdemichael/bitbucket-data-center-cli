@@ -599,6 +599,25 @@ func TestClientInitErrorFromInvalidCA(t *testing.T) {
 	}
 }
 
+func TestClientInitErrorFromInvalidClientCert(t *testing.T) {
+	client := NewFromConfig(config.AppConfig{
+		BitbucketURL:   "http://localhost:7990",
+		ClientCertFile: "/definitely/missing/client.crt",
+		ClientKeyFile:  "/definitely/missing/client.key",
+		RequestTimeout: time.Second,
+		RetryCount:     1,
+		RetryBackoff:   time.Millisecond,
+	})
+
+	if err := client.GetJSON(context.Background(), "/rest/api/latest/test", nil, nil); err == nil {
+		t.Fatal("expected initialization validation error")
+	}
+
+	if _, err := client.Health(context.Background()); err == nil {
+		t.Fatal("expected health initialization validation error")
+	}
+}
+
 func TestDiagnosticsWriter(t *testing.T) {
 	buffer := &bytes.Buffer{}
 

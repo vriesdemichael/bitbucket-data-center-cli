@@ -279,6 +279,26 @@ Ensure provisioning scripts place the CA certificate on disk **before** exportin
 ### Additive Trust Pool
 `bb` appends your corporate CA bundle to the system's root certificate pool (`x509.SystemCertPool()`). It does not replace public roots, allowing connections to public services (e.g. GitHub release verification) to succeed alongside internal Bitbucket calls.
 
+### Mutual TLS (mTLS) Client Authentication
+In zero-trust or defense networks requiring hardware- or PKI-backed mutual TLS at ingress gateways (Envoy, NGINX, F5, Cloudflare Access), configure client certificates and private keys ([ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)):
+
+```bash
+bb --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.key repo list
+```
+
+In CI/CD runners or shell environments:
+```bash
+export BB_CLIENT_CERT=/etc/ssl/certs/client.pem
+export BB_CLIENT_KEY=/etc/ssl/private/client.key
+```
+
+Or persist client certificate paths per host in stored profiles:
+```bash
+bb auth login https://bitbucket.corp.example --token abc --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.key
+```
+
+Private keys are loaded directly in-memory via Go's standard `crypto/tls` package and are never logged, serialized into machine JSON envelopes, or written to configuration files.
+
 ### Corporate Forward Proxies
 Configure standard proxy environment variables:
 ```bash

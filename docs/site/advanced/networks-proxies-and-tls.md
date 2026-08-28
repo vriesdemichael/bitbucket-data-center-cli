@@ -93,6 +93,31 @@ production error message go away.
 The fix for a production trust failure is `--ca-file`, and the difference matters
 — one tells `bb` who to trust, the other tells it to stop checking.
 
+## Mutual TLS (mTLS) client authentication
+
+Where ingress gateways, reverse proxies, or zero-trust perimeters require client certificate
+authentication during the TLS handshake, provide your certificate and private key:
+
+```bash
+bb --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.key repo list
+```
+
+or export them into the environment:
+
+```bash
+export BB_CLIENT_CERT=/etc/ssl/certs/client.pem
+export BB_CLIENT_KEY=/etc/ssl/private/client.key
+```
+
+You can also persist client certificates per host in your stored profile:
+
+```bash
+bb auth login https://bitbucket.example.com --token abc --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.key
+```
+
+Both files must be PEM-encoded. If either `--client-cert` or `--client-key` is specified without
+the other, `bb` fails immediately with `BB_CLIENT_CERT and BB_CLIENT_KEY must be set together`.
+
 ## Diagnosing a connection
 
 Work outward from the network to the credential:
@@ -114,6 +139,7 @@ credential in play.
 | Symptom | Usual cause |
 |---|---|
 | `x509: certificate signed by unknown authority` | Internal CA not trusted — set `--ca-file`. |
+| `tls: client didn't provide a certificate` or `tls: bad certificate` | Server requires mTLS — set `--client-cert` and `--client-key`. |
 | Hangs, then a timeout | Proxy required and not configured, or `NO_PROXY` missing an internal host. |
 | Works for `bb`, hangs for `bb repo clone` | Git's proxy configured separately — see above. |
 | `401` or `403` from `bb`, `200` from `/status` | Network is fine; this is authentication. See [`bb auth status`](../installation-and-quickstart.md#authenticate-to-bitbucket). |
@@ -121,5 +147,7 @@ credential in play.
 ## See also
 
 - [Environment Variables](../reference/environment.md)
+- [Enterprise Hardening](enterprise-hardening.md)
+- [Threat Model](threat-model.md)
 - [Git authentication](git-authentication.md) — how `bb` supplies credentials to git
 - [Machine Mode and Diagnostics](machine-mode-diagnostics.md)

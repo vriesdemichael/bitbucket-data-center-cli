@@ -79,6 +79,8 @@ your behalf using the link above.`,
 	rootCmd.PersistentFlags().BoolVar(&options.NoColor, "no-color", false, "Disable colored output")
 	rootCmd.PersistentFlags().String("ca-file", "", "Path to PEM CA bundle for TLS trust")
 	rootCmd.PersistentFlags().Bool("insecure-skip-verify", false, "Disable TLS certificate verification (unsafe; local/dev only)")
+	rootCmd.PersistentFlags().String("client-cert", "", "Path to PEM client certificate for mTLS")
+	rootCmd.PersistentFlags().String("client-key", "", "Path to PEM client key for mTLS")
 	rootCmd.PersistentFlags().String("request-timeout", "", "HTTP request timeout (Go duration, e.g. 20s)")
 	rootCmd.PersistentFlags().Int("retry-count", -1, "HTTP retry attempts for transient errors")
 	rootCmd.PersistentFlags().String("retry-backoff", "", "Base retry backoff duration (e.g. 250ms)")
@@ -366,6 +368,8 @@ func applyRuntimeFlagOverrides(cmd *cobra.Command) error {
 	}{
 		{flagName: "ca-file", envKey: "BB_CA_FILE"},
 		{flagName: "insecure-skip-verify", envKey: "BB_INSECURE_SKIP_VERIFY"},
+		{flagName: "client-cert", envKey: "BB_CLIENT_CERT"},
+		{flagName: "client-key", envKey: "BB_CLIENT_KEY"},
 		{flagName: "request-timeout", envKey: "BB_REQUEST_TIMEOUT"},
 		{flagName: "retry-count", envKey: "BB_RETRY_COUNT"},
 		{flagName: "retry-backoff", envKey: "BB_RETRY_BACKOFF"},

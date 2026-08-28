@@ -207,6 +207,8 @@ for.`,
 	var loginUsername string
 	var loginPassword string
 	var loginPasswordStdin bool
+	var loginClientCert string
+	var loginClientKey string
 	var loginSetDefault bool
 	var loginDiscoverAliases bool
 	var loginRequireKeyring bool
@@ -244,6 +246,15 @@ to fail instead of falling back.`,
 
 			warnAboutSecretsOnTheCommandLine(cmd)
 
+			clientCert := strings.TrimSpace(loginClientCert)
+			if clientCert == "" {
+				clientCert = strings.TrimSpace(os.Getenv("BB_CLIENT_CERT"))
+			}
+			clientKey := strings.TrimSpace(loginClientKey)
+			if clientKey == "" {
+				clientKey = strings.TrimSpace(os.Getenv("BB_CLIENT_KEY"))
+			}
+
 			aliases := []string(nil)
 			if loginDiscoverAliases {
 				probeCfg := config.AppConfig{
@@ -251,6 +262,8 @@ to fail instead of falling back.`,
 					BitbucketToken:    token,
 					BitbucketUsername: strings.TrimSpace(loginUsername),
 					BitbucketPassword: password,
+					ClientCertFile:    clientCert,
+					ClientKeyFile:     clientKey,
 				}
 				discoveredAliases, err := discoverAliases(cmd.Context(), probeCfg, deps.NewReposClient)
 				if err == nil {
@@ -264,6 +277,8 @@ to fail instead of falling back.`,
 				Username:       loginUsername,
 				Password:       password,
 				Token:          token,
+				ClientCert:     clientCert,
+				ClientKey:      clientKey,
 				SetDefault:     loginSetDefault,
 				RequireKeyring: loginRequireKeyring,
 			})
@@ -300,6 +315,8 @@ to fail instead of falling back.`,
 	loginCmd.Flags().StringVar(&loginUsername, "username", "", "Username for basic auth")
 	loginCmd.Flags().StringVar(&loginPassword, "password", "", "Password for basic auth (visible in the process list; prefer --password-stdin)")
 	loginCmd.Flags().BoolVar(&loginPasswordStdin, "password-stdin", false, "Read the basic-auth password from stdin")
+	loginCmd.Flags().StringVar(&loginClientCert, "client-cert", "", "Path to PEM client certificate for mTLS")
+	loginCmd.Flags().StringVar(&loginClientKey, "client-key", "", "Path to PEM client key for mTLS")
 	loginCmd.Flags().BoolVar(&loginSetDefault, "set-default", true, "Set host as default target")
 	loginCmd.Flags().BoolVar(&loginDiscoverAliases, "discover-aliases", true, "Discover host aliases from the first accessible repository clone links")
 	loginCmd.Flags().BoolVar(&loginRequireKeyring, "require-keyring", false, "Fail if the OS keyring is unavailable instead of storing credentials in plaintext")

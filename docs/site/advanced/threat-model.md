@@ -199,6 +199,7 @@ git config --local --get http.extraHeader
 - **Attacker Vector (ADV-2)**: Interception proxies re-signing traffic using internal enterprise root CAs cause certificate trust failures. Developers may attempt to bypass errors using `--insecure-skip-verify`.
 
 #### 2. Architectural Mitigations
+- **Mutual TLS (mTLS) Client Authentication**: Transport layer natively supports client certificates and private keys (`--client-cert`, `--client-key`, `BB_CLIENT_CERT`, `BB_CLIENT_KEY`, or stored profile `client_cert`/`client_key` in `~/.config/bb/config.yaml`) to authenticate endpoints to ingress reverse proxies ([ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)).
 - **Additive Corporate CA Trust Pool**: `BB_CA_FILE` appends the internal CA bundle to `x509.SystemCertPool()`, preserving public root verification while trusting the internal Bitbucket host.
 - **Proxy Traversal**: Inherits `HTTPS_PROXY`, `HTTP_PROXY`, and `NO_PROXY` directly from Go's `http.DefaultTransport`.
 - **TLS 1.2+ Enforced**: Pinned minimum version `tlsConfig.MinVersion = tls.VersionTLS12`.
@@ -206,13 +207,12 @@ git config --local --get http.extraHeader
 
 #### 3. Audit Test Procedure
 ```bash
-bb --log-level debug --log-format jsonl repo list --limit 1
+bb --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.key repo list --limit 1
 ```
-*Audit Assertion*: Verify that the connection succeeds over TLS 1.2+ and routes through the designated `HTTPS_PROXY`.
+*Audit Assertion*: Verify that the connection succeeds over TLS 1.2+ with client certificate authentication and routes through the designated `HTTPS_PROXY`.
 
 #### 4. Residual Gap & Tracking
-- **Limitation**: In zero-trust networks requiring client certificates at the TLS layer before reverse proxy ingress, `bb` cannot authenticate because it lacks mutual TLS (mTLS) client certificate support.
-- **Tracked Issue**: **[Issue #422: feat: mutual TLS (mTLS) client certificate support](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/422)**.
+- **Resolution**: Fully resolved. Mutual TLS (mTLS) client certificate support is natively built into the transport layer (`--client-cert`, `--client-key`, `BB_CLIENT_CERT`, `BB_CLIENT_KEY`, and per-host stored profiles), leaving zero residual gap ([ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)).
 
 ---
 
@@ -259,7 +259,7 @@ cosign verify-blob \
 ```
 
 #### 4. Residual Gap & Tracking
-- **Resolution**: Fully resolved via administrative killswitches (`BB_DISABLE_UPDATE=1`, `disable_update: true` in system configuration), compile-time removal (`-tags no_self_update`), and custom release mirror support (`--base-url`, `BB_UPDATE_BASE_URL`, `update_base_url`) ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md), [Issue #421](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/421)).
+- **Resolution**: Fully resolved via administrative killswitches (`BB_DISABLE_UPDATE=1`, `disable_update: true` in system configuration), compile-time removal (`-tags no_self_update`), and custom release mirror support (`--base-url`, `BB_UPDATE_BASE_URL`, `update_base_url`) ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)).
 
 ---
 
@@ -287,11 +287,11 @@ bb auth token list
 
 | Threat ID | Threat Description | Regulatory Mapping | Residual Risk | Risk Treatment | Test Procedure | Tracked Issue |
 |---|---|---|---|---|---|---|
-| **T-1** | Process table secret sniffing & plaintext disk fallback | SOC 2 CC6.1, ISO 27001:2022 A.8.24, NIST SP 800-53 AC-3 | **Low** | Fully mitigated via mandatory Keyring policy enforcement (`require_keyring: true`), system configuration tier, and stdin ingestion. | `bb auth status --json` | [#420](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420) ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)) |
+| **T-1** | Process table secret sniffing & plaintext disk fallback | SOC 2 CC6.1, ISO 27001:2022 A.8.24, NIST SP 800-53 AC-3 | **Low** | Fully mitigated via mandatory Keyring policy enforcement (`require_keyring: true`), system configuration tier, and stdin ingestion ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)). | `bb auth status --json` | — |
 | **T-2** | Repository secret bleed & cross-remote credential leakage | SOC 2 CC6.6, ISO 27001:2022 A.8.12 | **Low** | Mitigated via host-scoped Git credential helper (`bb auth setup-git`). | `git config --local --get http.extraHeader` | — |
-| **T-3** | Inability to traverse mutual TLS (mTLS) ingress | NIST SP 800-207 (Zero Trust Architecture), SC-8 | **Medium** | Backlog feature; requires client cert/key flags in transport. | `bb repo list` behind mTLS | [#422](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/422) |
+| **T-3** | Inability to traverse mutual TLS (mTLS) ingress | NIST SP 800-207 (Zero Trust Architecture), SC-8 | **Low** | Fully mitigated via mTLS client cert/key support (`--client-cert`, `--client-key`, `BB_CLIENT_CERT`, `BB_CLIENT_KEY`, and stored profiles; [ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)). | `bb --client-cert ... --client-key ... repo list` | — |
 | **T-4** | Prompt-injected AI agent executing unauthorized mutations | OWASP Top 10 LLM (2025 LLM01, LLM06), SOC 2 CC6.8 | **Medium** | Mitigate via safe/unsafe tool withholding; requires workspace bounding & audit logging. | `bb ai mcp tools` | [#423](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/423) |
-| **T-5** | Unmanaged binary updates breaking package manager state | ISO 27001:2022 A.8.19, NIST SP 800-53 SI-2 | **Low** | Fully mitigated via `BB_DISABLE_UPDATE=1`, system config `disable_update: true`, build tag `no_self_update`, and internal release mirror resolution. | `bb update` on managed machine | [#421](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/421) ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)) |
+| **T-5** | Unmanaged binary updates breaking package manager state | ISO 27001:2022 A.8.19, NIST SP 800-53 SI-2 | **Low** | Fully mitigated via `BB_DISABLE_UPDATE=1`, system config `disable_update: true`, build tag `no_self_update`, and internal release mirror resolution ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)). | `bb update` on managed machine | — |
 | **T-6** | Unfederated static token lifecycle management | CIS Controls v8 5.4 / 6.1, NIST SP 800-63B | **Medium** | Mitigate via scoped TTL PATs; browser flow requires Bitbucket DC admin configuration. | `bb auth token list` | [#424](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/424) |
 
 ---

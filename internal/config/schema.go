@@ -44,6 +44,14 @@ func ConfigJSONSchema() map[string]any {
 			"type":        "string",
 			"description": "Base URL of internal release manifest and asset mirror.",
 		},
+		"client_cert": map[string]any{
+			"type":        "string",
+			"description": "Absolute or relative path to PEM client certificate for mutual TLS (mTLS).",
+		},
+		"client_key": map[string]any{
+			"type":        "string",
+			"description": "Absolute or relative path to PEM client private key for mutual TLS (mTLS).",
+		},
 	}
 
 	hostProfileSchema := map[string]any{
@@ -70,6 +78,14 @@ func ConfigJSONSchema() map[string]any {
 				"items": map[string]any{
 					"type": "string",
 				},
+			},
+			"client_cert": map[string]any{
+				"type":        "string",
+				"description": "Absolute or relative path to PEM client certificate for mutual TLS (mTLS).",
+			},
+			"client_key": map[string]any{
+				"type":        "string",
+				"description": "Absolute or relative path to PEM client private key for mutual TLS (mTLS).",
 			},
 		},
 	}
@@ -111,6 +127,8 @@ func ConfigJSONSchema() map[string]any {
 			},
 			"require_keyring":            policyProps["require_keyring"],
 			"ca_file":                    policyProps["ca_file"],
+			"client_cert":                policyProps["client_cert"],
+			"client_key":                 policyProps["client_key"],
 			"allowed_hosts":              policyProps["allowed_hosts"],
 			"allow_insecure_skip_verify": policyProps["allow_insecure_skip_verify"],
 			"disable_update":             policyProps["disable_update"],
