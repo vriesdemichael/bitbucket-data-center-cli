@@ -163,7 +163,43 @@ type AliasMatch struct {
 	Endpoint string
 }
 
+// Overrides are per-invocation values that outrank the environment when
+// configuration is resolved, for flags like `bb api --host` and
+// `bb ai mcp serve --host/--token`.
+//
+// They exist so a command can target a specific instance without writing to the
+// process environment. Setting BITBUCKET_URL or BITBUCKET_TOKEN to steer a load
+// works, but it outlives the call: it retargets everything the process does
+// afterwards, is inherited by any subprocess bb spawns, and is not safe to do
+// from more than one goroutine. Passing the value down the call it belongs to
+// has none of those failure modes.
+type Overrides struct {
+	// Host targets a specific Bitbucket instance, ahead of BITBUCKET_URL and
+	// any configured default host.
+	Host string
+	// Token supplies the credential directly, ahead of BITBUCKET_TOKEN and any
+	// stored credential.
+	Token string
+}
+
+// LoadFromEnv resolves configuration from the environment and stored
+// credentials, with nothing overridden.
 func LoadFromEnv() (AppConfig, error) {
+	return LoadWithOverrides(Overrides{})
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+// LoadWithOverrides resolves configuration the same way LoadFromEnv does, with
+// the given per-invocation values taking precedence.
+func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 	loadDotEnv()
 
 	policy, err := LoadPolicy()
@@ -213,6 +249,9 @@ func LoadFromEnv() (AppConfig, error) {
 	}
 
 	envHost := strings.TrimSpace(os.Getenv("BITBUCKET_URL"))
+	if hostOverride := strings.TrimSpace(overrides.Host); hostOverride != "" {
+		envHost = hostOverride
+	}
 	resolvedURL := ""
 	if envHost != "" {
 		resolvedURL = normalizeURL(envHost)
@@ -262,7 +301,7 @@ func LoadFromEnv() (AppConfig, error) {
 		BitbucketURL:           resolvedURL,
 		BitbucketVersionTarget: envOrDefault("BITBUCKET_VERSION_TARGET", defaultBitbucketVersionTarget),
 		ProjectKey:             projectKey,
-		BitbucketToken:         envOrDefault("BITBUCKET_TOKEN", ""),
+		BitbucketToken:         firstNonEmpty(strings.TrimSpace(overrides.Token), envOrDefault("BITBUCKET_TOKEN", "")),
 		BitbucketUsername:      envOrDefault("BITBUCKET_USERNAME", envOrDefault("BITBUCKET_USER", envOrDefault("ADMIN_USER", ""))),
 		BitbucketPassword:      envOrDefault("BITBUCKET_PASSWORD", envOrDefault("ADMIN_PASSWORD", "")),
 		CAFile:                 caFile,

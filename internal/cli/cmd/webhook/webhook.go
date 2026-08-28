@@ -189,7 +189,10 @@ func New(deps Dependencies) *cobra.Command {
 	updateCmd.Flags().StringVar(&name, "name", "", "New name of the webhook")
 	updateCmd.Flags().StringVar(&url, "url", "", "New URL of the webhook")
 	updateCmd.Flags().StringSliceVar(&events, "event", nil, "New list of webhook events to subscribe to")
-	updateCmd.Flags().StringVar(&activeVal, "active", "", "Active status (true or false)")
+	// A string rather than a bool because update has three states to express:
+	// activate, deactivate, and leave the current setting alone. `create` takes
+	// a bool for the same flag, where there is nothing to leave alone.
+	updateCmd.Flags().StringVar(&activeVal, "active", "", "Active status (true or false); unchanged when omitted")
 
 	var webhookTestURL string
 	testCmd := &cobra.Command{
@@ -446,19 +449,20 @@ func New(deps Dependencies) *cobra.Command {
 				}
 			}
 
-			idStr := ""
+			// Report the name when the server did not send an id back, rather
+			// than printing the name where an id belongs: `bb webhook delete`
+			// takes the id, so a name shown in its place reads as one.
 			if hook.Id != nil {
-				idStr = fmt.Sprintf("%d", *hook.Id)
-			} else {
-				idStr = args[0]
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook:"), style.Secondary.Render(fmt.Sprintf("%d", *hook.Id)))
+				return nil
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook:"), style.Secondary.Render(idStr))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook"), style.Secondary.Render(args[0]))
 			return nil
 		},
 	}
 	createCmd.Flags().StringSliceVar(&createEvents, "event", []string{"repo:refs_changed"}, "Webhook event(s) to subscribe to")
-	createCmd.Flags().BoolVar(&createActive, "active", true, "Whether the webhook is active")
+	createCmd.Flags().BoolVar(&createActive, "active", true, "Whether the new webhook is active")
 
 	deleteCmd := &cobra.Command{
 		Use:   "delete <id>",

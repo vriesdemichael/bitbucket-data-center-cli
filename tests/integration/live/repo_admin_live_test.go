@@ -278,4 +278,3 @@ func TestLiveCLIRepoLifecyclePromotedCanonical(t *testing.T) {
 		t.Fatalf("expected delete status ok, got: %s", deleteOutput)
 	}
 }
-

@@ -11,6 +11,7 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/services/commentanchor"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
 
@@ -530,36 +531,29 @@ func (service *Service) AddInlineComment(ctx context.Context, repository Reposit
 		return Comment{}, apperrors.New(apperrors.KindValidation, "line must be a positive integer", nil)
 	}
 
-	lineType, err := normalizeLineType(anchor.LineType)
+	anchorFields, err := commentanchor.Payload(commentanchor.Options{
+		Path:     trimmedPath,
+		Line:     anchor.Line,
+		LineType: anchor.LineType,
+	}, commentanchor.APINames)
 	if err != nil {
 		return Comment{}, err
 	}
 
-	// fileType selects which side of the diff the line number refers to:
-	// removed lines only exist in the original file, everything else is
-	// anchored against the updated one. diffType EFFECTIVE anchors the comment
-	// against the pull request diff rather than a single commit.
-	fileType := "TO"
-	if lineType == "REMOVED" {
-		fileType = "FROM"
-	}
-
-	payload := map[string]any{
-		"text": trimmedText,
-		"anchor": map[string]any{
-			"line":     anchor.Line,
-			"path":     trimmedPath,
-			"lineType": lineType,
-			"fileType": fileType,
-			"diffType": "EFFECTIVE",
-		},
+	payload := map[string]any{"text": trimmedText}
+	for key, value := range anchorFields {
+		payload[key] = value
 	}
 
 	path := fmt.Sprintf("%s/%s/comments", pullRequestPath(repository), resolvedID)
 
 	var result Comment
 	if err := service.client.PostJSON(ctx, path, nil, payload, &result); err != nil {
-		return Comment{}, err
+		return Comment{}, commentanchor.ExplainRejection(err, commentanchor.Options{
+			Path:     trimmedPath,
+			Line:     anchor.Line,
+			LineType: anchor.LineType,
+		})
 	}
 
 	return result, nil
@@ -568,15 +562,7 @@ func (service *Service) AddInlineComment(ctx context.Context, repository Reposit
 // normalizeLineType validates the diff side an inline comment anchors to,
 // defaulting to ADDED when unset.
 func normalizeLineType(lineType string) (string, error) {
-	normalized := strings.ToUpper(strings.TrimSpace(lineType))
-	switch normalized {
-	case "":
-		return "ADDED", nil
-	case "ADDED", "REMOVED", "CONTEXT":
-		return normalized, nil
-	default:
-		return "", apperrors.New(apperrors.KindValidation, "line_type must be one of ADDED, REMOVED, or CONTEXT", nil)
-	}
+	return commentanchor.NormalizeLineType(lineType, commentanchor.APINames)
 }
 
 func (service *Service) AddReviewer(ctx context.Context, repository RepositoryRef, pullRequestID string, username string) (PullRequest, error) {

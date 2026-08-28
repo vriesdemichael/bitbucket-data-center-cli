@@ -9,6 +9,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 	browseservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/browse"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/services/commentanchor"
 	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
@@ -241,20 +242,13 @@ func specAddPRComment() Spec {
 			parentID := int64(req.GetInt("parent_id", 0))
 			inline := filePath != "" || line > 0
 
-			// Reject partial or conflicting anchors rather than silently
-			// downgrading to a general comment, which would leave the comment
-			// attached to the wrong place with no indication anything was off.
-			if inline && filePath == "" {
-				return mcpgo.NewToolResultError("add_pr_comment: line requires path for an inline comment"), nil
-			}
-			if inline && line <= 0 {
-				return mcpgo.NewToolResultError("add_pr_comment: path requires a positive line for an inline comment"), nil
-			}
-			if inline && parentID > 0 {
-				return mcpgo.NewToolResultError("add_pr_comment: parent_id cannot be combined with path/line; reply to a comment or anchor a new one, not both"), nil
-			}
-			if !inline && lineType != "" {
-				return mcpgo.NewToolResultError("add_pr_comment: line_type only applies to inline comments; provide path and line too"), nil
+			if err := commentanchor.Validate(commentanchor.Options{
+				Path:     filePath,
+				Line:     line,
+				LineType: lineType,
+				ParentID: parentID,
+			}, commentanchor.APINames); err != nil {
+				return mcpgo.NewToolResultError("add_pr_comment: " + err.Error()), nil
 			}
 
 			ref := pullrequestservice.RepositoryRef{ProjectKey: project, Slug: repo}

@@ -766,6 +766,10 @@
       "method": "PUT",
       "path": "/default-reviewers/latest/projects/%s/repos/%s/condition/%s"
     },
+    "UpdatePullRequestSettings1": {
+      "method": "POST",
+      "path": "/api/latest/projects/%s/repos/%s/settings/pull-requests"
+    },
     "UpdateRepository": {
       "method": "PUT",
       "path": "/api/latest/projects/%s/repos/%s"

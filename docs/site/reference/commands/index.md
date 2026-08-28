@@ -3626,10 +3626,30 @@ Use "bb pr comment [command] --help" for more information about a command.
 Add a comment to a pull request
 
 ```text
-Add a comment to a pull request
+Add a comment to a pull request.
+
+Pass --path and --line to anchor the comment to a file and line, or --parent-id
+to reply to an existing comment. Bitbucket only accepts an anchor on a line that
+appears in the pull request diff, so the line has to be inside a changed hunk and
+--line-type has to match the side it is on.
 
 Usage:
   bb pr comment add <pr-id> [flags]
+
+Examples:
+  # A pull-request-level comment
+  bb pr comment add 49 --repo PROJ/repo --text "Looks good overall."
+
+  # Anchored to a line in the diff
+  bb pr comment add 49 --repo PROJ/repo --path app/core/runner.py --line 157 \
+    --text "This raises after the execution is recorded."
+
+  # A line that only exists in the original file
+  bb pr comment add 49 --repo PROJ/repo --path app/core/runner.py --line 88 \
+    --line-type REMOVED --text "Why was this dropped?"
+
+  # Reply to an existing comment
+  bb pr comment add 49 --repo PROJ/repo --parent-id 1389396 --text "Agreed, fixed."
 
 Flags:
       --blocker            Mark the comment as a blocker
@@ -9546,7 +9566,7 @@ Usage:
   bb webhook create <name> <url> [flags]
 
 Flags:
-      --active          Whether the webhook is active (default true)
+      --active          Whether the new webhook is active (default true)
       --event strings   Webhook event(s) to subscribe to (default [repo:refs_changed])
 
 Global Flags:
@@ -9717,7 +9737,7 @@ Usage:
   bb webhook update <id> [flags]
 
 Flags:
-      --active string   Active status (true or false)
+      --active string   Active status (true or false); unchanged when omitted
       --event strings   New list of webhook events to subscribe to
       --name string     New name of the webhook
       --url string      New URL of the webhook

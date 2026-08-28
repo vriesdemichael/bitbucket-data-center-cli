@@ -28,6 +28,7 @@ import (
 	browseservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/browse"
 	codeowners "github.com/vriesdemichael/bitbucket-server-cli/internal/services/codeowners"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/services/commentanchor"
 	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
 	jiraservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/jira"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
@@ -1887,23 +1888,38 @@ func New(deps Dependencies) *cobra.Command {
 	commentAddCmd := &cobra.Command{
 		Use:   "add <pr-id>",
 		Short: "Add a comment to a pull request",
-		Args:  cobra.ExactArgs(1),
+		Long: `Add a comment to a pull request.
+
+Pass --path and --line to anchor the comment to a file and line, or --parent-id
+to reply to an existing comment. Bitbucket only accepts an anchor on a line that
+appears in the pull request diff, so the line has to be inside a changed hunk and
+--line-type has to match the side it is on.`,
+		Example: `  # A pull-request-level comment
+  bb pr comment add 49 --repo PROJ/repo --text "Looks good overall."
+
+  # Anchored to a line in the diff
+  bb pr comment add 49 --repo PROJ/repo --path app/core/runner.py --line 157 \
+    --text "This raises after the execution is recorded."
+
+  # A line that only exists in the original file
+  bb pr comment add 49 --repo PROJ/repo --path app/core/runner.py --line 88 \
+    --line-type REMOVED --text "Why was this dropped?"
+
+  # Reply to an existing comment
+  bb pr comment add 49 --repo PROJ/repo --parent-id 1389396 --text "Agreed, fixed."`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			inline := commentAddPath != "" || commentAddLine > 0
-			if inline && commentAddPath == "" {
-				return apperrors.New(apperrors.KindValidation, "line requires path for an inline comment", nil)
-			}
-			if inline && commentAddLine <= 0 {
-				return apperrors.New(apperrors.KindValidation, "path requires a positive line for an inline comment", nil)
-			}
-			if inline && commentAddParentID > 0 {
-				return apperrors.New(apperrors.KindValidation, "parent-id cannot be combined with path/line; reply to a comment or anchor a new one, not both", nil)
-			}
-			if !inline && commentAddLineType != "" {
-				return apperrors.New(apperrors.KindValidation, "line-type only applies to inline comments; provide path and line too", nil)
-			}
-			if commentAddParentID > 0 && commentAddBlocker {
-				return apperrors.New(apperrors.KindValidation, "parent-id cannot be combined with blocker", nil)
+			// Validated up front, in terms of the flags the caller typed, so a
+			// bad anchor fails before any network call. The comment service
+			// applies the same rules for callers that do not come through here.
+			if err := commentanchor.Validate(commentanchor.Options{
+				Path:     commentAddPath,
+				Line:     commentAddLine,
+				LineType: commentAddLineType,
+				ParentID: commentAddParentID,
+				Blocker:  commentAddBlocker,
+			}, commentanchor.CLINames); err != nil {
+				return err
 			}
 
 			cfg, client, err := deps.LoadConfigAndClient()

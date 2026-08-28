@@ -89,13 +89,13 @@ your behalf using the link above.`,
 
 	rootCmd.AddCommand(aicmd.New(aicmd.Dependencies{
 		Version:    func() string { return rootCmd.Version },
-		LoadConfig: loadConfig,
+		LoadConfig: loadConfigWithOverrides,
 		WriteJSON:  writeJSON,
 	}))
 	rootCmd.AddCommand(apicmd.New(apicmd.Dependencies{
 		JSONEnabled:   func() bool { return options.JSON },
 		DryRunEnabled: func() bool { return options.DryRun },
-		LoadConfig:    loadConfig,
+		LoadConfig:    loadConfigWithOverrides,
 		WriteJSON:     writeJSON,
 	}))
 	rootCmd.AddCommand(authcmd.New(authcmd.Dependencies{
@@ -307,7 +307,13 @@ func (options *rootOptions) permissionCheckerFor(client *openapigenerated.Client
 }
 
 func loadConfig() (config.AppConfig, error) {
-	cfg, err := config.LoadFromEnv()
+	return loadConfigWithOverrides(config.Overrides{})
+}
+
+// loadConfigWithOverrides is loadConfig for the commands that take a --host or
+// --token flag, which have to steer the resolution rather than inherit it.
+func loadConfigWithOverrides(overrides config.Overrides) (config.AppConfig, error) {
+	cfg, err := config.LoadWithOverrides(overrides)
 	if err != nil {
 		return config.AppConfig{}, err
 	}

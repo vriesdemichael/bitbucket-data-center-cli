@@ -490,12 +490,14 @@ func TestServiceCreateInlineAndThreadedComments(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected anchor in payload, got %#v", receivedBody)
 	}
-	if anchorMap["line"] != float64(42) || anchorMap["lineType"] != "ADDED" || anchorMap["fileType"] != "TO" {
+	if anchorMap["line"] != float64(42) || anchorMap["lineType"] != "ADDED" || anchorMap["fileType"] != "TO" || anchorMap["diffType"] != "EFFECTIVE" {
 		t.Fatalf("unexpected anchor values: %#v", anchorMap)
 	}
-	pathMap, ok := anchorMap["path"].(map[string]any)
-	if !ok || pathMap["name"] != "bar.go" || pathMap["parent"] != "pkg/foo" {
-		t.Fatalf("unexpected anchor path: %#v", anchorMap)
+	// The create endpoint takes anchor.path as a plain string. The generated
+	// model describes the object Bitbucket sends back, and building the request
+	// from that shape leaves the comment unanchored.
+	if anchorMap["path"] != "pkg/foo/bar.go" {
+		t.Fatalf("expected a plain string anchor path, got %#v", anchorMap["path"])
 	}
 
 	// 4. Inline comment with REMOVED
@@ -508,9 +510,92 @@ func TestServiceCreateInlineAndThreadedComments(t *testing.T) {
 	if anchorMap["fileType"] != "FROM" || anchorMap["lineType"] != "REMOVED" {
 		t.Fatalf("unexpected anchor for REMOVED: %#v", anchorMap)
 	}
-	pathMap = anchorMap["path"].(map[string]any)
-	if pathMap["name"] != "root.go" || pathMap["parent"] != nil {
-		t.Fatalf("unexpected anchor path for root file: %#v", anchorMap)
+	if anchorMap["path"] != "root.go" {
+		t.Fatalf("expected a plain string anchor path for a root file, got %#v", anchorMap["path"])
+	}
+
+	// 5. A pending inline comment still asks for the PENDING state.
+	receivedBody = nil
+	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Path: "root.go", Line: 5, Pending: true}, "draft inline")
+	if err != nil {
+		t.Fatalf("unexpected error for pending inline comment: %v", err)
+	}
+	if receivedBody["state"] != "PENDING" {
+		t.Fatalf("expected PENDING state alongside the anchor, got %#v", receivedBody)
+	}
+	if _, ok := receivedBody["anchor"].(map[string]any); !ok {
+		t.Fatalf("expected the anchor to survive alongside the pending state, got %#v", receivedBody)
+	}
+}
+
+// TestServiceCreateExplainsAnchorRejection covers the 400 Bitbucket returns
+// when the anchored line is not in the diff. The raw response says nothing
+// about the line, the path, or the rule.
+func TestServiceCreateExplainsAnchorRejection(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"errors":[{"message":"The comment anchor is invalid.","exceptionName":null}]}`))
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	_, err := service.Create(context.Background(),
+		Target{Repository: repo, PullRequestID: "12", Path: "pkg/foo/bar.go", Line: 157, LineType: "ADDED"},
+		"this line needs a guard")
+	if err == nil {
+		t.Fatal("expected an error for a rejected anchor")
+	}
+	if !apperrors.IsKind(err, apperrors.KindValidation) {
+		t.Fatalf("expected a validation error, got %v", err)
+	}
+
+	message := err.Error()
+	for _, want := range []string{
+		"pkg/foo/bar.go:157",
+		"line type ADDED",
+		"only accepted on a line that appears in the pull request diff",
+		// The server's own words are kept, not swallowed.
+		"The comment anchor is invalid.",
+	} {
+		if !strings.Contains(message, want) {
+			t.Fatalf("expected the error to mention %q, got: %s", want, message)
+		}
+	}
+
+	// A plain pull-request-level comment must not be dressed up with anchor
+	// advice it has nothing to do with.
+	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12"}, "general comment")
+	if err == nil {
+		t.Fatal("expected an error for the general comment too")
+	}
+	if strings.Contains(err.Error(), "pull request diff") {
+		t.Fatalf("anchor advice must not appear on a non-inline comment: %s", err.Error())
+	}
+}
+
+// TestServiceCreateDecodesStringAnchorPathResponse covers the other half of the
+// path-shape mismatch: Bitbucket echoes the created comment back with a string
+// anchor path, which the generated model cannot decode. The comment exists by
+// then, so a decode failure must not be reported as a failed create.
+func TestServiceCreateDecodesStringAnchorPathResponse(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":321,"version":0,"text":"inline","anchor":{"line":42,"lineType":"ADDED","fileType":"TO","diffType":"EFFECTIVE","path":"pkg/foo/bar.go","srcPath":"pkg/foo/bar.go"}}`))
+	})
+
+	created, err := service.Create(context.Background(),
+		Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12", Path: "pkg/foo/bar.go", Line: 42},
+		"inline")
+	if err != nil {
+		t.Fatalf("a string anchor path in the response must not fail the create: %v", err)
+	}
+	if created.Id == nil || *created.Id != 321 {
+		t.Fatalf("expected the server-assigned id 321, got %#v", created.Id)
+	}
+	if created.Anchor == nil || created.Anchor.Path == nil || created.Anchor.Path.Name == nil || *created.Anchor.Path.Name != "bar.go" {
+		t.Fatalf("expected the anchor path to be decoded into the object form, got %#v", created.Anchor)
 	}
 }
 

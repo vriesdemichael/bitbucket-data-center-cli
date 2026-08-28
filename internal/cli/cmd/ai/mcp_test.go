@@ -21,7 +21,7 @@ import (
 func testMCPDeps() Dependencies {
 	return Dependencies{
 		Version: func() string { return "test" },
-		LoadConfig: func() (config.AppConfig, error) {
+		LoadConfig: func(config.Overrides) (config.AppConfig, error) {
 			return config.AppConfig{}, nil
 		},
 		WriteJSON: func(w io.Writer, v any) error {
@@ -125,7 +125,7 @@ func TestMCPServeRejectsLoadConfigError(t *testing.T) {
 	sentinel := errors.New("config load failed")
 	deps := Dependencies{
 		Version: func() string { return "test" },
-		LoadConfig: func() (config.AppConfig, error) {
+		LoadConfig: func(config.Overrides) (config.AppConfig, error) {
 			return config.AppConfig{}, sentinel
 		},
 		WriteJSON: func(w io.Writer, v any) error { return nil },
@@ -146,30 +146,43 @@ func TestMCPServeRejectsLoadConfigError(t *testing.T) {
 	}
 }
 
-// TestMCPServeHostAndTokenOverride verifies that --host and --token env vars are set before LoadConfig.
+// TestMCPServeHostAndTokenOverride verifies that --host and --token reach the
+// config load, and that they do so without touching the environment.
+//
+// The environment assertion is the point: this process goes on to serve MCP for
+// as long as the client keeps it alive, so an exported BITBUCKET_TOKEN would sit
+// in the environment of every subprocess for the whole session.
 func TestMCPServeHostAndTokenOverride(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "http://initial.example")
 	t.Setenv("BITBUCKET_TOKEN", "initial-token")
 
-	var seenHost, seenToken string
+	var seen config.Overrides
 	deps := Dependencies{
 		Version: func() string { return "test" },
-		LoadConfig: func() (config.AppConfig, error) {
-			seenHost = mustGetenv("BITBUCKET_URL")
-			seenToken = mustGetenv("BITBUCKET_TOKEN")
+		LoadConfig: func(overrides config.Overrides) (config.AppConfig, error) {
+			seen = overrides
 			return config.AppConfig{}, errors.New("stop here")
 		},
 		WriteJSON: func(w io.Writer, v any) error { return nil },
 	}
 	cmd := New(deps)
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
 	cmd.SetArgs([]string{"mcp", "serve", "--host", "http://override.example", "--token", "my-pat"})
 	_ = cmd.Execute() // will error at LoadConfig — that's expected
 
-	if seenHost != "http://override.example" {
-		t.Errorf("host override: got %q, want %q", seenHost, "http://override.example")
+	if seen.Host != "http://override.example" {
+		t.Errorf("host override: got %q, want %q", seen.Host, "http://override.example")
 	}
-	if seenToken != "my-pat" {
-		t.Errorf("token override: got %q, want %q", seenToken, "my-pat")
+	if seen.Token != "my-pat" {
+		t.Errorf("token override: got %q, want %q", seen.Token, "my-pat")
+	}
+
+	if got := os.Getenv("BITBUCKET_URL"); got != "http://initial.example" {
+		t.Errorf("--host must not rewrite BITBUCKET_URL, got %q", got)
+	}
+	if got := os.Getenv("BITBUCKET_TOKEN"); got != "initial-token" {
+		t.Errorf("--token must not rewrite BITBUCKET_TOKEN, got %q", got)
 	}
 }
 
@@ -178,7 +191,7 @@ func TestMCPServeClientFromConfigFails(t *testing.T) {
 	// Provide a config with an invalid URL to make openapi client construction fail.
 	deps := Dependencies{
 		Version: func() string { return "test" },
-		LoadConfig: func() (config.AppConfig, error) {
+		LoadConfig: func(config.Overrides) (config.AppConfig, error) {
 			return config.AppConfig{
 				BitbucketURL:   "://bad-url",
 				RequestTimeout: time.Second,
@@ -209,7 +222,7 @@ func TestMCPServePassesThroughTestServer(t *testing.T) {
 
 	deps := Dependencies{
 		Version: func() string { return "test" },
-		LoadConfig: func() (config.AppConfig, error) {
+		LoadConfig: func(config.Overrides) (config.AppConfig, error) {
 			return config.AppConfig{
 				BitbucketURL:   srv.URL,
 				RequestTimeout: time.Second,
@@ -224,11 +237,6 @@ func TestMCPServePassesThroughTestServer(t *testing.T) {
 	// ServeStdio reads from os.Stdin; with no piped input it will fail or succeed
 	// immediately — either is fine. We just want this path to be covered.
 	_ = cmd.Execute()
-}
-
-// mustGetenv reads an env var, used in tests.
-func mustGetenv(key string) string {
-	return os.Getenv(key)
 }
 
 // TestMCPToolsCountMatchesAllSpecs ensures the tools listing covers all specs.

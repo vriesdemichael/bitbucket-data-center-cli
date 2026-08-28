@@ -2,10 +2,10 @@
   "version": 1,
   "summary": {
     "runnable_commands": 233,
-    "covered_commands": 229,
-    "covered_percent": 98.28326180257511,
+    "covered_commands": 231,
+    "covered_percent": 99.14163090128756,
     "masked_commands": 0,
-    "uncovered_commands": 4
+    "uncovered_commands": 2
   },
   "covered": [
     "admin health",
@@ -232,6 +232,8 @@
     "tag list",
     "tag view",
     "update",
+    "webhook create",
+    "webhook delete",
     "webhook get",
     "webhook list",
     "webhook stats",
@@ -241,8 +243,6 @@
   "known_masked": [],
   "known_uncovered": [
     "ai mcp serve",
-    "ai mcp tools",
-    "webhook create",
-    "webhook delete"
+    "ai mcp tools"
   ]
 }

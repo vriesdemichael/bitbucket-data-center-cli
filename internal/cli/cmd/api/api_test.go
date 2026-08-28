@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,7 +20,7 @@ func newTestDependencies(serverURL string, jsonMode bool, dryRun bool) Dependenc
 	return Dependencies{
 		JSONEnabled:   func() bool { return jsonMode },
 		DryRunEnabled: func() bool { return dryRun },
-		LoadConfig: func() (config.AppConfig, error) {
+		LoadConfig: func(config.Overrides) (config.AppConfig, error) {
 			return config.AppConfig{
 				BitbucketURL:   serverURL,
 				BitbucketToken: "test-token",
@@ -602,7 +603,7 @@ func TestApiDefaults(t *testing.T) {
 
 func TestApiLoadConfigError(t *testing.T) {
 	deps := Dependencies{
-		LoadConfig: func() (config.AppConfig, error) {
+		LoadConfig: func(config.Overrides) (config.AppConfig, error) {
 			return config.AppConfig{}, apperrors.New(apperrors.KindValidation, "forced config error", nil)
 		},
 	}
@@ -846,7 +847,22 @@ func TestApiMangledPathSanitization(t *testing.T) {
 	}
 }
 
+// isolateStoredConfig points config lookups at an empty temporary file so a
+// test never reads — or authenticates against — the developer's real Bitbucket
+// hosts.
+func isolateStoredConfig(t *testing.T) {
+	t.Helper()
+
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(configPath, []byte("hosts: {}\n"), 0o600); err != nil {
+		t.Fatalf("write stored config: %v", err)
+	}
+	t.Setenv("BB_CONFIG_PATH", configPath)
+}
+
 func TestApiHostFlagOverride(t *testing.T) {
+	isolateStoredConfig(t)
+
 	var serverHit bool
 	customServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		serverHit = true
@@ -872,5 +888,140 @@ func TestApiHostFlagOverride(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), `"host": "custom"`) {
 		t.Fatalf("expected custom server response, got: %s", buf.String())
+	}
+}
+
+// TestApiHostFlagDoesNotFallBackToDefaultHost pins the whole point of --host: a
+// host that is not in the stored config must still be the host that is called.
+// Resolving stored credentials leniently returns the default server's entire
+// profile, URL included, so the command used to answer confidently from a
+// server the caller never named.
+func TestApiHostFlagDoesNotFallBackToDefaultHost(t *testing.T) {
+	var defaultHit, customHit bool
+
+	defaultServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defaultHit = true
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"who":"default"}`))
+	}))
+	defer defaultServer.Close()
+
+	customServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		customHit = true
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"who":"custom"}`))
+	}))
+	defer customServer.Close()
+
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	storedConfig := fmt.Sprintf(
+		"default_host: %s\nhosts:\n  %s:\n    url: %s\n    username: someone\ninsecure_secrets:\n  %s:\n    token: stored-token\n",
+		defaultServer.URL, defaultServer.URL, defaultServer.URL, defaultServer.URL)
+	if err := os.WriteFile(configPath, []byte(storedConfig), 0o600); err != nil {
+		t.Fatalf("write stored config: %v", err)
+	}
+	t.Setenv("BB_CONFIG_PATH", configPath)
+
+	deps := newTestDependencies(defaultServer.URL, false, false)
+	cmd := New(deps)
+	buf := &bytes.Buffer{}
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"/rest/api/1.0/projects", "--host", customServer.URL})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if defaultHit || !customHit {
+		t.Fatalf("--host must target the requested server, not the stored default (default hit=%v, custom hit=%v): %s",
+			defaultHit, customHit, buf.String())
+	}
+}
+
+// TestApiHostFlagLeavesEnvironmentAlone pins how --host reaches the config
+// load: as an argument, not as a write to the process environment.
+//
+// Steering a load by exporting BITBUCKET_URL works, but it outlives the call —
+// it retargets everything the process does afterwards and is inherited by any
+// subprocess bb spawns.
+func TestApiHostFlagLeavesEnvironmentAlone(t *testing.T) {
+	isolateStoredConfig(t)
+	t.Setenv("BITBUCKET_URL", "https://original.example")
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer server.Close()
+
+	var seen config.Overrides
+	var envDuringLoad string
+	deps := newTestDependencies(server.URL, false, false)
+	deps.LoadConfig = func(overrides config.Overrides) (config.AppConfig, error) {
+		seen = overrides
+		envDuringLoad = os.Getenv("BITBUCKET_URL")
+		return config.AppConfig{BitbucketURL: server.URL, BitbucketToken: "test-token"}, nil
+	}
+
+	cmd := New(deps)
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"/rest/api/1.0/projects", "--host", server.URL})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if seen.Host != server.URL {
+		t.Fatalf("expected the host to be passed to the load, got %q", seen.Host)
+	}
+	if envDuringLoad != "https://original.example" {
+		t.Fatalf("BITBUCKET_URL must not be rewritten during the load, got %q", envDuringLoad)
+	}
+	if got := os.Getenv("BITBUCKET_URL"); got != "https://original.example" {
+		t.Fatalf("BITBUCKET_URL must be untouched after the command, got %q", got)
+	}
+}
+
+// TestApiSanitizePreservesLegitimatePaths guards the MSYS2 recovery from eating
+// real endpoints. `bb api` reaches plugin paths that contain "/rest/" partway
+// through, and a heuristic matching on words like "git" truncated them.
+func TestApiSanitizePreservesLegitimatePaths(t *testing.T) {
+	for _, path := range []string{
+		"/plugins/servlet/git-lfs/rest/objects/batch",
+		"/git/rest/api/1.0/projects",
+		"/bitbucket/rest/api/1.0/projects",
+		"/plugins/servlet/applinks/whoami",
+		"/rest/api/1.0/projects",
+		"rest/api/1.0/projects",
+		"/status",
+	} {
+		got, mangled := sanitizeMangledPath(path)
+		if mangled || got != path {
+			t.Errorf("path %q must be left alone, got %q (mangled=%v)", path, got, mangled)
+		}
+	}
+}
+
+// TestApiHTMLResponseAllowedOutsideRest keeps the login-page check to the REST
+// API. Plugin and servlet endpoints legitimately render HTML.
+func TestApiHTMLResponseAllowedOutsideRest(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html;charset=UTF-8")
+		_, _ = w.Write([]byte(`<html><body>plugin page</body></html>`))
+	}))
+	defer server.Close()
+
+	deps := newTestDependencies(server.URL, false, false)
+	cmd := New(deps)
+	buf := &bytes.Buffer{}
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"/plugins/servlet/custom-report"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("HTML from a non-REST path must not be rejected: %v", err)
+	}
+	if !strings.Contains(buf.String(), "plugin page") {
+		t.Fatalf("expected the plugin page body, got: %s", buf.String())
 	}
 }
