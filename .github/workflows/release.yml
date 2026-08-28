@@ -251,6 +251,7 @@ jobs:
           BINARY_NAME="bb${BINARY_EXT}"
           ARCHIVE_BASENAME="bb_${VERSION_NO_V}_${GOOS}_${GOARCH}"
 
+          # Standard build (in-place self-update enabled for standalone binary downloads)
           CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" go build -trimpath -ldflags "-s -w -buildid= -X main.Version=${VERSION}" -o "$BINARY_NAME" ./cmd/bb
 
           if [[ "$ARCHIVE" == "zip" ]]; then
@@ -258,6 +259,17 @@ jobs:
             zip -q "dist/${ARCHIVE_NAME}" "$BINARY_NAME"
           else
             ARCHIVE_NAME="${ARCHIVE_BASENAME}.tar.gz"
+            tar -czf "dist/${ARCHIVE_NAME}" "$BINARY_NAME"
+          fi
+
+          # Hardened build (in-place self-update disabled for package managers and enterprise deployments)
+          CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" go build -trimpath -tags no_self_update -ldflags "-s -w -buildid= -X main.Version=${VERSION}" -o "$BINARY_NAME" ./cmd/bb
+
+          if [[ "$ARCHIVE" == "zip" ]]; then
+            ARCHIVE_NAME="${ARCHIVE_BASENAME}_noupdate.zip"
+            zip -q "dist/${ARCHIVE_NAME}" "$BINARY_NAME"
+          else
+            ARCHIVE_NAME="${ARCHIVE_BASENAME}_noupdate.tar.gz"
             tar -czf "dist/${ARCHIVE_NAME}" "$BINARY_NAME"
           fi
 
@@ -492,7 +504,7 @@ jobs:
           for arch in amd64 arm64; do
             extract="${workdir}/${arch}"
             mkdir -p "$extract"
-            tar -xzf "dist/bb_${VERSION_NO_V}_linux_${arch}.tar.gz" -C "$extract"
+            tar -xzf "dist/bb_${VERSION_NO_V}_linux_${arch}_noupdate.tar.gz" -C "$extract"
 
             for packager in deb rpm; do
               PKG_ARCH="$arch" \
@@ -677,7 +689,7 @@ jobs:
         with:
           identifier: vriesdemichael.bb
           release-tag: ${{ needs.determine-version.outputs.version }}
-          installers-regex: '^bb_.*_windows_(amd64|arm64)\.zip$'
+          installers-regex: '^bb_.*_windows_(amd64|arm64)_noupdate\.zip$'
           token: ${{ secrets.WINGET_TOKEN }}
 
   scoop-release:
@@ -714,9 +726,9 @@ jobs:
           set -euo pipefail
           export VERSION_NO_V="${VERSION#v}"
           export HASH_AMD64
-          HASH_AMD64=$(grep "bb_${VERSION_NO_V}_windows_amd64.zip" sha256sums.txt | awk '{print $1}')
+          HASH_AMD64=$(grep "bb_${VERSION_NO_V}_windows_amd64_noupdate.zip" sha256sums.txt | awk '{print $1}')
           export HASH_ARM64
-          HASH_ARM64=$(grep "bb_${VERSION_NO_V}_windows_arm64.zip" sha256sums.txt | awk '{print $1}')
+          HASH_ARM64=$(grep "bb_${VERSION_NO_V}_windows_arm64_noupdate.zip" sha256sums.txt | awk '{print $1}')
           export BASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION}"
 
           git clone https://github.com/vriesdemichael/scoop.git scoop-bucket
@@ -738,11 +750,11 @@ jobs:
               "license": "Apache-2.0",
               "architecture": {
                   "64bit": {
-                      "url": f"{base_url}/bb_{version_no_v}_windows_amd64.zip",
+                      "url": f"{base_url}/bb_{version_no_v}_windows_amd64_noupdate.zip",
                       "hash": hash_amd64,
                   },
                   "arm64": {
-                      "url": f"{base_url}/bb_{version_no_v}_windows_arm64.zip",
+                      "url": f"{base_url}/bb_{version_no_v}_windows_arm64_noupdate.zip",
                       "hash": hash_arm64,
                   },
               },
@@ -750,8 +762,8 @@ jobs:
               "checkver": {"github": repo_url},
               "autoupdate": {
                   "architecture": {
-                      "64bit": {"url": f"{repo_url}/releases/download/v$version/bb_$version_windows_amd64.zip"},
-                      "arm64": {"url": f"{repo_url}/releases/download/v$version/bb_$version_windows_arm64.zip"},
+                      "64bit": {"url": f"{repo_url}/releases/download/v$version/bb_$version_windows_amd64_noupdate.zip"},
+                      "arm64": {"url": f"{repo_url}/releases/download/v$version/bb_$version_windows_arm64_noupdate.zip"},
                   },
               },
           }

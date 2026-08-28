@@ -29,7 +29,7 @@ def load_hashes(sums_path: Path) -> dict[str, str]:
 
 
 def hash_for(hashes: dict[str, str], version: str, target: str) -> str:
-    filename = f"bb_{version}_{target}.tar.gz"
+    filename = f"bb_{version}_{target}_noupdate.tar.gz"
     try:
         return hashes[filename]
     except KeyError:
@@ -51,8 +51,8 @@ url="{repo_url}"
 license=('Apache-2.0')
 provides=('bb')
 conflicts=('bb')
-source_x86_64=("bb-$pkgver-x86_64.tar.gz::{base_url}/bb_{version}_linux_amd64.tar.gz")
-source_aarch64=("bb-$pkgver-aarch64.tar.gz::{base_url}/bb_{version}_linux_arm64.tar.gz")
+source_x86_64=("bb-$pkgver-x86_64.tar.gz::{base_url}/bb_{version}_linux_amd64_noupdate.tar.gz")
+source_aarch64=("bb-$pkgver-aarch64.tar.gz::{base_url}/bb_{version}_linux_arm64_noupdate.tar.gz")
 sha256sums_x86_64=('{sha_x86}')
 sha256sums_aarch64=('{sha_arm}')
 
