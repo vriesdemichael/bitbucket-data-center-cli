@@ -137,6 +137,7 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte(`{"id":101,"version":1,"text":"Comment 1","state":"OPEN","author":{"name":"alice"}}`))
 
 		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/comments":
+			w.WriteHeader(http.StatusCreated)
 			_, _ = w.Write([]byte(`{"id":102,"version":1,"text":"New comment","state":"OPEN","author":{"name":"alice"}}`))
 
 		case r.Method == http.MethodPut && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/comments/101":
@@ -403,6 +404,94 @@ func TestPRCommentCommands(t *testing.T) {
 	}
 	if !strings.Contains(out, "Created comment") && !strings.Contains(out, "102") {
 		t.Fatalf("expected Created comment in add output: %s", out)
+	}
+
+	// Add inline comment
+	out, err = executePr(t, server.URL, "comment", "add", "42", "--text", "Inline review comment", "--path", "file1.go", "--line", "10")
+	if err != nil {
+		t.Fatalf("unexpected error on inline comment add: %v", err)
+	}
+	if !strings.Contains(out, "Created comment") && !strings.Contains(out, "102") {
+		t.Fatalf("expected Created comment in inline add output: %s", out)
+	}
+
+	// Add inline comment with line-type
+	out, err = executePr(t, server.URL, "comment", "add", "42", "--text", "Removed line comment", "--path", "file1.go", "--line", "10", "--line-type", "REMOVED")
+	if err != nil {
+		t.Fatalf("unexpected error on inline comment with line-type: %v", err)
+	}
+	if !strings.Contains(out, "Created comment") {
+		t.Fatalf("expected Created comment in line-type add output: %s", out)
+	}
+
+	// Add inline comment (dry-run)
+	out, err = executePr(t, server.URL, "--dry-run", "comment", "add", "42", "--text", "Inline review comment", "--path", "file1.go", "--line", "10")
+	if err != nil {
+		t.Fatalf("unexpected error on inline comment add dry-run: %v", err)
+	}
+
+	// Add inline comment (json)
+	out, err = executePr(t, server.URL, "--json", "comment", "add", "42", "--text", "Inline review comment", "--path", "file1.go", "--line", "10")
+	if err != nil {
+		t.Fatalf("unexpected error on inline comment add json: %v", err)
+	}
+	if !strings.Contains(out, "file1.go") {
+		t.Fatalf("expected file1.go in json output: %s", out)
+	}
+
+	// Add threaded reply comment
+	out, err = executePr(t, server.URL, "comment", "add", "42", "--text", "Threaded reply", "--parent-id", "101")
+	if err != nil {
+		t.Fatalf("unexpected error on threaded reply add: %v", err)
+	}
+	if !strings.Contains(out, "Created comment") {
+		t.Fatalf("expected Created comment in reply add output: %s", out)
+	}
+
+	// Add threaded reply (dry-run)
+	out, err = executePr(t, server.URL, "--dry-run", "comment", "add", "42", "--text", "Threaded reply", "--parent-id", "101")
+	if err != nil {
+		t.Fatalf("unexpected error on reply dry-run: %v", err)
+	}
+
+	// Add threaded reply (json)
+	out, err = executePr(t, server.URL, "--json", "comment", "add", "42", "--text", "Threaded reply", "--parent-id", "101")
+	if err != nil {
+		t.Fatalf("unexpected error on reply json: %v", err)
+	}
+	if !strings.Contains(out, "parent_id") {
+		t.Fatalf("expected parent_id in reply json: %s", out)
+	}
+
+	// Validation errors
+	// line without path
+	_, err = executePr(t, server.URL, "comment", "add", "42", "--text", "bad", "--line", "10")
+	if err == nil || !strings.Contains(err.Error(), "line requires path") {
+		t.Fatalf("expected error for line without path, got %v", err)
+	}
+
+	// path without line
+	_, err = executePr(t, server.URL, "comment", "add", "42", "--text", "bad", "--path", "file1.go")
+	if err == nil || !strings.Contains(err.Error(), "path requires a positive line") {
+		t.Fatalf("expected error for path without line, got %v", err)
+	}
+
+	// parent-id combined with path/line
+	_, err = executePr(t, server.URL, "comment", "add", "42", "--text", "bad", "--path", "file1.go", "--line", "10", "--parent-id", "101")
+	if err == nil || !strings.Contains(err.Error(), "parent-id cannot be combined with path/line") {
+		t.Fatalf("expected error for parent-id with path/line, got %v", err)
+	}
+
+	// parent-id combined with blocker
+	_, err = executePr(t, server.URL, "comment", "add", "42", "--text", "bad", "--parent-id", "101", "--blocker")
+	if err == nil || !strings.Contains(err.Error(), "parent-id cannot be combined with blocker") {
+		t.Fatalf("expected error for parent-id with blocker, got %v", err)
+	}
+
+	// line-type without inline
+	_, err = executePr(t, server.URL, "comment", "add", "42", "--text", "bad", "--line-type", "ADDED")
+	if err == nil || !strings.Contains(err.Error(), "line-type only applies to inline comments") {
+		t.Fatalf("expected error for line-type without inline, got %v", err)
 	}
 
 	// List comments
