@@ -39,6 +39,8 @@ func NewSafeClient(timeout string) *http.Client {
 type TLSOptions struct {
 	CAFile             string
 	InsecureSkipVerify bool
+	ClientCertFile     string
+	ClientKeyFile      string
 }
 
 func NewSafeTransport(options TLSOptions) (http.RoundTripper, error) {
@@ -73,6 +75,17 @@ func NewSafeTransport(options TLSOptions) (http.RoundTripper, error) {
 		}
 
 		tlsConfig.RootCAs = rootCAs
+	}
+
+	if options.ClientCertFile != "" || options.ClientKeyFile != "" {
+		if options.ClientCertFile == "" || options.ClientKeyFile == "" {
+			return nil, fmt.Errorf("both client certificate and private key must be provided")
+		}
+		cert, err := tls.LoadX509KeyPair(options.ClientCertFile, options.ClientKeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("load client certificate: %w", err)
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
 
 	transport.TLSClientConfig = tlsConfig

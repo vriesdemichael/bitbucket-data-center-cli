@@ -174,6 +174,18 @@ func TestLoadFromEnvTransportOverrides(t *testing.T) {
 	}
 	t.Setenv("BB_CA_FILE", caFile)
 
+	certFile := filepath.Join(t.TempDir(), "client.crt")
+	if err := os.WriteFile(certFile, []byte("-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n"), 0o600); err != nil {
+		t.Fatalf("write client cert file: %v", err)
+	}
+	t.Setenv("BB_CLIENT_CERT", certFile)
+
+	keyFile := filepath.Join(t.TempDir(), "client.key")
+	if err := os.WriteFile(keyFile, []byte("-----BEGIN PRIVATE KEY-----\nMIIB\n-----END PRIVATE KEY-----\n"), 0o600); err != nil {
+		t.Fatalf("write client key file: %v", err)
+	}
+	t.Setenv("BB_CLIENT_KEY", keyFile)
+
 	loaded, err := LoadFromEnv()
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
@@ -193,6 +205,12 @@ func TestLoadFromEnvTransportOverrides(t *testing.T) {
 	}
 	if loaded.CAFile != caFile {
 		t.Fatalf("unexpected ca file: %q", loaded.CAFile)
+	}
+	if loaded.ClientCertFile != certFile {
+		t.Fatalf("unexpected client cert file: %q", loaded.ClientCertFile)
+	}
+	if loaded.ClientKeyFile != keyFile {
+		t.Fatalf("unexpected client key file: %q", loaded.ClientKeyFile)
 	}
 	if loaded.LogLevel != "debug" {
 		t.Fatalf("unexpected log level: %q", loaded.LogLevel)
@@ -287,6 +305,48 @@ func TestLoadFromEnvTransportOverrideValidation(t *testing.T) {
 			t.Fatal("expected validation error")
 		}
 	})
+
+	t.Run("client cert set without client key", func(t *testing.T) {
+		certFile := filepath.Join(t.TempDir(), "client.crt")
+		_ = os.WriteFile(certFile, []byte("cert"), 0o600)
+		t.Setenv("BB_CLIENT_CERT", certFile)
+		t.Setenv("BB_CLIENT_KEY", "")
+		if _, err := LoadFromEnv(); err == nil {
+			t.Fatal("expected validation error when client key is unset")
+		}
+	})
+
+	t.Run("client key set without client cert", func(t *testing.T) {
+		keyFile := filepath.Join(t.TempDir(), "client.key")
+		_ = os.WriteFile(keyFile, []byte("key"), 0o600)
+		t.Setenv("BB_CLIENT_CERT", "")
+		t.Setenv("BB_CLIENT_KEY", keyFile)
+		if _, err := LoadFromEnv(); err == nil {
+			t.Fatal("expected validation error when client cert is unset")
+		}
+	})
+
+	t.Run("missing client cert path", func(t *testing.T) {
+		dir := t.TempDir()
+		keyFile := filepath.Join(dir, "client.key")
+		_ = os.WriteFile(keyFile, []byte("key"), 0o600)
+		t.Setenv("BB_CLIENT_CERT", filepath.Join(dir, "missing.crt"))
+		t.Setenv("BB_CLIENT_KEY", keyFile)
+		if _, err := LoadFromEnv(); err == nil {
+			t.Fatal("expected validation error for missing client cert")
+		}
+	})
+
+	t.Run("missing client key path", func(t *testing.T) {
+		dir := t.TempDir()
+		certFile := filepath.Join(dir, "client.crt")
+		_ = os.WriteFile(certFile, []byte("cert"), 0o600)
+		t.Setenv("BB_CLIENT_CERT", certFile)
+		t.Setenv("BB_CLIENT_KEY", filepath.Join(dir, "missing.key"))
+		if _, err := LoadFromEnv(); err == nil {
+			t.Fatal("expected validation error for missing client key")
+		}
+	})
 }
 
 func TestLoadFromEnvInvalidURL(t *testing.T) {
@@ -358,6 +418,57 @@ func TestSaveLoginAndLoadStoredConfig(t *testing.T) {
 
 	if profile.AuthMode != "basic" {
 		t.Fatalf("unexpected auth mode: %q", profile.AuthMode)
+	}
+}
+
+func TestSaveLoginWithClientCertAndKey(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
+	t.Setenv("BB_CONFIG_PATH", configPath)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+
+	dir := t.TempDir()
+	certFile := filepath.Join(dir, "client.crt")
+	keyFile := filepath.Join(dir, "client.key")
+	_ = os.WriteFile(certFile, []byte("cert"), 0o600)
+	_ = os.WriteFile(keyFile, []byte("key"), 0o600)
+
+	_, err := SaveLogin(LoginInput{
+		Host:       "https://mtls.example.com",
+		Token:      "token-val",
+		ClientCert: certFile,
+		ClientKey:  keyFile,
+		SetDefault: true,
+	})
+	if err != nil {
+		t.Fatalf("save login: %v", err)
+	}
+
+	stored, err := LoadStoredConfig()
+	if err != nil {
+		t.Fatalf("load stored config: %v", err)
+	}
+
+	profile := stored.Hosts["https://mtls.example.com"]
+	if profile.ClientCert != certFile {
+		t.Fatalf("expected client cert %q, got %q", certFile, profile.ClientCert)
+	}
+	if profile.ClientKey != keyFile {
+		t.Fatalf("expected client key %q, got %q", keyFile, profile.ClientKey)
+	}
+
+	// Loading config with unset env adopts stored client cert & key
+	t.Setenv("BITBUCKET_URL", "https://mtls.example.com")
+	t.Setenv("BB_CLIENT_CERT", "")
+	t.Setenv("BB_CLIENT_KEY", "")
+	loaded, err := LoadFromEnv()
+	if err != nil {
+		t.Fatalf("load from env: %v", err)
+	}
+	if loaded.ClientCertFile != certFile {
+		t.Fatalf("expected adopted client cert %q, got %q", certFile, loaded.ClientCertFile)
+	}
+	if loaded.ClientKeyFile != keyFile {
+		t.Fatalf("expected adopted client key %q, got %q", keyFile, loaded.ClientKeyFile)
 	}
 }
 
@@ -690,6 +801,32 @@ func TestValidateAndHostKeyBranches(t *testing.T) {
 
 	if err := (AppConfig{BitbucketURL: "http://localhost:7990", ProjectKey: "TEST", RequestTimeout: time.Second, RetryCount: 0, RetryBackoff: time.Second, CAFile: t.TempDir()}).Validate(); err == nil {
 		t.Fatal("expected CA file path validation error for directory")
+	}
+
+	tempDir := t.TempDir()
+	validCert := filepath.Join(tempDir, "valid.crt")
+	validKey := filepath.Join(tempDir, "valid.key")
+	_ = os.WriteFile(validCert, []byte("cert"), 0o600)
+	_ = os.WriteFile(validKey, []byte("key"), 0o600)
+
+	if err := (AppConfig{BitbucketURL: "http://localhost:7990", ProjectKey: "TEST", RequestTimeout: time.Second, RetryCount: 0, RetryBackoff: time.Second, ClientCertFile: validCert}).Validate(); err == nil {
+		t.Fatal("expected validation error when only ClientCertFile is set")
+	}
+
+	if err := (AppConfig{BitbucketURL: "http://localhost:7990", ProjectKey: "TEST", RequestTimeout: time.Second, RetryCount: 0, RetryBackoff: time.Second, ClientKeyFile: validKey}).Validate(); err == nil {
+		t.Fatal("expected validation error when only ClientKeyFile is set")
+	}
+
+	if err := (AppConfig{BitbucketURL: "http://localhost:7990", ProjectKey: "TEST", RequestTimeout: time.Second, RetryCount: 0, RetryBackoff: time.Second, ClientCertFile: tempDir, ClientKeyFile: validKey}).Validate(); err == nil {
+		t.Fatal("expected validation error when ClientCertFile is a directory")
+	}
+
+	if err := (AppConfig{BitbucketURL: "http://localhost:7990", ProjectKey: "TEST", RequestTimeout: time.Second, RetryCount: 0, RetryBackoff: time.Second, ClientCertFile: validCert, ClientKeyFile: tempDir}).Validate(); err == nil {
+		t.Fatal("expected validation error when ClientKeyFile is a directory")
+	}
+
+	if err := (AppConfig{BitbucketURL: "http://localhost:7990", ProjectKey: "TEST", RequestTimeout: time.Second, RetryCount: 0, RetryBackoff: time.Second, ClientCertFile: validCert, ClientKeyFile: validKey}).Validate(); err != nil {
+		t.Fatalf("expected valid client cert and key to pass validation, got: %v", err)
 	}
 
 	if hostKey("://bad") == "" {

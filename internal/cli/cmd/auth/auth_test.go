@@ -179,6 +179,44 @@ func TestAuthCommandAdditionalBranches(t *testing.T) {
 		}
 	})
 
+	t.Run("login with client cert and key stores in profile", func(t *testing.T) {
+		cmd := New(Dependencies{
+			JSONEnabled: func() bool { return false },
+			LoadConfig: func() (config.AppConfig, error) {
+				return config.AppConfig{BitbucketURL: "http://mtls.local:7990"}, nil
+			},
+			WriteJSON: func(writer io.Writer, payload any) error {
+				return jsonoutput.Write(writer, payload)
+			},
+		})
+
+		dir := t.TempDir()
+		certPath := filepath.Join(dir, "client.crt")
+		keyPath := filepath.Join(dir, "client.key")
+		_ = os.WriteFile(certPath, []byte("cert"), 0o600)
+		_ = os.WriteFile(keyPath, []byte("key"), 0o600)
+
+		out := &bytes.Buffer{}
+		cmd.SetOut(out)
+		cmd.SetErr(out)
+		cmd.SetArgs([]string{"login", "https://mtls.local:7990", "--token", "abc", "--client-cert", certPath, "--client-key", keyPath, "--set-default=true"})
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("login failed: %v", err)
+		}
+
+		stored, err := config.LoadStoredConfig()
+		if err != nil {
+			t.Fatalf("load stored config: %v", err)
+		}
+		profile := stored.Hosts["https://mtls.local:7990"]
+		if profile.ClientCert != certPath {
+			t.Fatalf("expected client cert %q, got %q", certPath, profile.ClientCert)
+		}
+		if profile.ClientKey != keyPath {
+			t.Fatalf("expected client key %q, got %q", keyPath, profile.ClientKey)
+		}
+	})
+
 	t.Run("logout json path", func(t *testing.T) {
 		if _, err := config.SaveLogin(config.LoginInput{Host: "http://logout.local:7990", Token: "tok", SetDefault: true}); err != nil {
 			t.Fatalf("save login for logout: %v", err)

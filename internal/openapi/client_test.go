@@ -343,6 +343,20 @@ func TestNewClientWithResponsesFromConfigInvalidCA(t *testing.T) {
 	}
 }
 
+func TestNewClientWithResponsesFromConfigInvalidClientCert(t *testing.T) {
+	_, err := NewClientWithResponsesFromConfig(config.AppConfig{
+		BitbucketURL:   "http://localhost:7990",
+		ClientCertFile: "/definitely/missing/client.crt",
+		ClientKeyFile:  "/definitely/missing/client.key",
+		RequestTimeout: time.Second,
+		RetryCount:     1,
+		RetryBackoff:   time.Millisecond,
+	})
+	if err == nil {
+		t.Fatal("expected transport initialization error")
+	}
+}
+
 func TestDiagnosticsWriter(t *testing.T) {
 	buffer := &bytes.Buffer{}
 

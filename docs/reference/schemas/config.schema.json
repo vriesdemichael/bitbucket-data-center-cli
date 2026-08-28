@@ -23,6 +23,14 @@
       "description": "Absolute or relative path to PEM Root CA certificate bundle.",
       "type": "string"
     },
+    "client_cert": {
+      "description": "Absolute or relative path to PEM client certificate for mutual TLS (mTLS).",
+      "type": "string"
+    },
+    "client_key": {
+      "description": "Absolute or relative path to PEM client private key for mutual TLS (mTLS).",
+      "type": "string"
+    },
     "default_host": {
       "description": "Default Bitbucket Server / Data Center instance URL or alias.",
       "type": "string"
@@ -48,6 +56,14 @@
               "token",
               "basic"
             ],
+            "type": "string"
+          },
+          "client_cert": {
+            "description": "Absolute or relative path to PEM client certificate for mutual TLS (mTLS).",
+            "type": "string"
+          },
+          "client_key": {
+            "description": "Absolute or relative path to PEM client private key for mutual TLS (mTLS).",
             "type": "string"
           },
           "url": {
@@ -104,6 +120,14 @@
           "description": "Absolute or relative path to PEM Root CA certificate bundle.",
           "type": "string"
         },
+        "client_cert": {
+          "description": "Absolute or relative path to PEM client certificate for mutual TLS (mTLS).",
+          "type": "string"
+        },
+        "client_key": {
+          "description": "Absolute or relative path to PEM client private key for mutual TLS (mTLS).",
+          "type": "string"
+        },
         "disable_update": {
           "description": "Disable CLI self-update command (bb update) machine-wide.",
           "type": "boolean"
@@ -136,6 +160,14 @@
         },
         "ca_file": {
           "description": "Absolute or relative path to PEM Root CA certificate bundle.",
+          "type": "string"
+        },
+        "client_cert": {
+          "description": "Absolute or relative path to PEM client certificate for mutual TLS (mTLS).",
+          "type": "string"
+        },
+        "client_key": {
+          "description": "Absolute or relative path to PEM client private key for mutual TLS (mTLS).",
           "type": "string"
         },
         "disable_update": {

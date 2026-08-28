@@ -42,6 +42,8 @@ type AppConfig struct {
 	BitbucketPassword      string
 	CAFile                 string
 	InsecureSkipVerify     bool
+	ClientCertFile         string
+	ClientKeyFile          string
 	RequestTimeout         time.Duration
 	RetryCount             int
 	RetryBackoff           time.Duration
@@ -114,10 +116,12 @@ type WorkspaceConfigFile struct {
 }
 
 type StoredProfile struct {
-	URL      string   `yaml:"url"`
-	Aliases  []string `yaml:"aliases,omitempty"`
-	Username string   `yaml:"username,omitempty"`
-	AuthMode string   `yaml:"auth_mode,omitempty"`
+	URL        string   `yaml:"url"`
+	Aliases    []string `yaml:"aliases,omitempty"`
+	Username   string   `yaml:"username,omitempty"`
+	AuthMode   string   `yaml:"auth_mode,omitempty"`
+	ClientCert string   `yaml:"client_cert,omitempty"`
+	ClientKey  string   `yaml:"client_key,omitempty"`
 }
 
 type StoredSecret struct {
@@ -131,6 +135,8 @@ type LoginInput struct {
 	Username   string
 	Password   string
 	Token      string
+	ClientCert string
+	ClientKey  string
 	SetDefault bool
 	// RequireKeyring fails the login when the OS keyring cannot store the
 	// secret, instead of falling back to plaintext in the config file.
@@ -261,6 +267,8 @@ func LoadFromEnv() (AppConfig, error) {
 		BitbucketPassword:      envOrDefault("BITBUCKET_PASSWORD", envOrDefault("ADMIN_PASSWORD", "")),
 		CAFile:                 caFile,
 		InsecureSkipVerify:     insecureSkipVerify,
+		ClientCertFile:         strings.TrimSpace(os.Getenv("BB_CLIENT_CERT")),
+		ClientKeyFile:          strings.TrimSpace(os.Getenv("BB_CLIENT_KEY")),
 		RequestTimeout:         requestTimeout,
 		RetryCount:             retryCount,
 		RetryBackoff:           retryBackoff,
@@ -291,6 +299,12 @@ func LoadFromEnv() (AppConfig, error) {
 			if config.BitbucketPassword == "" && stored.BitbucketPassword != "" {
 				config.BitbucketPassword = stored.BitbucketPassword
 				adoptedStoredSecret = true
+			}
+			if config.ClientCertFile == "" && stored.ClientCertFile != "" {
+				config.ClientCertFile = stored.ClientCertFile
+			}
+			if config.ClientKeyFile == "" && stored.ClientKeyFile != "" {
+				config.ClientKeyFile = stored.ClientKeyFile
 			}
 			if config.BitbucketToken != "" || (config.BitbucketUsername != "" && config.BitbucketPassword != "") {
 				config.AuthSource = "stored"
@@ -457,7 +471,19 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 		return LoginResult{}, err
 	}
 
-	profile := StoredProfile{URL: host, Aliases: aliases}
+	existingProfile := stored.Hosts[key]
+	profile := StoredProfile{
+		URL:        host,
+		Aliases:    aliases,
+		ClientCert: existingProfile.ClientCert,
+		ClientKey:  existingProfile.ClientKey,
+	}
+	if trimmed := strings.TrimSpace(input.ClientCert); trimmed != "" {
+		profile.ClientCert = trimmed
+	}
+	if trimmed := strings.TrimSpace(input.ClientKey); trimmed != "" {
+		profile.ClientKey = trimmed
+	}
 	result := LoginResult{Host: host, Aliases: append([]string{}, aliases...)}
 
 	if hasToken {
@@ -1120,7 +1146,12 @@ func resolveStoredCredentialsStrict(stored StoredConfig, runtimeURL string) (App
 }
 
 func credentialsForStoredHost(stored StoredConfig, key string, profile StoredProfile) AppConfig {
-	resolved := AppConfig{BitbucketURL: normalizeURL(profile.URL), BitbucketUsername: profile.Username}
+	resolved := AppConfig{
+		BitbucketURL:      normalizeURL(profile.URL),
+		BitbucketUsername: profile.Username,
+		ClientCertFile:    profile.ClientCert,
+		ClientKeyFile:     profile.ClientKey,
+	}
 
 	if token, err := keyringGet(keyringServiceName, key+":token"); err == nil && strings.TrimSpace(token) != "" {
 		resolved.BitbucketToken = token
@@ -1308,6 +1339,26 @@ func (config AppConfig) Validate() error {
 		}
 		if info.IsDir() {
 			return apperrors.New(apperrors.KindValidation, "BB_CA_FILE must be a file path", nil)
+		}
+	}
+
+	if config.ClientCertFile != "" || config.ClientKeyFile != "" {
+		if config.ClientCertFile == "" || config.ClientKeyFile == "" {
+			return apperrors.New(apperrors.KindValidation, "BB_CLIENT_CERT and BB_CLIENT_KEY must be set together", nil)
+		}
+		certInfo, err := os.Stat(config.ClientCertFile)
+		if err != nil {
+			return apperrors.New(apperrors.KindValidation, fmt.Sprintf("BB_CLIENT_CERT is invalid: %q", config.ClientCertFile), err)
+		}
+		if certInfo.IsDir() {
+			return apperrors.New(apperrors.KindValidation, "BB_CLIENT_CERT must be a file path", nil)
+		}
+		keyInfo, err := os.Stat(config.ClientKeyFile)
+		if err != nil {
+			return apperrors.New(apperrors.KindValidation, fmt.Sprintf("BB_CLIENT_KEY is invalid: %q", config.ClientKeyFile), err)
+		}
+		if keyInfo.IsDir() {
+			return apperrors.New(apperrors.KindValidation, "BB_CLIENT_KEY must be a file path", nil)
 		}
 	}
 

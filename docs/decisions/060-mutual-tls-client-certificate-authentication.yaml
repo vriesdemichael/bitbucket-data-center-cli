@@ -1,0 +1,28 @@
+number: 60
+title: Mutual TLS (mTLS) client certificate authentication
+category: architecture
+status: accepted
+decision: >
+  Support Mutual TLS (mTLS) client certificate and private key configuration across
+  environment variables (BB_CLIENT_CERT, BB_CLIENT_KEY), CLI flags (--client-cert, --client-key),
+  and stored host configuration profiles.
+
+  The network transport (internal/transport/network) parses PEM-encoded certificate/key pairs
+  using crypto/tls.LoadX509KeyPair and attaches them to TLSClientConfig.Certificates while preserving
+  the host system CA pool and custom CA bundles.
+agent_instructions: >
+  When interacting with Bitbucket instances fronted by zero-trust or mTLS authenticating reverse
+  proxies (Envoy, NGINX, F5, Cloudflare Access), configure client certificates via BB_CLIENT_CERT
+  and BB_CLIENT_KEY or stored profiles in ~/.config/bb/config.yaml.
+  Ensure certificate and key are provided together; partial configurations are rejected during validation.
+rationale: >
+  Enterprise, financial, and defense deployments frequently require hardware or PKI-backed mutual
+  TLS client authentication before any HTTP payload reaches Bitbucket Data Center. Supporting client
+  certificates natively at the transport layer enables seamless CLI operations within zero-trust
+  architectures without requiring wrapper tunnels or compromising security posture.
+rejected_alternatives:
+  - alternative: Requiring external stunnel or local reverse proxy loopback
+    reason: Adds significant operational overhead, extra process lifecycle management, and platform-specific setup friction.
+  - alternative: PKCS#12 (.p12 / .pfx) bundle support as primary format
+    reason: PEM is standard across Go crypto and cloud native toolchains. Support can be added later if needed.
+provenance: guided-ai

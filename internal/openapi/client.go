@@ -20,6 +20,8 @@ func NewClientWithResponsesFromConfig(cfg config.AppConfig) (*openapigenerated.C
 	transport, err := network.NewSafeTransport(network.TLSOptions{
 		CAFile:             cfg.CAFile,
 		InsecureSkipVerify: cfg.InsecureSkipVerify,
+		ClientCertFile:     cfg.ClientCertFile,
+		ClientKeyFile:      cfg.ClientKeyFile,
 	})
 	if err != nil {
 		return nil, err

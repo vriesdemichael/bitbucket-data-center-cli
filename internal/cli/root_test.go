@@ -467,7 +467,7 @@ func TestApplyRuntimeFlagOverridesBranches(t *testing.T) {
 	// registering them here they would leak into every test that runs after
 	// this one — including BB_RETRY_BACKOFF, which this package deliberately
 	// shortens in init() and which this test would otherwise leave at 500ms.
-	for _, key := range []string{"BB_INSECURE_SKIP_VERIFY", "BB_REQUEST_TIMEOUT", "BB_RETRY_COUNT", "BB_RETRY_BACKOFF"} {
+	for _, key := range []string{"BB_CLIENT_CERT", "BB_CLIENT_KEY", "BB_INSECURE_SKIP_VERIFY", "BB_REQUEST_TIMEOUT", "BB_RETRY_COUNT", "BB_RETRY_BACKOFF"} {
 		t.Setenv(key, os.Getenv(key))
 	}
 
@@ -478,6 +478,12 @@ func TestApplyRuntimeFlagOverridesBranches(t *testing.T) {
 	command := NewRootCommand()
 	if err := command.PersistentFlags().Set("ca-file", " "); err != nil {
 		t.Fatalf("set ca-file: %v", err)
+	}
+	if err := command.PersistentFlags().Set("client-cert", "/path/to/client.crt"); err != nil {
+		t.Fatalf("set client-cert: %v", err)
+	}
+	if err := command.PersistentFlags().Set("client-key", "/path/to/client.key"); err != nil {
+		t.Fatalf("set client-key: %v", err)
 	}
 	if err := command.PersistentFlags().Set("insecure-skip-verify", "true"); err != nil {
 		t.Fatalf("set insecure-skip-verify: %v", err)
@@ -499,6 +505,12 @@ func TestApplyRuntimeFlagOverridesBranches(t *testing.T) {
 
 	if value := os.Getenv("BB_CA_FILE"); value != "" {
 		t.Fatalf("expected BB_CA_FILE to be unset by blank flag value, got %q", value)
+	}
+	if value := os.Getenv("BB_CLIENT_CERT"); value != "/path/to/client.crt" {
+		t.Fatalf("unexpected BB_CLIENT_CERT value: %q", value)
+	}
+	if value := os.Getenv("BB_CLIENT_KEY"); value != "/path/to/client.key" {
+		t.Fatalf("unexpected BB_CLIENT_KEY value: %q", value)
 	}
 	if value := os.Getenv("BB_INSECURE_SKIP_VERIFY"); value != "true" {
 		t.Fatalf("unexpected BB_INSECURE_SKIP_VERIFY value: %q", value)

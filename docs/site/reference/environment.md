@@ -42,6 +42,8 @@ harness sets them. They work, but prefer the primary names.
 | Variable | Default | Effect |
 |---|---|---|
 | `BB_CA_FILE` | unset | Path to a PEM bundle of additional trusted CAs. **Added to** the system trust store, not a replacement for it. Equivalent flag: `--ca-file`. |
+| `BB_CLIENT_CERT` | unset | Path to a PEM-encoded client certificate or certificate chain for mutual TLS (mTLS). Must be set together with `BB_CLIENT_KEY`. Equivalent flag: `--client-cert`. |
+| `BB_CLIENT_KEY` | unset | Path to a PEM-encoded client private key for mutual TLS (mTLS). Must be set together with `BB_CLIENT_CERT`. Equivalent flag: `--client-key`. |
 | `BB_INSECURE_SKIP_VERIFY` | unset | `true` disables TLS certificate verification. Prints a warning on every invocation. Equivalent flag: `--insecure-skip-verify`. |
 | `HTTPS_PROXY` / `HTTP_PROXY` / `NO_PROXY` | unset | Standard proxy configuration, honoured for all `bb` HTTP traffic. Lowercase spellings work too. |
 
