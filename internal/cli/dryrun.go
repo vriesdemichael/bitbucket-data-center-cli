@@ -96,7 +96,9 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"repo default-task update": {Intent: "repo.default-task.update", Action: "update", Stateful: true},
 	"repo default-task delete": {Intent: "repo.default-task.delete", Action: "delete", Stateful: true},
 	// webhook
+	"webhook create": {Intent: "repo.webhook.create", Action: "create", Stateful: true},
 	"webhook update": {Intent: "repo.webhook.update", Action: "update", Stateful: true},
+	"webhook delete": {Intent: "repo.webhook.delete", Action: "delete", Stateful: true},
 	"webhook test":   {Intent: "repo.webhook.test", Action: "update", Stateful: true},
 	// repo admin
 	"repo admin create": {Intent: "repo.admin.create", Action: "create", Stateful: true},

@@ -378,9 +378,150 @@ func New(deps Dependencies) *cobra.Command {
 	listPaging.Register(listCmd, 25)
 	listCmd.Flags().IntVar(&listStart, "start", 0, "Start index for webhooks listing")
 
+	var createEvents []string
+	var createActive bool
+	createCmd := &cobra.Command{
+		Use:   "create <name> <url>",
+		Short: "Create a repository webhook",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := d.LoadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			projectKey, slug, err := reposel.Resolve(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			repo := reposettings.RepositoryRef{ProjectKey: projectKey, Slug: slug}
+
+			service := reposettings.NewService(client)
+			if d.DryRunEnabled() {
+				if d.PermissionChecker != nil {
+					checker := d.PermissionChecker(client)
+					if checker != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
+							return err
+						}
+					}
+				}
+
+				preview := dryrunpreview.Preview{
+					DryRun:       true,
+					PlanningMode: dryrunpreview.PlanningModeStateful,
+					Capability:   dryrunpreview.CapabilityFull,
+					Items: []dryrunpreview.Item{{
+						Intent:          "repo.webhook.create",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "url": args[1], "events": createEvents, "active": createActive},
+						Action:          "create",
+						PredictedAction: "create",
+						Supported:       true,
+						Reason:          "webhook will be created",
+						Confidence:      dryrunpreview.CapabilityFull,
+					}},
+					Summary: dryrunpreview.Summary{Total: 1, Supported: 1, CreateCount: 1},
+				}
+				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
+			}
+
+			payload, err := service.CreateRepositoryWebhook(cmd.Context(), repo, reposettings.WebhookCreateInput{
+				Name:   args[0],
+				URL:    args[1],
+				Events: createEvents,
+				Active: createActive,
+			})
+			if err != nil {
+				return err
+			}
+
+			if d.JSONEnabled() {
+				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhook": payload})
+			}
+
+			var hook WebhookModel
+			if payload != nil {
+				raw, err := json.Marshal(payload)
+				if err == nil {
+					_ = json.Unmarshal(raw, &hook)
+				}
+			}
+
+			idStr := ""
+			if hook.Id != nil {
+				idStr = fmt.Sprintf("%d", *hook.Id)
+			} else {
+				idStr = args[0]
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook:"), style.Secondary.Render(idStr))
+			return nil
+		},
+	}
+	createCmd.Flags().StringSliceVar(&createEvents, "event", []string{"repo:refs_changed"}, "Webhook event(s) to subscribe to")
+	createCmd.Flags().BoolVar(&createActive, "active", true, "Whether the webhook is active")
+
+	deleteCmd := &cobra.Command{
+		Use:   "delete <id>",
+		Short: "Delete a repository webhook",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, client, err := d.LoadConfigAndClient()
+			if err != nil {
+				return err
+			}
+			projectKey, slug, err := reposel.Resolve(repositorySelector, cfg)
+			if err != nil {
+				return err
+			}
+			repo := reposettings.RepositoryRef{ProjectKey: projectKey, Slug: slug}
+
+			service := reposettings.NewService(client)
+			if d.DryRunEnabled() {
+				if d.PermissionChecker != nil {
+					checker := d.PermissionChecker(client)
+					if checker != nil {
+						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
+							return err
+						}
+					}
+				}
+
+				preview := dryrunpreview.Preview{
+					DryRun:       true,
+					PlanningMode: dryrunpreview.PlanningModeStateful,
+					Capability:   dryrunpreview.CapabilityFull,
+					Items: []dryrunpreview.Item{{
+						Intent:          "repo.webhook.delete",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhook_id": args[0]},
+						Action:          "delete",
+						PredictedAction: "delete",
+						Supported:       true,
+						Reason:          "webhook will be deleted",
+						Confidence:      dryrunpreview.CapabilityFull,
+					}},
+					Summary: dryrunpreview.Summary{Total: 1, Supported: 1, DeleteCount: 1},
+				}
+				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
+			}
+
+			if err := service.DeleteRepositoryWebhook(cmd.Context(), repo, args[0]); err != nil {
+				return err
+			}
+
+			if d.JSONEnabled() {
+				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhook_id": args[0]})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted webhook:"), style.Secondary.Render(args[0]))
+			return nil
+		},
+	}
+
 	webhookCmd.AddCommand(getCmd)
 	webhookCmd.AddCommand(listCmd)
+	webhookCmd.AddCommand(createCmd)
 	webhookCmd.AddCommand(updateCmd)
+	webhookCmd.AddCommand(deleteCmd)
 	testCmd.Flags().StringVar(&webhookTestURL, "url", "", "Test this URL instead of the webhook's configured one")
 	webhookCmd.AddCommand(testCmd)
 	webhookCmd.AddCommand(statsCmd)

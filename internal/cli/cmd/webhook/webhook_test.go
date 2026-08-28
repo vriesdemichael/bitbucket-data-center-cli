@@ -74,8 +74,14 @@ func TestWebhookCommands(t *testing.T) {
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/repo1/webhooks/123":
 			_, _ = w.Write([]byte(`{"id":123,"name":"wh","url":"http://url","active":true}`))
 
+		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/repo1/webhooks":
+			_, _ = w.Write([]byte(`{"id":456,"name":"wh-created","url":"http://url-created","active":true,"events":["repo:refs_changed"]}`))
+
 		case r.Method == http.MethodPut && path == "/rest/api/latest/projects/PRJ/repos/repo1/webhooks/123":
 			_, _ = w.Write([]byte(`{"id":123,"name":"wh-new","url":"http://url","active":true}`))
+
+		case r.Method == http.MethodDelete && path == "/rest/api/latest/projects/PRJ/repos/repo1/webhooks/123":
+			w.WriteHeader(http.StatusNoContent)
 
 		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/repo1/webhooks/test":
 			_, _ = w.Write([]byte(`{"status":"ok"}`))
@@ -311,6 +317,83 @@ func TestWebhookCommands(t *testing.T) {
 	if !strings.Contains(buf.String(), "invocations") {
 		t.Fatalf("expected invocations in stats JSON output: %s", buf.String())
 	}
+	jsonEnabled = false
+
+	// 6. Create (dry-run, real, JSON)
+	dryRunEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "wh-created", "http://url-created", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on create dry-run: %v", err)
+	}
+
+	dryRunEnabled = false
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "wh-created", "http://url-created", "--event", "repo:refs_changed", "--active=true", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on create: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Created webhook") || !strings.Contains(buf.String(), "456") {
+		t.Fatalf("expected Created webhook 456 in create output: %s", buf.String())
+	}
+
+	jsonEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "wh-created", "http://url-created", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on create JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "wh-created") {
+		t.Fatalf("expected wh-created in create JSON output: %s", buf.String())
+	}
+	jsonEnabled = false
+
+	// 7. Delete (dry-run, real, JSON)
+	dryRunEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "123", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete dry-run: %v", err)
+	}
+
+	dryRunEnabled = false
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "123", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Deleted webhook") {
+		t.Fatalf("expected Deleted webhook in delete output: %s", buf.String())
+	}
+
+	jsonEnabled = true
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "123", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error on delete JSON: %v", err)
+	}
+	if !strings.Contains(buf.String(), "ok") {
+		t.Fatalf("expected ok in delete JSON output: %s", buf.String())
+	}
+	jsonEnabled = false
 }
 
 func TestWebhookErrorsAndEdgeCases(t *testing.T) {
@@ -364,9 +447,27 @@ func TestWebhookErrorsAndEdgeCases(t *testing.T) {
 	buf.Reset()
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "wh", "http://url", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on create dry-run")
+	}
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"update", "123", "--name", "wh-new", "--repo", "PRJ/repo1"})
 	if err := cmd.Execute(); err == nil {
 		t.Fatal("expected permission error on update dry-run")
+	}
+
+	cmd = New(deps)
+	buf.Reset()
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"delete", "123", "--repo", "PRJ/repo1"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected permission error on delete dry-run")
 	}
 
 	cmd = New(deps)
