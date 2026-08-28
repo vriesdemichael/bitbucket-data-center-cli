@@ -1916,6 +1916,36 @@ hosts:
 	if err := ValidateConfigYAML([]byte(invalidHost)); err == nil {
 		t.Fatal("expected error on host missing url, got nil")
 	}
+
+	// Valid host mTLS configuration
+	validHostMTLS := `
+hosts:
+  https://bb.example.com:
+    url: https://bb.example.com
+    client_cert: /etc/ssl/client.crt
+    client_key: /etc/ssl/client.key
+`
+	if err := ValidateConfigYAML([]byte(validHostMTLS)); err != nil {
+		t.Fatalf("valid host mTLS YAML should pass, got: %v", err)
+	}
+
+	// Invalid YAML: root-level client_cert (not supported at root level)
+	invalidRootMTLS := `
+default_host: https://bb.local
+client_cert: /tmp/c.crt
+`
+	if err := ValidateConfigYAML([]byte(invalidRootMTLS)); err == nil {
+		t.Fatal("expected error on root-level client_cert, got nil")
+	}
+
+	// Invalid YAML: policy-level client_cert (not supported in policy block)
+	invalidPolicyMTLS := `
+policy:
+  client_cert: /tmp/p.crt
+`
+	if err := ValidateConfigYAML([]byte(invalidPolicyMTLS)); err == nil {
+		t.Fatal("expected error on policy-level client_cert, got nil")
+	}
 }
 
 func TestLoadSystemConfigRejectsSchemaViolations(t *testing.T) {
