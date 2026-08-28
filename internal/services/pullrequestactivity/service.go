@@ -10,6 +10,7 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/services/commentanchor"
 )
 
 type RepositoryRef struct {
@@ -206,90 +207,17 @@ func mapActivity(item rawActivity) (Activity, error) {
 // Without this, a single inline comment makes the whole activity page fail to
 // decode, which is why pull requests with inline review comments used to return
 // nothing at all.
+//
+// The create-comment response has the same mismatch, so the rewrite lives in
+// commentanchor alongside the payload that produces those string paths.
 func normalizeCommentAnchorPaths(raw json.RawMessage) (json.RawMessage, error) {
-	var decoded any
-	if err := json.Unmarshal(raw, &decoded); err != nil {
-		return nil, err
-	}
-
-	comment, ok := decoded.(map[string]any)
-	if !ok {
-		return raw, nil
-	}
-	if !normalizeCommentTree(comment) {
-		return raw, nil
-	}
-
-	return json.Marshal(comment)
-}
-
-// normalizeCommentTree rewrites a comment and its replies in place, reporting
-// whether anything changed.
-func normalizeCommentTree(comment map[string]any) bool {
-	changed := false
-
-	for _, key := range []string{"anchor", "parent"} {
-		nested, ok := comment[key].(map[string]any)
-		if !ok {
-			continue
-		}
-		if key == "anchor" {
-			changed = normalizeAnchorPaths(nested) || changed
-			continue
-		}
-		changed = normalizeCommentTree(nested) || changed
-	}
-
-	replies, ok := comment["comments"].([]any)
-	if !ok {
-		return changed
-	}
-	for _, reply := range replies {
-		if nested, isMap := reply.(map[string]any); isMap {
-			changed = normalizeCommentTree(nested) || changed
-		}
-	}
-
-	return changed
-}
-
-func normalizeAnchorPaths(anchor map[string]any) bool {
-	changed := false
-
-	for _, key := range []string{"path", "srcPath"} {
-		value, ok := anchor[key].(string)
-		if !ok {
-			continue
-		}
-		anchor[key] = pathObjectFromString(value)
-		changed = true
-	}
-
-	return changed
+	return commentanchor.NormalizeResponsePaths(raw)
 }
 
 // pathObjectFromString splits "a/b/c.go" into the name/parent/extension/
 // components shape Bitbucket uses elsewhere.
 func pathObjectFromString(path string) map[string]any {
-	trimmed := strings.Trim(strings.TrimSpace(path), "/")
-	if trimmed == "" {
-		return map[string]any{}
-	}
-
-	components := strings.Split(trimmed, "/")
-	name := components[len(components)-1]
-	parent := strings.Join(components[:len(components)-1], "/")
-
-	object := map[string]any{
-		"name":       name,
-		"parent":     parent,
-		"components": components,
-	}
-	if index := strings.LastIndex(name, "."); index > 0 && index < len(name)-1 {
-		object["extension"] = name[index+1:]
-	}
-
-	return object
+	return commentanchor.PathObjectFromString(path)
 }
 
 func validateRepositoryRef(repository RepositoryRef) error {

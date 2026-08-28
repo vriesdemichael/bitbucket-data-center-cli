@@ -19,7 +19,7 @@ import (
 func testSkillDeps(version string) Dependencies {
 	return Dependencies{
 		Version: func() string { return version },
-		LoadConfig: func() (config.AppConfig, error) {
+		LoadConfig: func(config.Overrides) (config.AppConfig, error) {
 			return config.AppConfig{}, nil
 		},
 		WriteJSON: func(w io.Writer, v any) error {

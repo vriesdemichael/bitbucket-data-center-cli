@@ -14,8 +14,9 @@ type Dependencies struct {
 	// It is a func rather than a plain string so the root command can bind it lazily
 	// after setting cmd.Version post-construction.
 	Version func() string
-	// LoadConfig loads the resolved AppConfig from environment and stored credentials.
-	LoadConfig func() (config.AppConfig, error)
+	// LoadConfig loads the resolved AppConfig from environment and stored
+	// credentials, steered by the --host and --token flags of `mcp serve`.
+	LoadConfig func(config.Overrides) (config.AppConfig, error)
 	// WriteJSON serialises v to w as indented JSON.
 	WriteJSON func(w io.Writer, v any) error
 }
@@ -23,7 +24,7 @@ type Dependencies struct {
 // New returns the top-level `bb ai` command group.
 func New(deps Dependencies) *cobra.Command {
 	if deps.LoadConfig == nil {
-		deps.LoadConfig = func() (config.AppConfig, error) {
+		deps.LoadConfig = func(config.Overrides) (config.AppConfig, error) {
 			return config.AppConfig{}, apperrors.New(apperrors.KindInternal, "ai command dependency LoadConfig is not configured", nil)
 		}
 	}

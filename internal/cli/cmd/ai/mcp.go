@@ -2,7 +2,6 @@ package ai
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/server"
@@ -70,19 +69,14 @@ Use --token to restrict all API calls to the rights of a specific PAT.`,
 				}
 			}
 
-			// Apply host and token overrides before config loading.
-			if strings.TrimSpace(host) != "" {
-				if err := os.Setenv("BITBUCKET_URL", host); err != nil {
-					return apperrors.New(apperrors.KindInternal, "failed to set host override", err)
-				}
-			}
-			if strings.TrimSpace(token) != "" {
-				if err := os.Setenv("BITBUCKET_TOKEN", token); err != nil {
-					return apperrors.New(apperrors.KindInternal, "failed to set token override", err)
-				}
-			}
-
-			cfg, err := deps.LoadConfig()
+			// Passed into the load rather than written to the environment. This
+			// process then serves MCP for as long as the client keeps it alive,
+			// so an exported BITBUCKET_TOKEN would sit in the environment of
+			// every subprocess for the whole session.
+			cfg, err := deps.LoadConfig(config.Overrides{
+				Host:  strings.TrimSpace(host),
+				Token: strings.TrimSpace(token),
+			})
 			if err != nil {
 				return err
 			}

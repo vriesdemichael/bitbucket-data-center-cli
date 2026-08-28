@@ -1,9 +1,11 @@
 package comment
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"path"
+	"io"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -11,6 +13,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/services/commentanchor"
 )
 
 type RepositoryRef struct {
@@ -36,6 +39,16 @@ type Target struct {
 	Line          int
 	LineType      string
 	ParentID      int64
+}
+
+func (target Target) anchorOptions() commentanchor.Options {
+	return commentanchor.Options{
+		Path:     target.Path,
+		Line:     target.Line,
+		LineType: target.LineType,
+		ParentID: target.ParentID,
+		Blocker:  target.Blocker,
+	}
 }
 
 func (target Target) Context() Context {
@@ -196,106 +209,102 @@ func (service *Service) Create(ctx context.Context, target Target, text string) 
 		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindValidation, "comment text is required", nil)
 	}
 
+	// A draft comment is created by asking for the PENDING state, not by the
+	// pending flag: the schema marks pending readOnly and the server ignores it,
+	// publishing the comment the caller wanted kept private.
 	var pendingState *string
 	if target.Pending {
 		state := "PENDING"
 		pendingState = &state
 	}
-	body := openapigenerated.RestComment{
+	echo := openapigenerated.RestComment{
 		Text:  &trimmedText,
 		State: pendingState,
 	}
 
-	if target.ParentID > 0 || target.Path != "" || target.Line > 0 {
-		raw := map[string]any{}
-		if target.ParentID > 0 {
-			raw["parent"] = map[string]any{"id": target.ParentID}
-		}
-		if target.Path != "" || target.Line > 0 {
-			lineTypeStr := strings.ToUpper(strings.TrimSpace(target.LineType))
-			if lineTypeStr == "" {
-				lineTypeStr = "ADDED"
-			}
-			switch lineTypeStr {
-			case "ADDED", "REMOVED", "CONTEXT":
-			default:
-				return openapigenerated.RestComment{}, apperrors.New(apperrors.KindValidation, "line_type must be ADDED, REMOVED, or CONTEXT", nil)
-			}
-
-			fileTypeStr := "TO"
-			if lineTypeStr == "REMOVED" {
-				fileTypeStr = "FROM"
-			}
-
-			cleanedPath := path.Clean(strings.ReplaceAll(target.Path, "\\", "/"))
-			baseName := path.Base(cleanedPath)
-			dirName := path.Dir(cleanedPath)
-			pathMap := map[string]any{
-				"name": baseName,
-			}
-			if dirName != "." && dirName != "" && dirName != "/" {
-				pathMap["parent"] = dirName
-			}
-
-			raw["anchor"] = map[string]any{
-				"line":     target.Line,
-				"lineType": lineTypeStr,
-				"fileType": fileTypeStr,
-				"diffType": "EFFECTIVE",
-				"path":     pathMap,
-				"srcPath":  pathMap,
-			}
-		}
-
-		rawBytes, err := json.Marshal(raw)
-		if err != nil {
-			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindInternal, "failed to marshal comment anchor/parent payload", err)
-		}
-		if err := json.Unmarshal(rawBytes, &body); err != nil {
-			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindInternal, "failed to unmarshal comment anchor/parent payload", err)
-		}
+	// The body goes out as a map rather than the generated struct because an
+	// anchor's path has to be a plain string on the way in, and the generated
+	// RestComment models it as the object Bitbucket sends back. Round-tripping
+	// through the struct would rewrite the path into a shape the create
+	// endpoint does not accept.
+	fields := map[string]any{"text": trimmedText}
+	if pendingState != nil {
+		fields["state"] = *pendingState
+	}
+	anchorFields, err := commentanchor.Payload(target.anchorOptions(), commentanchor.APINames)
+	if err != nil {
+		return openapigenerated.RestComment{}, err
+	}
+	for key, value := range anchorFields {
+		fields[key] = value
 	}
 
+	encoded, err := json.Marshal(fields)
+	if err != nil {
+		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindInternal, "failed to encode comment payload", err)
+	}
+
+	// The raw request methods are used rather than their WithResponse wrappers
+	// because those decode a 201 straight into the generated RestComment, and
+	// an inline comment comes back with a string anchor path the model cannot
+	// hold — so a comment that was created successfully would surface as a
+	// transient failure. decodeCreatedComment does the decode after repairing
+	// the shape.
 	if strings.TrimSpace(target.CommitID) != "" {
-		response, err := service.client.CreateCommentWithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, nil, body)
-		if err != nil {
-			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to create commit comment", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return openapigenerated.RestComment{}, err
-		}
-		if response.ApplicationjsonCharsetUTF8201 != nil {
-			return *response.ApplicationjsonCharsetUTF8201, nil
-		}
-		return body, nil
+		response, err := service.client.CreateCommentWithBody(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, nil, jsonContentType, bytes.NewReader(encoded))
+		return decodeCreatedComment(response, err, "failed to create commit comment", echo)
 	}
 
 	if target.Blocker {
-		response, err := service.client.CreateComment1WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, body)
-		if err != nil {
-			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to create pull request blocker comment", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return openapigenerated.RestComment{}, err
-		}
-		if response.ApplicationjsonCharsetUTF8201 != nil {
-			return *response.ApplicationjsonCharsetUTF8201, nil
-		}
-		return body, nil
+		response, err := service.client.CreateComment1WithBody(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, jsonContentType, bytes.NewReader(encoded))
+		return decodeCreatedComment(response, err, "failed to create pull request blocker comment", echo)
 	}
 
-	response, err := service.client.CreateComment2WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, body)
-	if err != nil {
-		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to create pull request comment", err)
+	response, err := service.client.CreateComment2WithBody(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, jsonContentType, bytes.NewReader(encoded))
+
+	created, createErr := decodeCreatedComment(response, err, "failed to create pull request comment", echo)
+
+	return created, commentanchor.ExplainRejection(createErr, target.anchorOptions())
+}
+
+const jsonContentType = "application/json"
+
+// decodeCreatedComment turns a create-comment response into the generated
+// model, falling back to the request echo when the body cannot be read as one.
+//
+// The comment has already been created by the time this runs, so a body that
+// will not decode must not be reported as a failed create — the caller would
+// retry and post a duplicate. Anchor paths are normalised first because
+// Bitbucket sends them as strings while the generated model expects objects.
+func decodeCreatedComment(response *http.Response, requestErr error, failureMessage string, echo openapigenerated.RestComment) (openapigenerated.RestComment, error) {
+	if requestErr != nil {
+		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, failureMessage, requestErr)
 	}
-	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+
+	raw, readErr := io.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if readErr != nil {
+		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, failureMessage, readErr)
+	}
+
+	if err := openapi.MapStatusError(response.StatusCode, raw); err != nil {
 		return openapigenerated.RestComment{}, err
 	}
-	if response.ApplicationjsonCharsetUTF8201 != nil {
-		return *response.ApplicationjsonCharsetUTF8201, nil
+	if !json.Valid(raw) {
+		return echo, nil
 	}
 
-	return body, nil
+	normalized, err := commentanchor.NormalizeResponsePaths(raw)
+	if err != nil {
+		return echo, nil
+	}
+
+	var created openapigenerated.RestComment
+	if err := json.Unmarshal(normalized, &created); err != nil {
+		return echo, nil
+	}
+
+	return created, nil
 }
 
 func (service *Service) Update(ctx context.Context, target Target, commentID string, text string, version *int32) (openapigenerated.RestComment, error) {
@@ -569,24 +578,7 @@ func validateTarget(target Target) error {
 		return apperrors.New(apperrors.KindValidation, "blocker comments are only supported for pull requests, not commits", nil)
 	}
 
-	inline := target.Path != "" || target.Line > 0
-	if inline && target.Path == "" {
-		return apperrors.New(apperrors.KindValidation, "line requires path for an inline comment", nil)
-	}
-	if inline && target.Line <= 0 {
-		return apperrors.New(apperrors.KindValidation, "path requires a positive line for an inline comment", nil)
-	}
-	if inline && target.ParentID > 0 {
-		return apperrors.New(apperrors.KindValidation, "parent_id cannot be combined with path/line; reply to a comment or anchor a new one, not both", nil)
-	}
-	if !inline && target.LineType != "" {
-		return apperrors.New(apperrors.KindValidation, "line_type only applies to inline comments; provide path and line too", nil)
-	}
-	if target.ParentID > 0 && target.Blocker {
-		return apperrors.New(apperrors.KindValidation, "parent_id cannot be combined with blocker", nil)
-	}
-
-	return nil
+	return commentanchor.Validate(target.anchorOptions(), commentanchor.APINames)
 }
 
 // CommentState is the resolution state of a pull request comment.

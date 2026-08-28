@@ -22,8 +22,11 @@ import (
 type Dependencies struct {
 	JSONEnabled   func() bool
 	DryRunEnabled func() bool
-	LoadConfig    func() (config.AppConfig, error)
-	WriteJSON     func(w io.Writer, value any) error
+	// LoadConfig resolves configuration, steered by --host. The override is a
+	// parameter rather than an environment variable so targeting one instance
+	// cannot outlive the command that asked for it.
+	LoadConfig func(config.Overrides) (config.AppConfig, error)
+	WriteJSON  func(w io.Writer, value any) error
 }
 
 func (deps *Dependencies) withDefaults() Dependencies {
@@ -35,9 +38,7 @@ func (deps *Dependencies) withDefaults() Dependencies {
 		d.DryRunEnabled = func() bool { return false }
 	}
 	if d.LoadConfig == nil {
-		d.LoadConfig = func() (config.AppConfig, error) {
-			return config.LoadFromEnv()
-		}
+		d.LoadConfig = config.LoadWithOverrides
 	}
 	if d.WriteJSON == nil {
 		d.WriteJSON = jsonoutput.Write
@@ -118,22 +119,9 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 				}
 			}
 
-			if strings.TrimSpace(host) != "" {
-				_ = os.Setenv("BITBUCKET_URL", strings.TrimSpace(host))
-			}
-
-			cfg, err := d.LoadConfig()
+			cfg, err := loadConfigForHost(d, host)
 			if err != nil {
 				return err
-			}
-
-			if strings.TrimSpace(host) != "" {
-				trimmedHost := strings.TrimSpace(host)
-				if storedCfg, ok, _ := config.LoadStoredAuthForHost(trimmedHost); ok {
-					cfg = storedCfg
-				} else {
-					cfg.BitbucketURL = trimmedHost
-				}
 			}
 
 			customHeaders := make(http.Header)
@@ -214,12 +202,8 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 				return err
 			}
 
-			if isHTMLResponse(resp) {
-				return apperrors.New(
-					apperrors.KindAuthentication,
-					"expected JSON, got text/html — the request may have been unauthenticated or sent to the wrong path",
-					nil,
-				)
+			if err := htmlResponseError(resp, path); err != nil {
+				return err
 			}
 
 			return writeResponse(cmd.OutOrStdout(), resp.Body, d)
@@ -331,12 +315,8 @@ func executePaginated(
 			return err
 		}
 
-		if isHTMLResponse(resp) {
-			return apperrors.New(
-				apperrors.KindAuthentication,
-				"expected JSON, got text/html — the request may have been unauthenticated or sent to the wrong path",
-				nil,
-			)
+		if err := htmlResponseError(resp, path); err != nil {
+			return err
 		}
 
 		var pageData map[string]any
@@ -381,12 +361,60 @@ func executePaginated(
 	return writeResponse(out, mergedJSON, deps)
 }
 
-func isHTMLResponse(resp *httpclient.RawResponse) bool {
-	if resp == nil {
-		return false
+// loadConfigForHost resolves the configuration to use, honouring --host.
+//
+// The host is passed into the load so the full resolution path runs against it
+// — administrative allowed-host policy, per-host stored credentials and TLS
+// material all key off the resolved URL.
+//
+// The URL is then pinned to the requested host. Resolution falls back to the
+// configured default server for a host it has never seen, profile URL included,
+// which is right for `bb pr list` and wrong for a flag whose entire purpose is
+// to leave the default behind: without the pin, the command answers
+// confidently from a server the caller never named.
+func loadConfigForHost(d Dependencies, host string) (config.AppConfig, error) {
+	trimmedHost := strings.TrimSpace(host)
+	if trimmedHost == "" {
+		return d.LoadConfig(config.Overrides{})
 	}
-	ct := strings.ToLower(resp.Header.Get("Content-Type"))
-	return strings.Contains(ct, "text/html")
+
+	if !strings.Contains(trimmedHost, "://") {
+		trimmedHost = "https://" + trimmedHost
+	}
+
+	cfg, err := d.LoadConfig(config.Overrides{Host: trimmedHost})
+	if err != nil {
+		return config.AppConfig{}, err
+	}
+
+	cfg.BitbucketURL = trimmedHost
+
+	return cfg, nil
+}
+
+// htmlResponseError reports the login-page trap: a REST endpoint that answers
+// with HTML has not answered at all. Bitbucket serves its login page with a 200,
+// so without this the HTML is printed as if it were the resource.
+//
+// Only /rest/ paths are judged this way. `bb api` also reaches plugin and
+// servlet endpoints that legitimately render HTML, and refusing those would
+// trade one silent wrong answer for a loud wrong error.
+func htmlResponseError(resp *httpclient.RawResponse, path string) error {
+	if resp == nil {
+		return nil
+	}
+	if !strings.HasPrefix(strings.TrimPrefix(path, "/"), "rest/") {
+		return nil
+	}
+	if !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "text/html") {
+		return nil
+	}
+
+	return apperrors.New(
+		apperrors.KindAuthentication,
+		"expected JSON, got text/html — the request may have been unauthenticated or sent to the wrong path",
+		nil,
+	)
 }
 
 func sanitizeMangledPath(p string) (string, bool) {
@@ -423,18 +451,23 @@ func sanitizeMangledPath(p string) (string, bool) {
 	return p, false
 }
 
+// isMsysOrDrivePrefix reports whether a path prefix looks like the Windows
+// install root MSYS2 prepends, which is always anchored on a drive letter:
+// "C:/Program Files/Git", "/C:/Program Files/Git" or the short "/c" form.
+//
+// Matching on the words in that path instead — "program files", "git", "msys" —
+// is tempting and wrong: it also matches real Bitbucket endpoints, and
+// /plugins/servlet/git-lfs/rest/objects/batch would be silently truncated to
+// /rest/objects/batch. A drive letter cannot appear in a legitimate URL path,
+// so it is the only signal worth acting on.
 func isMsysOrDrivePrefix(prefix string) bool {
-	if len(prefix) >= 2 && prefix[1] == ':' {
+	if len(prefix) >= 2 && isAlpha(prefix[0]) && prefix[1] == ':' {
 		return true
 	}
-	if len(prefix) >= 3 && prefix[0] == '/' && prefix[2] == ':' {
+	if len(prefix) >= 3 && prefix[0] == '/' && isAlpha(prefix[1]) && prefix[2] == ':' {
 		return true
 	}
-	if len(prefix) >= 2 && prefix[0] == '/' && isAlpha(prefix[1]) && (len(prefix) == 2 || prefix[2] == '/') {
-		return true
-	}
-	lower := strings.ToLower(prefix)
-	if strings.Contains(lower, "program files") || strings.Contains(lower, "git") || strings.Contains(lower, "msys") {
+	if len(prefix) == 2 && prefix[0] == '/' && isAlpha(prefix[1]) {
 		return true
 	}
 	return false
