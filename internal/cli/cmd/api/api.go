@@ -49,6 +49,7 @@ func New(deps Dependencies) *cobra.Command {
 	d := deps.withDefaults()
 
 	var method string
+	var host string
 	var rawFields []string
 	var typedFields []string
 	var headers []string
@@ -67,9 +68,15 @@ Field arguments:
   -F, --field k=v        Pass a typed parameter (parses booleans, numbers, null, JSON, or @file)
   -H, --header k:v       Pass a custom HTTP header
   --input file           Pass a request body from a file (or '-' for stdin)
-  --paginate             Automatically fetch all pages for paginated endpoints`,
+  --paginate             Automatically fetch all pages for paginated endpoints
+  --host url             Target a specific Bitbucket host URL
+
+Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading slash (e.g. rest/api/1.0/...) to prevent shell path mangling.`,
 		Example: `  # GET a pull request settings resource
   bb api /rest/api/1.0/projects/PROJ/repos/repo/settings/pull-requests
+
+  # Target a specific Bitbucket instance
+  bb api /rest/api/1.0/projects --host https://bitbucket.example.com
 
   # Paginate all admin groups
   bb api /rest/api/1.0/admin/groups --paginate
@@ -82,9 +89,14 @@ Field arguments:
   cat body.json | bb api /rest/api/1.0/projects/PROJ/repos/repo/branches -X POST --input -`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := strings.TrimSpace(args[0])
-			if path == "" {
+			rawArgPath := strings.TrimSpace(args[0])
+			if rawArgPath == "" {
 				return apperrors.New(apperrors.KindValidation, "path cannot be empty", nil)
+			}
+
+			path, wasMangled := sanitizeMangledPath(rawArgPath)
+			if wasMangled {
+				fmt.Fprintf(cmd.ErrOrStderr(), "warning: path %q appears to be mangled by shell path conversion; sanitized to %q (set MSYS_NO_PATHCONV=1 to prevent mangling)\n", rawArgPath, path)
 			}
 
 			resolvedMethod := strings.ToUpper(strings.TrimSpace(method))
@@ -106,9 +118,22 @@ Field arguments:
 				}
 			}
 
+			if strings.TrimSpace(host) != "" {
+				_ = os.Setenv("BITBUCKET_URL", strings.TrimSpace(host))
+			}
+
 			cfg, err := d.LoadConfig()
 			if err != nil {
 				return err
+			}
+
+			if strings.TrimSpace(host) != "" {
+				trimmedHost := strings.TrimSpace(host)
+				if storedCfg, ok, _ := config.LoadStoredAuthForHost(trimmedHost); ok {
+					cfg = storedCfg
+				} else {
+					cfg.BitbucketURL = trimmedHost
+				}
 			}
 
 			customHeaders := make(http.Header)
@@ -189,11 +214,20 @@ Field arguments:
 				return err
 			}
 
+			if isHTMLResponse(resp) {
+				return apperrors.New(
+					apperrors.KindAuthentication,
+					"expected JSON, got text/html — the request may have been unauthenticated or sent to the wrong path",
+					nil,
+				)
+			}
+
 			return writeResponse(cmd.OutOrStdout(), resp.Body, d)
 		},
 	}
 
 	cmd.Flags().StringVarP(&method, "method", "X", "", "HTTP method (GET, POST, PUT, DELETE, PATCH, HEAD)")
+	cmd.Flags().StringVar(&host, "host", "", "Bitbucket host URL")
 	cmd.Flags().StringArrayVarP(&rawFields, "raw-field", "f", nil, "Add a string parameter (key=value)")
 	cmd.Flags().StringArrayVarP(&typedFields, "field", "F", nil, "Add a typed parameter (key=value, booleans, numbers, null, or @file)")
 	cmd.Flags().StringArrayVarP(&headers, "header", "H", nil, "Add a custom HTTP request header (Name: Value)")
@@ -297,6 +331,14 @@ func executePaginated(
 			return err
 		}
 
+		if isHTMLResponse(resp) {
+			return apperrors.New(
+				apperrors.KindAuthentication,
+				"expected JSON, got text/html — the request may have been unauthenticated or sent to the wrong path",
+				nil,
+			)
+		}
+
 		var pageData map[string]any
 		if err := json.Unmarshal(resp.Body, &pageData); err != nil {
 			// Not a JSON object page, write body directly
@@ -337,6 +379,69 @@ func executePaginated(
 	}
 
 	return writeResponse(out, mergedJSON, deps)
+}
+
+func isHTMLResponse(resp *httpclient.RawResponse) bool {
+	if resp == nil {
+		return false
+	}
+	ct := strings.ToLower(resp.Header.Get("Content-Type"))
+	return strings.Contains(ct, "text/html")
+}
+
+func sanitizeMangledPath(p string) (string, bool) {
+	if strings.HasPrefix(p, "/rest/") || strings.HasPrefix(p, "rest/") ||
+		strings.HasPrefix(p, "http://") || strings.HasPrefix(p, "https://") {
+		return p, false
+	}
+
+	normalized := strings.ReplaceAll(p, "\\", "/")
+
+	// If there's an embedded /rest/ in a path that starts with a drive letter or msys prefix
+	if idx := strings.Index(normalized, "/rest/"); idx > 0 {
+		prefix := normalized[:idx]
+		if isMsysOrDrivePrefix(prefix) {
+			return normalized[idx:], true
+		}
+	}
+
+	// Starts with /[A-Za-z]:/ (e.g. /C:/rest/...)
+	if len(normalized) >= 4 && normalized[0] == '/' && isAlpha(normalized[1]) && normalized[2] == ':' && normalized[3] == '/' {
+		return normalized[3:], true
+	}
+
+	// Starts with [A-Za-z]:/ (e.g. C:/rest/...)
+	if len(normalized) >= 3 && isAlpha(normalized[0]) && normalized[1] == ':' && normalized[2] == '/' {
+		return normalized[2:], true
+	}
+
+	// Starts with /[A-Za-z]/rest/ (e.g. /c/rest/...)
+	if len(normalized) >= 8 && normalized[0] == '/' && isAlpha(normalized[1]) && strings.HasPrefix(normalized[2:], "/rest/") {
+		return normalized[2:], true
+	}
+
+	return p, false
+}
+
+func isMsysOrDrivePrefix(prefix string) bool {
+	if len(prefix) >= 2 && prefix[1] == ':' {
+		return true
+	}
+	if len(prefix) >= 3 && prefix[0] == '/' && prefix[2] == ':' {
+		return true
+	}
+	if len(prefix) >= 2 && prefix[0] == '/' && isAlpha(prefix[1]) && (len(prefix) == 2 || prefix[2] == '/') {
+		return true
+	}
+	lower := strings.ToLower(prefix)
+	if strings.Contains(lower, "program files") || strings.Contains(lower, "git") || strings.Contains(lower, "msys") {
+		return true
+	}
+	return false
+}
+
+func isAlpha(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }
 
 func writeResponse(w io.Writer, body []byte, deps Dependencies) error {

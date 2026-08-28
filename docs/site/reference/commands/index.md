@@ -444,6 +444,9 @@ Field arguments:
   -H, --header k:v       Pass a custom HTTP header
   --input file           Pass a request body from a file (or '-' for stdin)
   --paginate             Automatically fetch all pages for paginated endpoints
+  --host url             Target a specific Bitbucket host URL
+
+Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading slash (e.g. rest/api/1.0/...) to prevent shell path mangling.
 
 Usage:
   bb api <path> [flags]
@@ -451,6 +454,9 @@ Usage:
 Examples:
   # GET a pull request settings resource
   bb api /rest/api/1.0/projects/PROJ/repos/repo/settings/pull-requests
+
+  # Target a specific Bitbucket instance
+  bb api /rest/api/1.0/projects --host https://bitbucket.example.com
 
   # Paginate all admin groups
   bb api /rest/api/1.0/admin/groups --paginate
@@ -465,6 +471,7 @@ Examples:
 Flags:
   -F, --field stringArray       Add a typed parameter (key=value, booleans, numbers, null, or @file)
   -H, --header stringArray      Add a custom HTTP request header (Name: Value)
+      --host string             Bitbucket host URL
       --input string            File to use as request body (or '-' for stdin)
   -X, --method string           HTTP method (GET, POST, PUT, DELETE, PATCH, HEAD)
       --paginate                Automatically fetch all pages for paginated endpoints
