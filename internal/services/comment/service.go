@@ -3,6 +3,7 @@ package comment
 import (
 	"context"
 	"encoding/json"
+	"path"
 	"strconv"
 	"strings"
 
@@ -31,6 +32,10 @@ type Target struct {
 	PullRequestID string
 	Blocker       bool
 	Pending       bool
+	Path          string
+	Line          int
+	LineType      string
+	ParentID      int64
 }
 
 func (target Target) Context() Context {
@@ -191,9 +196,6 @@ func (service *Service) Create(ctx context.Context, target Target, text string) 
 		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindValidation, "comment text is required", nil)
 	}
 
-	// A draft comment is created by asking for the PENDING state, not by the
-	// pending flag: the schema marks pending readOnly and the server ignores it,
-	// publishing the comment the caller wanted kept private.
 	var pendingState *string
 	if target.Pending {
 		state := "PENDING"
@@ -202,6 +204,56 @@ func (service *Service) Create(ctx context.Context, target Target, text string) 
 	body := openapigenerated.RestComment{
 		Text:  &trimmedText,
 		State: pendingState,
+	}
+
+	if target.ParentID > 0 || target.Path != "" || target.Line > 0 {
+		raw := map[string]any{}
+		if target.ParentID > 0 {
+			raw["parent"] = map[string]any{"id": target.ParentID}
+		}
+		if target.Path != "" || target.Line > 0 {
+			lineTypeStr := strings.ToUpper(strings.TrimSpace(target.LineType))
+			if lineTypeStr == "" {
+				lineTypeStr = "ADDED"
+			}
+			switch lineTypeStr {
+			case "ADDED", "REMOVED", "CONTEXT":
+			default:
+				return openapigenerated.RestComment{}, apperrors.New(apperrors.KindValidation, "line_type must be ADDED, REMOVED, or CONTEXT", nil)
+			}
+
+			fileTypeStr := "TO"
+			if lineTypeStr == "REMOVED" {
+				fileTypeStr = "FROM"
+			}
+
+			cleanedPath := path.Clean(strings.ReplaceAll(target.Path, "\\", "/"))
+			baseName := path.Base(cleanedPath)
+			dirName := path.Dir(cleanedPath)
+			pathMap := map[string]any{
+				"name": baseName,
+			}
+			if dirName != "." && dirName != "" && dirName != "/" {
+				pathMap["parent"] = dirName
+			}
+
+			raw["anchor"] = map[string]any{
+				"line":     target.Line,
+				"lineType": lineTypeStr,
+				"fileType": fileTypeStr,
+				"diffType": "EFFECTIVE",
+				"path":     pathMap,
+				"srcPath":  pathMap,
+			}
+		}
+
+		rawBytes, err := json.Marshal(raw)
+		if err != nil {
+			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindInternal, "failed to marshal comment anchor/parent payload", err)
+		}
+		if err := json.Unmarshal(rawBytes, &body); err != nil {
+			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindInternal, "failed to unmarshal comment anchor/parent payload", err)
+		}
 	}
 
 	if strings.TrimSpace(target.CommitID) != "" {
@@ -515,6 +567,23 @@ func validateTarget(target Target) error {
 
 	if target.Blocker && hasCommit {
 		return apperrors.New(apperrors.KindValidation, "blocker comments are only supported for pull requests, not commits", nil)
+	}
+
+	inline := target.Path != "" || target.Line > 0
+	if inline && target.Path == "" {
+		return apperrors.New(apperrors.KindValidation, "line requires path for an inline comment", nil)
+	}
+	if inline && target.Line <= 0 {
+		return apperrors.New(apperrors.KindValidation, "path requires a positive line for an inline comment", nil)
+	}
+	if inline && target.ParentID > 0 {
+		return apperrors.New(apperrors.KindValidation, "parent_id cannot be combined with path/line; reply to a comment or anchor a new one, not both", nil)
+	}
+	if !inline && target.LineType != "" {
+		return apperrors.New(apperrors.KindValidation, "line_type only applies to inline comments; provide path and line too", nil)
+	}
+	if target.ParentID > 0 && target.Blocker {
+		return apperrors.New(apperrors.KindValidation, "parent_id cannot be combined with blocker", nil)
 	}
 
 	return nil

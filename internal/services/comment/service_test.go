@@ -417,6 +417,103 @@ func TestServiceBlockerCommentsReactionsAndSuggestions(t *testing.T) {
 	}
 }
 
+func TestServiceCreateInlineAndThreadedComments(t *testing.T) {
+	var receivedBody map[string]any
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/comments" {
+			_ = json.NewDecoder(r.Body).Decode(&receivedBody)
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":200,"text":"created","version":1}`))
+			return
+		}
+		http.NotFound(w, r)
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	// 1. Validation tests
+	// path without line
+	_, err := service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Path: "foo.go"}, "msg")
+	if err == nil || !strings.Contains(err.Error(), "path requires a positive line") {
+		t.Fatalf("expected error for path without line, got %v", err)
+	}
+
+	// line without path
+	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Line: 10}, "msg")
+	if err == nil || !strings.Contains(err.Error(), "line requires path") {
+		t.Fatalf("expected error for line without path, got %v", err)
+	}
+
+	// parent_id combined with path/line
+	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Path: "foo.go", Line: 10, ParentID: 99}, "msg")
+	if err == nil || !strings.Contains(err.Error(), "parent_id cannot be combined with path/line") {
+		t.Fatalf("expected error for parent_id with path/line, got %v", err)
+	}
+
+	// parent_id combined with blocker
+	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", ParentID: 99, Blocker: true}, "msg")
+	if err == nil || !strings.Contains(err.Error(), "parent_id cannot be combined with blocker") {
+		t.Fatalf("expected error for parent_id with blocker, got %v", err)
+	}
+
+	// line_type on non-inline comment
+	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", LineType: "ADDED"}, "msg")
+	if err == nil || !strings.Contains(err.Error(), "line_type only applies to inline comments") {
+		t.Fatalf("expected error for line_type without inline, got %v", err)
+	}
+
+	// invalid line_type
+	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Path: "foo.go", Line: 10, LineType: "INVALID"}, "msg")
+	if err == nil || !strings.Contains(err.Error(), "line_type must be ADDED, REMOVED, or CONTEXT") {
+		t.Fatalf("expected error for invalid line_type, got %v", err)
+	}
+
+	// 2. Threaded reply comment
+	receivedBody = nil
+	cmt, err := service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", ParentID: 55}, "reply text")
+	if err != nil || cmt.Id == nil || *cmt.Id != 200 {
+		t.Fatalf("expected successful reply creation, got %v err=%v", cmt, err)
+	}
+	parentMap, ok := receivedBody["parent"].(map[string]any)
+	if !ok || parentMap["id"] != float64(55) {
+		t.Fatalf("expected parent id 55 in payload, got %#v", receivedBody)
+	}
+
+	// 3. Inline comment with ADDED
+	receivedBody = nil
+	cmt, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Path: "pkg/foo/bar.go", Line: 42, LineType: "ADDED"}, "inline comment")
+	if err != nil || cmt.Id == nil || *cmt.Id != 200 {
+		t.Fatalf("expected successful inline comment creation, got %v err=%v", cmt, err)
+	}
+	anchorMap, ok := receivedBody["anchor"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected anchor in payload, got %#v", receivedBody)
+	}
+	if anchorMap["line"] != float64(42) || anchorMap["lineType"] != "ADDED" || anchorMap["fileType"] != "TO" {
+		t.Fatalf("unexpected anchor values: %#v", anchorMap)
+	}
+	pathMap, ok := anchorMap["path"].(map[string]any)
+	if !ok || pathMap["name"] != "bar.go" || pathMap["parent"] != "pkg/foo" {
+		t.Fatalf("unexpected anchor path: %#v", anchorMap)
+	}
+
+	// 4. Inline comment with REMOVED
+	receivedBody = nil
+	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Path: "root.go", Line: 5, LineType: "REMOVED"}, "removed line comment")
+	if err != nil {
+		t.Fatalf("unexpected error for REMOVED comment: %v", err)
+	}
+	anchorMap = receivedBody["anchor"].(map[string]any)
+	if anchorMap["fileType"] != "FROM" || anchorMap["lineType"] != "REMOVED" {
+		t.Fatalf("unexpected anchor for REMOVED: %#v", anchorMap)
+	}
+	pathMap = anchorMap["path"].(map[string]any)
+	if pathMap["name"] != "root.go" || pathMap["parent"] != nil {
+		t.Fatalf("unexpected anchor path for root file: %#v", anchorMap)
+	}
+}
+
 func TestServiceBlockerReactionsAndSuggestionsAdditionalErrors(t *testing.T) {
 	// Blocker pagination test
 	t.Run("blocker pagination", func(t *testing.T) {

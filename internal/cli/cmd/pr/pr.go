@@ -1880,11 +1880,32 @@ func New(deps Dependencies) *cobra.Command {
 	var commentAddText string
 	var commentAddBlocker bool
 	var commentAddPending bool
+	var commentAddPath string
+	var commentAddLine int
+	var commentAddLineType string
+	var commentAddParentID int64
 	commentAddCmd := &cobra.Command{
 		Use:   "add <pr-id>",
 		Short: "Add a comment to a pull request",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			inline := commentAddPath != "" || commentAddLine > 0
+			if inline && commentAddPath == "" {
+				return apperrors.New(apperrors.KindValidation, "line requires path for an inline comment", nil)
+			}
+			if inline && commentAddLine <= 0 {
+				return apperrors.New(apperrors.KindValidation, "path requires a positive line for an inline comment", nil)
+			}
+			if inline && commentAddParentID > 0 {
+				return apperrors.New(apperrors.KindValidation, "parent-id cannot be combined with path/line; reply to a comment or anchor a new one, not both", nil)
+			}
+			if !inline && commentAddLineType != "" {
+				return apperrors.New(apperrors.KindValidation, "line-type only applies to inline comments; provide path and line too", nil)
+			}
+			if commentAddParentID > 0 && commentAddBlocker {
+				return apperrors.New(apperrors.KindValidation, "parent-id cannot be combined with blocker", nil)
+			}
+
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -1901,6 +1922,10 @@ func New(deps Dependencies) *cobra.Command {
 				PullRequestID: target.PullRequestID,
 				Blocker:       commentAddBlocker,
 				Pending:       commentAddPending,
+				Path:          commentAddPath,
+				Line:          commentAddLine,
+				LineType:      commentAddLineType,
+				ParentID:      commentAddParentID,
 			}
 
 			if deps.DryRunEnabled() {
@@ -1909,13 +1934,33 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
+				targetMap := map[string]any{
+					"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
+					"id":         target.PullRequestID,
+					"text":       commentAddText,
+					"blocker":    commentAddBlocker,
+					"pending":    commentAddPending,
+				}
+				if commentAddPath != "" {
+					targetMap["path"] = commentAddPath
+				}
+				if commentAddLine > 0 {
+					targetMap["line"] = commentAddLine
+				}
+				if commentAddLineType != "" {
+					targetMap["line_type"] = commentAddLineType
+				}
+				if commentAddParentID > 0 {
+					targetMap["parent_id"] = commentAddParentID
+				}
+
 				preview := dryrunpreview.Preview{
 					DryRun:       true,
 					PlanningMode: dryrunpreview.PlanningModeStateful,
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.comment.add",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "text": commentAddText, "blocker": commentAddBlocker, "pending": commentAddPending},
+						Target:          targetMap,
 						Action:          "create",
 						PredictedAction: "create",
 						Supported:       true,
@@ -1935,7 +1980,26 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "comment": created, "blocker": commentAddBlocker, "pending": commentAddPending})
+				outMap := map[string]any{
+					"repository":      repo,
+					"pull_request_id": target.PullRequestID,
+					"comment":         created,
+					"blocker":         commentAddBlocker,
+					"pending":         commentAddPending,
+				}
+				if commentAddPath != "" {
+					outMap["path"] = commentAddPath
+				}
+				if commentAddLine > 0 {
+					outMap["line"] = commentAddLine
+				}
+				if commentAddLineType != "" {
+					outMap["line_type"] = commentAddLineType
+				}
+				if commentAddParentID > 0 {
+					outMap["parent_id"] = commentAddParentID
+				}
+				return deps.WriteJSON(cmd.OutOrStdout(), outMap)
 			}
 
 			commentID := ""
@@ -1957,6 +2021,10 @@ func New(deps Dependencies) *cobra.Command {
 	commentAddCmd.Flags().StringVar(&commentAddText, "text", "", "Comment text")
 	commentAddCmd.Flags().BoolVar(&commentAddBlocker, "blocker", false, "Mark the comment as a blocker")
 	commentAddCmd.Flags().BoolVar(&commentAddPending, "pending", false, "Mark the comment as pending (draft)")
+	commentAddCmd.Flags().StringVar(&commentAddPath, "path", "", "File path for an inline comment")
+	commentAddCmd.Flags().IntVar(&commentAddLine, "line", 0, "Line number for an inline comment")
+	commentAddCmd.Flags().StringVar(&commentAddLineType, "line-type", "", "Line type for an inline comment: ADDED (default), REMOVED, or CONTEXT")
+	commentAddCmd.Flags().Int64Var(&commentAddParentID, "parent-id", 0, "Parent comment ID to reply to")
 	_ = commentAddCmd.MarkFlagRequired("text")
 	commentCmd.AddCommand(commentAddCmd)
 
