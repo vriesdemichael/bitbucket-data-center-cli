@@ -734,3 +734,143 @@ func TestApiPaginatedInvalidJSON(t *testing.T) {
 		t.Fatalf("expected raw text fallback on invalid JSON pagination, got: %s", buf.String())
 	}
 }
+
+func TestApiHTMLResponseReturnsAuthenticationError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html;charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`<!DOCTYPE html><html><head><title>Bitbucket Login</title></head><body><h1>Log In</h1></body></html>`))
+	}))
+	defer server.Close()
+
+	deps := newTestDependencies(server.URL, false, false)
+	cmd := New(deps)
+	buf := &bytes.Buffer{}
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"/rest/api/1.0/projects/PRJ"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error on HTML login response, got nil")
+	}
+	if !apperrors.IsKind(err, apperrors.KindAuthentication) {
+		t.Fatalf("expected authentication error, got kind %v (%v)", apperrors.KindOf(err), err)
+	}
+	if !strings.Contains(err.Error(), "expected JSON, got text/html") {
+		t.Fatalf("expected actionable message about text/html, got: %v", err)
+	}
+}
+
+func TestApiPaginatedHTMLResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html;charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`<html>Login Page</html>`))
+	}))
+	defer server.Close()
+
+	deps := newTestDependencies(server.URL, false, false)
+	cmd := New(deps)
+	buf := &bytes.Buffer{}
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"/rest/api/1.0/projects", "--paginate"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error on paginated HTML response, got nil")
+	}
+	if !apperrors.IsKind(err, apperrors.KindAuthentication) {
+		t.Fatalf("expected authentication error on paginated HTML, got %v", err)
+	}
+}
+
+func TestApiMangledPathSanitization(t *testing.T) {
+	var requestedPath string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	}))
+	defer server.Close()
+
+	tests := []struct {
+		name         string
+		inputArg     string
+		expectedPath string
+	}{
+		{
+			name:         "msys2 drive with program files git prefix",
+			inputArg:     "/C:/Program Files/Git/rest/api/1.0/projects/PROJ/repos/repo",
+			expectedPath: "/rest/api/1.0/projects/PROJ/repos/repo",
+		},
+		{
+			name:         "windows backslash with git prefix",
+			inputArg:     `C:\Program Files\Git\rest\api\1.0\projects\PROJ`,
+			expectedPath: "/rest/api/1.0/projects/PROJ",
+		},
+		{
+			name:         "short msys drive prefix",
+			inputArg:     "/c/rest/api/1.0/users",
+			expectedPath: "/rest/api/1.0/users",
+		},
+		{
+			name:         "custom plugin with drive letter",
+			inputArg:     "/C:/plugins/servlet/custom",
+			expectedPath: "/plugins/servlet/custom",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			deps := newTestDependencies(server.URL, false, false)
+			cmd := New(deps)
+			outBuf := &bytes.Buffer{}
+			errBuf := &bytes.Buffer{}
+			cmd.SetOut(outBuf)
+			cmd.SetErr(errBuf)
+			cmd.SetArgs([]string{tt.inputArg})
+
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if requestedPath != tt.expectedPath {
+				t.Fatalf("expected requested path %q, got %q", tt.expectedPath, requestedPath)
+			}
+			if !strings.Contains(errBuf.String(), "warning: path") || !strings.Contains(errBuf.String(), "MSYS_NO_PATHCONV=1") {
+				t.Fatalf("expected warning naming MSYS_NO_PATHCONV on stderr, got: %s", errBuf.String())
+			}
+		})
+	}
+}
+
+func TestApiHostFlagOverride(t *testing.T) {
+	var serverHit bool
+	customServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		serverHit = true
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"host":"custom"}`))
+	}))
+	defer customServer.Close()
+
+	// Default dependencies point to a fake dummy server that fails
+	deps := newTestDependencies("http://default-non-existent.example", false, false)
+	cmd := New(deps)
+	buf := &bytes.Buffer{}
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"/rest/api/1.0/projects", "--host", customServer.URL})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !serverHit {
+		t.Fatal("expected custom server to be reached via --host flag")
+	}
+	if !strings.Contains(buf.String(), `"host": "custom"`) {
+		t.Fatalf("expected custom server response, got: %s", buf.String())
+	}
+}
