@@ -6,10 +6,10 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -863,20 +863,29 @@ func ConfigPath() (string, error) {
 	return filepath.Join(baseDir, "bb", "config.yaml"), nil
 }
 
+// SystemConfigPath returns the machine-level configuration file, the one that
+// carries administrative policy.
+//
+// BB_SYSTEM_CONFIG_PATH redirects it under `go test` and nowhere else. Outside a
+// test, the environment is precisely what this tier exists to outrank: a
+// released binary that honoured the variable would let anyone able to set one in
+// a user's shell replace the entire policy tier with a file of their own, and
+// with it require_keyring, allowed_hosts, allow_insecure_skip_verify, the
+// mandated ca_file and disable_update. Windows registry policy was never
+// affected, because it is merged from HKLM after the file.
+//
+// Automation that needs different policy writes the real path instead — in a
+// container image that is one line at build time.
 func SystemConfigPath() (string, error) {
-	if custom := strings.TrimSpace(os.Getenv("BB_SYSTEM_CONFIG_PATH")); custom != "" {
+	return systemConfigPath(os.Getenv("BB_SYSTEM_CONFIG_PATH"), testing.Testing())
+}
+
+func systemConfigPath(pathOverride string, overrideAllowed bool) (string, error) {
+	if custom := strings.TrimSpace(pathOverride); custom != "" && overrideAllowed {
 		return custom, nil
 	}
 
-	if runtime.GOOS == "windows" {
-		programData := os.Getenv("ProgramData")
-		if programData == "" {
-			programData = `C:\ProgramData`
-		}
-		return filepath.Join(programData, "bb", "config.yaml"), nil
-	}
-
-	return "/etc/bb/config.yaml", nil
+	return machineConfigPath(), nil
 }
 
 func WorkspaceConfigPath() (string, error) {

@@ -2192,3 +2192,50 @@ func TestValidateConfigYAMLCommentsOnly(t *testing.T) {
 		t.Fatalf("comments-only YAML should be valid, got: %v", err)
 	}
 }
+
+func TestSystemConfigPathIgnoresEnvironmentOutsideTests(t *testing.T) {
+	attackerPath := filepath.Join(t.TempDir(), "attacker-policy.yaml")
+
+	// Under `go test`, the override is honoured: every policy test in this
+	// package depends on it.
+	testPath, err := systemConfigPath(attackerPath, true)
+	if err != nil {
+		t.Fatalf("expected success, got: %v", err)
+	}
+	if testPath != attackerPath {
+		t.Fatalf("expected the override to apply under test, got %q", testPath)
+	}
+
+	// In a released binary it is ignored, so administrative policy cannot be
+	// swapped out by anyone able to set a variable in the user's shell.
+	releasePath, err := systemConfigPath(attackerPath, false)
+	if err != nil {
+		t.Fatalf("expected success, got: %v", err)
+	}
+	if releasePath == attackerPath {
+		t.Fatal("BB_SYSTEM_CONFIG_PATH must not redirect administrative policy outside tests")
+	}
+
+	expected := machineConfigPath()
+	if releasePath != expected {
+		t.Fatalf("expected the machine path %q, got %q", expected, releasePath)
+	}
+
+	// An empty override leaves the machine path in place either way.
+	if emptyPath, err := systemConfigPath("", true); err != nil || emptyPath != expected {
+		t.Fatalf("expected the machine path for an empty override, got %q (%v)", emptyPath, err)
+	}
+}
+
+func TestMachineConfigPathIsNotEnvironmentDerived(t *testing.T) {
+	before := machineConfigPath()
+
+	// ProgramData is the Windows half of the same question: it names the
+	// directory policy is read from, and it must not come from the caller's
+	// environment either. On other platforms the path is a constant.
+	t.Setenv("ProgramData", filepath.Join(t.TempDir(), "spoofed"))
+
+	if after := machineConfigPath(); after != before {
+		t.Fatalf("machine config path must not follow the environment: %q became %q", before, after)
+	}
+}

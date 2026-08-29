@@ -3,9 +3,11 @@
 package config
 
 import (
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 )
 
@@ -15,6 +17,24 @@ type registryReader interface {
 	GetIntegerValue(name string) (uint64, uint32, error)
 	GetStringValue(name string) (string, uint32, error)
 	GetStringsValue(name string) ([]string, uint32, error)
+}
+
+// machineConfigPath is the location of the administrative policy file, with the
+// ProgramData directory taken from Windows itself.
+//
+// os.Getenv("ProgramData") answers the same on a healthy system, but the
+// environment belongs to whoever launched the process, and this directory
+// decides where policy is read from: a caller who can set ProgramData could
+// otherwise point bb at a policy file of their own making. KnownFolderPath asks
+// the OS instead.
+func machineConfigPath() string {
+	programData := `C:\ProgramData`
+	if resolved, err := windows.KnownFolderPath(windows.FOLDERID_ProgramData, 0); err == nil {
+		if trimmed := strings.TrimSpace(resolved); trimmed != "" {
+			programData = trimmed
+		}
+	}
+	return filepath.Join(programData, "bb", "config.yaml")
 }
 
 func loadPlatformPolicy() PolicyConfig {

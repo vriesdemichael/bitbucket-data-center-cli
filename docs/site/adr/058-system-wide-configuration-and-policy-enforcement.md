@@ -16,8 +16,12 @@ Establish a multi-tiered configuration hierarchy and machine-level administrativ
    (`.bb/config.yaml`) > User Configuration (`~/.config/bb/config.yaml` or `%APPDATA%\bb\config.yaml`) >
    System Configuration (`/etc/bb/config.yaml` or `%ProgramData%\bb\config.yaml`) > Built-in Defaults.
    Workspace configuration is located by traversing up from the working directory towards the repository
-   root (`.git` or `go.mod`). Environment variables `BB_SYSTEM_CONFIG_PATH` and `BB_WORKSPACE_CONFIG_PATH`
-   allow deterministic overriding in tests and automation.
+   root (`.git` or `go.mod`). `BB_WORKSPACE_CONFIG_PATH` overrides the workspace path, which carries no
+   policy. `BB_SYSTEM_CONFIG_PATH` overrides the system path under `go test` only: the system file is the
+   policy tier, and a released binary that relocated it on request would let anyone able to set an
+   environment variable replace every policy below with a file of their own. On Windows the ProgramData
+   directory holding that file is likewise resolved through the OS rather than read from `%ProgramData%`,
+   for the same reason. Automation that needs different policy writes the real path.
 
 2. Administrative Policy Invariants: System administrators can mandate security policies either via
    system configuration YAML (`/etc/bb/config.yaml` or `%ProgramData%\bb\config.yaml`) or native Windows
