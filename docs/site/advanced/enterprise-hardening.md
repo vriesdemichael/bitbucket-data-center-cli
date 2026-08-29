@@ -50,7 +50,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
 ### Deployable Fleet Controls
 
 1. **System Configuration and Immutable Administrative Policies ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md))**:
-   Deploy a machine-level configuration file (`/etc/bb/config.yaml` on Linux/macOS, `%ProgramData%\bb\config.yaml` on Windows) or native Windows Registry policy keys (`HKLM\Software\Policies\bb`). Policies defined at this tier are immutable and cannot be overridden by user shell environment variables, user config files, or repository workspace configs:
+   Deploy a machine-level configuration file (`/etc/bb/config.yaml` on Linux/macOS, `%ProgramData%\bb\config.yaml` on Windows) or native Windows Registry policy keys (`HKLM\Software\Policies\bb`). Policies defined at this tier are immutable and cannot be overridden by user shell environment variables, user config files, or repository workspace configs — including the path the policy file is read from:
    ```yaml
    # yaml-language-server: $schema=https://raw.githubusercontent.com/vriesdemichael/bitbucket-data-center-cli/main/docs/reference/schemas/config.schema.json
    $schema: https://raw.githubusercontent.com/vriesdemichael/bitbucket-data-center-cli/main/docs/reference/schemas/config.schema.json
