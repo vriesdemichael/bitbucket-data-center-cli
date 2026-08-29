@@ -48,6 +48,26 @@ func ConfigJSONSchema() map[string]any {
 			"type":        "string",
 			"description": "Mandate where 'bb ai mcp serve' writes its JSON Lines audit trail. The server then audits whether or not --audit-file is passed, and rejects a --audit-file naming a different path. Accepts a file path or the literal 'stderr'.",
 		},
+		"update_trusted_root": map[string]any{
+			"type":        "string",
+			"description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration only; removes the need for outbound access to the Sigstore TUF CDN.",
+		},
+		"update_tuf_url": map[string]any{
+			"type":        "string",
+			"description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration only; mutually exclusive with update_trusted_root.",
+		},
+		"update_signature_identity": map[string]any{
+			"type":        "string",
+			"description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+		},
+		"update_signature_issuer": map[string]any{
+			"type":        "string",
+			"description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+		},
+		"allow_unverified_update": map[string]any{
+			"type":        "boolean",
+			"description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration only.",
+		},
 	}
 
 	hostProfileSchema := map[string]any{
@@ -128,6 +148,11 @@ func ConfigJSONSchema() map[string]any {
 			"disable_update":             policyProps["disable_update"],
 			"update_base_url":            policyProps["update_base_url"],
 			"mcp_audit_file":             policyProps["mcp_audit_file"],
+			"update_trusted_root":        policyProps["update_trusted_root"],
+			"update_tuf_url":             policyProps["update_tuf_url"],
+			"update_signature_identity":  policyProps["update_signature_identity"],
+			"update_signature_issuer":    policyProps["update_signature_issuer"],
+			"allow_unverified_update":    policyProps["allow_unverified_update"],
 			"policies": map[string]any{
 				"type":                 "object",
 				"additionalProperties": false,

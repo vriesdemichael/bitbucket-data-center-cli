@@ -1360,3 +1360,134 @@ func wordsToRunes(words []uint16) []rune {
 	}
 	return result
 }
+
+func TestRunnerSkipsSignatureVerificationUnderPolicy(t *testing.T) {
+	archive := buildTarGzArchive(t, "bb", []byte("new-binary"))
+	checksum := fmt.Sprintf("%s  %s\n", sha256Hex(archive), "bb_1.2.0_linux_amd64.tar.gz")
+
+	// A mirror that re-publishes the artifacts without a Sigstore bundle: the
+	// signature asset is absent entirely, which is why the bundle lookup must
+	// not be fatal once policy has accepted an unverified update.
+	client := &stubReleaseClient{
+		release: githubrelease.Release{
+			TagName: "v1.2.0",
+			Assets: []githubrelease.Asset{
+				{Name: "bb_1.2.0_linux_amd64.tar.gz", BrowserDownloadURL: "https://mirror.internal/bb_1.2.0_linux_amd64.tar.gz"},
+				{Name: "sha256sums.txt", BrowserDownloadURL: "https://mirror.internal/sha256sums.txt"},
+			},
+		},
+		downloads: map[string][]byte{
+			"https://mirror.internal/sha256sums.txt":              []byte(checksum),
+			"https://mirror.internal/bb_1.2.0_linux_amd64.tar.gz": archive,
+		},
+	}
+
+	verifier := &stubSignatureVerifier{}
+	var written []byte
+	runner := NewRunner(Dependencies{
+		Releases:        client,
+		RepositoryOwner: "vriesdemichael",
+		RepositoryName:  "bitbucket-data-center-cli",
+		CurrentVersion:  func() string { return "v1.1.0" },
+		ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
+		Platform:        func() (string, string) { return "linux", "amd64" },
+		WriteBinary: func(_ string, binary []byte, _ fs.FileMode) error {
+			written = binary
+			return nil
+		},
+		Verifier:                  verifier,
+		SkipSignatureVerification: true,
+		TrustSource:               "none (signature verification disabled by administrative policy)",
+	})
+
+	result, err := runner.Run(context.Background(), Options{})
+	if err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
+	if verifier.calls != 0 {
+		t.Fatalf("expected no verification calls, got %d", verifier.calls)
+	}
+	if !result.SignatureSkipped || result.SignatureVerified {
+		t.Fatalf("expected a skipped signature, got %+v", result)
+	}
+	if !result.ChecksumVerified {
+		t.Fatal("checksum verification must remain mandatory when signatures are skipped")
+	}
+	if result.TrustSource == "" {
+		t.Fatal("expected the trust source to be reported")
+	}
+	if string(written) != "new-binary" {
+		t.Fatalf("unexpected binary written: %s", written)
+	}
+}
+
+func TestRunnerStillRequiresChecksumsWhenSignatureIsSkipped(t *testing.T) {
+	client := &stubReleaseClient{
+		release: githubrelease.Release{
+			TagName: "v1.2.0",
+			Assets: []githubrelease.Asset{
+				{Name: "bb_1.2.0_linux_amd64.tar.gz", BrowserDownloadURL: "https://mirror.internal/bb_1.2.0_linux_amd64.tar.gz"},
+			},
+		},
+	}
+
+	runner := NewRunner(Dependencies{
+		Releases:                  client,
+		RepositoryOwner:           "vriesdemichael",
+		RepositoryName:            "bitbucket-data-center-cli",
+		CurrentVersion:            func() string { return "v1.1.0" },
+		ExecutablePath:            func() (string, error) { return "/tmp/bb", nil },
+		Platform:                  func() (string, string) { return "linux", "amd64" },
+		SkipSignatureVerification: true,
+	})
+
+	_, err := runner.Run(context.Background(), Options{})
+	if !apperrors.IsKind(err, apperrors.KindNotFound) {
+		t.Fatalf("expected the missing checksum manifest to be fatal, got: %v", err)
+	}
+}
+
+func TestRunnerReportsUnavailableTrustMaterialDistinctly(t *testing.T) {
+	archive := buildTarGzArchive(t, "bb", []byte("new-binary"))
+	checksum := fmt.Sprintf("%s  %s\n", sha256Hex(archive), "bb_1.2.0_linux_amd64.tar.gz")
+
+	client := &stubReleaseClient{
+		release: releaseWithSignatureBundle(githubrelease.Release{
+			TagName: "v1.2.0",
+			Assets: []githubrelease.Asset{
+				{Name: "bb_1.2.0_linux_amd64.tar.gz", BrowserDownloadURL: "https://example.test/bb_1.2.0_linux_amd64.tar.gz"},
+				{Name: "sha256sums.txt", BrowserDownloadURL: "https://example.test/sha256sums.txt"},
+			},
+		}),
+		downloads: downloadsWithSignatureBundle(map[string][]byte{
+			"https://example.test/sha256sums.txt": []byte(checksum),
+		}),
+	}
+
+	trustRootErr := apperrors.New(
+		apperrors.KindTransient,
+		"failed to load Sigstore trusted roots",
+		fmt.Errorf("%w: dial tcp: i/o timeout", updatesigstore.ErrTrustedRootUnavailable),
+	)
+
+	runner := newTestRunner(Dependencies{
+		Releases:        client,
+		RepositoryOwner: "vriesdemichael",
+		RepositoryName:  "bitbucket-data-center-cli",
+		CurrentVersion:  func() string { return "v1.1.0" },
+		ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
+		Platform:        func() (string, string) { return "linux", "amd64" },
+		Verifier:        &stubSignatureVerifier{err: trustRootErr},
+	})
+
+	_, err := runner.Run(context.Background(), Options{DryRun: true})
+	if err == nil {
+		t.Fatal("expected an error when trust material cannot be loaded")
+	}
+	if !strings.Contains(err.Error(), "update_trusted_root") {
+		t.Fatalf("expected the message to name the offline trust root setting, got: %v", err)
+	}
+	if strings.Contains(err.Error(), "use winget, scoop, or manual install") {
+		t.Fatalf("expected trust material failures not to be reported as a bad signature, got: %v", err)
+	}
+}

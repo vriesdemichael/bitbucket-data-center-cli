@@ -76,8 +76,13 @@ func (client *Client) Latest(ctx context.Context, owner, repo string) (Release, 
 	var release Release
 	err := client.do(ctx, http.MethodGet, requestURL, &release)
 	if err != nil {
-		if apperrors.IsKind(err, apperrors.KindNotFound) && client.baseURL != defaultBaseURL {
-			// Fallback paths on custom mirrors (e.g. Artifactory / Nexus endpoints)
+		// Fallback paths on custom mirrors (e.g. Artifactory / Nexus endpoints),
+		// which serve the manifest at the root of a generic repository rather
+		// than under GitHub's /repos/{owner}/{repo} layout. A mirror that does
+		// not hold the manifest can answer with anything from 404 to 403 or a
+		// gateway error, so any failure is worth a second look — on the default
+		// base URL nothing changes.
+		if client.usesMirror() {
 			fallbackURLs := []string{
 				fmt.Sprintf("%s/releases/latest", client.baseURL),
 				fmt.Sprintf("%s/latest", client.baseURL),
@@ -93,6 +98,12 @@ func (client *Client) Latest(ctx context.Context, owner, repo string) (Release, 
 	}
 
 	return release, nil
+}
+
+// usesMirror reports whether a release mirror is configured, as opposed to the
+// public GitHub API.
+func (client *Client) usesMirror() bool {
+	return client.baseURL != defaultBaseURL
 }
 
 func (client *Client) Download(ctx context.Context, assetURL string) ([]byte, error) {
@@ -114,20 +125,55 @@ func (client *Client) Download(ctx context.Context, assetURL string) ([]byte, er
 		}
 	}
 
-	body, err := client.fetchAsset(ctx, resolvedURL)
-	if err != nil && client.baseURL != defaultBaseURL {
-		// If custom mirror is configured and fetching from the asset's URL failed
-		// (e.g. firewalled github.com URL from mirrored manifest), try fetching from the mirror directly
-		assetName := path.Base(resolvedURL)
-		if assetName != "" && assetName != "." && assetName != "/" {
-			mirrorFallbackURL := fmt.Sprintf("%s/%s", client.baseURL, assetName)
-			if mirrorBody, mirrorErr := client.fetchAsset(ctx, mirrorFallbackURL); mirrorErr == nil {
-				return mirrorBody, nil
+	// An asset URL that points off the mirror is tried on the mirror first.
+	//
+	// A manifest mirrored from GitHub still carries github.com asset URLs, and
+	// those are exactly the addresses an air-gapped enclave drops rather than
+	// refuses: trying them first costs a full connection timeout per asset —
+	// three of them per update — before the mirror is ever reached.
+	//
+	// A URL that already resolves onto the mirror is left alone. A manifest
+	// authored for the mirror can point at a path of its own choosing, and
+	// second-guessing it with a flattened file name would fetch the wrong
+	// object whenever the two disagree.
+	mirrorURL := ""
+	if client.usesMirror() && !client.hostedOnMirror(resolvedURL) {
+		if assetName := assetFileName(resolvedURL); assetName != "" {
+			mirrorURL = fmt.Sprintf("%s/%s", client.baseURL, assetName)
+			if body, mirrorErr := client.fetchAsset(ctx, mirrorURL); mirrorErr == nil {
+				return body, nil
 			}
 		}
 	}
 
+	body, err := client.fetchAsset(ctx, resolvedURL)
+	if err != nil && mirrorURL != "" && mirrorURL != resolvedURL {
+		// Both addresses failed. The mirror is the one the operator configured,
+		// so its failure is the one worth reporting.
+		return nil, apperrors.New(
+			apperrors.KindOf(err),
+			fmt.Sprintf("failed to download release asset from mirror %s or from %s", mirrorURL, resolvedURL),
+			err,
+		)
+	}
+
 	return body, err
+}
+
+// hostedOnMirror reports whether an already-resolved asset URL lives under the
+// configured mirror base URL.
+func (client *Client) hostedOnMirror(resolvedURL string) bool {
+	return resolvedURL == client.baseURL || strings.HasPrefix(resolvedURL, client.baseURL+"/")
+}
+
+// assetFileName extracts the file name an asset URL ends in, or "" when the URL
+// does not end in one.
+func assetFileName(assetURL string) string {
+	name := path.Base(assetURL)
+	if name == "" || name == "." || name == "/" {
+		return ""
+	}
+	return name
 }
 
 func (client *Client) fetchAsset(ctx context.Context, resolvedURL string) ([]byte, error) {

@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	githubrelease "github.com/vriesdemichael/bitbucket-server-cli/internal/transport/githubrelease"
 	updatesigstore "github.com/vriesdemichael/bitbucket-server-cli/internal/transport/sigstore"
@@ -614,4 +615,132 @@ func TestLoadUpdateCommandHTTPConfigHonoursSystemPolicy(t *testing.T) {
 			t.Fatalf("unexpected tls options: %+v", httpConfig.TLSOptions)
 		}
 	})
+}
+
+func TestLoadUpdateCommandHTTPConfigResolvesUpdateTrust(t *testing.T) {
+	t.Run("trust settings come from system policy", func(t *testing.T) {
+		tempDir := t.TempDir()
+		sysPath := filepath.Join(tempDir, "system-config.yaml")
+		trustedRoot := filepath.Join(tempDir, "trusted_root.json")
+		if err := os.WriteFile(trustedRoot, []byte("{}"), 0o600); err != nil {
+			t.Fatalf("write trusted root: %v", err)
+		}
+		sysYAML := fmt.Sprintf("policies:\n  update_trusted_root: %s\n", trustedRoot)
+		if err := os.WriteFile(sysPath, []byte(sysYAML), 0o600); err != nil {
+			t.Fatalf("write system config: %v", err)
+		}
+
+		t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+
+		httpConfig, err := LoadUpdateCommandHTTPConfig()
+		if err != nil {
+			t.Fatalf("expected success, got %v", err)
+		}
+		if httpConfig.Trust.TrustedRootPath != trustedRoot {
+			t.Fatalf("expected trusted root %q, got %q", trustedRoot, httpConfig.Trust.TrustedRootPath)
+		}
+	})
+
+	t.Run("an unusable trust configuration fails the command", func(t *testing.T) {
+		tempDir := t.TempDir()
+		sysPath := filepath.Join(tempDir, "system-config.yaml")
+		sysYAML := fmt.Sprintf("update_trusted_root: %s\n", filepath.Join(tempDir, "absent.json"))
+		if err := os.WriteFile(sysPath, []byte(sysYAML), 0o600); err != nil {
+			t.Fatalf("write system config: %v", err)
+		}
+
+		t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+
+		if _, err := LoadUpdateCommandHTTPConfig(); !apperrors.IsKind(err, apperrors.KindValidation) {
+			t.Fatalf("expected KindValidation, got %v", err)
+		}
+	})
+}
+
+func TestTrustSourceDescription(t *testing.T) {
+	cases := []struct {
+		name     string
+		trust    config.UpdateTrust
+		expected string
+	}{
+		{name: "default", trust: config.UpdateTrust{}, expected: "public Sigstore TUF repository"},
+		{name: "file", trust: config.UpdateTrust{TrustedRootPath: "/etc/bb/trusted_root.json"}, expected: "trusted root file /etc/bb/trusted_root.json"},
+		{name: "tuf mirror", trust: config.UpdateTrust{TUFRepositoryURL: "https://artifactory.internal/tuf"}, expected: "mirrored Sigstore TUF repository https://artifactory.internal/tuf"},
+		{name: "unverified", trust: config.UpdateTrust{AllowUnverified: true, TrustedRootPath: "/etc/bb/trusted_root.json"}, expected: "none (signature verification disabled by administrative policy)"},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := trustSourceDescription(testCase.trust); got != testCase.expected {
+				t.Fatalf("expected %q, got %q", testCase.expected, got)
+			}
+		})
+	}
+}
+
+func TestUpdateCommandWarnsWhenSignatureVerificationIsSkipped(t *testing.T) {
+	if BuildDisablesSelfUpdate {
+		t.Skip("skipping in no_self_update build")
+	}
+
+	originalFactory := UpdateRunnerFactory
+	defer func() {
+		UpdateRunnerFactory = originalFactory
+	}()
+
+	tempDir := t.TempDir()
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(tempDir, "system-config.yaml"))
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+
+	// A dry run stops before the archive is fetched, so the manifest only has
+	// to carry an entry for the target asset.
+	checksums := "0000000000000000000000000000000000000000000000000000000000000000  bb_1.2.0_linux_amd64.tar.gz\n"
+
+	UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
+		return updateworkflow.NewRunner(updateworkflow.Dependencies{
+			Releases: updateCommandReleaseClient{
+				release: githubrelease.Release{
+					TagName: "v1.2.0",
+					Assets: []githubrelease.Asset{
+						{Name: "bb_1.2.0_linux_amd64.tar.gz", BrowserDownloadURL: "https://mirror.internal/bb_1.2.0_linux_amd64.tar.gz"},
+						{Name: "sha256sums.txt", BrowserDownloadURL: "https://mirror.internal/sha256sums.txt"},
+					},
+				},
+				downloads: map[string][]byte{
+					"https://mirror.internal/sha256sums.txt": []byte(checksums),
+				},
+			},
+			RepositoryOwner:           "vriesdemichael",
+			RepositoryName:            "bitbucket-data-center-cli",
+			CurrentVersion:            func() string { return version },
+			ExecutablePath:            func() (string, error) { return "/tmp/bb", nil },
+			Platform:                  func() (string, string) { return "linux", "amd64" },
+			SkipSignatureVerification: true,
+			TrustSource:               "none (signature verification disabled by administrative policy)",
+		})
+	}
+
+	root := &cobra.Command{Use: "bb", Version: "v1.1.0"}
+	root.AddCommand(New(Dependencies{DryRunEnabled: func() bool { return true }}))
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	root.SetOut(stdout)
+	root.SetErr(stderr)
+	root.SetArgs([]string{"update"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if !strings.Contains(stderr.String(), "allow_unverified_update") {
+		t.Fatalf("expected a warning naming the policy on stderr, got: %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "not verified") {
+		t.Fatalf("expected the dry run to report the unverified signature, got: %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "Trust material") {
+		t.Fatalf("expected the dry run to report the trust material in use, got: %q", stdout.String())
+	}
 }

@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/go-openapi/runtime"
@@ -72,26 +73,70 @@ type legacyRekorPayload struct {
 	LogID          string `json:"logID"`
 }
 
-func NewGitHubReleaseVerifier(owner, repo string) *Verifier {
-	owner = strings.TrimSpace(owner)
-	repo = strings.TrimSpace(repo)
+// ReleaseVerifierOptions describes the release signer bb will accept and where
+// the trust material backing that decision comes from.
+type ReleaseVerifierOptions struct {
+	// Owner and Repo build the default signer identity: the release workflow of
+	// the bb repository on GitHub Actions.
+	Owner string
+	Repo  string
+	// TrustedRootPath and TUFRepositoryURL each replace the public-good TUF
+	// fetch. At most one is expected; the file wins if both are given.
+	TrustedRootPath  string
+	TUFRepositoryURL string
+	// ExpectedIdentity and ExpectedIssuer override the default signer, for
+	// organisations that re-sign mirrored artifacts with their own Fulcio.
+	ExpectedIdentity string
+	ExpectedIssuer   string
+	// HTTPClient is used for the TUF mirror fetch, so that the CA bundle and
+	// client certificates resolved for this invocation apply to it.
+	HTTPClient *http.Client
+}
+
+// NewReleaseVerifier builds the verifier for `bb update`.
+//
+// Defaults reproduce NewGitHubReleaseVerifier exactly: the bb release workflow
+// on GitHub Actions, verified against trust material fetched from the
+// public-good Sigstore TUF repository.
+func NewReleaseVerifier(options ReleaseVerifierOptions) *Verifier {
+	expectedIssuer := strings.TrimSpace(options.ExpectedIssuer)
+	if expectedIssuer == "" {
+		expectedIssuer = GitHubActionsIssuer
+	}
+
+	expectedSAN := strings.TrimSpace(options.ExpectedIdentity)
+	if expectedSAN == "" {
+		expectedSAN = DefaultReleaseIdentity(options.Owner, options.Repo)
+	}
+
+	var provider TrustedMaterialProvider
+	switch {
+	case strings.TrimSpace(options.TrustedRootPath) != "":
+		provider = TrustedRootFromFile(options.TrustedRootPath)
+	case strings.TrimSpace(options.TUFRepositoryURL) != "":
+		provider = TrustedRootFromTUF(options.TUFRepositoryURL, options.HTTPClient)
+	}
 
 	return NewVerifier(Options{
-		ExpectedIssuer: GitHubActionsIssuer,
-		ExpectedSAN:    fmt.Sprintf("https://github.com/%s/%s/%s@%s", owner, repo, ReleaseWorkflowPath, MainBranchRef),
+		ExpectedIssuer:          expectedIssuer,
+		ExpectedSAN:             expectedSAN,
+		TrustedMaterialProvider: provider,
 	})
+}
+
+// DefaultReleaseIdentity is the certificate SAN of the bb release workflow.
+func DefaultReleaseIdentity(owner, repo string) string {
+	return fmt.Sprintf("https://github.com/%s/%s/%s@%s", strings.TrimSpace(owner), strings.TrimSpace(repo), ReleaseWorkflowPath, MainBranchRef)
+}
+
+func NewGitHubReleaseVerifier(owner, repo string) *Verifier {
+	return NewReleaseVerifier(ReleaseVerifierOptions{Owner: owner, Repo: repo})
 }
 
 func NewVerifier(options Options) *Verifier {
 	provider := options.TrustedMaterialProvider
 	if provider == nil {
-		provider = func(context.Context) (sigroot.TrustedMaterial, error) {
-			trustedRoot, err := sigroot.FetchTrustedRoot()
-			if err != nil {
-				return nil, apperrors.New(apperrors.KindTransient, "failed to load Sigstore trusted roots", err)
-			}
-			return trustedRoot, nil
-		}
+		provider = FetchTrustedRoot
 	}
 
 	verifierOptions := options.VerifierOptions
