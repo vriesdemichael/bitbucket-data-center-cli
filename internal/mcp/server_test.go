@@ -2,14 +2,13 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
-	mcpgo "github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 )
 
@@ -25,18 +24,63 @@ func testClients(t *testing.T) Clients {
 		_, _ = w.Write([]byte(`{"errors":[{"message":"test server error"}]}`))
 	}))
 	t.Cleanup(srv.Close)
+	return clientsForURL(t, srv.URL)
+}
 
-	cfg := config.AppConfig{
-		BitbucketURL:   srv.URL,
+// clientsForURL builds Clients against an arbitrary base URL.
+func clientsForURL(t *testing.T, baseURL string) Clients {
+	t.Helper()
+	clients, err := ClientsFromConfig(config.AppConfig{
+		BitbucketURL:   baseURL,
 		RequestTimeout: 5 * time.Second,
 		RetryCount:     0,
 		RetryBackoff:   time.Millisecond,
-	}
-	clients, err := ClientsFromConfig(cfg)
+	})
 	if err != nil {
-		t.Fatalf("testClients: ClientsFromConfig: %v", err)
+		t.Fatalf("ClientsFromConfig: %v", err)
 	}
 	return clients
+}
+
+// connect starts an MCP server over an in-memory transport and returns a
+// connected client session. This is a real client-to-server round trip through
+// the SDK's own encoding, validation and dispatch — the only way to observe
+// what a tool actually puts on the wire.
+func connect(t *testing.T, clients Clients, allow, exclude []string, yolo bool) *mcp.ClientSession {
+	t.Helper()
+	ctx := context.Background()
+
+	serverTransport, clientTransport := mcp.NewInMemoryTransports()
+	server := NewServer("bb", "test", clients, allow, exclude, yolo)
+
+	serverSession, err := server.Connect(ctx, serverTransport, nil)
+	if err != nil {
+		t.Fatalf("server connect: %v", err)
+	}
+	t.Cleanup(func() { _ = serverSession.Wait() })
+
+	client := mcp.NewClient(&mcp.Implementation{Name: "bb-test", Version: "test"}, nil)
+	session, err := client.Connect(ctx, clientTransport, nil)
+	if err != nil {
+		t.Fatalf("client connect: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	return session
+}
+
+// listToolNames returns the tool names the server advertises over tools/list.
+func listToolNames(t *testing.T, session *mcp.ClientSession) []string {
+	t.Helper()
+	result, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("tools/list: %v", err)
+	}
+	names := make([]string, 0, len(result.Tools))
+	for _, tool := range result.Tools {
+		names = append(names, tool.Name)
+	}
+	return names
 }
 
 // TestAllSpecsReturnsExpectedCount ensures the catalog has exactly the expected number of tools.
@@ -66,11 +110,45 @@ func TestAllSpecsHaveNonEmptyDescriptions(t *testing.T) {
 	}
 }
 
-// TestAllSpecsHaveHandlers ensures every spec's Handler factory is non-nil.
-func TestAllSpecsHaveHandlers(t *testing.T) {
+// TestAllSpecsHaveRegistrars ensures every spec can register itself.
+func TestAllSpecsHaveRegistrars(t *testing.T) {
 	for _, spec := range AllSpecs() {
-		if spec.Handler == nil {
-			t.Errorf("tool %q has nil handler factory", spec.Tool.Name)
+		if spec.Register == nil {
+			t.Errorf("tool %q has nil Register", spec.Tool.Name)
+		}
+	}
+}
+
+// TestAllSpecsHaveAnnotations ensures every tool tells a client whether calling
+// it is safe to do without asking. An MCP client uses these hints to decide how
+// much ceremony a call deserves, so a missing annotation degrades to the
+// pessimistic default and makes read-only tools look dangerous.
+func TestAllSpecsHaveAnnotations(t *testing.T) {
+	for _, spec := range AllSpecs() {
+		if spec.Tool.Annotations == nil {
+			t.Errorf("tool %q has no annotations", spec.Tool.Name)
+		}
+	}
+}
+
+// TestUnsafeToolsAreAnnotatedDestructive pins the two classifications together.
+// Safe is what the server filters on; DestructiveHint is what a client reads.
+// They answer the same question, so a tool withheld without --yolo that tells
+// clients it is non-destructive is a contradiction that would mislead an agent.
+func TestUnsafeToolsAreAnnotatedDestructive(t *testing.T) {
+	for _, spec := range AllSpecs() {
+		if spec.Safe {
+			continue
+		}
+		annotations := spec.Tool.Annotations
+		if annotations == nil {
+			continue // reported by TestAllSpecsHaveAnnotations
+		}
+		if annotations.ReadOnlyHint {
+			t.Errorf("tool %q is withheld without --yolo but annotated read-only", spec.Tool.Name)
+		}
+		if annotations.DestructiveHint == nil || !*annotations.DestructiveHint {
+			t.Errorf("tool %q is withheld without --yolo but not annotated destructive", spec.Tool.Name)
 		}
 	}
 }
@@ -87,32 +165,50 @@ func TestAllSpecsHaveUniqueNames(t *testing.T) {
 	}
 }
 
-// TestNewServerNoFilter verifies that with empty allow/exclude all tools are registered.
-func TestNewServerNoFilter(_ *testing.T) {
-	// NewServer must not panic with a zero Clients value and no filter lists.
-	_ = NewServer("bb", "test", Clients{}, nil, nil, false)
+// TestNewServerExposesSafeToolsByDefault verifies the default filter through a
+// real tools/list rather than by trusting NewServer not to panic.
+func TestNewServerExposesSafeToolsByDefault(t *testing.T) {
+	session := connect(t, Clients{}, nil, nil, false)
+	got := listToolNames(t, session)
+
+	want := make(map[string]bool)
+	for _, spec := range SafeSpecs() {
+		want[spec.Tool.Name] = true
+	}
+	if len(got) != len(want) {
+		t.Errorf("tools/list returned %d tools, want %d safe tools", len(got), len(want))
+	}
+	for _, name := range got {
+		if !want[name] {
+			t.Errorf("tools/list exposed %q, which is not safe by default", name)
+		}
+	}
 }
 
-// TestNewServerAllowList verifies that only the allowed tool is registered.
-func TestNewServerAllowList(t *testing.T) {
-	specs := AllSpecs()
-	target := specs[0].Tool.Name
-	s := NewServer("bb", "test", Clients{}, []string{target}, nil, false)
-	if s == nil {
-		t.Fatal("NewServer returned nil")
+// TestNewServerYoloExposesEveryTool verifies --yolo lifts the safety filter.
+func TestNewServerYoloExposesEveryTool(t *testing.T) {
+	session := connect(t, Clients{}, nil, nil, true)
+	if got, want := len(listToolNames(t, session)), len(AllSpecs()); got != want {
+		t.Errorf("tools/list with yolo returned %d tools, want %d", got, want)
 	}
-	// The server is opaque; we trust NewServer if it doesn't panic and returns non-nil.
 }
 
-// TestNewServerExcludeList verifies that excluded tools don't cause a panic.
-func TestNewServerExcludeList(_ *testing.T) {
-	specs := AllSpecs()
-	names := make([]string, len(specs))
-	for i, s := range specs {
-		names[i] = s.Tool.Name
+// TestNewServerAllowListOverridesSafetyFilter verifies an explicit allowlist can
+// name an unsafe tool without --yolo, and suppresses everything else.
+func TestNewServerAllowListOverridesSafetyFilter(t *testing.T) {
+	session := connect(t, Clients{}, []string{"merge_pull_request"}, nil, false)
+	got := listToolNames(t, session)
+	if len(got) != 1 || got[0] != "merge_pull_request" {
+		t.Errorf("tools/list = %v, want exactly [merge_pull_request]", got)
 	}
-	// Exclude all tools — server should be created with no tools registered.
-	_ = NewServer("bb", "test", Clients{}, nil, names, false)
+}
+
+// TestNewServerExcludeAppliesAfterAllowList verifies exclude wins in every mode.
+func TestNewServerExcludeAppliesAfterAllowList(t *testing.T) {
+	session := connect(t, Clients{}, []string{"merge_pull_request"}, []string{"merge_pull_request"}, false)
+	if got := listToolNames(t, session); len(got) != 0 {
+		t.Errorf("tools/list = %v, want no tools", got)
+	}
 }
 
 // TestSafeSpecsSubsetOfAllSpecs verifies SafeSpecs is a strict subset of AllSpecs.
@@ -136,53 +232,27 @@ func TestSafeSpecsSubsetOfAllSpecs(t *testing.T) {
 	}
 }
 
-// TestMergePullRequestIsUnsafe verifies the merge tool is not in the safe set.
-func TestMergePullRequestIsUnsafe(t *testing.T) {
-	unsafeTools := []string{"merge_pull_request", "set_build_status"}
+// TestGatedToolsAreWithheld verifies the tools that influence merge gating are
+// not exposed without --yolo.
+func TestGatedToolsAreWithheld(t *testing.T) {
+	gated := []string{"merge_pull_request", "set_build_status", "submit_pr_review", "enable_auto_merge"}
 	safeByName := make(map[string]bool)
 	for _, s := range SafeSpecs() {
 		safeByName[s.Tool.Name] = true
 	}
 	allByName := make(map[string]bool)
 	for _, s := range AllSpecs() {
-		if s.Safe {
-			allByName[s.Tool.Name] = true
-		}
+		allByName[s.Tool.Name] = true
 	}
-	for _, name := range unsafeTools {
+	for _, name := range gated {
+		if !allByName[name] {
+			t.Errorf("%q not found in AllSpecs", name)
+			continue
+		}
 		if safeByName[name] {
 			t.Errorf("%q must not appear in SafeSpecs", name)
 		}
-		if allByName[name] {
-			t.Errorf("%q must have Safe=false in AllSpecs", name)
-		}
-		found := false
-		for _, s := range AllSpecs() {
-			if s.Tool.Name == name {
-				found = true
-			}
-		}
-		if !found {
-			t.Errorf("%q not found in AllSpecs", name)
-		}
 	}
-}
-
-// TestNewServerSafeModeExcludesMerge verifies that safe mode (yolo=false) does not expose merge_pull_request.
-func TestNewServerSafeModeExcludesMerge(_ *testing.T) {
-	// Safe mode: NewServer must not panic even though merge_pull_request is withheld.
-	_ = NewServer("bb", "test", Clients{}, nil, nil, false)
-}
-
-// TestNewServerYoloIncludesAllTools verifies that yolo mode exposes all tools without panic.
-func TestNewServerYoloIncludesAllTools(_ *testing.T) {
-	_ = NewServer("bb", "test", Clients{}, nil, nil, true)
-}
-
-// TestNewServerAllowListOverridesSafeMode verifies an explicit allowlist can include unsafe tools.
-func TestNewServerAllowListOverridesSafeMode(_ *testing.T) {
-	// Explicitly requesting merge_pull_request in safe mode must not panic.
-	_ = NewServer("bb", "test", Clients{}, []string{"merge_pull_request"}, nil, false)
 }
 
 // TestToSet covers empty input, normal input, and whitespace trimming.
@@ -207,42 +277,17 @@ func TestToSet(t *testing.T) {
 	}
 }
 
-// TestResultJSONSerializableValue verifies resultJSON with a plain struct.
-func TestResultJSONSerializableValue(t *testing.T) {
-	result, err := resultJSON(map[string]string{"key": "value"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+// TestLimitOrDefault pins the substitution an omitted limit relies on.
+func TestLimitOrDefault(t *testing.T) {
+	cases := []struct{ in, want int }{
+		{0, defaultLimit},
+		{-1, defaultLimit},
+		{1, 1},
+		{100, 100},
 	}
-	if result == nil {
-		t.Fatal("resultJSON returned nil result")
-	}
-	if result.IsError {
-		t.Fatal("resultJSON returned an error result for a serializable value")
-	}
-}
-
-// TestResultJSONUnserializableValue verifies resultJSON returns an error result, not a Go error.
-func TestResultJSONUnserializableValue(t *testing.T) {
-	// A channel is not JSON-serialisable.
-	result, err := resultJSON(make(chan int))
-	if err != nil {
-		t.Fatalf("resultJSON should not return a Go error for serialisation failures, got: %v", err)
-	}
-	if result == nil {
-		t.Fatal("resultJSON returned nil result for unserializable value")
-	}
-	if !result.IsError {
-		t.Fatal("expected an error tool result for an unserializable value")
-	}
-}
-
-// TestHandlerFactoriesReturnNonNilHandlers verifies each handler factory produces a non-nil handler.
-func TestHandlerFactoriesReturnNonNilHandlers(t *testing.T) {
-	clients := Clients{} // zero value; factories must not dereference nil clients at construction time
-	for _, spec := range AllSpecs() {
-		handler := spec.Handler(clients)
-		if handler == nil {
-			t.Errorf("tool %q handler factory returned nil handler", spec.Tool.Name)
+	for _, tc := range cases {
+		if got := limitOrDefault(tc.in); got != tc.want {
+			t.Errorf("limitOrDefault(%d) = %d, want %d", tc.in, got, tc.want)
 		}
 	}
 }
@@ -286,344 +331,22 @@ func TestToolNamesMatchExpected(t *testing.T) {
 	}
 }
 
-// TestHandlerReturnsToolErrorOnMissingRequiredArg exercises the required-argument path for one tool.
-// This does not require a live Bitbucket connection.
-func TestHandlerReturnsToolErrorOnMissingRequiredArg(t *testing.T) {
-	// get_pull_request requires project, repo, and pr_id. Call with nothing.
-	var targetSpec Spec
-	for _, s := range AllSpecs() {
-		if s.Tool.Name == "get_pull_request" {
-			targetSpec = s
-			break
-		}
-	}
-	if targetSpec.Tool.Name == "" {
-		t.Fatal("get_pull_request spec not found")
-	}
+// TestMissingRequiredArgumentIsRejected verifies the SDK validates arguments
+// against the declared input schema before the handler runs. Previously each
+// handler discarded the error from RequireString and carried on with an empty
+// string, so a missing project reached the API as a request for project "".
+func TestMissingRequiredArgumentIsRejected(t *testing.T) {
+	session := connect(t, testClients(t), nil, nil, false)
 
-	handler := targetSpec.Handler(Clients{})
-	req := mcpgo.CallToolRequest{}
-	result, err := handler(context.Background(), req)
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "get_pull_request",
+		Arguments: map[string]any{},
+	})
 	if err != nil {
-		t.Fatalf("handler returned unexpected Go error: %v", err)
+		t.Fatalf("tools/call returned a protocol error: %v", err)
 	}
-	if result == nil {
-		t.Fatal("handler returned nil result")
-	}
-	// Must be an error tool result (missing required args).
 	if !result.IsError {
-		t.Errorf("expected error result for missing required args, got: %+v", result)
-	}
-}
-
-// TestStructuredContentFor exercises every branch of structuredContentFor.
-// The function decides on the encoded bytes rather than the Go type, so the
-// cases here are JSON shapes: object, array, each scalar kind, null, and the
-// whitespace-prefixed and empty inputs that guard the indexing.
-func TestStructuredContentFor(t *testing.T) {
-	cases := []struct {
-		name     string
-		encoded  string
-		wantWire string // "" means the field is omitted (nil returned)
-	}{
-		{"object passes through", `{"name":"demo"}`, `{"name":"demo"}`},
-		{"nested object passes through", `{"a":{"b":[1,2]}}`, `{"a":{"b":[1,2]}}`},
-		// json.Marshal compacts a RawMessage, so the whitespace is dropped on
-		// the wire; what matters is that the payload is not wrapped.
-		{"object with leading whitespace passes through", "  \n\t" + `{"a":1}`, `{"a":1}`},
-		{"array wrapped", `[{"name":"v1"}]`, `{"items":[{"name":"v1"}]}`},
-		{"empty array wrapped", `[]`, `{"items":[]}`},
-		{"number wrapped", `42`, `{"items":42}`},
-		{"string wrapped", `"hello"`, `{"items":"hello"}`},
-		{"bool wrapped", `true`, `{"items":true}`},
-		{"null omits the field", `null`, ""},
-		{"empty input omits the field", ``, ""},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := structuredContentFor([]byte(tc.encoded))
-			if tc.wantWire == "" {
-				if got != nil {
-					t.Fatalf("structuredContentFor(%q) = %v, want nil so the field is omitted", tc.encoded, got)
-				}
-				return
-			}
-			if got == nil {
-				t.Fatalf("structuredContentFor(%q) = nil, want %s", tc.encoded, tc.wantWire)
-			}
-			wire, err := json.Marshal(got)
-			if err != nil {
-				t.Fatalf("marshal: %v", err)
-			}
-			if string(wire) != tc.wantWire {
-				t.Errorf("structuredContentFor(%q) marshalled to %s, want %s", tc.encoded, wire, tc.wantWire)
-			}
-		})
-	}
-}
-
-// TestResultJSONStructuredContentIsAlwaysRecord verifies the single-point guard
-// in resultJSON: structuredContent must serialise as a JSON object for every
-// payload a handler can pass, while the text content retains the original
-// shape. A slice structuredContent is what MCP clients validating against a
-// pre-SEP-2106 revision reject with "expected record, received array"; the
-// eight list-style tools (list_tags, list_commits, list_branches, resolve_ref,
-// get_build_status, list_required_builds, compare_refs, search_repositories)
-// all pass a slice.
-//
-// The typed-nil, nil-map and json.RawMessage cases are not reachable from
-// today's handlers — every service returns value structs and non-nil slices —
-// but they are the cases a type-based implementation gets wrong, so they are
-// pinned here to keep the byte-based one honest.
-func TestResultJSONStructuredContentIsAlwaysRecord(t *testing.T) {
-	type tag struct {
-		Name string `json:"name"`
-	}
-	var nilPtr *tag
-	var nilMap map[string]any
-	var nilSlice []tag
-
-	cases := []struct {
-		name       string
-		data       any
-		wantText   string
-		wantOmitSC bool // structuredContent absent on the wire
-	}{
-		{
-			name:     "slice wrapped under items",
-			data:     []tag{{"v1"}, {"v2"}},
-			wantText: `[{"name":"v1"},{"name":"v2"}]`,
-		},
-		{
-			name:     "empty slice wrapped under items",
-			data:     []tag{},
-			wantText: `[]`,
-		},
-		{
-			name:     "map passed through",
-			data:     map[string]any{"pull_requests": []string{"a"}},
-			wantText: `{"pull_requests":["a"]}`,
-		},
-		{
-			name:     "struct passed through",
-			data:     tag{"v1"},
-			wantText: `{"name":"v1"}`,
-		},
-		{
-			name:     "pointer to struct passed through",
-			data:     &tag{"v1"},
-			wantText: `{"name":"v1"}`,
-		},
-		{
-			name:     "scalar wrapped under items",
-			data:     42,
-			wantText: `42`,
-		},
-		{
-			name:     "string scalar wrapped under items",
-			data:     "hello",
-			wantText: `"hello"`,
-		},
-		{
-			// A struct whose MarshalJSON returns a string: the Go kind says
-			// object, the encoding says string. Only the byte check gets this
-			// right.
-			name:     "struct marshalling to a scalar wrapped under items",
-			data:     time.Date(2026, 8, 25, 12, 0, 0, 0, time.UTC),
-			wantText: `"2026-08-25T12:00:00Z"`,
-		},
-		{
-			// json.RawMessage is a slice whose contents are already an object;
-			// wrapping it would nest the payload one level too deep.
-			name:     "raw message holding an object passed through",
-			data:     json.RawMessage(`{"a":1}`),
-			wantText: `{"a":1}`,
-		},
-		{
-			name:       "typed nil pointer omits structuredContent",
-			data:       nilPtr,
-			wantText:   `null`,
-			wantOmitSC: true,
-		},
-		{
-			name:       "nil map omits structuredContent",
-			data:       nilMap,
-			wantText:   `null`,
-			wantOmitSC: true,
-		},
-		{
-			name:       "nil slice omits structuredContent",
-			data:       nilSlice,
-			wantText:   `null`,
-			wantOmitSC: true,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			res, err := resultJSON(tc.data)
-			if err != nil {
-				t.Fatalf("resultJSON returned error: %v", err)
-			}
-			if len(res.Content) != 1 {
-				t.Fatalf("expected 1 content item, got %d", len(res.Content))
-			}
-			text, ok := res.Content[0].(mcpgo.TextContent)
-			if !ok {
-				t.Fatalf("expected TextContent, got %T", res.Content[0])
-			}
-			if text.Text != tc.wantText {
-				t.Errorf("text content = %q, want %q", text.Text, tc.wantText)
-			}
-
-			// Marshal the full result and inspect what actually reaches a client.
-			wire, mErr := json.Marshal(res)
-			if mErr != nil {
-				t.Fatalf("marshal result: %v", mErr)
-			}
-			var probe struct {
-				SC json.RawMessage `json:"structuredContent"`
-			}
-			if jErr := json.Unmarshal(wire, &probe); jErr != nil {
-				t.Fatalf("unmarshal wire: %v", jErr)
-			}
-			if tc.wantOmitSC {
-				if len(probe.SC) != 0 {
-					t.Errorf("structuredContent = %s, want the field to be omitted", probe.SC)
-				}
-				return
-			}
-			if len(probe.SC) == 0 {
-				t.Fatal("structuredContent missing on wire")
-			}
-			if probe.SC[0] != '{' {
-				t.Errorf("structuredContent is not a JSON object: %s", probe.SC)
-			}
-		})
-	}
-}
-
-// TestResultJSONNilOmitsStructuredContent verifies that a nil payload produces
-// a result with no structuredContent on the wire, rather than a null or an
-// invented {"items": null} — an absent optional field is unambiguous, a null
-// one is not a record.
-func TestResultJSONNilOmitsStructuredContent(t *testing.T) {
-	res, err := resultJSON(nil)
-	if err != nil {
-		t.Fatalf("resultJSON(nil) returned error: %v", err)
-	}
-	wire, mErr := json.Marshal(res)
-	if mErr != nil {
-		t.Fatalf("marshal result: %v", mErr)
-	}
-	var probe struct {
-		SC json.RawMessage `json:"structuredContent"`
-	}
-	if jErr := json.Unmarshal(wire, &probe); jErr != nil {
-		t.Fatalf("unmarshal wire: %v", jErr)
-	}
-	if len(probe.SC) != 0 {
-		t.Errorf("structuredContent for nil payload = %s, want absent", probe.SC)
-	}
-}
-
-func TestListPRCommentsHandlerPathScopedAndAggregate(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodGet || r.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/comments" {
-				http.NotFound(w, r)
-				return
-			}
-			if r.URL.Query().Get("path") != "seed.txt" {
-				w.WriteHeader(http.StatusBadRequest)
-				_, _ = w.Write([]byte(`{"errors":[{"message":"expected path query"}]}`))
-				return
-			}
-			w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":301,"text":"mcp pr comment","version":2}]}`))
-		}))
-		defer srv.Close()
-
-		clients, err := ClientsFromConfig(config.AppConfig{BitbucketURL: srv.URL, RequestTimeout: 5 * time.Second, RetryCount: 0, RetryBackoff: time.Millisecond})
-		if err != nil {
-			t.Fatalf("ClientsFromConfig failed: %v", err)
-		}
-
-		handler := specListPRComments().Handler(clients)
-		result, err := handler(context.Background(), mcpgo.CallToolRequest{
-			Params: mcpgo.CallToolParams{Arguments: map[string]any{"project": "TEST", "repo": "demo", "pr_id": "30", "path": "seed.txt", "limit": 10}},
-		})
-		if err != nil {
-			t.Fatalf("handler returned Go error: %v", err)
-		}
-		if result == nil || result.IsError {
-			t.Fatalf("expected success result, got: %+v", result)
-		}
-	})
-
-	t.Run("aggregate without path", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodGet || r.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/activities" {
-				http.NotFound(w, r)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":301,"action":"COMMENTED","comment":{"id":401,"text":"aggregate comment","version":3}}]}`))
-		}))
-		defer srv.Close()
-
-		clients, err := ClientsFromConfig(config.AppConfig{BitbucketURL: srv.URL, RequestTimeout: 5 * time.Second, RetryCount: 0, RetryBackoff: time.Millisecond})
-		if err != nil {
-			t.Fatalf("ClientsFromConfig failed: %v", err)
-		}
-
-		handler := specListPRComments().Handler(clients)
-		result, err := handler(context.Background(), mcpgo.CallToolRequest{
-			Params: mcpgo.CallToolParams{Arguments: map[string]any{"project": "TEST", "repo": "demo", "pr_id": "30"}},
-		})
-		if err != nil {
-			t.Fatalf("handler returned Go error: %v", err)
-		}
-		if result == nil || result.IsError {
-			t.Fatalf("expected aggregate success result, got: %+v", result)
-		}
-	})
-}
-
-// toleratesServiceFailure is the set of tools that intentionally succeed even when
-// all backend API calls fail (e.g. because the result is derived from inputs alone, or
-// because the backend lookup is best-effort).
-var toleratesServiceFailure = map[string]bool{
-	// Clone URLs are derived from the base URL; the display-name lookup is best-effort.
-	"get_repository_clone_info": true,
-}
-
-// TestAllHandlersReturnErrorResultsOnServerFailure exercises the full error path
-// in every tool handler body by calling them with clients pointing at a failing
-// test server. This covers param extraction, service call, and error-return branches.
-func TestAllHandlersReturnErrorResultsOnServerFailure(t *testing.T) {
-	clients := testClients(t)
-	for _, spec := range AllSpecs() {
-		spec := spec // capture range variable
-		t.Run(spec.Tool.Name, func(t *testing.T) {
-			handler := spec.Handler(clients)
-			result, err := handler(context.Background(), mcpgo.CallToolRequest{})
-			if err != nil {
-				t.Fatalf("handler returned unexpected Go error: %v", err)
-			}
-			if result == nil {
-				t.Fatal("handler returned nil result")
-			}
-			if toleratesServiceFailure[spec.Tool.Name] {
-				return // success or error are both acceptable for this tool
-			}
-			// Failing server cannot satisfy any API call, so every handler must
-			// return an error tool result.
-			if !result.IsError {
-				t.Errorf("expected error tool result for failing-server call, got success: %+v", result)
-			}
-		})
+		t.Fatalf("expected an error result for missing required arguments, got: %+v", result)
 	}
 }
 
@@ -699,37 +422,5 @@ func TestBuildCloneURLs(t *testing.T) {
 				t.Errorf("SSH URL: got %q, want %q", sshURL, tc.wantSSH)
 			}
 		})
-	}
-}
-
-// TestResultJSONPreservesData verifies the JSON content round-trips correctly.
-func TestResultJSONPreservesData(t *testing.T) {
-	type payload struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
-	}
-	input := payload{ID: 42, Name: "test"}
-
-	result, err := resultJSON(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// Extract the text content from the result.
-	if len(result.Content) == 0 {
-		t.Fatal("result has no content")
-	}
-
-	raw, ok := result.Content[0].(mcpgo.TextContent)
-	if !ok {
-		t.Fatalf("expected TextContent, got %T", result.Content[0])
-	}
-
-	var got payload
-	if err := json.Unmarshal([]byte(raw.Text), &got); err != nil {
-		t.Fatalf("could not unmarshal result content: %v", err)
-	}
-	if got != input {
-		t.Errorf("round-trip mismatch: got %+v, want %+v", got, input)
 	}
 }

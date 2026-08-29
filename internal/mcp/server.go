@@ -1,13 +1,11 @@
 package mcp
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"strings"
 
-	mcpgo "github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/google/jsonschema-go/jsonschema"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
@@ -35,8 +33,13 @@ func ClientsFromConfig(cfg config.AppConfig) (Clients, error) {
 	}, nil
 }
 
-// Spec pairs a tool definition with a handler factory so that metadata
+// Spec pairs a tool definition with a registration function so that metadata
 // can be listed without a live Bitbucket connection.
+//
+// Register rather than a handler value because the SDK derives both schemas
+// from the handler's type parameters, and mcp.AddTool is a generic free
+// function: only a closure that already knows the concrete In and Out types
+// can call it. See toolSpec.
 //
 // Safe decides whether a tool is exposed without --yolo / --allow-writes. Set
 // it false when either of two things is true:
@@ -56,29 +59,101 @@ func ClientsFromConfig(cfg config.AppConfig) (Clients, error) {
 // undo it: opening a pull request or tagging a commit changes no branch and
 // gates nothing. Judge by consequence, not by whether a delete tool exists.
 type Spec struct {
-	Tool    mcpgo.Tool
-	Handler func(Clients) server.ToolHandlerFunc
-	Safe    bool
+	Tool     *mcp.Tool
+	Register func(*mcp.Server, Clients)
+	Safe     bool
+}
+
+// toolSpec binds a tool definition to a typed handler factory.
+//
+// In and Out are the whole output contract. The SDK derives the input schema
+// from In and the output schema from Out, validates arguments against the
+// former before the handler runs, and validates the marshalled result against
+// the latter before it reaches the client — so a handler cannot return a shape
+// its declared schema does not describe. Out is also what populates
+// structuredContent, with the JSON serialisation of the same value used as the
+// text content when the handler does not set one.
+//
+// Every Out in this package is a named struct with a single collection or
+// object field, so structuredContent is always a JSON object. Clients that
+// validate results against a pre-SEP-2106 revision of the spec reject a bare
+// array with "expected record, received array"; naming the payload avoids that
+// by construction rather than by wrapping non-objects at the choke point, which
+// is what this package did before (issue #416, ADR-061).
+func toolSpec[In, Out any](tool *mcp.Tool, safe bool, handler func(Clients) mcp.ToolHandlerFor[In, Out]) Spec {
+	return Spec{
+		Tool: tool,
+		Safe: safe,
+		Register: func(server *mcp.Server, clients Clients) {
+			mcp.AddTool(server, tool, handler(clients))
+		},
+	}
+}
+
+// enumInputSchema derives the input schema for In and pins named properties to
+// a fixed set of permitted values.
+//
+// The schema is derived rather than hand-written so it cannot drift from In.
+// The enum is applied afterwards because a struct tag has no way to express
+// one, and publishing the permitted values is worth the extra step: it is the
+// difference between a model guessing "APPROVE" and reading that the tool wants
+// "approve".
+//
+// Panics on a property that In does not have, in the same spirit as
+// mcp.AddTool panicking on a malformed tool — both are wiring errors fixed at
+// the call site, and TestAllSpecsBuild reaches every one of them.
+func enumInputSchema[In any](enums map[string][]string) *jsonschema.Schema {
+	schema, err := jsonschema.For[In](nil)
+	if err != nil {
+		panic(fmt.Sprintf("deriving input schema for %T: %v", *new(In), err))
+	}
+	for property, values := range enums {
+		target, ok := schema.Properties[property]
+		if !ok {
+			panic(fmt.Sprintf("enum declared for property %q which %T does not have", property, *new(In)))
+		}
+		target.Enum = make([]any, len(values))
+		for i, value := range values {
+			target.Enum[i] = value
+		}
+	}
+	return schema
+}
+
+// readOnly and mutating build the annotations an MCP client reads to decide how
+// much ceremony a tool call deserves. They mirror the Safe classification a
+// level up: everything withheld without --yolo is destructive, but not
+// everything destructive-free is read-only — creating a pull request writes.
+func readOnly() *mcp.ToolAnnotations {
+	return &mcp.ToolAnnotations{ReadOnlyHint: true}
+}
+
+func mutating(destructive bool) *mcp.ToolAnnotations {
+	return &mcp.ToolAnnotations{DestructiveHint: &destructive}
 }
 
 // AllSpecs returns the full catalog of MCP tool specifications in stable order.
+//
+// The order is part of the contract: the 2026-07-28 revision asks servers to
+// return tools/list in a deterministic order so clients can cache the listing
+// and keep prompt-cache hit rates up.
 func AllSpecs() []Spec {
 	return []Spec{
 		// Pull request group
 		// Reading PR state is always safe.
-		{specGetPullRequest().Tool, specGetPullRequest().Handler, true},
-		{specListPullRequests().Tool, specListPullRequests().Handler, true},
+		specGetPullRequest(),
+		specListPullRequests(),
 		// Opening a PR has low consequence: it changes no branch and blocks
 		// nothing. Not "easily reversed" — pr decline has no tool here — but it
 		// does not need to be.
-		{specCreatePullRequest().Tool, specCreatePullRequest().Handler, true},
+		specCreatePullRequest(),
 		// Editing title, description or draft state affects only the request.
-		{specUpdatePullRequest().Tool, specUpdatePullRequest().Handler, true},
-		{specListPRComments().Tool, specListPRComments().Handler, true},
-		{specGetPRDiff().Tool, specGetPRDiff().Handler, true},
-		{specGetFileContent().Tool, specGetFileContent().Handler, true},
+		specUpdatePullRequest(),
+		specListPRComments(),
+		specGetPRDiff(),
+		specGetFileContent(),
 		// Adding a comment is trivially reversed — safe by default.
-		{specAddPRComment().Tool, specAddPRComment().Handler, true},
+		specAddPRComment(),
 		// Submitting a review influences merge gating: APPROVED is the input a
 		// merge check consumes, so an agent that can approve takes part in the
 		// review it is subject to. Gated for the same reason as set_build_status,
@@ -88,33 +163,33 @@ func AllSpecs() []Spec {
 		// filters by tool, not by argument, so splitting would mean threading the
 		// yolo setting into every handler. NEEDS_WORK is the conservative outcome
 		// and loses least by being withheld.
-		{specSubmitPRReview().Tool, specSubmitPRReview().Handler, false},
+		specSubmitPRReview(),
 		// Merging is irreversible and affects the target branch — requires --yolo.
-		{specMergePullRequest().Tool, specMergePullRequest().Handler, false},
+		specMergePullRequest(),
 		// Enabling auto-merge can trigger an irreversible merge — requires --yolo.
-		{specEnableAutoMerge().Tool, specEnableAutoMerge().Handler, false},
+		specEnableAutoMerge(),
 		// Disabling auto-merge stops automation — safe (easily re-enabled).
-		{specDisableAutoMerge().Tool, specDisableAutoMerge().Handler, true},
+		specDisableAutoMerge(),
 		// Repository group
-		{specSearchRepositories().Tool, specSearchRepositories().Handler, true},
-		{specGetRepositoryCloneInfo().Tool, specGetRepositoryCloneInfo().Handler, true},
+		specSearchRepositories(),
+		specGetRepositoryCloneInfo(),
 		// Branch / ref group
-		{specListBranches().Tool, specListBranches().Handler, true},
-		{specResolveRef().Tool, specResolveRef().Handler, true},
+		specListBranches(),
+		specResolveRef(),
 		// Tag group
-		{specListTags().Tool, specListTags().Handler, true},
+		specListTags(),
 		// Creating a tag marks a commit and gates nothing. Note tag delete has no
 		// tool here, so this is low-consequence rather than easily reversed.
-		{specCreateTag().Tool, specCreateTag().Handler, true},
+		specCreateTag(),
 		// Build / quality group
-		{specGetBuildStatus().Tool, specGetBuildStatus().Handler, true},
+		specGetBuildStatus(),
 		// Setting a build status is a write operation that affects CI signal — requires --yolo.
-		{specSetBuildStatus().Tool, specSetBuildStatus().Handler, false},
-		{specListRequiredBuilds().Tool, specListRequiredBuilds().Handler, true},
+		specSetBuildStatus(),
+		specListRequiredBuilds(),
 		// Commit group
-		{specListCommits().Tool, specListCommits().Handler, true},
-		{specGetCommit().Tool, specGetCommit().Handler, true},
-		{specCompareRefs().Tool, specCompareRefs().Handler, true},
+		specListCommits(),
+		specGetCommit(),
+		specCompareRefs(),
 	}
 }
 
@@ -130,7 +205,7 @@ func SafeSpecs() []Spec {
 	return out
 }
 
-// NewServer creates a configured MCPServer with optional tool filtering.
+// NewServer creates a configured MCP server with optional tool filtering.
 // allow is a list of tool names to expose exclusively (empty = all).
 // exclude is a list of tool names to suppress.
 // yolo enables unrestricted mode: all tools are exposed including unsafe ones
@@ -138,8 +213,8 @@ func SafeSpecs() []Spec {
 // Safe are exposed unless an explicit allow list is provided.
 // When allow is non-empty it takes full precedence over the safety filter;
 // exclude is still applied afterwards in all modes.
-func NewServer(name, version string, clients Clients, allow, exclude []string, yolo bool) *server.MCPServer {
-	s := server.NewMCPServer(name, version, server.WithToolCapabilities(false))
+func NewServer(name, version string, clients Clients, allow, exclude []string, yolo bool) *mcp.Server {
+	server := mcp.NewServer(&mcp.Implementation{Name: name, Version: version}, nil)
 
 	allowSet := toSet(allow)
 	excludeSet := toSet(exclude)
@@ -158,10 +233,26 @@ func NewServer(name, version string, clients Clients, allow, exclude []string, y
 		if excludeSet[toolName] {
 			continue
 		}
-		s.AddTool(spec.Tool, spec.Handler(clients))
+		spec.Register(server, clients)
 	}
 
-	return s
+	return server
+}
+
+// defaultLimit is the page size every list tool falls back to.
+const defaultLimit = 25
+
+// limitOrDefault substitutes the default page size for an omitted limit.
+//
+// A typed input struct cannot distinguish "limit was absent" from "limit was
+// 0" without making the field a pointer, and a pointer per list tool buys
+// nothing: 0 is not a useful page size, so both cases want the default. The
+// tool descriptions say so.
+func limitOrDefault(limit int) int {
+	if limit <= 0 {
+		return defaultLimit
+	}
+	return limit
 }
 
 // toSet converts a string slice into a presence map, trimming whitespace.
@@ -173,60 +264,4 @@ func toSet(items []string) map[string]bool {
 		}
 	}
 	return m
-}
-
-// resultJSON serialises data as a JSON tool result.
-// Serialisation errors are surfaced as error results rather than Go errors
-// because tool handlers report operational errors through the result value.
-//
-// Many list handlers pass a slice here. A bare JSON array in
-// result.structuredContent is rejected by MCP clients that validate the result
-// against a pre-SEP-2106 revision of the spec, with "expected record, received
-// array" — the whole response fails schema validation before the client can
-// fall back to the text content. structuredContentFor therefore wraps
-// non-object payloads under an "items" key. The text content agents read is
-// unaffected and keeps the original shape.
-//
-// SEP-2106 has since relaxed structuredContent to any valid JSON value, so this
-// wrapping is client compatibility rather than spec conformance. Issue #416
-// tracks giving the MCP surface a real output contract — declared output
-// schemas, server-side validation, and a consistent envelope — at which point
-// the key should be named for what it holds instead of the generic "items".
-func resultJSON(data any) (*mcpgo.CallToolResult, error) {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return mcpgo.NewToolResultErrorFromErr("failed to serialize result", err), nil
-	}
-	return mcpgo.NewToolResultStructured(structuredContentFor(b), string(b)), nil
-}
-
-// structuredContentFor shapes an already-encoded payload for the
-// structuredContent field:
-//
-//   - a JSON object      → passed through unchanged
-//   - null (or empty)    → nil, so the optional field is omitted on the wire
-//     rather than sent as a null that is not a record
-//   - anything else      → wrapped as {"items": <payload>}, which covers
-//     arrays, strings, numbers and booleans
-//
-// The decision is made on the encoded bytes, not on the Go type of the value,
-// because a Go kind does not determine the JSON shape: a struct with a
-// MarshalJSON method encodes to whatever that method returns (time.Time
-// encodes to a string), a nil map and a typed nil pointer both encode to null,
-// and a json.RawMessage is a slice that may already hold an object. Inspecting
-// the bytes is correct for every one of those without enumerating types.
-//
-// No list handler can reach the null case: every service builds its result
-// with make([]T, 0), so an empty list encodes to [] and is wrapped as
-// {"items": []}.
-func structuredContentFor(encoded []byte) any {
-	trimmed := bytes.TrimLeft(encoded, " \t\r\n")
-	switch {
-	case len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null")):
-		return nil
-	case trimmed[0] == '{':
-		return json.RawMessage(encoded)
-	default:
-		return map[string]json.RawMessage{"items": json.RawMessage(encoded)}
-	}
 }

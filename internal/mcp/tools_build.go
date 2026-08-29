@@ -2,86 +2,118 @@ package mcp
 
 import (
 	"context"
+	"fmt"
 
-	mcpgo "github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
 )
 
+// GetBuildStatusInput is the argument set for get_build_status.
+type GetBuildStatusInput struct {
+	CommitID string `json:"commit_id" jsonschema:"Full commit SHA"`
+	Limit    int    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 25)"`
+}
+
+// GetBuildStatusOutput names the collection it holds.
+type GetBuildStatusOutput struct {
+	BuildStatuses []openapigenerated.RestBuildStatus `json:"build_statuses"`
+}
+
 func specGetBuildStatus() Spec {
-	tool := mcpgo.NewTool("get_build_status",
-		mcpgo.WithDescription("Get build/CI statuses for a specific commit. Use this to check whether CI passed before declaring a PR ready to merge."),
-		mcpgo.WithString("commit_id", mcpgo.Required(), mcpgo.Description("Full commit SHA")),
-		mcpgo.WithNumber("limit", mcpgo.Description("Maximum number of results (default 25)")),
-	)
-	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
+	tool := &mcp.Tool{
+		Name:        "get_build_status",
+		Description: "Get build/CI statuses for a specific commit. Use this to check whether CI passed before declaring a PR ready to merge.",
+		Annotations: readOnly(),
+	}
+	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[GetBuildStatusInput, GetBuildStatusOutput] {
 		svc := qualityservice.NewService(c.OpenAPI)
-		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
-			commitID, _ := req.RequireString("commit_id")
-			limit := req.GetInt("limit", 25)
-			statuses, err := svc.GetBuildStatuses(ctx, commitID, limit, "")
+		return func(ctx context.Context, _ *mcp.CallToolRequest, in GetBuildStatusInput) (*mcp.CallToolResult, GetBuildStatusOutput, error) {
+			statuses, err := svc.GetBuildStatuses(ctx, in.CommitID, limitOrDefault(in.Limit), "")
 			if err != nil {
-				return mcpgo.NewToolResultErrorFromErr("get_build_status failed", err), nil
+				return nil, GetBuildStatusOutput{}, fmt.Errorf("get_build_status failed: %w", err)
 			}
-			return resultJSON(statuses)
+			return nil, GetBuildStatusOutput{BuildStatuses: statuses}, nil
 		}
-	}}
+	})
+}
+
+// SetBuildStatusInput is the argument set for set_build_status.
+type SetBuildStatusInput struct {
+	CommitID    string `json:"commit_id" jsonschema:"Full commit SHA"`
+	Key         string `json:"key" jsonschema:"Unique build key (e.g. my-pipeline/unit-tests)"`
+	State       string `json:"state" jsonschema:"Build state: SUCCESSFUL, FAILED, or INPROGRESS"`
+	URL         string `json:"url" jsonschema:"URL to the build details"`
+	Name        string `json:"name,omitempty" jsonschema:"Human-readable build name"`
+	Description string `json:"description,omitempty" jsonschema:"Build description or summary"`
+}
+
+// SetBuildStatusOutput reports the status that was recorded. The Bitbucket
+// endpoint returns no body, so this echoes the inputs that identify the record
+// rather than inventing a payload: it gives the agent something to confirm
+// against without implying the server sent it back.
+type SetBuildStatusOutput struct {
+	CommitID string `json:"commit_id"`
+	Key      string `json:"key"`
+	State    string `json:"state"`
 }
 
 func specSetBuildStatus() Spec {
-	tool := mcpgo.NewTool("set_build_status",
-		mcpgo.WithDescription("Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views."),
-		mcpgo.WithString("commit_id", mcpgo.Required(), mcpgo.Description("Full commit SHA")),
-		mcpgo.WithString("key", mcpgo.Required(), mcpgo.Description("Unique build key (e.g. my-pipeline/unit-tests)")),
-		mcpgo.WithString("state", mcpgo.Required(), mcpgo.Description("Build state: SUCCESSFUL, FAILED, or INPROGRESS"),
-			mcpgo.Enum("SUCCESSFUL", "FAILED", "INPROGRESS")),
-		mcpgo.WithString("url", mcpgo.Required(), mcpgo.Description("URL to the build details")),
-		mcpgo.WithString("name", mcpgo.Description("Human-readable build name")),
-		mcpgo.WithString("description", mcpgo.Description("Build description or summary")),
-	)
-	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
+	tool := &mcp.Tool{
+		Name:        "set_build_status",
+		Description: "Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views.",
+		Annotations: mutating(true),
+		InputSchema: enumInputSchema[SetBuildStatusInput](map[string][]string{
+			"state": {"SUCCESSFUL", "FAILED", "INPROGRESS"},
+		}),
+	}
+	return toolSpec(tool, false, func(c Clients) mcp.ToolHandlerFor[SetBuildStatusInput, SetBuildStatusOutput] {
 		svc := qualityservice.NewService(c.OpenAPI)
-		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
-			commitID, _ := req.RequireString("commit_id")
-			key, _ := req.RequireString("key")
-			state, _ := req.RequireString("state")
-			buildURL, _ := req.RequireString("url")
-			err := svc.SetBuildStatus(ctx, commitID, qualityservice.BuildStatusSetInput{
-				Key:         key,
-				State:       state,
-				URL:         buildURL,
-				Name:        req.GetString("name", ""),
-				Description: req.GetString("description", ""),
+		return func(ctx context.Context, _ *mcp.CallToolRequest, in SetBuildStatusInput) (*mcp.CallToolResult, SetBuildStatusOutput, error) {
+			err := svc.SetBuildStatus(ctx, in.CommitID, qualityservice.BuildStatusSetInput{
+				Key:         in.Key,
+				State:       in.State,
+				URL:         in.URL,
+				Name:        in.Name,
+				Description: in.Description,
 			})
 			if err != nil {
-				return mcpgo.NewToolResultErrorFromErr("set_build_status failed", err), nil
+				return nil, SetBuildStatusOutput{}, fmt.Errorf("set_build_status failed: %w", err)
 			}
-			return mcpgo.NewToolResultText("build status set"), nil
+			return nil, SetBuildStatusOutput{CommitID: in.CommitID, Key: in.Key, State: in.State}, nil
 		}
-	}}
+	})
+}
+
+// ListRequiredBuildsInput is the argument set for list_required_builds.
+type ListRequiredBuildsInput struct {
+	Project string `json:"project" jsonschema:"Bitbucket project key"`
+	Repo    string `json:"repo" jsonschema:"Repository slug"`
+	Limit   int    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 25)"`
+}
+
+// ListRequiredBuildsOutput names the collection it holds.
+type ListRequiredBuildsOutput struct {
+	RequiredBuilds []openapigenerated.RestRequiredBuildCondition `json:"required_builds"`
 }
 
 func specListRequiredBuilds() Spec {
-	tool := mcpgo.NewTool("list_required_builds",
-		mcpgo.WithDescription("List required build checks that must pass before a pull request can be merged. Check this before attempting a merge to understand what CI must succeed."),
-		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
-		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
-		mcpgo.WithNumber("limit", mcpgo.Description("Maximum number of results (default 25)")),
-	)
-	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
+	tool := &mcp.Tool{
+		Name:        "list_required_builds",
+		Description: "List required build checks that must pass before a pull request can be merged. Check this before attempting a merge to understand what CI must succeed.",
+		Annotations: readOnly(),
+	}
+	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListRequiredBuildsInput, ListRequiredBuildsOutput] {
 		svc := qualityservice.NewService(c.OpenAPI)
-		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
-			project, _ := req.RequireString("project")
-			repo, _ := req.RequireString("repo")
-			limit := req.GetInt("limit", 25)
+		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListRequiredBuildsInput) (*mcp.CallToolResult, ListRequiredBuildsOutput, error) {
 			checks, err := svc.ListRequiredBuildChecks(ctx,
-				qualityservice.RepositoryRef{ProjectKey: project, Slug: repo},
-				limit,
+				qualityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
+				limitOrDefault(in.Limit),
 			)
 			if err != nil {
-				return mcpgo.NewToolResultErrorFromErr("list_required_builds failed", err), nil
+				return nil, ListRequiredBuildsOutput{}, fmt.Errorf("list_required_builds failed: %w", err)
 			}
-			return resultJSON(checks)
+			return nil, ListRequiredBuildsOutput{RequiredBuilds: checks}, nil
 		}
-	}}
+	})
 }
