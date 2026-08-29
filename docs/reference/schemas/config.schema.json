@@ -12,6 +12,10 @@
       "description": "Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.",
       "type": "boolean"
     },
+    "allow_unverified_update": {
+      "description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration only.",
+      "type": "boolean"
+    },
     "allowed_hosts": {
       "description": "Whitelist of permitted Bitbucket Server / Data Center instance URLs or hostnames.",
       "items": {
@@ -105,6 +109,10 @@
           "description": "Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.",
           "type": "boolean"
         },
+        "allow_unverified_update": {
+          "description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration only.",
+          "type": "boolean"
+        },
         "allowed_hosts": {
           "description": "Whitelist of permitted Bitbucket Server / Data Center instance URLs or hostnames.",
           "items": {
@@ -130,6 +138,22 @@
         },
         "update_base_url": {
           "description": "Base URL of internal release manifest and asset mirror.",
+          "type": "string"
+        },
+        "update_signature_identity": {
+          "description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+          "type": "string"
+        },
+        "update_signature_issuer": {
+          "description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+          "type": "string"
+        },
+        "update_trusted_root": {
+          "description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration only; removes the need for outbound access to the Sigstore TUF CDN.",
+          "type": "string"
+        },
+        "update_tuf_url": {
+          "description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration only; mutually exclusive with update_trusted_root.",
           "type": "string"
         }
       },
@@ -143,6 +167,10 @@
           "description": "Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.",
           "type": "boolean"
         },
+        "allow_unverified_update": {
+          "description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration only.",
+          "type": "boolean"
+        },
         "allowed_hosts": {
           "description": "Whitelist of permitted Bitbucket Server / Data Center instance URLs or hostnames.",
           "items": {
@@ -168,6 +196,22 @@
         },
         "update_base_url": {
           "description": "Base URL of internal release manifest and asset mirror.",
+          "type": "string"
+        },
+        "update_signature_identity": {
+          "description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+          "type": "string"
+        },
+        "update_signature_issuer": {
+          "description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+          "type": "string"
+        },
+        "update_trusted_root": {
+          "description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration only; removes the need for outbound access to the Sigstore TUF CDN.",
+          "type": "string"
+        },
+        "update_tuf_url": {
+          "description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration only; mutually exclusive with update_trusted_root.",
           "type": "string"
         }
       },
@@ -183,6 +227,22 @@
     },
     "update_base_url": {
       "description": "Base URL of internal release manifest and asset mirror.",
+      "type": "string"
+    },
+    "update_signature_identity": {
+      "description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+      "type": "string"
+    },
+    "update_signature_issuer": {
+      "description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+      "type": "string"
+    },
+    "update_trusted_root": {
+      "description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration only; removes the need for outbound access to the Sigstore TUF CDN.",
+      "type": "string"
+    },
+    "update_tuf_url": {
+      "description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration only; mutually exclusive with update_trusted_root.",
       "type": "string"
     }
   },

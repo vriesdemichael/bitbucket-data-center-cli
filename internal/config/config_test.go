@@ -2192,3 +2192,136 @@ func TestValidateConfigYAMLCommentsOnly(t *testing.T) {
 		t.Fatalf("comments-only YAML should be valid, got: %v", err)
 	}
 }
+
+func TestResolveUpdateTrustFromSystemPolicy(t *testing.T) {
+	t.Run("defaults to the public trust root", func(t *testing.T) {
+		tempDir := t.TempDir()
+		t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(tempDir, "system-config.yaml"))
+		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+
+		trust, err := ResolveUpdateTrust()
+		if err != nil {
+			t.Fatalf("expected success, got: %v", err)
+		}
+		if trust.Configured() {
+			t.Fatalf("expected an unconfigured trust policy, got: %+v", trust)
+		}
+	})
+
+	t.Run("reads every setting from the policies block", func(t *testing.T) {
+		tempDir := t.TempDir()
+		sysPath := filepath.Join(tempDir, "system-config.yaml")
+		trustedRoot := filepath.Join(tempDir, "trusted_root.json")
+		if err := os.WriteFile(trustedRoot, []byte("{}"), 0o600); err != nil {
+			t.Fatalf("write trusted root: %v", err)
+		}
+
+		sysYAML := fmt.Sprintf(`policies:
+  update_trusted_root: %s
+  update_signature_identity: https://github.com/corp/bb/.github/workflows/mirror.yml@refs/heads/main
+  update_signature_issuer: https://fulcio.corp.internal
+`, trustedRoot)
+		if err := os.WriteFile(sysPath, []byte(sysYAML), 0o600); err != nil {
+			t.Fatalf("write system config: %v", err)
+		}
+
+		t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+
+		trust, err := ResolveUpdateTrust()
+		if err != nil {
+			t.Fatalf("expected success, got: %v", err)
+		}
+		if trust.TrustedRootPath != trustedRoot {
+			t.Fatalf("expected trusted root %q, got %q", trustedRoot, trust.TrustedRootPath)
+		}
+		if trust.SignatureIssuer != "https://fulcio.corp.internal" {
+			t.Fatalf("unexpected issuer: %q", trust.SignatureIssuer)
+		}
+		if !strings.HasPrefix(trust.SignatureIdentity, "https://github.com/corp/bb/") {
+			t.Fatalf("unexpected identity: %q", trust.SignatureIdentity)
+		}
+		if trust.AllowUnverified {
+			t.Fatal("expected verification to remain enabled")
+		}
+	})
+
+	t.Run("environment variables cannot set update trust", func(t *testing.T) {
+		tempDir := t.TempDir()
+		trustedRoot := filepath.Join(tempDir, "attacker_root.json")
+		if err := os.WriteFile(trustedRoot, []byte("{}"), 0o600); err != nil {
+			t.Fatalf("write trusted root: %v", err)
+		}
+
+		t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(tempDir, "system-config.yaml"))
+		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+		t.Setenv("BB_UPDATE_TRUSTED_ROOT", trustedRoot)
+		t.Setenv("BB_UPDATE_SIGNATURE_IDENTITY", "https://attacker.example/workflow.yml@refs/heads/main")
+		t.Setenv("BB_ALLOW_UNVERIFIED_UPDATE", "1")
+
+		trust, err := ResolveUpdateTrust()
+		if err != nil {
+			t.Fatalf("expected success, got: %v", err)
+		}
+		if trust.Configured() {
+			t.Fatalf("environment must not influence update trust, got: %+v", trust)
+		}
+	})
+
+	t.Run("allow_unverified_update is honoured from policy", func(t *testing.T) {
+		tempDir := t.TempDir()
+		sysPath := filepath.Join(tempDir, "system-config.yaml")
+		if err := os.WriteFile(sysPath, []byte("allow_unverified_update: true\n"), 0o600); err != nil {
+			t.Fatalf("write system config: %v", err)
+		}
+
+		t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+
+		trust, err := ResolveUpdateTrust()
+		if err != nil {
+			t.Fatalf("expected success, got: %v", err)
+		}
+		if !trust.AllowUnverified {
+			t.Fatal("expected allow_unverified_update to be honoured")
+		}
+	})
+
+	t.Run("rejects a missing trusted root", func(t *testing.T) {
+		tempDir := t.TempDir()
+		sysPath := filepath.Join(tempDir, "system-config.yaml")
+		missing := filepath.Join(tempDir, "absent.json")
+		if err := os.WriteFile(sysPath, []byte(fmt.Sprintf("update_trusted_root: %s\n", missing)), 0o600); err != nil {
+			t.Fatalf("write system config: %v", err)
+		}
+
+		t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+
+		_, err := ResolveUpdateTrust()
+		if !apperrors.IsKind(err, apperrors.KindValidation) {
+			t.Fatalf("expected KindValidation, got: %v", err)
+		}
+	})
+
+	t.Run("rejects both trust sources at once", func(t *testing.T) {
+		tempDir := t.TempDir()
+		sysPath := filepath.Join(tempDir, "system-config.yaml")
+		trustedRoot := filepath.Join(tempDir, "trusted_root.json")
+		if err := os.WriteFile(trustedRoot, []byte("{}"), 0o600); err != nil {
+			t.Fatalf("write trusted root: %v", err)
+		}
+		sysYAML := fmt.Sprintf("update_trusted_root: %s\nupdate_tuf_url: https://artifactory.corp.internal/tuf\n", trustedRoot)
+		if err := os.WriteFile(sysPath, []byte(sysYAML), 0o600); err != nil {
+			t.Fatalf("write system config: %v", err)
+		}
+
+		t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+
+		_, err := ResolveUpdateTrust()
+		if !apperrors.IsKind(err, apperrors.KindValidation) {
+			t.Fatalf("expected KindValidation, got: %v", err)
+		}
+	})
+}

@@ -70,7 +70,36 @@ Distinguish between **enforceable technical controls** (which systems engineers 
 
 2. **Enterprise Update Controls and Release Mirrors ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md))**:
    - **Disabling In-Place Self-Updates**: On managed corporate machines where software must be installed exclusively through IT package managers (e.g. Jamf, Ansible, Intune, SCCM), disable `bb update` by setting `disable_update: true` in system configuration or `export BB_DISABLE_UPDATE=1`. Alternatively, install builds compiled with `-tags no_self_update`.
-   - **Internal Release Mirrors**: In firewalled or air-gapped enterprise enclaves, configure `bb update` to query internal mirrors (e.g. JFrog Artifactory, Sonatype Nexus) instead of `api.github.com` via `--base-url <url>`, `BB_UPDATE_BASE_URL`, or `update_base_url` in system/user config.
+   - **Internal Release Mirrors**: In firewalled or air-gapped enterprise enclaves, configure `bb update` to query internal mirrors (e.g. JFrog Artifactory, Sonatype Nexus) instead of `api.github.com` via `--base-url <url>`, `BB_UPDATE_BASE_URL`, or `update_base_url` in system/user config. A mirror alone is not sufficient on a host with no internet access: pair it with an offline trust root, below.
+   - **Offline Signature Verification ([ADR-063](../adr/063-offline-release-signature-verification.md))**: By default, `bb update` fetches Sigstore trust material from `https://tuf-repo-cdn.sigstore.dev` on every run. Deploy a `trusted_root.json` alongside the corporate CA bundle and point at it to verify releases with no internet access at all:
+     ```yaml
+     update_trusted_root: /etc/bb/trusted_root.json
+     ```
+     Produce the file once, on a host that does have access:
+     ```bash
+     cosign trusted-root create > trusted_root.json
+     ```
+     This verifies the public releases as published — signed certificate timestamps, the Rekor inclusion promise, and observer timestamps are all checked against keys inside the file — so mirroring artifacts byte-for-byte needs no re-signing. Refresh the file when Sigstore rotates its keys, which is a multi-year event and another file push. Organisations that mirror the Sigstore TUF repository itself can set `update_tuf_url: <url>` instead; the two are mutually exclusive, and the TUF fetch uses the configured `ca_file` and client certificates.
+   - **Re-Signed Artifacts**: Organisations that rebuild or re-sign `bb` against their own Fulcio instance replace the pinned signer with `update_signature_identity` (certificate SAN) and `update_signature_issuer` (OIDC issuer).
+   - **Unverified Updates (Last Resort)**: `allow_unverified_update: true` skips signature verification entirely. SHA256 checksum verification remains mandatory, so this still catches corruption but not tampering; every run prints a warning to stderr and reports `signature_skipped: true` in `--json` output. Prefer an offline trust root.
+   - **Policy Only**: `update_trusted_root`, `update_tuf_url`, `update_signature_identity`, `update_signature_issuer` and `allow_unverified_update` are read from system configuration and Windows registry policy only — never from an environment variable or a flag. Each decides who may vouch for a binary `bb` is about to execute, and that decision does not belong to whoever can set a variable in a user's shell. `update_base_url` keeps its flag and environment forms, because signature verification still gates whatever the mirror serves.
+   - **Mirror Layout**: The mirror serves a GitHub-release-shaped manifest at `/repos/vriesdemichael/bitbucket-data-center-cli/releases/latest`, or — for generic Artifactory/Nexus repositories — at `/releases/latest` or `/latest`, which `bb` tries in that order:
+     ```json
+     {
+       "tag_name": "v[[ bb_version ]]",
+       "html_url": "https://artifactory.corp.internal/artifactory/bb-releases",
+       "assets": [
+         { "name": "bb_[[ bb_version ]]_linux_amd64.tar.gz", "browser_download_url": "bb_[[ bb_version ]]_linux_amd64.tar.gz" },
+         { "name": "sha256sums.txt", "browser_download_url": "sha256sums.txt" },
+         { "name": "sha256sums.txt.sigstore.json", "browser_download_url": "sha256sums.txt.sigstore.json" }
+       ]
+     }
+     ```
+     Mirror `bb_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows), `sha256sums.txt`, and `sha256sums.txt.sigstore.json` at the base URL. Asset URLs may be relative, as above, or absolute mirror URLs; a manifest copied verbatim from GitHub also works, since `bb` fetches off-mirror asset URLs from `{base_url}/{asset_name}` first rather than stalling on a firewalled `github.com` address. Verify a mirror without replacing any binary:
+     ```bash
+     bb update --dry-run --base-url https://artifactory.corp.internal/artifactory/bb-releases
+     ```
+     The dry run reports which trust material was used and whether the manifest signature and checksum entry were found.
 
 3. **Mandate Keyring Storage (Advisory / User Tier)**:
    ```bash
@@ -456,6 +485,9 @@ Confirm:
 | `insecure TLS verification is disabled by administrative policy` | Attempted `--insecure-skip-verify` when prohibited by `allow_insecure_skip_verify: false` in system policy. | Configure the corporate CA certificate rather than disabling TLS verification. |
 | `overriding CA bundle is disabled by administrative policy` | Attempted to override mandated corporate CA bundle with a conflicting custom certificate. | Remove user-level `BB_CA_FILE` override and use the mandated corporate CA. |
 | `self-update is disabled by administrative policy` | Self-update is disabled machine-wide (`disable_update: true` or `BB_DISABLE_UPDATE=1`). | Update `bb` through your IT system package manager (`apt`, `dnf`, `brew`, `winget`). |
+| `could not load the Sigstore trust material needed to verify the release manifest` | The host cannot reach `https://tuf-repo-cdn.sigstore.dev`, and no offline trust root is configured. The release itself is not implicated. | Deploy a `trusted_root.json` and set `update_trusted_root` in system configuration (or `update_tuf_url` for a mirrored TUF repository). |
+| `update_trusted_root is invalid` | The configured trusted root path does not exist on this host — typically an imaging race, the same one that bites `ca_file`. | Ensure the provisioning script writes `trusted_root.json` before the configuration file that references it. |
+| `update_trusted_root and update_tuf_url are mutually exclusive` | Both Sigstore trust sources are configured. | Keep the trusted root file for air-gapped hosts, or the TUF mirror URL — not both. |
 
 ---
 

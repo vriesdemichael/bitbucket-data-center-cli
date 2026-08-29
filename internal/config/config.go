@@ -79,6 +79,14 @@ type PolicyConfig struct {
 	// audited runs in the developer's own IDE, so an audit destination they can
 	// change by editing a config file records only what they allow it to.
 	MCPAuditFile string `yaml:"mcp_audit_file,omitempty"`
+	// The five settings below decide who may vouch for a new bb binary, so
+	// they are read from administrative policy only — never from an
+	// environment variable or a flag. See ResolveUpdateTrust.
+	UpdateTrustedRoot       string `yaml:"update_trusted_root,omitempty"`
+	UpdateTUFURL            string `yaml:"update_tuf_url,omitempty"`
+	UpdateSignatureIdentity string `yaml:"update_signature_identity,omitempty"`
+	UpdateSignatureIssuer   string `yaml:"update_signature_issuer,omitempty"`
+	AllowUnverifiedUpdate   *bool  `yaml:"allow_unverified_update,omitempty"`
 }
 
 type SystemConfigFile struct {
@@ -93,6 +101,11 @@ type SystemConfigFile struct {
 	DisableUpdate           *bool                    `yaml:"disable_update,omitempty"`
 	UpdateBaseURL           string                   `yaml:"update_base_url,omitempty"`
 	MCPAuditFile            string                   `yaml:"mcp_audit_file,omitempty"`
+	UpdateTrustedRoot       string                   `yaml:"update_trusted_root,omitempty"`
+	UpdateTUFURL            string                   `yaml:"update_tuf_url,omitempty"`
+	UpdateSignatureIdentity string                   `yaml:"update_signature_identity,omitempty"`
+	UpdateSignatureIssuer   string                   `yaml:"update_signature_issuer,omitempty"`
+	AllowUnverifiedUpdate   *bool                    `yaml:"allow_unverified_update,omitempty"`
 	Policies                *PolicyConfig            `yaml:"policies,omitempty"`
 	Policy                  *PolicyConfig            `yaml:"policy,omitempty"`
 }
@@ -115,6 +128,11 @@ func (sys SystemConfigFile) PolicyConfig() PolicyConfig {
 		DisableUpdate:           sys.DisableUpdate,
 		UpdateBaseURL:           sys.UpdateBaseURL,
 		MCPAuditFile:            sys.MCPAuditFile,
+		UpdateTrustedRoot:       sys.UpdateTrustedRoot,
+		UpdateTUFURL:            sys.UpdateTUFURL,
+		UpdateSignatureIdentity: sys.UpdateSignatureIdentity,
+		UpdateSignatureIssuer:   sys.UpdateSignatureIssuer,
+		AllowUnverifiedUpdate:   sys.AllowUnverifiedUpdate,
 	}
 }
 
@@ -1025,6 +1043,21 @@ func mergePolicy(target *PolicyConfig, source PolicyConfig) {
 	if strings.TrimSpace(source.MCPAuditFile) != "" {
 		target.MCPAuditFile = strings.TrimSpace(source.MCPAuditFile)
 	}
+	if strings.TrimSpace(source.UpdateTrustedRoot) != "" {
+		target.UpdateTrustedRoot = strings.TrimSpace(source.UpdateTrustedRoot)
+	}
+	if strings.TrimSpace(source.UpdateTUFURL) != "" {
+		target.UpdateTUFURL = strings.TrimSpace(source.UpdateTUFURL)
+	}
+	if strings.TrimSpace(source.UpdateSignatureIdentity) != "" {
+		target.UpdateSignatureIdentity = strings.TrimSpace(source.UpdateSignatureIdentity)
+	}
+	if strings.TrimSpace(source.UpdateSignatureIssuer) != "" {
+		target.UpdateSignatureIssuer = strings.TrimSpace(source.UpdateSignatureIssuer)
+	}
+	if source.AllowUnverifiedUpdate != nil {
+		target.AllowUnverifiedUpdate = source.AllowUnverifiedUpdate
+	}
 }
 
 // TLSSettings is the resolved TLS material an outbound HTTP client is built
@@ -1152,6 +1185,103 @@ func ResolveUpdateBaseURL(flagValue string) (string, error) {
 		return normalizeURL(policy.UpdateBaseURL), nil
 	}
 	return "https://api.github.com", nil
+}
+
+// UpdateTrust describes who is allowed to vouch for a new bb binary, and how
+// the trust material backing that decision is obtained.
+type UpdateTrust struct {
+	// TrustedRootPath is a Sigstore trusted_root.json on disk. Set, it removes
+	// the only remaining network dependency in verification: everything else
+	// (SCTs, the Rekor inclusion promise, observer timestamps) is checked
+	// against keys inside the trusted root, with no Fulcio or Rekor calls.
+	TrustedRootPath string
+	// TUFRepositoryURL is a mirror of the Sigstore TUF repository, for
+	// organisations that mirror it rather than shipping a trusted root file.
+	TUFRepositoryURL string
+	// SignatureIdentity and SignatureIssuer override the release signer that
+	// bb pins by default, for organisations that re-sign mirrored artifacts
+	// with their own Fulcio instance.
+	SignatureIdentity string
+	SignatureIssuer   string
+	// AllowUnverified drops Sigstore verification entirely. Checksum
+	// verification still applies.
+	AllowUnverified bool
+}
+
+// Configured reports whether policy asked for anything other than the built-in
+// public-good trust configuration.
+func (trust UpdateTrust) Configured() bool {
+	return trust.TrustedRootPath != "" ||
+		trust.TUFRepositoryURL != "" ||
+		trust.SignatureIdentity != "" ||
+		trust.SignatureIssuer != "" ||
+		trust.AllowUnverified
+}
+
+// ResolveUpdateTrust reads the update trust settings from administrative
+// policy.
+//
+// These deliberately have no environment variable or flag form. Every one of
+// them changes which signer bb will accept for a binary it is about to execute,
+// so honouring them from the environment would hand that decision to anyone who
+// can set a variable in the user's shell. Policy — the system configuration
+// file, or HKLM\Software\Policies\bb on Windows — is the only source.
+func ResolveUpdateTrust() (UpdateTrust, error) {
+	policy, err := LoadPolicy()
+	if err != nil {
+		return UpdateTrust{}, err
+	}
+	return resolveUpdateTrust(policy)
+}
+
+func resolveUpdateTrust(policy PolicyConfig) (UpdateTrust, error) {
+	trust := UpdateTrust{
+		TrustedRootPath:   strings.TrimSpace(policy.UpdateTrustedRoot),
+		TUFRepositoryURL:  strings.TrimSpace(policy.UpdateTUFURL),
+		SignatureIdentity: strings.TrimSpace(policy.UpdateSignatureIdentity),
+		SignatureIssuer:   strings.TrimSpace(policy.UpdateSignatureIssuer),
+	}
+	if policy.AllowUnverifiedUpdate != nil {
+		trust.AllowUnverified = *policy.AllowUnverifiedUpdate
+	}
+
+	if trust.TrustedRootPath != "" && trust.TUFRepositoryURL != "" {
+		return UpdateTrust{}, apperrors.New(
+			apperrors.KindValidation,
+			"update_trusted_root and update_tuf_url are mutually exclusive; configure one source of Sigstore trust material",
+			nil,
+		)
+	}
+
+	if trust.TrustedRootPath != "" {
+		info, err := os.Stat(trust.TrustedRootPath)
+		if err != nil {
+			return UpdateTrust{}, apperrors.New(
+				apperrors.KindValidation,
+				fmt.Sprintf("update_trusted_root is invalid: %q", trust.TrustedRootPath),
+				err,
+			)
+		}
+		if info.IsDir() {
+			return UpdateTrust{}, apperrors.New(
+				apperrors.KindValidation,
+				fmt.Sprintf("update_trusted_root must be a file, not a directory: %q", trust.TrustedRootPath),
+				nil,
+			)
+		}
+	}
+
+	if trust.TUFRepositoryURL != "" {
+		if _, err := url.Parse(trust.TUFRepositoryURL); err != nil {
+			return UpdateTrust{}, apperrors.New(
+				apperrors.KindValidation,
+				fmt.Sprintf("update_tuf_url is invalid: %q", trust.TUFRepositoryURL),
+				err,
+			)
+		}
+	}
+
+	return trust, nil
 }
 
 func IsUpdateDisabled() (bool, string, error) {

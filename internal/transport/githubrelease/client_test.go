@@ -258,3 +258,79 @@ func TestClientDownloadRelativeAndMirrorFallback(t *testing.T) {
 		t.Fatalf("unexpected content from fallback: %s", string(data2))
 	}
 }
+
+func TestClientDownloadPrefersMirrorOverManifestURL(t *testing.T) {
+	externalRequests := 0
+	external := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		externalRequests++
+		_, _ = w.Write([]byte("github-content"))
+	}))
+	defer external.Close()
+
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/bb_linux_amd64.tar.gz" {
+			_, _ = w.Write([]byte("mirror-content"))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer mirror.Close()
+
+	client := NewClient(mirror.URL, mirror.Client(), "test-agent")
+
+	body, err := client.Download(context.Background(), external.URL+"/releases/download/v1.0.0/bb_linux_amd64.tar.gz")
+	if err != nil {
+		t.Fatalf("expected the mirror to serve the asset, got: %v", err)
+	}
+	if string(body) != "mirror-content" {
+		t.Fatalf("expected mirror content, got: %s", body)
+	}
+	if externalRequests != 0 {
+		t.Fatalf("expected no request to the manifest URL, got %d", externalRequests)
+	}
+}
+
+func TestClientDownloadReportsBothAddressesWhenMirrorAndManifestFail(t *testing.T) {
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	}))
+	defer mirror.Close()
+
+	external := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	}))
+	defer external.Close()
+
+	client := NewClient(mirror.URL, mirror.Client(), "test-agent")
+
+	_, err := client.Download(context.Background(), external.URL+"/releases/download/v1.0.0/bb_linux_amd64.tar.gz")
+	if err == nil {
+		t.Fatal("expected an error when neither address serves the asset")
+	}
+	if !strings.Contains(err.Error(), mirror.URL+"/bb_linux_amd64.tar.gz") {
+		t.Fatalf("expected the mirror address in the message, got: %v", err)
+	}
+}
+
+func TestClientLatestFallsBackOnNonNotFoundMirrorErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/owner/repo/releases/latest":
+			http.Error(w, "forbidden", http.StatusForbidden)
+		case "/releases/latest":
+			_ = json.NewEncoder(w).Encode(Release{TagName: "v3.0.0"})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, server.Client(), "test-agent")
+	release, err := client.Latest(context.Background(), "owner", "repo")
+	if err != nil {
+		t.Fatalf("expected the mirror fallback path to be tried, got: %v", err)
+	}
+	if release.TagName != "v3.0.0" {
+		t.Fatalf("unexpected tag: %s", release.TagName)
+	}
+}

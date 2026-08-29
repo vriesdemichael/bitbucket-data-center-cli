@@ -94,3 +94,40 @@ func TestParseRegistryPolicy(t *testing.T) {
 		t.Errorf("expected parsed comma-separated hosts, got %v", p2.AllowedHosts)
 	}
 }
+
+func TestParseRegistryPolicyUpdateTrust(t *testing.T) {
+	reader := &mockRegistryReader{
+		integers: map[string]uint64{
+			"AllowUnverifiedUpdate": 1,
+		},
+		strings: map[string]string{
+			"UpdateTrustedRoot":       `C:\ProgramData\bb\trusted_root.json`,
+			"UpdateTUFURL":            "https://artifactory.internal/tuf",
+			"UpdateSignatureIdentity": "https://github.com/corp/bb/.github/workflows/mirror.yml@refs/heads/main",
+			"UpdateSignatureIssuer":   "https://fulcio.internal",
+		},
+	}
+
+	policy := parseRegistryPolicy(reader)
+	if policy.UpdateTrustedRoot != `C:\ProgramData\bb\trusted_root.json` {
+		t.Errorf("expected UpdateTrustedRoot, got %s", policy.UpdateTrustedRoot)
+	}
+	if policy.UpdateTUFURL != "https://artifactory.internal/tuf" {
+		t.Errorf("expected UpdateTUFURL, got %s", policy.UpdateTUFURL)
+	}
+	if policy.UpdateSignatureIdentity == "" || policy.UpdateSignatureIssuer != "https://fulcio.internal" {
+		t.Errorf("expected signer overrides, got %s / %s", policy.UpdateSignatureIdentity, policy.UpdateSignatureIssuer)
+	}
+	if policy.AllowUnverifiedUpdate == nil || !*policy.AllowUnverifiedUpdate {
+		t.Errorf("expected AllowUnverifiedUpdate=true, got %v", policy.AllowUnverifiedUpdate)
+	}
+
+	stringForm := &mockRegistryReader{
+		strings: map[string]string{
+			"AllowUnverifiedUpdate": "false",
+		},
+	}
+	if policy := parseRegistryPolicy(stringForm); policy.AllowUnverifiedUpdate == nil || *policy.AllowUnverifiedUpdate {
+		t.Errorf("expected AllowUnverifiedUpdate=false from string value, got %v", policy.AllowUnverifiedUpdate)
+	}
+}

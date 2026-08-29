@@ -2,7 +2,7 @@
   "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.update.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "JSON output schema for `bb update --json`. Data describes the current version, latest release, selected artifact, checksum status, and whether an update was applied or only previewed.",
+  "description": "JSON output schema for `bb update --json`. Data describes the current version, latest release, selected artifact, checksum and signature status, the trust material verification used, and whether an update was applied or only previewed.",
   "properties": {
     "data": {
       "additionalProperties": false,
@@ -55,6 +55,21 @@
         "scheduled": {
           "type": "boolean"
         },
+        "signature_bundle_asset_name": {
+          "type": "string"
+        },
+        "signature_identity": {
+          "type": "string"
+        },
+        "signature_issuer": {
+          "type": "string"
+        },
+        "signature_skipped": {
+          "type": "boolean"
+        },
+        "signature_verified": {
+          "type": "boolean"
+        },
         "staged": {
           "type": "boolean"
         },
@@ -65,6 +80,12 @@
           "type": "string"
         },
         "target_platform": {
+          "type": "string"
+        },
+        "transparency_log_verified": {
+          "type": "boolean"
+        },
+        "trust_source": {
           "type": "string"
         },
         "up_to_date": {
@@ -85,6 +106,9 @@
         "dry_run",
         "checksum_available",
         "checksum_verified",
+        "signature_verified",
+        "signature_skipped",
+        "transparency_log_verified",
         "current_version_comparable",
         "latest_version_comparable"
       ],

@@ -80,5 +80,30 @@ func parseRegistryPolicy(k registryReader) PolicyConfig {
 		policy.UpdateBaseURL = strings.TrimSpace(val)
 	}
 
+	if val, _, err := k.GetStringValue("UpdateTrustedRoot"); err == nil && strings.TrimSpace(val) != "" {
+		policy.UpdateTrustedRoot = strings.TrimSpace(val)
+	}
+
+	if val, _, err := k.GetStringValue("UpdateTUFURL"); err == nil && strings.TrimSpace(val) != "" {
+		policy.UpdateTUFURL = strings.TrimSpace(val)
+	}
+
+	if val, _, err := k.GetStringValue("UpdateSignatureIdentity"); err == nil && strings.TrimSpace(val) != "" {
+		policy.UpdateSignatureIdentity = strings.TrimSpace(val)
+	}
+
+	if val, _, err := k.GetStringValue("UpdateSignatureIssuer"); err == nil && strings.TrimSpace(val) != "" {
+		policy.UpdateSignatureIssuer = strings.TrimSpace(val)
+	}
+
+	if val, _, err := k.GetIntegerValue("AllowUnverifiedUpdate"); err == nil {
+		b := val != 0
+		policy.AllowUnverifiedUpdate = &b
+	} else if strVal, _, err := k.GetStringValue("AllowUnverifiedUpdate"); err == nil {
+		if b, parseErr := strconv.ParseBool(strings.TrimSpace(strVal)); parseErr == nil {
+			policy.AllowUnverifiedUpdate = &b
+		}
+	}
+
 	return policy
 }

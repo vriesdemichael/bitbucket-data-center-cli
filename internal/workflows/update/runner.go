@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -56,6 +57,13 @@ type Result struct {
 	ChecksumAvailable        bool   `json:"checksum_available"`
 	ChecksumVerified         bool   `json:"checksum_verified"`
 	SignatureVerified        bool   `json:"signature_verified"`
+	// SignatureSkipped reports that signature verification was deliberately
+	// not performed because administrative policy set allow_unverified_update.
+	SignatureSkipped bool `json:"signature_skipped"`
+	// TrustSource names where the Sigstore trust material came from, so an
+	// operator can confirm from `bb update --dry-run` that their offline trust
+	// root is actually in use.
+	TrustSource              string `json:"trust_source,omitempty"`
 	SignatureIdentity        string `json:"signature_identity,omitempty"`
 	SignatureIssuer          string `json:"signature_issuer,omitempty"`
 	TransparencyLogVerified  bool   `json:"transparency_log_verified"`
@@ -77,6 +85,8 @@ type Runner struct {
 	processID      func() int
 	launchWindows  func(context.Context, windowsSwapLaunchOptions) error
 	verifier       SignatureVerifier
+	skipSignature  bool
+	trustSource    string
 }
 
 type Dependencies struct {
@@ -90,6 +100,13 @@ type Dependencies struct {
 	ProcessID       func() int
 	LaunchWindows   func(context.Context, windowsSwapLaunchOptions) error
 	Verifier        SignatureVerifier
+	// SkipSignatureVerification drops Sigstore verification. It exists for
+	// allow_unverified_update, which is administrative policy only — checksum
+	// verification stays mandatory either way.
+	SkipSignatureVerification bool
+	// TrustSource is a human-readable description of where trust material
+	// comes from, reported in the result.
+	TrustSource string
 }
 
 func NewRunner(deps Dependencies) *Runner {
@@ -139,6 +156,8 @@ func NewRunner(deps Dependencies) *Runner {
 		processID:      processID,
 		launchWindows:  launchWindows,
 		verifier:       verifier,
+		skipSignature:  deps.SkipSignatureVerification,
+		trustSource:    strings.TrimSpace(deps.TrustSource),
 	}
 }
 
@@ -149,7 +168,7 @@ func (runner *Runner) Run(ctx context.Context, options Options) (Result, error) 
 	if runner.owner == "" || runner.repo == "" {
 		return Result{}, apperrors.New(apperrors.KindInternal, "update repository is not configured", nil)
 	}
-	if runner.verifier == nil {
+	if runner.verifier == nil && !runner.skipSignature {
 		return Result{}, apperrors.New(apperrors.KindInternal, "update signature verifier is not configured", nil)
 	}
 
@@ -189,6 +208,7 @@ func (runner *Runner) Run(ctx context.Context, options Options) (Result, error) 
 		CurrentVersionComparable: currentNormalized != "",
 		LatestVersionComparable:  true,
 		TargetPlatform:           fmt.Sprintf("%s/%s", goos, goarch),
+		TrustSource:              runner.trustSource,
 	}
 
 	result.UpdateAvailable, result.Comparison = isUpdateAvailable(currentVersion, currentNormalized, latestVersion, latestNormalized)
@@ -208,39 +228,43 @@ func (runner *Runner) Run(ctx context.Context, options Options) (Result, error) 
 		return Result{}, apperrors.New(apperrors.KindNotFound, "release checksum file sha256sums.txt was not found", nil)
 	}
 
-	signatureBundleAsset, ok := findAsset(release.Assets, checksumAsset.Name+".sigstore.json")
-	if !ok {
+	signatureBundleAsset, hasSignatureBundle := findAsset(release.Assets, checksumAsset.Name+".sigstore.json")
+	if !hasSignatureBundle && !runner.skipSignature {
 		return Result{}, apperrors.New(apperrors.KindNotFound, "release signature bundle sha256sums.txt.sigstore.json was not found; use winget, scoop, or manual install", nil)
 	}
 
 	result.AssetName = asset.Name
 	result.AssetURL = asset.BrowserDownloadURL
 	result.ChecksumAssetName = checksumAsset.Name
-	result.SignatureBundleAssetName = signatureBundleAsset.Name
 	result.PlannedAction = plannedAction(goos)
+	if hasSignatureBundle {
+		result.SignatureBundleAssetName = signatureBundleAsset.Name
+	}
 
 	checksumsRaw, err := runner.releases.Download(ctx, checksumAsset.BrowserDownloadURL)
 	if err != nil {
 		return Result{}, err
 	}
-	bundleRaw, err := runner.releases.Download(ctx, signatureBundleAsset.BrowserDownloadURL)
-	if err != nil {
-		return Result{}, err
-	}
 
-	signatureVerification, err := runner.verifier.VerifyBlob(ctx, checksumsRaw, bundleRaw)
-	if err != nil {
-		kind := apperrors.KindOf(err)
-		message := "failed to verify the signed release manifest; use winget, scoop, or manual install"
-		if kind == apperrors.KindTransient {
-			message = "failed to verify the signed release manifest right now; retry or use winget, scoop, or manual install"
+	if runner.skipSignature {
+		// Policy has accepted an unauthenticated manifest. The checksums below
+		// are still enforced, so this catches corruption but not tampering.
+		result.SignatureSkipped = true
+	} else {
+		bundleRaw, err := runner.releases.Download(ctx, signatureBundleAsset.BrowserDownloadURL)
+		if err != nil {
+			return Result{}, err
 		}
-		return Result{}, apperrors.New(kind, message, err)
+
+		signatureVerification, err := runner.verifier.VerifyBlob(ctx, checksumsRaw, bundleRaw)
+		if err != nil {
+			return Result{}, signatureFailure(err)
+		}
+		result.SignatureVerified = true
+		result.SignatureIdentity = signatureVerification.CertificateIdentity
+		result.SignatureIssuer = signatureVerification.CertificateOIDCIssuer
+		result.TransparencyLogVerified = signatureVerification.TransparencyLogEntriesVerified > 0
 	}
-	result.SignatureVerified = true
-	result.SignatureIdentity = signatureVerification.CertificateIdentity
-	result.SignatureIssuer = signatureVerification.CertificateOIDCIssuer
-	result.TransparencyLogVerified = signatureVerification.TransparencyLogEntriesVerified > 0
 
 	checksums, err := parseChecksums(checksumsRaw)
 	if err != nil {
@@ -310,6 +334,31 @@ func (runner *Runner) Run(ctx context.Context, options Options) (Result, error) 
 
 	result.Applied = true
 	return result, nil
+}
+
+// signatureFailure separates "we could not obtain the trust material" from "the
+// signature did not verify against it".
+//
+// They demand opposite responses — the first is a configuration or connectivity
+// problem on this host, the second means the artifact is not the one we signed —
+// and conflating them leaves an operator on an air-gapped host debugging a
+// signature that is in fact perfectly good.
+func signatureFailure(err error) error {
+	kind := apperrors.KindOf(err)
+
+	if errors.Is(err, updatesigstore.ErrTrustedRootUnavailable) {
+		return apperrors.New(
+			kind,
+			"could not load the Sigstore trust material needed to verify the release manifest; without network access to the Sigstore TUF repository, deploy a trusted root and set update_trusted_root (or update_tuf_url) in system configuration",
+			err,
+		)
+	}
+
+	message := "failed to verify the signed release manifest; use winget, scoop, or manual install"
+	if kind == apperrors.KindTransient {
+		message = "failed to verify the signed release manifest right now; retry or use winget, scoop, or manual install"
+	}
+	return apperrors.New(kind, message, err)
 }
 
 func archiveName(version, goos, goarch string) string {
