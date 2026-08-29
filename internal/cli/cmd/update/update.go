@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -68,13 +67,12 @@ func LoadUpdateCommandHTTPConfig(optionalBaseURL ...string) (UpdateCommandHTTPCo
 		requestTimeout = parsed
 	}
 
-	insecureSkipVerify := false
-	if raw := strings.TrimSpace(os.Getenv("BB_INSECURE_SKIP_VERIFY")); raw != "" {
-		parsed, err := strconv.ParseBool(raw)
-		if err != nil {
-			return UpdateCommandHTTPConfig{}, apperrors.New(apperrors.KindValidation, "BB_INSECURE_SKIP_VERIFY must be a boolean", err)
-		}
-		insecureSkipVerify = parsed
+	// The update path downloads and then executes a new binary, so it resolves
+	// TLS through the same policy-aware helper the API client uses rather than
+	// reading BB_* variables directly (issue #448).
+	tlsSettings, err := config.ResolveTLSSettings()
+	if err != nil {
+		return UpdateCommandHTTPConfig{}, err
 	}
 
 	flagVal := ""
@@ -89,8 +87,10 @@ func LoadUpdateCommandHTTPConfig(optionalBaseURL ...string) (UpdateCommandHTTPCo
 	return UpdateCommandHTTPConfig{
 		RequestTimeout: requestTimeout,
 		TLSOptions: network.TLSOptions{
-			CAFile:             strings.TrimSpace(os.Getenv("BB_CA_FILE")),
-			InsecureSkipVerify: insecureSkipVerify,
+			CAFile:             tlsSettings.CAFile,
+			InsecureSkipVerify: tlsSettings.InsecureSkipVerify,
+			ClientCertFile:     tlsSettings.ClientCertFile,
+			ClientKeyFile:      tlsSettings.ClientKeyFile,
 		},
 		UpdateBaseURL: baseURL,
 	}, nil
