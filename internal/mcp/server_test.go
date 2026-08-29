@@ -48,10 +48,23 @@ func clientsForURL(t *testing.T, baseURL string) Clients {
 // what a tool actually puts on the wire.
 func connect(t *testing.T, clients Clients, allow, exclude []string, yolo bool) *mcp.ClientSession {
 	t.Helper()
+	return connectWith(t, ServerOptions{
+		Name:    "bb",
+		Version: "test",
+		Clients: clients,
+		Allow:   allow,
+		Exclude: exclude,
+		Yolo:    yolo,
+	})
+}
+
+// connectWith is connect with the full options struct, for the governance tests.
+func connectWith(t *testing.T, opts ServerOptions) *mcp.ClientSession {
+	t.Helper()
 	ctx := context.Background()
 
 	serverTransport, clientTransport := mcp.NewInMemoryTransports()
-	server := NewServer("bb", "test", clients, allow, exclude, yolo)
+	server := NewServer(opts)
 
 	serverSession, err := server.Connect(ctx, serverTransport, nil)
 	if err != nil {

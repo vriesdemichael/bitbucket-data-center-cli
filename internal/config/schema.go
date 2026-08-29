@@ -44,6 +44,10 @@ func ConfigJSONSchema() map[string]any {
 			"type":        "string",
 			"description": "Base URL of internal release manifest and asset mirror.",
 		},
+		"mcp_audit_file": map[string]any{
+			"type":        "string",
+			"description": "Mandate where 'bb ai mcp serve' writes its JSON Lines audit trail. The server then audits whether or not --audit-file is passed, and rejects a --audit-file naming a different path. Accepts a file path or the literal 'stderr'.",
+		},
 	}
 
 	hostProfileSchema := map[string]any{
@@ -123,6 +127,7 @@ func ConfigJSONSchema() map[string]any {
 			"allow_insecure_skip_verify": policyProps["allow_insecure_skip_verify"],
 			"disable_update":             policyProps["disable_update"],
 			"update_base_url":            policyProps["update_base_url"],
+			"mcp_audit_file":             policyProps["mcp_audit_file"],
 			"policies": map[string]any{
 				"type":                 "object",
 				"additionalProperties": false,

@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -475,4 +477,184 @@ func collectionFromCLI(t *testing.T, output, key string) []any {
 	}
 	t.Fatalf("bb --json output has no %q collection: %s", key, output)
 	return nil
+}
+
+// TestLiveMCPScopeBoundaryHolds proves the scope boundary against a real
+// Bitbucket, with two projects that both genuinely exist.
+//
+// A unit test with a failing stub cannot establish this: every call errors
+// there, so a boundary that refuses nothing looks identical to one that refuses
+// correctly. Here the out-of-scope repository is one the token can really read,
+// so a call that gets through returns data — and the test fails.
+func TestLiveMCPScopeBoundaryHolds(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	inScope, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed in-scope project failed: %v", err)
+	}
+	outOfScope, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed out-of-scope project failed: %v", err)
+	}
+
+	configureLiveCLIEnv(t, harness, inScope.Key, inScope.Repos[0].Slug)
+
+	// The out-of-scope repository is readable without the scope, which is what
+	// makes the refusal below meaningful rather than incidental.
+	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+		var payload struct {
+			Branches []struct {
+				DisplayID string `json:"displayId"`
+			} `json:"branches"`
+		}
+		callAndDecode(t, session, context.Background(), "list_branches", map[string]any{
+			"project": outOfScope.Key, "repo": outOfScope.Repos[0].Slug,
+		}, &payload)
+		if len(payload.Branches) == 0 {
+			t.Fatal("the out-of-scope repository has no branches, so refusing it later would prove nothing")
+		}
+	}, "ai", "mcp", "serve")
+
+	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+		callCtx := context.Background()
+
+		t.Run("in-scope calls succeed", func(t *testing.T) {
+			var payload struct {
+				Branches []struct {
+					DisplayID string `json:"displayId"`
+				} `json:"branches"`
+			}
+			callAndDecode(t, session, callCtx, "list_branches", map[string]any{
+				"project": inScope.Key, "repo": inScope.Repos[0].Slug,
+			}, &payload)
+			if len(payload.Branches) == 0 {
+				t.Error("in-scope list_branches returned nothing")
+			}
+		})
+
+		t.Run("out-of-scope calls are refused", func(t *testing.T) {
+			result, callErr := session.CallTool(callCtx, &mcp.CallToolParams{
+				Name: "list_branches",
+				Arguments: map[string]any{
+					"project": outOfScope.Key, "repo": outOfScope.Repos[0].Slug,
+				},
+			})
+			if callErr != nil {
+				t.Fatalf("tools/call returned a protocol error: %v", callErr)
+			}
+			if !result.IsError {
+				t.Fatalf("a call to %s/%s succeeded while scoped to %s; the boundary does not hold",
+					outOfScope.Key, outOfScope.Repos[0].Slug, inScope.Key)
+			}
+			if text := mcpResultText(result); !strings.Contains(text, "outside the scope") {
+				t.Errorf("refusal message = %q, want it to name the scope", text)
+			}
+		})
+
+		t.Run("omitted arguments are bound to the scope", func(t *testing.T) {
+			// Dashboard mode would otherwise reach every repository the token
+			// can see, which is exactly what the scope exists to prevent.
+			var payload struct {
+				PullRequests []struct {
+					ID int64 `json:"id"`
+				} `json:"pull_requests"`
+			}
+			callAndDecode(t, session, callCtx, "list_pull_requests", map[string]any{}, &payload)
+		})
+
+		t.Run("unboundable tools are withheld", func(t *testing.T) {
+			for _, name := range listedToolNames(t, session) {
+				if name == "get_build_status" || name == "set_build_status" {
+					t.Errorf("tool %q is listed under a scope it cannot honour", name)
+				}
+			}
+		})
+	}, "ai", "mcp", "serve", "--project", inScope.Key, "--repo", inScope.Repos[0].Slug)
+}
+
+// TestLiveMCPAuditTrailRecordsInvocations proves the audit file is written by a
+// real server run, with the denial record that Bitbucket's own audit log cannot
+// contain — a refused call never reaches it.
+func TestLiveMCPAuditTrailRecordsInvocations(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	auditPath := filepath.Join(t.TempDir(), "mcp-audit.jsonl")
+
+	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+		callCtx := context.Background()
+
+		var payload struct {
+			Tags []struct {
+				DisplayID string `json:"displayId"`
+			} `json:"tags"`
+		}
+		callAndDecode(t, session, callCtx, "list_tags", map[string]any{
+			"project": seeded.Key, "repo": repo.Slug,
+		}, &payload)
+
+		// Refused by the scope, so it never reaches Bitbucket.
+		_, _ = session.CallTool(callCtx, &mcp.CallToolParams{
+			Name:      "list_tags",
+			Arguments: map[string]any{"project": "NOSUCHPROJECT", "repo": repo.Slug},
+		})
+	}, "ai", "mcp", "serve", "--project", seeded.Key, "--audit-file", auditPath)
+
+	contents, err := os.ReadFile(auditPath)
+	if err != nil {
+		t.Fatalf("read audit log: %v", err)
+	}
+
+	var statuses []string
+	for _, line := range strings.Split(strings.TrimSpace(string(contents)), "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		var record struct {
+			Event  string `json:"event"`
+			Tool   string `json:"tool"`
+			Status string `json:"status"`
+			Host   string `json:"host"`
+			Scope  string `json:"scope"`
+		}
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			t.Fatalf("audit line is not valid JSON: %v\nline: %s", err, line)
+		}
+		if record.Event != "mcp_tool_invocation" {
+			t.Errorf("audit event = %q, want mcp_tool_invocation", record.Event)
+		}
+		if record.Tool != "list_tags" {
+			t.Errorf("audit tool = %q, want list_tags", record.Tool)
+		}
+		if record.Scope != seeded.Key {
+			t.Errorf("audit scope = %q, want %q", record.Scope, seeded.Key)
+		}
+		if strings.TrimSpace(record.Host) == "" {
+			t.Error("audit record has no host")
+		}
+		statuses = append(statuses, record.Status)
+	}
+
+	if len(statuses) != 2 {
+		t.Fatalf("expected 2 audit records, got %d: %s", len(statuses), contents)
+	}
+	if statuses[0] != "success" {
+		t.Errorf("first audit status = %q, want success", statuses[0])
+	}
+	if statuses[1] != "denied" {
+		t.Errorf("second audit status = %q, want denied; the denial is the event Bitbucket's own audit log cannot hold", statuses[1])
+	}
 }

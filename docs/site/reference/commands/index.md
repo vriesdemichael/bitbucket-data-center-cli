@@ -220,16 +220,34 @@ Use --exclude to suppress individual tools in any mode.
 When more than one Bitbucket instance is configured the --host flag is required.
 Use --token to restrict all API calls to the rights of a specific PAT.
 
+Use --project or --repo to confine the server to one project or repository. Any
+tool call aimed elsewhere is refused. Tools that address a resource Bitbucket
+does not scope to a project — build statuses, which hang off a commit SHA — are
+withheld entirely while a scope is set, because there is no argument to bound.
+
+Use --audit-file to record every tool call as JSON Lines for SIEM collection.
+Pass a path, or 'stderr' for a containerised deployment whose log collector
+reads the process streams. Auditing is off by default. When it is on and a
+record cannot be written the call is refused; --audit-failure=warn relaxes that.
+
+The audit trail covers this server only. An agent that can run shell commands
+can invoke bb directly and bypass it, along with every other control here; the
+control that survives that is --token, which binds at the Bitbucket server.
+
 Usage:
   bb ai mcp serve [flags]
 
 Flags:
-      --allow-writes     Alias for --yolo
-      --exclude string   Comma-separated denylist of tool names to suppress
-      --host string      Target Bitbucket instance URL; required when multiple instances are configured
-      --token string     PAT to use; restricts all API calls to this token's rights
-      --tools string     Comma-separated allowlist of tool names to expose (overrides safety filter)
-      --yolo             Expose all tools including unsafe operations like merge_pull_request
+      --allow-writes           Alias for --yolo
+      --audit-failure string   What to do when an audit record cannot be written: deny or warn (default "deny")
+      --audit-file string      Append a JSON Lines audit record per tool call to this path, or to 'stderr'
+      --exclude string         Comma-separated denylist of tool names to suppress
+      --host string            Target Bitbucket instance URL; required when multiple instances are configured
+      --project string         Confine the server to this project key; calls aimed elsewhere are refused
+      --repo string            Confine the server to one repository, as PROJECT/slug (or a slug alongside --project)
+      --token string           PAT to use; restricts all API calls to this token's rights
+      --tools string           Comma-separated allowlist of tool names to expose (overrides safety filter)
+      --yolo                   Expose all tools including unsafe operations like merge_pull_request
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust

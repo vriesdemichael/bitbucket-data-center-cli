@@ -93,6 +93,10 @@
       "description": "Plaintext fallback secrets store.",
       "type": "object"
     },
+    "mcp_audit_file": {
+      "description": "Mandate where 'bb ai mcp serve' writes its JSON Lines audit trail. The server then audits whether or not --audit-file is passed, and rejects a --audit-file naming a different path. Accepts a file path or the literal 'stderr'.",
+      "type": "string"
+    },
     "policies": {
       "additionalProperties": false,
       "description": "Administrative policy block.",
@@ -115,6 +119,10 @@
         "disable_update": {
           "description": "Disable CLI self-update command (bb update) machine-wide.",
           "type": "boolean"
+        },
+        "mcp_audit_file": {
+          "description": "Mandate where 'bb ai mcp serve' writes its JSON Lines audit trail. The server then audits whether or not --audit-file is passed, and rejects a --audit-file naming a different path. Accepts a file path or the literal 'stderr'.",
+          "type": "string"
         },
         "require_keyring": {
           "description": "Mandate OS keyring storage for credentials and prohibit plaintext config file fallback.",
@@ -149,6 +157,10 @@
         "disable_update": {
           "description": "Disable CLI self-update command (bb update) machine-wide.",
           "type": "boolean"
+        },
+        "mcp_audit_file": {
+          "description": "Mandate where 'bb ai mcp serve' writes its JSON Lines audit trail. The server then audits whether or not --audit-file is passed, and rejects a --audit-file naming a different path. Accepts a file path or the literal 'stderr'.",
+          "type": "string"
         },
         "require_keyring": {
           "description": "Mandate OS keyring storage for credentials and prohibit plaintext config file fallback.",

@@ -225,6 +225,8 @@ bb --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.
 - **Safe vs. Unsafe Tool Isolation**: High-impact mutating operations (`submit_pr_review`, `merge_pull_request`, `enable_auto_merge`, `set_build_status`) are withheld by default ([ADR-039](../adr/039-built-in-mcp-server-with-host-scoping-and-token-restriction.md)). Crucially, withholding `submit_pr_review` prevents an agent from self-approving its own pull requests.
 - **Dedicated Read-Only Token Scoping**: Running `bb ai mcp serve --token <ro-pat>` forces the MCP server to execute under a service token with read-only server rights.
 - **Explicit Capability Allowlists**: Constraining exposed tools via `--tools` or `--exclude`.
+- **Workspace Scoping**: `--project` and `--repo` confine every tool call to one project or repository ([ADR-062](../adr/062-mcp-workspace-scoping-and-agent-audit-trail.md)). Enforcement is a single choke point over `tools/call`, not a per-tool check: arguments that are omitted are bound to the scope, arguments that name something else are refused, and tools that address a resource Bitbucket does not scope to a project — build statuses, which hang off a commit SHA — are withheld while a scope is set.
+- **Agent Audit Trail**: `--audit-file` records every tool invocation as JSON Lines for SIEM ingestion, with secrets redacted. Its distinct value over Bitbucket's own audit log is *attribution* (every MCP call reaches Bitbucket as the same user with the same PAT) and *denied attempts* (a refused call never reaches Bitbucket, so no server-side record of it can exist). The destination is mandatable machine-wide via `policy.mcp_audit_file`.
 
 #### 3. Audit Test Procedure
 ```bash
@@ -232,9 +234,14 @@ bb ai mcp tools
 ```
 *Audit Assertion*: Confirm that unsafe tools are marked as withheld unless explicitly authorized.
 
+```bash
+bb ai mcp serve --project PAYMENTS --audit-file /var/log/bb/mcp-audit.jsonl
+```
+*Audit Assertion*: A tool call naming a project other than `PAYMENTS` returns an error result and appears in the audit log with `"status":"denied"`.
+
 #### 4. Residual Gap & Tracking
-- **Limitation**: `bb ai mcp serve` scopes to the entire Bitbucket server instance. Agents cannot be restricted to a single project or repository, and stdio RPC lacks a dedicated SIEM audit stream.
-- **Tracked Issue**: **[Issue #423: feat: MCP server workspace scoping and audit logging](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/423)**.
+- **The audit trail is not tamper-evident.** It is written on the developer's workstation, as the developer, to a path they can modify. It is evidence against a prompt-injected agent confined to MCP tools (ADV-3), which has no shell; it is not evidence against a determined insider.
+- **The CLI beside it is ungated.** An agent with shell access can invoke `bb` directly and reach all 233 commands with none of the safety gating, workspace scoping or auditing described here. This is not closable at this layer — an agent that can run shell commands can also edit the audit file. The mitigation that survives it is the dedicated read-only PAT (`--token`), which binds at the Bitbucket server and is indifferent to which local process issued the call. MCP-layer controls are defence in depth over a correctly scoped token, not a replacement for one.
 
 ---
 
@@ -290,7 +297,7 @@ bb auth token list
 | **T-1** | Process table secret sniffing & plaintext disk fallback | SOC 2 CC6.1, ISO 27001:2022 A.8.24, NIST SP 800-53 AC-3 | **Low** | Fully mitigated via mandatory Keyring policy enforcement (`require_keyring: true`), system configuration tier, and stdin ingestion ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)). | `bb auth status --json` | — |
 | **T-2** | Repository secret bleed & cross-remote credential leakage | SOC 2 CC6.6, ISO 27001:2022 A.8.12 | **Low** | Mitigated via host-scoped Git credential helper (`bb auth setup-git`). | `git config --local --get http.extraHeader` | — |
 | **T-3** | Inability to traverse mutual TLS (mTLS) ingress | NIST SP 800-207 (Zero Trust Architecture), SC-8 | **Low** | Fully mitigated via mTLS client cert/key support (`--client-cert`, `--client-key`, `BB_CLIENT_CERT`, `BB_CLIENT_KEY`, and stored profiles; [ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)). | `bb --client-cert ... --client-key ... repo list` | — |
-| **T-4** | Prompt-injected AI agent executing unauthorized mutations | OWASP Top 10 LLM (2025 LLM01, LLM06), SOC 2 CC6.8 | **Medium** | Mitigate via safe/unsafe tool withholding; requires workspace bounding & audit logging. | `bb ai mcp tools` | [#423](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/423) |
+| **T-4** | Prompt-injected AI agent executing unauthorized mutations | OWASP Top 10 LLM (2025 LLM01, LLM06), SOC 2 CC6.8 | **Low** | Mitigated via safe/unsafe tool withholding, workspace scoping (`--project`, `--repo`), and a redacted JSONL audit trail recording allowed and denied invocations ([ADR-062](../adr/062-mcp-workspace-scoping-and-agent-audit-trail.md)). Residual: the trail is not tamper-evident, and an agent with shell access can bypass the MCP layer entirely — a read-only `--token` is the control that survives that. | `bb ai mcp serve --project PAYMENTS --audit-file <path>` | — |
 | **T-5** | Unmanaged binary updates breaking package manager state | ISO 27001:2022 A.8.19, NIST SP 800-53 SI-2 | **Low** | Fully mitigated via `BB_DISABLE_UPDATE=1`, system config `disable_update: true`, build tag `no_self_update`, and internal release mirror resolution ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)). | `bb update` on managed machine | — |
 | **T-6** | Unfederated static token lifecycle management | CIS Controls v8 5.4 / 6.1, NIST SP 800-63B | **Medium** | Mitigate via scoped TTL PATs; browser flow requires Bitbucket DC admin configuration. | `bb auth token list` | [#424](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/424) |
 
