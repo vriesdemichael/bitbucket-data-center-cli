@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `61`
-- Accepted ADRs: `57`
+- Total ADRs: `62`
+- Accepted ADRs: `58`
 
 ## ADR List
 
@@ -70,4 +70,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 059: Enterprise update controls and release mirror support](059-enterprise-update-controls-and-release-mirrors.md) (`architecture`, `accepted`)
 - [ADR 060: Mutual TLS (mTLS) client certificate authentication](060-mutual-tls-client-certificate-authentication.md) (`architecture`, `accepted`)
 - [ADR 061: The MCP surface runs on the official SDK and every tool names its payload](061-mcp-output-contract-on-the-official-sdk.md) (`architecture`, `accepted`)
+- [ADR 062: The MCP server can be confined to a workspace, and records what agents attempt there](062-mcp-workspace-scoping-and-agent-audit-trail.md) (`architecture`, `accepted`)
 

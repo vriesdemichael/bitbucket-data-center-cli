@@ -205,19 +205,51 @@ func SafeSpecs() []Spec {
 	return out
 }
 
-// NewServer creates a configured MCP server with optional tool filtering.
-// allow is a list of tool names to expose exclusively (empty = all).
-// exclude is a list of tool names to suppress.
-// yolo enables unrestricted mode: all tools are exposed including unsafe ones
-// (e.g. merge_pull_request). In safe mode (yolo=false), only tools marked
-// Safe are exposed unless an explicit allow list is provided.
-// When allow is non-empty it takes full precedence over the safety filter;
-// exclude is still applied afterwards in all modes.
-func NewServer(name, version string, clients Clients, allow, exclude []string, yolo bool) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: name, Version: version}, nil)
+// ServerOptions configures a server.
+//
+// A struct rather than a parameter list because the governance controls added
+// for issue #423 pushed this past the point where positional booleans and
+// string slices could be read at the call site.
+type ServerOptions struct {
+	Name    string
+	Version string
+	Clients Clients
 
-	allowSet := toSet(allow)
-	excludeSet := toSet(exclude)
+	// Allow exposes exactly these tools, taking full precedence over the
+	// safety filter. Exclude suppresses tools afterwards, in every mode.
+	Allow   []string
+	Exclude []string
+
+	// Yolo lifts the safety filter, exposing tools whose effects are
+	// irreversible or which influence merge gating. See Spec.Safe.
+	Yolo bool
+
+	// Scope confines the server to one project or repository. The zero value
+	// is unscoped.
+	Scope Scope
+
+	// Audit, when non-nil, receives one record per tool call.
+	Audit *AuditLogger
+
+	// AuditFailure decides whether a call proceeds when its record cannot be
+	// written. Empty means AuditFailureDeny.
+	AuditFailure AuditFailureMode
+
+	// Warn receives operational messages that must not go to stdout, which is
+	// the protocol channel. Optional.
+	Warn func(string)
+}
+
+// NewServer creates a configured MCP server.
+//
+// Tool exposure is decided by three filters in order: an explicit Allow list
+// wins over the safety filter, Exclude is applied afterwards in every mode, and
+// a Scope withholds the tools it cannot bound.
+func NewServer(opts ServerOptions) *mcp.Server {
+	server := mcp.NewServer(&mcp.Implementation{Name: opts.Name, Version: opts.Version}, nil)
+
+	allowSet := toSet(opts.Allow)
+	excludeSet := toSet(opts.Exclude)
 
 	for _, spec := range AllSpecs() {
 		toolName := spec.Tool.Name
@@ -226,14 +258,29 @@ func NewServer(name, version string, clients Clients, allow, exclude []string, y
 			if !allowSet[toolName] {
 				continue
 			}
-		} else if !yolo && !spec.Safe {
+		} else if !opts.Yolo && !spec.Safe {
 			// Safe mode: skip tools not marked as safe.
 			continue
 		}
 		if excludeSet[toolName] {
 			continue
 		}
-		spec.Register(server, clients)
+		// The scope filter is deliberately last and not overridable by Allow.
+		// The other two express what an operator wants exposed; this one
+		// expresses what the server is able to bound, and naming a tool in
+		// --tools cannot make a commit SHA belong to a project.
+		if withheldUnderScope(toolName, opts.Scope) {
+			continue
+		}
+		spec.Register(server, opts.Clients)
+	}
+
+	if opts.Scope.IsSet() || opts.Audit != nil {
+		failure := opts.AuditFailure
+		if failure == "" {
+			failure = AuditFailureDeny
+		}
+		server.AddReceivingMiddleware(governanceMiddleware(opts.Scope, opts.Audit, failure, opts.Warn))
 	}
 
 	return server

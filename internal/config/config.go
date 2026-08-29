@@ -71,6 +71,14 @@ type PolicyConfig struct {
 	AllowInsecureSkipVerify *bool    `yaml:"allow_insecure_skip_verify,omitempty"`
 	DisableUpdate           *bool    `yaml:"disable_update,omitempty"`
 	UpdateBaseURL           string   `yaml:"update_base_url,omitempty"`
+	// MCPAuditFile mandates where `bb ai mcp serve` writes its audit trail.
+	// When set, the server audits whether or not --audit-file is passed, and
+	// rejects a --audit-file naming a different path.
+	//
+	// This is a fleet control rather than a developer one. The agent being
+	// audited runs in the developer's own IDE, so an audit destination they can
+	// change by editing a config file records only what they allow it to.
+	MCPAuditFile string `yaml:"mcp_audit_file,omitempty"`
 }
 
 type SystemConfigFile struct {
@@ -84,6 +92,7 @@ type SystemConfigFile struct {
 	AllowInsecureSkipVerify *bool                    `yaml:"allow_insecure_skip_verify,omitempty"`
 	DisableUpdate           *bool                    `yaml:"disable_update,omitempty"`
 	UpdateBaseURL           string                   `yaml:"update_base_url,omitempty"`
+	MCPAuditFile            string                   `yaml:"mcp_audit_file,omitempty"`
 	Policies                *PolicyConfig            `yaml:"policies,omitempty"`
 	Policy                  *PolicyConfig            `yaml:"policy,omitempty"`
 }
@@ -105,6 +114,7 @@ func (sys SystemConfigFile) PolicyConfig() PolicyConfig {
 		AllowInsecureSkipVerify: sys.AllowInsecureSkipVerify,
 		DisableUpdate:           sys.DisableUpdate,
 		UpdateBaseURL:           sys.UpdateBaseURL,
+		MCPAuditFile:            sys.MCPAuditFile,
 	}
 }
 
@@ -1011,6 +1021,9 @@ func mergePolicy(target *PolicyConfig, source PolicyConfig) {
 	}
 	if strings.TrimSpace(source.UpdateBaseURL) != "" {
 		target.UpdateBaseURL = strings.TrimSpace(source.UpdateBaseURL)
+	}
+	if strings.TrimSpace(source.MCPAuditFile) != "" {
+		target.MCPAuditFile = strings.TrimSpace(source.MCPAuditFile)
 	}
 }
 

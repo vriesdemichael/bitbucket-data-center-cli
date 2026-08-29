@@ -3,6 +3,7 @@ package ai
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -30,6 +31,10 @@ func newMCPServeCommand(deps Dependencies) *cobra.Command {
 	var toolsFlag string
 	var excludeFlag string
 	var yolo bool
+	var projectScope string
+	var repoScope string
+	var auditFile string
+	var auditFailure string
 
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -56,7 +61,21 @@ Use --tools to expose a specific subset regardless of the safety classification.
 Use --exclude to suppress individual tools in any mode.
 
 When more than one Bitbucket instance is configured the --host flag is required.
-Use --token to restrict all API calls to the rights of a specific PAT.`,
+Use --token to restrict all API calls to the rights of a specific PAT.
+
+Use --project or --repo to confine the server to one project or repository. Any
+tool call aimed elsewhere is refused. Tools that address a resource Bitbucket
+does not scope to a project — build statuses, which hang off a commit SHA — are
+withheld entirely while a scope is set, because there is no argument to bound.
+
+Use --audit-file to record every tool call as JSON Lines for SIEM collection.
+Pass a path, or 'stderr' for a containerised deployment whose log collector
+reads the process streams. Auditing is off by default. When it is on and a
+record cannot be written the call is refused; --audit-failure=warn relaxes that.
+
+The audit trail covers this server only. An agent that can run shell commands
+can invoke bb directly and bypass it, along with every other control here; the
+control that survives that is --token, which binds at the Bitbucket server.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Multi-instance host enforcement.
 			if strings.TrimSpace(host) == "" {
@@ -87,10 +106,49 @@ Use --token to restrict all API calls to the rights of a specific PAT.`,
 				return apperrors.New(apperrors.KindInternal, "failed to create API clients", err)
 			}
 
-			allow := splitCSV(toolsFlag)
-			exclude := splitCSV(excludeFlag)
+			scope, err := bbmcp.ParseScope(projectScope, repoScope)
+			if err != nil {
+				return apperrors.New(apperrors.KindValidation, err.Error(), nil)
+			}
 
-			s := bbmcp.NewServer("bb", deps.Version(), clients, allow, exclude, yolo)
+			// Administrative policy can mandate auditing, in which case an
+			// operator may not omit it or redirect it. A compliance control the
+			// person being audited can switch off is not a control (ADR-058).
+			resolvedAuditFile, err := resolveAuditFile(auditFile)
+			if err != nil {
+				return err
+			}
+
+			failureMode, err := parseAuditFailure(auditFailure)
+			if err != nil {
+				return err
+			}
+
+			audit, err := bbmcp.NewAuditLogger(resolvedAuditFile)
+			if err != nil {
+				return apperrors.New(apperrors.KindValidation, err.Error(), nil)
+			}
+			if audit != nil {
+				defer func() { _ = audit.Close() }()
+				audit.Identity = cfg.BitbucketUsername
+				audit.Host = cfg.BitbucketURL
+				audit.Scope = scope.String()
+			}
+
+			s := bbmcp.NewServer(bbmcp.ServerOptions{
+				Name:         "bb",
+				Version:      deps.Version(),
+				Clients:      clients,
+				Allow:        splitCSV(toolsFlag),
+				Exclude:      splitCSV(excludeFlag),
+				Yolo:         yolo,
+				Scope:        scope,
+				Audit:        audit,
+				AuditFailure: failureMode,
+				// stdout is the protocol channel, so operational messages go to
+				// stderr like every other diagnostic (ADR-046).
+				Warn: func(message string) { fmt.Fprintln(cmd.ErrOrStderr(), message) },
+			})
 
 			// IOTransport over the command's own streams rather than
 			// mcp.StdioTransport, which reads os.Stdin and writes os.Stdout
@@ -112,8 +170,54 @@ Use --token to restrict all API calls to the rights of a specific PAT.`,
 	cmd.Flags().StringVar(&excludeFlag, "exclude", "", "Comma-separated denylist of tool names to suppress")
 	cmd.Flags().BoolVar(&yolo, "yolo", false, "Expose all tools including unsafe operations like merge_pull_request")
 	cmd.Flags().BoolVar(&yolo, "allow-writes", false, "Alias for --yolo")
+	cmd.Flags().StringVar(&projectScope, "project", "", "Confine the server to this project key; calls aimed elsewhere are refused")
+	cmd.Flags().StringVar(&repoScope, "repo", "", "Confine the server to one repository, as PROJECT/slug (or a slug alongside --project)")
+	cmd.Flags().StringVar(&auditFile, "audit-file", "", "Append a JSON Lines audit record per tool call to this path, or to 'stderr'")
+	cmd.Flags().StringVar(&auditFailure, "audit-failure", string(bbmcp.AuditFailureDeny), "What to do when an audit record cannot be written: deny or warn")
 
 	return cmd
+}
+
+// resolveAuditFile applies administrative policy to the --audit-file flag.
+//
+// Policy wins, in both directions: it supplies the path when the flag is
+// omitted, and it rejects a flag that points somewhere else. Both matter for
+// the same reason — the person whose agent is being audited is the person
+// running this command, so a policy they can override by editing an IDE config
+// is documentation rather than enforcement.
+func resolveAuditFile(flagValue string) (string, error) {
+	policy, err := config.LoadPolicy()
+	if err != nil {
+		return "", apperrors.New(apperrors.KindInternal, "failed to load administrative policy", err)
+	}
+
+	mandated := strings.TrimSpace(policy.MCPAuditFile)
+	requested := strings.TrimSpace(flagValue)
+
+	if mandated == "" {
+		return requested, nil
+	}
+	if requested == "" {
+		return mandated, nil
+	}
+	if !strings.EqualFold(filepath.Clean(requested), filepath.Clean(mandated)) {
+		return "", apperrors.New(apperrors.KindAuthorization,
+			fmt.Sprintf("the MCP audit log destination is governed by administrative policy; mandated path: %s", mandated), nil)
+	}
+	return mandated, nil
+}
+
+// parseAuditFailure validates the --audit-failure flag.
+func parseAuditFailure(value string) (bbmcp.AuditFailureMode, error) {
+	switch bbmcp.AuditFailureMode(strings.ToLower(strings.TrimSpace(value))) {
+	case "", bbmcp.AuditFailureDeny:
+		return bbmcp.AuditFailureDeny, nil
+	case bbmcp.AuditFailureWarn:
+		return bbmcp.AuditFailureWarn, nil
+	default:
+		return "", apperrors.New(apperrors.KindValidation,
+			fmt.Sprintf("--audit-failure must be %q or %q, got %q", bbmcp.AuditFailureDeny, bbmcp.AuditFailureWarn, value), nil)
+	}
 }
 
 func newMCPToolsCommand(deps Dependencies) *cobra.Command {

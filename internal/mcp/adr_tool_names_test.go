@@ -13,12 +13,19 @@ import (
 // enough segments to avoid catching ordinary prose.
 var toolNamePattern = regexp.MustCompile(`\b[a-z]+(?:_[a-z]+){1,3}\b`)
 
-// prosePermitted are the YAML keys of the decision-record schema, which share
-// the snake_case shape of a tool name without being one.
+// prosePermitted are identifiers that share the snake_case shape of a tool name
+// without being one: the YAML keys of the decision-record schema itself, and
+// the configuration keys an MCP decision record has reason to name exactly.
+//
+// A configuration key belongs here rather than being reworded around, because
+// the whole point of naming it in a record is that an administrator can copy it
+// into a policy file. The list is exhaustive on purpose — anything not on it is
+// still required to be a real tool.
 var prosePermitted = map[string]bool{
 	"agent_instructions":    true,
 	"rejected_alternatives": true,
 	"superseded_by":         true,
+	"mcp_audit_file":        true,
 }
 
 // TestADRDoesNotNameToolsThatDoNotExist guards the drift that made ADR-039
