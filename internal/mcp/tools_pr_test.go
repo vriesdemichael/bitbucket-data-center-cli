@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	mcpgo "github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 )
 
@@ -67,17 +67,25 @@ func newRecordingClients(t *testing.T, response string, record func(r *http.Requ
 	return clients
 }
 
-func callTool(t *testing.T, spec Spec, clients Clients, args map[string]any) *mcpgo.CallToolResult {
+// callTool invokes one tool through a real client-to-server round trip.
+//
+// Going through a session rather than calling the handler directly means these
+// tests also cover argument validation and result encoding, which is where the
+// wire-shape bug in issue #416 lived. The tool is allowlisted so the safety
+// filter does not decide whether the test can reach it.
+func callTool(t *testing.T, spec Spec, clients Clients, args map[string]any) *mcp.CallToolResult {
 	t.Helper()
 
-	result, err := spec.Handler(clients)(context.Background(), mcpgo.CallToolRequest{
-		Params: mcpgo.CallToolParams{Arguments: args},
+	session := connect(t, clients, []string{spec.Tool.Name}, nil, true)
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      spec.Tool.Name,
+		Arguments: args,
 	})
 	if err != nil {
-		t.Fatalf("handler returned Go error: %v", err)
+		t.Fatalf("tools/call returned a protocol error: %v", err)
 	}
 	if result == nil {
-		t.Fatal("handler returned a nil result")
+		t.Fatal("tools/call returned a nil result")
 	}
 	return result
 }
@@ -359,10 +367,10 @@ func TestGetFileContentRejectsTraversal(t *testing.T) {
 }
 
 // resultText flattens a tool result's content into a single string.
-func resultText(result *mcpgo.CallToolResult) string {
+func resultText(result *mcp.CallToolResult) string {
 	var builder strings.Builder
 	for _, content := range result.Content {
-		if text, ok := content.(mcpgo.TextContent); ok {
+		if text, ok := content.(*mcp.TextContent); ok {
 			builder.WriteString(text.Text)
 		}
 	}

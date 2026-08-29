@@ -6,26 +6,36 @@ import (
 	"net/url"
 	"strings"
 
-	mcpgo "github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	repositoryservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
 )
 
+// SearchRepositoriesInput is the argument set for search_repositories.
+type SearchRepositoriesInput struct {
+	Name    string `json:"name,omitempty" jsonschema:"Repository name filter (substring match)"`
+	Project string `json:"project,omitempty" jsonschema:"Restrict results to this project key"`
+	Limit   int    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 25)"`
+}
+
+// SearchRepositoriesOutput names the collection it holds.
+type SearchRepositoriesOutput struct {
+	Repositories []repositoryservice.Repository `json:"repositories"`
+}
+
 func specSearchRepositories() Spec {
-	tool := mcpgo.NewTool("search_repositories",
-		mcpgo.WithDescription("Search for repositories by name, optionally filtered by project. Returns project key, slug, and display name."),
-		mcpgo.WithString("name", mcpgo.Description("Repository name filter (substring match)")),
-		mcpgo.WithString("project", mcpgo.Description("Restrict results to this project key")),
-		mcpgo.WithNumber("limit", mcpgo.Description("Maximum number of results (default 25)")),
-	)
-	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
+	tool := &mcp.Tool{
+		Name:        "search_repositories",
+		Description: "Search for repositories by name, optionally filtered by project. Returns project key, slug, and display name.",
+		Annotations: readOnly(),
+	}
+	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[SearchRepositoriesInput, SearchRepositoriesOutput] {
 		svc := repositoryservice.NewService(c.HTTP)
-		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
+		return func(ctx context.Context, _ *mcp.CallToolRequest, in SearchRepositoriesInput) (*mcp.CallToolResult, SearchRepositoriesOutput, error) {
 			opts := repositoryservice.ListOptions{
-				Name:  req.GetString("name", ""),
-				Limit: req.GetInt("limit", 25),
+				Name:  in.Name,
+				Limit: limitOrDefault(in.Limit),
 			}
-			project := strings.TrimSpace(req.GetString("project", ""))
+			project := strings.TrimSpace(in.Project)
 			var repos []repositoryservice.Repository
 			var err error
 			if project != "" {
@@ -34,15 +44,21 @@ func specSearchRepositories() Spec {
 				repos, err = svc.List(ctx, opts)
 			}
 			if err != nil {
-				return mcpgo.NewToolResultErrorFromErr("search_repositories failed", err), nil
+				return nil, SearchRepositoriesOutput{}, fmt.Errorf("search_repositories failed: %w", err)
 			}
-			return resultJSON(repos)
+			return nil, SearchRepositoriesOutput{Repositories: repos}, nil
 		}
-	}}
+	})
 }
 
-// cloneInfo is the result type for get_repository_clone_info.
-type cloneInfo struct {
+// GetRepositoryCloneInfoInput is the argument set for get_repository_clone_info.
+type GetRepositoryCloneInfoInput struct {
+	Project string `json:"project" jsonschema:"Bitbucket project key"`
+	Repo    string `json:"repo" jsonschema:"Repository slug"`
+}
+
+// CloneInfo is the clone URL payload for get_repository_clone_info.
+type CloneInfo struct {
 	ProjectKey    string `json:"project_key"`
 	Slug          string `json:"slug"`
 	Name          string `json:"name"`
@@ -50,42 +66,44 @@ type cloneInfo struct {
 	CloneURLSSH   string `json:"clone_url_ssh"`
 }
 
-func specGetRepositoryCloneInfo() Spec {
-	tool := mcpgo.NewTool("get_repository_clone_info",
-		mcpgo.WithDescription("Get HTTPS and SSH clone URLs for a repository. Use these URLs with git clone to check out the repository locally."),
-		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
-		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
-	)
-	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
-		svc := repositoryservice.NewService(c.HTTP)
-		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
-			project, _ := req.RequireString("project")
-			repo, _ := req.RequireString("repo")
+// GetRepositoryCloneInfoOutput names the payload it holds.
+type GetRepositoryCloneInfoOutput struct {
+	Repository CloneInfo `json:"repository"`
+}
 
-			httpsURL, sshURL, err := buildCloneURLs(c.BaseURL, project, repo)
+func specGetRepositoryCloneInfo() Spec {
+	tool := &mcp.Tool{
+		Name:        "get_repository_clone_info",
+		Description: "Get HTTPS and SSH clone URLs for a repository. Use these URLs with git clone to check out the repository locally.",
+		Annotations: readOnly(),
+	}
+	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[GetRepositoryCloneInfoInput, GetRepositoryCloneInfoOutput] {
+		svc := repositoryservice.NewService(c.HTTP)
+		return func(ctx context.Context, _ *mcp.CallToolRequest, in GetRepositoryCloneInfoInput) (*mcp.CallToolResult, GetRepositoryCloneInfoOutput, error) {
+			httpsURL, sshURL, err := buildCloneURLs(c.BaseURL, in.Project, in.Repo)
 			if err != nil {
-				return mcpgo.NewToolResultErrorFromErr("get_repository_clone_info failed", err), nil
+				return nil, GetRepositoryCloneInfoOutput{}, fmt.Errorf("get_repository_clone_info failed: %w", err)
 			}
 
 			// Look up display name; tolerate failure.
-			repos, _ := svc.ListByProject(ctx, project, repositoryservice.ListOptions{Name: repo, Limit: 5})
-			name := repo
+			repos, _ := svc.ListByProject(ctx, in.Project, repositoryservice.ListOptions{Name: in.Repo, Limit: 5})
+			name := in.Repo
 			for _, r := range repos {
-				if strings.EqualFold(r.Slug, repo) {
+				if strings.EqualFold(r.Slug, in.Repo) {
 					name = r.Name
 					break
 				}
 			}
 
-			return resultJSON(cloneInfo{
-				ProjectKey:    project,
-				Slug:          repo,
+			return nil, GetRepositoryCloneInfoOutput{Repository: CloneInfo{
+				ProjectKey:    in.Project,
+				Slug:          in.Repo,
 				Name:          name,
 				CloneURLHTTPS: httpsURL,
 				CloneURLSSH:   sshURL,
-			})
+			}}, nil
 		}
-	}}
+	})
 }
 
 // buildCloneURLs derives HTTPS and SSH clone URLs from the Bitbucket base URL.

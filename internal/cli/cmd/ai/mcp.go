@@ -2,9 +2,10 @@ package ai
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
-	"github.com/mark3labs/mcp-go/server"
+	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -90,7 +91,18 @@ Use --token to restrict all API calls to the rights of a specific PAT.`,
 			exclude := splitCSV(excludeFlag)
 
 			s := bbmcp.NewServer("bb", deps.Version(), clients, allow, exclude, yolo)
-			return server.ServeStdio(s)
+
+			// IOTransport over the command's own streams rather than
+			// mcp.StdioTransport, which reads os.Stdin and writes os.Stdout
+			// directly. Identical in production, where Cobra hands the command
+			// the process streams, and it is what lets the live suite drive a
+			// real server in-process rather than spawning a binary whose
+			// execution no coverage profile can see.
+			transport := &mcpsdk.IOTransport{
+				Reader: io.NopCloser(cmd.InOrStdin()),
+				Writer: nopWriteCloser{Writer: cmd.OutOrStdout()},
+			}
+			return s.Run(cmd.Context(), transport)
 		},
 	}
 
@@ -169,6 +181,15 @@ server exposes by default.`,
 
 	return cmd
 }
+
+// nopWriteCloser adapts the command's output stream to the io.WriteCloser the
+// transport wants. Closing is a no-op deliberately: the stream belongs to the
+// command, and in the live suite it is a pipe the test still needs to read.
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (nopWriteCloser) Close() error { return nil }
 
 // Exposure labels for the tool listing. These are part of the --json contract,
 // so they are constants rather than inline literals.

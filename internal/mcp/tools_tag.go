@@ -2,66 +2,83 @@ package mcp
 
 import (
 	"context"
+	"fmt"
 
-	mcpgo "github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	tagservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/tag"
 )
 
+// ListTagsInput is the argument set for list_tags.
+type ListTagsInput struct {
+	Project string `json:"project" jsonschema:"Bitbucket project key"`
+	Repo    string `json:"repo" jsonschema:"Repository slug"`
+	Filter  string `json:"filter,omitempty" jsonschema:"Text filter applied to tag names"`
+	Limit   int    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 25)"`
+}
+
+// ListTagsOutput names the collection it holds.
+type ListTagsOutput struct {
+	Tags []openapigenerated.RestTag `json:"tags"`
+}
+
 func specListTags() Spec {
-	tool := mcpgo.NewTool("list_tags",
-		mcpgo.WithDescription("List tags in a repository. Use to find the latest release baseline or versioning information."),
-		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
-		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
-		mcpgo.WithString("filter", mcpgo.Description("Text filter applied to tag names")),
-		mcpgo.WithNumber("limit", mcpgo.Description("Maximum number of results (default 25)")),
-	)
-	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
+	tool := &mcp.Tool{
+		Name:        "list_tags",
+		Description: "List tags in a repository. Use to find the latest release baseline or versioning information.",
+		Annotations: readOnly(),
+	}
+	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListTagsInput, ListTagsOutput] {
 		svc := tagservice.NewService(c.OpenAPI)
-		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
-			project, _ := req.RequireString("project")
-			repo, _ := req.RequireString("repo")
+		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListTagsInput) (*mcp.CallToolResult, ListTagsOutput, error) {
 			tags, err := svc.List(ctx,
-				tagservice.RepositoryRef{ProjectKey: project, Slug: repo},
+				tagservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 				tagservice.ListOptions{
-					FilterText: req.GetString("filter", ""),
-					Limit:      req.GetInt("limit", 25),
+					FilterText: in.Filter,
+					Limit:      limitOrDefault(in.Limit),
 				},
 			)
 			if err != nil {
-				return mcpgo.NewToolResultErrorFromErr("list_tags failed", err), nil
+				return nil, ListTagsOutput{}, fmt.Errorf("list_tags failed: %w", err)
 			}
-			return resultJSON(tags)
+			return nil, ListTagsOutput{Tags: tags}, nil
 		}
-	}}
+	})
+}
+
+// CreateTagInput is the argument set for create_tag.
+type CreateTagInput struct {
+	Project    string `json:"project" jsonschema:"Bitbucket project key"`
+	Repo       string `json:"repo" jsonschema:"Repository slug"`
+	Name       string `json:"name" jsonschema:"Tag name (e.g. v1.2.3)"`
+	StartPoint string `json:"start_point" jsonschema:"Branch name or commit SHA to tag"`
+	Message    string `json:"message,omitempty" jsonschema:"Optional annotated tag message; omit for a lightweight tag"`
+}
+
+// CreateTagOutput names the created tag.
+type CreateTagOutput struct {
+	Tag openapigenerated.RestTag `json:"tag"`
 }
 
 func specCreateTag() Spec {
-	tool := mcpgo.NewTool("create_tag",
-		mcpgo.WithDescription("Create a tag on a specific commit or ref. Use for release tagging after a PR is merged."),
-		mcpgo.WithString("project", mcpgo.Required(), mcpgo.Description("Bitbucket project key")),
-		mcpgo.WithString("repo", mcpgo.Required(), mcpgo.Description("Repository slug")),
-		mcpgo.WithString("name", mcpgo.Required(), mcpgo.Description("Tag name (e.g. v1.2.3)")),
-		mcpgo.WithString("start_point", mcpgo.Required(), mcpgo.Description("Branch name or commit SHA to tag")),
-		mcpgo.WithString("message", mcpgo.Description("Optional annotated tag message; omit for a lightweight tag")),
-	)
-	return Spec{Tool: tool, Handler: func(c Clients) server.ToolHandlerFunc {
+	tool := &mcp.Tool{
+		Name:        "create_tag",
+		Description: "Create a tag on a specific commit or ref. Use for release tagging after a PR is merged.",
+		Annotations: mutating(false),
+	}
+	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[CreateTagInput, CreateTagOutput] {
 		svc := tagservice.NewService(c.OpenAPI)
-		return func(ctx context.Context, req mcpgo.CallToolRequest) (*mcpgo.CallToolResult, error) {
-			project, _ := req.RequireString("project")
-			repo, _ := req.RequireString("repo")
-			name, _ := req.RequireString("name")
-			startPoint, _ := req.RequireString("start_point")
+		return func(ctx context.Context, _ *mcp.CallToolRequest, in CreateTagInput) (*mcp.CallToolResult, CreateTagOutput, error) {
 			tag, err := svc.Create(ctx,
-				tagservice.RepositoryRef{ProjectKey: project, Slug: repo},
-				name,
-				startPoint,
-				req.GetString("message", ""),
+				tagservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
+				in.Name,
+				in.StartPoint,
+				in.Message,
 			)
 			if err != nil {
-				return mcpgo.NewToolResultErrorFromErr("create_tag failed", err), nil
+				return nil, CreateTagOutput{}, fmt.Errorf("create_tag failed: %w", err)
 			}
-			return resultJSON(tag)
+			return nil, CreateTagOutput{Tag: tag}, nil
 		}
-	}}
+	})
 }
