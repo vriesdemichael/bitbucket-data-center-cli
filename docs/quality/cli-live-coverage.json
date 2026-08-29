@@ -2,13 +2,15 @@
   "version": 1,
   "summary": {
     "runnable_commands": 233,
-    "covered_commands": 231,
-    "covered_percent": 99.14163090128756,
+    "covered_commands": 233,
+    "covered_percent": 100,
     "masked_commands": 0,
-    "uncovered_commands": 2
+    "uncovered_commands": 0
   },
   "covered": [
     "admin health",
+    "ai mcp serve",
+    "ai mcp tools",
     "ai skill install",
     "ai skill remove",
     "ai skill show",
@@ -241,8 +243,5 @@
     "webhook update"
   ],
   "known_masked": [],
-  "known_uncovered": [
-    "ai mcp serve",
-    "ai mcp tools"
-  ]
+  "known_uncovered": []
 }

@@ -235,6 +235,11 @@ func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool) map[s
 		case "executeLiveCLI":
 		case "executeLiveCLIWithStdin":
 			leadingArgs = 2
+		case "executeLiveMCPServer":
+			// The MCP server is a conversation, not an invoke-and-assert: it
+			// takes a callback that drives the protocol while the command runs.
+			// Like the stdin variant, the command words follow that argument.
+			leadingArgs = 2
 		default:
 			return true
 		}
