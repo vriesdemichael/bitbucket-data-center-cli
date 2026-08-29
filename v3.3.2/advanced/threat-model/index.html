@@ -1,0 +1,2641 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="CLI automation for Bitbucket Data Center">
+      
+      
+      
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v3.3.2/advanced/threat-model/">
+      
+      
+        <link rel="prev" href="../enterprise-hardening/">
+      
+      
+        <link rel="next" href="../repository-discovery-and-server-switching/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Security Architecture & Threat Model - Bitbucket Data Center CLI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"IBM Plex Sans";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#security-architecture-and-threat-model" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Bitbucket Data Center CLI" class="md-header__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Bitbucket Data Center CLI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Security Architecture & Threat Model
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Bitbucket Data Center CLI" class="md-nav__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    Bitbucket Data Center CLI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation-and-quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation and Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cheatsheet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Cheatsheet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../basic-usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Command Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JSON Schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Topics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Topics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enterprise-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise Hardening
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Architecture & Threat Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Architecture & Threat Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#document-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Document Metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Document Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scope-system-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope &amp; System Boundaries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-asset-inventory-adversary-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Asset Inventory &amp; Adversary Model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Asset Inventory &amp; Adversary Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#assets-to-protect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assets to Protect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adversary-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adversary Profiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-system-architecture-trust-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. System Architecture &amp; Trust Boundaries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. System Architecture &amp; Trust Boundaries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trust-boundary-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust Boundary Definitions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-everyday-source-code-to-llm-data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. The Everyday Source-Code-to-LLM Data Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. The Everyday Source-Code-to-LLM Data Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-mcp-channel-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The MCP Channel Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hardening-the-by-design-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardening the By-Design Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-multi-os-policy-enforcement-realities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Multi-OS Policy Enforcement Realities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-stride-threat-domain-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. STRIDE Threat Domain Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. STRIDE Threat Domain Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#domain-1-secret-hygiene-storage-at-rest-tb-1-tb-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain 1: Secret Hygiene &amp; Storage at Rest (TB-1 &amp; TB-2)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domain 1: Secret Hygiene &amp; Storage at Rest (TB-1 &amp; TB-2)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-threat-analysis-stride-information-disclosure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Threat Analysis (STRIDE: Information Disclosure)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-architectural-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architectural Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-test-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit Test Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-residual-gap-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Residual Gap &amp; Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-2-git-transport-repository-boundaries-tb-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain 2: Git Transport &amp; Repository Boundaries (TB-3)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domain 2: Git Transport &amp; Repository Boundaries (TB-3)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-threat-analysis-stride-information-disclosure-elevation-of-privilege" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Threat Analysis (STRIDE: Information Disclosure, Elevation of Privilege)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-architectural-mitigations_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architectural Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-test-procedure_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit Test Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-3-network-perimeter-proxies-internal-pki-tb-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain 3: Network Perimeter, Proxies &amp; Internal PKI (TB-4)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domain 3: Network Perimeter, Proxies &amp; Internal PKI (TB-4)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-threat-analysis-stride-information-disclosure-tampering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Threat Analysis (STRIDE: Information Disclosure, Tampering)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-architectural-mitigations_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architectural Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-test-procedure_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit Test Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-residual-gap-tracking_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Residual Gap &amp; Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-4-autonomous-ai-mcp-server-governance-tb-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain 4: Autonomous AI &amp; MCP Server Governance (TB-5)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domain 4: Autonomous AI &amp; MCP Server Governance (TB-5)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-threat-analysis-stride-tampering-elevation-of-privilege-information-disclosure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Threat Analysis (STRIDE: Tampering, Elevation of Privilege, Information Disclosure)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-architectural-mitigations_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architectural Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-test-procedure_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit Test Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-residual-gap-tracking_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Residual Gap &amp; Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-5-supply-chain-software-distribution-tb-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain 5: Supply Chain &amp; Software Distribution (TB-6)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domain 5: Supply Chain &amp; Software Distribution (TB-6)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-threat-analysis-stride-tampering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Threat Analysis (STRIDE: Tampering)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-architectural-mitigations_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architectural Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-test-procedure_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit Test Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-residual-gap-tracking_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Residual Gap &amp; Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-6-enterprise-identity-federation-sso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain 6: Enterprise Identity &amp; Federation (SSO)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domain 6: Enterprise Identity &amp; Federation (SSO)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-threat-analysis-stride-spoofing-elevation-of-privilege" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Threat Analysis (STRIDE: Spoofing, Elevation of Privilege)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-architectural-mitigations_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architectural Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-test-procedure_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit Test Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-residual-gap-tracking_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Residual Gap &amp; Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-compliance-matrix-risk-treatment-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Compliance Matrix &amp; Risk Treatment Plan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-security-invariants-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Security Invariants Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repository-discovery-and-server-switching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository Discovery and Server Switching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bulk-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bulk Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dry-run-planning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-Run Planning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../git-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../networks-proxies-and-tls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Networks, Proxies and TLS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../machine-mode-diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Mode and Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ai-and-llms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI and llms.txt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#document-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Document Metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Document Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scope-system-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope &amp; System Boundaries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-asset-inventory-adversary-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Asset Inventory &amp; Adversary Model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Asset Inventory &amp; Adversary Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#assets-to-protect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assets to Protect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adversary-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adversary Profiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-system-architecture-trust-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. System Architecture &amp; Trust Boundaries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. System Architecture &amp; Trust Boundaries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trust-boundary-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust Boundary Definitions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-everyday-source-code-to-llm-data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. The Everyday Source-Code-to-LLM Data Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. The Everyday Source-Code-to-LLM Data Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-mcp-channel-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The MCP Channel Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hardening-the-by-design-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardening the By-Design Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-multi-os-policy-enforcement-realities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Multi-OS Policy Enforcement Realities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-stride-threat-domain-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. STRIDE Threat Domain Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. STRIDE Threat Domain Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#domain-1-secret-hygiene-storage-at-rest-tb-1-tb-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain 1: Secret Hygiene &amp; Storage at Rest (TB-1 &amp; TB-2)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domain 1: Secret Hygiene &amp; Storage at Rest (TB-1 &amp; TB-2)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-threat-analysis-stride-information-disclosure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Threat Analysis (STRIDE: Information Disclosure)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-architectural-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architectural Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-test-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit Test Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-residual-gap-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Residual Gap &amp; Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-2-git-transport-repository-boundaries-tb-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain 2: Git Transport &amp; Repository Boundaries (TB-3)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domain 2: Git Transport &amp; Repository Boundaries (TB-3)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-threat-analysis-stride-information-disclosure-elevation-of-privilege" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Threat Analysis (STRIDE: Information Disclosure, Elevation of Privilege)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-architectural-mitigations_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architectural Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-test-procedure_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit Test Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-3-network-perimeter-proxies-internal-pki-tb-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain 3: Network Perimeter, Proxies &amp; Internal PKI (TB-4)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domain 3: Network Perimeter, Proxies &amp; Internal PKI (TB-4)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-threat-analysis-stride-information-disclosure-tampering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Threat Analysis (STRIDE: Information Disclosure, Tampering)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-architectural-mitigations_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architectural Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-test-procedure_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit Test Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-residual-gap-tracking_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Residual Gap &amp; Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-4-autonomous-ai-mcp-server-governance-tb-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain 4: Autonomous AI &amp; MCP Server Governance (TB-5)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domain 4: Autonomous AI &amp; MCP Server Governance (TB-5)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-threat-analysis-stride-tampering-elevation-of-privilege-information-disclosure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Threat Analysis (STRIDE: Tampering, Elevation of Privilege, Information Disclosure)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-architectural-mitigations_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architectural Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-test-procedure_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit Test Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-residual-gap-tracking_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Residual Gap &amp; Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-5-supply-chain-software-distribution-tb-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain 5: Supply Chain &amp; Software Distribution (TB-6)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domain 5: Supply Chain &amp; Software Distribution (TB-6)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-threat-analysis-stride-tampering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Threat Analysis (STRIDE: Tampering)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-architectural-mitigations_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architectural Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-test-procedure_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit Test Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-residual-gap-tracking_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Residual Gap &amp; Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-6-enterprise-identity-federation-sso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain 6: Enterprise Identity &amp; Federation (SSO)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domain 6: Enterprise Identity &amp; Federation (SSO)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-threat-analysis-stride-spoofing-elevation-of-privilege" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Threat Analysis (STRIDE: Spoofing, Elevation of Privilege)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-architectural-mitigations_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Architectural Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-test-procedure_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit Test Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-residual-gap-tracking_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Residual Gap &amp; Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-compliance-matrix-risk-treatment-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Compliance Matrix &amp; Risk Treatment Plan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-security-invariants-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Security Invariants Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="security-architecture-and-threat-model">Security Architecture and Threat Model<a class="headerlink" href="#security-architecture-and-threat-model" title="Permanent link">&para;</a></h1>
+<p>A formal security architecture, trust boundary analysis, and threat model for Chief Information Security Officers (CISOs), enterprise security architects, and compliance auditors evaluating <code>bb</code> (Bitbucket Data Center CLI).</p>
+<hr />
+<h2 id="document-metadata">Document Metadata<a class="headerlink" href="#document-metadata" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Document Version</strong></td>
+<td>1.1.0</td>
+</tr>
+<tr>
+<td><strong>Target System</strong></td>
+<td><code>bb</code> (Bitbucket Data Center CLI) v2.10.x+</td>
+</tr>
+<tr>
+<td><strong>Classification</strong></td>
+<td>Public Security &amp; Threat Analysis Whitepaper</td>
+</tr>
+<tr>
+<td><strong>Methodology</strong></td>
+<td>STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege)</td>
+</tr>
+<tr>
+<td><strong>Effective Date</strong></td>
+<td>August 2026</td>
+</tr>
+<tr>
+<td><strong>Review Cadence</strong></td>
+<td>Annual, or upon major architectural revision</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scope-system-boundaries">Scope &amp; System Boundaries<a class="headerlink" href="#scope-system-boundaries" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>In-Scope</strong>: The <code>bb</code> compiled binary runtime, local process execution, operating system keyring integration, Git credential helper protocol, local repository manipulation, network transport (TLS 1.2+, proxy traversal, custom CA handling), built-in MCP server (<code>bb ai mcp serve</code>), and release artifact distribution.</li>
+<li><strong>Out-of-Scope</strong>: Bitbucket Data Center server-side zero-day vulnerabilities, host operating system kernel compromise / rootkit, and the external data handling / privacy practices of third-party cloud LLM providers connected to developer IDEs.</li>
+</ul>
+<hr />
+<h2 id="1-asset-inventory-adversary-model">1. Asset Inventory &amp; Adversary Model<a class="headerlink" href="#1-asset-inventory-adversary-model" title="Permanent link">&para;</a></h2>
+<h3 id="assets-to-protect">Assets to Protect<a class="headerlink" href="#assets-to-protect" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Asset ID</th>
+<th>Asset Name</th>
+<th>Description</th>
+<th>Sensitivity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A-1</strong></td>
+<td><strong>Authentication Credentials</strong></td>
+<td>Personal Access Tokens (PATs) and HTTP Basic credentials used to authenticate API and Git operations.</td>
+<td><strong>Critical</strong> (Confidentiality &amp; Integrity)</td>
+</tr>
+<tr>
+<td><strong>A-2</strong></td>
+<td><strong>Source Code &amp; Working Trees</strong></td>
+<td>Proprietary source code in cloned repositories, working tree diffs, pull request comments, and file contents.</td>
+<td><strong>High</strong> (Confidentiality &amp; Integrity)</td>
+</tr>
+<tr>
+<td><strong>A-3</strong></td>
+<td><strong>Repository Gate Integrity</strong></td>
+<td>Pull request review approvals, branch merge gates, and commit history on the Bitbucket server.</td>
+<td><strong>High</strong> (Integrity)</td>
+</tr>
+<tr>
+<td><strong>A-4</strong></td>
+<td><strong>Executable Integrity</strong></td>
+<td>Authenticity and provenance of the compiled <code>bb</code> binary running on developer workstations.</td>
+<td><strong>Critical</strong> (Integrity)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="adversary-profiles">Adversary Profiles<a class="headerlink" href="#adversary-profiles" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Adversary</th>
+<th>Description</th>
+<th>Access Level &amp; Capabilities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ADV-1: Local Unprivileged User</strong></td>
+<td>Multi-user jump host user, malicious developer, or unprivileged local background process.</td>
+<td>Can read <code>/proc/&lt;pid&gt;/cmdline</code>, process table (<code>ps aux</code>), unencrypted filesystem paths, and user environment variables.</td>
+</tr>
+<tr>
+<td><strong>ADV-2: Network Interceptor</strong></td>
+<td>Man-in-the-Middle (MitM) attacker on local network, untrusted forward proxy, or compromised DNS.</td>
+<td>Can intercept, inspect, or tamper with outbound network traffic if TLS validation is absent or compromised.</td>
+</tr>
+<tr>
+<td><strong>ADV-3: Prompt-Injected AI Agent</strong></td>
+<td>Autonomous AI developer tool (Cursor, VS Code Agent) manipulated via indirect prompt injection in pull request diffs or comments.</td>
+<td>Can invoke exposed Model Context Protocol (MCP) tools over stdio to read data or trigger mutations.</td>
+</tr>
+<tr>
+<td><strong>ADV-4: Upstream Supply Chain Attacker</strong></td>
+<td>Adversary targeting upstream dependencies, build runners, or release distribution channels.</td>
+<td>Can attempt to inject malicious code into dependencies or tamper with published release archives.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-system-architecture-trust-boundaries">2. System Architecture &amp; Trust Boundaries<a class="headerlink" href="#2-system-architecture-trust-boundaries" title="Permanent link">&para;</a></h2>
+<p>The following architecture diagram models all six trust boundaries across the workstation, local repositories, corporate network, IDE AI integration, and build pipeline:</p>
+<pre class="mermaid"><code>flowchart TB
+    subgraph TB1["TB-1: Process &amp; Terminal Environment"]
+        User["Developer / Shell"]
+        CLI["bb Process (Cobra / Transport)"]
+        User -- "stdin pipe (--token-stdin)" --&gt; CLI
+    end
+
+    subgraph TB2["TB-2: OS Keyring Store"]
+        Vault[("OS Keyring: DPAPI / Keychain / Secret Service")]
+        CLI -- "Store / Retrieve Secret" --&gt; Vault
+    end
+
+    subgraph TB3["TB-3: Git Working Tree"]
+        GitEngine["Git Engine (child process)"]
+        RepoConfig[".git/config (Local Clone)"]
+        CLI -- "Dynamic Credential" --&gt; GitEngine
+        GitEngine --&gt; RepoConfig
+    end
+
+    subgraph TB4["TB-4: Network Perimeter"]
+        Proxy["Corporate Forward Proxy"]
+        BBServer["Bitbucket Data Center Instance"]
+        CLI -- "REST API (TLS 1.2+ / Internal CA)" --&gt; Proxy --&gt; BBServer
+        GitEngine -- "Git-over-HTTP" --&gt; Proxy --&gt; BBServer
+    end
+
+    subgraph TB5["TB-5: IDE &amp; AI Agent Surface"]
+        IDE["IDE / Agent (VS Code, Cursor)"]
+        LLMProvider["LLM Cloud API (External)"]
+        CLI -- "MCP stdio pipe (bb ai mcp serve)" --&gt; IDE
+        IDE -. "Everyday Flow: Diff &amp; Code Snippets" .-&gt; LLMProvider
+    end
+
+    subgraph TB6["TB-6: Software Supply Chain"]
+        GHA["GitHub Actions Release Workflow"]
+        Sigstore[("Sigstore / Cosign OIDC")]
+        GHA -- "Keyless Sign &amp; Attest" --&gt; Sigstore
+        Sigstore -. "Verify Binary Provenance" .-&gt; CLI
+    end</code></pre>
+<h3 id="trust-boundary-definitions">Trust Boundary Definitions<a class="headerlink" href="#trust-boundary-definitions" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Boundary</th>
+<th>Components</th>
+<th>Trust Level</th>
+<th>Security Invariants</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TB-1: Process &amp; Terminal</strong></td>
+<td><code>bb</code> runtime process, memory, arguments, stdout/stderr</td>
+<td>Trusted Local User</td>
+<td>Zero secret leakage in process argument table (<code>/proc/&lt;pid&gt;/cmdline</code>). Zero telemetry.</td>
+</tr>
+<tr>
+<td><strong>TB-2: OS Keyring Store</strong></td>
+<td>Windows Credential Manager, macOS Keychain, Linux Secret Service</td>
+<td>System Security Enclave</td>
+<td>Secrets held encrypted at rest. Immediate failure if plaintext fallback is needed when <code>BB_REQUIRE_KEYRING=1</code> is set.</td>
+</tr>
+<tr>
+<td><strong>TB-3: Git Working Tree</strong></td>
+<td>Local git clone, <code>.git/config</code>, <code>git</code> CLI child processes</td>
+<td>Semi-Trusted Filesystem</td>
+<td>Zero credentials persisted into repository <code>.git/config</code>. Host-scoped credential querying.</td>
+</tr>
+<tr>
+<td><strong>TB-4: Network Perimeter</strong></td>
+<td>Corporate forward proxies, internal enterprise PKI, Bitbucket DC</td>
+<td>Untrusted / Inspected Network</td>
+<td>Minimum TLS 1.2. Additive corporate CA trust pool. Strict non-interactive timeout enforcement.</td>
+</tr>
+<tr>
+<td><strong>TB-5: AI / MCP Surface</strong></td>
+<td>IDE agent (Cursor, VS Code, Claude Desktop), stdio RPC pipe</td>
+<td>Constrained Automation</td>
+<td>Safe-by-default tool gating. Unsafe tools withheld without explicit <code>--yolo</code>. Dedicated read-only tokens.</td>
+</tr>
+<tr>
+<td><strong>TB-6: Supply Chain</strong></td>
+<td>GitHub Actions builder, release packaging, Sigstore/Cosign</td>
+<td>Cryptographic Verification</td>
+<td>Keyless OIDC signatures, SLSA build provenance attestations, attested SPDX 2.3 SBOM.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-the-everyday-source-code-to-llm-data-flow">3. The Everyday Source-Code-to-LLM Data Flow<a class="headerlink" href="#3-the-everyday-source-code-to-llm-data-flow" title="Permanent link">&para;</a></h2>
+<p>A primary question in enterprise security evaluations of AI-enabled developer tooling is: <strong>what proprietary data leaves the workstation, and to whom is it transmitted?</strong></p>
+<h3 id="the-mcp-channel-architecture">The MCP Channel Architecture<a class="headerlink" href="#the-mcp-channel-architecture" title="Permanent link">&para;</a></h3>
+<p>When <code>bb ai mcp serve</code> runs, it communicates strictly over standard input/output (<code>stdio</code>) with the local IDE process (e.g. VS Code, Cursor). </p>
+<div class="highlight"><pre><span></span><code>[Bitbucket DC] ──(HTTPS/Internal CA)──&gt; [bb CLI (Local)] ──(stdio RPC)──&gt; [Local IDE] ──(HTTPS/IDE Config)──&gt; [Cloud LLM]
+</code></pre></div>
+<ol>
+<li><strong>Local CLI Boundary</strong>: <code>bb</code> sends <strong>zero external telemetry</strong> and initiates no network requests to AI providers. Its network calls are strictly directed to your Bitbucket server.</li>
+<li><strong>The Stdio Pipe</strong>: When an AI agent executes tools like <code>get_pr_diff</code>, <code>get_pull_request</code>, or <code>list_pr_comments</code>, <code>bb</code> fetches the data from Bitbucket and prints structured JSON to <code>stdout</code>.</li>
+<li><strong>The IDE &amp; Cloud LLM Transmission</strong>: The IDE consumes this output and includes the source code diffs in prompt contexts sent to the developer's configured LLM provider (e.g. OpenAI, Anthropic, or internal corporate Ollama/vLLM endpoints).</li>
+</ol>
+<h3 id="hardening-the-by-design-flow">Hardening the By-Design Flow<a class="headerlink" href="#hardening-the-by-design-flow" title="Permanent link">&para;</a></h3>
+<p>To govern this everyday flow:
+- <strong>Dedicated Read-Only Token</strong>: Bind <code>bb ai mcp serve</code> to a service token with read-only rights (<code>--token &lt;ro-pat&gt;</code>), ensuring the agent cannot execute mutations on the Bitbucket server even if prompted.
+- <strong>Explicit Tool Allowlists</strong>: Constrain exposed tools using <code>--tools get_pull_request,list_pull_requests,get_pr_diff,list_pr_comments,add_pr_comment</code>.
+- <strong>Egress Governance</strong>: Outbound LLM network traffic is managed at the IDE layer (via corporate proxy, DLP filtering, or private Azure OpenAI / AWS Bedrock VPC endpoints).</p>
+<hr />
+<h2 id="4-multi-os-policy-enforcement-realities">4. Multi-OS Policy Enforcement Realities<a class="headerlink" href="#4-multi-os-policy-enforcement-realities" title="Permanent link">&para;</a></h2>
+<p>Enterprise policy enforcement mechanisms differ across operating systems, unified under the multi-tier hierarchy (<a href="../../adr/058-system-wide-configuration-and-policy-enforcement/">ADR-058</a>):</p>
+<table>
+<thead>
+<tr>
+<th>Operating System</th>
+<th>Fleet Tooling</th>
+<th>Primary Policy Channel</th>
+<th>Fallback Policy Channel</th>
+<th>Enforcement Posture</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Windows</strong></td>
+<td>Microsoft Intune / SCCM / Active Directory GPO</td>
+<td><strong>Windows Registry (<code>HKLM\Software\Policies\bb</code>)</strong></td>
+<td>System Config (<code>%ProgramData%\bb\config.yaml</code>)</td>
+<td><strong>High</strong>. Unprivileged users cannot modify <code>HKLM\Software\Policies</code>. Registry policy takes immutable precedence over user environment variables and user configuration files.</td>
+</tr>
+<tr>
+<td><strong>macOS</strong></td>
+<td>Jamf Pro, Kandji, Apple MDM</td>
+<td><strong>System Config (<code>/etc/bb/config.yaml</code>, <code>chmod 644 root:wheel</code>)</strong></td>
+<td>System Shell Profiles (<code>/etc/zshenv</code>)</td>
+<td><strong>High</strong>. Read directly by the <code>bb</code> binary across both terminal shells and GUI parent processes (such as IDE-launched MCP servers).</td>
+</tr>
+<tr>
+<td><strong>Linux (Workstations)</strong></td>
+<td>Ansible, Puppet, SaltStack, Red Hat Satellite</td>
+<td><strong>System Config (<code>/etc/bb/config.yaml</code>, <code>chmod 644 root:root</code>)</strong></td>
+<td>Shell Environment (<code>/etc/profile.d/bb.sh</code>)</td>
+<td><strong>High</strong>. Standard root-owned system configuration. Immutable by non-root users on developer workstations and multi-user jump hosts.</td>
+</tr>
+<tr>
+<td><strong>Linux (CI Runners)</strong></td>
+<td>Kubernetes, Docker, Runner Daemons</td>
+<td>Ephemeral Environment Variables (<code>BITBUCKET_TOKEN</code>, <code>BB_DISABLE_STORED_CONFIG=1</code>, <code>BB_DISABLE_UPDATE=1</code>)</td>
+<td>Baked Container Image <code>/etc/bb/config.yaml</code></td>
+<td><strong>High</strong>. Containers lack desktop keyrings; <code>BB_DISABLE_STORED_CONFIG=1</code> guarantees zero stored credential reads and zero keyring daemon access.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-stride-threat-domain-analysis">5. STRIDE Threat Domain Analysis<a class="headerlink" href="#5-stride-threat-domain-analysis" title="Permanent link">&para;</a></h2>
+<p>Each domain is analyzed using the <strong>Threat (STRIDE) ↔ Architectural Mitigation ↔ Audit Test Procedure ↔ Residual Gap</strong> triad.</p>
+<hr />
+<h3 id="domain-1-secret-hygiene-storage-at-rest-tb-1-tb-2">Domain 1: Secret Hygiene &amp; Storage at Rest (TB-1 &amp; TB-2)<a class="headerlink" href="#domain-1-secret-hygiene-storage-at-rest-tb-1-tb-2" title="Permanent link">&para;</a></h3>
+<h4 id="1-threat-analysis-stride-information-disclosure">1. Threat Analysis (STRIDE: Information Disclosure)<a class="headerlink" href="#1-threat-analysis-stride-information-disclosure" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Attacker Vector (ADV-1)</strong>: Unprivileged local users, compromised background processes, or EDR agents scrape secrets passed via CLI flags (<code>--token &lt;val&gt;</code>) through <code>ps aux</code> or <code>/proc/&lt;pid&gt;/cmdline</code>.</li>
+<li><strong>Plaintext Fallback Risk</strong>: If an OS keyring is unavailable, CLI tools may silently fall back to unencrypted disk files:</li>
+<li>Linux: <code>~/.config/bb/config.yaml</code></li>
+<li>macOS: <code>~/Library/Application Support/bb/config.yaml</code></li>
+<li>Windows: <code>%AppData%\bb\config.yaml</code></li>
+</ul>
+<h4 id="2-architectural-mitigations">2. Architectural Mitigations<a class="headerlink" href="#2-architectural-mitigations" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Mandatory Stdin Ingestion</strong>: <code>bb auth login</code> supports <code>--token-stdin</code> and <code>--password-stdin</code>, reading secrets strictly over standard input.</li>
+<li><strong>Process Table Warning</strong>: Supplying <code>--token</code> or <code>--password</code> as CLI flags prints an explicit warning to <code>stderr</code> alerting the operator (<a href="../../adr/047-credential-input-and-keyring-enforcement/">ADR-047</a>).</li>
+<li><strong>Enforced Keyring Storage</strong>: Setting <code>require_keyring: true</code> in system configuration or Windows Registry <code>HKLM\Software\Policies\bb</code> hard-refuses plaintext fallback machine-wide and cannot be bypassed by unprivileged users unsetting environment variables (<a href="../../adr/058-system-wide-configuration-and-policy-enforcement/">ADR-058</a>). Advisory <code>BB_REQUIRE_KEYRING=1</code> remains supported for ad-hoc user environments.</li>
+<li><strong>Headless Disabling</strong>: Setting <code>BB_DISABLE_STORED_CONFIG=1</code> in CI/CD completely skips stored config reads and keyring access, reading solely from <code>BITBUCKET_TOKEN</code>.</li>
+</ul>
+<h4 id="3-audit-test-procedure">3. Audit Test Procedure<a class="headerlink" href="#3-audit-test-procedure" title="Permanent link">&para;</a></h4>
+<p><div class="highlight"><pre><span></span><code>bb<span class="w"> </span>auth<span class="w"> </span>status<span class="w"> </span>--json
+</code></pre></div>
+<em>Audit Assertion</em>: Verify that <code>.data.credential_storage</code> equals <code>keyring</code> (on workstations) or <code>environment</code> (in CI runners), and never <code>config-file-plaintext</code>.</p>
+<h4 id="4-residual-gap-tracking">4. Residual Gap &amp; Tracking<a class="headerlink" href="#4-residual-gap-tracking" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Resolution</strong>: Fully resolved via system-wide configuration (<code>/etc/bb/config.yaml</code>, <code>%ProgramData%\bb\config.yaml</code>) and Windows Registry policy (<code>HKLM\Software\Policies\bb</code>) with <code>require_keyring: true</code> (<a href="../../adr/058-system-wide-configuration-and-policy-enforcement/">ADR-058</a>, <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420">Issue #420</a>). Plaintext fallback cannot occur when mandated by machine policy.</li>
+</ul>
+<hr />
+<h3 id="domain-2-git-transport-repository-boundaries-tb-3">Domain 2: Git Transport &amp; Repository Boundaries (TB-3)<a class="headerlink" href="#domain-2-git-transport-repository-boundaries-tb-3" title="Permanent link">&para;</a></h3>
+<h4 id="1-threat-analysis-stride-information-disclosure-elevation-of-privilege">1. Threat Analysis (STRIDE: Information Disclosure, Elevation of Privilege)<a class="headerlink" href="#1-threat-analysis-stride-information-disclosure-elevation-of-privilege" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Attacker Vector (ADV-1, ADV-2)</strong>: Persisting tokens into <code>.git/config</code> (via legacy <code>http.extraHeader</code>) leaks credentials whenever repositories are archived, copied, or pushed. Furthermore, an unscoped <code>http.extraHeader</code> is transmitted to any HTTP remote, leaking internal Bitbucket tokens to external remotes.</li>
+</ul>
+<h4 id="2-architectural-mitigations_1">2. Architectural Mitigations<a class="headerlink" href="#2-architectural-mitigations_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Host-Scoped Credential Helper</strong>: <code>bb auth setup-git</code> writes a credential helper rule scoped strictly to the Bitbucket hostname into the global <code>~/.gitconfig</code> (<a href="../../adr/044-git-credential-helper-instead-of-persisted-credentials/">ADR-044</a>):
+  <div class="highlight"><pre><span></span><code><span class="k">[credential &quot;https://bitbucket.example.com&quot;]</span>
+<span class="w">  </span><span class="na">helper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">!&quot;/usr/local/bin/bb&quot; auth git-credential</span>
+</code></pre></div></li>
+<li><strong>Zero Repository Footprint</strong>: Cloned repositories contain zero credentials or tokens in their local <code>.git/config</code>.</li>
+<li><strong>Instant Revocation</strong>: If a token is revoked in Bitbucket or removed via <code>bb auth logout</code>, all local clones immediately lose access without requiring manual git cleanup.</li>
+</ul>
+<h4 id="3-audit-test-procedure_1">3. Audit Test Procedure<a class="headerlink" href="#3-audit-test-procedure_1" title="Permanent link">&para;</a></h4>
+<p><div class="highlight"><pre><span></span><code>git<span class="w"> </span>config<span class="w"> </span>--local<span class="w"> </span>--get<span class="w"> </span>http.extraHeader
+</code></pre></div>
+<em>Audit Assertion</em>: Command exits with non-zero status (no extra headers found).</p>
+<hr />
+<h3 id="domain-3-network-perimeter-proxies-internal-pki-tb-4">Domain 3: Network Perimeter, Proxies &amp; Internal PKI (TB-4)<a class="headerlink" href="#domain-3-network-perimeter-proxies-internal-pki-tb-4" title="Permanent link">&para;</a></h3>
+<h4 id="1-threat-analysis-stride-information-disclosure-tampering">1. Threat Analysis (STRIDE: Information Disclosure, Tampering)<a class="headerlink" href="#1-threat-analysis-stride-information-disclosure-tampering" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Attacker Vector (ADV-2)</strong>: Interception proxies re-signing traffic using internal enterprise root CAs cause certificate trust failures. Developers may attempt to bypass errors using <code>--insecure-skip-verify</code>.</li>
+</ul>
+<h4 id="2-architectural-mitigations_2">2. Architectural Mitigations<a class="headerlink" href="#2-architectural-mitigations_2" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Mutual TLS (mTLS) Client Authentication</strong>: Transport layer natively supports client certificates and private keys (<code>--client-cert</code>, <code>--client-key</code>, <code>BB_CLIENT_CERT</code>, <code>BB_CLIENT_KEY</code>, or stored profile <code>client_cert</code>/<code>client_key</code> in <code>~/.config/bb/config.yaml</code>) to authenticate endpoints to ingress reverse proxies (<a href="../../adr/060-mutual-tls-client-certificate-authentication/">ADR-060</a>).</li>
+<li><strong>Additive Corporate CA Trust Pool</strong>: <code>BB_CA_FILE</code> appends the internal CA bundle to <code>x509.SystemCertPool()</code>, preserving public root verification while trusting the internal Bitbucket host.</li>
+<li><strong>Proxy Traversal</strong>: Inherits <code>HTTPS_PROXY</code>, <code>HTTP_PROXY</code>, and <code>NO_PROXY</code> directly from Go's <code>http.DefaultTransport</code>.</li>
+<li><strong>TLS 1.2+ Enforced</strong>: Pinned minimum version <code>tlsConfig.MinVersion = tls.VersionTLS12</code>.</li>
+<li><strong>Zero Telemetry</strong>: Guaranteed zero external analytics or metrics calls (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md">SECURITY.md</a>).</li>
+</ul>
+<h4 id="3-audit-test-procedure_2">3. Audit Test Procedure<a class="headerlink" href="#3-audit-test-procedure_2" title="Permanent link">&para;</a></h4>
+<p><div class="highlight"><pre><span></span><code>bb<span class="w"> </span>--client-cert<span class="w"> </span>/etc/ssl/certs/client.pem<span class="w"> </span>--client-key<span class="w"> </span>/etc/ssl/private/client.key<span class="w"> </span>repo<span class="w"> </span>list<span class="w"> </span>--limit<span class="w"> </span><span class="m">1</span>
+</code></pre></div>
+<em>Audit Assertion</em>: Verify that the connection succeeds over TLS 1.2+ with client certificate authentication and routes through the designated <code>HTTPS_PROXY</code>.</p>
+<h4 id="4-residual-gap-tracking_1">4. Residual Gap &amp; Tracking<a class="headerlink" href="#4-residual-gap-tracking_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Resolution</strong>: Fully resolved. Mutual TLS (mTLS) client certificate support is natively built into the transport layer (<code>--client-cert</code>, <code>--client-key</code>, <code>BB_CLIENT_CERT</code>, <code>BB_CLIENT_KEY</code>, and per-host stored profiles), leaving zero residual gap (<a href="../../adr/060-mutual-tls-client-certificate-authentication/">ADR-060</a>).</li>
+</ul>
+<hr />
+<h3 id="domain-4-autonomous-ai-mcp-server-governance-tb-5">Domain 4: Autonomous AI &amp; MCP Server Governance (TB-5)<a class="headerlink" href="#domain-4-autonomous-ai-mcp-server-governance-tb-5" title="Permanent link">&para;</a></h3>
+<h4 id="1-threat-analysis-stride-tampering-elevation-of-privilege-information-disclosure">1. Threat Analysis (STRIDE: Tampering, Elevation of Privilege, Information Disclosure)<a class="headerlink" href="#1-threat-analysis-stride-tampering-elevation-of-privilege-information-disclosure" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Attacker Vector (ADV-3)</strong>: Prompt injection in pull request diffs or comments manipulates an AI agent into performing destructive mutations (approving unauthorized PRs, merging unvetted code, modifying build status) or querying sensitive repositories across unrelated projects.</li>
+</ul>
+<h4 id="2-architectural-mitigations_3">2. Architectural Mitigations<a class="headerlink" href="#2-architectural-mitigations_3" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Safe vs. Unsafe Tool Isolation</strong>: High-impact mutating operations (<code>submit_pr_review</code>, <code>merge_pull_request</code>, <code>enable_auto_merge</code>, <code>set_build_status</code>) are withheld by default (<a href="../../adr/039-built-in-mcp-server-with-host-scoping-and-token-restriction/">ADR-039</a>). Crucially, withholding <code>submit_pr_review</code> prevents an agent from self-approving its own pull requests.</li>
+<li><strong>Dedicated Read-Only Token Scoping</strong>: Running <code>bb ai mcp serve --token &lt;ro-pat&gt;</code> forces the MCP server to execute under a service token with read-only server rights.</li>
+<li><strong>Explicit Capability Allowlists</strong>: Constraining exposed tools via <code>--tools</code> or <code>--exclude</code>.</li>
+</ul>
+<h4 id="3-audit-test-procedure_3">3. Audit Test Procedure<a class="headerlink" href="#3-audit-test-procedure_3" title="Permanent link">&para;</a></h4>
+<p><div class="highlight"><pre><span></span><code>bb<span class="w"> </span>ai<span class="w"> </span>mcp<span class="w"> </span>tools
+</code></pre></div>
+<em>Audit Assertion</em>: Confirm that unsafe tools are marked as withheld unless explicitly authorized.</p>
+<h4 id="4-residual-gap-tracking_2">4. Residual Gap &amp; Tracking<a class="headerlink" href="#4-residual-gap-tracking_2" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Limitation</strong>: <code>bb ai mcp serve</code> scopes to the entire Bitbucket server instance. Agents cannot be restricted to a single project or repository, and stdio RPC lacks a dedicated SIEM audit stream.</li>
+<li><strong>Tracked Issue</strong>: <strong><a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/423">Issue #423: feat: MCP server workspace scoping and audit logging</a></strong>.</li>
+</ul>
+<hr />
+<h3 id="domain-5-supply-chain-software-distribution-tb-6">Domain 5: Supply Chain &amp; Software Distribution (TB-6)<a class="headerlink" href="#domain-5-supply-chain-software-distribution-tb-6" title="Permanent link">&para;</a></h3>
+<h4 id="1-threat-analysis-stride-tampering">1. Threat Analysis (STRIDE: Tampering)<a class="headerlink" href="#1-threat-analysis-stride-tampering" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Attacker Vector (ADV-4)</strong>: Compromised build runners, malicious upstream dependencies, or tampered release packages could introduce backdoors into developer environments. Additionally, running <code>bb update</code> on managed machines bypasses package managers and change approval boards.</li>
+</ul>
+<h4 id="2-architectural-mitigations_4">2. Architectural Mitigations<a class="headerlink" href="#2-architectural-mitigations_4" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Sigstore / Cosign Keyless Signing</strong>: Releases are signed via OIDC identity bound to <code>.github/workflows/release.yml@refs/heads/main</code>.</li>
+<li><strong>GitHub Build Provenance</strong>: Provenance attestations verifiable via <code>gh attestation verify</code>.</li>
+<li><strong>Attested SPDX 2.3 SBOM</strong>: Every release publishes <code>sbom.spdx.json</code>, attested against each compiled binary.</li>
+</ul>
+<h4 id="3-audit-test-procedure_4">3. Audit Test Procedure<a class="headerlink" href="#3-audit-test-procedure_4" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;3.3.2&quot;</span>
+cosign<span class="w"> </span>verify-blob<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--bundle<span class="w"> </span><span class="s2">&quot;bb_</span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="s2">_linux_amd64.tar.gz.sigstore.json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--certificate-identity<span class="w"> </span><span class="s1">&#39;https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--certificate-oidc-issuer<span class="w"> </span><span class="s1">&#39;https://token.actions.githubusercontent.com&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;bb_</span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="s2">_linux_amd64.tar.gz&quot;</span>
+</code></pre></div>
+<h4 id="4-residual-gap-tracking_3">4. Residual Gap &amp; Tracking<a class="headerlink" href="#4-residual-gap-tracking_3" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Resolution</strong>: Fully resolved via administrative killswitches (<code>BB_DISABLE_UPDATE=1</code>, <code>disable_update: true</code> in system configuration), compile-time removal (<code>-tags no_self_update</code>), and custom release mirror support (<code>--base-url</code>, <code>BB_UPDATE_BASE_URL</code>, <code>update_base_url</code>) (<a href="../../adr/059-enterprise-update-controls-and-release-mirrors/">ADR-059</a>).</li>
+</ul>
+<hr />
+<h3 id="domain-6-enterprise-identity-federation-sso">Domain 6: Enterprise Identity &amp; Federation (SSO)<a class="headerlink" href="#domain-6-enterprise-identity-federation-sso" title="Permanent link">&para;</a></h3>
+<h4 id="1-threat-analysis-stride-spoofing-elevation-of-privilege">1. Threat Analysis (STRIDE: Spoofing, Elevation of Privilege)<a class="headerlink" href="#1-threat-analysis-stride-spoofing-elevation-of-privilege" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Attacker Vector (ADV-1)</strong>: Static personal access tokens with infinite lifespans escape centralized IdP lifecycle de-provisioning.</li>
+</ul>
+<h4 id="2-architectural-mitigations_5">2. Architectural Mitigations<a class="headerlink" href="#2-architectural-mitigations_5" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Scoped TTL Tokens</strong>: <code>bb auth token create --expiry-days &lt;N&gt;</code> supports time-bound tokens.</li>
+<li><strong>Immediate Invalidation</strong>: Tokens revoked in Bitbucket Server immediately invalidate all CLI and git operations.</li>
+</ul>
+<h4 id="3-audit-test-procedure_5">3. Audit Test Procedure<a class="headerlink" href="#3-audit-test-procedure_5" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>auth<span class="w"> </span>token<span class="w"> </span>list
+</code></pre></div>
+<h4 id="4-residual-gap-tracking_4">4. Residual Gap &amp; Tracking<a class="headerlink" href="#4-residual-gap-tracking_4" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Limitation</strong>: Bitbucket Data Center ships with zero configured OAuth clients, and non-admin users cannot create them. Enabling a browser OAuth flow requires extensive server-administrator changes.</li>
+<li><strong>Tracked Issue</strong>: <strong><a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/424">Issue #424: feat: opt-in OAuth 2.0 browser login for enterprise SSO</a></strong>.</li>
+</ul>
+<hr />
+<h2 id="6-compliance-matrix-risk-treatment-plan">6. Compliance Matrix &amp; Risk Treatment Plan<a class="headerlink" href="#6-compliance-matrix-risk-treatment-plan" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Threat ID</th>
+<th>Threat Description</th>
+<th>Regulatory Mapping</th>
+<th>Residual Risk</th>
+<th>Risk Treatment</th>
+<th>Test Procedure</th>
+<th>Tracked Issue</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>T-1</strong></td>
+<td>Process table secret sniffing &amp; plaintext disk fallback</td>
+<td>SOC 2 CC6.1, ISO 27001:2022 A.8.24, NIST SP 800-53 AC-3</td>
+<td><strong>Low</strong></td>
+<td>Fully mitigated via mandatory Keyring policy enforcement (<code>require_keyring: true</code>), system configuration tier, and stdin ingestion (<a href="../../adr/058-system-wide-configuration-and-policy-enforcement/">ADR-058</a>).</td>
+<td><code>bb auth status --json</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>T-2</strong></td>
+<td>Repository secret bleed &amp; cross-remote credential leakage</td>
+<td>SOC 2 CC6.6, ISO 27001:2022 A.8.12</td>
+<td><strong>Low</strong></td>
+<td>Mitigated via host-scoped Git credential helper (<code>bb auth setup-git</code>).</td>
+<td><code>git config --local --get http.extraHeader</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>T-3</strong></td>
+<td>Inability to traverse mutual TLS (mTLS) ingress</td>
+<td>NIST SP 800-207 (Zero Trust Architecture), SC-8</td>
+<td><strong>Low</strong></td>
+<td>Fully mitigated via mTLS client cert/key support (<code>--client-cert</code>, <code>--client-key</code>, <code>BB_CLIENT_CERT</code>, <code>BB_CLIENT_KEY</code>, and stored profiles; <a href="../../adr/060-mutual-tls-client-certificate-authentication/">ADR-060</a>).</td>
+<td><code>bb --client-cert ... --client-key ... repo list</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>T-4</strong></td>
+<td>Prompt-injected AI agent executing unauthorized mutations</td>
+<td>OWASP Top 10 LLM (2025 LLM01, LLM06), SOC 2 CC6.8</td>
+<td><strong>Medium</strong></td>
+<td>Mitigate via safe/unsafe tool withholding; requires workspace bounding &amp; audit logging.</td>
+<td><code>bb ai mcp tools</code></td>
+<td><a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/423">#423</a></td>
+</tr>
+<tr>
+<td><strong>T-5</strong></td>
+<td>Unmanaged binary updates breaking package manager state</td>
+<td>ISO 27001:2022 A.8.19, NIST SP 800-53 SI-2</td>
+<td><strong>Low</strong></td>
+<td>Fully mitigated via <code>BB_DISABLE_UPDATE=1</code>, system config <code>disable_update: true</code>, build tag <code>no_self_update</code>, and internal release mirror resolution (<a href="../../adr/059-enterprise-update-controls-and-release-mirrors/">ADR-059</a>).</td>
+<td><code>bb update</code> on managed machine</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>T-6</strong></td>
+<td>Unfederated static token lifecycle management</td>
+<td>CIS Controls v8 5.4 / 6.1, NIST SP 800-63B</td>
+<td><strong>Medium</strong></td>
+<td>Mitigate via scoped TTL PATs; browser flow requires Bitbucket DC admin configuration.</td>
+<td><code>bb auth token list</code></td>
+<td><a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/424">#424</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-security-invariants-summary">7. Security Invariants Summary<a class="headerlink" href="#7-security-invariants-summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Strict Non-Interactive CLI Contract (<a href="../../adr/054-strict-non-interactive-cli-contract/">ADR-054</a>)</strong>: <code>bb</code> never prompts on stdin for confirmation or surveys, guaranteeing zero hanging processes in automation or CI/CD pipelines.</li>
+<li><strong>Zero External Telemetry (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md">SECURITY.md</a>)</strong>: <code>bb</code> sends no telemetry, metrics, or usage statistics to any third-party server.</li>
+<li><strong>Structured Error Taxonomy (<a href="../../adr/011-error-taxonomy-and-cli-exit-contract/">ADR-011</a>, <a href="../../adr/046-json-error-envelope-on-the-failure-path/">ADR-046</a>)</strong>: Fatal failures emit a predictable JSON error envelope with categorized error taxonomy (<code>validation</code>, <code>auth</code>, <code>not_found</code>, <code>conflict</code>, <code>system</code>).</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.tracking", "navigation.sections", "navigation.expand", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
