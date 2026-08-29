@@ -211,12 +211,9 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 	workspaceConfig, _ := LoadWorkspaceConfig()
 	storedConfig, _ := LoadStoredConfig()
 
-	insecureSkipVerify, err := envBoolOrDefault("BB_INSECURE_SKIP_VERIFY", false)
+	tlsSettings, err := ResolveTLSSettingsFrom(policy, sysConfig)
 	if err != nil {
-		return AppConfig{}, apperrors.New(apperrors.KindValidation, "BB_INSECURE_SKIP_VERIFY must be a boolean", err)
-	}
-	if policy.AllowInsecureSkipVerify != nil && !*policy.AllowInsecureSkipVerify && insecureSkipVerify {
-		return AppConfig{}, apperrors.New(apperrors.KindAuthorization, "insecure TLS verification is disabled by administrative policy", nil)
+		return AppConfig{}, err
 	}
 
 	requestTimeout, err := envDurationOrDefault("BB_REQUEST_TIMEOUT", defaultRequestTimeout)
@@ -274,21 +271,6 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		)
 	}
 
-	caFile := strings.TrimSpace(os.Getenv("BB_CA_FILE"))
-	if policy.CAFile != "" {
-		if caFile == "" {
-			caFile = policy.CAFile
-		} else if filepath.Clean(caFile) != filepath.Clean(policy.CAFile) {
-			return AppConfig{}, apperrors.New(
-				apperrors.KindAuthorization,
-				fmt.Sprintf("overriding CA bundle is disabled by administrative policy; mandated CA file: %s", policy.CAFile),
-				nil,
-			)
-		}
-	} else if caFile == "" && sysConfig.CAFile != "" {
-		caFile = sysConfig.CAFile
-	}
-
 	projectKey := envOrDefault("BITBUCKET_PROJECT_KEY", "")
 	if projectKey == "" {
 		projectKey = workspaceConfig.ProjectKey
@@ -304,10 +286,10 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		BitbucketToken:         firstNonEmpty(strings.TrimSpace(overrides.Token), envOrDefault("BITBUCKET_TOKEN", "")),
 		BitbucketUsername:      envOrDefault("BITBUCKET_USERNAME", envOrDefault("BITBUCKET_USER", envOrDefault("ADMIN_USER", ""))),
 		BitbucketPassword:      envOrDefault("BITBUCKET_PASSWORD", envOrDefault("ADMIN_PASSWORD", "")),
-		CAFile:                 caFile,
-		InsecureSkipVerify:     insecureSkipVerify,
-		ClientCertFile:         strings.TrimSpace(os.Getenv("BB_CLIENT_CERT")),
-		ClientKeyFile:          strings.TrimSpace(os.Getenv("BB_CLIENT_KEY")),
+		CAFile:                 tlsSettings.CAFile,
+		InsecureSkipVerify:     tlsSettings.InsecureSkipVerify,
+		ClientCertFile:         tlsSettings.ClientCertFile,
+		ClientKeyFile:          tlsSettings.ClientKeyFile,
 		RequestTimeout:         requestTimeout,
 		RetryCount:             retryCount,
 		RetryBackoff:           retryBackoff,
@@ -1030,6 +1012,65 @@ func mergePolicy(target *PolicyConfig, source PolicyConfig) {
 	if strings.TrimSpace(source.UpdateBaseURL) != "" {
 		target.UpdateBaseURL = strings.TrimSpace(source.UpdateBaseURL)
 	}
+}
+
+// TLSSettings is the resolved TLS material an outbound HTTP client is built
+// from, after administrative policy has been applied.
+type TLSSettings struct {
+	CAFile             string
+	InsecureSkipVerify bool
+	ClientCertFile     string
+	ClientKeyFile      string
+}
+
+// ResolveTLSSettings resolves the TLS configuration from the environment with
+// administrative policy and system configuration layered on top.
+//
+// It is deliberately independent of host resolution and stored credentials, so
+// commands that run without a configured Bitbucket host — `bb update` in
+// particular — inherit the same policy as the API client instead of reading the
+// environment on their own.
+func ResolveTLSSettings() (TLSSettings, error) {
+	policy, err := LoadPolicy()
+	if err != nil {
+		return TLSSettings{}, err
+	}
+	sysConfig, _ := LoadSystemConfig()
+	return ResolveTLSSettingsFrom(policy, sysConfig)
+}
+
+// ResolveTLSSettingsFrom is ResolveTLSSettings for callers that have already
+// loaded policy and system configuration.
+func ResolveTLSSettingsFrom(policy PolicyConfig, sysConfig SystemConfigFile) (TLSSettings, error) {
+	insecureSkipVerify, err := envBoolOrDefault("BB_INSECURE_SKIP_VERIFY", false)
+	if err != nil {
+		return TLSSettings{}, apperrors.New(apperrors.KindValidation, "BB_INSECURE_SKIP_VERIFY must be a boolean", err)
+	}
+	if policy.AllowInsecureSkipVerify != nil && !*policy.AllowInsecureSkipVerify && insecureSkipVerify {
+		return TLSSettings{}, apperrors.New(apperrors.KindAuthorization, "insecure TLS verification is disabled by administrative policy", nil)
+	}
+
+	caFile := strings.TrimSpace(os.Getenv("BB_CA_FILE"))
+	if policy.CAFile != "" {
+		if caFile == "" {
+			caFile = policy.CAFile
+		} else if filepath.Clean(caFile) != filepath.Clean(policy.CAFile) {
+			return TLSSettings{}, apperrors.New(
+				apperrors.KindAuthorization,
+				fmt.Sprintf("overriding CA bundle is disabled by administrative policy; mandated CA file: %s", policy.CAFile),
+				nil,
+			)
+		}
+	} else if caFile == "" && sysConfig.CAFile != "" {
+		caFile = sysConfig.CAFile
+	}
+
+	return TLSSettings{
+		CAFile:             caFile,
+		InsecureSkipVerify: insecureSkipVerify,
+		ClientCertFile:     strings.TrimSpace(os.Getenv("BB_CLIENT_CERT")),
+		ClientKeyFile:      strings.TrimSpace(os.Getenv("BB_CLIENT_KEY")),
+	}, nil
 }
 
 func IsHostAllowed(targetURL string, allowedHosts []string) bool {

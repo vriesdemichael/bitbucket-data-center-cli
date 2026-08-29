@@ -553,3 +553,65 @@ func TestLoadUpdateCommandHTTPConfigInvalidBaseURL(t *testing.T) {
 		t.Fatal("expected error for control characters in base URL")
 	}
 }
+
+func TestLoadUpdateCommandHTTPConfigHonoursSystemPolicy(t *testing.T) {
+	t.Run("insecure skip verify is rejected by policy", func(t *testing.T) {
+		tempDir := t.TempDir()
+		sysPath := filepath.Join(tempDir, "system-config.yaml")
+		if err := os.WriteFile(sysPath, []byte("allow_insecure_skip_verify: false\n"), 0o600); err != nil {
+			t.Fatalf("write system config: %v", err)
+		}
+
+		t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+		t.Setenv("BB_INSECURE_SKIP_VERIFY", "1")
+
+		_, err := LoadUpdateCommandHTTPConfig()
+		if err == nil {
+			t.Fatal("expected BB_INSECURE_SKIP_VERIFY to be refused under policy, got nil")
+		}
+		if !apperrors.IsKind(err, apperrors.KindAuthorization) {
+			t.Fatalf("expected KindAuthorization, got %v", err)
+		}
+	})
+
+	t.Run("ca file comes from system config without an env var", func(t *testing.T) {
+		tempDir := t.TempDir()
+		sysPath := filepath.Join(tempDir, "system-config.yaml")
+		mandatedCA := filepath.Join(tempDir, "corp-ca.pem")
+		if err := os.WriteFile(mandatedCA, []byte("dummy-cert-data"), 0o600); err != nil {
+			t.Fatalf("write CA: %v", err)
+		}
+		if err := os.WriteFile(sysPath, []byte(fmt.Sprintf("ca_file: %s\n", mandatedCA)), 0o600); err != nil {
+			t.Fatalf("write system config: %v", err)
+		}
+
+		t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+		t.Setenv("BB_CA_FILE", "")
+
+		httpConfig, err := LoadUpdateCommandHTTPConfig()
+		if err != nil {
+			t.Fatalf("expected success, got %v", err)
+		}
+		if httpConfig.TLSOptions.CAFile != mandatedCA {
+			t.Fatalf("expected mandated CA %q, got %q", mandatedCA, httpConfig.TLSOptions.CAFile)
+		}
+	})
+
+	t.Run("client certificates are forwarded", func(t *testing.T) {
+		tempDir := t.TempDir()
+		t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(tempDir, "system-config.yaml"))
+		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+		t.Setenv("BB_CLIENT_CERT", "/tmp/client.crt")
+		t.Setenv("BB_CLIENT_KEY", "/tmp/client.key")
+
+		httpConfig, err := LoadUpdateCommandHTTPConfig()
+		if err != nil {
+			t.Fatalf("expected success, got %v", err)
+		}
+		if httpConfig.TLSOptions.ClientCertFile != "/tmp/client.crt" || httpConfig.TLSOptions.ClientKeyFile != "/tmp/client.key" {
+			t.Fatalf("unexpected tls options: %+v", httpConfig.TLSOptions)
+		}
+	})
+}
