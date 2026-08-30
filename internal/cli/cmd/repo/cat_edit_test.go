@@ -1,6 +1,8 @@
 package repocmd
 
 import (
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -291,4 +293,39 @@ func TestRepoCLIErrorAndEdgeCases(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected file creation error")
 	}
+
+	// repo archive: a close that fails must fail the command rather than
+	// print "Successfully downloaded" over a truncated file.
+	func() {
+		original := createArchiveFile
+		defer func() { createArchiveFile = original }()
+
+		createArchiveFile = func(name string) (io.WriteCloser, error) {
+			file, createErr := os.Create(name)
+			if createErr != nil {
+				return nil, createErr
+			}
+			return failOnCloseWriter{File: file}, nil
+		}
+
+		_, err = executeTestCLI(t, "repo", "archive")
+		if err == nil {
+			t.Fatal("expected a failed close to fail the archive command")
+		}
+		if !strings.Contains(err.Error(), "failed to finish writing repository archive") {
+			t.Fatalf("unexpected archive close error: %v", err)
+		}
+	}()
+}
+
+// failOnCloseWriter writes through to a real file and fails on Close, which is
+// what a full disk or a network filesystem does and what os.File will not do on
+// demand.
+type failOnCloseWriter struct {
+	*os.File
+}
+
+func (w failOnCloseWriter) Close() error {
+	_ = w.File.Close()
+	return errors.New("simulated close failure")
 }

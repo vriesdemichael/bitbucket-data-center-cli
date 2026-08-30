@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
@@ -667,4 +668,49 @@ func TestRepoLabelsWatchAndTasks(t *testing.T) {
 	if !strings.Contains(buf.String(), "Deleted default task:") {
 		t.Fatalf("expected Deleted default task: in output: %s", buf.String())
 	}
+}
+
+// TestFinishArchiveFile covers the close that `bb repo archive` reports on.
+//
+// The failure branch is the point: io.Copy succeeding does not mean the bytes
+// reached the disk, and this command used to print success over a truncated
+// archive. Closing an already-closed file is the portable way to make Close
+// fail.
+func TestFinishArchiveFile(t *testing.T) {
+	t.Run("nil file is not an error", func(t *testing.T) {
+		if err := finishArchiveFile(nil, "unused"); err != nil {
+			t.Fatalf("expected nil, got %v", err)
+		}
+	})
+
+	t.Run("closes an open file", func(t *testing.T) {
+		file, err := os.Create(filepath.Join(t.TempDir(), "archive.zip"))
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+		if err := finishArchiveFile(file, "archive.zip"); err != nil {
+			t.Fatalf("expected a clean close, got %v", err)
+		}
+	})
+
+	t.Run("reports a failed close as an error naming the target", func(t *testing.T) {
+		file, err := os.Create(filepath.Join(t.TempDir(), "archive.zip"))
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+		if err := file.Close(); err != nil {
+			t.Fatalf("first close: %v", err)
+		}
+
+		err = finishArchiveFile(file, "/tmp/archive.zip")
+		if err == nil {
+			t.Fatal("expected a failed close to be reported, got nil")
+		}
+		if !apperrors.IsKind(err, apperrors.KindInternal) {
+			t.Fatalf("expected KindInternal, got %v", err)
+		}
+		if !strings.Contains(err.Error(), "/tmp/archive.zip") {
+			t.Fatalf("message does not name the target file: %v", err)
+		}
+	})
 }
