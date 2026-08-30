@@ -415,8 +415,8 @@ func TestUpdateCommandDisabledByPolicy(t *testing.T) {
 	if !apperrors.IsKind(err, apperrors.KindAuthorization) {
 		t.Fatalf("expected KindAuthorization, got %v", err)
 	}
-	if !strings.Contains(err.Error(), "self-update is disabled by administrative policy; update bb using your system package manager") {
-		t.Fatalf("unexpected message: %v", err)
+	if !strings.Contains(err.Error(), "BB_DISABLE_UPDATE") {
+		t.Fatalf("message does not name the environment variable: %v", err)
 	}
 
 	// 2. Via system config policy disable_update: true
@@ -437,8 +437,8 @@ func TestUpdateCommandDisabledByPolicy(t *testing.T) {
 	if !apperrors.IsKind(err2, apperrors.KindAuthorization) {
 		t.Fatalf("expected KindAuthorization, got %v", err2)
 	}
-	if !strings.Contains(err2.Error(), "self-update is disabled by administrative policy; update bb using your system package manager") {
-		t.Fatalf("unexpected message: %v", err2)
+	if !strings.Contains(err2.Error(), "disable_update") || !strings.Contains(err2.Error(), sysPath) {
+		t.Fatalf("message does not name the policy setting and file: %v", err2)
 	}
 }
 

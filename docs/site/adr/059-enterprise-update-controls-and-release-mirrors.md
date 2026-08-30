@@ -14,9 +14,15 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 Provide centralized control over CLI updates for enterprise and air-gapped environments, including update disabling mechanisms and internal release mirror resolution.
 1. Disabling Self-Update:
    - Runtime Policy: An administrator can disable self-updates machine-wide by setting `disable_update: true`
-     in the system configuration file or by setting `BB_DISABLE_UPDATE=1`. When disabled, `bb update` terminates
-     immediately with exit code 3 (`KindAuthorization`) and the message:
-     `self-update is disabled by administrative policy; update bb using your system package manager`.
+     in the system configuration file or the Windows registry, or by setting `BB_DISABLE_UPDATE=1`. When disabled,
+     `bb update` terminates immediately with exit code 3 (`KindAuthorization`).
+   - The refusal message names which of the two levers fired, and the resolved policy path when it is the policy
+     file. Both are legitimate ways to administer a fleet — an environment variable reaches machines through MDM, a
+     container image, a login profile, or a CI runner definition — but they live in unrelated places, and an
+     operator re-enabling self-update has to know which one to go and change. A single shared sentence left them
+     hunting for a variable that may be set anywhere in the login chain.
+   - `update_tuf_url` is held to an absolute `https` URL. It names where Sigstore trust material comes from, and
+     `url.Parse` — which accepts a bare word, a relative path, and any scheme — was never a check on it.
    - Compile-time Tag: Distributions packaged for managed OS repositories (e.g. RPM, DEB, Homebrew, WinGet)
      can compile with `-tags no_self_update` to eliminate update execution entirely, reporting:
      `self-update is disabled in this build; update bb using your system package manager`.

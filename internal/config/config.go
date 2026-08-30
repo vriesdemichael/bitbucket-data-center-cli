@@ -1281,11 +1281,24 @@ func resolveUpdateTrust(policy PolicyConfig) (UpdateTrust, error) {
 	}
 
 	if trust.TUFRepositoryURL != "" {
-		if _, err := url.Parse(trust.TUFRepositoryURL); err != nil {
+		// url.Parse is not a check here: it accepts a bare word, a relative
+		// path, and any scheme at all. This setting names where the Sigstore
+		// trust material for a binary bb is about to execute comes from, so it
+		// is held to an absolute https URL. The sibling update_trusted_root is
+		// validated properly, which made the asymmetry easy to miss.
+		parsed, err := url.ParseRequestURI(trust.TUFRepositoryURL)
+		if err != nil {
 			return UpdateTrust{}, apperrors.New(
 				apperrors.KindValidation,
 				fmt.Sprintf("update_tuf_url is invalid: %q", trust.TUFRepositoryURL),
 				err,
+			)
+		}
+		if !strings.EqualFold(parsed.Scheme, "https") || parsed.Host == "" {
+			return UpdateTrust{}, apperrors.New(
+				apperrors.KindValidation,
+				fmt.Sprintf("update_tuf_url must be an absolute https URL: %q", trust.TUFRepositoryURL),
+				nil,
 			)
 		}
 	}
@@ -1293,18 +1306,52 @@ func resolveUpdateTrust(policy PolicyConfig) (UpdateTrust, error) {
 	return trust, nil
 }
 
+// IsUpdateDisabled reports whether self-update is turned off, and by which
+// lever.
+//
+// Naming the lever is the point of the second return value. An environment
+// variable is a legitimate way to administer a fleet — through MDM, a container
+// image, a login profile, a CI runner definition — so both sources are real
+// policy, and neither is being demoted here. But they live in completely
+// different places, and an operator trying to re-enable self-update has to know
+// whether to edit the policy file or hunt down where BB_DISABLE_UPDATE is being
+// set, which is much the harder of the two to find when the message does not
+// say.
 func IsUpdateDisabled() (bool, string, error) {
 	policy, err := LoadPolicy()
 	if err != nil {
 		return false, "", err
 	}
 	if policy.DisableUpdate != nil && *policy.DisableUpdate {
-		return true, "self-update is disabled by administrative policy; update bb using your system package manager", nil
+		return true, fmt.Sprintf(
+			"self-update is disabled by administrative policy (disable_update in %s); update bb using your system package manager",
+			disableUpdatePolicyOrigin(),
+		), nil
 	}
 	if envVal := strings.TrimSpace(os.Getenv("BB_DISABLE_UPDATE")); envVal == "1" || strings.EqualFold(envVal, "true") {
-		return true, "self-update is disabled by administrative policy; update bb using your system package manager", nil
+		return true, "self-update is disabled by the BB_DISABLE_UPDATE environment variable; unset it to re-enable self-update, or update bb using your system package manager", nil
 	}
 	return false, "", nil
+}
+
+// disableUpdatePolicyOrigin names the policy source that set disable_update.
+//
+// Policy is merged from the system configuration file and, on Windows, the
+// registry, so the origin is resolved by asking which of the two actually
+// carries the setting rather than by tracking provenance through the merge.
+func disableUpdatePolicyOrigin() string {
+	platform := loadPlatformPolicy()
+	if platform.DisableUpdate != nil && *platform.DisableUpdate {
+		if description := platformPolicyDescription(); description != "" {
+			return description
+		}
+	}
+
+	path, err := SystemConfigPath()
+	if err != nil || strings.TrimSpace(path) == "" {
+		return "the system configuration file"
+	}
+	return "the system configuration file " + path
 }
 
 // matchStoredHost finds the stored profile that genuinely corresponds to

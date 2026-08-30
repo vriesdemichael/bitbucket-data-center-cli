@@ -1763,8 +1763,12 @@ func TestIsUpdateDisabled(t *testing.T) {
 	if err != nil || !disabled {
 		t.Fatalf("expected disabled via env, got disabled=%v, err=%v", disabled, err)
 	}
-	if !strings.Contains(msg, "self-update is disabled by administrative policy") {
-		t.Fatalf("unexpected message: %s", msg)
+	// The message has to name the lever, not just report that one fired. The
+	// policy file and BB_DISABLE_UPDATE live in unrelated places, and an
+	// operator re-enabling self-update needs to know which one to go and
+	// change -- the environment variable being much the harder to track down.
+	if !strings.Contains(msg, "BB_DISABLE_UPDATE") {
+		t.Fatalf("message does not name the environment variable: %s", msg)
 	}
 
 	// Via system policy
@@ -1776,8 +1780,14 @@ func TestIsUpdateDisabled(t *testing.T) {
 	if err != nil || !disabled {
 		t.Fatalf("expected disabled via policy, got disabled=%v, err=%v", disabled, err)
 	}
-	if !strings.Contains(msg, "self-update is disabled by administrative policy") {
-		t.Fatalf("unexpected message: %s", msg)
+	if !strings.Contains(msg, "disable_update") {
+		t.Fatalf("message does not name the policy setting: %s", msg)
+	}
+	if !strings.Contains(msg, sysPath) {
+		t.Fatalf("message does not name the policy file %s: %s", sysPath, msg)
+	}
+	if strings.Contains(msg, "BB_DISABLE_UPDATE") {
+		t.Fatalf("policy message wrongly blames the environment variable: %s", msg)
 	}
 }
 
@@ -2322,6 +2332,51 @@ func TestResolveUpdateTrustFromSystemPolicy(t *testing.T) {
 		_, err := ResolveUpdateTrust()
 		if !apperrors.IsKind(err, apperrors.KindValidation) {
 			t.Fatalf("expected KindValidation, got: %v", err)
+		}
+	})
+
+	// url.Parse accepted every one of these, which is why it was never a
+	// check. This setting names where the Sigstore trust material for a binary
+	// bb is about to execute comes from.
+	t.Run("rejects a tuf url that is not an absolute https URL", func(t *testing.T) {
+		for _, value := range []string{
+			"not a url",
+			"artifactory.corp.internal/tuf",
+			"http://artifactory.corp.internal/tuf",
+			"file:///etc/passwd",
+			"/var/lib/tuf",
+		} {
+			tempDir := t.TempDir()
+			sysPath := filepath.Join(tempDir, "system-config.yaml")
+			if err := os.WriteFile(sysPath, []byte(fmt.Sprintf("update_tuf_url: %q\n", value)), 0o600); err != nil {
+				t.Fatalf("write system config: %v", err)
+			}
+
+			t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+			t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+
+			if _, err := ResolveUpdateTrust(); !apperrors.IsKind(err, apperrors.KindValidation) {
+				t.Fatalf("expected %q to be rejected, got: %v", value, err)
+			}
+		}
+	})
+
+	t.Run("accepts an absolute https tuf url", func(t *testing.T) {
+		tempDir := t.TempDir()
+		sysPath := filepath.Join(tempDir, "system-config.yaml")
+		if err := os.WriteFile(sysPath, []byte("update_tuf_url: https://artifactory.corp.internal/tuf\n"), 0o600); err != nil {
+			t.Fatalf("write system config: %v", err)
+		}
+
+		t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
+		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
+
+		trust, err := ResolveUpdateTrust()
+		if err != nil {
+			t.Fatalf("expected success, got: %v", err)
+		}
+		if trust.TUFRepositoryURL != "https://artifactory.corp.internal/tuf" {
+			t.Fatalf("unexpected tuf url: %q", trust.TUFRepositoryURL)
 		}
 	})
 }

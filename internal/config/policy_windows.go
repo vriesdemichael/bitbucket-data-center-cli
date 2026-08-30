@@ -37,6 +37,12 @@ func machineConfigPath() string {
 	return filepath.Join(programData, "bb", "config.yaml")
 }
 
+// platformPolicyDescription names the registry key policy is read from, so a
+// message about a setting can say where to go and change it.
+func platformPolicyDescription() string {
+	return "Windows registry policy HKEY_LOCAL_MACHINE\\" + registryPolicyKey
+}
+
 func loadPlatformPolicy() PolicyConfig {
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, registryPolicyKey, registry.QUERY_VALUE)
 	if err != nil {
