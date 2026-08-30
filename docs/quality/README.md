@@ -12,9 +12,8 @@ exists.
 
 | File | Asserts | Update | Verify |
 |---|---|---|---|
-| `cli-live-coverage.json` | which CLI commands the live suite proves work against a real Bitbucket | `task quality:cli-live-coverage:update` | `task quality:cli-live-coverage:verify` |
+| `command-reach.json` | which CLI commands the live suite proves work against a real Bitbucket | `task quality:command-reach:update` | `task quality:command-reach:verify` |
 | `spec-coverage.json` | which `(method, path)` operations from the Bitbucket spec the CLI reaches | `task quality:spec-coverage:update` | `task quality:spec-coverage:verify` |
-| `generated-operation-contracts.json` | mapping of generated client operations to the tests providing contract coverage | — | consumed by `quality-report` |
 
 Both verify commands are static analysis: they read the Cobra command tree, the live test sources,
 the OpenAPI spec and the services source. Neither starts Bitbucket, so both run in the fast CI job
@@ -54,7 +53,7 @@ when the change affects behaviour the live suite exercises.
 The same loop on CI costs a full live run per attempt, on a profile you cannot inspect — which is
 why the locations are printed rather than just the percentage.
 
-## CLI live coverage (`cli-live-coverage.json`)
+## command reach (`command-reach.json`)
 
 Records which commands the live suite actually exercises against a real server. The verify step
 fails when a command loses live coverage, arrives without it, or becomes **masked** — its only live

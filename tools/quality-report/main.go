@@ -7,11 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"io"
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -50,15 +46,9 @@ type uncoveredLine struct {
 	line int
 }
 
-type operationManifest struct {
-	Version    int                 `json:"version"`
-	Operations map[string][]string `json:"operations"`
-}
-
 type report struct {
-	Version            int                      `json:"version"`
-	Coverage           coverageSummary          `json:"coverage"`
-	GeneratedContracts generatedContractSummary `json:"generated_contracts"`
+	Version  int             `json:"version"`
+	Coverage coverageSummary `json:"coverage"`
 }
 
 type coverageSummary struct {
@@ -89,20 +79,12 @@ type scopeSummary struct {
 	ExcludePrefixes []string `json:"exclude_prefixes"`
 }
 
-type generatedContractSummary struct {
-	CoveragePercent    float64  `json:"coverage_percent"`
-	UsedOperations     []string `json:"used_operations"`
-	MappedOperations   []string `json:"mapped_operations"`
-	UnmappedOperations []string `json:"unmapped_operations"`
-}
-
 func main() {
 	coverProfilePath := flag.String("coverprofile", ".tmp/coverage.unit.out", "Path to unit go coverage profile")
 	liveCoverProfilePath := flag.String("live-coverprofile", ".tmp/coverage.live.out", "Path to live go coverage profile")
 	baseRef := flag.String("base-ref", "main", "Base git ref used for patch coverage diff")
 	includePrefixes := flag.String("scope-include", "internal/,cmd/", "Comma-separated include path prefixes for scoped coverage")
 	excludePrefixes := flag.String("scope-exclude", "internal/openapi/generated/,internal/models/generated/", "Comma-separated exclude path prefixes for scoped coverage")
-	manifestPath := flag.String("manifest", "docs/quality/generated-operation-contracts.json", "Path to generated-operation contract manifest")
 	reportPath := flag.String("report-file", "docs/quality/coverage-report.json", "Path to coverage report file")
 	rawCoverProfilePath := flag.String("raw-coverprofile-file", "", "Path to committed combined raw coverprofile artifact")
 	scopedCoverProfilePath := flag.String("scoped-coverprofile-file", "", "Path to committed combined scoped coverprofile artifact")
@@ -115,7 +97,6 @@ func main() {
 	minPatch := flag.Float64("min-patch", 85.0, "Minimum required patch coverage percentage")
 	minPatchLines := flag.Int("min-patch-lines", 30, "Minimum coverable patch lines required before applying percentage-based patch gate")
 	maxUncoveredSmallPatch := flag.Int("max-uncovered-small-patch", 2, "Maximum uncovered patch lines allowed when coverable patch lines are below --min-patch-lines")
-	minContract := flag.Float64("min-contract", 0.0, "Minimum required used generated operation contract coverage percentage")
 	specCoverageMode := flag.Bool("spec-coverage", false, "Compute OpenAPI spec path coverage (both transports) and exit")
 	specCoverageFile := flag.String("spec-coverage-file", "docs/quality/spec-coverage.json", "Path to spec coverage artifact")
 	openapiSpecPath := flag.String("openapi-spec", "docs/reference/atlassian/bitbucket-openapi.json", "Path to the Bitbucket OpenAPI spec")
@@ -162,16 +143,6 @@ func main() {
 	combinedScopedCovered, combinedScopedTotal := calculateScopedCoverage(combinedProfile, includes, excludes)
 	patch := calculatePatchCoverage(changedLines, combinedProfile, includes, excludes)
 
-	usedOperations, err := discoverUsedGeneratedOperations("internal/services")
-	if err != nil {
-		fail("failed to discover used generated operations: %v", err)
-	}
-	manifest, err := loadOperationManifest(*manifestPath)
-	if err != nil {
-		fail("failed to load operation manifest: %v", err)
-	}
-	mapped, unmapped := calculateContractMapping(usedOperations, manifest)
-
 	reportData := report{
 		Version: 2,
 		Coverage: coverageSummary{
@@ -191,12 +162,6 @@ func main() {
 			PatchLines:               countSummary{Covered: patch.coveredLines, Total: patch.coverableLines},
 			Scope:                    scopeSummary{IncludePrefixes: includes, ExcludePrefixes: excludes},
 		},
-		GeneratedContracts: generatedContractSummary{
-			CoveragePercent:    percent(len(mapped), len(usedOperations)),
-			UsedOperations:     usedOperations,
-			MappedOperations:   mapped,
-			UnmappedOperations: unmapped,
-		},
 	}
 
 	encoded, err := json.MarshalIndent(reportData, "", "  ")
@@ -215,7 +180,6 @@ func main() {
 	} else {
 		fmt.Printf("Patch coverage: %.2f%% (%d/%d changed lines)\n", reportData.Coverage.PatchPercent, reportData.Coverage.PatchLines.Covered, reportData.Coverage.PatchLines.Total)
 	}
-	fmt.Printf("Generated used-operation contract coverage: %.2f%% (%d/%d operations mapped)\n", reportData.GeneratedContracts.CoveragePercent, len(mapped), len(usedOperations))
 
 	if *writeReport {
 		if err := os.MkdirAll(filepath.Dir(*reportPath), 0o755); err != nil {
@@ -282,17 +246,23 @@ func main() {
 		}
 	}
 
-	enforceThresholds(reportData, patch, resolvedMinGlobalCombined, *minPatch, *minPatchLines, *maxUncoveredSmallPatch, *minContract)
+	enforceThresholds(reportData, patch, resolvedMinGlobalCombined, *minPatch, *minPatchLines, *maxUncoveredSmallPatch)
 }
 
 func printCoverageSummary(reportData report) {
-	fmt.Printf("Unit raw coverage: %.2f%% (%d/%d statements)\n", reportData.Coverage.UnitRawPercent, reportData.Coverage.UnitStatements.Covered, reportData.Coverage.UnitStatements.Total)
-	fmt.Printf("Live raw coverage: %.2f%% (%d/%d statements)\n", reportData.Coverage.LiveRawPercent, reportData.Coverage.LiveStatements.Covered, reportData.Coverage.LiveStatements.Total)
-	fmt.Printf("Combined raw coverage: %.2f%% (%d/%d statements)\n", reportData.Coverage.CombinedRawPercent, reportData.Coverage.CombinedStatements.Covered, reportData.Coverage.CombinedStatements.Total)
-	fmt.Printf("Combined scoped coverage: %.2f%% (%d/%d statements)\n", reportData.Coverage.CombinedScopedPercent, reportData.Coverage.CombinedScopedStatements.Covered, reportData.Coverage.CombinedScopedStatements.Total)
+	// The raw numbers count the generated OpenAPI client and models, which are
+	// roughly two thirds of the statements in the tree and are not written by
+	// hand. Left unlabelled they read as the project's coverage and alarm
+	// anyone who sees them -- 29.86% against a scoped 87.41%. Only the scoped
+	// number is gated, so the label says which is which.
+	fmt.Println("Coverage including generated code (not gated):")
+	fmt.Printf("  unit     %.2f%% (%d/%d statements)\n", reportData.Coverage.UnitRawPercent, reportData.Coverage.UnitStatements.Covered, reportData.Coverage.UnitStatements.Total)
+	fmt.Printf("  live     %.2f%% (%d/%d statements)\n", reportData.Coverage.LiveRawPercent, reportData.Coverage.LiveStatements.Covered, reportData.Coverage.LiveStatements.Total)
+	fmt.Printf("  combined %.2f%% (%d/%d statements)\n", reportData.Coverage.CombinedRawPercent, reportData.Coverage.CombinedStatements.Covered, reportData.Coverage.CombinedStatements.Total)
+	fmt.Printf("Combined scoped coverage (gated): %.2f%% (%d/%d statements)\n", reportData.Coverage.CombinedScopedPercent, reportData.Coverage.CombinedScopedStatements.Covered, reportData.Coverage.CombinedScopedStatements.Total)
 }
 
-func enforceThresholds(reportData report, patch patchCoverage, minGlobalCombined, minPatch float64, minPatchLines int, maxUncoveredSmallPatch int, minContract float64) {
+func enforceThresholds(reportData report, patch patchCoverage, minGlobalCombined, minPatch float64, minPatchLines int, maxUncoveredSmallPatch int) {
 	var failed bool
 	globalCombinedPercent := reportData.Coverage.CombinedScopedPercent
 	if globalCombinedPercent < minGlobalCombined {
@@ -309,10 +279,6 @@ func enforceThresholds(reportData report, patch patchCoverage, minGlobalCombined
 		}
 	} else if reportData.Coverage.PatchPercent < minPatch {
 		fmt.Printf("FAIL: patch coverage %.2f%% is below required %.2f%% (%d coverable lines >= %d)\n", reportData.Coverage.PatchPercent, minPatch, patchTotal, minPatchLines)
-		failed = true
-	}
-	if reportData.GeneratedContracts.CoveragePercent < minContract {
-		fmt.Printf("FAIL: used generated operation contract coverage %.2f%% is below required %.2f%%\n", reportData.GeneratedContracts.CoveragePercent, minContract)
 		failed = true
 	}
 	if failed {
@@ -756,100 +722,6 @@ func reportUncoveredPatchLines(writer io.Writer, patch patchCoverage) {
 		fmt.Fprintf(writer, "  %s:%s\n", file, strings.Join(ranges, ","))
 		index = end
 	}
-}
-
-func discoverUsedGeneratedOperations(root string) ([]string, error) {
-	set := map[string]struct{}{}
-	fileSet := token.NewFileSet()
-
-	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() {
-			return nil
-		}
-		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
-			return nil
-		}
-
-		node, err := parser.ParseFile(fileSet, path, nil, 0)
-		if err != nil {
-			return err
-		}
-
-		hasGeneratedImport := false
-		for _, imported := range node.Imports {
-			importPath := strings.Trim(imported.Path.Value, "\"")
-			if strings.HasSuffix(importPath, "/internal/openapi/generated") {
-				hasGeneratedImport = true
-				break
-			}
-		}
-		if !hasGeneratedImport {
-			return nil
-		}
-
-		ast.Inspect(node, func(n ast.Node) bool {
-			call, ok := n.(*ast.CallExpr)
-			if !ok {
-				return true
-			}
-			sel, ok := call.Fun.(*ast.SelectorExpr)
-			if !ok || sel.Sel == nil {
-				return true
-			}
-			inner, ok := sel.X.(*ast.SelectorExpr)
-			if !ok || inner.Sel == nil || inner.Sel.Name != "client" {
-				return true
-			}
-			set[sel.Sel.Name] = struct{}{}
-			return true
-		})
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	operations := make([]string, 0, len(set))
-	for operation := range set {
-		operations = append(operations, operation)
-	}
-	sort.Strings(operations)
-	return operations, nil
-}
-
-func loadOperationManifest(path string) (operationManifest, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return operationManifest{}, err
-	}
-	manifest := operationManifest{}
-	if err := json.Unmarshal(content, &manifest); err != nil {
-		return operationManifest{}, err
-	}
-	if manifest.Operations == nil {
-		manifest.Operations = map[string][]string{}
-	}
-	return manifest, nil
-}
-
-func calculateContractMapping(used []string, manifest operationManifest) ([]string, []string) {
-	mapped := make([]string, 0)
-	unmapped := make([]string, 0)
-	for _, operation := range used {
-		tests := manifest.Operations[operation]
-		if len(tests) == 0 {
-			unmapped = append(unmapped, operation)
-			continue
-		}
-		mapped = append(mapped, operation)
-	}
-	sort.Strings(mapped)
-	sort.Strings(unmapped)
-	return mapped, unmapped
 }
 
 func readModulePath(goModPath string) (string, error) {

@@ -1,4 +1,4 @@
-// Command cli-live-coverage reports which CLI commands the live integration
+// Command command-reach reports which CLI commands the live integration
 // suite actually proves work against a real Bitbucket.
 //
 // The project treats live tests as the primary correctness gate, but two holes
@@ -69,7 +69,7 @@ type report struct {
 }
 
 func main() {
-	reportPath := flag.String("report-file", "docs/quality/cli-live-coverage.json", "Path to the committed CLI live coverage report")
+	reportPath := flag.String("report-file", "docs/quality/command-reach.json", "Path to the committed command reach report")
 	liveDir := flag.String("live-dir", "tests/integration/live", "Directory holding the live integration tests")
 	write := flag.Bool("write", false, "Write the report to disk")
 	verify := flag.Bool("verify", false, "Fail when live coverage regresses against the committed report")
@@ -89,7 +89,7 @@ func main() {
 		if err := writeReport(*reportPath, current); err != nil {
 			fail("failed to write report: %v", err)
 		}
-		fmt.Printf("Wrote CLI live coverage report: %s\n", *reportPath)
+		fmt.Printf("Wrote command reach report: %s\n", *reportPath)
 	}
 
 	if *verify {
@@ -103,10 +103,10 @@ func main() {
 			}
 			fmt.Fprintln(os.Stderr, "\nEvery command needs at least one live test that runs it against a real Bitbucket.")
 			fmt.Fprintln(os.Stderr, "A test that calls t.Skip on error does not count: it passes whether or not the command works.")
-			fmt.Fprintln(os.Stderr, "Add or fix a test in tests/integration/live, then run: task quality:cli-live-coverage:update")
+			fmt.Fprintln(os.Stderr, "Add or fix a test in tests/integration/live, then run: task quality:command-reach:update")
 			os.Exit(1)
 		}
-		fmt.Println("Verified CLI live coverage: no regressions")
+		fmt.Println("Verified command reach: no regressions")
 	}
 }
 
@@ -500,7 +500,7 @@ func toSet(values []string) map[string]struct{} {
 
 func printSummary(current report) {
 	fmt.Printf(
-		"CLI live coverage: %.2f%% (%d/%d runnable commands asserted by a live test)\n",
+		"command reach: %.2f%% (%d/%d runnable commands asserted by a live test)\n",
 		current.Summary.Percent,
 		current.Summary.Covered,
 		current.Summary.Runnable,

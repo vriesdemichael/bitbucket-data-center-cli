@@ -648,3 +648,74 @@ func contains(values []string, target string) bool {
 	}
 	return false
 }
+
+// discoverUsedGeneratedOperations reports which generated client operations the
+// service layer actually calls, by parsing every non-test file under root that
+// imports the generated package.
+//
+// It lives here because spec coverage is its only consumer. It was shared with
+// a contract-coverage metric that has since been deleted: that metric looked
+// each operation up in a hand-written manifest of test files, verified nothing
+// about those files, and reported against a threshold of zero.
+func discoverUsedGeneratedOperations(root string) ([]string, error) {
+	set := map[string]struct{}{}
+	fileSet := token.NewFileSet()
+
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+
+		node, err := parser.ParseFile(fileSet, path, nil, 0)
+		if err != nil {
+			return err
+		}
+
+		hasGeneratedImport := false
+		for _, imported := range node.Imports {
+			importPath := strings.Trim(imported.Path.Value, "\"")
+			if strings.HasSuffix(importPath, "/internal/openapi/generated") {
+				hasGeneratedImport = true
+				break
+			}
+		}
+		if !hasGeneratedImport {
+			return nil
+		}
+
+		ast.Inspect(node, func(n ast.Node) bool {
+			call, ok := n.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			sel, ok := call.Fun.(*ast.SelectorExpr)
+			if !ok || sel.Sel == nil {
+				return true
+			}
+			inner, ok := sel.X.(*ast.SelectorExpr)
+			if !ok || inner.Sel == nil || inner.Sel.Name != "client" {
+				return true
+			}
+			set[sel.Sel.Name] = struct{}{}
+			return true
+		})
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	operations := make([]string, 0, len(set))
+	for operation := range set {
+		operations = append(operations, operation)
+	}
+	sort.Strings(operations)
+	return operations, nil
+}

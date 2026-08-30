@@ -8,8 +8,8 @@ decision: >
   Measurements are the output of running the suite: coverage profiles and the combined coverage
   report. They are recomputed by CI on every pull request, published to Codecov and as workflow
   artifacts, and never committed.
-  Baselines are assertions about what must remain true: which CLI commands the live suite proves
-  work, which OpenAPI operations are exercised, and the generated-operation manifest. They stay
+  Baselines are assertions about what must remain true: which CLI commands the live suite reaches,
+  and which OpenAPI operations are exercised. They stay
   committed because they are small, readable in a diff, and verifiable by static analysis without a
   Bitbucket instance.
   Because measurements now live only in .tmp/ and on CI, keep them locally actionable: the coverage
@@ -20,8 +20,8 @@ agent_instructions: >
   Do not commit coverage profiles or coverage reports. docs/quality/coverage-report.json,
   docs/quality/coverage.combined.raw.out, docs/quality/coverage.combined.scoped.out and the
   repository-root coverage.out are gitignored; write coverage output to .tmp/ instead.
-  Do commit docs/quality/cli-live-coverage.json, docs/quality/spec-coverage.json and
-  docs/quality/generated-operation-contracts.json, and regenerate them when a change affects them.
+  Do commit docs/quality/command-reach.json and docs/quality/spec-coverage.json, and regenerate
+  them when a change affects them.
   A diff in those files is the point: it is how a reviewer sees that a command lost live coverage.
   Do not reintroduce a rebase procedure for refreshing committed coverage. Rebase with
   `task pr:rebase` or plain `git rebase origin/main`; there is nothing to regenerate afterwards.
@@ -43,7 +43,7 @@ rationale: >
   AGENTS.md, and a dedicated pr:linearize task existed to manage the conflicts. Nothing consumed
   them: CI computed coverage fresh into .tmp/ and uploaded to Codecov from there, and no workflow
   step ever verified the committed copies. The rebase procedure was maintaining data no gate read.
-  Baselines are a different kind of artifact and are kept. cli-live-coverage.json exists so that a
+  Baselines are a different kind of artifact and are kept. command-reach.json exists so that a
   command silently losing live coverage fails the build, which has already caught a real regression:
   `bb pr task *` called an endpoint removed in Bitbucket 8.0 while its live test skipped on error,
   and CI stayed green for years. That value comes from the file being committed and diffable, and
@@ -62,7 +62,7 @@ rejected_alternatives:
       procedure existed to manage.
   - alternative: Stop committing the baselines as well
     reason: >
-      cli-live-coverage.json and spec-coverage.json are contracts rather than measurements. They are
+      command-reach.json and spec-coverage.json are contracts rather than measurements. They are
       verifiable without a Bitbucket instance, so they gate cheaply on every pull request, and a
       change in them is exactly what a reviewer should see. Removing them would drop a check that
       has caught a real regression.
