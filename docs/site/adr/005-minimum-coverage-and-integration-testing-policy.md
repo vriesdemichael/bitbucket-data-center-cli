@@ -5,7 +5,8 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `005`
 - Title: `Minimum coverage and integration testing policy`
 - Category: `development`
-- Status: `accepted`
+- Status: `superseded`
+- Superseded By: `065`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/005-minimum-coverage-and-integration-testing-policy.yaml`
 

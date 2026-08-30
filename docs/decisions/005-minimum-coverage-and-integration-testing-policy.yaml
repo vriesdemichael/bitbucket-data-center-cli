@@ -1,7 +1,8 @@
 number: 5
 title: Minimum coverage and integration testing policy
 category: development
-status: accepted
+status: superseded
+superseded_by: 65
 decision: >
   Maintain at least 85% global combined line coverage (unit + live) across the maintained source
   scope used by quality reporting (cmd/ + internal/ excluding generated code paths), and at least
