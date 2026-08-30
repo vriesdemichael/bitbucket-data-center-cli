@@ -157,8 +157,11 @@ func TestLiveEnterpriseUpdateControls(t *testing.T) {
 	if !apperrors.IsKind(err, apperrors.KindAuthorization) {
 		t.Fatalf("expected KindAuthorization, got %v", err)
 	}
-	if !strings.Contains(err.Error(), "self-update is disabled by administrative policy") {
-		t.Fatalf("unexpected error message: %v", err)
+	// The message names the lever, not just the fact that one fired. The two
+	// killswitches live in unrelated places, and an operator re-enabling
+	// self-update has to know which one to go and change.
+	if !strings.Contains(err.Error(), "BB_DISABLE_UPDATE") {
+		t.Fatalf("message does not name the environment variable: %v", err)
 	}
 
 	// 2. Machine policy killswitch disable_update: true
@@ -172,6 +175,9 @@ func TestLiveEnterpriseUpdateControls(t *testing.T) {
 	}
 	if !apperrors.IsKind(err, apperrors.KindAuthorization) {
 		t.Fatalf("expected KindAuthorization, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "disable_update") || !strings.Contains(err.Error(), policyPath) {
+		t.Fatalf("message does not name the policy setting and file %s: %v", policyPath, err)
 	}
 
 	// 3. Mirror resolution with local test server
