@@ -1340,18 +1340,28 @@ func IsUpdateDisabled() (bool, string, error) {
 // registry, so the origin is resolved by asking which of the two actually
 // carries the setting rather than by tracking provenance through the merge.
 func disableUpdatePolicyOrigin() string {
-	platform := loadPlatformPolicy()
-	if platform.DisableUpdate != nil && *platform.DisableUpdate {
-		if description := platformPolicyDescription(); description != "" {
-			return description
-		}
-	}
-
 	path, err := SystemConfigPath()
-	if err != nil || strings.TrimSpace(path) == "" {
+	if err != nil {
+		path = ""
+	}
+	return policyOriginDescription(loadPlatformPolicy().DisableUpdate, platformPolicyDescription(), path)
+}
+
+// policyOriginDescription names where a boolean policy setting came from,
+// given the value the platform-native store holds for it.
+//
+// It takes its inputs rather than reading them so that every branch is
+// reachable from a test on any OS. Resolved in place, the registry branch is
+// dead code on Linux and macOS and needs a registry write on Windows, which is
+// how a message nobody can exercise ends up asserting nothing.
+func policyOriginDescription(platformValue *bool, platformDescription, systemConfigPath string) string {
+	if platformValue != nil && *platformValue && platformDescription != "" {
+		return platformDescription
+	}
+	if strings.TrimSpace(systemConfigPath) == "" {
 		return "the system configuration file"
 	}
-	return "the system configuration file " + path
+	return "the system configuration file " + systemConfigPath
 }
 
 // matchStoredHost finds the stored profile that genuinely corresponds to
