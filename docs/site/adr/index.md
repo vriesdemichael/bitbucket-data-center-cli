@@ -4,7 +4,7 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `63`
+- Total ADRs: `64`
 - Accepted ADRs: `59`
 
 ## ADR List
@@ -13,7 +13,7 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 002: Taskfile for development automation](002-taskfile-for-development-automation.md) (`development`, `accepted`)
 - [ADR 003: AI agents as first-class developers](003-ai-agents-as-first-class-developers.md) (`development`, `accepted`)
 - [ADR 004: Live integration tests as primary correctness gate](004-live-integration-tests-as-primary-correctness-gate.md) (`development`, `accepted`)
-- [ADR 005: Minimum coverage and integration testing policy](005-minimum-coverage-and-integration-testing-policy.md) (`development`, `accepted`)
+- [ADR 005: Minimum coverage and integration testing policy](005-minimum-coverage-and-integration-testing-policy.md) (`development`, `superseded`)
 - [ADR 006: Conventional commits with hook enforcement](006-conventional-commits-with-hook-enforcement.md) (`development`, `accepted`)
 - [ADR 007: Manual GitHub release workflow](007-manual-github-release-workflow.md) (`development`, `superseded`)
 - [ADR 008: Layered Go architecture and package boundaries](008-layered-go-architecture-and-package-boundaries.md) (`architecture`, `accepted`)
@@ -72,4 +72,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 061: The MCP surface runs on the official SDK and every tool names its payload](061-mcp-output-contract-on-the-official-sdk.md) (`architecture`, `accepted`)
 - [ADR 062: The MCP server can be confined to a workspace, and records what agents attempt there](062-mcp-workspace-scoping-and-agent-audit-trail.md) (`architecture`, `accepted`)
 - [ADR 063: Offline release signature verification and update trust policy](063-offline-release-signature-verification.md) (`architecture`, `accepted`)
+- [ADR 065: What the quality apparatus measures, and why each part exists](065-what-the-quality-apparatus-measures.md) (`development`, `accepted`)
 
