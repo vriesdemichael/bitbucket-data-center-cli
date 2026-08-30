@@ -23,16 +23,23 @@ Record the intended shape of the quality apparatus as a whole. It grew one mecha
      paths) answers a different question from the patch gate and is not a stricter version of it.
      Its job is erosion: a deleted test, or a refactor that drops whole paths, neither of which the
      patch gate sees. The two sharing the number 85 is coincidence, not design.
+   - Raw line coverage, the same measurement with no scope applied, is still computed and printed
+     but is labelled as including generated code, and is not gated. It reads 29.86% against a
+     scoped 87.41% because roughly two thirds of the statements in the tree are the generated
+     OpenAPI client and models. Unlabelled it read as the project failing badly.
    - Spec coverage records which Bitbucket endpoints the CLI calls at all.
-   - CLI live coverage records which commands a live test proves work against a real server. It is
-     the strongest statement the project makes about its own correctness and, per ADR-004, the
-     primary correctness gate. Line coverage says a line executed; this says a command worked.
+   - Command reach records which commands a live test invokes against a real server without
+     skipping on error. It is named for what it measures. It was called CLI live coverage, and at
+     100% that name claimed something impossible: the measurement is binary per command and says
+     nothing about flags, branches, or paths within a command. What it does catch is a command no
+     live test exercises at all, which is a real and previously realised failure.
    - Output-schema coverage, meaning which commands publish a data contract, is the one axis with
      no mechanism, at 28 of 233 commands. Tracked as issue 462; ADR-064 depends on it.
-   - Generated used-operation contract coverage is computed and printed on every pull request
-     against a threshold of 0, so it gates nothing. A metric that cannot fail is not a gate, it is
-     output. It is either raised to a real floor or removed, and until that is decided it must not
-     be described as a check.
+   - Generated used-operation contract coverage is removed, along with its manifest. It resolved
+     each called operation against a hand-written map of operation to test files and counted the
+     operation as covered when the list was non-empty -- verifying neither that the file existed
+     nor that it touched the operation. It ran against a threshold of 0 and stood at 39 of 193,
+     which is the shape of a checklist someone abandoned. A metric that cannot fail is not a gate.
 
 2. Committed or recomputed: ADR-045's measurement and baseline distinction is the project-wide
    rule, with one addition. A measurement is the output of running the suite, so recompute it and
@@ -41,8 +48,8 @@ Record the intended shape of the quality apparatus as a whole. It grew one mecha
 
    The addition: a committed baseline must have a CI step that fails when the committed copy is
    stale. A baseline with no verification is not a baseline, it is a file that goes quietly wrong.
-   docs/quality/generated-operation-contracts.json is committed, consumed by every coverage run,
-   hand-maintained, and verified by nothing; it does not currently meet this bar.
+   generated-operation-contracts.json was the one artifact breaking this rule, and deleting it is
+   what brings the set into line rather than adding a ninth mechanism to police it.
 
 3. Thresholds have one home, .github/coverage-thresholds.env. They were in three, that file plus
    Taskfile.yml vars plus ADR-005's prose, so a local run and CI could disagree about what the
@@ -54,7 +61,17 @@ Record the intended shape of the quality apparatus as a whole. It grew one mecha
    which made them advisory, and two ran only in CI. A gate that runs only in a git hook is not a
    gate, because nothing stops a branch that skipped the hook.
 
-5. Deliberately not measured, so the question stops recurring: mutation testing, live-suite flake
+5. Linear history is no longer a CI gate. The check existed to stop the committed coverage
+   artifacts conflicting on every rebase; ADR-045 deleted those artifacts, and ADR-030, where the
+   check was recorded, is already superseded. Rebasing stays the convention, and nothing else --
+   the live suite, the coverage gates, the parity test -- depends on it.
+
+6. CI reports the live suite, the coverage gates and the Codecov publication as three jobs rather
+   than one. They fail for unrelated reasons, and as one job a patch-coverage breach was reported
+   as "Live Integration Tests failed", which sends the reader looking for a broken test that does
+   not exist. The live job hands the coverage profiles on as a build artifact.
+
+7. Deliberately not measured, so the question stops recurring: mutation testing, live-suite flake
    rate, dependency freshness, binary size, and startup time. Also not measured, and the more
    interesting omission, is whether a test asserts anything worth asserting. No gate can judge
    that. It is addressed by exercise instead, by deliberately breaking a governance test to
@@ -62,7 +79,7 @@ Record the intended shape of the quality apparatus as a whole. It grew one mecha
 
 ## Agent Instructions
 
-Do not add a ninth mechanism without first saying which axis it belongs to and what it catches that the existing ones do not. More coverage is not an answer. When adding a gate that needs no Bitbucket instance, add it to quality:verify in Taskfile.yml. Do not add it to the CI workflow directly; the workflow runs the same list and a test enforces that the two match. A gate that needs a Bitbucket instance goes in the live-tests job and not in a git hook, per ADR-045. When adding a committed artifact under docs/quality/, add its verify task in the same change. If it cannot be verified without a Bitbucket instance, it does not belong there. Do not add a coverage threshold to Taskfile.yml or to a workflow. Add it to .github/coverage-thresholds.env, which both read. Do not lower a threshold to make a change pass. When patch coverage fails, read the uncovered lines the gate prints. If they are unreachable, the code is wrong rather than the gate: extract the decision into something a test can reach, as the update killswitch origin naming was. A metric whose threshold is 0 must not be described as a gate in documentation or in a pull request. Say that it is reported.
+Do not add a ninth mechanism without first saying which axis it belongs to and what it catches that the existing ones do not. More coverage is not an answer. When adding a gate that needs no Bitbucket instance, add it to quality:verify in Taskfile.yml. Do not add it to the CI workflow directly; the workflow runs the same list and a test enforces that the two match. A gate that needs a Bitbucket instance goes in the live-tests job and not in a git hook, per ADR-045. When adding a committed artifact under docs/quality/, add its verify task in the same change. If it cannot be verified without a Bitbucket instance, it does not belong there. Do not add a coverage threshold to Taskfile.yml or to a workflow. Add it to .github/coverage-thresholds.env, which both read. Do not lower a threshold to make a change pass. When patch coverage fails, read the uncovered lines the gate prints. If they are unreachable, the code is wrong rather than the gate: extract the decision into something a test can reach, as the update killswitch origin naming was. A metric whose threshold is 0 must not be described as a gate in documentation or in a pull request. Say that it is reported, or delete it. Name a metric for what it measures. Command reach counts commands reached, not lines covered within them; do not reintroduce a name that claims more than the measurement supports.
 
 ## Rationale
 
@@ -78,5 +95,5 @@ Naming what is not measured is the cheapest part and prevents the most recurring
 
 - `Have CI run task quality:verify as a single step instead of enumerating the gates`: It would make drift structurally impossible, which is the right instinct, but it collapses eleven named steps into one in the workflow UI and the pull request summary. Losing which gate failed at a glance is a real cost paid on every failure, against a drift that a test catches for free. The test keeps both properties.
 - `Drop the global line coverage floor and rely on the patch gate`: The patch gate cannot see a deleted test or a refactor that removes covered paths wholesale, because neither appears as uncovered changed lines. The floor costs nothing extra to compute, being the same run, and its only real cost is a false failure when headroom is thin, which is itself the signal that tests are owed.
-- `Raise the contract coverage threshold now to make it a real gate`: It sits at 20.21%. Picking a floor it currently passes would enshrine the status quo and create a second metric that cannot fail; picking one it does not would block every pull request on unrelated work. The decision is whether the axis is wanted at all, and that belongs with issue 462, where the output-schema question is already being answered.
-- `Stop committing spec-coverage.json and cli-live-coverage.json`: Already rejected by ADR-045 and still right. They are verifiable with no Bitbucket instance, so they gate cheaply on every pull request, and cli-live-coverage.json has already caught a real regression that stayed green for years.
+- `Raise the contract coverage threshold instead of deleting the axis`: It sat at 20.21%. A floor it already passes enshrines the status quo and creates a second metric that cannot fail; a floor it does not pass blocks every pull request on unrelated work. Neither is worth having when the underlying map is hand-written and unverified: the honest version of this axis is "which generated operations that we call are exercised by a test", computed rather than declared, and that is a different mechanism which nobody has asked for.
+- `Stop committing spec-coverage.json and command-reach.json`: Already rejected by ADR-045 and still right. They are verifiable with no Bitbucket instance, so they gate cheaply on every pull request, and command-reach.json has already caught a real regression that stayed green for years.

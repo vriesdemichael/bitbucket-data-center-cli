@@ -27,7 +27,7 @@ import (
 // same reason the rest of the suite does: a subprocess executes code no
 // coverage profile can see, and this is the surface an agent actually calls.
 //
-// The command words follow the callback, so tools/cli-live-coverage counts this
+// The command words follow the callback, so tools/command-reach counts this
 // as an invocation of `ai mcp serve` exactly as it counts the other two helpers.
 func executeLiveMCPServer(t *testing.T, drive func(*mcp.ClientSession), args ...string) {
 	t.Helper()

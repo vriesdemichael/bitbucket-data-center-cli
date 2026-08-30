@@ -19,25 +19,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linear-history:
-    name: Linear History
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Setup Task
-        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
-
-      - name: Verify PR branch has no merge commits
-        run: task quality:git:ensure-linear
-
   adr-validation:
     name: ADR Validation
     runs-on: ubuntu-latest
@@ -114,8 +95,8 @@ jobs:
 
       # Catches commands that no live test proves work, including ones whose only
       # live test skips itself when the call fails.
-      - name: Verify CLI live coverage has not regressed
-        run: task quality:cli-live-coverage:verify
+      - name: Verify command reach has not regressed
+        run: task quality:command-reach:verify
 
       # Catches documented commands that do not parse against the real command
       # tree. Six had accumulated by v2.0.2, including the README quickstart and
@@ -168,6 +149,10 @@ jobs:
       - name: Build docs site
         run: task docs:validate
 
+  # Three jobs rather than one, because they fail for unrelated reasons and a
+  # single job made every one of them read as "Live Integration Tests failed".
+  # A patch-coverage breach reported under that name sends the reader looking
+  # for a broken test that does not exist.
   live-tests:
     name: Live Integration Tests
     runs-on: ubuntu-latest
@@ -206,10 +191,54 @@ jobs:
       - name: Run live integration tests with coverage
         run: task test:live:coverage
 
-      - name: Fetch origin/main for quality-report base ref
+      # The profiles are the handoff to the two jobs below. Uploaded on failure
+      # too: when the suite fails it is still worth seeing what it covered.
+      - name: Upload raw coverage profiles
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-profiles-raw
+          path: |
+            .tmp/coverage.unit.out
+            .tmp/coverage.live.out
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Dump Bitbucket logs on failure
+        if: failure()
+        run: docker compose -f docker/compose.yml logs --no-color --tail 400 bitbucket
+
+      - name: Stop Bitbucket stack
+        if: always()
+        run: docker compose -f docker/compose.yml down
+
+  coverage-gates:
+    name: Coverage Gates
+    runs-on: ubuntu-latest
+    needs: live-tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # The patch gate diffs against the base branch, so it needs history.
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download raw coverage profiles
+        uses: actions/download-artifact@v7
+        with:
+          name: coverage-profiles-raw
+          path: .tmp
+
+      - name: Fetch base ref for the patch gate
         run: git fetch origin main
 
-      - name: Resolve CI coverage thresholds
+      - name: Resolve coverage thresholds
         run: |
           set -euo pipefail
 
@@ -226,9 +255,8 @@ jobs:
           COVERAGE_MIN_PATCH="${CI_COVERAGE_MIN_PATCH:-85}"
           COVERAGE_MIN_PATCH_LINES="${CI_COVERAGE_MIN_PATCH_LINES:-30}"
           COVERAGE_MAX_UNCOVERED_SMALL_PATCH="${CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH:-2}"
-          COVERAGE_MIN_CONTRACT="${CI_COVERAGE_MIN_CONTRACT:-0}"
 
-          for var in COVERAGE_MIN_GLOBAL_COMBINED COVERAGE_MIN_PATCH COVERAGE_MIN_PATCH_LINES COVERAGE_MAX_UNCOVERED_SMALL_PATCH COVERAGE_MIN_CONTRACT; do
+          for var in COVERAGE_MIN_GLOBAL_COMBINED COVERAGE_MIN_PATCH COVERAGE_MIN_PATCH_LINES COVERAGE_MAX_UNCOVERED_SMALL_PATCH; do
             value="${!var}"
             if ! [[ "$value" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
               echo "Invalid numeric value for $var: $value" >&2
@@ -241,7 +269,6 @@ jobs:
             echo "COVERAGE_MIN_PATCH=$COVERAGE_MIN_PATCH"
             echo "COVERAGE_MIN_PATCH_LINES=$COVERAGE_MIN_PATCH_LINES"
             echo "COVERAGE_MAX_UNCOVERED_SMALL_PATCH=$COVERAGE_MAX_UNCOVERED_SMALL_PATCH"
-            echo "COVERAGE_MIN_CONTRACT=$COVERAGE_MIN_CONTRACT"
           } >> "$GITHUB_ENV"
 
       - name: Verify coverage quality gates
@@ -250,31 +277,43 @@ jobs:
             -coverprofile .tmp/coverage.unit.out \
             -live-coverprofile .tmp/coverage.live.out \
             -base-ref origin/main \
-            -manifest docs/quality/generated-operation-contracts.json \
             -scoped-coverprofile-file .tmp/coverage.combined.scoped.out \
             -write-coverprofiles \
             -min-global-combined "$COVERAGE_MIN_GLOBAL_COMBINED" \
             -min-patch "$COVERAGE_MIN_PATCH" \
             -min-patch-lines "$COVERAGE_MIN_PATCH_LINES" \
-            -max-uncovered-small-patch "$COVERAGE_MAX_UNCOVERED_SMALL_PATCH" \
-            -min-contract "$COVERAGE_MIN_CONTRACT"
+            -max-uncovered-small-patch "$COVERAGE_MAX_UNCOVERED_SMALL_PATCH"
 
-      # Coverage profiles are published here rather than committed. They used to
-      # live in docs/quality/ because CI could not run the live suite, so a
-      # developer's machine was the only place they could be produced; that cost
-      # a rebase conflict on every branch for ~5.7MB of data nothing read. CI now
-      # recomputes them every run, so the artifact is the copy worth keeping.
-      - name: Upload coverage profiles
+      # Written before the thresholds are enforced, so it exists even when the
+      # gate fails -- which is exactly when someone wants to read it.
+      - name: Upload scoped coverage profile
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-profiles
-          path: |
-            .tmp/coverage.unit.out
-            .tmp/coverage.live.out
-            .tmp/coverage.combined.scoped.out
+          name: coverage-profile-scoped
+          path: .tmp/coverage.combined.scoped.out
           retention-days: 14
           if-no-files-found: warn
+
+  codecov:
+    name: Codecov
+    runs-on: ubuntu-latest
+    needs:
+      - live-tests
+      - coverage-gates
+    # Publishes coverage history and the README badge. It runs even when the
+    # gates fail, because a red build's coverage is still the number the badge
+    # should be reporting.
+    if: always() && needs.live-tests.result == 'success'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download scoped coverage profile
+        uses: actions/download-artifact@v7
+        with:
+          name: coverage-profile-scoped
+          path: .tmp
 
       - name: Upload combined scoped coverage to Codecov
         if: env.CODECOV_TOKEN != ''
@@ -325,34 +364,27 @@ jobs:
 
           echo "::warning::Codecov did not process this commit; not failing a pull request build."
 
-      - name: Dump Bitbucket logs on failure
-        if: failure()
-        run: docker compose -f docker/compose.yml logs --no-color --tail 400 bitbucket
-
-      - name: Stop Bitbucket stack
-        if: always()
-        run: docker compose -f docker/compose.yml down
-
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-latest
     needs:
-      - linear-history
       - adr-validation
       - unit-tests
       - docs-site
       - live-tests
+      - coverage-gates
+      - codecov
     if: always()
     steps:
       - name: Verify all required CI jobs passed
         env:
-          LINEAR_HISTORY_RESULT: ${{ needs.linear-history.result }}
           ADR_VALIDATION_RESULT: ${{ needs.adr-validation.result }}
           UNIT_TESTS_RESULT: ${{ needs.unit-tests.result }}
           DOCS_SITE_RESULT: ${{ needs.docs-site.result }}
           LIVE_TESTS_RESULT: ${{ needs.live-tests.result }}
+          COVERAGE_GATES_RESULT: ${{ needs.coverage-gates.result }}
+          CODECOV_RESULT: ${{ needs.codecov.result }}
         run: |
-          [[ "$LINEAR_HISTORY_RESULT" == "success" ]]
           [[ "$ADR_VALIDATION_RESULT" == "success" ]]
           [[ "$UNIT_TESTS_RESULT" == "success" ]]
           [[ "$DOCS_SITE_RESULT" == "success" ]]
@@ -360,3 +392,8 @@ jobs:
           # SDK-licensed and needs no repository secret, so "skipped" would now
           # mean the primary correctness gate silently did not run.
           [[ "$LIVE_TESTS_RESULT" == "success" ]]
+          [[ "$COVERAGE_GATES_RESULT" == "success" ]]
+          # Codecov publishes the badge and history; it is not a correctness
+          # gate, and on a fork without the token its steps are skipped, so the
+          # job legitimately reports success having uploaded nothing.
+          [[ "$CODECOV_RESULT" == "success" ]]

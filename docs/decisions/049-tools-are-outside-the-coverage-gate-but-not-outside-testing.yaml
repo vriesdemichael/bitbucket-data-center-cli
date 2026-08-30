@@ -38,7 +38,7 @@ rationale: >
   artifacts.
   The counter-argument is real and is why the convention exists rather than nothing. Tool failures
   are not all loud. A bug in quality-report makes gates pass when they should not, which is silent
-  and worse than a broken build; cli-live-coverage exists precisely because the project already
+  and worse than a broken build; command-reach exists precisely because the project already
   concluded that a check you cannot trust is worse than no check. quality-report is also the largest
   tool and the least covered, which is uncomfortable regardless of where the scope line sits.
   Writing the convention down is what keeps that concern addressed without paying for the gate. It

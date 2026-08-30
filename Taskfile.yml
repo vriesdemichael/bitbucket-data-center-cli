@@ -177,23 +177,9 @@ tasks:
     desc: Export per-command JSON output schemas for the bb.machine v2 envelope
     cmd: go run ./tools/output-schema-export -out docs/reference/schemas/output
 
-  quality:git:ensure-linear:
-    desc: Fail when branch contains merge commits relative to origin/main
-    cmds:
-      - git fetch origin main
-      - |
-        merge_count="$(git rev-list --count --merges origin/main..HEAD)"
-        if [ "$merge_count" != "0" ]; then
-          echo "Branch must be linear (rebase-only). Found $merge_count merge commit(s) in origin/main..HEAD."
-          git log --oneline --merges origin/main..HEAD
-          exit 1
-        fi
-        echo "Branch is linear (no merge commits in origin/main..HEAD)."
-
   quality:check:
     desc: Run core quality checks that need no Bitbucket instance
     deps:
-      - quality:git:ensure-linear
       - quality:verify
 
   pr:rebase:
@@ -219,7 +205,7 @@ tasks:
       - task: models:verify
       - task: client:verify
       - task: quality:spec-coverage:verify
-      - task: quality:cli-live-coverage:verify
+      - task: quality:command-reach:verify
       - task: test:live:compile
       - task: docs:lint
       - task: docs:verify-generated
@@ -265,7 +251,7 @@ tasks:
       - git fetch origin main
       - task: test:unit:coverage
       - task: test:live:coverage
-      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref {{.COVERAGE_BASE_REF}} -manifest docs/quality/generated-operation-contracts.json -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.CI_COVERAGE_MIN_CONTRACT}}
+      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref {{.COVERAGE_BASE_REF}} -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}}
 
   quality:coverage:origin-main:
     desc: Run combined (unit + live) global + patch coverage gates against origin/main (requires live infra)
@@ -273,7 +259,7 @@ tasks:
       - git fetch origin main
       - task: test:unit:coverage
       - task: test:live:coverage
-      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref origin/main -manifest docs/quality/generated-operation-contracts.json -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.CI_COVERAGE_MIN_CONTRACT}}
+      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref origin/main -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}}
 
   quality:coverage:replay:
     desc: Re-run the coverage gates against the profiles already in .tmp/ (seconds; no tests, no live infra)
@@ -283,7 +269,7 @@ tasks:
       - sh: test -f .tmp/coverage.live.out
         msg: ".tmp/coverage.live.out is missing — run `task test:live:coverage` first (needs the stack up)"
     cmds:
-      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref origin/main -manifest docs/quality/generated-operation-contracts.json -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.CI_COVERAGE_MIN_CONTRACT}}
+      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref origin/main -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}}
 
   quality:spec-coverage:
     desc: Print OpenAPI spec path coverage across both transports (generated client + raw httpclient)
@@ -300,20 +286,20 @@ tasks:
     cmds:
       - go run ./tools/quality-report -spec-coverage -verify-report -spec-coverage-file docs/quality/spec-coverage.json
 
-  quality:cli-live-coverage:
+  quality:command-reach:
     desc: Print which CLI commands the live suite proves work against a real Bitbucket
     cmds:
-      - go run ./tools/cli-live-coverage
+      - go run ./tools/command-reach
 
-  quality:cli-live-coverage:update:
-    desc: Update the committed CLI live coverage baseline
+  quality:command-reach:update:
+    desc: Update the committed command reach baseline
     cmds:
-      - go run ./tools/cli-live-coverage -write
+      - go run ./tools/command-reach -write
 
-  quality:cli-live-coverage:verify:
+  quality:command-reach:verify:
     desc: Fail when a command loses live coverage, arrives without it, or is masked by a skip-on-error test (CI-safe, no live execution)
     cmds:
-      - go run ./tools/cli-live-coverage -verify
+      - go run ./tools/command-reach -verify
 
   test:unit:
     desc: Run Go unit tests

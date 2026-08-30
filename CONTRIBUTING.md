@@ -119,7 +119,9 @@ changes that actually break the CLI contract: a removed or renamed command or
 flag, a changed exit code, or a change to the `bb.machine` JSON envelope.
 
 **Keep history linear.** Rebase onto `main`; never merge `main` into your
-branch. CI enforces this.
+branch. This is a convention rather than a gate: the check that enforced it
+existed to keep committed coverage artifacts from conflicting on every rebase,
+and ADR-045 deleted those artifacts.
 
 ```bash
 git fetch origin && git rebase origin/main
@@ -132,8 +134,8 @@ Bitbucket 8.0 and CI stayed green for years because the test skipped on error. A
 skipped test is not a passing test.
 
 ```bash
-task quality:cli-live-coverage:update
-git add docs/quality/cli-live-coverage.json
+task quality:command-reach:update
+git add docs/quality/command-reach.json
 ```
 
 **Regenerate committed artifacts you affect.** The command reference, ADR pages,
@@ -281,11 +283,16 @@ They are still expected, and a reviewer will ask:
 
 | Job | What it does |
 |---|---|
-| Linear History | rejects merge commits on the branch |
 | ADR Validation | validates `docs/decisions/*.yaml` |
-| Unit Tests | non-live tests, verification that generated artifacts are current, and that every documented `bb ...` invocation parses |
+| Unit Tests | non-live tests, that the live-tagged tree compiles, that generated artifacts are current, and that every documented `bb ...` invocation parses |
 | Docs Site | builds the MkDocs site |
-| Live Integration Tests | starts Bitbucket, runs the live suite, enforces coverage thresholds |
+| Live Integration Tests | starts Bitbucket and runs the live suite |
+| Coverage Gates | global and patch coverage thresholds, against the profiles the live job produced |
+| Codecov | publishes coverage history and the README badge |
+
+Coverage gates are a separate job from the live suite on purpose: they fail for
+unrelated reasons, and reporting a patch-coverage breach as "Live Integration
+Tests failed" sends you looking for a broken test that does not exist.
 
 Live tests **run on pull requests from forks**. If they fail on your PR, the
 failure is real — please do not assume it is infrastructure.

@@ -23,7 +23,7 @@ Coverage **baselines** are still committed, because they are contracts rather th
 
 | File | Asserts | Regenerate with |
 |---|---|---|
-| `docs/quality/cli-live-coverage.json` | which CLI commands the live suite proves work | `task quality:cli-live-coverage:update` |
+| `docs/quality/command-reach.json` | which CLI commands the live suite proves work | `task quality:command-reach:update` |
 | `docs/quality/spec-coverage.json` | which OpenAPI operations are exercised | `task quality:spec-coverage:update` |
 | `docs/quality/generated-operation-contracts.json` | the generated-operation manifest | — |
 
@@ -129,10 +129,10 @@ If the linter flags something you believe is correct, suspect a trailing carriag
 suspecting the documentation: on a CRLF checkout `\r` ends up inside the last token and pflag
 reports it as an unknown flag, with nothing visible in the message to say so. See ADR-048.
 
-### CLI live coverage artifact
+### command reach artifact
 
-`docs/quality/cli-live-coverage.json` records which CLI commands the live suite actually proves work
-against a real Bitbucket. CI verifies it via `task quality:cli-live-coverage:verify` (CI-safe, no live
+`docs/quality/command-reach.json` records which CLI commands the live suite actually proves work
+against a real Bitbucket. CI verifies it via `task quality:command-reach:verify` (CI-safe, no live
 infra needed — it is static analysis of the Cobra tree and the live test sources).
 
 It fails when:
@@ -150,8 +150,8 @@ test is not a passing test. Fix the command or the test; do not add a skip.
 When you add a command, add a live test that runs it and asserts, then:
 
 ```bash
-task quality:cli-live-coverage:update
-git add docs/quality/cli-live-coverage.json
+task quality:command-reach:update
+git add docs/quality/command-reach.json
 ```
 
 ### OpenAPI spec coverage artifact
