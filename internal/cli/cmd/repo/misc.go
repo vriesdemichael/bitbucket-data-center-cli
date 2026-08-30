@@ -1060,6 +1060,9 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 			}
 
 			var writer io.Writer
+			// Non-nil only when writing to a file rather than stdout; the file is
+			// closed explicitly before success is reported.
+			var archiveFile *os.File
 			var targetMsg string
 
 			if output == "-" {
@@ -1074,7 +1077,13 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				defer file.Close()
+				// Closed explicitly below, before success is reported.
+				// io.Copy returning nil does not mean the bytes reached the
+				// disk: a Close that fails on a full disk or a network
+				// filesystem leaves a truncated archive, and this command used
+				// to print success and exit 0 over exactly that.
+				defer func() { _ = file.Close() }()
+				archiveFile = file
 				writer = file
 				absPath, _ := filepath.Abs(filename)
 				targetMsg = absPath
@@ -1083,6 +1092,12 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 			_, err = io.Copy(writer, resp.Body)
 			if err != nil {
 				return err
+			}
+
+			if archiveFile != nil {
+				if err := archiveFile.Close(); err != nil {
+					return apperrors.New(apperrors.KindInternal, fmt.Sprintf("failed to finish writing repository archive to %s", targetMsg), err)
+				}
 			}
 
 			if output != "-" {

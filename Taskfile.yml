@@ -200,6 +200,12 @@ tasks:
       - task: openapi:verify
       - task: openapi:operation-paths:verify
       - task: quality:format:verify
+      # quality:lint is deliberately not here yet. The first run surfaced 103
+      # findings in code that predates the config, and a gate that is red on
+      # main is not a gate -- it teaches people to ignore it. The two findings
+      # issue #457 named as acceptance criteria are fixed; the rest is a
+      # baseline pass that wants its own reviewable change.
+      - task: quality:vulncheck
       - task: quality:line-endings:verify
       - task: quality:validate-decisions
       - task: models:verify
@@ -214,6 +220,19 @@ tasks:
     desc: Validate every documented bb invocation against the real Cobra command tree
     cmds:
       - go run ./tools/docs-lint
+
+  quality:lint:
+    desc: Run golangci-lint over the maintained Go tree
+    # Pinned like task itself: a linter release must not turn CI red on an
+    # unrelated pull request.
+    cmd: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.2 run ./cmd/... ./internal/... ./tools/... ./tests/...
+
+  quality:vulncheck:
+    desc: Report known vulnerabilities in this module and its dependencies
+    # The one check with no substitute here. bb ships signed binaries to five
+    # package managers, and nothing in the pipeline would otherwise surface a
+    # CVE in a transitive dependency.
+    cmd: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 
   quality:format:verify:
     desc: Verify the Go tree is gofmt-clean
