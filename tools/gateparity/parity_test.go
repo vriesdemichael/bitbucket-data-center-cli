@@ -54,6 +54,12 @@ var exemptFromParity = map[string]string{
 	// The docs job renders a changelog from the releases API before building,
 	// which a developer has no token for and does not need.
 	"docs:build": "CI renders the changelog from the releases API before building",
+	// The same tests over the same packages, twice, differing only in whether a
+	// coverage profile is written. The hook skips the profile because nothing
+	// local reads it and instrumentation costs time on every commit; CI writes
+	// it because the coverage gates consume it.
+	"test:go:safe":       "the pre-commit form of test:unit:coverage, without the profile",
+	"test:unit:coverage": "the CI form of test:go:safe, which also writes the profile the gates read",
 }
 
 func TestEveryCISafeGateRunsOnBothSides(t *testing.T) {

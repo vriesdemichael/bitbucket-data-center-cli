@@ -65,8 +65,28 @@ jobs:
       - name: Verify line endings
         run: task quality:line-endings:verify
 
-      - name: Run Go tests (targeted non-live package scope)
-        run: task test:go:safe
+      # bb ships signed binaries to five package managers, and nothing else in
+      # the pipeline would surface a CVE in a dependency or in the toolchain.
+      # Its first run found five: the pinned Go toolchain was five patches
+      # behind, which is why go.mod now carries a toolchain directive.
+      - name: Check for known vulnerabilities
+        run: task quality:vulncheck
+
+      # The same package set the pre-commit hook runs, with a coverage profile
+      # attached. It used to run here without one and again inside the live job
+      # with one -- the same tests twice, the second time on the critical path
+      # behind a four-minute Bitbucket boot it does not need.
+      - name: Run Go tests with coverage (targeted non-live package scope)
+        run: task test:unit:coverage
+
+      - name: Upload unit coverage profile
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-profile-unit
+          path: .tmp/coverage.unit.out
+          retention-days: 14
+          if-no-files-found: warn
 
       # The live suite is tagged, so the step above never compiles it and a
       # break in it surfaced only once the live job had run for eight minutes.
@@ -185,22 +205,17 @@ jobs:
       - name: Bootstrap Bitbucket (enable basic auth for admin API calls)
         run: bash scripts/bootstrap-bitbucket.sh "$BITBUCKET_URL" "$ADMIN_USER" "$ADMIN_PASSWORD"
 
-      - name: Run unit tests with coverage
-        run: task test:unit:coverage
-
       - name: Run live integration tests with coverage
         run: task test:live:coverage
 
-      # The profiles are the handoff to the two jobs below. Uploaded on failure
-      # too: when the suite fails it is still worth seeing what it covered.
-      - name: Upload raw coverage profiles
+      # The handoff to the coverage gates. Uploaded on failure too: when the
+      # suite fails it is still worth seeing what it covered.
+      - name: Upload live coverage profile
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-profiles-raw
-          path: |
-            .tmp/coverage.unit.out
-            .tmp/coverage.live.out
+          name: coverage-profile-live
+          path: .tmp/coverage.live.out
           retention-days: 14
           if-no-files-found: warn
 
@@ -215,7 +230,9 @@ jobs:
   coverage-gates:
     name: Coverage Gates
     runs-on: ubuntu-latest
-    needs: live-tests
+    needs:
+      - unit-tests
+      - live-tests
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -229,14 +246,30 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Download raw coverage profiles
+      - name: Download unit coverage profile
         uses: actions/download-artifact@v7
         with:
-          name: coverage-profiles-raw
+          name: coverage-profile-unit
           path: .tmp
 
-      - name: Fetch base ref for the patch gate
-        run: git fetch origin main
+      - name: Download live coverage profile
+        uses: actions/download-artifact@v7
+        with:
+          name: coverage-profile-live
+          path: .tmp
+
+      # The patch gate diffs against the branch this pull request actually
+      # targets, not against main. On a long-lived integration branch -- the v4
+      # milestone is one -- diffing against main would report the whole
+      # divergence as the patch, which is neither reviewable nor passable.
+      - name: Fetch the base ref the patch gate diffs against
+        env:
+          BASE_REF: ${{ github.base_ref || github.ref_name }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$BASE_REF"
+          echo "COVERAGE_BASE_REF=origin/$BASE_REF" >> "$GITHUB_ENV"
+          echo "Patch coverage is measured against origin/$BASE_REF"
 
       - name: Resolve coverage thresholds
         run: |
@@ -276,7 +309,7 @@ jobs:
           go run ./tools/quality-report \
             -coverprofile .tmp/coverage.unit.out \
             -live-coverprofile .tmp/coverage.live.out \
-            -base-ref origin/main \
+            -base-ref "$COVERAGE_BASE_REF" \
             -scoped-coverprofile-file .tmp/coverage.combined.scoped.out \
             -write-coverprofiles \
             -min-global-combined "$COVERAGE_MIN_GLOBAL_COMBINED" \
