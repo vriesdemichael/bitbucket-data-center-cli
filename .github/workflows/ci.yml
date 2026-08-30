@@ -199,7 +199,11 @@ jobs:
       - name: Setup Task
         run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
+      # BUILDKIT_PROGRESS=plain stops the builder redrawing its step table,
+      # which a CI log records as a fresh copy of the whole table each time.
       - name: Start Bitbucket stack
+        env:
+          BUILDKIT_PROGRESS: plain
         run: docker compose -f docker/compose.yml up -d --wait
 
       - name: Bootstrap Bitbucket (enable basic auth for admin API calls)
