@@ -99,7 +99,14 @@ func newCloneCommand(deps Dependencies) *cobra.Command {
 			upstreamOwner := ""
 			upstreamAdded := false
 			if !noUpstream {
-				upstreamOwner, upstreamURL, err = lookupParentCloneURL(cmd.Context(), cfg, cloneHost, repo)
+				// Deliberately best-effort, and the discard is explicit because
+				// it used to be an assignment to err that nothing then read:
+				// the lookup could fail and the clone would carry on as though
+				// the repository simply had no parent. A repository with no
+				// parent, or one whose parent the user cannot read, is not a
+				// clone failure -- the remote is not added, and the JSON output
+				// reports that as upstream_added: false.
+				upstreamOwner, upstreamURL, _ = lookupParentCloneURL(cmd.Context(), cfg, cloneHost, repo)
 				if strings.TrimSpace(upstreamURL) != "" {
 					if strings.EqualFold(strings.TrimSpace(upstreamRemoteName), "@owner") && strings.TrimSpace(upstreamOwner) != "" {
 						resolvedUpstreamName = strings.ToLower(strings.TrimSpace(upstreamOwner))

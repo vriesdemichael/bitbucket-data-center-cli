@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -388,5 +390,60 @@ func TestExecuteRootCommandReportsEnvelopeWriteFailure(t *testing.T) {
 	}
 	if !strings.Contains(output, "transient: upstream unavailable") {
 		t.Fatalf("expected the original error still reported, got %q", output)
+	}
+}
+
+// stdoutFailure fails every write, standing in for a full disk or a read-only
+// destination.
+type stdoutFailure struct{ err error }
+
+func (w stdoutFailure) Write([]byte) (int, error) { return 0, w.err }
+
+// TestExecuteRootCommandFailsWhenOutputCannotBeWritten covers the case the
+// output recorder exists for.
+//
+// The command succeeds and prints its result; the write never lands. Reporting
+// success there is indistinguishable from having produced complete output,
+// which is how `bb pr list > file` on a full disk used to exit 0 with a
+// truncated file.
+func TestExecuteRootCommandFailsWhenOutputCannotBeWritten(t *testing.T) {
+	t.Setenv("BB_LOG_LEVEL", "")
+	t.Setenv("BB_LOG_FORMAT", "")
+
+	cmd := &cobra.Command{Use: "test", RunE: func(command *cobra.Command, args []string) error {
+		fmt.Fprintln(command.OutOrStdout(), "the result the caller asked for")
+		return nil
+	}}
+
+	stderr := &bytes.Buffer{}
+	code := executeRootCommand(cmd, nil, stdoutFailure{err: errors.New("no space left on device")}, stderr)
+
+	if code == 0 {
+		t.Fatal("expected a failed write to fail the command")
+	}
+	if !strings.Contains(stderr.String(), "failed to write command output") {
+		t.Fatalf("stderr does not explain the failure: %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "no space left on device") {
+		t.Fatalf("stderr does not name the underlying cause: %q", stderr.String())
+	}
+}
+
+// TestExecuteRootCommandSucceedsOnAClosedPipe is the other half: `bb ... | head`
+// closes the pipe early, and that must stay a success.
+func TestExecuteRootCommandSucceedsOnAClosedPipe(t *testing.T) {
+	t.Setenv("BB_LOG_LEVEL", "")
+	t.Setenv("BB_LOG_FORMAT", "")
+
+	cmd := &cobra.Command{Use: "test", RunE: func(command *cobra.Command, args []string) error {
+		fmt.Fprintln(command.OutOrStdout(), "more output than the reader wants")
+		return nil
+	}}
+
+	stderr := &bytes.Buffer{}
+	code := executeRootCommand(cmd, nil, stdoutFailure{err: syscall.EPIPE}, stderr)
+
+	if code != 0 {
+		t.Fatalf("a closed pipe must not fail the command, got exit %d: %s", code, stderr.String())
 	}
 }

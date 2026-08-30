@@ -328,7 +328,7 @@ func (service *Service) ListProjectPermissionGroups(ctx context.Context, project
 				}
 			}
 			if value.Permission != nil {
-				entry.Permission = string(*value.Permission)
+				entry.Permission = *value.Permission
 			}
 			results = append(results, entry)
 		}

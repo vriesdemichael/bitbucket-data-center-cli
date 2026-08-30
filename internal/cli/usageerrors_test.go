@@ -142,6 +142,10 @@ func TestClassifyUsageErrorLeavesClassifiedErrorsAlone(t *testing.T) {
 		t.Run(string(kind), func(t *testing.T) {
 			original := apperrors.New(kind, "already classified", nil)
 
+			// Identity, not matching: the contract is that an already-classified
+			// error comes back untouched. errors.Is would also accept a wrapper,
+			// which is the thing being ruled out.
+			//nolint:errorlint // deliberate identity comparison
 			if classified := ClassifyUsageError(original); classified != error(original) {
 				t.Fatalf("expected the original error back, got %v", classified)
 			}

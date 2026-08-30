@@ -100,7 +100,11 @@ func NewAuditLogger(path string) (*AuditLogger, error) {
 	}
 
 	if directory := filepath.Dir(trimmed); directory != "" && directory != "." {
-		if err := os.MkdirAll(directory, 0o755); err != nil {
+		// 0750, not 0755: the audit trail records which repositories an agent
+		// touched and what it did to them. ADR-062 makes it a compliance
+		// artefact, and a compliance artefact every local account can read is
+		// a weaker one.
+		if err := os.MkdirAll(directory, 0o750); err != nil {
 			return nil, fmt.Errorf("cannot create audit log directory %s: %w", directory, err)
 		}
 	}

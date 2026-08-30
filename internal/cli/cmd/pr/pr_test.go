@@ -429,6 +429,7 @@ func TestPRCommentCommands(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on inline comment add dry-run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// Add inline comment (json)
 	out, err = executePr(t, server.URL, "--json", "comment", "add", "42", "--text", "Inline review comment", "--path", "file1.go", "--line", "10")
@@ -453,6 +454,7 @@ func TestPRCommentCommands(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on reply dry-run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// Add threaded reply (json)
 	out, err = executePr(t, server.URL, "--json", "comment", "add", "42", "--text", "Threaded reply", "--parent-id", "101")
@@ -630,6 +632,7 @@ func TestPRWatchAndUnwatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on watch dry-run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// Unwatch human mode
 	out, err = executePr(t, server.URL, "unwatch", "42")
@@ -654,6 +657,7 @@ func TestPRWatchAndUnwatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on unwatch dry-run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 }
 
 func TestPRJiraIssues(t *testing.T) {
@@ -730,6 +734,7 @@ func TestPRRebase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on rebase dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// Real execution
 	out, err = executePr(t, server.URL, "rebase", "42")
@@ -837,6 +842,7 @@ func TestPRReviewCompleteAndDiscard(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on review complete dry-run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// Complete real execution (human & JSON)
 	out, err = executePr(t, server.URL, "review", "complete", "42", "--status", "APPROVED", "--comment", "Looks good")
@@ -860,6 +866,7 @@ func TestPRReviewCompleteAndDiscard(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on review discard dry-run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// Discard real execution (human & JSON)
 	out, err = executePr(t, server.URL, "review", "discard", "42")
@@ -909,6 +916,7 @@ func TestPRCommentApplySuggestion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on apply-suggestion dry-run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// Real execution (human & JSON)
 	out, err = executePr(t, server.URL, "comment", "apply-suggestion", "42", "101", "--commit-message", "Apply fix", "--comment-version", "1", "--pr-version", "1")
@@ -936,6 +944,7 @@ func TestPRCommentReact(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on react dry-run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// React add (human & JSON)
 	out, err = executePr(t, server.URL, "comment", "react", "42", "101", "thumbsup")
@@ -959,6 +968,7 @@ func TestPRCommentReact(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on react delete dry-run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "comment", "react", "42", "101", "thumbsup", "--remove")
 	if err != nil {
@@ -1040,6 +1050,7 @@ func TestPRCreateUpdateMergeDeclineReopenModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on create dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "--json", "create", "--from-ref", "feature/y", "--to-ref", "main", "--title", "Created PR")
 	if err != nil {
@@ -1054,6 +1065,7 @@ func TestPRCreateUpdateMergeDeclineReopenModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on update dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "--json", "update", "42", "--version", "1", "--title", "Updated PR")
 	if err != nil {
@@ -1068,6 +1080,7 @@ func TestPRCreateUpdateMergeDeclineReopenModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on merge dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "--json", "merge", "42", "--version", "1")
 	if err != nil {
@@ -1082,6 +1095,7 @@ func TestPRCreateUpdateMergeDeclineReopenModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on decline dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "--json", "decline", "42")
 	if err != nil {
@@ -1096,6 +1110,7 @@ func TestPRCreateUpdateMergeDeclineReopenModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on reopen dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "--json", "reopen", "42")
 	if err != nil {
@@ -1114,6 +1129,7 @@ func TestPRReviewAndReviewerModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on approve dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "--json", "review", "approve", "42")
 	if err != nil {
@@ -1128,6 +1144,7 @@ func TestPRReviewAndReviewerModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on unapprove dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "--json", "review", "unapprove", "42")
 	if err != nil {
@@ -1142,6 +1159,7 @@ func TestPRReviewAndReviewerModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on reviewer add dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "--json", "review", "reviewer", "add", "42", "--user", "bob")
 	if err != nil {
@@ -1156,6 +1174,7 @@ func TestPRReviewAndReviewerModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on reviewer remove dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "--json", "review", "reviewer", "remove", "42", "--user", "bob")
 	if err != nil {
@@ -1182,15 +1201,27 @@ func TestPRCommentModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on comment list full: %v", err)
 	}
+	if !strings.Contains(out, "Comment 1") {
+		t.Fatalf("--full must still list the comments: %s", out)
+	}
 
 	out, err = executePr(t, server.URL, "comment", "list", "42", "--blocker")
 	if err != nil {
 		t.Fatalf("unexpected error on comment list blocker: %v", err)
 	}
+	// --blocker reads a different endpoint, so the fixture returns different
+	// text. Asserting it is what distinguishes the flag being honoured from
+	// the flag being accepted and ignored -- the failure #476 describes.
+	if !strings.Contains(out, "Blocker comment") {
+		t.Fatalf("--blocker must read the blocker comments: %s", out)
+	}
 
 	out, err = executePr(t, server.URL, "comment", "list", "42", "--path", "file1.go")
 	if err != nil {
 		t.Fatalf("unexpected error on comment list path: %v", err)
+	}
+	if !strings.Contains(out, "Comment 1") {
+		t.Fatalf("--path must still list the matching comments: %s", out)
 	}
 
 	out, err = executePr(t, server.URL, "--json", "comment", "list", "42")
@@ -1215,6 +1246,7 @@ func TestPRCommentModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on comment add blocker dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "--json", "comment", "add", "42", "--text", "Draft note", "--pending")
 	if err != nil {
@@ -1229,6 +1261,7 @@ func TestPRCommentModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on comment resolve dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "--json", "comment", "resolve", "42", "101")
 	if err != nil {
@@ -1243,10 +1276,14 @@ func TestPRCommentModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on comment reopen dry run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executePr(t, server.URL, "--json", "comment", "reopen", "42", "101")
 	if err != nil {
 		t.Fatalf("unexpected error on comment reopen json: %v", err)
+	}
+	if !json.Valid([]byte(out)) {
+		t.Fatalf("--json must emit a parseable envelope: %s", out)
 	}
 }
 
@@ -1399,6 +1436,7 @@ func TestPRCreateReviewerGroups(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
+		assertDryRunPreview(t, out)
 		if !strings.Contains(out, "bob") || !strings.Contains(out, "charlie") {
 			t.Fatalf("expected expanded reviewers in dry run output: %s", out)
 		}
@@ -1478,6 +1516,7 @@ func TestPRReviewerAddEnhanced(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
+		assertDryRunPreview(t, out)
 		if !strings.Contains(out, "reviewer already present") {
 			t.Fatalf("expected reviewer already present in dry run: %s", out)
 		}
@@ -1591,4 +1630,25 @@ func TestPRDefaultReviewersAndCodeOwners(t *testing.T) {
 			t.Fatalf("expected gopher added: %s", out)
 		}
 	})
+}
+
+// assertDryRunPreview fails when a --dry-run invocation produced no preview.
+//
+// The preview is the entire product of a dry run: it is what tells the caller
+// what would happen. These tests used to capture the output and check only that
+// the command did not error, which cannot tell a real preview from an empty one
+// -- and a --dry-run that quietly does nothing is the shape of #481, where a
+// command pre-flighted as read-only and then created a commit.
+//
+// The text comes from the shared writer in internal/cli/dryrunpreview, which
+// renders "Dry-run (<mode>, capability=<capability>)" for every command.
+func assertDryRunPreview(t *testing.T, out string) {
+	t.Helper()
+
+	// Human output carries the rendered banner; --json carries the same
+	// preview as an envelope with dry_run true. Either proves a preview was
+	// produced, which is the thing being asserted.
+	if !strings.Contains(out, "Dry-run") && !strings.Contains(out, `"dry_run": true`) {
+		t.Fatalf("expected a dry-run preview, got: %q", out)
+	}
 }

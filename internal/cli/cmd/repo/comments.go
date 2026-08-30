@@ -57,7 +57,7 @@ func commentIDString(comment openapigenerated.RestComment) string {
 	if comment.Id == nil {
 		return "?"
 	}
-	return strconv.FormatInt(int64(*comment.Id), 10)
+	return strconv.FormatInt(*comment.Id, 10)
 }
 
 func formatCommentSummary(comment openapigenerated.RestComment) string {

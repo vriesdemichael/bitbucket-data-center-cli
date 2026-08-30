@@ -495,6 +495,10 @@ func (backend *Backend) run(ctx context.Context, options runOptions) (runResult,
 		defer cancel()
 	}
 
+	// #nosec G204 -- the binary is the literal "git" and the arguments are
+	// passed as a slice, so no shell parses them and nothing here can inject a
+	// second command. Running git with caller-supplied arguments is what this
+	// backend is for (ADR-020); the trust boundary is the user's own shell.
 	command := exec.CommandContext(ctx, "git", options.args...)
 	if options.cwd != "" {
 		command.Dir = options.cwd

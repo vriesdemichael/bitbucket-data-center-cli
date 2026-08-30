@@ -3,7 +3,6 @@ package cli
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -458,7 +457,7 @@ func TestDryRunCommandPath(t *testing.T) {
 		t.Fatalf("expected command path 'project create', got: %q", got)
 	}
 
-	if got := fmt.Sprintf("%s", dryRunCommandPath(command)); got != "bb" {
+	if got := dryRunCommandPath(command); got != "bb" {
 		t.Fatalf("expected root path to remain bb, got: %q", got)
 	}
 }

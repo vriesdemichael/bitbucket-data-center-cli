@@ -171,9 +171,7 @@ func readGitGlobalValues(t *testing.T, key string) []string {
 	}
 
 	values := []string{}
-	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
-		values = append(values, line)
-	}
+	values = append(values, strings.Split(strings.TrimSpace(string(output)), "\n")...)
 	return values
 }
 

@@ -65,6 +65,9 @@ jobs:
       - name: Verify line endings
         run: task quality:line-endings:verify
 
+      - name: Lint
+        run: task quality:lint
+
       # bb ships signed binaries to five package managers, and nothing else in
       # the pipeline would surface a CVE in a dependency or in the toolchain.
       # Its first run found five: the pinned Go toolchain was five patches

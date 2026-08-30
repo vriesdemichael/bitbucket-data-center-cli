@@ -438,12 +438,12 @@ func extractBinaryFromTarGz(binaryName string, archiveBytes []byte) ([]byte, fs.
 	if err != nil {
 		return nil, 0, apperrors.New(apperrors.KindPermanent, "failed to open tar.gz archive", err)
 	}
-	defer gzipReader.Close()
+	defer func() { _ = gzipReader.Close() }()
 
 	tarReader := tar.NewReader(gzipReader)
 	for {
 		header, err := tarReader.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -462,7 +462,13 @@ func extractBinaryFromTarGz(binaryName string, archiveBytes []byte) ([]byte, fs.
 			return nil, 0, apperrors.New(apperrors.KindPermanent, "failed to extract binary from tar.gz archive", err)
 		}
 
-		mode := fs.FileMode(header.Mode)
+		// tar carries the mode as int64 and only the permission bits mean
+		// anything here. Masking them is both the correct read of the field and
+		// the reason the conversion can no longer overflow.
+		// #nosec G115 -- the mask bounds the value at 0o7777, so the conversion
+		// cannot overflow. gosec cannot see through the mask; it is not wrong
+		// about the general shape, only about this instance.
+		mode := fs.FileMode(header.Mode & 0o7777)
 		if mode == 0 {
 			mode = 0o755
 		}

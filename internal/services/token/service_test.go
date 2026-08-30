@@ -2,6 +2,7 @@ package token
 
 import (
 	"context"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -261,5 +262,25 @@ func TestTokenServiceNetworkErrors(t *testing.T) {
 	}
 	if err := service.Revoke(ctx, ScopeRepo, "PRJ/repo1", "tok-1"); err == nil {
 		t.Fatal("expected network error")
+	}
+}
+
+// TestTokenCreateRejectsOutOfRangeExpiry covers the bound on --expiry-days.
+//
+// The API field is 32 bits and int is 64 on every platform bb ships for, so
+// before this check the value silently wrapped: --expiry-days 2147483648
+// reached the server as a negative expiry.
+func TestTokenCreateRejectsOutOfRangeExpiry(t *testing.T) {
+	service := NewService(nil)
+
+	_, err := service.Create(context.Background(), ScopeUser, "alice", "ci", nil, math.MaxInt32+1)
+	if err == nil {
+		t.Fatal("expected an out-of-range expiry to be rejected")
+	}
+	if !apperrors.IsKind(err, apperrors.KindValidation) {
+		t.Fatalf("expected KindValidation, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "expiry days") {
+		t.Fatalf("message does not name the field: %v", err)
 	}
 }

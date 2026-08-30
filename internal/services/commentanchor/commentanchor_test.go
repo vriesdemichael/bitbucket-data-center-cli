@@ -216,10 +216,14 @@ func TestExplainRejection(t *testing.T) {
 	// the server rejecting the anchor. Dressing either up in anchor advice
 	// sends the reader the wrong way.
 	plain := ExplainRejection(serverErr, Options{})
+	// Identity, not matching: "left alone" means the same error value, and
+	// errors.Is would accept a wrapped one.
+	//nolint:errorlint // deliberate identity comparison
 	if plain != serverErr {
 		t.Error("a non-inline comment must be left alone")
 	}
 	transient := apperrors.New(apperrors.KindTransient, "connection reset", nil)
+	//nolint:errorlint // deliberate identity comparison, as above
 	if ExplainRejection(transient, anchored) != transient {
 		t.Error("a non-validation failure must be left alone")
 	}

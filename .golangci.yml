@@ -39,6 +39,45 @@ linters:
       # An unchecked Close on a file being written is not a style nit here: it
       # is how `bb repo archive` reported success over a truncated download.
       check-type-assertions: true
+      # These are excluded because the error is captured elsewhere, not
+      # because it does not matter. internal/cli/outwriter wraps stdout once at
+      # the root and remembers the first write failure; cmd/bb checks it after
+      # the command returns and exits non-zero. A single fmt.Fprintln cannot do
+      # anything with its own error -- a command has no way to report that
+      # stdout is broken -- but the process can, and does.
+      #
+      # Without that, `bb pr list > file` on a full disk produced truncated
+      # output and exited 0: the same bug as an unchecked Close on a download.
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+    staticcheck:
+      # Everything except the QF quickfix category.
+      #
+      # SA finds bugs and S finds genuine simplifications; both are kept. QF is
+      # staticcheck's refactoring aid -- "this if/else chain could be a tagged
+      # switch", "this selector could omit an embedded field" -- and is meant to
+      # be applied from an editor, not enforced in CI. It accounted for 32 of
+      # the 44 staticcheck findings here, none of which would change behaviour,
+      # and taking them would have meant a large mechanical diff through files
+      # this change has no other reason to touch.
+      #
+      # Turn it back on if the project decides those rewrites are wanted; it is
+      # a preference, not a correctness question.
+      # The list is golangci-lint's own default with -QF* appended. Writing
+      # only ["all", "-QF*"] would silently switch on the ST style checks the
+      # default excludes, which turned 44 findings into 200.
+      checks:
+        - all
+        - -ST1000
+        - -ST1003
+        - -ST1016
+        - -ST1020
+        - -ST1021
+        - -ST1022
+        - -QF*
+
     gosec:
       excludes:
         # G304 (file inclusion via variable) fires on every path this CLI is
@@ -65,6 +104,17 @@ linters:
           - unconvert
           - unparam
           - unused
+      # Build tooling writes generated artifacts -- command reference, ADR
+      # pages, JSON schemas, coverage baselines -- that are committed and read
+      # by everyone. G301 and G306 want 0750/0600 for them, which would be
+      # wrong: a generated documentation file only its author can read is not
+      # more secure, it is broken. The same checks stay on for cmd/ and
+      # internal/, where they caught the MCP audit directory being created
+      # world-readable.
+      - path: ^tools/
+        linters:
+          - gosec
+        text: "(G301|G306)"
       # Test files legitimately ignore errors on setup teardown and construct
       # subprocesses and temp paths that gosec cannot distinguish from the real
       # thing.
@@ -77,3 +127,10 @@ linters:
 formatters:
   enable:
     - gofmt
+
+issues:
+  # Report everything. The defaults cap output at 3 issues per linter and 3 of
+  # the same kind, which makes the total look small and stable while fixes just
+  # uncover the next three -- a baseline measured against it would be wrong.
+  max-issues-per-linter: 0
+  max-same-issues: 0

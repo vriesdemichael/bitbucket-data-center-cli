@@ -326,7 +326,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 			for i, t := range tasks {
 				idStr := ""
 				if t.Id != nil {
-					idStr = strconv.FormatInt(int64(*t.Id), 10)
+					idStr = strconv.FormatInt(*t.Id, 10)
 				}
 				desc := ""
 				if t.Description != nil {
@@ -407,7 +407,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 			}
 			idStr := ""
 			if task != nil && task.Id != nil {
-				idStr = strconv.FormatInt(int64(*task.Id), 10)
+				idStr = strconv.FormatInt(*task.Id, 10)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created default task:"), style.Secondary.Render(idStr))
 			return nil
@@ -1052,7 +1052,7 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			if resp.StatusCode >= 400 {
 				bodyBytes, _ := io.ReadAll(resp.Body)

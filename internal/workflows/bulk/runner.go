@@ -2,6 +2,8 @@ package bulk
 
 import (
 	"context"
+	"fmt"
+	"math"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
@@ -100,6 +102,15 @@ func (runner *ServiceRunner) Run(ctx context.Context, repo RepositoryTarget, ope
 		if *operation.Enabled {
 			if operation.InactivityWeeks == nil {
 				return nil, apperrors.New(apperrors.KindValidation, "inactivityWeeks is required when enabled is true", nil)
+			}
+			// The API field is 32-bit and this value comes from a policy file,
+			// so an out-of-range week count wrapped instead of being rejected.
+			if *operation.InactivityWeeks < 0 || *operation.InactivityWeeks > math.MaxInt32 {
+				return nil, apperrors.New(
+					apperrors.KindValidation,
+					fmt.Sprintf("inactivityWeeks must be between 0 and %d", math.MaxInt32),
+					nil,
+				)
 			}
 			inactivityWeeks = int32(*operation.InactivityWeeks)
 		}

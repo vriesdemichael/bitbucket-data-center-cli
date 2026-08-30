@@ -53,6 +53,8 @@ func SnapshotAmbientConfig() ConfigSnapshot {
 	found := false
 
 	for _, scope := range []string{"--local", "--worktree"} {
+		// #nosec G204 -- fixed binary, fixed arguments; scope is one of the two
+		// literals in the loop above.
 		command := exec.Command("git", "config", scope, "--list", "-z")
 		// Git exports GIT_DIR and friends to every hook it runs, and honours
 		// them over the working directory. Without scrubbing them the guard

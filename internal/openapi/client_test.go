@@ -52,6 +52,7 @@ func TestRetryTransport(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got: %v", err)
 		}
+		defer func() { _ = response.Body.Close() }()
 		if response.StatusCode != http.StatusOK {
 			t.Fatalf("expected final 200 response, got %d", response.StatusCode)
 		}
@@ -83,6 +84,7 @@ func TestRetryTransport(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got: %v", err)
 		}
+		defer func() { _ = response.Body.Close() }()
 		if response.StatusCode != http.StatusOK {
 			t.Fatalf("expected final 200 response, got %d", response.StatusCode)
 		}
@@ -115,6 +117,7 @@ func TestRetryTransport(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got: %v", err)
 		}
+		defer func() { _ = response.Body.Close() }()
 		if response.StatusCode != http.StatusServiceUnavailable {
 			t.Fatalf("expected 503 response, got %d", response.StatusCode)
 		}
@@ -142,7 +145,8 @@ func TestRetryTransport(t *testing.T) {
 			t.Fatalf("new request: %v", err)
 		}
 
-		_, err = transport.RoundTrip(request)
+		failed, err := transport.RoundTrip(request)
+		closeResponse(failed)
 		if err == nil {
 			t.Fatal("expected transport error")
 		}
@@ -176,6 +180,7 @@ func TestRetryTransport(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got: %v", err)
 		}
+		defer func() { _ = response.Body.Close() }()
 		if response.StatusCode != http.StatusServiceUnavailable {
 			t.Fatalf("expected last 503 response, got %d", response.StatusCode)
 		}
@@ -198,6 +203,7 @@ func TestRetryTransport(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got: %v", err)
 		}
+		defer func() { _ = response.Body.Close() }()
 		if response.StatusCode != http.StatusOK {
 			t.Fatalf("expected 200 response, got %d", response.StatusCode)
 		}
@@ -231,6 +237,7 @@ func TestRetryTransport(t *testing.T) {
 		}
 
 		response, err := transport.RoundTrip(request)
+		closeResponse(response)
 		if err != nil {
 			t.Fatalf("expected retry to complete without waiting an hour, got: %v", err)
 		}
@@ -258,7 +265,8 @@ func TestRetryTransport(t *testing.T) {
 			t.Fatalf("new request: %v", err)
 		}
 
-		_, err = transport.RoundTrip(request)
+		cancelled, err := transport.RoundTrip(request)
+		closeResponse(cancelled)
 		if err == nil {
 			t.Fatal("expected context cancellation error")
 		}
@@ -437,4 +445,16 @@ func TestNewClientWithResponsesFromConfigAuthAndBasePath(t *testing.T) {
 			t.Fatalf("expected basic auth header, got %q", authHeader)
 		}
 	})
+}
+
+// closeResponse releases a response body when there is one.
+//
+// A request that fails returns a nil response, and one that succeeds holds a
+// connection open until its body is closed. Tests that discard the response
+// leak the second kind, which is what bodyclose reports and what this makes
+// unnecessary to think about at each call site.
+func closeResponse(response *http.Response) {
+	if response != nil && response.Body != nil {
+		_ = response.Body.Close()
+	}
 }

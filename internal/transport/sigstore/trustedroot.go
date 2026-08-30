@@ -95,7 +95,7 @@ func (fetcher *httpFetcher) DownloadFile(urlPath string, maxLength int64, _ time
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("downloading %s: unexpected status %d", urlPath, response.StatusCode)

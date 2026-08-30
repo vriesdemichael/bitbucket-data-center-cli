@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -344,10 +345,6 @@ func TestCreatePullRequestWithReviewers(t *testing.T) {
 }
 
 func intPtr(value int) *int {
-	return &value
-}
-
-func boolPtr(value bool) *bool {
 	return &value
 }
 
@@ -2018,4 +2015,35 @@ func TestEnableAutoMergeSurfacesFailures(t *testing.T) {
 			t.Fatalf("expected the server's reason to be preserved, got: %v", err)
 		}
 	})
+}
+
+// TestRebaseRejectsOutOfRangeVersion covers the bound on the pull request
+// version sent with a rebase.
+//
+// The API field is 32 bits. A version outside its range used to wrap, which
+// would have rebased against a different version than the caller named — the
+// one case where silently using the wrong number is worse than refusing.
+func TestRebaseRejectsOutOfRangeVersion(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer server.Close()
+
+	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+
+	service := NewService(nil).WithAPIClient(client)
+	repo := RepositoryRef{ProjectKey: "PRJ", Slug: "repo"}
+
+	for _, version := range []int{-1, math.MaxInt32 + 1} {
+		if _, err := service.Rebase(context.Background(), repo, "42", &version); err == nil {
+			t.Fatalf("expected version %d to be rejected", version)
+		} else if !apperrors.IsKind(err, apperrors.KindValidation) {
+			t.Fatalf("expected KindValidation for %d, got %v", version, err)
+		}
+	}
 }

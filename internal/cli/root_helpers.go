@@ -18,7 +18,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/execgit"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	branchservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/branch"
-	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
 	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
@@ -546,15 +545,6 @@ func resolveRepositorySettingsReference(selector string, cfg config.AppConfig) (
 	return reposettings.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, nil
 }
 
-func resolvePullRequestRepositoryReference(selector string, cfg config.AppConfig) (pullrequestservice.RepositoryRef, error) {
-	repo, err := resolveRepositorySelector(selector, cfg)
-	if err != nil {
-		return pullrequestservice.RepositoryRef{}, err
-	}
-
-	return pullrequestservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, nil
-}
-
 func resolveTagRepositoryReference(selector string, cfg config.AppConfig) (tagservice.RepositoryRef, error) {
 	repo, err := resolveRepositorySelector(selector, cfg)
 	if err != nil {
@@ -580,28 +570,6 @@ func resolveQualityRepositoryReference(selector string, cfg config.AppConfig) (q
 	}
 
 	return qualityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, nil
-}
-
-func resolveCommentTarget(selector string, commitID string, pullRequestID string, cfg config.AppConfig) (commentservice.Target, error) {
-	repo, err := resolveRepositorySelector(selector, cfg)
-	if err != nil {
-		return commentservice.Target{}, err
-	}
-
-	trimmedCommitID := strings.TrimSpace(commitID)
-	trimmedPullRequestID := strings.TrimSpace(pullRequestID)
-	hasCommit := trimmedCommitID != ""
-	hasPullRequest := trimmedPullRequestID != ""
-
-	if hasCommit == hasPullRequest {
-		return commentservice.Target{}, apperrors.New(apperrors.KindValidation, "exactly one of --commit or --pr is required", nil)
-	}
-
-	return commentservice.Target{
-		Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
-		CommitID:      trimmedCommitID,
-		PullRequestID: trimmedPullRequestID,
-	}, nil
 }
 
 func resolveDiffOutputMode(patch, stat, nameOnly bool) (diffservice.OutputKind, error) {
@@ -776,20 +744,6 @@ func safeUsers(values *[]openapigenerated.RestApplicationUser) []openapigenerate
 	}
 
 	return *values
-}
-
-func normalizeAccessKeyIDs(values []int) ([]int32, error) {
-	const maxInt32Value = int(^uint32(0) >> 1)
-
-	normalized := make([]int32, 0, len(values))
-	for _, value := range values {
-		if value < 0 || value > maxInt32Value {
-			return nil, apperrors.New(apperrors.KindValidation, "access-key-id must be between 0 and 2147483647", nil)
-		}
-		normalized = append(normalized, int32(value))
-	}
-
-	return normalized, nil
 }
 
 func safeStringFromTagType(tagType *openapigenerated.RestTagType) string {

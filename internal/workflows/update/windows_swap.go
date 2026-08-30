@@ -64,6 +64,10 @@ func buildWindowsSwapCommand(ctx context.Context, options windowsSwapLaunchOptio
 		return nil, err
 	}
 	encoded := encodePowerShellCommand(script)
+	// #nosec G204 -- a fixed binary with fixed flags. The script is built here
+	// and base64-encoded, which is what -EncodedCommand exists for: it removes
+	// the quoting layer where an injected path could otherwise become a
+	// statement.
 	return exec.Command("powershell.exe", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded), nil
 }
 

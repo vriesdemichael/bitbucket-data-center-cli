@@ -2,11 +2,13 @@ package bulk
 
 import (
 	"context"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
 	reposettings "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reposettings"
@@ -143,4 +145,39 @@ func TestServiceRunnerValidationBranches(t *testing.T) {
 			t.Fatal("expected validation error")
 		}
 	})
+}
+
+// TestAutoDeclineRejectsOutOfRangeInactivityWeeks covers the bound on a value
+// that arrives from a policy file.
+//
+// The API field is 32 bits; before this check a week count beyond its range
+// wrapped rather than being rejected, so a policy could silently configure the
+// opposite of what it said.
+func TestAutoDeclineRejectsOutOfRangeInactivityWeeks(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	}))
+	defer server.Close()
+
+	client, _ := openapi.NewClientWithResponsesFromConfig(config.AppConfig{BitbucketURL: server.URL})
+	runner := NewServiceRunner(reposettings.NewService(client), qualityservice.NewService(client))
+	repo := RepositoryTarget{ProjectKey: "PRJ", Slug: "repo"}
+
+	for _, weeks := range []int{-1, math.MaxInt32 + 1} {
+		operation := OperationSpec{
+			Type:            OperationRepoSettingsAutoDecline,
+			Enabled:         boolPtr(true),
+			InactivityWeeks: intPtr(weeks),
+		}
+
+		_, err := runner.Run(context.Background(), repo, operation)
+		if err == nil {
+			t.Fatalf("expected inactivityWeeks %d to be rejected", weeks)
+		}
+		if !apperrors.IsKind(err, apperrors.KindValidation) {
+			t.Fatalf("expected KindValidation for %d, got %v", weeks, err)
+		}
+	}
 }

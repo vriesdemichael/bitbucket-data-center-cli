@@ -153,12 +153,14 @@ func TestInsightsReportSetAndGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on set dry-run update: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// 3. Set report in dry-run mode (create when report does not exist)
 	out, err = executeInsights(t, server.URL, "--dry-run", "report", "set", "commit1", "report-empty", "--body", `{"title":"New Report","result":"PASS"}`)
 	if err != nil {
 		t.Fatalf("unexpected error on set dry-run create: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// 4. Get report in JSON mode
 	out, err = executeInsights(t, server.URL, "--json", "report", "get", "commit1", "report1")
@@ -200,12 +202,14 @@ func TestInsightsReportDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on delete dry-run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// Delete in dry-run mode (report not found -> no-op)
 	out, err = executeInsights(t, server.URL, "--dry-run", "report", "delete", "commit1", "report-empty")
 	if err != nil {
 		t.Fatalf("unexpected error on delete dry-run not-found: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// Delete for real (human & JSON)
 	out, err = executeInsights(t, server.URL, "report", "delete", "commit1", "report1")
@@ -233,6 +237,7 @@ func TestInsightsAnnotationAddAndList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on add dry-run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	// 2. Add annotations (human & JSON)
 	out, err = executeInsights(t, server.URL, "annotation", "add", "commit1", "report1", "--body", `[{"message":"Issue found","severity":"HIGH"}]`)
@@ -256,11 +261,13 @@ func TestInsightsAnnotationAddAndList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on set annotation dry-run update: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executeInsights(t, server.URL, "--dry-run", "annotation", "set", "commit1", "report1", "ann-new", "--message", "New issue", "--severity", "LOW")
 	if err != nil {
 		t.Fatalf("unexpected error on set annotation dry-run create: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executeInsights(t, server.URL, "annotation", "set", "commit1", "report1", "ann1",
 		"--message", "Issue found",
@@ -316,11 +323,13 @@ func TestInsightsAnnotationAddAndList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on delete annotation dry-run: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executeInsights(t, server.URL, "--dry-run", "annotation", "delete", "commit1", "report1", "--external-id", "ann-nonexistent")
 	if err != nil {
 		t.Fatalf("unexpected error on delete annotation dry-run no-op: %v", err)
 	}
+	assertDryRunPreview(t, out)
 
 	out, err = executeInsights(t, server.URL, "annotation", "delete", "commit1", "report1", "--external-id", "ann1")
 	if err != nil {
@@ -358,5 +367,26 @@ func TestInsightsValidationErrors(t *testing.T) {
 	_, err = executeInsights(t, server.URL, "annotation", "set", "commit1", "report1", "ann1")
 	if err == nil {
 		t.Fatalf("expected error when required flags are missing in annotation set")
+	}
+}
+
+// assertDryRunPreview fails when a --dry-run invocation produced no preview.
+//
+// The preview is the entire product of a dry run: it is what tells the caller
+// what would happen. These tests used to capture the output and check only that
+// the command did not error, which cannot tell a real preview from an empty one
+// -- and a --dry-run that quietly does nothing is the shape of #481, where a
+// command pre-flighted as read-only and then created a commit.
+//
+// The text comes from the shared writer in internal/cli/dryrunpreview, which
+// renders "Dry-run (<mode>, capability=<capability>)" for every command.
+func assertDryRunPreview(t *testing.T, out string) {
+	t.Helper()
+
+	// Human output carries the rendered banner; --json carries the same
+	// preview as an envelope with dry_run true. Either proves a preview was
+	// produced, which is the thing being asserted.
+	if !strings.Contains(out, "Dry-run") && !strings.Contains(out, `"dry_run": true`) {
+		t.Fatalf("expected a dry-run preview, got: %q", out)
 	}
 }

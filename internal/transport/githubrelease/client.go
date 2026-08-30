@@ -190,7 +190,7 @@ func (client *Client) fetchAsset(ctx context.Context, resolvedURL string) ([]byt
 	if err != nil {
 		return nil, apperrors.New(apperrors.KindTransient, "failed to download release asset", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return nil, mapHTTPError(response.StatusCode, "failed to download release asset")
@@ -218,7 +218,7 @@ func (client *Client) do(ctx context.Context, method, requestURL string, out any
 	if err != nil {
 		return apperrors.New(apperrors.KindTransient, "failed to fetch release metadata", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return mapHTTPError(response.StatusCode, "failed to fetch release metadata")

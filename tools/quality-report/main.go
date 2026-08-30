@@ -291,18 +291,6 @@ func enforceThresholds(reportData report, patch patchCoverage, minGlobalCombined
 	}
 }
 
-func readCommittedReport(path string) (report, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return report{}, err
-	}
-	parsed := report{}
-	if err := json.Unmarshal(content, &parsed); err != nil {
-		return report{}, err
-	}
-	return parsed, nil
-}
-
 func splitCSV(value string) []string {
 	parts := strings.Split(value, ",")
 	result := make([]string, 0, len(parts))
@@ -320,7 +308,7 @@ func parseCoverageProfile(path string, modulePath string) (coverageProfile, erro
 	if err != nil {
 		return coverageProfile{}, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	profile := coverageProfile{byRelativePath: map[string][]coverageSegment{}}
 	scanner := bufio.NewScanner(file)
@@ -336,11 +324,7 @@ func parseCoverageProfile(path string, modulePath string) (coverageProfile, erro
 			return coverageProfile{}, err
 		}
 
-		relPath := pathPart
-		modulePrefix := modulePath + "/"
-		if strings.HasPrefix(relPath, modulePrefix) {
-			relPath = strings.TrimPrefix(relPath, modulePrefix)
-		}
+		relPath := strings.TrimPrefix(pathPart, modulePath+"/")
 		relPath = filepath.ToSlash(relPath)
 
 		segment := coverageSegment{startLine: rangePart.startLine, endLine: rangePart.endLine, numStmt: numStmt, covered: count > 0}
@@ -560,6 +544,8 @@ func collectChangedLines(baseRef string) (map[string]map[int]struct{}, error) {
 		return nil, errors.New("empty merge-base result")
 	}
 
+	// #nosec G204 -- fixed binary and flags; mergeBase is a commit hash this
+	// tool resolved itself, and it is an argument rather than shell input.
 	diffCmd := exec.Command("git", "diff", "--unified=0", "--no-color", mergeBase, "--", ".")
 	diffOutput, err := diffCmd.Output()
 	if err != nil {
@@ -580,12 +566,12 @@ func parseUnifiedDiffChangedLines(diff string) map[string]map[int]struct{} {
 	for _, line := range lines {
 		if strings.HasPrefix(line, "+++ ") {
 			inHunk = false
-			fileToken := strings.TrimSpace(strings.TrimPrefix(line, "+++ "))
-			if fileToken == "/dev/null" {
+			filePath := strings.TrimSpace(strings.TrimPrefix(line, "+++ "))
+			if filePath == "/dev/null" {
 				currentFile = ""
 				continue
 			}
-			currentFile = filepath.ToSlash(strings.TrimPrefix(fileToken, "b/"))
+			currentFile = filepath.ToSlash(strings.TrimPrefix(filePath, "b/"))
 			if !strings.HasSuffix(currentFile, ".go") {
 				currentFile = ""
 			}

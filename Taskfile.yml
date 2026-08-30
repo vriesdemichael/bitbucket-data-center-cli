@@ -200,11 +200,7 @@ tasks:
       - task: openapi:verify
       - task: openapi:operation-paths:verify
       - task: quality:format:verify
-      # quality:lint is deliberately not here yet. The first run surfaced 103
-      # findings in code that predates the config, and a gate that is red on
-      # main is not a gate -- it teaches people to ignore it. The two findings
-      # issue #457 named as acceptance criteria are fixed; the rest is a
-      # baseline pass that wants its own reviewable change.
+      - task: quality:lint
       - task: quality:vulncheck
       - task: quality:line-endings:verify
       - task: quality:validate-decisions
