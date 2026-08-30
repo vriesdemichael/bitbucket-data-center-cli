@@ -1,12 +1,18 @@
 name: CI
 
+# next is the v4 integration branch (issue #487). It is listed here because a
+# workflow that triggers only on main leaves the train branch ungated: a pull
+# request into next would report no checks at all, and CI Complete -- the one
+# required status -- would never appear.
 on:
   pull_request:
     branches:
       - main
+      - next
   push:
     branches:
       - main
+      - next
 
 permissions:
   contents: read
