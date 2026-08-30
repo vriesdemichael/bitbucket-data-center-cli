@@ -364,6 +364,12 @@ jobs:
           files: .tmp/coverage.combined.scoped.out
           flags: combined_scoped
           fail_ci_if_error: true
+          # The file is named above, so the uploader has nothing to look for.
+          # Left searching, it hunts for coverage in every language it supports
+          # and warns about each one it cannot find -- xcrun, gcov, coverage.py
+          # -- none of which this repository has ever had.
+          disable_search: true
+          plugins: noop
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
