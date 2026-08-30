@@ -263,6 +263,28 @@ func staticString(expr ast.Expr) string {
 	return ""
 }
 
+// skipDirectory reports whether a directory is outside this checkout's own
+// source.
+//
+// Dot-directories are the load-bearing case and the reason this is a function.
+// Agent tooling keeps full checkouts of other branches under .claude/worktrees/
+// -- gitignored, but still on disk and still full of .go files. Walking them
+// made this tool report call sites from other branches as if they belonged to
+// this one: on one machine that was 2,569 extra Go files, and the artifact was
+// regenerated with 468 operations that no code on the branch actually calls.
+//
+// The rule is that anything git does not track is not this checkout's source.
+// Skipping dot-directories covers that for .claude, .git, .idea and their kin
+// without shelling out to git, and the root is reached with path "." which must
+// not itself be skipped.
+func skipDirectory(path, name string) bool {
+	switch name {
+	case ".tmp", "node_modules", "docs", "vendor":
+		return true
+	}
+	return path != "." && strings.HasPrefix(name, ".")
+}
+
 // collectCalledOperations scans the project's own Go source for typed client
 // calls, ignoring the generated client itself.
 func collectCalledOperations(root, generatedPath string) (map[string]bool, error) {
@@ -277,8 +299,7 @@ func collectCalledOperations(root, generatedPath string) (map[string]bool, error
 			return walkErr
 		}
 		if info.IsDir() {
-			switch info.Name() {
-			case ".git", ".tmp", "node_modules", "docs":
+			if skipDirectory(path, info.Name()) {
 				return filepath.SkipDir
 			}
 			return nil

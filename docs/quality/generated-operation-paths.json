@@ -30,14 +30,6 @@
       "method": "POST",
       "path": "/keys/latest/projects/%s/repos/%s/ssh"
     },
-    "AddGroupToUser": {
-      "method": "POST",
-      "path": "/api/latest/admin/users/add-group"
-    },
-    "AddIdp": {
-      "method": "POST",
-      "path": "/authconfig/latest/idps"
-    },
     "AddKey": {
       "method": "POST",
       "path": "/gpg/latest/keys"
@@ -50,65 +42,13 @@
       "method": "POST",
       "path": "/ssh/latest/keys"
     },
-    "AddUserToGroup": {
-      "method": "POST",
-      "path": "/api/latest/admin/groups/add-user"
-    },
-    "AddUserToGroups": {
-      "method": "POST",
-      "path": "/api/latest/admin/users/add-groups"
-    },
-    "AddUsersToGroup": {
-      "method": "POST",
-      "path": "/api/latest/admin/groups/add-users"
-    },
     "ApplySuggestion": {
       "method": "POST",
       "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s/comments/%s/apply-suggestion"
     },
-    "AssignParticipantRole": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s/participants"
-    },
-    "Authenticate": {
-      "method": "POST",
-      "path": "/mirroring/latest/authenticate"
-    },
-    "Authenticate2": {
-      "method": "POST",
-      "path": "/tsv/latest/authenticate"
-    },
-    "AuthenticateWithRecoveryCode": {
-      "method": "POST",
-      "path": "/tsv/latest/authenticate/recovery-code"
-    },
-    "BulkAddExemptRepositories": {
-      "method": "POST",
-      "path": "/api/latest/secret-scanning/exempt"
-    },
-    "BulkAddExemptRepositories1": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/secret-scanning/exempt"
-    },
     "CanRebase": {
       "method": "GET",
       "path": "/git/latest/projects/%s/repos/%s/pull-requests/%s/rebase"
-    },
-    "CompleteAuthenticationChange": {
-      "method": "POST",
-      "path": "/tsv/latest/totp/complete-enrollment-update"
-    },
-    "CompleteEnforcedEnrollment": {
-      "method": "POST",
-      "path": "/tsv/latest/totp/complete-enforced-enrollment"
-    },
-    "CompleteVoluntaryEnrollment": {
-      "method": "POST",
-      "path": "/tsv/latest/totp/complete-voluntary-enrollment"
-    },
-    "Create": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/repos/%s/pull-requests"
     },
     "Create1": {
       "method": "POST",
@@ -117,10 +57,6 @@
     "Create2": {
       "method": "POST",
       "path": "/api/latest/projects/%s/repos/%s/settings/reviewer-groups"
-    },
-    "Create3": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/settings-restriction"
     },
     "CreateAccessToken": {
       "method": "PUT",
@@ -134,25 +70,9 @@
       "method": "PUT",
       "path": "/access-tokens/latest/users/%s"
     },
-    "CreateAllowlistRule": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/secret-scanning/allowlist"
-    },
-    "CreateAllowlistRule1": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/repos/%s/secret-scanning/allowlist"
-    },
     "CreateBranch": {
       "method": "POST",
       "path": "/branch-utils/latest/projects/%s/repos/%s/branches"
-    },
-    "CreateBranchForRepository": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/repos/%s/branches"
-    },
-    "CreateCertificate": {
-      "method": "POST",
-      "path": "/api/latest/signing/x509-certificates"
     },
     "CreateComment": {
       "method": "POST",
@@ -165,14 +85,6 @@
     "CreateComment2": {
       "method": "POST",
       "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s/comments"
-    },
-    "CreateHookScript": {
-      "method": "POST",
-      "path": "/api/latest/hook-scripts"
-    },
-    "CreateIssue": {
-      "method": "POST",
-      "path": "/jira/latest/comments/%s/issues"
     },
     "CreateOrUpdateDeployment": {
       "method": "POST",
@@ -198,30 +110,6 @@
       "method": "POST",
       "path": "/required-builds/latest/projects/%s/repos/%s/condition"
     },
-    "CreateRestrictions": {
-      "method": "POST",
-      "path": "/branch-permissions/latest/projects/%s/restrictions"
-    },
-    "CreateRestrictions1": {
-      "method": "POST",
-      "path": "/branch-permissions/latest/projects/%s/repos/%s/restrictions"
-    },
-    "CreateRule": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/secret-scanning/rules"
-    },
-    "CreateRule1": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/repos/%s/secret-scanning/rules"
-    },
-    "CreateRule2": {
-      "method": "POST",
-      "path": "/api/latest/secret-scanning/rules"
-    },
-    "CreateTag": {
-      "method": "POST",
-      "path": "/git/latest/projects/%s/repos/%s/tags"
-    },
     "CreateTagForRepository": {
       "method": "POST",
       "path": "/api/latest/projects/%s/repos/%s/tags"
@@ -238,10 +126,6 @@
       "method": "POST",
       "path": "/api/latest/projects/%s/repos/%s/webhooks"
     },
-    "Decline": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s/decline"
-    },
     "Delete": {
       "method": "DELETE",
       "path": "/api/latest/projects/%s/repos/%s/commits/%s/builds"
@@ -250,21 +134,9 @@
       "method": "DELETE",
       "path": "/api/latest/projects/%s/repos/%s/commits/%s/deployments"
     },
-    "Delete3": {
-      "method": "DELETE",
-      "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s"
-    },
     "Delete5": {
       "method": "DELETE",
       "path": "/api/latest/projects/%s/repos/%s/settings/auto-merge"
-    },
-    "Delete6": {
-      "method": "DELETE",
-      "path": "/api/latest/projects/%s/settings/change-author"
-    },
-    "Delete7": {
-      "method": "DELETE",
-      "path": "/api/latest/projects/%s/repos/%s/settings/change-author"
     },
     "Delete8": {
       "method": "DELETE",
@@ -378,61 +250,13 @@
       "method": "DELETE",
       "path": "/api/latest/projects/%s/repos/%s/webhooks/%s"
     },
-    "DisableHook": {
-      "method": "DELETE",
-      "path": "/api/latest/projects/%s/settings/hooks/%s/enabled"
-    },
-    "DisableHook1": {
-      "method": "DELETE",
-      "path": "/api/latest/projects/%s/repos/%s/settings/hooks/%s/enabled"
-    },
     "DiscardReview": {
       "method": "DELETE",
       "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s/review"
     },
-    "EditAllowlistRule": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/secret-scanning/allowlist/%s"
-    },
-    "EditAllowlistRule1": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/repos/%s/secret-scanning/allowlist/%s"
-    },
     "EditFile": {
       "method": "PUT",
       "path": "/api/latest/projects/%s/repos/%s/browse/%s"
-    },
-    "EditRule": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/secret-scanning/rules/%s"
-    },
-    "EditRule1": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/repos/%s/secret-scanning/rules/%s"
-    },
-    "EditRule2": {
-      "method": "PUT",
-      "path": "/api/latest/secret-scanning/rules/%s"
-    },
-    "ElevatePermissionsWithPassword": {
-      "method": "POST",
-      "path": "/tsv/latest/elevate-permissions/password"
-    },
-    "ElevatePermissionsWithRecoveryCode": {
-      "method": "POST",
-      "path": "/tsv/latest/elevate-permissions/recovery-code"
-    },
-    "ElevatePermissionsWithTotp": {
-      "method": "POST",
-      "path": "/tsv/latest/elevate-permissions/totp"
-    },
-    "EnableHook": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/settings/hooks/%s/enabled"
-    },
-    "EnableHook1": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/repos/%s/settings/hooks/%s/enabled"
     },
     "FindByCommit": {
       "method": "GET",
@@ -562,10 +386,6 @@
       "method": "GET",
       "path": "/api/latest/projects/%s/repos/%s/commits"
     },
-    "GetConfigurations1": {
-      "method": "GET",
-      "path": "/api/latest/projects/%s/repos/%s/hook-scripts"
-    },
     "GetDefaultBranch2": {
       "method": "GET",
       "path": "/api/latest/projects/%s/repos/%s/default-branch"
@@ -654,14 +474,6 @@
       "method": "GET",
       "path": "/api/latest/projects/%s/repos/%s"
     },
-    "GetRepositoryHooks": {
-      "method": "GET",
-      "path": "/api/latest/projects/%s/settings/hooks"
-    },
-    "GetRepositoryHooks1": {
-      "method": "GET",
-      "path": "/api/latest/projects/%s/repos/%s/settings/hooks"
-    },
     "GetRestriction": {
       "method": "GET",
       "path": "/branch-permissions/latest/projects/%s/restrictions/%s"
@@ -701,14 +513,6 @@
     "GetReviewers": {
       "method": "GET",
       "path": "/default-reviewers/latest/projects/%s/repos/%s/reviewers"
-    },
-    "GetSettings": {
-      "method": "GET",
-      "path": "/api/latest/projects/%s/settings/hooks/%s/settings"
-    },
-    "GetSettings1": {
-      "method": "GET",
-      "path": "/api/latest/projects/%s/repos/%s/settings/hooks/%s/settings"
     },
     "GetSshKeys": {
       "method": "GET",
@@ -774,30 +578,6 @@
       "method": "GET",
       "path": "/api/latest/projects/%s/repos/%s/webhooks/%s"
     },
-    "Merge": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s/merge"
-    },
-    "Preview": {
-      "method": "POST",
-      "path": "/api/latest/markup/preview"
-    },
-    "PreviewExport": {
-      "method": "POST",
-      "path": "/api/latest/migration/exports/preview"
-    },
-    "PreviewMeshMigration": {
-      "method": "POST",
-      "path": "/api/latest/migration/mesh/preview"
-    },
-    "PublishEvent": {
-      "method": "POST",
-      "path": "/mirroring/latest/mirrorServers/%s/events"
-    },
-    "Put": {
-      "method": "PUT",
-      "path": "/basicauth/latest/config"
-    },
     "React1": {
       "method": "PUT",
       "path": "/comment-likes/latest/projects/%s/repos/%s/pull-requests/%s/comments/%s/reactions/%s"
@@ -806,45 +586,9 @@
       "method": "POST",
       "path": "/git/latest/projects/%s/repos/%s/pull-requests/%s/rebase"
     },
-    "Register": {
-      "method": "POST",
-      "path": "/mirroring/latest/requests"
-    },
-    "RegisterNewMeshNode": {
-      "method": "POST",
-      "path": "/api/latest/admin/git/mesh/nodes"
-    },
-    "ReindexRepositories": {
-      "method": "POST",
-      "path": "/indexing/latest/reindex"
-    },
-    "RemoveConfiguration1": {
-      "method": "DELETE",
-      "path": "/api/latest/projects/%s/repos/%s/hook-scripts/%s"
-    },
-    "RemoveGroupFromUser": {
-      "method": "POST",
-      "path": "/api/latest/admin/users/remove-group"
-    },
     "RemoveLabel": {
       "method": "DELETE",
       "path": "/api/latest/projects/%s/repos/%s/labels/%s"
-    },
-    "RemoveUserFromGroup": {
-      "method": "POST",
-      "path": "/api/latest/admin/groups/remove-user"
-    },
-    "RenameUser": {
-      "method": "POST",
-      "path": "/api/latest/admin/users/rename"
-    },
-    "Reopen": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s/reopen"
-    },
-    "RestartIndexingThreadWorker": {
-      "method": "POST",
-      "path": "/indexing/latest/restart"
     },
     "RevokeForProject": {
       "method": "DELETE",
@@ -853,10 +597,6 @@
     "RevokeForRepository": {
       "method": "DELETE",
       "path": "/keys/latest/projects/%s/repos/%s/ssh/%s"
-    },
-    "RevokeMany": {
-      "method": "DELETE",
-      "path": "/keys/latest/ssh/%s"
     },
     "RevokePermissionsForGroup1": {
       "method": "DELETE",
@@ -874,10 +614,6 @@
       "method": "DELETE",
       "path": "/api/latest/projects/%s/repos/%s/permissions/users"
     },
-    "SaveAttachmentMetadata": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/repos/%s/attachments/%s/metadata"
-    },
     "Search": {
       "method": "GET",
       "path": "/api/latest/projects/%s/repos/%s/participants"
@@ -886,29 +622,9 @@
       "method": "GET",
       "path": "/api/latest/projects/%s/repos/%s/webhooks/search"
     },
-    "Set": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/settings/auto-merge"
-    },
     "Set1": {
       "method": "PUT",
       "path": "/api/latest/projects/%s/repos/%s/settings/auto-merge"
-    },
-    "Set2": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/settings/change-author"
-    },
-    "Set3": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/repos/%s/settings/change-author"
-    },
-    "Set4": {
-      "method": "POST",
-      "path": "/api/latest/admin/rate-limit/settings/users"
-    },
-    "Set5": {
-      "method": "PUT",
-      "path": "/api/latest/admin/rate-limit/settings/users/%s"
     },
     "SetACodeInsightsReport": {
       "method": "PUT",
@@ -918,33 +634,9 @@
       "method": "PUT",
       "path": "/insights/latest/projects/%s/repos/%s/commits/%s/reports/%s/annotations/%s"
     },
-    "SetAutoDeclineSettings": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/settings/auto-decline"
-    },
     "SetAutoDeclineSettings1": {
       "method": "PUT",
       "path": "/api/latest/projects/%s/repos/%s/settings/auto-decline"
-    },
-    "SetBanner": {
-      "method": "PUT",
-      "path": "/api/latest/admin/banner"
-    },
-    "SetConfiguration": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/hook-scripts/%s"
-    },
-    "SetConfiguration1": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/repos/%s/hook-scripts/%s"
-    },
-    "SetDefaultBranch": {
-      "method": "PUT",
-      "path": "/api/latest/admin/default-branch"
-    },
-    "SetDefaultBranch1": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/repos/%s/branches/default"
     },
     "SetDefaultBranch2": {
       "method": "PUT",
@@ -953,22 +645,6 @@
     "SetEnabled": {
       "method": "POST",
       "path": "/sync/latest/projects/%s/repos/%s"
-    },
-    "SetMailConfig": {
-      "method": "PUT",
-      "path": "/api/latest/admin/mail-server"
-    },
-    "SetMergeConfig": {
-      "method": "POST",
-      "path": "/api/latest/admin/pull-requests/%s"
-    },
-    "SetMirrorMode": {
-      "method": "PUT",
-      "path": "/mirroring/latest/syncSettings/mode"
-    },
-    "SetMirrorSettings": {
-      "method": "PUT",
-      "path": "/mirroring/latest/syncSettings"
     },
     "SetPermissionForGroup": {
       "method": "PUT",
@@ -985,70 +661,6 @@
     "SetPermissionForUsers1": {
       "method": "PUT",
       "path": "/api/latest/projects/%s/permissions/users"
-    },
-    "SetPreferredMirrorId": {
-      "method": "POST",
-      "path": "/mirroring/latest/account/settings/preferred-mirror"
-    },
-    "SetRepositoryArchivePolicy": {
-      "method": "PUT",
-      "path": "/policies/latest/admin/repos/archive"
-    },
-    "SetRepositoryDeletePolicy": {
-      "method": "PUT",
-      "path": "/policies/latest/admin/repos/delete"
-    },
-    "SetSenderAddress": {
-      "method": "PUT",
-      "path": "/api/latest/admin/mail-server/sender-address"
-    },
-    "SetSettings": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/settings/hooks/%s/settings"
-    },
-    "SetSettings1": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/repos/%s/settings/hooks/%s/settings"
-    },
-    "SetSettings2": {
-      "method": "PUT",
-      "path": "/api/latest/logs/settings"
-    },
-    "SetSettings3": {
-      "method": "PUT",
-      "path": "/api/latest/admin/rate-limit/settings"
-    },
-    "SetWorkerThreadCount": {
-      "method": "PUT",
-      "path": "/indexing/latest/threads"
-    },
-    "Settings": {
-      "method": "PUT",
-      "path": "/csp/latest/settings"
-    },
-    "StartBackfillSync": {
-      "method": "POST",
-      "path": "/jira-dev/latest/devinfo-backfill"
-    },
-    "StartEnforcedEnrollment": {
-      "method": "POST",
-      "path": "/tsv/latest/totp/start-enforced-enrollment"
-    },
-    "StartExport": {
-      "method": "POST",
-      "path": "/api/latest/migration/exports"
-    },
-    "StartImport": {
-      "method": "POST",
-      "path": "/api/latest/migration/imports"
-    },
-    "StartMeshMigration": {
-      "method": "POST",
-      "path": "/api/latest/migration/mesh"
-    },
-    "StartMirroringProjects": {
-      "method": "POST",
-      "path": "/mirroring/latest/syncSettings/projects"
     },
     "StreamChanges": {
       "method": "GET",
@@ -1094,10 +706,6 @@
       "method": "DELETE",
       "path": "/comment-likes/latest/projects/%s/repos/%s/pull-requests/%s/comments/%s/reactions/%s"
     },
-    "UnenrollUser": {
-      "method": "DELETE",
-      "path": "/tsv/latest/totp/unenroll/user/%s"
-    },
     "Unwatch1": {
       "method": "DELETE",
       "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s/watch"
@@ -1105,10 +713,6 @@
     "Unwatch2": {
       "method": "DELETE",
       "path": "/api/latest/projects/%s/repos/%s/watch"
-    },
-    "Update": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s"
     },
     "Update1": {
       "method": "PUT",
@@ -1142,10 +746,6 @@
       "method": "PUT",
       "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s/comments/%s"
     },
-    "UpdateConfig": {
-      "method": "PATCH",
-      "path": "/authconfig/latest/sso"
-    },
     "UpdateDefaultTask": {
       "method": "PUT",
       "path": "/default-tasks/latest/projects/%s/tasks/%s"
@@ -1153,26 +753,6 @@
     "UpdateDefaultTask1": {
       "method": "PUT",
       "path": "/default-tasks/latest/projects/%s/repos/%s/tasks/%s"
-    },
-    "UpdateGlobalSettings": {
-      "method": "PUT",
-      "path": "/admin"
-    },
-    "UpdateHookScript": {
-      "method": "PUT",
-      "path": "/api/latest/hook-scripts/%s"
-    },
-    "UpdateIdp": {
-      "method": "PATCH",
-      "path": "/authconfig/latest/idps/%s"
-    },
-    "UpdateLicense": {
-      "method": "POST",
-      "path": "/api/latest/admin/license"
-    },
-    "UpdateMeshNode": {
-      "method": "PUT",
-      "path": "/api/latest/admin/git/mesh/nodes/%s"
     },
     "UpdateProject": {
       "method": "PUT",
@@ -1186,10 +766,6 @@
       "method": "PUT",
       "path": "/default-reviewers/latest/projects/%s/repos/%s/condition/%s"
     },
-    "UpdatePullRequestSettings": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/settings/pull-requests/%s"
-    },
     "UpdatePullRequestSettings1": {
       "method": "POST",
       "path": "/api/latest/projects/%s/repos/%s/settings/pull-requests"
@@ -1202,34 +778,6 @@
       "method": "PUT",
       "path": "/required-builds/latest/projects/%s/repos/%s/condition/%s"
     },
-    "UpdateSettings": {
-      "method": "POST",
-      "path": "/api/latest/users/%s/settings"
-    },
-    "UpdateStatus": {
-      "method": "PUT",
-      "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s/participants/%s"
-    },
-    "UpdateSystemSigningConfiguration": {
-      "method": "POST",
-      "path": "/api/latest/system-signing/configuration"
-    },
-    "UpdateUserDetails": {
-      "method": "PUT",
-      "path": "/api/latest/admin/users"
-    },
-    "UpdateUserDetails1": {
-      "method": "PUT",
-      "path": "/api/latest/users"
-    },
-    "UpdateUserPassword": {
-      "method": "PUT",
-      "path": "/api/latest/admin/users/credentials"
-    },
-    "UpdateUserPassword1": {
-      "method": "PUT",
-      "path": "/api/latest/users/credentials"
-    },
     "UpdateWebhook": {
       "method": "PUT",
       "path": "/api/latest/projects/%s/webhooks/%s"
@@ -1237,22 +785,6 @@
     "UpdateWebhook1": {
       "method": "PUT",
       "path": "/api/latest/projects/%s/repos/%s/webhooks/%s"
-    },
-    "Upgrade": {
-      "method": "PUT",
-      "path": "/mirroring/latest/mirrorServers/%s"
-    },
-    "UploadAvatar": {
-      "method": "POST",
-      "path": "/api/latest/projects/%s/avatar.png"
-    },
-    "UploadAvatar1": {
-      "method": "POST",
-      "path": "/api/latest/users/%s/avatar.png"
-    },
-    "VerifyCode": {
-      "method": "POST",
-      "path": "/tsv/latest/authenticate/totp-code"
     },
     "Watch1": {
       "method": "POST",
