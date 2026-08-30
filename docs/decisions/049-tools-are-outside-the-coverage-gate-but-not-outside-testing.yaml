@@ -26,10 +26,11 @@ agent_instructions: >
   itself, and test accordingly.
 rationale: >
   The question was measured rather than argued. Adding tools/ to the scope moves global combined
-  coverage from 89.89% (15428/17163) to 86.08% (16283/18916), leaving 1.08 points of margin over the
-  85% floor instead of 4.89. At that margin an unrelated edit to a tool can fail the build for
-  reasons disconnected from the change, and the usual remedy — lowering the threshold — would weaken
-  the gate for cmd/ and internal/, where it matters most.
+  coverage far enough to leave barely a point of margin over the floor, where there had been several.
+  At that margin an unrelated edit to a tool can fail the build for reasons disconnected from the
+  change, and the usual remedy — lowering the threshold — would weaken the gate for cmd/ and
+  internal/, where it matters most. Rerun the measurement before reopening the question; the figures
+  move with the tree, which is why they are not written down here.
   The composition of what the gate would have demanded is the other half. On the change that raised
   the question, 65 new lines in tools/ were uncovered: roughly a third main() and os.Exit plumbing,
   a third I/O error paths needing filesystem fault injection, and a third genuine parsing logic.
@@ -47,7 +48,7 @@ rationale: >
 rejected_alternatives:
   - alternative: Add tools/ to the coverage scope
     reason: >
-      Cuts the margin over the 85% floor to 1.08 points, making the gate fragile for changes that
+      Cuts the margin over the floor to about a point, making the gate fragile for changes that
       have nothing to do with it, and would require either a retro-testing campaign across all of
       tools/ first — including two packages with no test files at all — or lowering the threshold
       and weakening it everywhere else.

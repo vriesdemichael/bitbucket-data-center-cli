@@ -11,18 +11,18 @@ decision: >
 
   1. Coverage axes, and the distinct question each answers:
 
-     - Patch line coverage (at least 85% on patch sets of 30 or more coverable lines; at most 2
-       uncovered changed lines below that) blocks new untested code. It is the axis that fires most
-       often and it earns its cost: it caught unreachable defensive branches that would otherwise
-       have shipped as code no test could exercise.
-     - Global line coverage (at least 85% combined, scoped to cmd/ and internal/ excluding generated
-       paths) answers a different question from the patch gate and is not a stricter version of it.
-       Its job is erosion: a deleted test, or a refactor that drops whole paths, neither of which the
-       patch gate sees. The two sharing the number 85 is coincidence, not design.
+     - Patch line coverage blocks new untested code, with a lower bar for patches too small for a
+       percentage to mean anything. It is the axis that fires most often and it earns its cost: it
+       caught unreachable defensive branches that would otherwise have shipped as code no test could
+       exercise. The thresholds live in .github/coverage-thresholds.env.
+     - Global line coverage, scoped to cmd/ and internal/ excluding generated paths, answers a
+       different question from the patch gate and is not a stricter version of it. Its job is
+       erosion: a deleted test, or a refactor that drops whole paths, neither of which the patch gate
+       sees. That the two floors happen to be equal is coincidence, not design.
      - Raw line coverage, the same measurement with no scope applied, is still computed and printed
-       but is labelled as including generated code, and is not gated. It reads 29.86% against a
-       scoped 87.41% because roughly two thirds of the statements in the tree are the generated
-       OpenAPI client and models. Unlabelled it read as the project failing badly.
+       but is labelled as including generated code, and is not gated. It reads far lower than the
+       scoped number because most of the statements in the tree are the generated OpenAPI client and
+       models. Unlabelled it read as the project failing badly.
      - Spec coverage records which Bitbucket endpoints the CLI calls at all.
      - Command reach records which commands a live test invokes against a real server without
        skipping on error. It is named for what it measures. It was called CLI live coverage, and at
@@ -30,12 +30,14 @@ decision: >
        nothing about flags, branches, or paths within a command. What it does catch is a command no
        live test exercises at all, which is a real and previously realised failure.
      - Output-schema coverage, meaning which commands publish a data contract, is the one axis with
-       no mechanism, at 28 of 233 commands. Tracked as issue 462; ADR-064 depends on it.
+       no mechanism, covering a small fraction of the command surface. Tracked as issue 462;
+       ADR-064 depends on it.
      - Generated used-operation contract coverage is removed, along with its manifest. It resolved
        each called operation against a hand-written map of operation to test files and counted the
        operation as covered when the list was non-empty -- verifying neither that the file existed
-       nor that it touched the operation. It ran against a threshold of 0 and stood at 39 of 193,
-       which is the shape of a checklist someone abandoned. A metric that cannot fail is not a gate.
+       nor that it touched the operation. It ran against a threshold of zero and covered a minority
+       of the operations it measured: the shape of a checklist someone abandoned. A metric that
+       cannot fail is not a gate.
 
   2. Committed or recomputed: ADR-045's measurement and baseline distinction is the project-wide
      rule, with one addition. A measurement is the output of running the suite, so recompute it and
@@ -57,10 +59,18 @@ decision: >
      which made them advisory, and two ran only in CI. A gate that runs only in a git hook is not a
      gate, because nothing stops a branch that skipped the hook.
 
-  5. Linear history is no longer a CI gate. The check existed to stop the committed coverage
-     artifacts conflicting on every rebase; ADR-045 deleted those artifacts, and ADR-030, where the
-     check was recorded, is already superseded. Rebasing stays the convention, and nothing else --
-     the live suite, the coverage gates, the parity test -- depends on it.
+  5. Linear history is enforced by the branch ruleset on main rather than by a CI job. ADR-025
+     requires rebase-only integration and still stands; what changed is where that is enforced. The
+     ruleset now requires linear history and permits only rebase merges, which decides the question
+     at merge time rather than observing a branch after the fact, and cannot be reached around.
+
+     The CI job that previously checked it is removed. It was recorded in ADR-030, already
+     superseded, and existed to stop the committed coverage artifacts conflicting on every rebase --
+     artifacts ADR-045 deleted. Nothing else depends on it: not the live suite, not the coverage
+     gates, not the parity test.
+
+     This is the general preference and not a one-off. Where the platform can enforce a rule at the
+     point of the action, prefer that to a CI job that can only observe the result.
 
   6. CI reports the live suite, the coverage gates and the Codecov publication as three jobs rather
      than one. They fail for unrelated reasons, and as one job a patch-coverage breach was reported
@@ -117,11 +127,12 @@ rationale: >
   rather than after one. A local run reading Taskfile vars and a CI run reading the env file can
   disagree silently, and the failure mode is a developer who believes a gate passed.
 
-  Line coverage keeps its 85% but not for the reason usually given. The patch gate demonstrably
-  catches new untested code. The global floor sits at 87.41% against an 85% floor, so 2.41 points of
-  headroom, and ADR-049 measured that adding tools/ would cut that to 1.08. It is therefore close
-  enough to bite on an unrelated change, which is tolerable only because its job is narrow and now
-  stated: erosion, not new code. Thin headroom is a signal to add tests, never to lower the floor.
+  Line coverage keeps its floor but not for the reason usually given. The patch gate demonstrably
+  catches new untested code. The global floor runs with only a couple of points of headroom, and
+  ADR-049 measured that widening the scope to tools/ would cut that to about one. It is therefore
+  close enough to bite on an unrelated change, which is tolerable only because its job is narrow and
+  now stated: erosion, not new code. Thin headroom is a signal to add tests, never to lower the
+  floor.
 
   Naming what is not measured is the cheapest part and prevents the most recurring argument. The
   honest admission is the last one: nothing here can tell a test that asserts something from a test
@@ -144,7 +155,7 @@ rejected_alternatives:
       itself the signal that tests are owed.
   - alternative: Raise the contract coverage threshold instead of deleting the axis
     reason: >
-      It sat at 20.21%. A floor it already passes enshrines the status quo and creates a second
+      A floor it already passes enshrines the status quo and creates a second
       metric that cannot fail; a floor it does not pass blocks every pull request on unrelated work.
       Neither is worth having when the underlying map is hand-written and unverified: the honest
       version of this axis is "which generated operations that we call are exercised by a test",
