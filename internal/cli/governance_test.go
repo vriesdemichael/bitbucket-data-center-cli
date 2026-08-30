@@ -1449,7 +1449,7 @@ func TestPullRequestRepoResolveFallbackCLI(t *testing.T) {
 	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
 
 	command := NewRootCommand()
-	// Run a command that uses resolvePullRequestRepositoryReference
+	// Run a command that has to resolve a repository reference
 	command.SetArgs([]string{"pr", "list"})
 	_ = command.Execute()
 }
@@ -1475,9 +1475,6 @@ func TestReviewerConditionDeleteFallbackCLI(t *testing.T) {
 }
 
 func TestRootHelpersAdditionalCLI(t *testing.T) {
-	_, _ = normalizeAccessKeyIDs(nil)
-	_, _ = normalizeAccessKeyIDs([]int{1, 2})
-	_, _ = normalizeAccessKeyIDs([]int{-1})
 }
 
 func TestSafeHelpersNonNilCLI(t *testing.T) {

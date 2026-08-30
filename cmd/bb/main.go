@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/outwriter"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/diagnostics"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
@@ -32,6 +33,13 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 		stderr = io.Discard
 	}
 
+	// Command output goes through a recorder so a failed write is not lost.
+	// Individually those writes cannot be checked -- a command has no way to
+	// report that stdout is broken -- but here, after the command has run and
+	// an exit code is still available, it can be.
+	output := outwriter.New(stdout)
+	rootCmd.SetOut(output)
+
 	if err := cli.ClassifyUsageError(rootCmd.Execute()); err != nil {
 		emitCommandFailureDiagnostic(err, stderr)
 
@@ -47,6 +55,16 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 
 		fmt.Fprintln(stderr, err.Error())
 		return apperrors.ExitCode(err)
+	}
+
+	// The command believes it succeeded. If its output never reached the
+	// destination, saying so is the whole point of recording it: truncated
+	// output reported as success is indistinguishable from complete output.
+	if writeErr := output.Err(); writeErr != nil {
+		failure := apperrors.New(apperrors.KindInternal, "failed to write command output", writeErr)
+		emitCommandFailureDiagnostic(failure, stderr)
+		fmt.Fprintln(stderr, failure.Error())
+		return apperrors.ExitCode(failure)
 	}
 
 	return 0

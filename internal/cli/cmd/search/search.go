@@ -232,9 +232,14 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 			var prs []pullrequestservice.PullRequest
 
 			if repositorySelector != "" {
-				projectKey, slug, err := reposel.Resolve(repositorySelector, cfg)
-				if err != nil {
-					return err
+				// Named apart from err on purpose. This was `projectKey, slug,
+				// err := ...`, which shadowed the outer err for the rest of the
+				// branch -- so service.List below assigned its failure to the
+				// shadow, the check after the if/else read the outer one, and a
+				// failed search returned an empty list and exit 0.
+				projectKey, slug, resolveErr := reposel.Resolve(repositorySelector, cfg)
+				if resolveErr != nil {
+					return resolveErr
 				}
 				repo := pullrequestservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}
 				opts := pullrequestservice.ListOptions{

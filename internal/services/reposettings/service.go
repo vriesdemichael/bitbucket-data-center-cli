@@ -147,7 +147,7 @@ func (service *Service) ListRepositoryPermissionGroups(ctx context.Context, repo
 				}
 			}
 			if value.Permission != nil {
-				entry.Permission = string(*value.Permission)
+				entry.Permission = *value.Permission
 			}
 			results = append(results, entry)
 		}

@@ -4,6 +4,7 @@ package live_test
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"testing"
 	"time"
@@ -58,8 +59,8 @@ func TestLiveTagLifecycle(t *testing.T) {
 		t.Fatalf("expected not found error after tag delete")
 	}
 
-	appErr, ok := err.(*errors.AppError)
-	if !ok || appErr.Kind != errors.KindNotFound {
+	var appErr *errors.AppError
+	if !stderrors.As(err, &appErr) || appErr.Kind != errors.KindNotFound {
 		t.Fatalf("expected not_found error, got: %v", err)
 	}
 }

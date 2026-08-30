@@ -11,10 +11,6 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 func TestReviewerServiceAdditional(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

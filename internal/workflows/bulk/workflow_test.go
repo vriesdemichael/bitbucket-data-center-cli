@@ -1044,25 +1044,25 @@ func TestCopyOperationsDeepClone(t *testing.T) {
 
 func TestValidateIdentifier(t *testing.T) {
 	t.Run("missing", func(t *testing.T) {
-		if err := validateIdentifier("", "operation id"); err == nil {
+		if err := validateIdentifier(""); err == nil {
 			t.Fatal("expected error")
 		}
 	})
 
 	t.Run("path separators", func(t *testing.T) {
-		if err := validateIdentifier("bad/id", "operation id"); err == nil {
+		if err := validateIdentifier("bad/id"); err == nil {
 			t.Fatal("expected error")
 		}
 	})
 
 	t.Run("unsupported characters", func(t *testing.T) {
-		if err := validateIdentifier("bad id", "operation id"); err == nil {
+		if err := validateIdentifier("bad id"); err == nil {
 			t.Fatal("expected error")
 		}
 	})
 
 	t.Run("valid", func(t *testing.T) {
-		if err := validateIdentifier("op-1.ok", "operation id"); err != nil {
+		if err := validateIdentifier("op-1.ok"); err != nil {
 			t.Fatalf("expected valid id, got: %v", err)
 		}
 	})

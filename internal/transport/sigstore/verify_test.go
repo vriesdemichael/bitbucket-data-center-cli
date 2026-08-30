@@ -3,7 +3,6 @@ package sigstore
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
@@ -350,11 +349,6 @@ func marshalLegacyBundle(entity sigverify.SignedEntity) ([]byte, error) {
 	}
 
 	return json.Marshal(legacy)
-}
-
-func artifactDigest(artifact []byte) []byte {
-	digest := sha256.Sum256(artifact)
-	return digest[:]
 }
 
 func errMissingLegacyFixtureComponent(name string) error {

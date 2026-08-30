@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/url"
 	"strconv"
 	"strings"
@@ -648,12 +649,11 @@ func (service *Service) GetBuildStatuses(ctx context.Context, repository Reposit
 		}
 
 		for _, v := range response.Values {
-			results = append(results, BuildStatus{
-				Key:   v.Key,
-				State: v.State,
-				URL:   v.URL,
-				Name:  v.Name,
-			})
+			// A conversion rather than a literal: the two structs must stay
+			// field-for-field identical, and a conversion stops compiling if
+			// they diverge. The literal would silently drop a field added to
+			// only one of them.
+			results = append(results, BuildStatus(v))
 		}
 
 		if response.IsLastPage {
@@ -785,20 +785,6 @@ func normalizeState(state string) (string, error) {
 		return resolved, nil
 	default:
 		return "", apperrors.New(apperrors.KindValidation, "--state must be one of: open, closed, all", nil)
-	}
-}
-
-func normalizeTaskState(state string) (string, error) {
-	resolved := strings.ToLower(strings.TrimSpace(state))
-	if resolved == "" {
-		return "open", nil
-	}
-
-	switch resolved {
-	case "open", "resolved", "all":
-		return resolved, nil
-	default:
-		return "", apperrors.New(apperrors.KindValidation, "--state must be one of: open, resolved, all", nil)
 	}
 }
 
@@ -964,18 +950,6 @@ func mapMergeability(raw mergeabilityValue) Mergeability {
 	}
 }
 
-func resolveUserName(user *pullRequestUserIdentity) string {
-	if user == nil {
-		return ""
-	}
-
-	if displayName := strings.TrimSpace(user.DisplayName); displayName != "" {
-		return displayName
-	}
-
-	return strings.TrimSpace(user.Name)
-}
-
 func validateRepositoryRef(repository RepositoryRef) error {
 	if strings.TrimSpace(repository.ProjectKey) == "" || strings.TrimSpace(repository.Slug) == "" {
 		return apperrors.New(apperrors.KindValidation, "repository must be specified as project/repo", nil)
@@ -992,19 +966,6 @@ func normalizePullRequestID(pullRequestID string) (string, error) {
 
 	if _, err := strconv.ParseInt(resolved, 10, 64); err != nil {
 		return "", apperrors.New(apperrors.KindValidation, "pull request id must be a valid integer", nil)
-	}
-
-	return resolved, nil
-}
-
-func normalizeTaskID(taskID string) (string, error) {
-	resolved := strings.TrimSpace(taskID)
-	if resolved == "" {
-		return "", apperrors.New(apperrors.KindValidation, "task id is required", nil)
-	}
-
-	if _, err := strconv.ParseInt(resolved, 10, 64); err != nil {
-		return "", apperrors.New(apperrors.KindValidation, "task id must be a valid integer", nil)
 	}
 
 	return resolved, nil
@@ -1153,14 +1114,6 @@ func (service *Service) updateReviewer(ctx context.Context, repository Repositor
 	}
 
 	return mapPullRequest(response), nil
-}
-
-func resolveTaskStateValue(resolved bool) string {
-	if resolved {
-		return "RESOLVED"
-	}
-
-	return "OPEN"
 }
 
 func branchDisplayName(reference *pullRequestRef) string {
@@ -1347,6 +1300,15 @@ func (service *Service) Rebase(ctx context.Context, repository RepositoryRef, pu
 
 	var request openapigenerated.RestPullRequestRebaseRequest
 	if version != nil {
+		// The API field is 32-bit; a version outside its range wrapped rather
+		// than being rejected, which would rebase against the wrong version.
+		if *version < 0 || *version > math.MaxInt32 {
+			return nil, apperrors.New(
+				apperrors.KindValidation,
+				fmt.Sprintf("pull request version must be between 0 and %d", math.MaxInt32),
+				nil,
+			)
+		}
 		v32 := int32(*version)
 		request.Version = &v32
 	}

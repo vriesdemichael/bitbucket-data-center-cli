@@ -1741,7 +1741,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			source := "comments"
-			comments := make([]openapigenerated.RestComment, 0)
+			var comments []openapigenerated.RestComment
 			var threads []pullrequestactivityservice.Thread
 			var summary pullrequestactivityservice.Summary
 

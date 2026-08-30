@@ -428,7 +428,7 @@ func (store *StatusStore) Save(status ApplyStatus) error {
 	if store == nil || strings.TrimSpace(store.baseDir) == "" {
 		return apperrors.New(apperrors.KindInternal, "bulk status store directory is not configured", nil)
 	}
-	if err := validateIdentifier(status.OperationID, "operation id"); err != nil {
+	if err := validateIdentifier(status.OperationID); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(store.baseDir, 0o700); err != nil {
@@ -451,7 +451,7 @@ func (store *StatusStore) Load(operationID string) (ApplyStatus, error) {
 	if store == nil || strings.TrimSpace(store.baseDir) == "" {
 		return ApplyStatus{}, apperrors.New(apperrors.KindInternal, "bulk status store directory is not configured", nil)
 	}
-	if err := validateIdentifier(operationID, "operation id"); err != nil {
+	if err := validateIdentifier(operationID); err != nil {
 		return ApplyStatus{}, err
 	}
 
@@ -968,7 +968,11 @@ func normalizeValue(value any) (any, error) {
 	}
 }
 
-func validateIdentifier(value string, label string) error {
+// validateIdentifier checks an operation id. The label used to be a
+// parameter, and every caller passed the same string.
+func validateIdentifier(value string) error {
+	const label = "operation id"
+
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
 		return apperrors.New(apperrors.KindValidation, fmt.Sprintf("%s is required", label), nil)

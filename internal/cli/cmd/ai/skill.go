@@ -126,12 +126,14 @@ Re-run after upgrading bb to keep the skill file current.`,
 				return err
 			}
 
-			if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+			// The skill is installed into the invoking user's own agent
+			// configuration, so it needs no group or world access.
+			if err := os.MkdirAll(filepath.Dir(dest), 0o750); err != nil {
 				return apperrors.New(apperrors.KindInternal, "failed to create skill directory", err)
 			}
 
 			rendered := buildSkill(skill, deps.Version())
-			if err := os.WriteFile(dest, []byte(rendered), 0o644); err != nil {
+			if err := os.WriteFile(dest, []byte(rendered), 0o600); err != nil {
 				return apperrors.New(apperrors.KindInternal, "failed to write skill file", err)
 			}
 

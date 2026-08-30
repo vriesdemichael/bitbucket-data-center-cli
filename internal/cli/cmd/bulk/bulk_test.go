@@ -168,7 +168,7 @@ func TestBulkApplyReturnsStructuredFailure(t *testing.T) {
 	planner := bulkworkflow.NewPlanner(fakeCatalog{repositories: map[string][]repository.Repository{
 		"PRJ": {{ProjectKey: "PRJ", Slug: "repo-a", Name: "Repo A"}},
 	}})
-	plan, err := planner.Plan(nil, bulkworkflow.Policy{
+	plan, err := planner.Plan(context.TODO(), bulkworkflow.Policy{
 		APIVersion: bulkworkflow.APIVersion,
 		Selector:   bulkworkflow.Selector{ProjectKey: "PRJ", Repositories: []string{"repo-a"}},
 		Operations: []bulkworkflow.OperationSpec{{Type: bulkworkflow.OperationRepoPullRequestRequiredAllTasksComplete, RequiredAllTasksComplete: boolPointer(true)}},

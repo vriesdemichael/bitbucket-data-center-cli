@@ -236,3 +236,36 @@ func TestCommentHelpers(t *testing.T) {
 		t.Fatal("expected 42 for comment with ID")
 	}
 }
+
+// TestResolveCommentTargetRequiresExactlyOneContext moved here from
+// internal/cli, where it exercised a copy of this function left behind by the
+// ADR-032 modularization. The copy had no callers; this one has four, and had
+// no test of its own.
+func TestResolveCommentTargetRequiresExactlyOneContext(t *testing.T) {
+	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	cfg := config.AppConfig{ProjectKey: "TEST"}
+
+	if _, err := resolveCommentTarget("", "", "", cfg); err == nil {
+		t.Fatal("expected validation error for missing commit/pr")
+	}
+
+	if _, err := resolveCommentTarget("", "abc123", "77", cfg); err == nil {
+		t.Fatal("expected validation error for both commit and pr")
+	}
+
+	target, err := resolveCommentTarget("", "abc123", "", cfg)
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if target.CommitID != "abc123" || target.PullRequestID != "" {
+		t.Fatalf("unexpected target: %+v", target)
+	}
+
+	target, err = resolveCommentTarget("", "", " 77 ", cfg)
+	if err != nil {
+		t.Fatalf("expected no error for pull request target, got: %v", err)
+	}
+	if target.CommitID != "" || target.PullRequestID != "77" {
+		t.Fatalf("unexpected pull request target: %+v", target)
+	}
+}

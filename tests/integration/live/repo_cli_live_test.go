@@ -1291,20 +1291,6 @@ func prReviewersSnapshot(t *testing.T, output string) string {
 	return string(raw)
 }
 
-func taskIDFromPRTaskOutput(t *testing.T, output string) string {
-	t.Helper()
-	payload := decodeJSONMap(t, output)
-	task, ok := payload["task"].(map[string]any)
-	if !ok {
-		t.Fatalf("task field missing from output: %s", output)
-	}
-	id, ok := numericOrStringID(task["id"])
-	if !ok {
-		t.Fatalf("task id missing from output: %s", output)
-	}
-	return id
-}
-
 func jsonArrayContainsSlug(t *testing.T, output string, slug string) bool {
 	t.Helper()
 

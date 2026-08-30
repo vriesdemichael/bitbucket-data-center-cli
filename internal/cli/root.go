@@ -405,22 +405,17 @@ func loadConfigAndClient() (config.AppConfig, *openapigenerated.ClientWithRespon
 }
 
 func loadQualityRepoAndService(selector string) (qualityservice.RepositoryRef, *qualityservice.Service, error) {
-	repo, service, _, err := loadQualityRepoServiceAndClient(selector)
-	return repo, service, err
-}
-
-func loadQualityRepoServiceAndClient(selector string) (qualityservice.RepositoryRef, *qualityservice.Service, *openapigenerated.ClientWithResponses, error) {
 	cfg, client, err := loadConfigAndClient()
 	if err != nil {
-		return qualityservice.RepositoryRef{}, nil, nil, err
+		return qualityservice.RepositoryRef{}, nil, err
 	}
 
 	repo, err := resolveQualityRepositoryReference(selector, cfg)
 	if err != nil {
-		return qualityservice.RepositoryRef{}, nil, nil, err
+		return qualityservice.RepositoryRef{}, nil, err
 	}
 
-	return repo, qualityservice.NewService(client), client, nil
+	return repo, qualityservice.NewService(client), nil
 }
 
 func newAPIClientFromConfig(cfg config.AppConfig) (*openapigenerated.ClientWithResponses, error) {

@@ -956,7 +956,7 @@ func TestWindowsSwapHelpers(t *testing.T) {
 	})
 
 	t.Run("build worker command accepts nil context", func(t *testing.T) {
-		command, err := buildWindowsSwapCommand(nil, windowsSwapLaunchOptions{ParentPID: 12, TargetPath: `C:\Tools\bb.exe`, StagedPath: `C:\Tools\bb.exe.new`, ResultPath: `C:\Tools\bb.exe.update-result.json`})
+		command, err := buildWindowsSwapCommand(context.TODO(), windowsSwapLaunchOptions{ParentPID: 12, TargetPath: `C:\Tools\bb.exe`, StagedPath: `C:\Tools\bb.exe.new`, ResultPath: `C:\Tools\bb.exe.update-result.json`})
 		if err != nil {
 			t.Fatalf("buildWindowsSwapCommand: %v", err)
 		}

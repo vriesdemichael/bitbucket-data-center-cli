@@ -48,7 +48,7 @@ func loadPlatformPolicy() PolicyConfig {
 	if err != nil {
 		return PolicyConfig{}
 	}
-	defer k.Close()
+	defer func() { _ = k.Close() }()
 
 	return parseRegistryPolicy(k)
 }

@@ -748,7 +748,7 @@ func TestLoadQualityRepoServiceAndClientReturnsSelectorValidationError(t *testin
 	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
 	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
 
-	_, _, _, err := loadQualityRepoServiceAndClient("bad-selector")
+	_, _, err := loadQualityRepoAndService("bad-selector")
 	if !apperrors.IsKind(err, apperrors.KindValidation) {
 		t.Fatalf("expected validation error, got: %v", err)
 	}

@@ -92,7 +92,8 @@ func TestMapStatusError(t *testing.T) {
 				return
 			}
 
-			appErr, ok := err.(*apperrors.AppError)
+			var appErr *apperrors.AppError
+			ok := errors.As(err, &appErr)
 			if !ok {
 				t.Errorf("MapStatusError() error = %T, want *apperrors.AppError", err)
 				return

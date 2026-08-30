@@ -2,6 +2,8 @@ package token
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -208,6 +210,16 @@ func (s *Service) Create(ctx context.Context, scope ScopeType, target string, na
 		body.Permissions = permissions
 	}
 	if expiryDays > 0 {
+		// The API field is 32-bit. int is 64-bit on every platform bb ships
+		// for, so --expiry-days 2147483648 silently wrapped to a negative
+		// number and was sent as the expiry.
+		if expiryDays > math.MaxInt32 {
+			return openapigenerated.RestRawAccessToken{}, apperrors.New(
+				apperrors.KindValidation,
+				fmt.Sprintf("expiry days must be %d or fewer", math.MaxInt32),
+				nil,
+			)
+		}
 		exp32 := int32(expiryDays)
 		body.ExpiryDays = &exp32
 	}

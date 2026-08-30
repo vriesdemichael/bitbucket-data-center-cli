@@ -88,7 +88,7 @@ func TestUpdateRepositoryPullRequestRequiredApproversCount(t *testing.T) {
 
 func TestRepositorySettingsHelperCoverage(t *testing.T) {
 	permission, err := normalizeRepositoryPermission(" repo_read ")
-	if err != nil || string(permission) != "REPO_READ" {
+	if err != nil || permission != "REPO_READ" {
 		t.Fatalf("expected REPO_READ normalization, got permission=%q err=%v", permission, err)
 	}
 
@@ -813,6 +813,14 @@ func TestNewRepositorySettingsMethods(t *testing.T) {
 	webhook, err := service.GetWebhook(ctx, repo, "1")
 	if err != nil {
 		t.Errorf("GetWebhook failed: %v", err)
+	}
+	// Asserting the fetched hook is what separates "GetWebhook returned"
+	// from "GetWebhook returned the hook that was asked for". It comes back as
+	// a decoded any, so the check goes through the encoded form.
+	if encoded, marshalErr := json.Marshal(webhook); marshalErr != nil {
+		t.Errorf("GetWebhook result is not encodable: %v", marshalErr)
+	} else if !strings.Contains(string(encoded), "hook1") {
+		t.Errorf("GetWebhook returned the wrong hook: %s", encoded)
 	}
 	webhook, err = service.UpdateWebhook(ctx, repo, "1", "hook1-updated", "http://url", []string{"repo:refs_changed"}, nil)
 	if err != nil {

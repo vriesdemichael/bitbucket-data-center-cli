@@ -472,7 +472,7 @@ func (service *Service) upsertRestriction(ctx context.Context, repo RepositoryRe
 	if err != nil {
 		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindTransient, "failed to upsert branch restriction", err)
 	}
-	defer rawResponse.Body.Close()
+	defer func() { _ = rawResponse.Body.Close() }()
 
 	responseBody, readErr := io.ReadAll(rawResponse.Body)
 	if readErr != nil {

@@ -467,7 +467,7 @@ func runGitCapture(directory string, args ...string) (string, error) {
 
 	output, err := command.CombinedOutput()
 	if err != nil {
-		return string(output), fmt.Errorf("git %s failed: %v: %s", strings.Join(args, " "), err, strings.TrimSpace(string(output)))
+		return string(output), fmt.Errorf("git %s failed: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(string(output)))
 	}
 
 	return string(output), nil
@@ -489,7 +489,7 @@ func runGit(directory string, args ...string) error {
 		}
 
 		message := strings.TrimSpace(string(output))
-		lastErr = fmt.Errorf("git %s failed: %v: %s", strings.Join(args, " "), err, message)
+		lastErr = fmt.Errorf("git %s failed: %w: %s", strings.Join(args, " "), err, message)
 		if hint := licenceExpiryHint(message); hint != "" {
 			// The licence can lapse mid-run even when the preflight passed.
 			// Saying so here is the difference between one clear line and an

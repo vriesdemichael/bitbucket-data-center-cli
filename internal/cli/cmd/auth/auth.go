@@ -176,7 +176,7 @@ for.`,
 			for _, check := range checks {
 				// An advisory miss reads as a suggestion rather than breakage,
 				// because for an API-only setup that is exactly what it is.
-				marker := "-"
+				var marker string
 				switch {
 				case check.OK:
 					marker = "-"

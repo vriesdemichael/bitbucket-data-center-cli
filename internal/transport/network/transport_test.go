@@ -72,7 +72,8 @@ func TestSafeTransport(t *testing.T) {
 			transport := &SafeTransport{Base: base}
 			req, _ := http.NewRequest(http.MethodGet, tt.url, nil)
 
-			_, err := transport.RoundTrip(req)
+			response, err := transport.RoundTrip(req)
+			closeResponse(response)
 			if (err != nil) != tt.wantError {
 				t.Errorf("SafeTransport.RoundTrip() error = %v, wantError %v", err, tt.wantError)
 			}
@@ -283,7 +284,8 @@ func TestNewSafeTransport(t *testing.T) {
 			t.Fatalf("create no-cert transport: %v", err)
 		}
 		noCertClient := &http.Client{Transport: noCertTransport}
-		_, err = noCertClient.Get(server.URL)
+		refused, err := noCertClient.Get(server.URL)
+		closeResponse(refused)
 		if err == nil {
 			t.Fatal("expected request without client cert to fail mTLS handshake")
 		}
@@ -415,4 +417,16 @@ func generateSignedCert(t *testing.T, caCertPEM, caKeyPEM []byte, hostOrCN strin
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER})
 
 	return certPEM, keyPEM
+}
+
+// closeResponse releases a response body when there is one.
+//
+// A request that fails returns a nil response, and one that succeeds holds a
+// connection open until its body is closed. Tests that discard the response
+// leak the second kind, which is what bodyclose reports and what this makes
+// unnecessary to think about at each call site.
+func closeResponse(response *http.Response) {
+	if response != nil && response.Body != nil {
+		_ = response.Body.Close()
+	}
 }

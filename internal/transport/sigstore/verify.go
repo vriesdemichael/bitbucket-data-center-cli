@@ -187,7 +187,7 @@ func parseSignedEntity(bundleJSON, artifact []byte) (sigverify.SignedEntity, err
 		if legacyErr == nil {
 			return legacyEntity, nil
 		}
-		return nil, fmt.Errorf("protobuf bundle parse failed: %v; legacy bundle parse failed: %w", err, legacyErr)
+		return nil, fmt.Errorf("protobuf bundle parse failed: %w; legacy bundle parse failed: %w", err, legacyErr)
 	}
 }
 
@@ -362,7 +362,7 @@ func legacyKindVersion(body []byte) (*protorekor.KindVersion, error) {
 	}, nil
 }
 
-func (verifier *Verifier) verifyEntity(ctx context.Context, entity sigverify.SignedEntity, artifactPolicy sigverify.ArtifactPolicyOption, policyOptions ...sigverify.PolicyOption) (Verification, error) {
+func (verifier *Verifier) verifyEntity(ctx context.Context, entity sigverify.SignedEntity, artifactPolicy sigverify.ArtifactPolicyOption) (Verification, error) {
 	if verifier == nil || verifier.trustedMaterialProvider == nil {
 		return Verification{}, apperrors.New(apperrors.KindInternal, "sigstore verifier is not configured", nil)
 	}
@@ -378,7 +378,7 @@ func (verifier *Verifier) verifyEntity(ctx context.Context, entity sigverify.Sig
 		return Verification{}, err
 	}
 
-	signedEntityVerifier, err := sigverify.NewSignedEntityVerifier(trustedMaterial, verifier.verifierOptions...)
+	entityVerifier, err := sigverify.NewVerifier(trustedMaterial, verifier.verifierOptions...)
 	if err != nil {
 		return Verification{}, apperrors.New(apperrors.KindInternal, "failed to initialize Sigstore verifier", err)
 	}
@@ -388,8 +388,7 @@ func (verifier *Verifier) verifyEntity(ctx context.Context, entity sigverify.Sig
 		return Verification{}, apperrors.New(apperrors.KindInternal, "failed to configure Sigstore certificate identity", err)
 	}
 
-	policyOptions = append(policyOptions, sigverify.WithCertificateIdentity(certificateIdentity))
-	result, err := signedEntityVerifier.Verify(entity, sigverify.NewPolicy(artifactPolicy, policyOptions...))
+	result, err := entityVerifier.Verify(entity, sigverify.NewPolicy(artifactPolicy, sigverify.WithCertificateIdentity(certificateIdentity)))
 	if err != nil {
 		return Verification{}, apperrors.New(apperrors.KindPermanent, "release signature verification failed", err)
 	}

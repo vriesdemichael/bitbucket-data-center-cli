@@ -78,7 +78,7 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, pull
 		if page.IsLastPage || page.NextPageStart == nil {
 			break
 		}
-		if int(*page.NextPageStart) == int(start) {
+		if *page.NextPageStart == int(start) {
 			break
 		}
 		start = float32(*page.NextPageStart)

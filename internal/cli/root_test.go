@@ -2221,37 +2221,6 @@ func TestLoadQualityRepoAndServiceBranches(t *testing.T) {
 	})
 }
 
-func TestResolveCommentTargetRequiresExactlyOneContext(t *testing.T) {
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	cfg := config.AppConfig{ProjectKey: "TEST"}
-
-	_, err := resolveCommentTarget("", "", "", cfg)
-	if err == nil {
-		t.Fatal("expected validation error for missing commit/pr")
-	}
-
-	_, err = resolveCommentTarget("", "abc123", "77", cfg)
-	if err == nil {
-		t.Fatal("expected validation error for both commit and pr")
-	}
-
-	target, err := resolveCommentTarget("", "abc123", "", cfg)
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if target.CommitID != "abc123" || target.PullRequestID != "" {
-		t.Fatalf("unexpected target: %+v", target)
-	}
-
-	target, err = resolveCommentTarget("", "", " 77 ", cfg)
-	if err != nil {
-		t.Fatalf("expected no error for pull request target, got: %v", err)
-	}
-	if target.CommitID != "" || target.PullRequestID != "77" {
-		t.Fatalf("unexpected pull request target: %+v", target)
-	}
-}
-
 func TestResolveDiffOutputModeAndWriters(t *testing.T) {
 	_, err := resolveDiffOutputMode(true, true, false)
 	if err == nil {
@@ -4315,7 +4284,7 @@ func TestPRBuildStatusCLI(t *testing.T) {
 		}
 	})
 
-	// no repo slug and no --repo flag → resolvePullRequestRepositoryReference fails
+	// no repo slug and no --repo flag → repository resolution fails
 	t.Run("missing repo slug", func(t *testing.T) {
 		t.Setenv("BITBUCKET_REPO_SLUG", "")
 		cmd := NewRootCommand()

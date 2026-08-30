@@ -399,6 +399,9 @@ func parseHostQualifiedRepositorySelector(value string) (string, repoRef, bool) 
 
 func openInBrowser(target string) error {
 	commandName, commandArgs := browserCommand(runtime.GOOS, target)
+	// #nosec G204 -- commandName comes from browserCommand, which picks a fixed
+	// per-platform opener rather than anything the user supplies, and the URL
+	// travels as an argument with no shell to reinterpret it.
 	command := exec.Command(commandName, commandArgs...)
 
 	if err := command.Run(); err != nil {

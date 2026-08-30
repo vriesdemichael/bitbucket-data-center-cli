@@ -291,7 +291,7 @@ func TestPRReviewJiraEdgeCases(t *testing.T) {
 		t.Errorf("expected permission error, got: %v", err)
 	}
 
-	// 9. Unset repository slug/key to trigger resolvePullRequestRepositoryReference error
+	// 9. Unset repository slug/key so repository resolution fails
 	t.Setenv("BITBUCKET_PROJECT_KEY", "")
 	t.Setenv("BITBUCKET_REPO_SLUG", "")
 	_, err = executeTestCLI(t, "pr", "jira", "42")
