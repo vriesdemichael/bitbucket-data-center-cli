@@ -29,13 +29,6 @@ func (t *SafeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return base.RoundTrip(req)
 }
 
-// NewSafeClient returns an http.Client configured with SafeTransport.
-func NewSafeClient(timeout string) *http.Client {
-	return &http.Client{
-		Transport: &SafeTransport{},
-	}
-}
-
 type TLSOptions struct {
 	CAFile             string
 	InsecureSkipVerify bool

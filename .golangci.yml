@@ -1,0 +1,79 @@
+# Linter configuration (ADR-065, issue #457).
+#
+# CI verified formatting, generated artifacts, coverage, documented commands and
+# live behaviour, and ran no linter at all: `gofmt -l` only, plus the small vet
+# subset `go test` runs on its own. This is the class of check that had no gate.
+#
+# The set below is the default five plus what this project's surfaces actually
+# call for. Nothing is enabled for completeness.
+version: "2"
+
+run:
+  timeout: 5m
+  # Live tests carry a build tag, so without this the linter silently skips the
+  # whole ./tests tree -- the same blind spot that let a live test break
+  # unnoticed until CI ran it.
+  build-tags:
+    - live
+
+linters:
+  enable:
+    # bodyclose: this project makes a lot of HTTP calls, and a leaked response
+    # body holds a connection until GC.
+    - bodyclose
+    # errorlint: the error taxonomy in ADR-011 depends on errors.As/Is working
+    # through wrapped errors. A %v where %w belongs breaks classification
+    # silently, and classification is what decides the exit code.
+    - errorlint
+    # gosec: the surfaces this project has -- file permissions on credential and
+    # audit paths, TLS configuration, subprocess construction in execgit.
+    - gosec
+    - misspell
+    # unconvert and unparam: both flag NewSafeClient(timeout string), which
+    # ignored its only parameter and returned a client with no timeout.
+    - unconvert
+    - unparam
+
+  settings:
+    errcheck:
+      # An unchecked Close on a file being written is not a style nit here: it
+      # is how `bb repo archive` reported success over a truncated download.
+      check-type-assertions: true
+    gosec:
+      excludes:
+        # G304 (file inclusion via variable) fires on every path this CLI is
+        # asked to read by the user, which is most of them. The trust boundary
+        # is the user's own shell.
+        - G304
+
+  exclusions:
+    generated: lax
+    rules:
+      # internal/openapi/generated and internal/models/generated are produced by
+      # oapi-codegen and are not hand-maintained. ADR-065 keeps them out of the
+      # coverage scope for the same reason.
+      - path: internal/(openapi|models)/generated/
+        linters:
+          - bodyclose
+          - errcheck
+          - errorlint
+          - gosec
+          - govet
+          - ineffassign
+          - misspell
+          - staticcheck
+          - unconvert
+          - unparam
+          - unused
+      # Test files legitimately ignore errors on setup teardown and construct
+      # subprocesses and temp paths that gosec cannot distinguish from the real
+      # thing.
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - unparam
+
+formatters:
+  enable:
+    - gofmt

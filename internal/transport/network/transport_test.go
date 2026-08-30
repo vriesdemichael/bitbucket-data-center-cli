@@ -88,16 +88,6 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return m.roundTripFunc(req)
 }
 
-func TestNewSafeClient(t *testing.T) {
-	client := NewSafeClient("20s")
-	if client == nil {
-		t.Fatal("expected client to be initialized")
-	}
-	if _, ok := client.Transport.(*SafeTransport); !ok {
-		t.Errorf("expected SafeTransport, got %T", client.Transport)
-	}
-}
-
 func TestNewSafeTransport(t *testing.T) {
 	t.Run("insecure mode enabled", func(t *testing.T) {
 		roundTripper, err := NewSafeTransport(TLSOptions{InsecureSkipVerify: true})

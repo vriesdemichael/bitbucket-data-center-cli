@@ -2,6 +2,8 @@ module github.com/vriesdemichael/bitbucket-server-cli
 
 go 1.26.0
 
+toolchain go1.26.6
+
 require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/go-openapi/runtime v0.33.1
