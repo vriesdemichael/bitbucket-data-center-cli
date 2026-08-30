@@ -1062,7 +1062,7 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 			var writer io.Writer
 			// Non-nil only when writing to a file rather than stdout; the file is
 			// closed explicitly before success is reported.
-			var archiveFile *os.File
+			var archiveFile io.WriteCloser
 			var targetMsg string
 
 			if output == "-" {
@@ -1073,15 +1073,12 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 				if filename == "" {
 					filename = fmt.Sprintf("%s.%s", repoRef.Slug, format)
 				}
-				file, err := os.Create(filename)
+				file, err := createArchiveFile(filename)
 				if err != nil {
 					return err
 				}
-				// Closed explicitly below, before success is reported.
-				// io.Copy returning nil does not mean the bytes reached the
-				// disk: a Close that fails on a full disk or a network
-				// filesystem leaves a truncated archive, and this command used
-				// to print success and exit 0 over exactly that.
+				// finishArchiveFile closes it before success is reported; this
+				// only covers the paths that return early.
 				defer func() { _ = file.Close() }()
 				archiveFile = file
 				writer = file
@@ -1094,10 +1091,8 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			if archiveFile != nil {
-				if err := archiveFile.Close(); err != nil {
-					return apperrors.New(apperrors.KindInternal, fmt.Sprintf("failed to finish writing repository archive to %s", targetMsg), err)
-				}
+			if err := finishArchiveFile(archiveFile, targetMsg); err != nil {
+				return err
 			}
 
 			if output != "-" {
@@ -1355,4 +1350,36 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 	repoSshCmd.AddCommand(removeCmd)
 
 	return repoSshCmd
+}
+
+// createArchiveFile is the seam the archive download writes through.
+//
+// A close failure is the thing worth testing here and it cannot be provoked
+// through os.Create: a real file closes cleanly, and one closed early fails the
+// write instead. It returns io.WriteCloser rather than *os.File so a test can
+// supply something that writes fine and fails only on Close, which is the
+// branch that used to report a truncated download as a success.
+var createArchiveFile = func(name string) (io.WriteCloser, error) { return os.Create(name) }
+
+// finishArchiveFile closes the downloaded archive and reports a close failure
+// as an error rather than as a successful download.
+//
+// io.Copy returning nil does not mean the bytes reached the disk. A Close that
+// fails — a full disk, a network filesystem — leaves a truncated archive, and
+// this command used to print "Successfully downloaded" and exit 0 over exactly
+// that. It is a function rather than three lines at the call site so the
+// failure path can be exercised: closing an already-closed *os.File returns an
+// error on every platform, which no amount of mocking around os.Create would.
+func finishArchiveFile(file io.WriteCloser, target string) error {
+	if file == nil {
+		return nil
+	}
+	if err := file.Close(); err != nil {
+		return apperrors.New(
+			apperrors.KindInternal,
+			fmt.Sprintf("failed to finish writing repository archive to %s", target),
+			err,
+		)
+	}
+	return nil
 }
