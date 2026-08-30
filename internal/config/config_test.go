@@ -2427,3 +2427,66 @@ func TestMachineConfigPathIsNotEnvironmentDerived(t *testing.T) {
 		t.Fatalf("machine config path must not follow the environment: %q became %q", before, after)
 	}
 }
+
+// TestPolicyOriginDescription covers every branch of the naming used by the
+// update killswitch message, including the Windows registry branch that is
+// unreachable on other platforms when resolved in place.
+func TestPolicyOriginDescription(t *testing.T) {
+	enabled := true
+	disabled := false
+
+	cases := []struct {
+		name             string
+		platformValue    *bool
+		platformDesc     string
+		systemConfigPath string
+		want             string
+	}{
+		{
+			name:             "registry holds the setting",
+			platformValue:    &enabled,
+			platformDesc:     `Windows registry policy HKEY_LOCAL_MACHINE\Software\Policies\bb`,
+			systemConfigPath: `C:\ProgramData\bb\config.yaml`,
+			want:             `Windows registry policy HKEY_LOCAL_MACHINE\Software\Policies\bb`,
+		},
+		{
+			name:             "registry present but does not set it",
+			platformValue:    &disabled,
+			platformDesc:     `Windows registry policy HKEY_LOCAL_MACHINE\Software\Policies\bb`,
+			systemConfigPath: `C:\ProgramData\bb\config.yaml`,
+			want:             `the system configuration file C:\ProgramData\bb\config.yaml`,
+		},
+		{
+			name:             "no platform policy store",
+			platformValue:    nil,
+			platformDesc:     "",
+			systemConfigPath: "/etc/bb/config.yaml",
+			want:             "the system configuration file /etc/bb/config.yaml",
+		},
+		{
+			// Set on a platform with no store to name: fall back rather than
+			// return an empty description.
+			name:             "platform sets it but has no description",
+			platformValue:    &enabled,
+			platformDesc:     "",
+			systemConfigPath: "/etc/bb/config.yaml",
+			want:             "the system configuration file /etc/bb/config.yaml",
+		},
+		{
+			name:             "no resolvable config path",
+			platformValue:    nil,
+			platformDesc:     "",
+			systemConfigPath: "   ",
+			want:             "the system configuration file",
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			got := policyOriginDescription(testCase.platformValue, testCase.platformDesc, testCase.systemConfigPath)
+			if got != testCase.want {
+				t.Fatalf("policyOriginDescription() = %q, want %q", got, testCase.want)
+			}
+		})
+	}
+}
