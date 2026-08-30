@@ -1,0 +1,48 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.auth.alias.discover.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb auth alias discover --json`. Data contains the discovered alias set.",
+  "properties": {
+    "data": {
+      "additionalProperties": false,
+      "properties": {
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "host": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb auth alias discover output",
+  "type": "object"
+}
