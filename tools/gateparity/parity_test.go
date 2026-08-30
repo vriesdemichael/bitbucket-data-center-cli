@@ -51,10 +51,6 @@ const (
 // a developer cannot run before pushing -- a round trip to CI someone pays for
 // -- or one CI does not enforce, which makes it advisory.
 var exemptFromParity = map[string]string{
-	// Linear history is a property of the branch as pushed and costs seconds in
-	// CI. `task quality:check` runs it locally for anyone who wants it; no hook
-	// does, deliberately.
-	"quality:git:ensure-linear": "CI-only: a property of the pushed branch, cheap to check there",
 	// The docs job renders a changelog from the releases API before building,
 	// which a developer has no token for and does not need.
 	"docs:build": "CI renders the changelog from the releases API before building",
