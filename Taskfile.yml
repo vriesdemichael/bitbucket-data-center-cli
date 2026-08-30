@@ -1,5 +1,11 @@
 version: '3'
 
+# Coverage thresholds have one home (ADR-065). They used to be stated here, in
+# .github/coverage-thresholds.env, and in ADR-005's prose, so a local run and a
+# CI run could disagree about what the gate was -- and the failure mode is a
+# developer who believes a gate passed. The workflow sources this same file.
+dotenv: ['.github/coverage-thresholds.env']
+
 vars:
   OAPI_CODEGEN_VERSION: v2.4.1
   # The Bitbucket release under test lives in exactly one place, the harness base
@@ -9,11 +15,6 @@ vars:
   BITBUCKET_OPENAPI_SANITIZED_TMP: .tmp/bitbucket-openapi.sanitized.json
   DOCS_PROJECT_DIR: docs
   COVERAGE_BASE_REF: origin/main
-  COVERAGE_MIN_GLOBAL_COMBINED: "85"
-  COVERAGE_MIN_PATCH: "85"
-  COVERAGE_MIN_PATCH_LINES: "30"
-  COVERAGE_MAX_UNCOVERED_SMALL_PATCH: "2"
-  COVERAGE_MIN_CONTRACT: "0"
 
 tasks:
   default:
@@ -264,7 +265,7 @@ tasks:
       - git fetch origin main
       - task: test:unit:coverage
       - task: test:live:coverage
-      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref {{.COVERAGE_BASE_REF}} -manifest docs/quality/generated-operation-contracts.json -min-global-combined {{.COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.COVERAGE_MIN_PATCH}} -min-patch-lines {{.COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.COVERAGE_MIN_CONTRACT}}
+      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref {{.COVERAGE_BASE_REF}} -manifest docs/quality/generated-operation-contracts.json -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.CI_COVERAGE_MIN_CONTRACT}}
 
   quality:coverage:origin-main:
     desc: Run combined (unit + live) global + patch coverage gates against origin/main (requires live infra)
@@ -272,7 +273,7 @@ tasks:
       - git fetch origin main
       - task: test:unit:coverage
       - task: test:live:coverage
-      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref origin/main -manifest docs/quality/generated-operation-contracts.json -min-global-combined {{.COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.COVERAGE_MIN_PATCH}} -min-patch-lines {{.COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.COVERAGE_MIN_CONTRACT}}
+      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref origin/main -manifest docs/quality/generated-operation-contracts.json -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.CI_COVERAGE_MIN_CONTRACT}}
 
   quality:coverage:replay:
     desc: Re-run the coverage gates against the profiles already in .tmp/ (seconds; no tests, no live infra)
@@ -282,7 +283,7 @@ tasks:
       - sh: test -f .tmp/coverage.live.out
         msg: ".tmp/coverage.live.out is missing — run `task test:live:coverage` first (needs the stack up)"
     cmds:
-      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref origin/main -manifest docs/quality/generated-operation-contracts.json -min-global-combined {{.COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.COVERAGE_MIN_PATCH}} -min-patch-lines {{.COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.COVERAGE_MIN_CONTRACT}}
+      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref origin/main -manifest docs/quality/generated-operation-contracts.json -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}} -min-contract {{.CI_COVERAGE_MIN_CONTRACT}}
 
   quality:spec-coverage:
     desc: Print OpenAPI spec path coverage across both transports (generated client + raw httpclient)
