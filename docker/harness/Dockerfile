@@ -53,6 +53,23 @@ RUN mkdir -p /opt/atlassian-sdk \
 ENV ATLAS_HOME=/opt/atlassian-sdk
 ENV PATH="/opt/atlassian-sdk/bin:${PATH}"
 
+# Maven writes download progress as carriage-return redraws meant for a
+# terminal. A CI log has no terminal to redraw, so every update becomes its own
+# line: the stack step emitted about 8,000 of them -- "Progress (1): 12/14 MB"
+# over and over -- out of roughly 9,900 lines total, burying the two or three
+# lines anybody reads.
+#
+# Set on the image rather than per command so it covers the builds below and
+# atlas-run at container start. MAVEN_ARGS is read by Maven 3.9+, which the SDK
+# bundles.
+#
+# MAVEN_OPTS would silence the same output through an slf4j property and would
+# reach wrappers that do not forward MAVEN_ARGS, but setting it here replaces
+# whatever heap flags atlas-run relies on for the product JVM. That trade --
+# risking an out-of-memory four minutes into a CI run to tidy a log -- is not
+# worth taking.
+ENV MAVEN_ARGS="--batch-mode --no-transfer-progress"
+
 WORKDIR /work
 
 # AMPS drives everything from a plugin project. We never build or install a
@@ -66,7 +83,7 @@ RUN atlas-create-bitbucket-plugin \
         --non-interactive
 
 # Warm the largest artifact so a cold start is not dominated by one download.
-RUN /opt/atlassian-sdk/apache-maven-3.9.8/bin/mvn -q \
+RUN /opt/atlassian-sdk/apache-maven-3.9.8/bin/mvn -q --batch-mode --no-transfer-progress \
         -gs /opt/atlassian-sdk/apache-maven-3.9.8/conf/settings.xml \
         dependency:get \
         -Dartifact="com.atlassian.bitbucket.server:bitbucket-webapp:$(cat /bitbucket-version):war" \
