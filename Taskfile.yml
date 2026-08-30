@@ -202,15 +202,24 @@ tasks:
       - git rebase origin/main
 
   quality:verify:
-    desc: Run every quality gate that needs no Bitbucket instance (fast; matches what CI checks before the live job)
+    desc: Run every quality gate that needs no Bitbucket instance (fast; the same set the CI jobs run before the live job)
+    # The ordering claim in the description is load-bearing, so the list is kept
+    # in step with .github/workflows/ci.yml deliberately. It had drifted in both
+    # directions: openapi:verify, openapi:operation-paths:verify and
+    # docs:verify-generated ran only here, so a stale generated artifact reached
+    # main unchallenged; models:verify and client:verify ran only in CI, so the
+    # first sign of regenerated code was a red pull request.
     cmds:
       - task: openapi:verify
       - task: openapi:operation-paths:verify
       - task: quality:format:verify
       - task: quality:line-endings:verify
       - task: quality:validate-decisions
+      - task: models:verify
+      - task: client:verify
       - task: quality:spec-coverage:verify
       - task: quality:cli-live-coverage:verify
+      - task: test:live:compile
       - task: docs:lint
       - task: docs:verify-generated
 
@@ -326,6 +335,24 @@ tasks:
       - mkdir -p .tmp
       - go test -tags=live -timeout 20m -covermode=count -coverpkg=./cmd/...,./internal/...,./tools/... -coverprofile=.tmp/coverage.live.out ./tests/integration/live
       - go tool cover -func=.tmp/coverage.live.out | tail -n 1
+
+  test:live:compile:
+    desc: Build and link the live-tagged test tree without running it (no Bitbucket instance)
+    # The live suite carries the `live` build tag, and every routine test target
+    # here is `go test ./cmd/... ./internal/... ./tools/...` -- which does not
+    # match ./tests/... and does not set the tag. So nothing a developer runs
+    # before pushing ever compiles the live tests, and a renamed helper or a
+    # changed signature in internal/ stays invisible until the live job runs,
+    # eight minutes into CI.
+    #
+    # `-run ^$` builds and links every live test binary and runs none of them:
+    # about three seconds, no Bitbucket instance, no network.
+    #
+    # Its limit is worth stating plainly, because a gate that is trusted for
+    # more than it does is worse than no gate. This catches live tests that no
+    # longer COMPILE. It cannot catch a live test that compiles and whose
+    # assertion has gone stale -- only running it does.
+    cmd: go test -tags=live -run ^$ ./tests/...
 
   test:live:
     desc: Run live integration tests against local Bitbucket stack

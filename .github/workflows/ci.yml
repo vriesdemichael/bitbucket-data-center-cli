@@ -87,10 +87,27 @@ jobs:
       - name: Run Go tests (targeted non-live package scope)
         run: task test:go:safe
 
+      # The live suite is tagged, so the step above never compiles it and a
+      # break in it surfaced only once the live job had run for eight minutes.
+      # This builds and links it in about three seconds. It does not catch a
+      # stale assertion -- only the live job does.
+      - name: Verify the live-tagged test tree still compiles
+        run: task test:live:compile
+
       # Generated code was never verified in CI, which is how the sanitizer's
       # nondeterministic operationId suffixing went unnoticed.
       - name: Verify generated models and client are current
         run: task models:verify && task client:verify
+
+      - name: Verify the vendored OpenAPI spec matches the harness release
+        run: task openapi:verify
+
+      # Guards against an operation this project calls quietly moving to a
+      # different endpoint. It ran only in the local pre-push hook, so the
+      # artifact drifted 468 operations out of date on main without CI
+      # objecting.
+      - name: Verify generated operation paths are current
+        run: task openapi:operation-paths:verify
 
       - name: Verify OpenAPI spec coverage artifact is current
         run: task quality:spec-coverage:verify
@@ -105,6 +122,13 @@ jobs:
       # the agent skill, which agents emit verbatim.
       - name: Verify documented bb invocations are valid
         run: task docs:lint
+
+      # The docs job builds the site from freshly generated artifacts, which
+      # passes whether or not the committed copies match. Nothing in CI compared
+      # the two, so a schema change with its regenerated files left uncommitted
+      # went green.
+      - name: Verify committed generated docs artifacts are current
+        run: task docs:verify-generated
 
   docs-site:
     name: Docs Site
