@@ -35,6 +35,7 @@ package gittest
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"sort"
@@ -230,34 +231,59 @@ func FailureMessage(differences []string) string {
 // not this process at all. Prevention narrows the class; it does not close it.
 //
 // Guard calls os.Exit and does not return.
+// Guard is deliberately three lines. It ends in os.Exit, which cannot be called
+// from a test, so everything it decides lives in the two functions below where
+// it can be.
 func Guard(m *testing.M) {
-	if root, err := repositoryRoot(); err == nil {
-		// Ceilings are consulted only when git searches upward, so this does
-		// not affect a repository the tests create and address directly.
-		// execgit.ScopeFreeEnv strips this variable, which is what lets the
-		// snapshot below still read the repository the tests may not.
-		if previous, set := os.LookupEnv(ceilingVariable); set {
-			defer func() { _ = os.Setenv(ceilingVariable, previous) }()
-			root = root + string(os.PathListSeparator) + previous
-		}
-		if err := os.Setenv(ceilingVariable, root); err != nil {
-			// Not fatal: the comparison below is the guarantee, and the
-			// ceiling only narrows what can reach the repository first.
-			fmt.Fprintf(os.Stderr, "gittest: could not place the repository out of reach: %v\n", err)
-		}
-	}
-
+	placeRepositoryOutOfReach(os.Stderr)
 	before := SnapshotAmbientConfig()
-	code := m.Run()
+	os.Exit(exitCode(m.Run(), before, os.Stderr))
+}
 
-	if differences := Diff(before, SnapshotAmbientConfig()); len(differences) > 0 {
-		fmt.Fprint(os.Stderr, FailureMessage(differences))
-		if code == 0 {
-			code = 1
-		}
+// placeRepositoryOutOfReach sets a ceiling at the repository root and returns
+// what it set, or "" when there was nothing to place.
+//
+// Ceilings are consulted only when git searches upward, so this does not affect
+// a repository the tests create and address directly. execgit.ScopeFreeEnv
+// strips this variable, which is what lets the snapshot still read the
+// repository the tests may not.
+//
+// Nothing here is fatal. The comparison is the guarantee; the ceiling narrows
+// what can reach the repository before the comparison has to notice.
+//
+// No previous value is restored: the caller ends in os.Exit, which does not run
+// deferred functions, and a process about to exit has nothing to restore for.
+func placeRepositoryOutOfReach(complaints io.Writer) string {
+	root, err := repositoryRoot()
+	if err != nil {
+		return ""
 	}
 
-	os.Exit(code)
+	ceiling := root
+	if previous, set := os.LookupEnv(ceilingVariable); set && previous != "" {
+		ceiling = root + string(os.PathListSeparator) + previous
+	}
+
+	if err := os.Setenv(ceilingVariable, ceiling); err != nil {
+		fmt.Fprintf(complaints, "gittest: could not place the repository out of reach: %v\n", err)
+		return ""
+	}
+	return ceiling
+}
+
+// exitCode reports what the test binary should exit with, failing a run whose
+// tests passed but which left the repository changed.
+func exitCode(code int, before ConfigSnapshot, report io.Writer) int {
+	differences := Diff(before, SnapshotAmbientConfig())
+	if len(differences) == 0 {
+		return code
+	}
+
+	fmt.Fprint(report, FailureMessage(differences))
+	if code == 0 {
+		return 1
+	}
+	return code
 }
 
 // ceilingVariable stops git's upward search for a repository.

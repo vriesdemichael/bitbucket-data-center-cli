@@ -1,6 +1,10 @@
 package gittest
 
 import (
+	"bytes"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -201,5 +205,88 @@ func TestDiffSeparatesARemotesURLFromItsRefspec(t *testing.T) {
 	differences := Diff(before, after)
 	if len(differences) != 1 || !strings.Contains(differences[0], "remote.upstream.url") {
 		t.Fatalf("expected only the URL to be reported, got %v", differences)
+	}
+}
+
+// TestPlaceRepositoryOutOfReachSetsACeiling covers the prevention half.
+//
+// Guard itself ends in os.Exit and cannot be called from a test, so what it
+// decides lives here where it can be.
+//
+// Not parallel: these replace a process environment variable.
+func TestPlaceRepositoryOutOfReachSetsACeiling(t *testing.T) {
+	t.Setenv(ceilingVariable, "")
+
+	ceiling := placeRepositoryOutOfReach(io.Discard)
+	if ceiling == "" {
+		t.Fatal("no ceiling was placed; a stray git command can still reach this repository")
+	}
+
+	root, err := repositoryRoot()
+	if err != nil {
+		t.Fatalf("repository root: %v", err)
+	}
+	if ceiling != root {
+		t.Errorf("ceiling = %q, want the repository root %q", ceiling, root)
+	}
+	if os.Getenv(ceilingVariable) != ceiling {
+		t.Errorf("the variable was not set to what was returned: %q", os.Getenv(ceilingVariable))
+	}
+}
+
+// TestPlaceRepositoryOutOfReachKeepsAnExistingCeiling guards against taking
+// away a boundary somebody else set.
+func TestPlaceRepositoryOutOfReachKeepsAnExistingCeiling(t *testing.T) {
+	existing := filepath.Join("somewhere", "else")
+	t.Setenv(ceilingVariable, existing)
+
+	ceiling := placeRepositoryOutOfReach(io.Discard)
+	if !strings.Contains(ceiling, existing) {
+		t.Errorf("ceiling = %q, want it to still contain %q", ceiling, existing)
+	}
+	if !strings.HasPrefix(ceiling, string(os.PathListSeparator)) && !strings.Contains(ceiling, string(os.PathListSeparator)) {
+		t.Errorf("ceiling = %q, want the repository root joined to the existing value", ceiling)
+	}
+}
+
+// TestExitCodeFailsARunThatChangedTheRepository is the reporting half.
+func TestExitCodeFailsARunThatChangedTheRepository(t *testing.T) {
+	unchanged := SnapshotAmbientConfig()
+
+	cases := []struct {
+		name     string
+		before   ConfigSnapshot
+		code     int
+		want     int
+		reported bool
+	}{
+		{name: "clean run, nothing changed", before: unchanged, code: 0, want: 0},
+		{name: "failing run, nothing changed", before: unchanged, code: 2, want: 2},
+		{
+			name:     "passing run that changed the repository",
+			before:   ConfigSnapshot{Available: true, entries: map[string]string{"--local invented.key": "x"}},
+			code:     0,
+			want:     1,
+			reported: true,
+		},
+		{
+			name:     "already failing, and it changed the repository too",
+			before:   ConfigSnapshot{Available: true, entries: map[string]string{"--local invented.key": "x"}},
+			code:     3,
+			want:     3,
+			reported: true,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			report := &bytes.Buffer{}
+			if got := exitCode(testCase.code, testCase.before, report); got != testCase.want {
+				t.Errorf("exit code = %d, want %d", got, testCase.want)
+			}
+			if reported := report.Len() > 0; reported != testCase.reported {
+				t.Errorf("reported = %v, want %v (%q)", reported, testCase.reported, report.String())
+			}
+		})
 	}
 }
