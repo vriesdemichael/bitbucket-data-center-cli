@@ -204,3 +204,73 @@ func RequestFor(cmd *cobra.Command, machineOutput bool) Request {
 		MachineOutput: machineOutput,
 	}
 }
+
+// Missing is one value a command needs and does not have.
+type Missing struct {
+	// Flag is what would have supplied it, named in the refusal.
+	Flag string
+	// Question is what to ask a person who is there.
+	Question string
+	// Value receives the answer.
+	Value *string
+}
+
+// FillMissing asks for each absent value, or refuses naming every flag at once.
+//
+// Naming them all matters: a caller told about --title, corrected, and then
+// told about --to-ref has spent two round trips learning what one message
+// could have said. gh names the whole set for the same reason.
+func FillMissing(request Request, missing []Missing) error {
+	absent := []Missing{}
+	for _, item := range missing {
+		if strings.TrimSpace(*item.Value) == "" {
+			absent = append(absent, item)
+		}
+	}
+	if len(absent) == 0 {
+		return nil
+	}
+
+	decision := interactive.Detect(interactive.Options{
+		Stdin:         request.In,
+		Stdout:        request.Out,
+		Disabled:      request.Disabled,
+		MachineOutput: request.MachineOutput,
+		Lookup:        request.Lookup,
+	})
+	if !decision.Allowed {
+		flags := make([]string, 0, len(absent))
+		for _, item := range absent {
+			flags = append(flags, item.Flag)
+		}
+		return apperrors.New(
+			apperrors.KindValidation,
+			fmt.Sprintf("required flag(s) %s not set (%s, so there is nobody to ask)", strings.Join(flags, ", "), decision.Reason),
+			nil,
+		)
+	}
+
+	reader := bufio.NewReader(request.In)
+	for _, item := range absent {
+		fmt.Fprintf(request.Out, "%s: ", item.Question)
+
+		line, err := reader.ReadString('\n')
+		if err != nil && !(err == io.EOF && line != "") {
+			return apperrors.New(apperrors.KindValidation, "could not read "+item.Flag, err)
+		}
+
+		answer := strings.TrimSpace(line)
+		if answer == "" {
+			// An empty answer is not a value. Substituting a default here is
+			// the "refusing to ask is not permission to guess" failure with an
+			// extra step.
+			return apperrors.New(
+				apperrors.KindValidation,
+				fmt.Sprintf("%s cannot be empty; pass %s or answer the question", item.Question, item.Flag),
+				nil,
+			)
+		}
+		*item.Value = answer
+	}
+	return nil
+}
