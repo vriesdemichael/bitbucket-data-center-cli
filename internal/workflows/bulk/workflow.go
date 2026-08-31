@@ -38,6 +38,12 @@ const (
 	resultStatusSuccess = "success"
 	resultStatusFailed  = "failed"
 	resultStatusSkipped = "skipped"
+	// resultStatusCancelled marks work the run never reached, which is neither
+	// tried-and-failed nor deliberately-skipped.
+	resultStatusCancelled = "cancelled"
+	// resultStatusPartialFailure was a bare literal while its siblings were
+	// constants, and it is part of the published apply-status contract.
+	resultStatusPartialFailure = "partial_failure"
 )
 
 var supportedOperationTypes = []string{
@@ -136,6 +142,11 @@ type ApplySummary struct {
 	SuccessfulOperations int `json:"successfulOperations"`
 	FailedOperations     int `json:"failedOperations"`
 	SkippedOperations    int `json:"skippedOperations"`
+	// Cancelled counts work the run never reached, kept apart from failed and
+	// skipped so an operator can tell "never attempted" from "tried and did not
+	// work" when reading the artifact after an interrupted run.
+	CancelledTargets    int `json:"cancelledTargets,omitempty"`
+	CancelledOperations int `json:"cancelledOperations,omitempty"`
 }
 
 type ApplyStatus struct {
@@ -353,7 +364,22 @@ func (executor *Executor) Apply(ctx context.Context, plan Plan) (ApplyStatus, er
 		Targets: make([]TargetResult, 0, len(plan.Targets)),
 	}
 
+	var cancellation error
+
 	for _, target := range plan.Targets {
+		// Checked before the target rather than inside the operation loop,
+		// because the honest answer for a target nobody started is "not
+		// attempted". Without this the cancelled context reached runner.Run,
+		// came back as an error, and was recorded as an operation failure --
+		// then the loop walked the rest of the plan at the speed of the
+		// failures, marking every un-attempted repository failed with a
+		// context-cancelled string in error.
+		if err := ctx.Err(); err != nil {
+			cancellation = err
+			status.Targets = append(status.Targets, cancelledTargets(plan.Targets[len(status.Targets):], &status.Summary)...)
+			break
+		}
+
 		targetResult := TargetResult{
 			Repository: target.Repository,
 			Status:     resultStatusSuccess,
@@ -407,17 +433,60 @@ func (executor *Executor) Apply(ctx context.Context, plan Plan) (ApplyStatus, er
 		if status.Summary.SuccessfulTargets == 0 {
 			status.Status = resultStatusFailed
 		} else {
-			status.Status = "partial_failure"
+			status.Status = resultStatusPartialFailure
 		}
 	}
 
+	// Cancellation outranks the failure verdict. A run that was interrupted did
+	// not fail; saying so is the difference between "these repositories were
+	// tried and did not work" and "these were never reached".
+	if cancellation != nil {
+		status.Status = resultStatusCancelled
+	}
+
+	// Saved either way. The artifact is what makes an interrupted run
+	// recoverable, so losing it is the one outcome worse than the interruption.
 	if executor.store != nil {
 		if err := executor.store.Save(status); err != nil {
 			return status, err
 		}
 	}
 
+	if cancellation != nil {
+		return status, apperrors.New(apperrors.KindTransient, "bulk apply was cancelled before every repository was attempted", cancellation)
+	}
+
 	return status, nil
+}
+
+// cancelledTargets records the repositories the run never reached.
+//
+// They are neither failed nor skipped. Failed means tried and did not work;
+// skipped means an earlier operation on the same repository failed, so this one
+// was not worth trying. Neither is true of a repository the run never got to,
+// and an operator reading the artifact afterwards has to be able to tell the
+// three apart -- which is the whole reason the artifact exists.
+func cancelledTargets(remaining []TargetPlan, summary *ApplySummary) []TargetResult {
+	results := make([]TargetResult, 0, len(remaining))
+
+	for _, target := range remaining {
+		result := TargetResult{
+			Repository: target.Repository,
+			Status:     resultStatusCancelled,
+			Operations: make([]OperationResult, 0, len(target.Operations)),
+		}
+		for _, operation := range target.Operations {
+			result.Operations = append(result.Operations, OperationResult{
+				Type:   operation.Type,
+				Status: resultStatusCancelled,
+			})
+			summary.CancelledOperations++
+		}
+		results = append(results, result)
+		summary.CancelledTargets++
+	}
+
+	return results
 }
 
 func (status ApplyStatus) HasFailures() bool {

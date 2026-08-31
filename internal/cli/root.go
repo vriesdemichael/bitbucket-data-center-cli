@@ -90,9 +90,10 @@ your behalf using the link above.`,
 	rootCmd.PersistentFlags().String("log-format", "", "Diagnostics format: text or jsonl")
 
 	rootCmd.AddCommand(aicmd.New(aicmd.Dependencies{
-		Version:    func() string { return rootCmd.Version },
-		LoadConfig: options.loadConfigWithOverrides,
-		WriteJSON:  writeJSON,
+		Version:     func() string { return rootCmd.Version },
+		JSONEnabled: func() bool { return options.JSON },
+		LoadConfig:  options.loadConfigWithOverrides,
+		WriteJSON:   writeJSON,
 	}))
 	rootCmd.AddCommand(apicmd.New(apicmd.Dependencies{
 		JSONEnabled:   func() bool { return options.JSON },

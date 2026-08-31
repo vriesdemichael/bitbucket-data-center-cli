@@ -8,6 +8,7 @@ tool for the jobs people reach for them to do.
 
 ## What is not here
 
+<!-- docs-lint: ignore-inline — this table names commands removed on purpose (ADR-051) -->
 | Not in `bb` | What it is |
 | --- | --- |
 | `bb hook list` / `enable` / `disable` / `configure` | Plugin hooks — pre-receive and post-receive handlers contributed by installed apps |

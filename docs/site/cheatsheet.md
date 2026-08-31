@@ -34,7 +34,7 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 | Goal | Command | Notes |
 |---|---|---|
 | List branches | `bb branch list --repo PROJ/my-repo` | Filter with `--filter <pattern>` |
-| Create a branch | `bb branch create feature/retry --from-ref main --repo PROJ/my-repo` | Created directly on server |
+| Create a branch | `bb branch create feature/retry --start-point main --repo PROJ/my-repo` | Created directly on server |
 | Delete a branch | `bb branch delete feature/retry --repo PROJ/my-repo` | Removes branch from server |
 | View commit details | `bb commit get 1a2b3c4 --repo PROJ/my-repo` | Author, message, and timestamp |
 | Compare commits or refs | `bb commit compare 1a2b3c4 5d6e7f8 --repo PROJ/my-repo` | Compares two commit SHAs |
