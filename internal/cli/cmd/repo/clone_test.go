@@ -1292,7 +1292,7 @@ func TestRepoCloneCommandHTTPFallbackFailsBothSSHAndHTTP(t *testing.T) {
 // canPromptForCloneLoginFunc to bypass the TTY guard.
 func TestCloneRepositoryWithAuthFallbackPromptPathEmptyToken(t *testing.T) {
 	originalPromptFunc := canPromptForCloneLoginFunc
-	canPromptForCloneLoginFunc = func(io.Reader) bool { return true }
+	canPromptForCloneLoginFunc = func(io.Reader, io.Writer) bool { return true }
 	t.Cleanup(func() { canPromptForCloneLoginFunc = originalPromptFunc })
 
 	originalFactory := gitBackendFactory
@@ -1334,7 +1334,7 @@ func TestCloneRepositoryWithAuthFallbackPromptPathEmptyToken(t *testing.T) {
 // succeeds.  canPromptForCloneLoginFunc is injected to bypass the TTY guard.
 func TestCloneRepositoryWithAuthFallbackPromptPathSuccess(t *testing.T) {
 	originalPromptFunc := canPromptForCloneLoginFunc
-	canPromptForCloneLoginFunc = func(io.Reader) bool { return true }
+	canPromptForCloneLoginFunc = func(io.Reader, io.Writer) bool { return true }
 	t.Cleanup(func() { canPromptForCloneLoginFunc = originalPromptFunc })
 
 	originalFactory := gitBackendFactory
@@ -1374,13 +1374,14 @@ func TestCloneRepositoryWithAuthFallbackPromptPathSuccess(t *testing.T) {
 	}
 }
 
-// TestCanPromptForCloneLoginOsFile exercises the *os.File branch of canPromptForCloneLogin.
-// os.Stdin is a *os.File but is not a TTY in a test environment, so the function returns false.
-func TestCanPromptForCloneLoginOsFile(t *testing.T) {
-	result := canPromptForCloneLogin(os.Stdin)
-	// In CI/test environments os.Stdin is not a terminal.
-	if result {
-		t.Fatal("expected canPromptForCloneLogin(os.Stdin) = false in non-TTY test environment")
+// TestCanPromptForCloneLoginDefersToTheSharedDecision checks the delegation.
+//
+// os.Stdin is an *os.File but is not a terminal under `go test`, so the shared
+// rules refuse. The point of the assertion is that clone asks them at all
+// rather than keeping a check of its own.
+func TestCanPromptForCloneLoginDefersToTheSharedDecision(t *testing.T) {
+	if canPromptForCloneLogin(os.Stdin, os.Stdout) {
+		t.Fatal("prompting was permitted with no terminal attached")
 	}
 }
 

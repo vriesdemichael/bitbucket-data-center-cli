@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `70`
-- Accepted ADRs: `64`
+- Total ADRs: `71`
+- Accepted ADRs: `65`
 
 ## ADR List
 
@@ -79,4 +79,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 069: Dependabot updates merge themselves, except where held for a person](069-dependabot-updates-merge-themselves-except-where-held.md) (`development`, `accepted`)
 - [ADR 070: Every command is explicitly classified for dry-run, and unknown means refuse](070-every-command-is-explicitly-classified-for-dry-run.md) (`architecture`, `accepted`)
 - [ADR 071: Tests must not reconfigure the repository they run in](071-tests-must-not-reconfigure-the-repository-they-run-in.md) (`development`, `accepted`)
+- [ADR 072: Interactivity is decided in one place, and the escape hatch costs nothing per call](072-interactivity-is-decided-in-one-place.md) (`architecture`, `accepted`)
 
