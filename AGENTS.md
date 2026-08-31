@@ -193,6 +193,32 @@ Where the sabotage can be expressed as a test, write it as one — see
 `TestParityComparisonDetectsDrift`. That turns "verified once" into something CI
 re-verifies.
 
+Where two classifications describe the same thing, check both directions. The
+MCP tool safety flag and the tool annotations answer the same question — is this
+dangerous — and were cross-checked one way only: a gated tool claiming to be
+harmless failed, a tool exposed without `--yolo` while annotating itself
+destructive did not. The unguarded direction was the worse one, because the
+annotation is advice a client may ignore while the flag is what the server
+enforces.
+
+The governance guards, so the set is knowable:
+
+| Guard | Invariant |
+|---|---|
+| `TestAllRunnableCommandsDeclareArgsPolicy` | a command with a positional placeholder declares an `Args` policy |
+| `TestAllCommandsExhaustivelyClassifiedForDryRun` | every command is in exactly one dry-run category |
+| `TestCommandVerbsAgreeWithTheirDryRunClassification` | the command name and the category do not contradict |
+| `TestClassifyUsageErrorMatchesCobrasRealMessages` | the usage-error markers still match Cobra |
+| `TestEveryMCPToolIsAccountedFor`, `TestEveryMappedCLICommandExists` | the MCP and CLI surfaces stay in step |
+| `TestEveryToolHasAScopeRule` | no MCP tool escapes workspace scoping |
+| `TestADRDoesNotNameToolsThatDoNotExist` | decision records do not name tools that were removed |
+| `TestGatedToolsAreTheOnesThatMergeOrGate` | the `--yolo` set is exactly the tools that merge or gate |
+| `TestUnsafeToolsAreAnnotatedDestructive`, `TestSafeToolsAreNotAnnotatedDestructive` | the safety flag and the annotations agree, both ways |
+| `TestEveryToolHasConformanceArguments` | every MCP tool is exercised by the conformance test |
+| `TestEveryToolDeclaresAnOutputSchema`, `TestEveryToolResultConformsToItsOutputSchema` | a tool result matches its published schema |
+| `gittest` ambient config snapshot | no test reconfigures the repository it runs in |
+| `TestEveryCISafeGateRunsOnBothSides` | every gate needing no Bitbucket runs locally and in CI |
+
 ### When running tests also uncovers a broken test
 
 If the rebase brought in API changes from `main` (e.g. a command's flag changed from `--host` to a positional argument), tests added on the branch may need updating. Fix them in the same amend so history stays clean.
