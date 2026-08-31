@@ -11,6 +11,9 @@ type bbInvocation struct {
 	Line int
 	Raw  string
 	Args []string
+	// FlagsToVerify are flags whose value was a placeholder, so the value was
+	// dropped and only the flag's existence can be checked.
+	FlagsToVerify []string
 }
 
 // extractBBInvocations pulls every `bb ...` command out of one shell snippet.
@@ -264,4 +267,152 @@ func splitFields(segment string) ([]string, bool) {
 	flush()
 
 	return fields, true
+}
+
+// inlineIgnoreDirective suppresses inline checking for the line that follows.
+//
+// It exists for documentation that names a command on purpose that does not
+// exist: server-side-hooks.md documents the removed `bb hook list` (ADR-051).
+const inlineIgnoreDirective = "docs-lint: ignore-inline"
+
+// placeholderMarkers are the ways documentation stands in for a value the
+// reader substitutes.
+var placeholderMarkers = []string{"...", "…", "<", "{", "*", "["}
+
+// extractInlineBBInvocations pulls every `bb ...` written in an inline code
+// span, outside any fenced block.
+//
+// Only fenced blocks were checked, so a command in backticks was invisible to
+// the linter. That is not a rare style here: cheatsheet.md is entirely markdown
+// tables -- 50 inline spans, no fenced blocks -- so none of the page was
+// checked, and invocations in the tree had drifted.
+//
+// Fenced blocks are skipped rather than re-read: they are already validated,
+// with their own language rules and expect-invalid handling.
+func extractInlineBBInvocations(contents string) []bbInvocation {
+	var found []bbInvocation
+
+	inFence := false
+	fence := ""
+	ignoreNext := false
+
+	for index, line := range strings.Split(contents, "\n") {
+		trimmed := strings.TrimSpace(line)
+
+		if inFence {
+			if strings.HasPrefix(trimmed, fence) {
+				inFence = false
+			}
+			continue
+		}
+		if marker := fenceMarker(trimmed); marker != "" {
+			inFence = true
+			fence = marker
+			continue
+		}
+
+		if strings.Contains(line, inlineIgnoreDirective) {
+			ignoreNext = true
+			continue
+		}
+		// Suppression runs to the next blank line rather than one line, so a
+		// table of commands that deliberately do not exist takes one directive
+		// instead of one per row -- and an HTML comment between table rows does
+		// not render.
+		if ignoreNext {
+			if trimmed == "" {
+				ignoreNext = false
+			}
+			continue
+		}
+
+		for _, span := range inlineCodeSpans(line) {
+			args, ok := parseBBSegment(span)
+			if !ok {
+				continue
+			}
+			cleaned, flagsToVerify, usable := resolvePlaceholders(args)
+			if !usable {
+				continue
+			}
+			found = append(found, bbInvocation{Line: index, Raw: span, Args: cleaned, FlagsToVerify: flagsToVerify})
+		}
+	}
+
+	return found
+}
+
+// resolvePlaceholders substitutes placeholder values and reports whether the
+// span is checkable at all.
+//
+// Where a placeholder stands is what decides. Following a flag it is a value
+// the reader supplies, so `bb auth login --host ...` still says something
+// checkable -- whether --host exists on that command, which it does not. In
+// subcommand position it means the span is a shape rather than an invocation,
+// and `bb project permissions users …` is documentation doing its job.
+// The placeholder-valued flag is dropped rather than given a made-up value: a
+// substitute has to satisfy the flag's type, and `--expiry-days <N>` would
+// otherwise be reported as an invalid integer, which is the documentation being
+// blamed for the linter's stand-in. The flag name is returned instead, so the
+// caller can check it exists without pretending to know its value.
+func resolvePlaceholders(args []string) (cleaned []string, flagsToVerify []string, usable bool) {
+	cleaned = make([]string, 0, len(args))
+
+	for index, arg := range args {
+		if !isPlaceholder(arg) {
+			cleaned = append(cleaned, arg)
+			continue
+		}
+
+		if index == 0 || !strings.HasPrefix(args[index-1], "-") {
+			return nil, nil, false
+		}
+
+		// Drop the flag that precedes it along with the value.
+		flagsToVerify = append(flagsToVerify, cleaned[len(cleaned)-1])
+		cleaned = cleaned[:len(cleaned)-1]
+	}
+
+	return cleaned, flagsToVerify, true
+}
+
+// isPlaceholder reports whether a token stands in for something.
+func isPlaceholder(arg string) bool {
+	for _, marker := range placeholderMarkers {
+		if strings.Contains(arg, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+// inlineCodeSpans returns the backtick-delimited spans in a line.
+func inlineCodeSpans(line string) []string {
+	var spans []string
+
+	rest := line
+	for {
+		open := strings.Index(rest, "`")
+		if open < 0 {
+			return spans
+		}
+		rest = rest[open+1:]
+
+		closing := strings.Index(rest, "`")
+		if closing < 0 {
+			return spans
+		}
+		spans = append(spans, strings.TrimSpace(rest[:closing]))
+		rest = rest[closing+1:]
+	}
+}
+
+// fenceMarker returns the fence a line opens, or "".
+func fenceMarker(trimmed string) string {
+	for _, marker := range []string{"```", "~~~"} {
+		if strings.HasPrefix(trimmed, marker) {
+			return marker
+		}
+	}
+	return ""
 }

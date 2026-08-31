@@ -46,7 +46,7 @@ func newSkillCommand(deps Dependencies) *cobra.Command {
 
 	skillCmd.AddCommand(newSkillShowCommand(deps))
 	skillCmd.AddCommand(newSkillInstallCommand(deps))
-	skillCmd.AddCommand(newSkillRemoveCommand())
+	skillCmd.AddCommand(newSkillRemoveCommand(deps))
 
 	return skillCmd
 }
@@ -137,6 +137,15 @@ Re-run after upgrading bb to keep the skill file current.`,
 				return apperrors.New(apperrors.KindInternal, "failed to write skill file", err)
 			}
 
+			if deps.jsonEnabled() {
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
+					"status": "installed",
+					"skill":  skill.name,
+					"path":   dest,
+					"scope":  installScope(global),
+				})
+			}
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Skill installed: %s\n", dest)
 			return nil
 		},
@@ -146,7 +155,7 @@ Re-run after upgrading bb to keep the skill file current.`,
 	return cmd
 }
 
-func newSkillRemoveCommand() *cobra.Command {
+func newSkillRemoveCommand(deps Dependencies) *cobra.Command {
 	var global bool
 
 	cmd := &cobra.Command{
@@ -169,12 +178,33 @@ func newSkillRemoveCommand() *cobra.Command {
 			}
 
 			if _, statErr := os.Stat(dest); os.IsNotExist(statErr) {
+				// Not an error: removing something already absent leaves the
+				// caller in the state they asked for. The status says which
+				// of the two happened, which the English sentence also did.
+				if deps.jsonEnabled() {
+					return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
+						"status": "not_found",
+						"skill":  skill.name,
+						"path":   dest,
+						"scope":  installScope(global),
+					})
+				}
+
 				fmt.Fprintf(cmd.OutOrStdout(), "Skill file not found: %s\n", dest)
 				return nil
 			}
 
 			if err := os.Remove(dest); err != nil {
 				return apperrors.New(apperrors.KindInternal, "failed to remove skill file", err)
+			}
+
+			if deps.jsonEnabled() {
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
+					"status": "removed",
+					"skill":  skill.name,
+					"path":   dest,
+					"scope":  installScope(global),
+				})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Skill removed: %s\n", dest)
@@ -220,4 +250,14 @@ func buildSkill(skill skillInfo, version string) string {
 	content := strings.TrimRight(string(skill.content), "\n")
 
 	return content + "\n\n---\n\nPrinted by `bb` " + version + ".\n"
+}
+
+// installScope names where the skill file lives, because the caller cannot
+// infer it from the path alone: project scope resolves relative to the working
+// directory and global scope under the home directory.
+func installScope(global bool) string {
+	if global {
+		return "global"
+	}
+	return "project"
 }

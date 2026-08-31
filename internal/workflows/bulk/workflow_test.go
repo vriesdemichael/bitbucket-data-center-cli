@@ -3,6 +3,7 @@ package bulk
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -1066,4 +1067,125 @@ func TestValidateIdentifier(t *testing.T) {
 			t.Fatalf("expected valid id, got: %v", err)
 		}
 	})
+}
+
+// cancellingRunner cancels the context partway through, the way Ctrl-C does.
+type cancellingRunner struct {
+	cancel     context.CancelFunc
+	afterCalls int
+	calls      int
+}
+
+func (runner *cancellingRunner) Run(ctx context.Context, _ RepositoryTarget, _ OperationSpec) (any, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	runner.calls++
+	if runner.calls >= runner.afterCalls {
+		runner.cancel()
+	}
+	return map[string]any{"ok": true}, nil
+}
+
+// TestApplyStopsOnCancellationRatherThanFailingTheRest is issue #469.
+//
+// Neither loop consulted the context, so on Ctrl-C the cancelled context
+// reached runner.Run, came back as an error, and was recorded as an operation
+// failure -- then the loop walked the rest of the plan at the speed of the
+// failures, writing a status artifact in which every un-attempted repository
+// was marked failed with a context-cancelled string in error.
+//
+// For a run over a few hundred repositories that destroys the thing the
+// artifact exists for: afterwards nobody can tell what was applied, what
+// genuinely failed, and what was never touched.
+func TestApplyStopsOnCancellationRatherThanFailingTheRest(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	plan := planWithTargets(t, 5)
+	runner := &cancellingRunner{cancel: cancel, afterCalls: 2}
+
+	status, err := NewExecutor(runner, nil).Apply(ctx, plan)
+	if err == nil {
+		t.Fatal("an interrupted run reported success; the exit code would not reflect it")
+	}
+
+	if status.Status != resultStatusCancelled {
+		t.Errorf("status = %q, want %q -- an interrupted run did not fail", status.Status, resultStatusCancelled)
+	}
+	if status.Summary.FailedTargets != 0 {
+		t.Errorf("failed targets = %d, want 0; nothing was tried and found wanting", status.Summary.FailedTargets)
+	}
+	if status.Summary.CancelledTargets == 0 {
+		t.Error("no target was recorded as cancelled; the un-attempted ones are indistinguishable")
+	}
+	if len(status.Targets) != len(plan.Targets) {
+		t.Errorf("recorded %d targets of %d; the artifact must account for every repository in the plan",
+			len(status.Targets), len(plan.Targets))
+	}
+
+	// Every target is exactly one of: attempted, or recorded as cancelled.
+	for _, target := range status.Targets {
+		switch target.Status {
+		case resultStatusSuccess, resultStatusFailed, resultStatusCancelled:
+		default:
+			t.Errorf("target %v has status %q", target.Repository, target.Status)
+		}
+		for _, operation := range target.Operations {
+			if operation.Status == resultStatusFailed && strings.Contains(operation.Error, "context canceled") {
+				t.Errorf("a cancelled operation was recorded as failed: %+v", operation)
+			}
+		}
+	}
+}
+
+// TestApplyRunsEveryTargetWhenNotCancelled guards the other direction: the
+// context check must not stop a healthy run.
+func TestApplyRunsEveryTargetWhenNotCancelled(t *testing.T) {
+	plan := planWithTargets(t, 4)
+	runner := &cancellingRunner{cancel: func() {}, afterCalls: 1 << 30}
+
+	status, err := NewExecutor(runner, nil).Apply(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("an uninterrupted run failed: %v", err)
+	}
+	if status.Status != resultStatusSuccess {
+		t.Errorf("status = %q, want success", status.Status)
+	}
+	if status.Summary.CancelledTargets != 0 {
+		t.Errorf("cancelled targets = %d, want 0", status.Summary.CancelledTargets)
+	}
+	if status.Summary.SuccessfulTargets != len(plan.Targets) {
+		t.Errorf("successful targets = %d, want %d", status.Summary.SuccessfulTargets, len(plan.Targets))
+	}
+}
+
+// planWithTargets builds a verifiable plan of n single-operation targets.
+func planWithTargets(t *testing.T, n int) Plan {
+	t.Helper()
+
+	enabled := true
+	targets := make([]TargetPlan, 0, n)
+	for i := 0; i < n; i++ {
+		targets = append(targets, TargetPlan{
+			Repository: RepositoryTarget{ProjectKey: "PRJ", Slug: fmt.Sprintf("repo-%d", i)},
+			Validation: ValidationResult{Valid: true},
+			Operations: []OperationSpec{{Type: OperationRepoSettingsAutoMerge, Enabled: &enabled}},
+		})
+	}
+
+	plan := Plan{
+		APIVersion: APIVersion,
+		Kind:       PlanKind,
+		Validation: ValidationResult{Valid: true},
+		Summary:    PlanSummary{TargetCount: n, OperationCount: n},
+		Targets:    targets,
+	}
+
+	hash, err := ComputePlanHash(plan)
+	if err != nil {
+		t.Fatalf("hashing the plan failed: %v", err)
+	}
+	plan.PlanHash = hash
+	return plan
 }
