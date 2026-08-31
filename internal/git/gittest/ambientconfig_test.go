@@ -222,7 +222,7 @@ func TestPlaceRepositoryOutOfReachSetsACeiling(t *testing.T) {
 		t.Fatal("no ceiling was placed; a stray git command can still reach this repository")
 	}
 
-	root, err := repositoryRoot()
+	root, err := repositoryRoot("")
 	if err != nil {
 		t.Fatalf("repository root: %v", err)
 	}
@@ -288,5 +288,28 @@ func TestExitCodeFailsARunThatChangedTheRepository(t *testing.T) {
 				t.Errorf("reported = %v, want %v (%q)", reported, testCase.reported, report.String())
 			}
 		})
+	}
+}
+
+// TestNothingIsPlacedOutsideARepository covers the branch where there is
+// nothing to place.
+//
+// A guarded package's tests always run inside this repository, so the branch is
+// only reachable by asking from somewhere that is not one. It matters because
+// the guard must degrade to a no-op rather than fail: a checkout without git,
+// or a package vendored elsewhere, should still run its tests.
+func TestNothingIsPlacedOutsideARepository(t *testing.T) {
+	outside := t.TempDir()
+
+	if _, err := repositoryRoot(outside); err == nil {
+		t.Skip("the temporary directory is inside a repository; nothing to assert")
+	}
+
+	complaints := &bytes.Buffer{}
+	if ceiling := placeRepositoryOutOfReachFrom(outside, complaints); ceiling != "" {
+		t.Errorf("a ceiling of %q was placed from outside any repository", ceiling)
+	}
+	if complaints.Len() != 0 {
+		t.Errorf("not being in a repository was reported as a problem: %q", complaints.String())
 	}
 }

@@ -254,7 +254,15 @@ func Guard(m *testing.M) {
 // No previous value is restored: the caller ends in os.Exit, which does not run
 // deferred functions, and a process about to exit has nothing to restore for.
 func placeRepositoryOutOfReach(complaints io.Writer) string {
-	root, err := repositoryRoot()
+	return placeRepositoryOutOfReachFrom("", complaints)
+}
+
+// placeRepositoryOutOfReachFrom is placeRepositoryOutOfReach from a named
+// directory. An empty directory means the process working directory; the tests
+// pass one that is not a repository, to reach the branch where there is nothing
+// to place.
+func placeRepositoryOutOfReachFrom(directory string, complaints io.Writer) string {
+	root, err := repositoryRoot(directory)
 	if err != nil {
 		return ""
 	}
@@ -293,9 +301,10 @@ const ceilingVariable = "GIT_CEILING_DIRECTORIES"
 //
 // It asks git rather than walking for a .git entry, so a linked worktree
 // answers with its own root rather than the main checkout's.
-func repositoryRoot() (string, error) {
+func repositoryRoot(directory string) (string, error) {
 	command := exec.Command("git", "rev-parse", "--show-toplevel")
 	command.Env = execgit.ScopeFreeEnv()
+	command.Dir = directory
 
 	output, err := command.Output()
 	if err != nil {
