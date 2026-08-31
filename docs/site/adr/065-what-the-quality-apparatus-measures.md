@@ -34,8 +34,7 @@ Record the intended shape of the quality apparatus as a whole. It grew one mecha
      nothing about flags, branches, or paths within a command. What it does catch is a command no
      live test exercises at all, which is a real and previously realised failure.
    - Output-schema coverage, meaning which commands publish a data contract, is the one axis with
-     no mechanism, covering a small fraction of the command surface. Tracked as issue 462;
-     ADR-064 depends on it.
+     no mechanism, covering a small fraction of the command surface. Tracked as issue 462.
    - Generated used-operation contract coverage is removed, along with its manifest. It resolved
      each called operation against a hand-written map of operation to test files and counted the
      operation as covered when the list was non-empty -- verifying neither that the file existed
