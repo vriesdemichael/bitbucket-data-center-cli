@@ -263,7 +263,13 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 			// fills BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG from the git
 			// remote -- and that is indistinguishable from an operator setting
 			// them, so neither counts as naming the repository here (ADR-073).
-			targetExplicit := cmd.Flags().Changed("repo")
+			// Changed alone is not "the caller named it": inference sets the
+			// flag and marks it Changed so every command can resolve a target,
+			// which silently made an inferred repository count as explicit and
+			// let --yes apply to the one you were standing in. That is the
+			// hazard #472 reports, reintroduced by the fix for it.
+			targetExplicit := cmd.Flags().Changed("repo") &&
+				!(deps.RepositoryWasInferred != nil && deps.RepositoryWasInferred())
 			if len(args) == 1 {
 				// Two named targets that disagree is not something to resolve
 				// by precedence. The caller believes one of them is about to be

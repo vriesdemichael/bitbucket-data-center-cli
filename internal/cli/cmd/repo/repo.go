@@ -32,6 +32,18 @@ type Dependencies struct {
 	WriteJSON           func(io.Writer, any) error
 	WriteJSONList       func(io.Writer, any, bool) error
 	PermissionChecker   func(*openapigenerated.ClientWithResponses) PermissionChecker
+	// RepositoryWasInferred reports that --repo was filled in from the git
+	// remote rather than named by the caller.
+	//
+	// Only the destructive commands need the difference. Inference marks the
+	// flag Changed so every command can resolve a target, which made "the
+	// caller named it" and "we guessed it" indistinguishable -- and that is
+	// what makes --yes dangerous on a repository you merely happen to be
+	// standing in (#472).
+	//
+	// Optional: nil reads as not inferred, which is right for a caller that
+	// does no inference at all.
+	RepositoryWasInferred func() bool
 }
 
 func (deps *Dependencies) withDefaults() Dependencies {
