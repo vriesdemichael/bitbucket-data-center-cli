@@ -37,11 +37,12 @@ const decisionsDirectory = "docs/decisions"
 // Both spellings are checked because both are load-bearing: the prose form
 // ADR-NNN is how a reader is sent somewhere, and superseded_by is what the
 // export tool follows when it renders the site.
+//
 // Every ADR-NNN in a record is read as a live citation. The check cannot tell
-// one from a record that is discussing an absent record, which is why ADR-067
-// describes this defect without spelling the number and why the number is
-// recorded here instead. If that case becomes common, an exemption keyed by
-// file and number is the pattern this repository already uses elsewhere.
+// one from a record that is discussing an absent record, so a record needing to
+// do the latter describes it rather than spelling the number. If that case
+// becomes common, an exemption keyed by file and number is the pattern this
+// repository already uses elsewhere.
 func TestEveryADRCrossReferenceResolves(t *testing.T) {
 	records := filepath.Join(repositoryRoot(t), decisionsDirectory)
 
