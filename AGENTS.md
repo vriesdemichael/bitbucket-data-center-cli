@@ -93,10 +93,21 @@ after a bulk rewrite; `git update-index --refresh` settles it. Nothing is actual
 
 ### Tests must not reconfigure the repository they run in
 
-`internal/git/gittest` snapshots the repository-scoped git configuration before a package's tests and
-compares it afterwards. A `TestMain` in every package whose tests start a git process fails it
-when anything changed, naming the exact keys. The set is computed rather than listed here; this
-paragraph named three of them when there were four.
+Every package whose tests start a git process installs the guard, as one line:
+
+```go
+func TestMain(m *testing.M) { gittest.Guard(m) }
+```
+
+`gittest.Guard` does two things. It puts this repository out of git's reach for the run, by setting
+a ceiling at its root, so a command that would find it by searching upward fails with "not inside a
+git repository" instead of succeeding against your checkout — which is the shape both recorded
+incidents took. And it snapshots the repository-scoped configuration before the tests and compares
+it afterwards, failing the package on any change and naming the exact keys. A repository a test
+creates and addresses directly is unaffected, because a ceiling only stops an upward search.
+
+The set of packages that need it is computed rather than listed here; this paragraph named three of
+them when there were four.
 
 This is not hypothetical. `Backend.Clone` persists `http.extraHeader` into the repository it clones
 into so later fetches carry authentication. A test that pointed it at the working copy instead of a
