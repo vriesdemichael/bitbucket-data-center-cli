@@ -9,8 +9,15 @@ import (
 	"testing"
 )
 
-// This test asserts ADR-065's rule: every quality gate that needs no Bitbucket
-// instance runs both locally and in CI.
+// This test asserts ADR-065's rule: every quality gate that a git hook can run
+// runs both locally and in CI.
+//
+// "That a git hook can run" is a statement about cost, not capability. It used
+// to be about capability: before ADR-043 the live suite needed a licensed
+// Bitbucket that CI could not provision, so "CI-safe" meant "runs without one".
+// CI provisions its own instance now, on forks included, so every check can run
+// anywhere. What is left is that booting Bitbucket costs minutes, and a
+// contributor who has not started the stack should still be able to push.
 //
 // The two lists had drifted in both directions before anyone compared them.
 // Three gates ran only in the pre-push hook and two only in CI.
@@ -39,8 +46,9 @@ const (
 	lefthookPath   = "lefthook.yml"
 	ciWorkflowPath = ".github/workflows/ci.yml"
 
-	// liveJob needs a provisioned Bitbucket, so its gates are deliberately not
-	// runnable locally before a push (ADR-045) and are excluded from both sides.
+	// liveJob boots Bitbucket. Its gates could run in a hook -- nothing stops
+	// them since ADR-043 -- but a full stack boot on every push is a cost
+	// nobody wants, so they are CI-only by choice and excluded from both sides.
 	liveJob = "live-tests"
 )
 
@@ -62,7 +70,7 @@ var exemptFromParity = map[string]string{
 	"test:unit:coverage": "the CI form of test:go:safe, which also writes the profile the gates read",
 }
 
-func TestEveryCISafeGateRunsOnBothSides(t *testing.T) {
+func TestEveryHookRunnableGateRunsOnBothSides(t *testing.T) {
 	root := repositoryRoot(t)
 	references := taskReferences(t, filepath.Join(root, taskfilePath))
 

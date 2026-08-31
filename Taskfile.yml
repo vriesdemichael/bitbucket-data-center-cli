@@ -292,12 +292,12 @@ tasks:
       - go run ./tools/quality-report -spec-coverage
 
   quality:spec-coverage:update:
-    desc: Update committed OpenAPI spec coverage artifact (CI-safe, no live execution)
+    desc: Update committed OpenAPI spec coverage artifact (static analysis; needs no Bitbucket instance)
     cmds:
       - go run ./tools/quality-report -spec-coverage -write-report -spec-coverage-file docs/quality/spec-coverage.json
 
   quality:spec-coverage:verify:
-    desc: Verify committed OpenAPI spec coverage artifact is current (CI-safe, no live execution)
+    desc: Verify committed OpenAPI spec coverage artifact is current (static analysis; needs no Bitbucket instance)
     cmds:
       - go run ./tools/quality-report -spec-coverage -verify-report -spec-coverage-file docs/quality/spec-coverage.json
 
@@ -312,7 +312,7 @@ tasks:
       - go run ./tools/command-reach -write
 
   quality:command-reach:verify:
-    desc: Fail when a command loses live coverage, arrives without it, or is masked by a skip-on-error test (CI-safe, no live execution)
+    desc: Fail when a command loses live coverage, arrives without it, or is masked by a skip-on-error test (static analysis; needs no Bitbucket instance)
     cmds:
       - go run ./tools/command-reach -verify
 
