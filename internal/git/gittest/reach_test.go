@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/execgit"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/gittest"
 )
 
@@ -77,4 +78,53 @@ func TestAFixtureRepositoryIsUnaffected(t *testing.T) {
 // gittestSnapshot reports whether the guard can still see a repository.
 func gittestSnapshot() bool {
 	return gittest.SnapshotAmbientConfig().Available
+}
+
+// TestAnInheritedGitDirCannotReachTheRepository is the hook case, and the one
+// the ceiling alone never covered.
+//
+// git exports GIT_DIR to every hook it runs. In a linked worktree it is
+// absolute, because no relative path reaches .git/worktrees/<name> from the
+// checkout, so it still names a repository from any directory the test binary
+// runs in. A git command that inherits it does not search upward at all, and
+// GIT_CEILING_DIRECTORIES only ever bounds a search -- so in a worktree the
+// guard was installed, ran, and reached this repository anyway, on every commit
+// made from one. Guard now releases the locators before it places the ceiling.
+func TestAnInheritedGitDirCannotReachTheRepository(t *testing.T) {
+	t.Setenv("GIT_DIR", ambientGitDir(t))
+
+	// The hazard first. If an inherited GIT_DIR ever stops reaching the
+	// repository on its own, the assertion below proves nothing, and this
+	// should say so rather than pass for the wrong reason (ADR-067).
+	if _, err := exec.Command("git", "config", "--local", "--list").CombinedOutput(); err != nil {
+		t.Fatalf("an inherited GIT_DIR no longer reaches the repository, so this test covers nothing: %v", err)
+	}
+
+	if err := execgit.ClearRepositoryLocators(); err != nil {
+		t.Fatalf("release the inherited repository: %v", err)
+	}
+
+	output, err := exec.Command("git", "config", "--local", "--list").CombinedOutput()
+	if err == nil {
+		t.Fatalf("the repository is still reachable once the locators are released:\n%s", output)
+	}
+	if !strings.Contains(string(output), "git repository") {
+		t.Errorf("git failed for some other reason than not finding a repository: %s", output)
+	}
+}
+
+// ambientGitDir is the repository the tests are running inside, asked for with
+// the scoping variables stripped -- the ceiling Guard placed is exactly what
+// stops an ordinary git command from answering.
+func ambientGitDir(t *testing.T) string {
+	t.Helper()
+
+	command := exec.Command("git", "rev-parse", "--absolute-git-dir")
+	command.Env = execgit.ScopeFreeEnv()
+
+	output, err := command.Output()
+	if err != nil {
+		t.Skipf("not running inside a git repository: %v", err)
+	}
+	return strings.TrimSpace(string(output))
 }
