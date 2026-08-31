@@ -35,9 +35,9 @@ func specListCommits() Spec {
 			commits, err := svc.List(ctx,
 				commitservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 				commitservice.ListOptions{
-					Since: in.Since,
-					Until: in.Until,
-					Limit: limitOrDefault(in.Limit),
+					Since:      in.Since,
+					Until:      in.Until,
+					MaxResults: limitOrDefault(in.Limit),
 				},
 			)
 			if err != nil {
@@ -107,9 +107,9 @@ func specCompareRefs() Spec {
 			commits, err := svc.Compare(ctx,
 				commitservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 				commitservice.CompareOptions{
-					From:  in.From,
-					To:    in.To,
-					Limit: limitOrDefault(in.Limit),
+					From:       in.From,
+					To:         in.To,
+					MaxResults: limitOrDefault(in.Limit),
 				},
 			)
 			if err != nil {

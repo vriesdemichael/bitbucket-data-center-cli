@@ -96,8 +96,8 @@ func newSearchReposCommand(deps Dependencies) *cobra.Command {
 			service := repositoryservice.NewService(client)
 
 			opts := repositoryservice.ListOptions{
-				Limit: listPaging.ServiceLimit(),
-				Start: start,
+				MaxResults: listPaging.ServiceLimit(),
+				Start:      start,
 			}
 			if len(args) > 0 {
 				opts.Name = args[0]
@@ -165,12 +165,12 @@ func newSearchCommitsCommand(deps Dependencies) *cobra.Command {
 			service := commitservice.NewService(client)
 
 			opts := commitservice.ListOptions{
-				Limit:  listPaging.ServiceLimit(),
-				Start:  start,
-				Path:   path,
-				Since:  since,
-				Until:  until,
-				Merges: merges,
+				MaxResults: listPaging.ServiceLimit(),
+				Start:      start,
+				Path:       path,
+				Since:      since,
+				Until:      until,
+				Merges:     merges,
 			}
 
 			commits, err := service.List(cmd.Context(), repo, opts)
@@ -243,17 +243,17 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 				}
 				repo := pullrequestservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}
 				opts := pullrequestservice.ListOptions{
-					Limit: listPaging.ServiceLimit(),
-					Start: start,
-					State: state,
+					MaxResults: listPaging.ServiceLimit(),
+					Start:      start,
+					State:      state,
 				}
 				prs, err = service.List(cmd.Context(), repo, opts)
 			} else {
 				opts := pullrequestservice.DashboardListOptions{
-					Limit: listPaging.ServiceLimit(),
-					Start: start,
-					State: state,
-					Role:  role,
+					MaxResults: listPaging.ServiceLimit(),
+					Start:      start,
+					State:      state,
+					Role:       role,
 				}
 				prs, err = service.ListDashboard(cmd.Context(), opts)
 			}

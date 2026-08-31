@@ -67,7 +67,7 @@ func TestListChangesMapsFields(t *testing.T) {
 		_, _ = fmt.Fprint(w, `{"values":[{"path":{"toString":"src/new.go"},"type":"ADD","nodeType":"FILE","executable":true},{"path":{"toString":"dst.go"},"srcPath":{"toString":"src.go"},"type":"MOVE"}],"isLastPage":true,"nextPageStart":0}`)
 	})
 
-	changes, err := service.ListChanges(context.Background(), inspectionRepo, "7", PageOptions{Limit: 50})
+	changes, err := service.ListChanges(context.Background(), inspectionRepo, "7", PageOptions{PageSize: 50})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

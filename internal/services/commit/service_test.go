@@ -82,7 +82,7 @@ func TestCommitServicePagination(t *testing.T) {
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
-	commits, err := service.List(context.Background(), repo, ListOptions{Limit: 0, Path: "src/main.go"})
+	commits, err := service.List(context.Background(), repo, ListOptions{MaxResults: 0, Path: "src/main.go"})
 	if err != nil || len(commits) != 2 {
 		t.Fatalf("expected paginated list, len=%d err=%v", len(commits), err)
 	}
@@ -237,7 +237,7 @@ func TestCommitServicePaginationLimit(t *testing.T) {
 	})
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-	commits, err := service.List(context.Background(), repo, ListOptions{Start: 1, Limit: 3})
+	commits, err := service.List(context.Background(), repo, ListOptions{Start: 1, MaxResults: 3})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -259,7 +259,7 @@ func TestCommitServicePaginationEdgeCases(t *testing.T) {
 	})
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-	commits, err := service.List(context.Background(), repo, ListOptions{Start: -1, Limit: 3})
+	commits, err := service.List(context.Background(), repo, ListOptions{Start: -1, MaxResults: 3})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

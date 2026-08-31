@@ -110,7 +110,7 @@ func New(deps Dependencies) *cobra.Command {
 			client := httpclient.NewFromConfig(cfg)
 			service := repository.NewService(client)
 
-			listOptions := repository.ListOptions{Limit: listPaging.ServiceLimit(), Start: start}
+			listOptions := repository.ListOptions{MaxResults: listPaging.ServiceLimit(), Start: start}
 
 			var repos []repository.Repository
 			if projectKey != "" {

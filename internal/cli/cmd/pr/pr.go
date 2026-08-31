@@ -138,7 +138,7 @@ func New(deps Dependencies) *cobra.Command {
 			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 			pullRequests, err := service.List(cmd.Context(), repo, pullrequestservice.ListOptions{
 				State:        state,
-				Limit:        listPaging.ServiceLimit(),
+				MaxResults:   listPaging.ServiceLimit(),
 				Start:        start,
 				SourceBranch: sourceBranch,
 				TargetBranch: targetBranch,
@@ -309,7 +309,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 			repo := target.RepositoryRef()
 
-			commits, err := service.ListCommits(cmd.Context(), repo, target.PullRequestID, pullrequestservice.PageOptions{Limit: commitsPaging.ServiceLimit(), Start: commitsStart})
+			commits, err := service.ListCommits(cmd.Context(), repo, target.PullRequestID, pullrequestservice.PageOptions{PageSize: commitsPaging.ServiceLimit(), Start: commitsStart})
 			if err != nil {
 				return err
 			}
@@ -352,7 +352,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 			repo := target.RepositoryRef()
 
-			changes, err := service.ListChanges(cmd.Context(), repo, target.PullRequestID, pullrequestservice.PageOptions{Limit: filesPaging.ServiceLimit(), Start: filesStart})
+			changes, err := service.ListChanges(cmd.Context(), repo, target.PullRequestID, pullrequestservice.PageOptions{PageSize: filesPaging.ServiceLimit(), Start: filesStart})
 			if err != nil {
 				return err
 			}
@@ -554,7 +554,7 @@ func New(deps Dependencies) *cobra.Command {
 			if deps.DryRunEnabled() {
 				existing, err := service.List(cmd.Context(), repo, pullrequestservice.ListOptions{
 					State:        "open",
-					Limit:        200,
+					MaxResults:   200,
 					SourceBranch: createFromRef,
 					TargetBranch: createToRef,
 				})
@@ -1775,7 +1775,7 @@ func New(deps Dependencies) *cobra.Command {
 			} else if trimmedCommentPath == "" {
 				source = "activities"
 				activityService := pullrequestactivityservice.NewService(client)
-				activities, listErr := activityService.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID, pullrequestactivityservice.ListOptions{Limit: commentPaging.ServiceLimit()})
+				activities, listErr := activityService.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID, pullrequestactivityservice.ListOptions{PageSize: commentPaging.ServiceLimit()})
 				if listErr != nil {
 					return listErr
 				}
@@ -2266,7 +2266,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			repo := target.RepositoryRef()
 
 			service := pullrequestactivityservice.NewService(client)
-			activities, err := service.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID, pullrequestactivityservice.ListOptions{Limit: activityPaging.ServiceLimit()})
+			activities, err := service.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID, pullrequestactivityservice.ListOptions{PageSize: activityPaging.ServiceLimit()})
 			if err != nil {
 				return err
 			}
@@ -3316,8 +3316,8 @@ func fetchBusyCounts(ctx context.Context, cfg config.AppConfig, warn io.Writer, 
 	counts := make(map[string]int)
 	service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
 	list, err := service.List(ctx, pullrequestservice.RepositoryRef{ProjectKey: projectKey, Slug: repoSlug}, pullrequestservice.ListOptions{
-		State: "open",
-		Limit: busyCountsPullRequestLimit,
+		State:      "open",
+		MaxResults: busyCountsPullRequestLimit,
 	})
 	if err != nil {
 		writeWarning(warn, fmt.Sprintf("could not read open pull requests to rank least_busy reviewers (%v); falling back to reviewer group order", err))

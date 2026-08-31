@@ -22,8 +22,8 @@ type RepositoryRef struct {
 }
 
 type TreeOptions struct {
-	At    string
-	Limit int
+	At       string
+	PageSize int
 }
 
 type FileOptions struct {
@@ -60,8 +60,8 @@ func (service *Service) Tree(ctx context.Context, repo RepositoryRef, path strin
 		return nil, err
 	}
 
-	if options.Limit <= 0 {
-		options.Limit = 1000
+	if options.PageSize <= 0 {
+		options.PageSize = 1000
 	}
 
 	apiPath := repositoryRootPath(repo, "files")
@@ -75,7 +75,7 @@ func (service *Service) Tree(ctx context.Context, repo RepositoryRef, path strin
 	for {
 		query := map[string]string{
 			"start": strconv.Itoa(start),
-			"limit": strconv.Itoa(options.Limit),
+			"limit": strconv.Itoa(options.PageSize),
 		}
 		if strings.TrimSpace(options.At) != "" {
 			query["at"] = strings.TrimSpace(options.At)

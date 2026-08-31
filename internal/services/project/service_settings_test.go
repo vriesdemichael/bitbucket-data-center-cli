@@ -682,7 +682,7 @@ func TestProjectSettingsServiceEmptyAndInvalidJSON(t *testing.T) {
 			http.NotFound(w, r)
 		})
 
-		res, err := service.ListRestrictions(context.Background(), "PRJ", RestrictionListOptions{Limit: 10})
+		res, err := service.ListRestrictions(context.Background(), "PRJ", RestrictionListOptions{MaxResults: 10})
 		if err != nil {
 			t.Fatalf("unexpected list error: %v", err)
 		}

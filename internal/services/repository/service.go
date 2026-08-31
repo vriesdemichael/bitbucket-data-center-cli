@@ -28,7 +28,7 @@ type ListOptions struct {
 	// Unlike other service list options, this is not forwarded as a caller-controlled
 	// Bitbucket page size because `bb repo list --limit` is defined as a maximum
 	// result count at the CLI layer.
-	Limit       int
+	MaxResults  int
 	Start       int
 	Name        string
 	ProjectName string
@@ -49,15 +49,15 @@ func (service *Service) ListByProject(ctx context.Context, projectKey string, op
 const defaultPageSize = 25
 
 func (service *Service) listPaged(ctx context.Context, path string, opts ListOptions) ([]Repository, error) {
-	if opts.Limit <= 0 {
-		opts.Limit = defaultPageSize
+	if opts.MaxResults <= 0 {
+		opts.MaxResults = defaultPageSize
 	}
 
 	results := []Repository{}
 	start := opts.Start
 
 	for {
-		remaining := opts.Limit - len(results)
+		remaining := opts.MaxResults - len(results)
 		if remaining <= 0 {
 			break
 		}
@@ -97,7 +97,7 @@ func (service *Service) listPaged(ctx context.Context, path string, opts ListOpt
 				Name:       value.Name,
 				Public:     value.Public,
 			})
-			if len(results) >= opts.Limit {
+			if len(results) >= opts.MaxResults {
 				return results, nil
 			}
 		}

@@ -115,7 +115,7 @@ func New(deps Dependencies) *cobra.Command {
 				}
 			} else {
 				service := commitservice.NewService(client)
-				commits, err = service.List(cmd.Context(), repo, commitservice.ListOptions{Limit: listPaging.ServiceLimit(), Start: start, Path: listPath})
+				commits, err = service.List(cmd.Context(), repo, commitservice.ListOptions{MaxResults: listPaging.ServiceLimit(), Start: start, Path: listPath})
 				if err != nil {
 					return err
 				}
@@ -192,9 +192,9 @@ func New(deps Dependencies) *cobra.Command {
 
 			service := commitservice.NewService(client)
 			commits, err := service.Compare(cmd.Context(), repo, commitservice.CompareOptions{
-				From:  args[0],
-				To:    args[1],
-				Limit: listPaging.ServiceLimit(),
+				From:       args[0],
+				To:         args[1],
+				MaxResults: listPaging.ServiceLimit(),
 			})
 			if err != nil {
 				return err

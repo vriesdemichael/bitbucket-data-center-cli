@@ -68,7 +68,7 @@ func TestProjectServicePagination(t *testing.T) {
 		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"key":"PRJ2"}]}`))
 	})
 
-	projects, err := service.List(context.Background(), ListOptions{Limit: 0})
+	projects, err := service.List(context.Background(), ListOptions{MaxResults: 0})
 	if err != nil || len(projects) != 2 {
 		t.Fatalf("expected paginated list, len=%d err=%v", len(projects), err)
 	}
@@ -324,7 +324,7 @@ func TestProjectServicePaginationLimit(t *testing.T) {
 	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
 	service := NewService(client)
 
-	projects, err := service.List(context.Background(), ListOptions{Limit: 3, Start: 1})
+	projects, err := service.List(context.Background(), ListOptions{MaxResults: 3, Start: 1})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -345,7 +345,7 @@ func TestProjectServicePaginationEdgeCases(t *testing.T) {
 		_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":4,"values":[{"key":"P1"},{"key":"P2"},{"key":"P3"},{"key":"P4"}]}`))
 	})
 
-	projects, err := service.List(context.Background(), ListOptions{Start: -1, Limit: 3})
+	projects, err := service.List(context.Background(), ListOptions{Start: -1, MaxResults: 3})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

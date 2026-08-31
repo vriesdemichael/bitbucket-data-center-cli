@@ -49,8 +49,8 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 			}
 
 			files, err := service.Tree(cmd.Context(), repo, path, browseservice.TreeOptions{
-				At:    treeAt,
-				Limit: treePaging.ServiceLimit(),
+				At:       treeAt,
+				PageSize: treePaging.ServiceLimit(),
 			})
 			if err != nil {
 				return err
@@ -244,7 +244,7 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 			repo := commitservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
 			service := commitservice.NewService(client)
 
-			commits, err := service.List(cmd.Context(), repo, commitservice.ListOptions{Limit: historyPaging.ServiceLimit(), Path: args[0]})
+			commits, err := service.List(cmd.Context(), repo, commitservice.ListOptions{MaxResults: historyPaging.ServiceLimit(), Path: args[0]})
 			if err != nil {
 				return err
 			}

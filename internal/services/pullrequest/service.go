@@ -23,7 +23,7 @@ type RepositoryRef struct {
 
 type ListOptions struct {
 	State        string `json:"state"`
-	Limit        int    `json:"limit"`
+	MaxResults   int    `json:"limit"`
 	Start        int    `json:"start"`
 	SourceBranch string `json:"source_branch,omitempty"`
 	TargetBranch string `json:"target_branch,omitempty"`
@@ -142,7 +142,7 @@ type DashboardListOptions struct {
 	// APPROVED. Combined with Role=REVIEWER, UNAPPROVED is "asked to review and
 	// has not acted yet", which is what Bitbucket's own dashboard shows.
 	ParticipantStatus string
-	Limit             int
+	MaxResults        int
 	Start             int
 }
 
@@ -152,8 +152,8 @@ func (service *Service) ListDashboard(ctx context.Context, options DashboardList
 		return nil, err
 	}
 
-	if options.Limit <= 0 {
-		options.Limit = 25
+	if options.MaxResults <= 0 {
+		options.MaxResults = 25
 	}
 	if options.Start < 0 {
 		return nil, apperrors.New(apperrors.KindValidation, "start must be greater than or equal to 0", nil)
@@ -165,7 +165,7 @@ func (service *Service) ListDashboard(ctx context.Context, options DashboardList
 
 	for {
 		query := map[string]string{
-			"limit": strconv.Itoa(options.Limit),
+			"limit": strconv.Itoa(options.MaxResults),
 			"start": strconv.Itoa(start),
 		}
 		if normalizedState != "" {
@@ -218,8 +218,8 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, opti
 		return nil, err
 	}
 
-	if options.Limit <= 0 {
-		options.Limit = 25
+	if options.MaxResults <= 0 {
+		options.MaxResults = 25
 	}
 	if options.Start < 0 {
 		return nil, apperrors.New(apperrors.KindValidation, "start must be greater than or equal to 0", nil)
@@ -231,7 +231,7 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, opti
 
 	for {
 		query := map[string]string{
-			"limit": strconv.Itoa(options.Limit),
+			"limit": strconv.Itoa(options.MaxResults),
 			"start": strconv.Itoa(start),
 		}
 		if normalizedState == "open" {
@@ -265,7 +265,7 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, opti
 		// The pages still have to be walked, because matchesFilters runs after
 		// the fetch and a page can contribute nothing; the cap belongs on the
 		// results, not on the requests.
-		if len(results) >= options.Limit {
+		if len(results) >= options.MaxResults {
 			break
 		}
 
@@ -280,8 +280,8 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, opti
 		start = response.NextPageStart
 	}
 
-	if len(results) > options.Limit {
-		results = results[:options.Limit]
+	if len(results) > options.MaxResults {
+		results = results[:options.MaxResults]
 	}
 
 	return results, nil

@@ -13,7 +13,7 @@ import (
 )
 
 type RestrictionListOptions struct {
-	Limit       int
+	MaxResults  int
 	Type        string
 	MatcherType string
 	MatcherID   string
@@ -35,8 +35,8 @@ func (service *Service) ListRestrictions(ctx context.Context, projectKey string,
 		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
 
-	if options.Limit <= 0 {
-		options.Limit = 1000
+	if options.MaxResults <= 0 {
+		options.MaxResults = 1000
 	}
 
 	start := float32(0)
@@ -80,8 +80,8 @@ func (service *Service) ListRestrictions(ctx context.Context, projectKey string,
 
 		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
 
-		if len(results) >= options.Limit {
-			results = results[:options.Limit]
+		if len(results) >= options.MaxResults {
+			results = results[:options.MaxResults]
 			break
 		}
 

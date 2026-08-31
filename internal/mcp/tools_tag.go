@@ -35,7 +35,7 @@ func specListTags() Spec {
 				tagservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 				tagservice.ListOptions{
 					FilterText: in.Filter,
-					Limit:      limitOrDefault(in.Limit),
+					MaxResults: limitOrDefault(in.Limit),
 				},
 			)
 			if err != nil {

@@ -37,7 +37,7 @@ func specListBranches() Spec {
 				branchservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 				branchservice.ListOptions{
 					FilterText: in.Filter,
-					Limit:      limitOrDefault(in.Limit),
+					MaxResults: limitOrDefault(in.Limit),
 				},
 			)
 			if err != nil {

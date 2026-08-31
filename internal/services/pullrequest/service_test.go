@@ -45,7 +45,7 @@ func TestListPullRequestsWithPaginationAndFilters(t *testing.T) {
 
 	service := NewService(httpclient.NewFromConfig(cfg))
 
-	results, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, ListOptions{State: "all", Limit: 1, SourceBranch: "feature/b"})
+	results, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, ListOptions{State: "all", MaxResults: 1, SourceBranch: "feature/b"})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestListPullRequestsDashboard(t *testing.T) {
 	cfg := config.AppConfig{BitbucketURL: server.URL}
 	service := NewService(httpclient.NewFromConfig(cfg))
 
-	results, err := service.ListDashboard(context.Background(), DashboardListOptions{State: "all", Role: "author", Limit: 10})
+	results, err := service.ListDashboard(context.Background(), DashboardListOptions{State: "all", Role: "author", MaxResults: 10})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -89,11 +89,11 @@ func TestListPullRequestsDashboard(t *testing.T) {
 	}
 
 	// Test state filter specific branch logic
-	_, err = service.ListDashboard(context.Background(), DashboardListOptions{State: "open", Limit: 10})
+	_, err = service.ListDashboard(context.Background(), DashboardListOptions{State: "open", MaxResults: 10})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-	_, err = service.ListDashboard(context.Background(), DashboardListOptions{State: "closed", Limit: 10})
+	_, err = service.ListDashboard(context.Background(), DashboardListOptions{State: "closed", MaxResults: 10})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -145,7 +145,7 @@ func TestListPullRequestsValidationAndAuthError(t *testing.T) {
 		t.Fatalf("expected start validation error exit code 2, got: %v", err)
 	}
 
-	_, err = service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, ListOptions{State: "open", Limit: 5})
+	_, err = service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, ListOptions{State: "open", MaxResults: 5})
 	if err == nil || apperrors.ExitCode(err) != 3 {
 		t.Fatalf("expected auth error exit code 3, got: %v", err)
 	}
@@ -1662,7 +1662,7 @@ func TestListPullRequestsAppliesRoleFilter(t *testing.T) {
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
-	if _, err := service.List(context.Background(), repo, ListOptions{Role: "reviewer", Limit: 5}); err != nil {
+	if _, err := service.List(context.Background(), repo, ListOptions{Role: "reviewer", MaxResults: 5}); err != nil {
 		t.Fatalf("expected list success, got %v", err)
 	}
 	if gotRole != "REVIEWER" {
@@ -1718,8 +1718,8 @@ func TestListCapsResultsAtLimit(t *testing.T) {
 	service := NewService(httpclient.NewFromConfig(cfg))
 
 	results, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "repo"}, ListOptions{
-		State: "open",
-		Limit: pageSize,
+		State:      "open",
+		MaxResults: pageSize,
 	})
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
@@ -1760,7 +1760,7 @@ func TestListReturnsEverythingBelowTheLimit(t *testing.T) {
 
 	service := NewService(httpclient.NewFromConfig(cfg))
 
-	results, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "repo"}, ListOptions{State: "open", Limit: 25})
+	results, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "repo"}, ListOptions{State: "open", MaxResults: 25})
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -1807,8 +1807,8 @@ func TestListTrimsAnOvershootingPage(t *testing.T) {
 	service := NewService(httpclient.NewFromConfig(cfg))
 
 	results, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "repo"}, ListOptions{
-		State: "open",
-		Limit: requested,
+		State:      "open",
+		MaxResults: requested,
 	})
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
@@ -1858,7 +1858,7 @@ func TestListDashboardParticipantStatus(t *testing.T) {
 			State:             "open",
 			Role:              "reviewer",
 			ParticipantStatus: testCase.option,
-			Limit:             10,
+			MaxResults:        10,
 		}); err != nil {
 			t.Fatalf("list dashboard with participant status %q failed: %v", testCase.option, err)
 		}

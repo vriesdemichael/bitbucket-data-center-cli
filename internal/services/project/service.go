@@ -10,9 +10,9 @@ import (
 )
 
 type ListOptions struct {
-	Limit int
-	Start int
-	Name  string
+	MaxResults int
+	Start      int
+	Name       string
 }
 
 type CreateInput struct {
@@ -46,8 +46,8 @@ func NewService(client *openapigenerated.ClientWithResponses) *Service {
 }
 
 func (service *Service) List(ctx context.Context, options ListOptions) ([]openapigenerated.RestProject, error) {
-	if options.Limit <= 0 {
-		options.Limit = 25
+	if options.MaxResults <= 0 {
+		options.MaxResults = 25
 	}
 
 	if options.Start < 0 {
@@ -57,7 +57,7 @@ func (service *Service) List(ctx context.Context, options ListOptions) ([]openap
 	results := make([]openapigenerated.RestProject, 0)
 
 	for {
-		remaining := options.Limit - len(results)
+		remaining := options.MaxResults - len(results)
 		if remaining <= 0 {
 			break
 		}
@@ -82,7 +82,7 @@ func (service *Service) List(ctx context.Context, options ListOptions) ([]openap
 
 		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
 
-		if len(results) >= options.Limit {
+		if len(results) >= options.MaxResults {
 			break
 		}
 		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
@@ -95,8 +95,8 @@ func (service *Service) List(ctx context.Context, options ListOptions) ([]openap
 		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
 	}
 
-	if len(results) > options.Limit {
-		results = results[:options.Limit]
+	if len(results) > options.MaxResults {
+		results = results[:options.MaxResults]
 	}
 	return results, nil
 }
