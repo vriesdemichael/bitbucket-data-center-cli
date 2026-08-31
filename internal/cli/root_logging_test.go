@@ -22,7 +22,7 @@ func TestApplyRuntimeFlagOverridesLoggingFlags(t *testing.T) {
 		t.Fatalf("set log-format: %v", err)
 	}
 
-	if err := applyRuntimeFlagOverrides(cmd); err != nil {
+	if err := (&rootOptions{}).applyRuntimeFlagOverrides(cmd); err != nil {
 		t.Fatalf("applyRuntimeFlagOverrides: %v", err)
 	}
 
