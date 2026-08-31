@@ -313,3 +313,33 @@ func TestNothingIsPlacedOutsideARepository(t *testing.T) {
 		t.Errorf("not being in a repository was reported as a problem: %q", complaints.String())
 	}
 }
+
+// TestReleaseInheritedRepositoryDropsTheLocators covers the step that makes the
+// ceiling meaningful.
+//
+// A ceiling bounds an upward search. Git does not search upward when the
+// environment already names a repository, and it exports GIT_DIR to every hook
+// -- absolute in a linked worktree, because no relative path reaches
+// .git/worktrees/<name> from the checkout. So the guard was installed, running,
+// and reaching this repository anyway, in the pre-commit hook of every commit
+// made from a worktree.
+//
+// Not parallel: it changes the process environment.
+func TestReleaseInheritedRepositoryDropsTheLocators(t *testing.T) {
+	t.Setenv("GIT_DIR", "/somewhere/else/.git")
+	t.Setenv("GIT_WORK_TREE", "/somewhere/else")
+
+	complaints := &bytes.Buffer{}
+	if !releaseInheritedRepository(complaints) {
+		t.Fatalf("releasing the inherited repository reported failure: %q", complaints.String())
+	}
+
+	for _, name := range []string{"GIT_DIR", "GIT_WORK_TREE"} {
+		if value, set := os.LookupEnv(name); set {
+			t.Errorf("%s survived at %q; a git command would still go there rather than searching", name, value)
+		}
+	}
+	if complaints.Len() != 0 {
+		t.Errorf("a clean release complained: %q", complaints.String())
+	}
+}
