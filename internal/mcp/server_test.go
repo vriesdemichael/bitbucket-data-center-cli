@@ -442,3 +442,45 @@ func TestBuildCloneURLs(t *testing.T) {
 		})
 	}
 }
+
+// TestToolSpecFillsInMissingAnnotations covers the guard in toolSpec.
+//
+// Every real tool declares annotations and TestAllSpecsHaveAnnotations keeps it
+// that way, so the nil branch never runs in production. It is still worth
+// having: without it, a tool defined without annotations would panic while the
+// package initialises, which is a worse failure than a filled-in default and
+// happens before any test can report it usefully.
+func TestToolSpecFillsInMissingAnnotations(t *testing.T) {
+	type in struct{}
+	type out struct {
+		Value string `json:"value"`
+	}
+
+	handler := func(Clients) mcp.ToolHandlerFor[in, out] {
+		return func(context.Context, *mcp.CallToolRequest, in) (*mcp.CallToolResult, out, error) {
+			return nil, out{}, nil
+		}
+	}
+
+	t.Run("nil annotations are created and the hint derived", func(t *testing.T) {
+		spec := toolSpec(&mcp.Tool{Name: "no_annotations"}, false, handler)
+
+		if spec.Tool.Annotations == nil {
+			t.Fatal("expected annotations to be filled in rather than left nil")
+		}
+		if spec.Tool.Annotations.DestructiveHint == nil || !*spec.Tool.Annotations.DestructiveHint {
+			t.Error("a tool that is not safe must be annotated destructive")
+		}
+	})
+
+	t.Run("safe tools are annotated non-destructive", func(t *testing.T) {
+		spec := toolSpec(&mcp.Tool{Name: "safe_tool", Annotations: readOnly()}, true, handler)
+
+		if spec.Tool.Annotations.DestructiveHint == nil || *spec.Tool.Annotations.DestructiveHint {
+			t.Error("a safe tool must be annotated non-destructive")
+		}
+		if !spec.Tool.Annotations.ReadOnlyHint {
+			t.Error("deriving the destructive hint must not clear the read-only hint")
+		}
+	})
+}
