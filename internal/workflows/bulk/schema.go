@@ -3,23 +3,36 @@ package bulk
 import (
 	"fmt"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
 
 const jsonSchemaVersion = "https://json-schema.org/draft/2020-12/schema"
 
+// Schemas returns the published bulk artifact schemas, identified against the
+// "latest" alias.
 func Schemas() map[string]map[string]any {
+	return SchemasFor(docsite.LatestVersion)
+}
+
+// SchemasFor returns the same schemas, each claiming the identity it has when
+// published under siteVersion.
+func SchemasFor(siteVersion string) map[string]map[string]any {
 	return map[string]map[string]any{
-		"bulk-policy.schema.json":       PolicyJSONSchema(),
-		"bulk-plan.schema.json":         PlanJSONSchema(),
-		"bulk-apply-status.schema.json": ApplyStatusJSONSchema(),
+		"bulk-policy.schema.json":       policyJSONSchema(siteVersion),
+		"bulk-plan.schema.json":         planJSONSchema(siteVersion),
+		"bulk-apply-status.schema.json": applyStatusJSONSchema(siteVersion),
 	}
 }
 
 func PolicyJSONSchema() map[string]any {
+	return policyJSONSchema(docsite.LatestVersion)
+}
+
+func policyJSONSchema(siteVersion string) map[string]any {
 	return map[string]any{
 		"$schema":              jsonSchemaVersion,
-		"$id":                  schemaID("bulk-policy.schema.json"),
+		"$id":                  schemaID(siteVersion, "bulk-policy.schema.json"),
 		"title":                "BBSC Bulk Policy",
 		"description":          "Schema for multi-repository bulk policy files. JSON Schema can validate equivalent YAML documents.",
 		"type":                 "object",
@@ -35,9 +48,13 @@ func PolicyJSONSchema() map[string]any {
 }
 
 func PlanJSONSchema() map[string]any {
+	return planJSONSchema(docsite.LatestVersion)
+}
+
+func planJSONSchema(siteVersion string) map[string]any {
 	return map[string]any{
 		"$schema":              jsonSchemaVersion,
-		"$id":                  schemaID("bulk-plan.schema.json"),
+		"$id":                  schemaID(siteVersion, "bulk-plan.schema.json"),
 		"title":                "BBSC Bulk Plan",
 		"description":          "Schema for deterministic reviewed bulk plan artifacts produced by bb bulk plan.",
 		"type":                 "object",
@@ -57,9 +74,13 @@ func PlanJSONSchema() map[string]any {
 }
 
 func ApplyStatusJSONSchema() map[string]any {
+	return applyStatusJSONSchema(docsite.LatestVersion)
+}
+
+func applyStatusJSONSchema(siteVersion string) map[string]any {
 	return map[string]any{
 		"$schema":              jsonSchemaVersion,
-		"$id":                  schemaID("bulk-apply-status.schema.json"),
+		"$id":                  schemaID(siteVersion, "bulk-apply-status.schema.json"),
 		"title":                "BBSC Bulk Apply Status",
 		"description":          "Schema for persisted and command-emitted bulk apply status artifacts produced by bb bulk apply and bb bulk status.",
 		"type":                 "object",
@@ -374,8 +395,12 @@ func refSchema(name string) map[string]any {
 	return map[string]any{"$ref": fmt.Sprintf("#/$defs/%s", name)}
 }
 
-func schemaID(fileName string) string {
-	return "https://github.com/vriesdemichael/bitbucket-server-cli/docs/reference/schemas/" + fileName
+// schemaID is the canonical identity a published bulk schema claims.  It names
+// the documentation site, which is where the docs and the bb-bulk skill tell
+// readers to point a $schema directive, rather than a repository path that no
+// validator can fetch.
+func schemaID(siteVersion, fileName string) string {
+	return docsite.URL(siteVersion, "reference/schemas/"+fileName)
 }
 
 func planHashSchema() map[string]any {

@@ -9,12 +9,21 @@ package outputschemas
 import (
 	authschemas "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/auth"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
 	bulkworkflow "github.com/vriesdemichael/bitbucket-server-cli/internal/workflows/bulk"
 )
 
 // Schemas returns all per-command output JSON schemas keyed by their published
-// file name.  The tool tools/output-schema-export writes them to disk.
+// file name, identified against the "latest" alias.
 func Schemas() map[string]map[string]any {
+	return SchemasFor(docsite.LatestVersion)
+}
+
+// SchemasFor returns the same schemas, each claiming the identity it has when
+// published under siteVersion.  The tool tools/output-schema-export writes them
+// to disk; a release passes the version it is publishing so that snapshot does
+// not claim the identity of every other one.
+func SchemasFor(siteVersion string) map[string]map[string]any {
 	all := make(map[string]map[string]any)
 
 	// Auth command group schemas
@@ -59,6 +68,13 @@ func Schemas() map[string]map[string]any {
 	// Failure envelope — one schema for every command, since the shape of a
 	// failure does not vary by command.
 	all[ErrorSchemaFileName] = jsonoutput.ErrorEnvelopeSchema(ErrorSchemaFileName)
+
+	// Stamped once, here, rather than threaded through every builder: a
+	// schema is identified by where it is published, and the map key is that
+	// location.
+	for name, schema := range all {
+		schema["$id"] = jsonoutput.SchemaID(siteVersion, name)
+	}
 
 	return all
 }

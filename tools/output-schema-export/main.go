@@ -9,24 +9,26 @@ import (
 	"sort"
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/outputschemas"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
 )
 
 func main() {
 	outputDir := flag.String("out", "docs/reference/schemas/output", "directory for exported per-command JSON output schemas")
+	siteVersion := flag.String("site-version", docsite.LatestVersion, "documentation site version the exported $id values claim")
 	flag.Parse()
 
-	if err := exportSchemas(*outputDir); err != nil {
+	if err := exportSchemas(*outputDir, *siteVersion); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func exportSchemas(outputDir string) error {
+func exportSchemas(outputDir, siteVersion string) error {
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}
 
-	schemas := outputschemas.Schemas()
+	schemas := outputschemas.SchemasFor(siteVersion)
 	fileNames := make([]string, 0, len(schemas))
 	for name := range schemas {
 		fileNames = append(fileNames, name)

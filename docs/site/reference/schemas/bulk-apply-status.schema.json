@@ -563,7 +563,7 @@
       "type": "object"
     }
   },
-  "$id": "https://github.com/vriesdemichael/bitbucket-server-cli/docs/reference/schemas/bulk-apply-status.schema.json",
+  "$id": "https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/bulk-apply-status.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Schema for persisted and command-emitted bulk apply status artifacts produced by bb bulk apply and bb bulk status.",

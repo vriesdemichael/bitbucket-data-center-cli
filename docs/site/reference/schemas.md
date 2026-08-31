@@ -12,8 +12,13 @@ Every data-returning command that supports `--json` has a published JSON Schema 
 Schemas are named `output.<command-path>.schema.json` and published under:
 
 ```
-https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/
+https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/output/
 ```
+
+Each published snapshot identifies itself by the release it belongs to: the copy served
+under `latest/` carries the `$id` of whichever version `latest` currently points at.  Pin
+to a version directory — `.../v3.4.0/reference/schemas/output/` — when you need a contract
+that cannot change under you.
 
 ### Auth command output schemas
 
@@ -121,7 +126,7 @@ task docs:generate
 Add a schema comment at the top of a bulk policy YAML file:
 
 ```yaml
-# yaml-language-server: $schema=https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/bulk-policy.schema.json
+# yaml-language-server: $schema=https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/bulk-policy.schema.json
 apiVersion: bb.io/v1alpha1
 selector:
   projectKey: TEST

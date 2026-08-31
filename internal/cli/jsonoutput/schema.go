@@ -3,13 +3,22 @@ package jsonoutput
 import (
 	"sort"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
 
 const jsonSchemaVersion = "https://json-schema.org/draft/2020-12/schema"
 
-// SchemaBaseURL is the base URL under which output schemas are published.
-const SchemaBaseURL = "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/"
+// SchemaBaseURL is the directory under which output schemas are published for
+// the given version of the documentation site.
+func SchemaBaseURL(siteVersion string) string {
+	return docsite.URL(siteVersion, "reference/schemas/output/")
+}
+
+// SchemaID is the canonical identity a published output schema claims.
+func SchemaID(siteVersion, schemaFileName string) string {
+	return SchemaBaseURL(siteVersion) + schemaFileName
+}
 
 // EnvelopeSchemaFor builds a full bb.machine v2 envelope schema whose data
 // field is constrained to the supplied dataSchema.  title and description are
@@ -17,7 +26,7 @@ const SchemaBaseURL = "https://vriesdemichael.github.io/bitbucket-server-cli/lat
 func EnvelopeSchemaFor(schemaFileName, title, description string, dataSchema map[string]any) map[string]any {
 	return map[string]any{
 		"$schema":              jsonSchemaVersion,
-		"$id":                  SchemaBaseURL + schemaFileName,
+		"$id":                  SchemaID(docsite.LatestVersion, schemaFileName),
 		"title":                title,
 		"description":          description,
 		"type":                 "object",
@@ -58,7 +67,7 @@ func ErrorEnvelopeSchema(schemaFileName string) map[string]any {
 
 	return map[string]any{
 		"$schema":              jsonSchemaVersion,
-		"$id":                  SchemaBaseURL + schemaFileName,
+		"$id":                  SchemaID(docsite.LatestVersion, schemaFileName),
 		"title":                "bb command failure",
 		"description":          "Emitted on stdout by any bb command that fails while --json is set. The presence of error rather than data marks the run as failed; exit_code matches the process exit status.",
 		"type":                 "object",
