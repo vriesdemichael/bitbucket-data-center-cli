@@ -1,7 +1,7 @@
 pre-commit:
   parallel: false
   commands:
-    safe-go-tests:
+    unit-tests:
       run: task test:unit
 
 # The live coverage gate deliberately does not run here.
