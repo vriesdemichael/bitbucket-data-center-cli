@@ -94,8 +94,9 @@ after a bulk rewrite; `git update-index --refresh` settles it. Nothing is actual
 ### Tests must not reconfigure the repository they run in
 
 `internal/git/gittest` snapshots the repository-scoped git configuration before a package's tests and
-compares it afterwards. `TestMain` in `internal/git/execgit`, `internal/cli` and
-`tests/integration/live` fails the package when anything changed, naming the exact keys.
+compares it afterwards. A `TestMain` in every package whose tests start a git process fails it
+when anything changed, naming the exact keys. The set is computed rather than listed here; this
+paragraph named three of them when there were four.
 
 This is not hypothetical. `Backend.Clone` persists `http.extraHeader` into the repository it clones
 into so later fetches carry authentication. A test that pointed it at the working copy instead of a
@@ -117,6 +118,18 @@ identity override meanwhile authored real commits as `Test User <test@example.lo
 **Any test that shells out to git must operate on a directory it created**, normally `t.TempDir()`.
 If the guard fires, look for a git invocation missing `-C` or a helper defaulting to the current
 directory. It reports rather than repairs; undo damage with `git config --local --unset <key>`.
+
+The `--local` scope is not private to your worktree. In a linked worktree it resolves to
+`$GIT_COMMON_DIR/config` — the main checkout's `.git/config`, shared by all of them. A sibling
+worktree running `git branch`, `git checkout -b`, `git push -u` or `git fetch` rewrites the file
+the guard is watching mid-run. That surfaced as several guarded packages failing at once with no
+`--- FAIL` line, and passing on a re-run. Git's own bookkeeping for those operations —
+`branch.*`, `remote.*.fetch`, `lfs.*` — is excluded from the shared scope for that reason, and
+only from the shared scope. Everything else still fails, so **if the guard names a key, believe
+it**: it is not the worktrees.
+
+The cost is that a test writing `branch.*` into this repository is no longer caught. Do not widen
+the exclusion to buy quiet; if a key you think is noise fires, it came from a test.
 
 ### Documented commands are parsed, not just written
 
