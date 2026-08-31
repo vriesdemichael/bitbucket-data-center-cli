@@ -42,3 +42,18 @@ func TestPolicySchemaReferencesSupportedOperationTypes(t *testing.T) {
 		t.Fatalf("expected %d operation schema variants, got %#v", len(supportedOperationTypes), operation["oneOf"])
 	}
 }
+
+func TestSchemasForIdentifiesBulkSchemasAgainstTheGivenSiteVersion(t *testing.T) {
+	schemas := SchemasFor("v4.0.0")
+	if len(schemas) == 0 {
+		t.Fatal("SchemasFor returned no schemas")
+	}
+
+	for name, schema := range schemas {
+		id, _ := schema["$id"].(string)
+		want := "https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/reference/schemas/" + name
+		if id != want {
+			t.Errorf("schema %s: $id = %q, want %q", name, id, want)
+		}
+	}
+}

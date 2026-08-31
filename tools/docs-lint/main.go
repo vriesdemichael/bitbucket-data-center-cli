@@ -62,6 +62,7 @@ func main() {
 	roots := flag.String("roots", "README.md,AGENTS.md,CONTRIBUTING.md,SECURITY.md,docs,skills", "Comma-separated files and directories to scan")
 	updateVersion := flag.Bool("update-version", false, "Update stale version strings across documentation in-place")
 	versionFlag := flag.String("version", "", "Target release version to enforce or update (defaults to latest git tag)")
+	retiredHostRoot := flag.String("retired-host-root", ".", "Tree to scan for references to the retired documentation host")
 	flag.Parse()
 
 	targetVer := resolveTargetVersion(*versionFlag)
@@ -90,6 +91,16 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+
+	// Scanned over the whole tree rather than the documentation roots: the
+	// retired host reached Go source and generated schemas as well as prose.
+	hostFindings, err := lintRetiredHost(*retiredHostRoot)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	findings = append(findings, hostFindings...)
+	sortFindings(findings)
 
 	if code := report(os.Stdout, findings, checked); code != 0 {
 		os.Exit(code)
@@ -182,14 +193,20 @@ func lintPathsWithVersion(roots []string, targetVer string) ([]finding, int, err
 		checked += fileChecked
 	}
 
+	sortFindings(findings)
+
+	return findings, checked, nil
+}
+
+// sortFindings orders findings by location so the report reads like a file
+// listing regardless of which rule produced each one.
+func sortFindings(findings []finding) {
 	sort.Slice(findings, func(left, right int) bool {
 		if findings[left].File == findings[right].File {
 			return findings[left].Line < findings[right].Line
 		}
 		return findings[left].File < findings[right].File
 	})
-
-	return findings, checked, nil
 }
 
 func collectMarkdownFiles(roots []string) ([]string, error) {

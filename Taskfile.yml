@@ -128,11 +128,20 @@ tasks:
       vars:
         - VERSION
     # The version reaches the pages through BB_DOCS_VERSION, which docs/main.py
-    # reads at build time. Nothing is rewritten on disk, so a release no longer
+    # reads at build time. Nothing is committed back, so a release no longer
     # leaves the checked-in sources a version behind.
     env:
       BB_DOCS_VERSION: '{{.VERSION}}'
     cmds:
+      # A schema $id is a canonical identity, not an address. Every release
+      # publishes a full copy of the schemas and mike also serves the newest
+      # copy under the latest alias, so identifying them against the alias
+      # would have every release assert one identity for a different document.
+      # Re-exported here, into the working tree the site is built from, so the
+      # published snapshot names the version it belongs to while the committed
+      # copies stay on the alias and docs:verify-generated stays stable.
+      - go run ./tools/output-schema-export -out docs/site/reference/schemas/output -site-version '{{.VERSION}}'
+      - go run ./tools/bulk-schema-export -out docs/site/reference/schemas -site-version '{{.VERSION}}'
       - uv run --project '{{.DOCS_PROJECT_DIR}}' mike deploy --push --update-aliases {{.VERSION}} latest
       - uv run --project '{{.DOCS_PROJECT_DIR}}' mike set-default --push latest
 

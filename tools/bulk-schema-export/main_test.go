@@ -7,13 +7,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
 	bulkworkflow "github.com/vriesdemichael/bitbucket-server-cli/internal/workflows/bulk"
 )
 
 func TestExportSchemasWritesAllExpectedFiles(t *testing.T) {
 	outputDir := t.TempDir()
 
-	if err := exportSchemas(outputDir); err != nil {
+	if err := exportSchemas(outputDir, docsite.LatestVersion); err != nil {
 		t.Fatalf("exportSchemas failed: %v", err)
 	}
 
@@ -53,11 +54,30 @@ func TestExportSchemasReturnsErrorForInvalidOutputPath(t *testing.T) {
 		t.Fatalf("setup file failed: %v", err)
 	}
 
-	err := exportSchemas(filePath)
+	err := exportSchemas(filePath, docsite.LatestVersion)
 	if err == nil {
 		t.Fatal("expected exportSchemas to fail when output path is a file")
 	}
 	if !strings.Contains(err.Error(), "create output directory") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestExportSchemasWritesTheRequestedSiteVersionIntoID(t *testing.T) {
+	outputDir := t.TempDir()
+
+	if err := exportSchemas(outputDir, "v4.0.0"); err != nil {
+		t.Fatalf("exportSchemas failed: %v", err)
+	}
+
+	const name = "bulk-policy.schema.json"
+	raw, err := os.ReadFile(filepath.Join(outputDir, name))
+	if err != nil {
+		t.Fatalf("read exported schema: %v", err)
+	}
+
+	want := `"$id": "https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/reference/schemas/` + name + `"`
+	if !strings.Contains(string(raw), want) {
+		t.Fatalf("exported %s does not carry %s", name, want)
 	}
 }

@@ -1,5 +1,5 @@
 {
-  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.auth.alias.discover.schema.json",
+  "$id": "https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/output/output.auth.alias.discover.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "JSON output schema for `bb auth alias discover --json`. Data contains the discovered alias set.",

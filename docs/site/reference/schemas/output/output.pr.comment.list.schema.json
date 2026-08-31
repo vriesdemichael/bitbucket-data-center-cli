@@ -1,5 +1,5 @@
 {
-  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.pr.comment.list.schema.json",
+  "$id": "https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/output/output.pr.comment.list.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "JSON output schema for `bb pr comment list --json`. By default data carries the summarised thread view (comments and tasks together, unresolved first). With --full it carries the raw Bitbucket comment objects under `comments` instead.",

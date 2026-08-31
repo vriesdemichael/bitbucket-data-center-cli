@@ -62,3 +62,32 @@ func TestSchemasReturnNonEmpty(t *testing.T) {
 		}
 	}
 }
+
+// Every release publishes a full copy of the schemas, and mike also serves the
+// newest copy under the "latest" alias.  Identifying them all against the alias
+// makes three distinct documents claim one canonical identity, which is what a
+// validator resolves $ref against and caches by.
+func TestSchemasForIdentifiesEverySchemaAgainstTheGivenSiteVersion(t *testing.T) {
+	schemas := outputschemas.SchemasFor("v4.0.0")
+	if len(schemas) == 0 {
+		t.Fatal("SchemasFor returned no schemas")
+	}
+
+	for name, schema := range schemas {
+		id, _ := schema["$id"].(string)
+		want := "https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/reference/schemas/output/" + name
+		if id != want {
+			t.Errorf("schema %s: $id = %q, want %q", name, id, want)
+		}
+	}
+}
+
+func TestSchemasIdentifyAgainstTheLatestAlias(t *testing.T) {
+	for name, schema := range outputschemas.Schemas() {
+		id, _ := schema["$id"].(string)
+		want := "https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/output/" + name
+		if id != want {
+			t.Errorf("schema %s: $id = %q, want %q", name, id, want)
+		}
+	}
+}

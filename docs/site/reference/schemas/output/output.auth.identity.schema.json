@@ -1,5 +1,5 @@
 {
-  "$id": "https://vriesdemichael.github.io/bitbucket-server-cli/latest/reference/schemas/output/output.auth.identity.schema.json",
+  "$id": "https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/output/output.auth.identity.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "JSON output schema for `bb auth identity --json` (alias: bb auth whoami). Data contains the authenticated user identity.",
