@@ -100,9 +100,10 @@ your behalf using the link above.`,
 		WriteJSON:     writeJSON,
 	}))
 	rootCmd.AddCommand(authcmd.New(authcmd.Dependencies{
-		JSONEnabled: func() bool { return options.JSON },
-		LoadConfig:  loadConfig,
-		WriteJSON:   writeJSON,
+		JSONEnabled:             func() bool { return options.JSON },
+		LoadConfig:              loadConfig,
+		LoadConfigWithOverrides: loadConfigWithOverrides,
+		WriteJSON:               writeJSON,
 	}))
 	rootCmd.AddCommand(bulkcmd.New(bulkcmd.Dependencies{
 		JSONEnabled: func() bool { return options.JSON },
