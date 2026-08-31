@@ -1,7 +1,8 @@
 number: 27
 title: Atlassian 9.4 docs as API reference source
 category: architecture
-status: accepted
+status: superseded
+superseded_by: 68
 decision: >
   Use Atlassian Bitbucket Data Center 9.4 REST documentation and its published OpenAPI
   artifact as the single external source of API reference for endpoint discovery, payload shape,

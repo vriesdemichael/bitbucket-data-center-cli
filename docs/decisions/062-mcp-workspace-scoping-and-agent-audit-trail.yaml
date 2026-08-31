@@ -3,111 +3,43 @@ title: The MCP server can be confined to a workspace, and records what agents at
 category: architecture
 status: accepted
 decision: >
-  bb ai mcp serve accepts --project KEY and --repo PROJECT/slug, confining every tool call to that
-  project or repository, and --audit-file PATH, recording every invocation as JSON Lines. Both are
-  off by default; both are enforced in one receiving middleware over tools/call rather than in the
-  handlers.
-  Scoping resolves in three ways, one per tool, from a table pinned in both directions against the
-  catalogue by a test. A tool whose project and repository arguments identify its target has them
-  injected when omitted and refused when they name something else. A tool that widens without them —
-  the dashboard mode of the pull-request listing — has them injected, so the unbounded mode becomes
-  the bounded one. A tool whose project argument is only a filter is withheld under a repository
-  scope, because pinning a filter still lists siblings. A tool addressing a resource Bitbucket does
-  not scope to a project at all, which is anything keyed by commit SHA, is withheld under any scope.
-  Withheld tools are dropped from the catalogue as well as refused on call.
-  Audit records carry timestamp, tool, project, repo, status, duration, identity, host, scope,
-  redacted arguments, and the W3C trace parent when the client sends one. Status is success, error,
-  or denied. Redaction reuses internal/diagnostics rather than reimplementing a token list.
-  Writes are synchronous, and a write that fails refuses the call. --audit-failure=warn relaxes that.
-  The sink is a file, or the literal stderr. stdout is rejected outright, since it carries the
-  protocol. bb ships no direct SIEM integration.
-  Administrators can mandate the destination with policy.mcp_audit_file, which supplies the path when
-  the flag is absent and rejects a flag naming a different one.
+  bb ai mcp serve accepts --project and --repo, confining every tool call to that project or
+  repository, and --audit-file, recording every invocation as JSON Lines. Both are off by default.
+  Both are enforced in one middleware over tools/call, never in handlers.
+  Each tool has a scope rule, held to the catalogue by a test. A tool whose arguments identify its
+  target has them injected when omitted and refused when they name something else. A tool whose
+  project argument is only a filter, or that addresses something Bitbucket does not scope to a
+  project at all, is withheld: dropped from the catalogue as well as refused on call.
+  Audit writes are synchronous and a failed write refuses the call, unless --audit-failure=warn.
+  The sink is a file or stderr; stdout carries the protocol and is rejected. Administrators can
+  mandate the destination with policy.mcp_audit_file, which binds only where the policy file is out
+  of the developer's reach -- see ADR-058 for the deployment step that makes that true.
 agent_instructions: >
-  Add a scope rule for every new tool in the same change that adds the tool. TestEveryToolHasAScopeRule
-  fails without one, in both directions. Choose the rule by asking what the tool's arguments can
-  actually bound, not by whether it happens to accept a project: a tool keyed by commit SHA cannot be
-  bounded and must be withheld, however convenient it would be to let through.
-  Never write a scope check that skips when it cannot find an argument to check. That shape permits
-  every call it does not understand while reading like enforcement in review, and it is the specific
-  defect this design exists to avoid.
-  Do not add per-handler enforcement. The middleware is the choke point, and it is what makes "every
-  tool call is checked" a property of the code rather than of everyone remembering.
-  When documenting these controls, say plainly that the audit trail is not tamper-evident and that an
-  agent with shell access bypasses the MCP layer entirely. Do not describe either control as
-  preventing what it does not prevent.
-  Audit logging stays off by default. Do not enable it for convenience; a developer who did not ask
-  for a log file should not find one.
+  Add a scope rule for every new tool in the same change. TestEveryToolHasAScopeRule fails without
+  one, in both directions. Choose it by what the tool's arguments can actually bound: a tool keyed by
+  commit SHA cannot be bounded and must be withheld.
+  Never write a scope check that skips when it finds no argument to check. That permits every call it
+  does not understand while reading like enforcement.
+  Do not add per-handler enforcement, and do not enable auditing by default.
+  Do not describe either control as preventing what it does not: the trail is not tamper-evident, and
+  an agent with shell access bypasses this layer entirely.
 rationale: >
-  ADR-039 already bounds an MCP server to one instance and one token's rights. Neither bounds it to a
-  part of the instance, and on a multi-tenant Bitbucket a read-only PAT still reaches most of what
-  its owner can read. Scoping closes the distance between "this agent may only read" and "this agent
-  may only read the thing it is working on".
-  Enforcing in middleware rather than in handlers is the load-bearing choice. With 24 handlers and
-  more arriving, a per-handler check is 24 opportunities to forget, and the forgetting is silent. One
-  middleware over tools/call means the property holds for tools nobody thought about when writing it,
-  and the audit record cannot be skipped by a handler returning early.
-  Injecting an omitted argument rather than demanding it is what makes scoping usable. An agent that
-  omits project and repo is asking for the widest form of the call; refusing costs it a turn and
-  teaches it nothing, while binding the call to the scope gives it the answer it can actually have.
-  Withholding what cannot be bounded is the honest alternative to pretending. A build status hangs
-  off a commit SHA, which is global in Bitbucket's API; there is no argument that would confine it,
-  and a check that waved it through because it found no project argument would be exactly the
-  fail-open shape that makes a guard worse than none.
-  The audit trail is not a duplicate of Bitbucket's, which was the first objection worth answering.
-  Bitbucket sees a REST call from a user with a token, and cannot distinguish a person in a browser
-  from an agent in that person's IDE, so attribution exists only here. More decisively, a call
-  refused by the scope or the safety gate never reaches Bitbucket, so no server-side record of it can
-  exist — and attempted-and-blocked is the prompt-injection signal worth alerting on. Bitbucket's
-  read events also sit at Full audit coverage, which most operators do not run, and an exfiltrating
-  agent is reading.
-  A file, not a SIEM integration, for the reason Vault reaches the same answer with file, syslog and
-  socket devices after a decade: collectors adapt to files, and every SIEM already tails them. A
-  direct HTTP sink would put a network call, a credential and retry buffering inside the tool-call
-  path of a process spawned per IDE session and killed without warning.
-  Fail-closed follows Vault's rule that it does not answer requests it cannot log. An audit trail
-  that degrades silently is worse than none, because the absence of a record stops meaning anything.
-  Policy enforcement follows ADR-058 because the person whose agent is audited is the person running
-  the command. A destination they can edit is documentation, not a control.
+  ADR-039 bounds a server to one instance and one token's rights, not to a part of the instance. On a
+  multi-tenant Bitbucket a read-only token still reaches most of what its owner can read.
+  Middleware rather than handlers is the load-bearing choice: 24 handlers is 24 chances to forget,
+  silently, and one choke point makes the property hold for tools nobody has written yet.
+  The trail is not a duplicate of Bitbucket's. A call refused by the scope never reaches Bitbucket,
+  so no server-side record can exist -- and attempted-and-blocked is the prompt-injection signal
+  worth alerting on. Bitbucket also cannot tell an agent from the person whose token it uses.
 rejected_alternatives:
-  - alternative: Check the scope inside each tool handler
-    reason: >
-      24 places to forget, silently, and every new tool adds another. The middleware makes the
-      property structural, and a per-tool rule table with an exhaustive test makes the classification
-      visible instead of scattered.
   - alternative: Compare project and repository only when the caller supplies them
-    reason: >
-      Fails open on every call that omits them, which includes the entire dashboard mode of the
-      pull-request listing and every tool keyed by commit. This was the shape suggested on the issue,
-      and it reads like enforcement while permitting what it does not understand.
+    reason: Fails open on every call that omits them, while reading like enforcement.
   - alternative: Let unboundable tools through under a scope
+    reason: Sells a boundary that does not exist; a commit SHA is not project-scoped in the API.
+  - alternative: Write audit records asynchronously
+    reason: Loses the denials, which are the records worth having.
+  - alternative: Ship direct SIEM integrations
     reason: >
-      Sells a boundary that does not exist. A commit SHA is not project-scoped in Bitbucket's API, so
-      there is nothing to check; withholding is the only honest outcome, and dropping the tools from
-      the catalogue means an agent does not waste a turn discovering it.
-  - alternative: Write audit records asynchronously to keep the call path fast
-    reason: >
-      Loses exactly the records that matter. A denial written by a fire-and-forget call that failed
-      is a denial nobody can review, and the latency it saves is irrelevant next to a network round
-      trip to Bitbucket.
-  - alternative: Ship direct Splunk or Datadog integrations
-    reason: >
-      Narrows the product set for no gain and puts a network dependency, a stored credential and
-      retry buffering in the request path of a short-lived process with no reliable shutdown hook.
-      A JSONL file is the integration; every collector already reads one.
-  - alternative: Log to stderr only, as the MCP specification suggests for diagnostics
-    reason: >
-      Correct for diagnostics and wrong for audit. An IDE-spawned server's stderr goes to an output
-      pane that is not a compliance sink. stderr remains available as an --audit-file value for
-      containerised deployments whose collector reads the process streams.
-  - alternative: Audit the whole CLI, not only the MCP server
-    reason: >
-      The three reasons the MCP trail is worth keeping all evaporate for a person at a keyboard.
-      Bitbucket's attribution of a human running a command is already correct and complete; the CLI
-      has no scope or gate to deny against, so there are no denial events to lose; and a read a
-      person chose to make is not an anomaly. Auditing it would add volume and no signal.
-  - alternative: Enable auditing by default
-    reason: >
-      Spends disk on every developer who never asked for it and will not know where to look. The
-      control is a fleet control, so it belongs behind an explicit flag or an administrative policy.
+      Puts a network call, a credential and retry buffering in the tool-call path of a process
+      spawned per IDE session. Every collector already tails a file.
 provenance: guided-ai

@@ -2095,6 +2095,46 @@ func TestSystemConfigPathDefault(t *testing.T) {
 	}
 }
 
+// TestPolicyLoadingNeverCreatesTheSystemConfigDirectory pins ADR-058 point 5:
+// bb reads the administrative policy tier and never creates the directory that
+// holds it. That directory belongs to whoever creates it, and on Windows
+// C:\ProgramData lets an unprivileged account be that somebody — so a
+// convenience MkdirAll on a read path would hand the tier that outranks user
+// configuration to whichever account happened to run bb first.
+//
+// The second half of the test is what stops the first half being vacuous: the
+// same run asserts that SaveStoredConfig does create the per-user directory, so
+// a directory creation on the policy path would be detected rather than lost in
+// a test that creates nothing anywhere.
+func TestPolicyLoadingNeverCreatesTheSystemConfigDirectory(t *testing.T) {
+	root := t.TempDir()
+	systemDir := filepath.Join(root, "system", "bb")
+	userDir := filepath.Join(root, "user", "bb")
+
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(systemDir, "config.yaml"))
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(userDir, "config.yaml"))
+
+	if _, err := LoadSystemConfig(); err != nil {
+		t.Fatalf("LoadSystemConfig error: %v", err)
+	}
+	if _, err := LoadPolicy(); err != nil {
+		t.Fatalf("LoadPolicy error: %v", err)
+	}
+	if _, err := ResolveTLSSettings(); err != nil {
+		t.Fatalf("ResolveTLSSettings error: %v", err)
+	}
+	if err := SaveStoredConfig(StoredConfig{DefaultHost: "https://bitbucket.example.com"}); err != nil {
+		t.Fatalf("SaveStoredConfig error: %v", err)
+	}
+
+	if _, err := os.Stat(systemDir); !os.IsNotExist(err) {
+		t.Fatalf("bb created the system configuration directory %s (stat err: %v); the policy tier is the administrator's to create, see ADR-058 point 5", systemDir, err)
+	}
+	if _, err := os.Stat(userDir); err != nil {
+		t.Fatalf("expected SaveStoredConfig to create the per-user configuration directory %s: %v", userDir, err)
+	}
+}
+
 func TestWorkspaceConfigPathDiscovery(t *testing.T) {
 	tempDir := t.TempDir()
 	bbDir := filepath.Join(tempDir, ".bb")
