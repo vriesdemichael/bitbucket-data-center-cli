@@ -1382,10 +1382,11 @@ func TestPRExtendedLifecycleAndReviewerCommands(t *testing.T) {
 }
 
 func TestResolveRepositorySelector(t *testing.T) {
-	t.Run("uses env fallback", func(t *testing.T) {
-		t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-		repo, err := resolveRepositorySelector("", config.AppConfig{ProjectKey: "TEST"})
+	t.Run("falls back to the resolved repository", func(t *testing.T) {
+		// The slug comes off the configuration now rather than being read from
+		// the environment here, so an inferred context reaches it as a value
+		// (issue #458). LoadWithOverrides is what fills it.
+		repo, err := resolveRepositorySelector("", config.AppConfig{ProjectKey: "TEST", RepoSlug: "demo"})
 		if err != nil {
 			t.Fatalf("expected no error, got: %v", err)
 		}
@@ -3343,8 +3344,12 @@ func TestAuthIdentityCommand(t *testing.T) {
 }
 
 func TestResolveRepositoryReferenceWrappers(t *testing.T) {
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	cfg := config.AppConfig{ProjectKey: "TEST"}
+	// The slug is carried on the configuration rather than read from the
+	// environment at the point of use, so no t.Setenv is needed -- and this test
+	// can be parallel.
+	t.Parallel()
+
+	cfg := config.AppConfig{ProjectKey: "TEST", RepoSlug: "demo"}
 
 	diffRepo, err := resolveRepositoryReference("", cfg)
 	if err != nil || diffRepo.ProjectKey != "TEST" || diffRepo.Slug != "demo" {
@@ -4374,6 +4379,12 @@ func TestRuntimeFlagsBecomeOverridesNotEnvironment(t *testing.T) {
 	}
 	if runtime.RequestTimeout == nil || *runtime.RequestTimeout != "30s" {
 		t.Errorf("request timeout = %v, want 30s", runtime.RequestTimeout)
+	}
+	if runtime.ClientKey == nil || *runtime.ClientKey != "/path/to/client.key" {
+		t.Errorf("client key = %v, want /path/to/client.key", runtime.ClientKey)
+	}
+	if runtime.RetryBackoff == nil || *runtime.RetryBackoff != "500ms" {
+		t.Errorf("retry backoff = %v, want 500ms", runtime.RetryBackoff)
 	}
 }
 

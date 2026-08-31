@@ -30,13 +30,18 @@ type repositoriesClient interface {
 type Dependencies struct {
 	JSONEnabled func() bool
 	LoadConfig  func() (config.AppConfig, error)
+	// RuntimeOverrides carries the global flags, for the values auth reads
+	// directly rather than through a config load.
+	RuntimeOverrides func() config.Overrides
+
 	// LoadConfigWithOverrides steers resolution for the commands that take a
 	// --host flag. They used to publish the value with os.Setenv, which
 	// outlived the command and destroyed a real BITBUCKET_URL rather than
 	// outranking it for one invocation (ADR-021, issue #458).
 	//
-	// Optional: a nil value falls back to LoadConfig, so a test that does not
-	// exercise the override needs no change.
+	// Optional only for a caller that never passes a host: loadWith falls back
+	// to LoadConfig when none is given, and reports an internal error when one
+	// is given and this is nil, rather than resolving the wrong instance.
 	LoadConfigWithOverrides func(config.Overrides) (config.AppConfig, error)
 	WriteJSON               func(io.Writer, any) error
 	NewUsersClient          func(config.AppConfig) (usersClient, error)
@@ -248,14 +253,13 @@ to fail instead of falling back.`,
 
 			warnAboutSecretsOnTheCommandLine(cmd)
 
-			clientCert := strings.TrimSpace(loginClientCert)
-			if clientCert == "" {
-				clientCert = strings.TrimSpace(os.Getenv("BB_CLIENT_CERT"))
-			}
-			clientKey := strings.TrimSpace(loginClientKey)
-			if clientKey == "" {
-				clientKey = strings.TrimSpace(os.Getenv("BB_CLIENT_KEY"))
-			}
+			// The subcommand's own flag wins, then the global --client-cert,
+			// then the variable. The middle layer used to arrive as the
+			// variable, because the global flag was written into it; reading
+			// the environment alone stopped seeing it once flags became values.
+			globals := deps.runtimeOverrides()
+			clientCert := firstNonBlank(loginClientCert, derefString(globals.ClientCert), os.Getenv("BB_CLIENT_CERT"))
+			clientKey := firstNonBlank(loginClientKey, derefString(globals.ClientKey), os.Getenv("BB_CLIENT_KEY"))
 
 			aliases := []string(nil)
 			if loginDiscoverAliases {
@@ -330,7 +334,7 @@ to fail instead of falling back.`,
 		Aliases: []string{"whoami"},
 		Short:   "Show authenticated user identity",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := loadConfigWithOptionalHostOverride(deps, identityHost)
+			cfg, err := deps.loadWith(identityHost)
 			if err != nil {
 				return err
 			}
@@ -586,7 +590,7 @@ to fail instead of falling back.`,
 			"Pass --replace to store only what was discovered. Anything dropped is named in the " +
 			"output.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := loadConfigWithOptionalHostOverride(deps, aliasDiscoverHost)
+			cfg, err := deps.loadWith(aliasDiscoverHost)
 			if err != nil {
 				return err
 			}
@@ -661,12 +665,6 @@ type authIdentity struct {
 	ID          int64  `json:"id,omitempty"`
 	Type        string `json:"type,omitempty"`
 	Active      bool   `json:"active"`
-}
-
-// loadConfigWithOptionalHostOverride is Dependencies.loadWith, kept as a
-// function for the call sites that hold a loader rather than the whole struct.
-func loadConfigWithOptionalHostOverride(deps Dependencies, hostOverride string) (config.AppConfig, error) {
-	return deps.loadWith(hostOverride)
 }
 
 func resolveIdentity(ctx context.Context, cfg config.AppConfig, newUsersClient func(config.AppConfig) (usersClient, error)) (authIdentity, error) {
@@ -991,4 +989,30 @@ func (deps Dependencies) loadWith(host string) (config.AppConfig, error) {
 			"a host override was given but this command was built without support for one", nil)
 	}
 	return deps.LoadConfigWithOverrides(config.Overrides{Host: host})
+}
+
+// runtimeOverrides is the global flags, or none when the caller wired nothing.
+func (deps Dependencies) runtimeOverrides() config.Overrides {
+	if deps.RuntimeOverrides == nil {
+		return config.Overrides{}
+	}
+	return deps.RuntimeOverrides()
+}
+
+// firstNonBlank returns the first value that is not empty after trimming.
+func firstNonBlank(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
+// derefString reads through an override pointer, where nil means "not passed".
+func derefString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
