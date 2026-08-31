@@ -32,6 +32,7 @@ A governance test asserts an invariant about the codebase rather than a behaviou
    - TestPolicyLoadingNeverCreatesTheSystemConfigDirectory: reading policy does not create its directory.
    - TestVerbClassificationExemptionsNameRealCommands: an exemption names a real command and gives a reason.
    - TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit: a package running git installs the guard.
+   - TestOnlyTheSharedHelperDecidesInteractivity: only the shared helper asks whether a stream is a terminal.
    - TestGovernanceTestsNamedInThisRecordExist: this list names only tests that exist.
 
 ## Agent Instructions

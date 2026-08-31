@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/interactive"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
@@ -359,7 +360,7 @@ func cloneRepositoryWithAuthFallback(
 		}
 	}
 
-	if jsonOutput || !canPromptForCloneLoginFunc(cmd.InOrStdin()) {
+	if jsonOutput || !canPromptForCloneLoginFunc(cmd.InOrStdin(), cmd.OutOrStdout()) {
 		return "", newCloneLoginRequiredError(cloneHost, sshErr, transportMode == cloneTransportAuto)
 	}
 
@@ -451,12 +452,13 @@ func promptForCloneLogin(cmd *cobra.Command, cfg config.AppConfig, cloneHost str
 	return savedCfg, true, nil
 }
 
-func canPromptForCloneLogin(input io.Reader) bool {
-	file, ok := input.(*os.File)
-	if !ok {
-		return false
-	}
-	return term.IsTerminal(int(file.Fd()))
+// canPromptForCloneLogin defers to the shared interactivity decision.
+//
+// It used to test stdin alone, which permitted a prompt into a pipeline and is
+// weaker than the two-stream rule ADR-072 records. The decision now lives in
+// one place so a command cannot get it subtly wrong on its own.
+func canPromptForCloneLogin(input io.Reader, output io.Writer) bool {
+	return interactive.Detect(interactive.Options{Stdin: input, Stdout: output}).Allowed
 }
 
 func readCloneToken(input io.Reader, output io.Writer) (string, error) {
