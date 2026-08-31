@@ -46,7 +46,7 @@ func TestLiveCLIRepoAdminLifecycle(t *testing.T) {
 	}
 
 	// Delete
-	deleteOutput, err := executeLiveCLI(t, "--json", "repo", "admin", "delete")
+	deleteOutput, err := executeLiveCLI(t, "--json", "repo", "admin", "delete", seeded.Key+"/test-repo", "--yes")
 	if err != nil {
 		t.Fatalf("repo delete failed: %v\noutput: %s", err, deleteOutput)
 	}
@@ -139,7 +139,7 @@ func TestLiveCLIRepoAdminUpdateDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected no repository side-effect from admin update dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
 
-	_, _ = executeLiveCLI(t, "--json", "repo", "admin", "delete")
+	_, _ = executeLiveCLI(t, "--json", "repo", "admin", "delete", seeded.Key+"/"+repoName, "--yes")
 }
 
 func TestLiveCLIRepoAdminDeleteDryRunNoSideEffect(t *testing.T) {
@@ -183,7 +183,7 @@ func TestLiveCLIRepoAdminDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected no repository side-effect from admin delete dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
 
-	_, _ = executeLiveCLI(t, "--json", "repo", "admin", "delete")
+	_, _ = executeLiveCLI(t, "--json", "repo", "admin", "delete", seeded.Key+"/"+repoName, "--yes")
 }
 
 func TestLiveCLIRepoAdminForkDryRunNoSideEffect(t *testing.T) {
@@ -263,13 +263,13 @@ func TestLiveCLIRepoLifecyclePromotedCanonical(t *testing.T) {
 	}
 
 	// Canonical Delete Fork
-	deleteForkOutput, err := executeLiveCLI(t, "--json", "repo", "delete", "--repo", seeded.Key+"/"+forkName)
+	deleteForkOutput, err := executeLiveCLI(t, "--json", "repo", "delete", "--repo", seeded.Key+"/"+forkName, "--yes")
 	if err != nil {
 		t.Fatalf("repo delete fork failed: %v\noutput: %s", err, deleteForkOutput)
 	}
 
 	// Canonical Delete Repo
-	deleteOutput, err := executeLiveCLI(t, "--json", "repo", "delete", "--repo", seeded.Key+"/"+repoName)
+	deleteOutput, err := executeLiveCLI(t, "--json", "repo", "delete", "--repo", seeded.Key+"/"+repoName, "--yes")
 	if err != nil {
 		t.Fatalf("repo delete failed: %v\noutput: %s", err, deleteOutput)
 	}
