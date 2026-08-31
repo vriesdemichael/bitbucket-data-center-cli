@@ -16,6 +16,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prsel"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
@@ -450,6 +451,21 @@ func New(deps Dependencies) *cobra.Command {
 			}
 			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
 
+			// Ask a person who is there; name every missing flag to one who is
+			// not. This is what MarkFlagRequired used to do, minus the part
+			// that made asking impossible.
+			if err := prompt.FillMissing(prompt.Request{
+				In:            cmd.InOrStdin(),
+				Out:           cmd.OutOrStdout(),
+				MachineOutput: deps.JSONEnabled(),
+			}, []prompt.Missing{
+				{Flag: "--from-ref", Question: "Source branch", Value: &createFromRef},
+				{Flag: "--to-ref", Question: "Target branch", Value: &createToRef},
+				{Flag: "--title", Question: "Title", Value: &createTitle},
+			}); err != nil {
+				return err
+			}
+
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
 				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
@@ -622,9 +638,10 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd.Flags().BoolVar(&createCodeOwners, "codeowners", true, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal")
 	createCmd.Flags().BoolVar(&createNoCodeOwners, "no-codeowners", false, "Do not include code owners from .bitbucket/CODEOWNERS")
 	createCmd.Flags().BoolVar(&createDraft, "draft", false, "Create as a draft pull request (Bitbucket DC 8.0+)")
-	_ = createCmd.MarkFlagRequired("from-ref")
-	_ = createCmd.MarkFlagRequired("to-ref")
-	_ = createCmd.MarkFlagRequired("title")
+	// Not MarkFlagRequired: Cobra rejects before RunE, which forecloses asking
+	// a person who is there. FillMissing enforces the same requirement and, when
+	// nobody is there, produces the same message naming every absent flag at
+	// once (ADR-073).
 	prCmd.AddCommand(createCmd)
 
 	var updateTitle string
