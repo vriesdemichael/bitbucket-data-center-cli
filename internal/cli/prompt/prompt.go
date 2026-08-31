@@ -231,7 +231,7 @@ func FillMissing(request Request, missing []Missing) error {
 		return nil
 	}
 
-	decision := interactive.Detect(interactive.Options{
+	decision := decide(interactive.Options{
 		Stdin:         request.In,
 		Stdout:        request.Out,
 		Disabled:      request.Disabled,
