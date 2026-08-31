@@ -122,6 +122,11 @@ func confirmYesNo(in io.Reader, out io.Writer, action string) error {
 	return apperrors.New(apperrors.KindValidation, "cancelled", nil)
 }
 
+// decide is a seam. Under `go test` no stream is a terminal, so every path past
+// the gate is unreachable without one, and the prompting half of this package
+// would be untestable -- which is also how it would rot.
+var decide = interactive.Detect
+
 // gate is the shared half: when nobody can answer, say which flag was missing.
 //
 // Refusing to prompt is not permission to proceed, and it is not permission to
@@ -132,7 +137,7 @@ func gate(request Request, action string) error {
 		return nil
 	}
 
-	decision := interactive.Detect(interactive.Options{
+	decision := decide(interactive.Options{
 		Stdin:         request.In,
 		Stdout:        request.Out,
 		Disabled:      request.Disabled,
