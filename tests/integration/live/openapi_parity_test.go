@@ -98,7 +98,7 @@ func verifyRepositoryListParity(ctx context.Context, cfg config.AppConfig, proje
 	manualClient := httpclient.NewFromConfig(cfg)
 	manualService := repository.NewService(manualClient)
 
-	manualRepos, err := manualService.ListByProject(ctx, projectKey, repository.ListOptions{Limit: 100})
+	manualRepos, err := manualService.ListByProject(ctx, projectKey, repository.ListOptions{MaxResults: 100})
 	if err != nil {
 		return fmt.Errorf("manual repo list failed: %w", err)
 	}

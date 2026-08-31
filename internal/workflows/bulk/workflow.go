@@ -708,7 +708,12 @@ func (planner *Planner) resolveTargets(ctx context.Context, selector Selector) (
 			return cached, nil
 		}
 
-		repositories, err := planner.catalog.ListByProject(ctx, trimmedProjectKey, repository.ListOptions{Limit: 100})
+		// FIXME(#468): this is a total cap, not a page size, so a project with
+		// more than this many repositories is silently planned in part and
+		// applied as a complete success. Passing zero would be worse -- it
+		// means one default-sized page (ADR-074), not unlimited. Fixing it
+		// needs a way to ask for everything, which no service offers yet.
+		repositories, err := planner.catalog.ListByProject(ctx, trimmedProjectKey, repository.ListOptions{MaxResults: 100})
 		if err != nil {
 			return nil, err
 		}

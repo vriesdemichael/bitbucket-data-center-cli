@@ -120,7 +120,7 @@ func specListPullRequests() Spec {
 						Role:         in.Role,
 						SourceBranch: in.SourceBranch,
 						TargetBranch: in.TargetBranch,
-						Limit:        limit,
+						MaxResults:   limit,
 					},
 				)
 			case in.Project != "" || in.Repo != "":
@@ -131,9 +131,9 @@ func specListPullRequests() Spec {
 					role = "REVIEWER"
 				}
 				prs, err = svc.ListDashboard(ctx, pullrequestservice.DashboardListOptions{
-					State: state,
-					Role:  role,
-					Limit: limit,
+					State:      state,
+					Role:       role,
+					MaxResults: limit,
 				})
 			}
 			if err != nil {
@@ -249,7 +249,7 @@ func specListPRComments() Spec {
 			var threads []pullrequestactivityservice.Thread
 			var summary pullrequestactivityservice.Summary
 			if in.Path == "" {
-				activities, listErr := activitySvc.List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID, pullrequestactivityservice.ListOptions{Limit: limit})
+				activities, listErr := activitySvc.List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID, pullrequestactivityservice.ListOptions{PageSize: limit})
 				if listErr != nil {
 					return nil, ListPRCommentsOutput{}, fmt.Errorf("list_pr_comments failed: %w", listErr)
 				}

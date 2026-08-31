@@ -19,8 +19,8 @@ type RepositoryRef struct {
 }
 
 type ListOptions struct {
-	Limit int `json:"limit"`
-	Start int `json:"start"`
+	PageSize int `json:"limit"`
+	Start    int `json:"start"`
 }
 
 type Activity struct {
@@ -49,15 +49,15 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, pull
 		return nil, err
 	}
 
-	if options.Limit <= 0 {
-		options.Limit = 25
+	if options.PageSize <= 0 {
+		options.PageSize = 25
 	}
 	if options.Start < 0 {
 		return nil, apperrors.New(apperrors.KindValidation, "start must be greater than or equal to 0", nil)
 	}
 
 	start := float32(options.Start)
-	limit := float32(options.Limit)
+	limit := float32(options.PageSize)
 	results := make([]Activity, 0)
 
 	for {

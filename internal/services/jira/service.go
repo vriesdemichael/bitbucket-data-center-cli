@@ -41,7 +41,7 @@ func (s *Service) GetPRIssues(ctx context.Context, repo RepositoryRef, prID stri
 
 type jiraCommitsResponse struct {
 	Size       int          `json:"size"`
-	Limit      int          `json:"limit"`
+	MaxResults int          `json:"limit"`
 	IsLastPage bool         `json:"isLastPage"`
 	Values     []JiraCommit `json:"values"`
 }

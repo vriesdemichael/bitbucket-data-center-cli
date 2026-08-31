@@ -35,7 +35,7 @@ func TestListAndExtractComments(t *testing.T) {
 		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":1001,"action":"COMMENTED","createdDate":123,"comment":{"id":41,"text":"general comment","version":2}},{"id":1002,"action":"COMMENTED","createdDate":124,"comment":{"id":42,"text":"anchored comment","version":1,"anchor":{"path":{"parent":"src","name":"main.go"}}}},{"id":1003,"action":"APPROVED","createdDate":125}]}`))
 	})
 
-	activities, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12", ListOptions{Limit: 10})
+	activities, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12", ListOptions{PageSize: 10})
 	if err != nil {
 		t.Fatalf("expected list to succeed, got: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestListPaginationAndStatusBranches(t *testing.T) {
 			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"id":2001,"action":"COMMENTED","comment":{"id":51,"text":"duplicate"}}]}`))
 		})
 
-		activities, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12", ListOptions{Limit: 2})
+		activities, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12", ListOptions{PageSize: 2})
 		if err != nil {
 			t.Fatalf("expected list to succeed, got: %v", err)
 		}

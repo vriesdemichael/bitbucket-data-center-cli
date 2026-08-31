@@ -57,12 +57,12 @@ func TestBrowseServiceCoreCommands(t *testing.T) {
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
-	files, err := service.Tree(context.Background(), repo, "", TreeOptions{Limit: 25})
+	files, err := service.Tree(context.Background(), repo, "", TreeOptions{PageSize: 25})
 	if err != nil || len(files) != 2 {
 		t.Fatalf("expected tree success, len=%d err=%v", len(files), err)
 	}
 
-	dirFiles, err := service.Tree(context.Background(), repo, "dir", TreeOptions{Limit: 25})
+	dirFiles, err := service.Tree(context.Background(), repo, "dir", TreeOptions{PageSize: 25})
 	if err != nil || len(dirFiles) != 1 {
 		t.Fatalf("expected dir tree success, len=%d err=%v", len(dirFiles), err)
 	}
@@ -113,7 +113,7 @@ func TestBrowseServicePagination(t *testing.T) {
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
-	files, err := service.Tree(context.Background(), repo, "", TreeOptions{Limit: 0})
+	files, err := service.Tree(context.Background(), repo, "", TreeOptions{PageSize: 0})
 	if err != nil || len(files) != 2 {
 		t.Fatalf("expected paginated list, len=%d err=%v", len(files), err)
 	}
@@ -458,7 +458,7 @@ func TestBrowseServiceTreeNestedPathKeepsSeparators(t *testing.T) {
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
-	files, err := service.Tree(context.Background(), repo, "src/main/java", TreeOptions{Limit: 10, At: "refs/heads/main"})
+	files, err := service.Tree(context.Background(), repo, "src/main/java", TreeOptions{PageSize: 10, At: "refs/heads/main"})
 	if err != nil {
 		t.Fatalf("expected tree success, got %v", err)
 	}

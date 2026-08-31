@@ -38,7 +38,7 @@ func TestTagServiceValidationAndStatusMapping(t *testing.T) {
 		t.Fatalf("expected tag name validation error, got %v", err)
 	}
 
-	_, err = service.List(context.Background(), repo, ListOptions{Limit: 25})
+	_, err = service.List(context.Background(), repo, ListOptions{MaxResults: 25})
 	if err == nil || !strings.Contains(err.Error(), "authorization") {
 		t.Fatalf("expected mapped authorization error, got %v", err)
 	}
@@ -65,7 +65,7 @@ func TestTagServicePaginationAndFallbackBranches(t *testing.T) {
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
-	tags, err := service.List(context.Background(), repo, ListOptions{Limit: 2, FilterText: "v"})
+	tags, err := service.List(context.Background(), repo, ListOptions{MaxResults: 2, FilterText: "v"})
 	if err != nil {
 		t.Fatalf("expected paginated list success, got: %v", err)
 	}
@@ -205,7 +205,7 @@ func TestTagServiceTransportAndValidationBranches(t *testing.T) {
 		})
 
 		repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-		tags, err := service.List(context.Background(), repo, ListOptions{Limit: 0, OrderBy: " ALPHABETICAL ", FilterText: " release "})
+		tags, err := service.List(context.Background(), repo, ListOptions{MaxResults: 0, OrderBy: " ALPHABETICAL ", FilterText: " release "})
 		if err != nil {
 			t.Fatalf("expected default/trim branch success, got: %v", err)
 		}
@@ -234,7 +234,7 @@ func TestTagServicePaginationLimit(t *testing.T) {
 	})
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-	tags, err := service.List(context.Background(), repo, ListOptions{Limit: 3, Start: 1})
+	tags, err := service.List(context.Background(), repo, ListOptions{MaxResults: 3, Start: 1})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -256,7 +256,7 @@ func TestTagServicePaginationEdgeCases(t *testing.T) {
 	})
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-	tags, err := service.List(context.Background(), repo, ListOptions{Start: -1, Limit: 3})
+	tags, err := service.List(context.Background(), repo, ListOptions{Start: -1, MaxResults: 3})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

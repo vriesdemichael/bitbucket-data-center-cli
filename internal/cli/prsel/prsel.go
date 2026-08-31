@@ -89,7 +89,7 @@ func Resolve(
 	openPRs, err := lister.List(ctx, repo, pullrequestservice.ListOptions{
 		State:        "open",
 		SourceBranch: branchName,
-		Limit:        10,
+		MaxResults:   10,
 	})
 	if err != nil {
 		return Target{}, err
@@ -118,7 +118,7 @@ func Resolve(
 	allPRs, err := lister.List(ctx, repo, pullrequestservice.ListOptions{
 		State:        "all",
 		SourceBranch: branchName,
-		Limit:        10,
+		MaxResults:   10,
 	})
 	if err != nil {
 		return Target{}, err

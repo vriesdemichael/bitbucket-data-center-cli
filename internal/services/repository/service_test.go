@@ -46,9 +46,9 @@ func TestListRepositoriesAcrossPages(t *testing.T) {
 	client := httpclient.NewFromConfig(cfg)
 	service := NewService(client)
 
-	// Limit: 2 — should stop after the first page with 2 results, never fetch page 2
+	// MaxResults: 2 — should stop after the first page with 2 results, never fetch page 2
 	requestCount.Store(0)
-	repos, err := service.List(context.Background(), ListOptions{Limit: 2})
+	repos, err := service.List(context.Background(), ListOptions{MaxResults: 2})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -62,9 +62,9 @@ func TestListRepositoriesAcrossPages(t *testing.T) {
 		t.Fatalf("expected 1 API request for limit=2, got %d", requestCount.Load())
 	}
 
-	// Limit: 100 — should fetch all pages
+	// MaxResults: 100 — should fetch all pages
 	requestCount.Store(0)
-	repos, err = service.List(context.Background(), ListOptions{Limit: 100})
+	repos, err = service.List(context.Background(), ListOptions{MaxResults: 100})
 	if err != nil {
 		t.Fatalf("expected no error (all pages), got: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestListRepositoriesAuthError(t *testing.T) {
 	client := httpclient.NewFromConfig(cfg)
 	service := NewService(client)
 
-	_, err = service.List(context.Background(), ListOptions{Limit: 10})
+	_, err = service.List(context.Background(), ListOptions{MaxResults: 10})
 	if err == nil {
 		t.Fatal("expected auth error")
 	}
@@ -196,7 +196,7 @@ func TestListRepositoriesByProject(t *testing.T) {
 	client := httpclient.NewFromConfig(cfg)
 	service := NewService(client)
 
-	repos, err := service.ListByProject(context.Background(), "TEST", ListOptions{Limit: 10})
+	repos, err := service.ListByProject(context.Background(), "TEST", ListOptions{MaxResults: 10})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}

@@ -98,7 +98,7 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 
 	// 1. The activity timeline must carry the comments and the task.
 	activitySvc := pullrequestactivityservice.NewService(harness.client)
-	activities, err := activitySvc.List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: seeded.Key, Slug: repo.Slug}, pullRequestID, pullrequestactivityservice.ListOptions{Limit: 100})
+	activities, err := activitySvc.List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: seeded.Key, Slug: repo.Slug}, pullRequestID, pullrequestactivityservice.ListOptions{PageSize: 100})
 	if err != nil {
 		t.Fatalf("list pull request activities failed: %v", err)
 	}
@@ -138,7 +138,7 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	//    `bb pr list` renders for free. Bitbucket 10.x sends them here but not
 	//    on the single pull request endpoint, which is why `pr get` falls back
 	//    to the blocker-comment tally instead of these.
-	listed, err := prSvc.List(ctx, repoRef, pullrequestservice.ListOptions{State: "open", Limit: 25})
+	listed, err := prSvc.List(ctx, repoRef, pullrequestservice.ListOptions{State: "open", MaxResults: 25})
 	if err != nil {
 		t.Fatalf("list pull requests failed: %v", err)
 	}
@@ -207,7 +207,7 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 		t.Fatalf("resolve task failed: %v", err)
 	}
 
-	afterActivities, err := activitySvc.List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: seeded.Key, Slug: repo.Slug}, pullRequestID, pullrequestactivityservice.ListOptions{Limit: 100})
+	afterActivities, err := activitySvc.List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: seeded.Key, Slug: repo.Slug}, pullRequestID, pullrequestactivityservice.ListOptions{PageSize: 100})
 	if err != nil {
 		t.Fatalf("list pull request activities after resolve failed: %v", err)
 	}
