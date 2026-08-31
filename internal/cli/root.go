@@ -71,7 +71,7 @@ your behalf using the link above.`,
 				return err
 			}
 			style.Init(options.NoColor)
-			return applyInferredRepositoryContext(cmd, options.JSON)
+			return options.applyInferredRepositoryContext(cmd, options.JSON)
 		},
 	}
 
@@ -121,14 +121,16 @@ your behalf using the link above.`,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) repocmd.PermissionChecker {
 			return options.permissionCheckerFor(client)
 		},
+		RepositoryWasInferred: func() bool { return options.repositoryInferred },
 	}))
 	rootCmd.AddCommand(repocmd.NewClone(repocmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
-		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          options.loadConfig,
-		LoadConfigAndClient: options.loadConfigAndClient,
-		WriteJSON:           writeJSON,
-		WriteJSONList:       writeJSONList,
+		JSONEnabled:           func() bool { return options.JSON },
+		DryRunEnabled:         func() bool { return options.DryRun },
+		LoadConfig:            options.loadConfig,
+		LoadConfigAndClient:   options.loadConfigAndClient,
+		WriteJSON:             writeJSON,
+		WriteJSONList:         writeJSONList,
+		RepositoryWasInferred: func() bool { return options.repositoryInferred },
 	}))
 	rootCmd.AddCommand(tagcmd.New(tagcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
@@ -301,8 +303,12 @@ type rootOptions struct {
 	// outranks BB_* for this invocation instead of destroying it, and so the
 	// value does not outlive the command -- which matters for bb ai mcp serve
 	// (issue #458).
-	runtime           config.Overrides
-	permissionChecker *PermissionChecker
+	runtime config.Overrides
+	// repositoryInferred reports that --repo was filled in from the git remote
+	// rather than named by the caller. A destructive command needs the
+	// difference; see applyInferredRepositoryContext.
+	repositoryInferred bool
+	permissionChecker  *PermissionChecker
 }
 
 func (options *rootOptions) permissionCheckerFor(client *openapigenerated.ClientWithResponses) *PermissionChecker {

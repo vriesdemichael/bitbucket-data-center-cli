@@ -129,3 +129,33 @@ func TestNoInputRefusesWithoutPrompting(t *testing.T) {
 		t.Errorf("error = %q, want it to say --no-input is why nobody was asked", err.Error())
 	}
 }
+
+// TestRepoDeleteTreatsAnInferredTargetAsUnnamed closes a hole in the fix for
+// #472.
+//
+// applyInferredRepositoryContext sets --repo from the git remote and marks the
+// flag Changed, because every command reads the flag to resolve its target.
+// The first version of this guard read Changed as "the caller named it", so
+// inside a checkout whose remote matches the configured host, `bb repo delete
+// --yes` was treated as an explicit target and deleted the repository you were
+// standing in -- the exact scenario the issue reports, reintroduced by its fix.
+func TestRepoDeleteTreatsAnInferredTargetAsUnnamed(t *testing.T) {
+	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
+	t.Setenv("BITBUCKET_TOKEN", "token")
+
+	root := NewRootCommandWithInference(true)
+	out := &strings.Builder{}
+	root.SetOut(out)
+	root.SetErr(out)
+	// --repo is set the way inference sets it: a real value, flag marked
+	// Changed, but nothing the caller wrote.
+	root.SetArgs([]string{"repo", "delete", "--repo", "PRJ/repo", "--yes"})
+
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("--yes applied to an inferred target; the repository would have been deleted")
+	}
+	if !strings.Contains(err.Error(), "only applies when the target is named explicitly") {
+		t.Errorf("error = %q, want it to say --yes does not apply to an inferred target", err.Error())
+	}
+}
