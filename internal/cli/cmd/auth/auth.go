@@ -28,11 +28,19 @@ type repositoriesClient interface {
 }
 
 type Dependencies struct {
-	JSONEnabled    func() bool
-	LoadConfig     func() (config.AppConfig, error)
-	WriteJSON      func(io.Writer, any) error
-	NewUsersClient func(config.AppConfig) (usersClient, error)
-	NewReposClient func(config.AppConfig) (repositoriesClient, error)
+	JSONEnabled func() bool
+	LoadConfig  func() (config.AppConfig, error)
+	// LoadConfigWithOverrides steers resolution for the commands that take a
+	// --host flag. They used to publish the value with os.Setenv, which
+	// outlived the command and destroyed a real BITBUCKET_URL rather than
+	// outranking it for one invocation (ADR-021, issue #458).
+	//
+	// Optional: a nil value falls back to LoadConfig, so a test that does not
+	// exercise the override needs no change.
+	LoadConfigWithOverrides func(config.Overrides) (config.AppConfig, error)
+	WriteJSON               func(io.Writer, any) error
+	NewUsersClient          func(config.AppConfig) (usersClient, error)
+	NewReposClient          func(config.AppConfig) (repositoriesClient, error)
 	// ConfigureGitCredentialHelper writes the git configuration that points git
 	// at bb for credentials. Injected so setup-git can be tested without
 	// mutating the developer's real git configuration.
@@ -118,13 +126,7 @@ Machine output is a single document on stdout, so a failing exit would replace
 the findings with an error envelope — losing exactly the detail that was asked
 for.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if strings.TrimSpace(statusHost) != "" {
-				if err := os.Setenv("BITBUCKET_URL", statusHost); err != nil {
-					return apperrors.New(apperrors.KindInternal, "failed to set host override", err)
-				}
-			}
-
-			cfg, err := deps.LoadConfig()
+			cfg, err := deps.loadWith(statusHost)
 			if err != nil {
 				return err
 			}
@@ -328,7 +330,7 @@ to fail instead of falling back.`,
 		Aliases: []string{"whoami"},
 		Short:   "Show authenticated user identity",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := loadConfigWithOptionalHostOverride(deps.LoadConfig, identityHost)
+			cfg, err := loadConfigWithOptionalHostOverride(deps, identityHost)
 			if err != nil {
 				return err
 			}
@@ -584,7 +586,7 @@ to fail instead of falling back.`,
 			"Pass --replace to store only what was discovered. Anything dropped is named in the " +
 			"output.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := loadConfigWithOptionalHostOverride(deps.LoadConfig, aliasDiscoverHost)
+			cfg, err := loadConfigWithOptionalHostOverride(deps, aliasDiscoverHost)
 			if err != nil {
 				return err
 			}
@@ -661,14 +663,10 @@ type authIdentity struct {
 	Active      bool   `json:"active"`
 }
 
-func loadConfigWithOptionalHostOverride(loadConfig func() (config.AppConfig, error), hostOverride string) (config.AppConfig, error) {
-	if strings.TrimSpace(hostOverride) != "" {
-		if err := os.Setenv("BITBUCKET_URL", hostOverride); err != nil {
-			return config.AppConfig{}, apperrors.New(apperrors.KindInternal, "failed to set host override", err)
-		}
-	}
-
-	return loadConfig()
+// loadConfigWithOptionalHostOverride is Dependencies.loadWith, kept as a
+// function for the call sites that hold a loader rather than the whole struct.
+func loadConfigWithOptionalHostOverride(deps Dependencies, hostOverride string) (config.AppConfig, error) {
+	return deps.loadWith(hostOverride)
 }
 
 func resolveIdentity(ctx context.Context, cfg config.AppConfig, newUsersClient func(config.AppConfig) (usersClient, error)) (authIdentity, error) {
@@ -974,4 +972,23 @@ func aliasesMissingFrom(before []string, after []string) []string {
 	}
 
 	return missing
+}
+
+// loadWith resolves configuration with a host override, without publishing it.
+//
+// The override used to be an os.Setenv of BITBUCKET_URL. That outlived the
+// command -- harmless for a one-shot invocation, not for `bb ai mcp serve`
+// -- and it overwrote the user's own BITBUCKET_URL rather than outranking it,
+// which is the flag layer ADR-021 describes and the implementation did not have.
+func (deps Dependencies) loadWith(host string) (config.AppConfig, error) {
+	if strings.TrimSpace(host) == "" {
+		return deps.LoadConfig()
+	}
+	if deps.LoadConfigWithOverrides == nil {
+		// A caller that did not wire the override cannot honour one. Say so
+		// rather than silently resolving the wrong instance.
+		return config.AppConfig{}, apperrors.New(apperrors.KindInternal,
+			"a host override was given but this command was built without support for one", nil)
+	}
+	return deps.LoadConfigWithOverrides(config.Overrides{Host: host})
 }
