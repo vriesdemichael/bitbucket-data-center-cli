@@ -5,7 +5,8 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `027`
 - Title: `Atlassian 9.4 docs as API reference source`
 - Category: `architecture`
-- Status: `accepted`
+- Status: `superseded`
+- Superseded By: `068`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/027-atlassian-94-docs-as-api-reference-source.yaml`
 

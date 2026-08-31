@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `66`
-- Accepted ADRs: `61`
+- Total ADRs: `70`
+- Accepted ADRs: `64`
 
 ## ADR List
 
@@ -35,7 +35,7 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 024: Use .tmp directory for agent temporary files](024-use-tmp-directory-for-agent-temporary-files.md) (`development`, `accepted`)
 - [ADR 025: Git discipline and branch management](025-git-discipline-and-branch-management.md) (`development`, `accepted`)
 - [ADR 026: PR readiness and auto-merge criteria](026-pr-readiness-and-auto-merge-criteria.md) (`development`, `accepted`)
-- [ADR 027: Atlassian 9.4 docs as API reference source](027-atlassian-94-docs-as-api-reference-source.md) (`architecture`, `accepted`)
+- [ADR 027: Atlassian 9.4 docs as API reference source](027-atlassian-94-docs-as-api-reference-source.md) (`architecture`, `superseded`)
 - [ADR 028: OpenAPI fix registry and parity enforcement](028-openapi-fix-registry-and-parity-policy.md) (`development`, `accepted`)
 - [ADR 029: Network Isolation during Unit Testing](029-network-isolation-during-unit-testing.md) (`development`, `accepted`)
 - [ADR 030: Linear rebase workflow with generated coverage artifacts](030-linear-rebase-workflow-with-generated-coverage-artifacts.md) (`development`, `superseded`)
@@ -75,4 +75,8 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 065: What the quality apparatus measures, and why each part exists](065-what-the-quality-apparatus-measures.md) (`development`, `accepted`)
 - [ADR 066: Major releases integrate on a next branch, and only main releases](066-major-releases-integrate-on-a-next-branch.md) (`development`, `accepted`)
 - [ADR 067: Governance tests are verified by breaking them](067-governance-tests-are-verified-by-breaking-them.md) (`development`, `accepted`)
+- [ADR 068: The vendored API reference is derived from the harness release](068-api-reference-derived-from-the-harness-release.md) (`architecture`, `accepted`)
+- [ADR 069: Dependabot updates merge themselves, except where held for a person](069-dependabot-updates-merge-themselves-except-where-held.md) (`development`, `accepted`)
+- [ADR 070: Every command is explicitly classified for dry-run, and unknown means refuse](070-every-command-is-explicitly-classified-for-dry-run.md) (`architecture`, `accepted`)
+- [ADR 071: Tests must not reconfigure the repository they run in](071-tests-must-not-reconfigure-the-repository-they-run-in.md) (`development`, `accepted`)
 

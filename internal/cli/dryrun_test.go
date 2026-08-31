@@ -702,3 +702,50 @@ func TestAuthGpgKeyClearDryRun(t *testing.T) {
 		t.Fatalf("expected dry_run: true in json output, got: %s", output)
 	}
 }
+
+// TestVerbClassificationExemptionsNameRealCommands stops an exemption
+// outliving the command it excuses.
+//
+// verbClassificationExemptions turns off the verb check for a named path. An
+// entry whose command was renamed or removed keeps sitting there, reads as a
+// deliberate decision about the current tree, and explains nothing -- the
+// ADR-039 failure shape applied to a safety check rather than to a tool list.
+// ADR-070 requires an exemption to name a command that exists.
+//
+// The reason string is checked too. An exemption with no reason is the same
+// hole with the explanation removed.
+func TestVerbClassificationExemptionsNameRealCommands(t *testing.T) {
+	runnable := map[string]struct{}{}
+
+	var visit func(*cobra.Command)
+	visit = func(cmd *cobra.Command) {
+		if cmd.Runnable() {
+			runnable[dryRunCommandPath(cmd)] = struct{}{}
+		}
+		for _, child := range cmd.Commands() {
+			visit(child)
+		}
+	}
+	visit(NewRootCommand())
+
+	if len(runnable) == 0 {
+		t.Fatal("expected to collect runnable commands; the walk found none")
+	}
+	if len(verbClassificationExemptions) == 0 {
+		t.Fatal("expected at least one exemption; an empty map makes this check vacuous")
+	}
+
+	for path, reason := range verbClassificationExemptions {
+		if _, exists := runnable[path]; !exists {
+			t.Errorf(
+				"verbClassificationExemptions excuses %q, which is not a runnable command.\n"+
+					"The command was renamed or removed and the exemption was left behind.\n"+
+					"Delete the entry, or correct the path to the command it was meant to cover.",
+				path,
+			)
+		}
+		if strings.TrimSpace(reason) == "" {
+			t.Errorf("the exemption for %q records no reason; ADR-070 requires one", path)
+		}
+	}
+}
