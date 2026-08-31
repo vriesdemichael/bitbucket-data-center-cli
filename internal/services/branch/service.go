@@ -19,7 +19,7 @@ type RepositoryRef struct {
 }
 
 type ListOptions struct {
-	Limit      int
+	MaxResults int
 	Start      int
 	OrderBy    string
 	FilterText string
@@ -28,7 +28,7 @@ type ListOptions struct {
 }
 
 type RestrictionListOptions struct {
-	Limit       int
+	MaxResults  int
 	Type        string
 	MatcherType string
 	MatcherID   string
@@ -57,8 +57,8 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 		return nil, err
 	}
 
-	if options.Limit <= 0 {
-		options.Limit = 25
+	if options.MaxResults <= 0 {
+		options.MaxResults = 25
 	}
 
 	if options.Start < 0 {
@@ -68,7 +68,7 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 	results := make([]openapigenerated.RestBranch, 0)
 
 	for {
-		remaining := options.Limit - len(results)
+		remaining := options.MaxResults - len(results)
 		if remaining <= 0 {
 			break
 		}
@@ -108,7 +108,7 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 
 		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
 
-		if len(results) >= options.Limit {
+		if len(results) >= options.MaxResults {
 			break
 		}
 		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
@@ -121,8 +121,8 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
 	}
 
-	if len(results) > options.Limit {
-		results = results[:options.Limit]
+	if len(results) > options.MaxResults {
+		results = results[:options.MaxResults]
 	}
 	return results, nil
 }
@@ -281,12 +281,12 @@ func (service *Service) ListRestrictions(ctx context.Context, repo RepositoryRef
 		return nil, err
 	}
 
-	if options.Limit <= 0 {
-		options.Limit = 25
+	if options.MaxResults <= 0 {
+		options.MaxResults = 25
 	}
 
 	start := float32(0)
-	pageLimit := float32(options.Limit)
+	pageLimit := float32(options.MaxResults)
 	results := make([]openapigenerated.RestRefRestriction, 0)
 
 	for {

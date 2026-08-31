@@ -53,7 +53,7 @@ func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {
 				}
 
 				repoQueryService := reposervice.NewService(httpclient.NewFromConfig(cfg))
-				existing, err := repoQueryService.ListByProject(cmd.Context(), createProject, reposervice.ListOptions{Limit: 200, Name: createName})
+				existing, err := repoQueryService.ListByProject(cmd.Context(), createProject, reposervice.ListOptions{MaxResults: 200, Name: createName})
 				if err != nil {
 					return err
 				}

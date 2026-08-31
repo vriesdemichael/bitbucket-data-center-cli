@@ -109,7 +109,7 @@ func TestBranchServicePaginationAndFilters(t *testing.T) {
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
 	branches, err := service.List(context.Background(), repo, ListOptions{
-		Limit:      0,
+		MaxResults: 0,
 		OrderBy:    "alphabetical",
 		FilterText: "main",
 		Base:       "refs/heads/main",
@@ -125,7 +125,7 @@ func TestBranchServicePaginationAndFilters(t *testing.T) {
 	}
 
 	restrictions, err := service.ListRestrictions(context.Background(), repo, RestrictionListOptions{
-		Limit:       0,
+		MaxResults:  0,
 		Type:        "read-only",
 		MatcherType: "branch",
 		MatcherID:   "refs/heads/main",
@@ -486,7 +486,7 @@ func TestBranchServicePaginationLimit(t *testing.T) {
 	})
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-	branches, err := service.List(context.Background(), repo, ListOptions{Limit: 3, Start: 1})
+	branches, err := service.List(context.Background(), repo, ListOptions{MaxResults: 3, Start: 1})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -508,7 +508,7 @@ func TestBranchServicePaginationEdgeCases(t *testing.T) {
 	})
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-	branches, err := service.List(context.Background(), repo, ListOptions{Start: -1, Limit: 3})
+	branches, err := service.List(context.Background(), repo, ListOptions{Start: -1, MaxResults: 3})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

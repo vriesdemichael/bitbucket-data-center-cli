@@ -248,7 +248,7 @@ func New(deps Dependencies) *cobra.Command {
 
 			service := branchservice.NewService(client)
 			branches, err := service.List(cmd.Context(), repo, branchservice.ListOptions{
-				Limit:      listPaging.ServiceLimit(),
+				MaxResults: listPaging.ServiceLimit(),
 				Start:      start,
 				OrderBy:    orderBy,
 				FilterText: filterText,
@@ -318,7 +318,7 @@ func New(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				branches, err := service.List(cmd.Context(), repo, branchservice.ListOptions{Limit: 1000, FilterText: args[0]})
+				branches, err := service.List(cmd.Context(), repo, branchservice.ListOptions{MaxResults: 1000, FilterText: args[0]})
 				if err != nil {
 					return err
 				}
@@ -712,7 +712,7 @@ func New(deps Dependencies) *cobra.Command {
 
 			service := branchservice.NewService(client)
 			restrictions, err := service.ListRestrictions(cmd.Context(), repo, branchservice.RestrictionListOptions{
-				Limit:       listPaging.ServiceLimit(),
+				MaxResults:  listPaging.ServiceLimit(),
 				Type:        restrictionType,
 				MatcherType: matcherType,
 				MatcherID:   matcherID,
@@ -825,7 +825,7 @@ func New(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				restrictions, err := service.ListRestrictions(cmd.Context(), repo, branchservice.RestrictionListOptions{Limit: 1000})
+				restrictions, err := service.ListRestrictions(cmd.Context(), repo, branchservice.RestrictionListOptions{MaxResults: 1000})
 				if err != nil {
 					return err
 				}

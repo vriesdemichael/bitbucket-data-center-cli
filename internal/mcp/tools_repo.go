@@ -32,8 +32,8 @@ func specSearchRepositories() Spec {
 		svc := repositoryservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in SearchRepositoriesInput) (*mcp.CallToolResult, SearchRepositoriesOutput, error) {
 			opts := repositoryservice.ListOptions{
-				Name:  in.Name,
-				Limit: limitOrDefault(in.Limit),
+				Name:       in.Name,
+				MaxResults: limitOrDefault(in.Limit),
 			}
 			project := strings.TrimSpace(in.Project)
 			var repos []repositoryservice.Repository
@@ -86,7 +86,7 @@ func specGetRepositoryCloneInfo() Spec {
 			}
 
 			// Look up display name; tolerate failure.
-			repos, _ := svc.ListByProject(ctx, in.Project, repositoryservice.ListOptions{Name: in.Repo, Limit: 5})
+			repos, _ := svc.ListByProject(ctx, in.Project, repositoryservice.ListOptions{Name: in.Repo, MaxResults: 5})
 			name := in.Repo
 			for _, r := range repos {
 				if strings.EqualFold(r.Slug, in.Repo) {

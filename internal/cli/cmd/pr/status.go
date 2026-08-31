@@ -55,9 +55,9 @@ func newPullRequestStatusCommand(deps Dependencies, repositorySelector *string) 
 			payload.CurrentBranch = collectCurrentBranchPullRequests(cmd.Context(), deps, service, cfg, *repositorySelector, listPaging.ServiceLimit())
 
 			created, err := service.ListDashboard(cmd.Context(), pullrequestservice.DashboardListOptions{
-				State: "open",
-				Role:  "author",
-				Limit: listPaging.ServiceLimit(),
+				State:      "open",
+				Role:       "author",
+				MaxResults: listPaging.ServiceLimit(),
 			})
 			if err != nil {
 				return err
@@ -68,7 +68,7 @@ func newPullRequestStatusCommand(deps Dependencies, repositorySelector *string) 
 				State:             "open",
 				Role:              "reviewer",
 				ParticipantStatus: "UNAPPROVED",
-				Limit:             listPaging.ServiceLimit(),
+				MaxResults:        listPaging.ServiceLimit(),
 			})
 			if err != nil {
 				return err
@@ -119,7 +119,7 @@ func collectCurrentBranchPullRequests(
 
 	pullRequests, err := service.List(ctx, repo, pullrequestservice.ListOptions{
 		State:        "open",
-		Limit:        limit,
+		MaxResults:   limit,
 		SourceBranch: branch,
 	})
 	if err != nil {

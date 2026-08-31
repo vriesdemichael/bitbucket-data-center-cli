@@ -124,7 +124,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			service := tagservice.NewService(client)
-			tags, err := service.List(cmd.Context(), repo, tagservice.ListOptions{Limit: listPaging.ServiceLimit(), Start: start, OrderBy: orderBy, FilterText: filterText})
+			tags, err := service.List(cmd.Context(), repo, tagservice.ListOptions{MaxResults: listPaging.ServiceLimit(), Start: start, OrderBy: orderBy, FilterText: filterText})
 			if err != nil {
 				return err
 			}
@@ -174,7 +174,7 @@ func New(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				tags, err := service.List(cmd.Context(), repo, tagservice.ListOptions{Limit: 200, FilterText: args[0]})
+				tags, err := service.List(cmd.Context(), repo, tagservice.ListOptions{MaxResults: 200, FilterText: args[0]})
 				if err != nil {
 					return err
 				}

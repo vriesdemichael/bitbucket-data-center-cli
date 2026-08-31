@@ -11,8 +11,8 @@ import (
 
 // PageOptions controls pagination for pull request inspection listings.
 type PageOptions struct {
-	Limit int `json:"limit"`
-	Start int `json:"start"`
+	PageSize int `json:"limit"`
+	Start    int `json:"start"`
 }
 
 // Commit is a commit reachable from a pull request (its commit list or merge base).
@@ -47,7 +47,7 @@ func (service *Service) ListCommits(ctx context.Context, repository RepositoryRe
 
 	for {
 		var response pagedCommitsResponse
-		if err := service.client.GetJSON(ctx, path, pageQuery(options.Limit, start), &response); err != nil {
+		if err := service.client.GetJSON(ctx, path, pageQuery(options.PageSize, start), &response); err != nil {
 			return nil, err
 		}
 
@@ -77,7 +77,7 @@ func (service *Service) ListChanges(ctx context.Context, repository RepositoryRe
 
 	for {
 		var response pagedChangesResponse
-		if err := service.client.GetJSON(ctx, path, pageQuery(options.Limit, start), &response); err != nil {
+		if err := service.client.GetJSON(ctx, path, pageQuery(options.PageSize, start), &response); err != nil {
 			return nil, err
 		}
 
@@ -123,8 +123,8 @@ func (service *Service) validateInspectionRequest(repository RepositoryRef, pull
 	if err != nil {
 		return "", err
 	}
-	if options.Limit <= 0 {
-		options.Limit = 25
+	if options.PageSize <= 0 {
+		options.PageSize = 25
 	}
 	if options.Start < 0 {
 		return "", apperrors.New(apperrors.KindValidation, "start must be greater than or equal to 0", nil)

@@ -98,9 +98,9 @@ func New(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			projects, err := service.List(cmd.Context(), projectservice.ListOptions{
-				Limit: listPaging.ServiceLimit(),
-				Start: start,
-				Name:  listName,
+				MaxResults: listPaging.ServiceLimit(),
+				Start:      start,
+				Name:       listName,
 			})
 			if err != nil {
 				return err

@@ -15,18 +15,18 @@ type RepositoryRef struct {
 }
 
 type ListOptions struct {
-	Limit  int
-	Start  int
-	Path   string
-	Since  string
-	Until  string
-	Merges string
+	MaxResults int
+	Start      int
+	Path       string
+	Since      string
+	Until      string
+	Merges     string
 }
 
 type CompareOptions struct {
-	From  string
-	To    string
-	Limit int
+	From       string
+	To         string
+	MaxResults int
 }
 
 type Service struct {
@@ -42,8 +42,8 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 		return nil, err
 	}
 
-	if options.Limit <= 0 {
-		options.Limit = 25
+	if options.MaxResults <= 0 {
+		options.MaxResults = 25
 	}
 
 	if options.Start < 0 {
@@ -53,7 +53,7 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 	results := make([]openapigenerated.RestCommit, 0)
 
 	for {
-		remaining := options.Limit - len(results)
+		remaining := options.MaxResults - len(results)
 		if remaining <= 0 {
 			break
 		}
@@ -90,7 +90,7 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 
 		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
 
-		if len(results) >= options.Limit {
+		if len(results) >= options.MaxResults {
 			break
 		}
 		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
@@ -103,8 +103,8 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
 	}
 
-	if len(results) > options.Limit {
-		results = results[:options.Limit]
+	if len(results) > options.MaxResults {
+		results = results[:options.MaxResults]
 	}
 	return results, nil
 }
@@ -146,12 +146,12 @@ func (service *Service) Compare(ctx context.Context, repo RepositoryRef, options
 		return nil, apperrors.New(apperrors.KindValidation, "compare from and to refs are required", nil)
 	}
 
-	if options.Limit <= 0 {
-		options.Limit = 25
+	if options.MaxResults <= 0 {
+		options.MaxResults = 25
 	}
 
 	start := float32(0)
-	pageLimit := float32(options.Limit)
+	pageLimit := float32(options.MaxResults)
 	results := make([]openapigenerated.RestCommit, 0)
 
 	for {

@@ -34,6 +34,7 @@ A governance test asserts an invariant about the codebase rather than a behaviou
    - TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit: a package running git installs the guard.
    - TestOnlyTheSharedHelperDecidesInteractivity: only the shared helper asks whether a stream is a terminal.
    - TestEveryUseOfStandardInputIsAccountedFor: every place standard input is used is recorded.
+   - TestNoServiceOptionIsCalledLimit: a service list option says whether it caps or pages.
    - TestGovernanceTestsNamedInThisRecordExist: this list names only tests that exist.
 
 ## Agent Instructions
