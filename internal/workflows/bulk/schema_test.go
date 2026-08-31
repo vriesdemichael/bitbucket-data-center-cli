@@ -1,7 +1,10 @@
 package bulk
 
 import (
+	"strings"
+
 	"encoding/json"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
 	"testing"
 )
 
@@ -55,5 +58,34 @@ func TestSchemasForIdentifiesBulkSchemasAgainstTheGivenSiteVersion(t *testing.T)
 		if id != want {
 			t.Errorf("schema %s: $id = %q, want %q", name, id, want)
 		}
+	}
+}
+
+// TestApplyStatusJSONSchemaIdentifiesTheCurrentRelease covers the exported
+// wrapper.
+//
+// The versioned form is what the $id carries: a schema published under the
+// renamed host has to say which release's copy it is, or a consumer that
+// fetched one cannot tell whether it still matches the CLI it is talking to.
+func TestApplyStatusJSONSchemaIdentifiesTheCurrentRelease(t *testing.T) {
+	t.Parallel()
+
+	schema := ApplyStatusJSONSchema()
+
+	id, ok := schema["$id"].(string)
+	if !ok || id == "" {
+		t.Fatalf("schema carries no $id: %v", schema["$id"])
+	}
+	if !strings.Contains(id, "bulk-apply-status.schema.json") {
+		t.Errorf("$id = %q, want it to name the schema", id)
+	}
+	if !strings.Contains(id, docsite.LatestVersion) {
+		t.Errorf("$id = %q, want it to identify release %q", id, docsite.LatestVersion)
+	}
+
+	// The wrapper must agree with the function it delegates to, or the
+	// published copy and the emitted one drift.
+	if direct := applyStatusJSONSchema(docsite.LatestVersion); direct["$id"] != id {
+		t.Errorf("wrapper $id = %q, delegate = %q", id, direct["$id"])
 	}
 }
