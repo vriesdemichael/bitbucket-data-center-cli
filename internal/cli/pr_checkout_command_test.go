@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
@@ -609,7 +608,8 @@ func TestForkRemoteDoesNotBreakRepositoryInference(t *testing.T) {
 			command := &cobra.Command{Use: "pr list"}
 			command.Flags().String("repo", "", "")
 
-			err := applyInferredRepositoryContext(command, false)
+			options := &rootOptions{}
+			err := options.applyInferredRepositoryContext(command, false)
 			if testCase.wantError {
 				if err == nil {
 					t.Fatal("expected an ambiguity error")
@@ -623,7 +623,9 @@ func TestForkRemoteDoesNotBreakRepositoryInference(t *testing.T) {
 			if err != nil {
 				t.Fatalf("expected inference to succeed, got: %v", err)
 			}
-			if got := os.Getenv("BITBUCKET_PROJECT_KEY"); got != testCase.wantProject {
+			// The inferred context is a value now, not an environment write, so
+			// BITBUCKET_PROJECT_KEY still holds what the test set above.
+			if got := options.runtime.ProjectKey; got != testCase.wantProject {
 				t.Fatalf("expected project %q, got %q", testCase.wantProject, got)
 			}
 		})

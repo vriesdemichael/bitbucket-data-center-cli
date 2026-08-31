@@ -1448,15 +1448,21 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 		errBuffer := &bytes.Buffer{}
 		cmd.SetErr(errBuffer)
 
-		if err := applyInferredRepositoryContext(cmd, false); err != nil {
+		// The inferred context is carried as a value now rather than published
+		// to the environment, so this asserts where it actually lands.
+		options := &rootOptions{}
+		if err := options.applyInferredRepositoryContext(cmd, false); err != nil {
 			t.Fatalf("apply inferred repository context failed: %v", err)
 		}
 
-		if got := os.Getenv("BITBUCKET_PROJECT_KEY"); got != "PRJ" {
+		if got := options.runtime.ProjectKey; got != "PRJ" {
 			t.Fatalf("expected inferred project key, got %q", got)
 		}
-		if got := os.Getenv("BITBUCKET_REPO_SLUG"); got != "demo" {
+		if got := options.runtime.RepoSlug; got != "demo" {
 			t.Fatalf("expected inferred repo slug, got %q", got)
+		}
+		if !options.repositoryInferred {
+			t.Error("inference was not recorded; a destructive command cannot tell it from a named target")
 		}
 		if !strings.Contains(errBuffer.String(), "Using repository context from git remote") {
 			t.Fatalf("expected inference notice, got: %s", errBuffer.String())
@@ -1464,14 +1470,14 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 	})
 
 	t.Run("nil command is ignored", func(t *testing.T) {
-		if err := applyInferredRepositoryContext(nil, false); err != nil {
+		if err := (&rootOptions{}).applyInferredRepositoryContext(nil, false); err != nil {
 			t.Fatalf("expected nil command to be ignored, got: %v", err)
 		}
 	})
 
 	t.Run("command without repo flag is ignored", func(t *testing.T) {
 		cmd := &cobra.Command{Use: "project list"}
-		if err := applyInferredRepositoryContext(cmd, false); err != nil {
+		if err := (&rootOptions{}).applyInferredRepositoryContext(cmd, false); err != nil {
 			t.Fatalf("expected no error when repo flag is absent, got: %v", err)
 		}
 	})
@@ -1493,7 +1499,7 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 			t.Fatalf("set repo flag: %v", err)
 		}
 
-		if err := applyInferredRepositoryContext(cmd, false); err != nil {
+		if err := (&rootOptions{}).applyInferredRepositoryContext(cmd, false); err != nil {
 			t.Fatalf("expected no error for explicit repo, got: %v", err)
 		}
 
@@ -1519,7 +1525,7 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 		cmd := &cobra.Command{Use: "branch list"}
 		cmd.Flags().String("repo", "", "")
 
-		err := applyInferredRepositoryContext(cmd, false)
+		err := (&rootOptions{}).applyInferredRepositoryContext(cmd, false)
 		if err == nil {
 			t.Fatal("expected ambiguity error")
 		}
@@ -1536,7 +1542,7 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 		cmd := &cobra.Command{Use: "branch list"}
 		cmd.Flags().String("repo", "", "")
 
-		if err := applyInferredRepositoryContext(cmd, false); err != nil {
+		if err := (&rootOptions{}).applyInferredRepositoryContext(cmd, false); err != nil {
 			t.Fatalf("expected non-repository error to be ignored, got: %v", err)
 		}
 	})
@@ -1554,7 +1560,7 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 		errBuffer := &bytes.Buffer{}
 		cmd.SetErr(errBuffer)
 
-		if err := applyInferredRepositoryContext(cmd, true); err != nil {
+		if err := (&rootOptions{}).applyInferredRepositoryContext(cmd, true); err != nil {
 			t.Fatalf("json inference failed: %v", err)
 		}
 		if errBuffer.Len() != 0 {
@@ -1567,7 +1573,7 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 		cmd := &cobra.Command{Use: "branch list"}
 		cmd.Flags().String("repo", "", "")
 
-		if err := applyInferredRepositoryContext(cmd, false); err != nil {
+		if err := (&rootOptions{}).applyInferredRepositoryContext(cmd, false); err != nil {
 			t.Fatalf("expected load config error to be ignored, got: %v", err)
 		}
 	})

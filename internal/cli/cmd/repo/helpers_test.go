@@ -38,3 +38,22 @@ func NewRootCommand() *cobra.Command {
 	root.AddCommand(NewClone(deps))
 	return root
 }
+
+// NewRootCommandWithInference is NewRootCommand with the repository reported as
+// inferred, which is what the real root does after resolving it from a git
+// remote.
+func NewRootCommandWithInference(inferred bool) *cobra.Command {
+	root := &cobra.Command{Use: "bb"}
+	jsonFlag := root.PersistentFlags().Bool("json", false, "")
+	dryRunFlag := root.PersistentFlags().Bool("dry-run", false, "")
+	root.PersistentFlags().Bool("no-input", false, "")
+	deps := Dependencies{
+		JSONEnabled:           func() bool { return *jsonFlag },
+		DryRunEnabled:         func() bool { return *dryRunFlag },
+		PermissionChecker:     func(c *openapigenerated.ClientWithResponses) PermissionChecker { return permissionchecker.New(c) },
+		RepositoryWasInferred: func() bool { return inferred },
+	}
+	root.AddCommand(New(deps))
+	root.AddCommand(NewClone(deps))
+	return root
+}

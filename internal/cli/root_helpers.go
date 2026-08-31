@@ -68,7 +68,7 @@ func resolveRepositorySelector(selector string, cfg config.AppConfig) (repositor
 	return parseRepositorySelector(trimmed)
 }
 
-func applyInferredRepositoryContext(cmd *cobra.Command, asJSON bool) error {
+func (options *rootOptions) applyInferredRepositoryContext(cmd *cobra.Command, asJSON bool) error {
 	if cmd == nil {
 		return nil
 	}
@@ -95,21 +95,26 @@ func applyInferredRepositoryContext(cmd *cobra.Command, asJSON bool) error {
 		return nil
 	}
 
-	if err := os.Setenv("BITBUCKET_URL", inferred.Host); err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to set inferred host", err)
-	}
-	if err := os.Setenv("BITBUCKET_PROJECT_KEY", inferred.ProjectKey); err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to set inferred project key", err)
-	}
-	if err := os.Setenv("BITBUCKET_REPO_SLUG", inferred.Slug); err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to set inferred repository slug", err)
-	}
+	// Carried as values rather than published to the environment. Writing them
+	// meant the inferred context outlived the command and was indistinguishable
+	// from an operator having set the same variables (issue #458).
+	options.runtime.Host = inferred.Host
+	options.runtime.ProjectKey = inferred.ProjectKey
+	options.runtime.RepoSlug = inferred.Slug
 
 	repoValue := fmt.Sprintf("%s/%s", inferred.ProjectKey, inferred.Slug)
 	if err := repoFlag.Value.Set(repoValue); err != nil {
 		return apperrors.New(apperrors.KindInternal, "failed to apply inferred repository to --repo flag", err)
 	}
+
+	// Changed is set because commands read the flag to resolve their target,
+	// and recorded because for a destructive command it is not the same thing
+	// as the caller having named one. bb repo delete treats a named target as
+	// what makes --yes apply, and inference marking the flag Changed defeated
+	// that check: --yes then applied to the repository you happened to be
+	// standing in, which is the hazard #472 reports.
 	repoFlag.Changed = true
+	options.repositoryInferred = true
 
 	if asJSON {
 		return nil
