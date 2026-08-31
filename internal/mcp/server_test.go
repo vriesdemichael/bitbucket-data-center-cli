@@ -144,55 +144,27 @@ func TestAllSpecsHaveAnnotations(t *testing.T) {
 	}
 }
 
-// TestUnsafeToolsAreAnnotatedDestructive pins the two classifications together.
-// Safe is what the server filters on; DestructiveHint is what a client reads.
-// They answer the same question, so a tool withheld without --yolo that tells
-// clients it is non-destructive is a contradiction that would mislead an agent.
-func TestUnsafeToolsAreAnnotatedDestructive(t *testing.T) {
+// TestReadOnlyToolsAreNotGated is what remains of the safety cross-checking.
+//
+// DestructiveHint used to be declared alongside Safe and the two were checked
+// against each other. It is now derived from Safe in toolSpec, so they cannot
+// disagree and the checks that compared them tested nothing.
+//
+// ReadOnlyHint is still declared independently, and it answers a different
+// question: does the tool write at all. A tool that writes nothing has no
+// reason to be withheld, so a read-only tool behind --yolo is either mislabelled
+// or wrongly gated. That comparison is between two facts nobody derived from
+// each other, which is what makes it worth asserting.
+func TestReadOnlyToolsAreNotGated(t *testing.T) {
 	for _, spec := range AllSpecs() {
-		if spec.Safe {
+		annotations := spec.Tool.Annotations
+		if annotations == nil || !annotations.ReadOnlyHint {
 			continue
 		}
-		annotations := spec.Tool.Annotations
-		if annotations == nil {
-			continue // reported by TestAllSpecsHaveAnnotations
-		}
-		if annotations.ReadOnlyHint {
-			t.Errorf("tool %q is withheld without --yolo but annotated read-only", spec.Tool.Name)
-		}
-		if annotations.DestructiveHint == nil || !*annotations.DestructiveHint {
-			t.Errorf("tool %q is withheld without --yolo but not annotated destructive", spec.Tool.Name)
-		}
-	}
-}
-
-// TestSafeToolsAreNotAnnotatedDestructive is the other half of the pairing
-// above, and it points the more dangerous way.
-//
-// TestUnsafeToolsAreAnnotatedDestructive catches a gated tool that tells clients
-// it is harmless. This catches the reverse: a tool the server hands out without
-// --yolo while its own annotation says it is destructive. That contradiction
-// matters more, because the annotation is advice a client may ignore and the
-// Safe flag is what the server actually enforces -- so the permissive side wins
-// and an agent gets a destructive tool it was never gated on.
-//
-// A tool that writes without being destructive is normal and stays allowed:
-// create_pull_request changes nothing that existed and blocks nothing, which is
-// why mutating() takes the flag rather than assuming it.
-func TestSafeToolsAreNotAnnotatedDestructive(t *testing.T) {
-	for _, spec := range AllSpecs() {
 		if !spec.Safe {
-			continue
-		}
-		annotations := spec.Tool.Annotations
-		if annotations == nil {
-			continue // reported by TestAllSpecsHaveAnnotations
-		}
-		if annotations.DestructiveHint != nil && *annotations.DestructiveHint {
 			t.Errorf(
-				"tool %q is exposed without --yolo but annotates itself destructive; "+
-					"either it needs gating (Safe: false, listed in TestGatedToolsAreTheOnesThatMergeOrGate) "+
-					"or the annotation overstates it",
+				"tool %q is annotated read-only but withheld without --yolo; "+
+					"either it writes after all and the annotation is wrong, or it needs no gating",
 				spec.Tool.Name,
 			)
 		}

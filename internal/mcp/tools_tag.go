@@ -64,7 +64,7 @@ func specCreateTag() Spec {
 	tool := &mcp.Tool{
 		Name:        "create_tag",
 		Description: "Create a tag on a specific commit or ref. Use for release tagging after a PR is merged.",
-		Annotations: mutating(false),
+		Annotations: mutating(),
 	}
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[CreateTagInput, CreateTagOutput] {
 		svc := tagservice.NewService(c.OpenAPI)
