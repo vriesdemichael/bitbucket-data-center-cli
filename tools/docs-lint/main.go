@@ -502,7 +502,36 @@ func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) 
 		}
 	}
 
+	// Inline spans, which were invisible to this linter until #460. A page can
+	// be entirely tables — cheatsheet.md is — and so entirely unchecked.
+	if !isGeneratedFromRecords(file) {
+		for _, invocation := range extractInlineBBInvocations(contents) {
+			checked++
+
+			if problem := validateInlineInvocation(invocation.Args, invocation.FlagsToVerify); problem != "" {
+				findings = append(findings, finding{
+					File:    file,
+					Line:    invocation.Line + 1,
+					Command: invocation.Raw,
+					Problem: problem,
+				})
+			}
+		}
+	}
+
 	return findings, checked
+}
+
+// isGeneratedFromRecords reports whether a file is rendered from a decision
+// record rather than written.
+//
+// The ADR pages quote rejected alternatives — `bb repo list --name foo`
+// (ADR-031), `bb ai skill install --target` (ADR-040) — which are invocations
+// that deliberately do not exist. Reporting them would mean editing generated
+// output to satisfy a linter, and the record is the source of truth.
+func isGeneratedFromRecords(file string) bool {
+	normalised := strings.ReplaceAll(file, "\\", "/")
+	return strings.Contains(normalised, "docs/site/adr/")
 }
 
 func lintCodeBlockVersions(file string, block codeBlock, targetVer string) []finding {
@@ -834,7 +863,73 @@ func openingFence(trimmed string) (marker, language string, ok bool) {
 //
 // A fresh tree per invocation keeps parsed flag values from leaking between
 // checks, which would otherwise make results depend on document order.
+// validateInvocation checks a complete invocation: command path, flags, and
+// the command's own argument rules.
 func validateInvocation(args []string) string {
+	return validate(args, true)
+}
+
+// validateInlineInvocation checks an inline code span, which is usually a
+// reference to a command rather than a complete invocation.
+//
+// Positional arguments are not required. Prose names a command -- `bb pr view`,
+// `bb repo clone` -- to talk about it, and 207 of the first 223 findings were
+// this shape. Reporting them would mean padding documentation with arguments to
+// satisfy a linter, which is how a linter loses its audience.
+//
+// What still holds is the part that goes stale: the command must exist and its
+// flags must be real. That is what caught both drifted invocations.
+func validateInlineInvocation(args []string, flagsToVerify []string) string {
+	if problem := validate(args, false); problem != "" {
+		return problem
+	}
+	return verifyFlagsExist(args, flagsToVerify)
+}
+
+// verifyFlagsExist checks flags whose value was a placeholder.
+//
+// The value was dropped because a made-up substitute has to satisfy the flag's
+// type -- `--expiry-days <N>` would be reported as an invalid integer, which is
+// the documentation being blamed for the linter's stand-in. Whether the flag
+// exists is still worth knowing: `bb auth login --host ...` was wrong for that
+// reason, and the ellipsis was hiding it.
+func verifyFlagsExist(args []string, flagsToVerify []string) string {
+	if len(flagsToVerify) == 0 {
+		return ""
+	}
+
+	root := cli.NewRootCommand()
+	root.SetOut(io.Discard)
+	root.SetErr(io.Discard)
+	root.Version = "docs-lint"
+
+	target, _, err := root.Find(args)
+	if err != nil {
+		return err.Error()
+	}
+	target.InitDefaultHelpFlag()
+	target.InitDefaultVersionFlag()
+
+	for _, name := range flagsToVerify {
+		trimmed := strings.TrimLeft(name, "-")
+		if trimmed == "" {
+			continue
+		}
+		if target.Flags().Lookup(trimmed) != nil {
+			continue
+		}
+		// ShorthandLookup panics on anything longer than one character, so it
+		// is only asked about a name that could be one.
+		if len(trimmed) == 1 && target.Flags().ShorthandLookup(trimmed) != nil {
+			continue
+		}
+		return fmt.Sprintf("unknown flag: %s", name)
+	}
+
+	return ""
+}
+
+func validate(args []string, requirePositionals bool) string {
 	root := cli.NewRootCommand()
 	root.SetOut(io.Discard)
 	root.SetErr(io.Discard)
@@ -885,8 +980,10 @@ func validateInvocation(args []string) string {
 		}
 	}
 
-	if err := validatePositionals(target, target.Flags().Args()); err != nil {
-		return err.Error()
+	if requirePositionals {
+		if err := validatePositionals(target, target.Flags().Args()); err != nil {
+			return err.Error()
+		}
 	}
 
 	return ""

@@ -19,6 +19,10 @@ type Dependencies struct {
 	LoadConfig func(config.Overrides) (config.AppConfig, error)
 	// WriteJSON serialises v to w as indented JSON.
 	WriteJSON func(w io.Writer, v any) error
+	// JSONEnabled reports whether --json was passed. The skill commands report
+	// an outcome and a resolved path, which is a data payload rather than a
+	// document, so they owe the caller an envelope (ADR-014).
+	JSONEnabled func() bool
 }
 
 // New returns the top-level `bb ai` command group.
@@ -43,4 +47,10 @@ func New(deps Dependencies) *cobra.Command {
 	aiCmd.AddCommand(newSkillCommand(deps))
 
 	return aiCmd
+}
+
+// jsonEnabled reports whether machine output was asked for, treating an
+// unwired dependency as no.
+func (deps Dependencies) jsonEnabled() bool {
+	return deps.JSONEnabled != nil && deps.JSONEnabled()
 }

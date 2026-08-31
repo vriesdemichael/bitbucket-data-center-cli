@@ -60,8 +60,8 @@ that cannot change under you.
 |---|---|
 | [output.branch.create.schema.json](schemas/output/output.branch.create.schema.json) | `bb branch create --json` |
 | [output.branch.delete.schema.json](schemas/output/output.branch.delete.schema.json) | `bb branch delete --json` |
-| [output.branch.get-default.schema.json](schemas/output/output.branch.get-default.schema.json) | `bb branch get-default --json` |
-| [output.branch.set-default.schema.json](schemas/output/output.branch.set-default.schema.json) | `bb branch set-default --json` |
+| [output.branch.get-default.schema.json](schemas/output/output.branch.get-default.schema.json) | `bb branch default get --json` |
+| [output.branch.set-default.schema.json](schemas/output/output.branch.set-default.schema.json) | `bb branch default set --json` |
 
 ### Pull request command output schemas
 

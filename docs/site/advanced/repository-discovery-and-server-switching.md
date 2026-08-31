@@ -135,7 +135,7 @@ Expected JSON output (example):
 
 ## Recommended team pattern
 
-- Keep one stored context per server (`bb auth login --host ...`).
+- Keep one stored context per server (`bb auth login <host>`).
 - Let `bb auth login` auto-discover clone-host aliases when possible.
 - Add explicit aliases for non-default SSH endpoints when discovery does not surface them.
 - Switch active context with `bb auth server use --host ...` before running automation.
