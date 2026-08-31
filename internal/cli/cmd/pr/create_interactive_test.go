@@ -22,9 +22,10 @@ func TestPrCreateNamesEveryMissingFlagAtOnce(t *testing.T) {
 	defer server.Close()
 
 	cases := []struct {
-		name  string
-		args  []string
-		wants []string
+		name     string
+		args     []string
+		wants    []string
+		notWants []string
 	}{
 		{
 			name:  "nothing given",
@@ -32,14 +33,16 @@ func TestPrCreateNamesEveryMissingFlagAtOnce(t *testing.T) {
 			wants: []string{"--from-ref", "--to-ref", "--title"},
 		},
 		{
-			name:  "only the title given",
-			args:  []string{"create", "--repo", "PRJ/repo", "--title", "x"},
-			wants: []string{"--from-ref", "--to-ref"},
+			name:     "only the title given",
+			args:     []string{"create", "--repo", "PRJ/repo", "--title", "x"},
+			wants:    []string{"--from-ref", "--to-ref"},
+			notWants: []string{"--title"},
 		},
 		{
-			name:  "only the refs given",
-			args:  []string{"create", "--repo", "PRJ/repo", "--from-ref", "a", "--to-ref", "b"},
-			wants: []string{"--title"},
+			name:     "only the refs given",
+			args:     []string{"create", "--repo", "PRJ/repo", "--from-ref", "a", "--to-ref", "b"},
+			wants:    []string{"--title"},
+			notWants: []string{"--from-ref", "--to-ref"},
 		},
 	}
 
@@ -54,6 +57,13 @@ func TestPrCreateNamesEveryMissingFlagAtOnce(t *testing.T) {
 			for _, flag := range testCase.wants {
 				if !strings.Contains(message, flag) {
 					t.Errorf("error = %q, want it to name %q", message, flag)
+				}
+			}
+			// The claim is that it names exactly the absent set. A message
+			// listing a flag the caller did supply would pass the check above.
+			for _, flag := range testCase.notWants {
+				if strings.Contains(message, flag) {
+					t.Errorf("error = %q, should not name %q, which was supplied", message, flag)
 				}
 			}
 		})
@@ -75,7 +85,10 @@ func TestPrCreateDoesNotAskWhenItHasEverything(t *testing.T) {
 
 	_, err := executePr(t, server.URL,
 		"create", "--repo", "PRJ/repo", "--from-ref", "feature", "--to-ref", "main", "--title", "x")
-	if err != nil && strings.Contains(err.Error(), "required flag(s)") {
-		t.Fatalf("a complete invocation was told it was missing flags: %v", err)
+	// Asserting only that the error is not about missing flags would let any
+	// unrelated failure pass while looking like a guard. A complete invocation
+	// against this stub succeeds, so that is what is asserted.
+	if err != nil {
+		t.Fatalf("a complete invocation failed: %v", err)
 	}
 }
