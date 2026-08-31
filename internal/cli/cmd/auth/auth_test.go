@@ -63,13 +63,20 @@ func (client *fakeReposClient) GetRepositories1WithResponse(ctx context.Context,
 }
 
 func TestStatusJSONUsesHostOverride(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "http://initial.example")
+	// No t.Setenv, so this test can run in parallel. It used to observe the
+	// override by reading BITBUCKET_URL out of the process, which is the
+	// coupling issue #458 removes: the override is a value now, so the stub
+	// receives it instead of discovering it.
+	t.Parallel()
 
 	var seenHost string
 	cmd := New(Dependencies{
 		JSONEnabled: func() bool { return true },
 		LoadConfig: func() (config.AppConfig, error) {
-			seenHost = os.Getenv("BITBUCKET_URL")
+			return config.AppConfig{BitbucketURL: "http://initial.example"}, nil
+		},
+		LoadConfigWithOverrides: func(overrides config.Overrides) (config.AppConfig, error) {
+			seenHost = overrides.Host
 			return config.AppConfig{
 				BitbucketURL:           seenHost,
 				BitbucketVersionTarget: "9.4.16",
@@ -1010,9 +1017,10 @@ func TestAuthAliasCommandsAndDiscovery(t *testing.T) {
 	}
 
 	listCmd := New(Dependencies{
-		JSONEnabled: func() bool { return true },
-		LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-		WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+		JSONEnabled:             func() bool { return true },
+		LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+		LoadConfigWithOverrides: config.LoadWithOverrides,
+		WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 	})
 	listOut := &bytes.Buffer{}
 	listCmd.SetOut(listOut)
@@ -1036,9 +1044,10 @@ func TestAuthAliasCommandsAndDiscovery(t *testing.T) {
 	}
 
 	addCmd := New(Dependencies{
-		JSONEnabled: func() bool { return true },
-		LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-		WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+		JSONEnabled:             func() bool { return true },
+		LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+		LoadConfigWithOverrides: config.LoadWithOverrides,
+		WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 	})
 	addOut := &bytes.Buffer{}
 	addCmd.SetOut(addOut)
@@ -1052,9 +1061,10 @@ func TestAuthAliasCommandsAndDiscovery(t *testing.T) {
 	}
 
 	removeCmd := New(Dependencies{
-		JSONEnabled: func() bool { return true },
-		LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-		WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+		JSONEnabled:             func() bool { return true },
+		LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+		LoadConfigWithOverrides: config.LoadWithOverrides,
+		WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 	})
 	removeOut := &bytes.Buffer{}
 	removeCmd.SetOut(removeOut)
@@ -1068,9 +1078,10 @@ func TestAuthAliasCommandsAndDiscovery(t *testing.T) {
 	}
 
 	discoverCmd := New(Dependencies{
-		JSONEnabled: func() bool { return true },
-		LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-		WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+		JSONEnabled:             func() bool { return true },
+		LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+		LoadConfigWithOverrides: config.LoadWithOverrides,
+		WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 		NewReposClient: func(cfg config.AppConfig) (repositoriesClient, error) {
 			return &fakeReposClient{recent: recentResponse, all: recentResponseToAll(recentResponse)}, nil
 		},
@@ -1093,9 +1104,10 @@ func TestAuthJSONOutputsUseEmptyAliasArrays(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 
 	cmd := New(Dependencies{
-		JSONEnabled: func() bool { return true },
-		LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-		WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+		JSONEnabled:             func() bool { return true },
+		LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+		LoadConfigWithOverrides: config.LoadWithOverrides,
+		WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 	})
 
 	loginOut := &bytes.Buffer{}
@@ -1116,9 +1128,10 @@ func TestAuthJSONOutputsUseEmptyAliasArrays(t *testing.T) {
 	}
 
 	aliasListCmd := New(Dependencies{
-		JSONEnabled: func() bool { return true },
-		LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-		WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+		JSONEnabled:             func() bool { return true },
+		LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+		LoadConfigWithOverrides: config.LoadWithOverrides,
+		WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 	})
 	aliasListOut := &bytes.Buffer{}
 	aliasListCmd.SetOut(aliasListOut)
@@ -1138,9 +1151,10 @@ func TestAuthJSONOutputsUseEmptyAliasArrays(t *testing.T) {
 	}
 
 	serverListCmd := New(Dependencies{
-		JSONEnabled: func() bool { return true },
-		LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-		WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+		JSONEnabled:             func() bool { return true },
+		LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+		LoadConfigWithOverrides: config.LoadWithOverrides,
+		WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 	})
 	serverListOut := &bytes.Buffer{}
 	serverListCmd.SetOut(serverListOut)
@@ -1165,9 +1179,10 @@ func TestAuthJSONOutputsUseEmptyAliasArrays(t *testing.T) {
 	}
 
 	removeCmd := New(Dependencies{
-		JSONEnabled: func() bool { return true },
-		LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-		WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+		JSONEnabled:             func() bool { return true },
+		LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+		LoadConfigWithOverrides: config.LoadWithOverrides,
+		WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 	})
 	removeOut := &bytes.Buffer{}
 	removeCmd.SetOut(removeOut)
@@ -1178,9 +1193,10 @@ func TestAuthJSONOutputsUseEmptyAliasArrays(t *testing.T) {
 	}
 
 	removeCmd = New(Dependencies{
-		JSONEnabled: func() bool { return true },
-		LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-		WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+		JSONEnabled:             func() bool { return true },
+		LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+		LoadConfigWithOverrides: config.LoadWithOverrides,
+		WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 	})
 	removeOut = &bytes.Buffer{}
 	removeCmd.SetOut(removeOut)
@@ -1200,9 +1216,10 @@ func TestAuthJSONOutputsUseEmptyAliasArrays(t *testing.T) {
 	}
 
 	discoverCmd := New(Dependencies{
-		JSONEnabled: func() bool { return true },
-		LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-		WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+		JSONEnabled:             func() bool { return true },
+		LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+		LoadConfigWithOverrides: config.LoadWithOverrides,
+		WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 		NewReposClient: func(cfg config.AppConfig) (repositoriesClient, error) {
 			recent := &openapigenerated.GetRepositoriesRecentlyAccessedResponse{
 				HTTPResponse: &http.Response{StatusCode: 200},
@@ -1420,9 +1437,10 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 
 	t.Run("login without discovery has no alias line", func(t *testing.T) {
 		cmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
-			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			JSONEnabled:             func() bool { return false },
+			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			LoadConfigWithOverrides: config.LoadWithOverrides,
+			WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 		})
 		out := &bytes.Buffer{}
 		cmd.SetOut(out)
@@ -1438,9 +1456,10 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 
 	t.Run("alias list human empty message", func(t *testing.T) {
 		cmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
-			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			JSONEnabled:             func() bool { return false },
+			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			LoadConfigWithOverrides: config.LoadWithOverrides,
+			WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 		})
 		out := &bytes.Buffer{}
 		cmd.SetOut(out)
@@ -1456,9 +1475,10 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 
 	t.Run("alias discover human empty message", func(t *testing.T) {
 		cmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
-			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			JSONEnabled:             func() bool { return false },
+			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			LoadConfigWithOverrides: config.LoadWithOverrides,
+			WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 			NewReposClient: func(cfg config.AppConfig) (repositoriesClient, error) {
 				recent := &openapigenerated.GetRepositoriesRecentlyAccessedResponse{
 					HTTPResponse: &http.Response{StatusCode: 200},
@@ -1491,9 +1511,10 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 			t.Fatalf("set aliases failed: %v", err)
 		}
 		cmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
-			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			JSONEnabled:             func() bool { return false },
+			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			LoadConfigWithOverrides: config.LoadWithOverrides,
+			WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 		})
 		out := &bytes.Buffer{}
 		cmd.SetOut(out)
@@ -1509,9 +1530,10 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 
 	t.Run("alias command errors for unknown host", func(t *testing.T) {
 		cmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
-			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			JSONEnabled:             func() bool { return false },
+			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			LoadConfigWithOverrides: config.LoadWithOverrides,
+			WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 		})
 		cmd.SetOut(&bytes.Buffer{})
 		cmd.SetErr(&bytes.Buffer{})
@@ -1538,9 +1560,10 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 		}
 
 		cmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
-			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			JSONEnabled:             func() bool { return false },
+			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			LoadConfigWithOverrides: config.LoadWithOverrides,
+			WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 			NewReposClient: func(cfg config.AppConfig) (repositoriesClient, error) {
 				return &fakeReposClient{recent: recent, all: recentResponseToAll(recent)}, nil
 			},
@@ -1558,9 +1581,10 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 		}
 
 		listCmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
-			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			JSONEnabled:             func() bool { return false },
+			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			LoadConfigWithOverrides: config.LoadWithOverrides,
+			WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 		})
 		listOut := &bytes.Buffer{}
 		listCmd.SetOut(listOut)
@@ -1574,9 +1598,10 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 		}
 
 		addCmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
-			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			JSONEnabled:             func() bool { return false },
+			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			LoadConfigWithOverrides: config.LoadWithOverrides,
+			WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 		})
 		addOut := &bytes.Buffer{}
 		addCmd.SetOut(addOut)
@@ -1590,9 +1615,10 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 		}
 
 		removeCmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
-			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			JSONEnabled:             func() bool { return false },
+			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			LoadConfigWithOverrides: config.LoadWithOverrides,
+			WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 		})
 		removeOut := &bytes.Buffer{}
 		removeCmd.SetOut(removeOut)
@@ -1606,9 +1632,10 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 		}
 
 		discoverCmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
-			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			JSONEnabled:             func() bool { return false },
+			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			LoadConfigWithOverrides: config.LoadWithOverrides,
+			WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 			NewReposClient: func(cfg config.AppConfig) (repositoriesClient, error) {
 				return &fakeReposClient{recent: recent, all: recentResponseToAll(recent)}, nil
 			},
@@ -1627,9 +1654,10 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 
 	t.Run("login ignores discovery failure and still stores credentials", func(t *testing.T) {
 		cmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
-			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			JSONEnabled:             func() bool { return false },
+			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			LoadConfigWithOverrides: config.LoadWithOverrides,
+			WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 			NewReposClient: func(cfg config.AppConfig) (repositoriesClient, error) {
 				return nil, errors.New("boom")
 			},
@@ -1744,9 +1772,10 @@ func TestAliasDiscoverPreservesManualAliases(t *testing.T) {
 
 	newAuthCommand := func() *cobra.Command {
 		return New(Dependencies{
-			JSONEnabled: func() bool { return true },
-			LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-			WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+			JSONEnabled:             func() bool { return true },
+			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
+			LoadConfigWithOverrides: config.LoadWithOverrides,
+			WriteJSON:               func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
 			NewReposClient: func(cfg config.AppConfig) (repositoriesClient, error) {
 				return &fakeReposClient{recent: recentResponse, all: recentResponseToAll(recentResponse)}, nil
 			},
