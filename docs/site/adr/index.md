@@ -4,7 +4,7 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `71`
+- Total ADRs: `72`
 - Accepted ADRs: `65`
 
 ## ADR List
@@ -62,7 +62,7 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 051: bb does not manage server-side hooks](051-no-server-side-hook-management.md) (`architecture`, `accepted`)
 - [ADR 052: Layer-boundary testing policy and HTTP mock elimination](052-layer-boundary-testing-and-mock-elimination.md) (`development`, `accepted`)
 - [ADR 053: Raw API escape hatch for uncovered endpoints and version gaps](053-raw-api-escape-hatch.md) (`architecture`, `accepted`)
-- [ADR 054: Strict non-interactive CLI contract and fail-fast validation invariant](054-strict-non-interactive-cli-contract.md) (`architecture`, `accepted`)
+- [ADR 054: Strict non-interactive CLI contract and fail-fast validation invariant](054-strict-non-interactive-cli-contract.md) (`architecture`, `superseded`)
 - [ADR 055: Documented release versions are validated and synchronized](055-documented-release-versions-are-validated-and-synchronized.md) (`development`, `superseded`)
 - [ADR 056: Pull request reviewer automation, default reviewers, and CODEOWNERS](056-pull-request-reviewer-automation-and-codeowners.md) (`architecture`, `accepted`)
 - [ADR 057: Documented release version is injected at build time](057-documented-release-version-is-injected-at-build-time.md) (`development`, `accepted`)
@@ -80,4 +80,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 070: Every command is explicitly classified for dry-run, and unknown means refuse](070-every-command-is-explicitly-classified-for-dry-run.md) (`architecture`, `accepted`)
 - [ADR 071: Tests must not reconfigure the repository they run in](071-tests-must-not-reconfigure-the-repository-they-run-in.md) (`development`, `accepted`)
 - [ADR 072: Interactivity is decided in one place, and the escape hatch costs nothing per call](072-interactivity-is-decided-in-one-place.md) (`architecture`, `accepted`)
+- [ADR 073: Interactive when a person is there, explicit when not](073-interactive-when-a-person-is-there-explicit-when-not.md) (`architecture`, `accepted`)
 

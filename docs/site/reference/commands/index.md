@@ -6153,7 +6153,10 @@ Delete a repository.
 Alias for bb repo delete.
 
 Usage:
-  bb repo admin delete [flags]
+  bb repo admin delete [PROJECT/slug] [flags]
+
+Flags:
+      --yes   Skip the confirmation. Only applies when the repository is named explicitly.
 
 Global Flags:
       --all                      Return every result rather than the first --limit
@@ -6964,13 +6967,17 @@ Delete a repository
 ```text
 Delete a repository.
 
+The repository must be named explicitly, as a PROJECT/slug argument or with --repo.
+--yes is ignored otherwise: a safety flag that works on an inferred target is not one.
+
 Also available as bb repo admin delete.
 
 Usage:
-  bb repo delete [flags]
+  bb repo delete [PROJECT/slug] [flags]
 
 Flags:
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
+      --yes           Skip the confirmation. Only applies when the repository is named explicitly.
 
 Global Flags:
       --all                      Return every result rather than the first --limit
