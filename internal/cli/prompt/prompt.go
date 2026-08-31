@@ -15,15 +15,22 @@ import (
 	"io"
 	"strings"
 
+	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/interactive"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
+
+// noInputFlag is the per-invocation refusal, registered on the root command.
+const noInputFlag = "no-input"
 
 // Request is one destructive command's confirmation, in the terms ADR-073
 // states it.
 type Request struct {
 	In  io.Reader
 	Out io.Writer
+
+	// Disabled is the --no-input flag: an explicit per-invocation refusal.
+	Disabled bool
 
 	// Yes is the --yes flag. It is honoured only when TargetExplicit is true.
 	Yes bool
@@ -128,6 +135,7 @@ func gate(request Request, action string) error {
 	decision := interactive.Detect(interactive.Options{
 		Stdin:         request.In,
 		Stdout:        request.Out,
+		Disabled:      request.Disabled,
 		MachineOutput: request.MachineOutput,
 		Lookup:        request.Lookup,
 	})
@@ -170,4 +178,24 @@ func confirmDeletion(in io.Reader, out io.Writer, resource string) error {
 		)
 	}
 	return nil
+}
+
+// RequestFor builds a Request from the command.
+//
+// It reads the persistent --no-input flag, so a call site cannot forget it.
+// That flag was declared in ADR-072 and documented on this struct before it was
+// registered anywhere, which meant a refusal could name a flag nobody could
+// pass. Reading it here rather than threading it through every Dependencies
+// struct keeps the one place that must not be forgotten down to one place.
+func RequestFor(cmd *cobra.Command, machineOutput bool) Request {
+	// A missing flag is not an error worth surfacing: GetBool reports false for
+	// a command that somehow lacks it, which is the same as not passing it.
+	disabled, _ := cmd.Flags().GetBool(noInputFlag)
+
+	return Request{
+		In:            cmd.InOrStdin(),
+		Out:           cmd.OutOrStdout(),
+		Disabled:      disabled,
+		MachineOutput: machineOutput,
+	}
 }
