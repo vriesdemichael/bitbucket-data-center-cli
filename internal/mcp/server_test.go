@@ -166,6 +166,39 @@ func TestUnsafeToolsAreAnnotatedDestructive(t *testing.T) {
 	}
 }
 
+// TestSafeToolsAreNotAnnotatedDestructive is the other half of the pairing
+// above, and it points the more dangerous way.
+//
+// TestUnsafeToolsAreAnnotatedDestructive catches a gated tool that tells clients
+// it is harmless. This catches the reverse: a tool the server hands out without
+// --yolo while its own annotation says it is destructive. That contradiction
+// matters more, because the annotation is advice a client may ignore and the
+// Safe flag is what the server actually enforces -- so the permissive side wins
+// and an agent gets a destructive tool it was never gated on.
+//
+// A tool that writes without being destructive is normal and stays allowed:
+// create_pull_request changes nothing that existed and blocks nothing, which is
+// why mutating() takes the flag rather than assuming it.
+func TestSafeToolsAreNotAnnotatedDestructive(t *testing.T) {
+	for _, spec := range AllSpecs() {
+		if !spec.Safe {
+			continue
+		}
+		annotations := spec.Tool.Annotations
+		if annotations == nil {
+			continue // reported by TestAllSpecsHaveAnnotations
+		}
+		if annotations.DestructiveHint != nil && *annotations.DestructiveHint {
+			t.Errorf(
+				"tool %q is exposed without --yolo but annotates itself destructive; "+
+					"either it needs gating (Safe: false, listed in TestGatedToolsAreTheOnesThatMergeOrGate) "+
+					"or the annotation overstates it",
+				spec.Tool.Name,
+			)
+		}
+	}
+}
+
 // TestAllSpecsHaveUniqueNames ensures no two tools share the same name.
 func TestAllSpecsHaveUniqueNames(t *testing.T) {
 	seen := map[string]int{}
