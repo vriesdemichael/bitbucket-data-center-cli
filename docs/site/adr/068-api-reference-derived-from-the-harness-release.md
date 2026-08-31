@@ -1,0 +1,30 @@
+# ADR 068: The vendored API reference is derived from the harness release
+
+This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
+
+- Number: `068`
+- Title: `The vendored API reference is derived from the harness release`
+- Category: `architecture`
+- Status: `accepted`
+- Supersedes: `027`
+- Provenance: `guided-ai`
+- Source: `docs/decisions/068-api-reference-derived-from-the-harness-release.yaml`
+
+## Decision
+
+Atlassian's published OpenAPI artifact stays the single external source of API reference, vendored at docs/reference/atlassian/bitbucket-openapi.json so generation and review need no network. What changes from ADR-027 is that its version is derived rather than pinned. tools/openapi-spec reads the harness base image tag -- the one place ADR-042 keeps the release -- and derives the artifact URL from it, discarding the patch component because Atlassian publishes a spec per minor. The vendored file carries no version in its name; a version in a filename is a second copy of a fact that lives elsewhere, and it is the copy that drifted. `task openapi:refresh` vendors the matching document. `task openapi:verify` fails when the vendored document and the harness have parted ways, and names the refresh command. It runs in the unit-tests CI job and in the pre-push gate, so a pull request carrying an outdated spec is blocked before review, not after. The bump and the refresh belong in one change: between them the live suite validates behaviour against one release while the generated client takes its shape from another. Kept from ADR-027: the spec is reference, not behaviour truth. Behaviour is established by the live suite (ADR-004), and a divergence is encoded as an executable test (ADR-028), never argued from the document.
+
+## Agent Instructions
+
+Read endpoints, payload shapes and status codes from the vendored artifact. Do not consult another release's documentation, and do not treat the document as proof of behaviour. Do not pin an API version anywhere -- not in a filename, not in a Taskfile variable, not in prose. To find the release under test, read the harness base image tag as ADR-042 directs. When you bump that tag, run `task openapi:refresh` in the same change and regenerate the models and the client; models:verify and client:verify tell you whether you did. On a refresh, read the docs/quality/generated-operation-paths.json diff before accepting it. An operation that now names a different endpoint still compiles and still passes the unit tests, and the resulting CLI calls the wrong URL. Do not name a Bitbucket version in the decision or agent_instructions of any record. TestAcceptedRecordsDoNotNameABitbucketVersion enforces this.
+
+## Rationale
+
+ADR-027 named one release and stayed accepted while the harness moved two majors past it, still directing readers to a version this project does not vendor and to a docs/spec directory that does not exist. Under ADR-003 agents read an accepted record as authoritative, so that is not cosmetic. The mechanism was the one this project keeps rediscovering: a second copy of a fact. The version lived in Taskfile variables and in the vendored filename as well as in the harness tag, and copies do not move together. Deriving removes the copy rather than policing it, which is ADR-067's preference for making a contradiction unrepresentable. The gate is not ceremony. Upstream operationIds re-point between releases -- eleven did across one minor -- and a re-pointed operation compiles and passes unit tests while calling the wrong URL. Every occurrence so far was caught only because the arity happened to change too.
+
+## Rejected Alternatives
+
+- `Edit ADR-027 to name the current release instead of superseding it`: Re-pinning reproduces the same failure at the next bump. The decision changed shape, not just its number.
+- `Keep the release in the vendored filename`: Readable, and precisely the copy that drifted. The document states its own version, and openapi:verify checks it against the harness on every run.
+- `Track the newest published spec rather than the harness release`: A reference ahead of the harness describes endpoints the live suite cannot exercise: the same drift with the sign reversed.
+- `Refresh on a schedule rather than alongside the bump`: Would vendor a document for a release the harness does not run, failing the gate on every unrelated pull request until someone reconciled the two.

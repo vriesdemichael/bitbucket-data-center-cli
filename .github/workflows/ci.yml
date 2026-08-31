@@ -297,10 +297,16 @@ jobs:
           # shellcheck disable=SC1091
           source "$thresholds_file"
 
-          COVERAGE_MIN_GLOBAL_COMBINED="${CI_COVERAGE_MIN_GLOBAL_COMBINED:-85}"
-          COVERAGE_MIN_PATCH="${CI_COVERAGE_MIN_PATCH:-85}"
-          COVERAGE_MIN_PATCH_LINES="${CI_COVERAGE_MIN_PATCH_LINES:-30}"
-          COVERAGE_MAX_UNCOVERED_SMALL_PATCH="${CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH:-2}"
+          # No fallback defaults here. ADR-065 gives the thresholds one home and
+          # the Taskfile reads that file via dotenv, so a default written here
+          # would be a second statement of the same policy -- and it would apply
+          # exactly when the two could disagree, a key renamed or dropped from
+          # the env file. CI would then quietly gate on 85 while a local run
+          # gated on nothing. Missing is an error, not a number.
+          COVERAGE_MIN_GLOBAL_COMBINED="${CI_COVERAGE_MIN_GLOBAL_COMBINED:?not set in $thresholds_file}"
+          COVERAGE_MIN_PATCH="${CI_COVERAGE_MIN_PATCH:?not set in $thresholds_file}"
+          COVERAGE_MIN_PATCH_LINES="${CI_COVERAGE_MIN_PATCH_LINES:?not set in $thresholds_file}"
+          COVERAGE_MAX_UNCOVERED_SMALL_PATCH="${CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH:?not set in $thresholds_file}"
 
           for var in COVERAGE_MIN_GLOBAL_COMBINED COVERAGE_MIN_PATCH COVERAGE_MIN_PATCH_LINES COVERAGE_MAX_UNCOVERED_SMALL_PATCH; do
             value="${!var}"

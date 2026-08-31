@@ -241,8 +241,21 @@ New-Item -ItemType Directory -Force -Path $CertDir | Out-Null
 Copy-Item ".\corp-root-ca.pem" -Destination "$CertDir\corp-root-ca.pem"
 
 # 3. Option A: Deploy System Configuration File (%ProgramData%\bb\config.yaml)
+#    Create this directory as an administrator before any developer runs bb. C:\ProgramData
+#    lets an unprivileged account create a subdirectory and become its owner, and bb never
+#    creates the directory itself (ADR-058, point 5). The ACL below removes the inherited
+#    Users write entry so the policy file cannot be replaced by the accounts it governs.
 $ConfigDir = "C:\ProgramData\bb"
 New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
+$Acl = Get-Acl $ConfigDir
+$Acl.SetAccessRuleProtection($true, $false)
+foreach ($Identity in "SYSTEM", "Administrators") {
+    $Acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+        $Identity, "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")))
+}
+$Acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+    "Users", "ReadAndExecute", "ContainerInherit,ObjectInherit", "None", "Allow")))
+Set-Acl -Path $ConfigDir -AclObject $Acl
 @"
 require_keyring: true
 ca_file: $CertDir\corp-root-ca.pem
@@ -421,6 +434,10 @@ policy:
 ```
 
 The server then audits whether or not `--audit-file` is passed, and refuses a `--audit-file` pointing anywhere else with an authorization error.
+
+**The mandate is worth what the policy file's permissions are worth.** `bb` reads the system configuration file and never creates the directory holding it, which is deliberate — see [ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md), point 5. On Linux and macOS creating `/etc/bb/` already requires root. On Windows it does not: `C:\ProgramData` lets any account add a subdirectory and hands its creator full control of it, so `C:\ProgramData\bb` must be created by an administrator, before any developer runs `bb`, with unprivileged accounts left read access only. Until that is done, "the developer cannot redirect this" is not a claim you can make on a Windows workstation.
+
+`mcp_audit_file` is also the one policy setting with no `HKLM\Software\Policies\bb` value, so on Windows it is set through the file and not by GPO. The registry is the stronger channel for everything it does carry.
 
 When a record cannot be written the call is **refused**. An audit trail that silently stops recording is worse than none, because the absence of a record then carries no information. `--audit-failure=warn` relaxes this for an operator who would rather lose records than lose the server.
 
