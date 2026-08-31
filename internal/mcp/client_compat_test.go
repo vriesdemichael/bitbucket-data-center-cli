@@ -47,8 +47,8 @@ var toolArguments = map[string]map[string]any{
 // fixtureServer answers every Bitbucket request with a well-formed but empty
 // response.
 //
-// The conformance test is about the shape a tool returns, not about the data
-// Bitbucket holds, so the thinnest valid response for each endpoint family is
+// The test is about the shape a tool returns, not about the data Bitbucket
+// holds, so the thinnest valid response for each endpoint family is
 // exactly right: it reaches the handler's success path without a fixture corpus
 // that would need maintaining alongside the real API.
 func fixtureServer(t *testing.T) string {

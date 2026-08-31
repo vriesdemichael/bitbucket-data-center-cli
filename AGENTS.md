@@ -25,10 +25,13 @@ Coverage **baselines** are still committed, because they are contracts rather th
 |---|---|---|
 | `docs/quality/command-reach.json` | which CLI commands the live suite proves work | `task quality:command-reach:update` |
 | `docs/quality/spec-coverage.json` | which OpenAPI operations are exercised | `task quality:spec-coverage:update` |
-| `docs/quality/generated-operation-contracts.json` | the generated-operation manifest | — |
 
-These are small, readable in a diff, and verified by static analysis with no Bitbucket instance. A
-diff in them is the point: it is how a reviewer sees that a command lost live coverage.
+These are small, readable in a diff, and verified by static analysis needing no Bitbucket instance.
+A diff in them is the point: it is how a reviewer sees that a command lost live coverage.
+
+`generated-operation-contracts.json` used to sit here. It was deleted with the contract-coverage
+metric it fed (ADR-065): a hand-written map of operation to test file, verified by nothing, feeding
+a percentage measured against a threshold of zero.
 
 Run `task quality:verify` for every gate that needs no Bitbucket instance, and
 `task quality:coverage` for the full coverage gate when you want it locally. The latter
