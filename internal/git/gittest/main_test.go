@@ -5,8 +5,6 @@
 package gittest_test
 
 import (
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/gittest"
@@ -20,16 +18,4 @@ import (
 // a directory the test created; a fixture that lost its cmd.Dir would write
 // here instead, and the package that exists to catch that fault is the last
 // place it should go unnoticed.
-func TestMain(m *testing.M) {
-	before := gittest.SnapshotAmbientConfig()
-	code := m.Run()
-
-	if differences := gittest.Diff(before, gittest.SnapshotAmbientConfig()); len(differences) > 0 {
-		fmt.Fprint(os.Stderr, gittest.FailureMessage(differences))
-		if code == 0 {
-			code = 1
-		}
-	}
-
-	os.Exit(code)
-}
+func TestMain(m *testing.M) { gittest.Guard(m) }
