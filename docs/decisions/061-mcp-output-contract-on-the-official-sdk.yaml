@@ -14,13 +14,19 @@ decision: >
   tag, comment. The pull-request tools already named theirs and set the precedent the rest now
   follow. The generic items key that wrapped eight list tools
   is gone, and so is the resultJSON choke point that applied it.
-  A conformance test drives every tool through a real in-process client, calls it against fixture
-  responses, and validates the returned structuredContent against the schema the same server
-  advertises over tools/list. A second test fails when a tool is added without an argument fixture,
-  so a new tool cannot opt out of the round trip.
-  Tools carry annotations. ReadOnlyHint and DestructiveHint are set to match the Safe classification
-  that ADR-039 defines, and a test fails when a tool withheld without --yolo claims to be read-only
-  or non-destructive.
+  A test drives every tool through a real in-process client against fixture responses. It no longer
+  validates the payload against the advertised schema: the SDK derives that schema from the
+  handler output type and applies it to the marshalled result before it leaves the process, so a
+  test doing it afterwards re-checked the framework. What it checks is what the SDK does not --
+  that structuredContent is a JSON object, because a schema saying "array" and an array result
+  both satisfy the SDK while a pre-SEP-2106 client rejects the response outright, and that a text
+  fallback exists for clients that do not read structuredContent. A second test fails when a tool
+  is added without an argument fixture, so a new tool cannot go uncalled.
+  Tools carry annotations. ReadOnlyHint says whether the tool writes at all and is declared per
+  tool. DestructiveHint is derived from the Safe classification ADR-039 defines rather than
+  declared beside it: the two answer the same question, and two hand-written answers can disagree
+  in the direction that matters -- Safe is what the server enforces, DestructiveHint is advice a
+  client may ignore. A test fails when a tool annotated read-only is withheld without --yolo.
 agent_instructions: >
   Add a tool with mcp.AddTool through the toolSpec helper in internal/mcp/server.go. Define an input
   struct and an output struct; do not hand-write a schema. Fields without omitempty become required,
@@ -31,8 +37,9 @@ agent_instructions: >
   path, so the name is what tells it what it is looking at.
   Return a Go error for a failure. The SDK packs it into the result content with IsError set, so
   there is no need to build an error result by hand, and no need to return a nil error alongside one.
-  Add an entry to toolArguments in the conformance test under internal/mcp in the same change.
-  TestEveryToolHasConformanceArguments fails without one.
+  Add an entry to toolArguments in internal/mcp/client_compat_test.go in the same change.
+  TestEveryToolHasCallArguments fails without one, and without it the new tool is never called
+  by any test.
   Do not add an enum to an input schema for a value the service layer normalises. Pinning the
   upper-case spelling of a role rejects "author", which works today. Put the permitted values in the
   field description instead. Enums are for vocabularies the service does not widen.

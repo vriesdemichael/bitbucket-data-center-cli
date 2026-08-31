@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `65`
-- Accepted ADRs: `60`
+- Total ADRs: `66`
+- Accepted ADRs: `61`
 
 ## ADR List
 
@@ -74,4 +74,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 063: Offline release signature verification and update trust policy](063-offline-release-signature-verification.md) (`architecture`, `accepted`)
 - [ADR 065: What the quality apparatus measures, and why each part exists](065-what-the-quality-apparatus-measures.md) (`development`, `accepted`)
 - [ADR 066: Major releases integrate on a next branch, and only main releases](066-major-releases-integrate-on-a-next-branch.md) (`development`, `accepted`)
+- [ADR 067: Governance tests are verified by breaking them](067-governance-tests-are-verified-by-breaking-them.md) (`development`, `accepted`)
 

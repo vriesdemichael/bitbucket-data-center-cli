@@ -132,8 +132,7 @@ reports it as an unknown flag, with nothing visible in the message to say so. Se
 ### command reach artifact
 
 `docs/quality/command-reach.json` records which CLI commands the live suite actually proves work
-against a real Bitbucket. CI verifies it via `task quality:command-reach:verify` (CI-safe, no live
-infra needed — it is static analysis of the Cobra tree and the live test sources).
+against a real Bitbucket. CI verifies it via `task quality:command-reach:verify` (static analysis, no liveinfra needed — it is static analysis of the Cobra tree and the live test sources).
 
 It fails when:
 
@@ -163,7 +162,7 @@ task quality:spec-coverage:update
 git add docs/quality/spec-coverage.json
 ```
 
-CI verifies it via `task quality:spec-coverage:verify` (CI-safe, no live infra).
+CI verifies it via `task quality:spec-coverage:verify` (static analysis, no live infra).
 
 ### Adding a governance test: break it first
 
@@ -214,10 +213,10 @@ The governance guards, so the set is knowable:
 | `TestADRDoesNotNameToolsThatDoNotExist` | decision records do not name tools that were removed |
 | `TestGatedToolsAreTheOnesThatMergeOrGate` | the `--yolo` set is exactly the tools that merge or gate |
 | `TestUnsafeToolsAreAnnotatedDestructive`, `TestSafeToolsAreNotAnnotatedDestructive` | the safety flag and the annotations agree, both ways |
-| `TestEveryToolHasConformanceArguments` | every MCP tool is exercised by the conformance test |
-| `TestEveryToolDeclaresAnOutputSchema`, `TestEveryToolResultConformsToItsOutputSchema` | a tool result matches its published schema |
+| `TestEveryToolHasCallArguments` | every MCP tool is actually called by a test |
+| `TestEveryToolReturnsAClientCompatibleResult` | a tool result is a JSON object with a text fallback |
 | `gittest` ambient config snapshot | no test reconfigures the repository it runs in |
-| `TestEveryCISafeGateRunsOnBothSides` | every gate needing no Bitbucket runs locally and in CI |
+| `TestEveryHookRunnableGateRunsOnBothSides` | every gate needing no Bitbucket runs locally and in CI |
 
 ### When running tests also uncovers a broken test
 

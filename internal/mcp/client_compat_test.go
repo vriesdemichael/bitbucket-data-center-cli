@@ -9,15 +9,14 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
 // toolArguments is a valid argument set for every tool in AllSpecs.
 //
-// It exists so the conformance test can reach each handler body rather than
-// bouncing off input validation. TestEveryToolHasConformanceArguments fails
-// when a tool is added without an entry, which is what stops a new tool from
-// quietly opting out of the output contract.
+// It exists so the test below can reach each handler body rather than bouncing
+// off input validation. TestEveryToolHasCallArguments fails when a tool is
+// added without an entry, which is what stops a new tool from never being
+// called at all.
 var toolArguments = map[string]map[string]any{
 	"get_pull_request":          {"project": "TEST", "repo": "demo", "id": "1"},
 	"list_pull_requests":        {"project": "TEST", "repo": "demo"},
@@ -82,12 +81,12 @@ func fixtureServer(t *testing.T) string {
 	return srv.URL
 }
 
-// TestEveryToolHasConformanceArguments fails when a tool is added to AllSpecs
+// TestEveryToolHasCallArguments fails when a tool is added to AllSpecs
 // without an argument fixture, so it cannot escape the conformance run below.
-func TestEveryToolHasConformanceArguments(t *testing.T) {
+func TestEveryToolHasCallArguments(t *testing.T) {
 	for _, spec := range AllSpecs() {
 		if _, ok := toolArguments[spec.Tool.Name]; !ok {
-			t.Errorf("tool %q has no entry in toolArguments; add one so it is covered by the conformance test", spec.Tool.Name)
+			t.Errorf("tool %q has no entry in toolArguments; add one so it is called by the client compatibility test", spec.Tool.Name)
 		}
 	}
 	for name := range toolArguments {
@@ -104,49 +103,6 @@ func TestEveryToolHasConformanceArguments(t *testing.T) {
 	}
 }
 
-// TestEveryToolDeclaresAnOutputSchema asserts the contract exists at all.
-//
-// Before the SDK migration not one of the 24 tools declared an output schema,
-// so nothing validated what a handler returned and a wire-shape bug reached a
-// user (issue #416). The schema is read from tools/list rather than from the
-// Spec because the SDK derives it during registration: tools/list is where a
-// client sees it, so it is where the test looks.
-func TestEveryToolDeclaresAnOutputSchema(t *testing.T) {
-	session := connect(t, Clients{}, nil, nil, true)
-
-	result, err := session.ListTools(context.Background(), nil)
-	if err != nil {
-		t.Fatalf("tools/list: %v", err)
-	}
-	if len(result.Tools) != len(AllSpecs()) {
-		t.Fatalf("tools/list returned %d tools, want %d", len(result.Tools), len(AllSpecs()))
-	}
-
-	for _, tool := range result.Tools {
-		if tool.OutputSchema == nil {
-			t.Errorf("tool %q declares no output schema", tool.Name)
-			continue
-		}
-		encoded, marshalErr := json.Marshal(tool.OutputSchema)
-		if marshalErr != nil {
-			t.Errorf("tool %q: marshal output schema: %v", tool.Name, marshalErr)
-			continue
-		}
-		// Every payload is named inside an object, so a client validating
-		// against a pre-SEP-2106 revision never sees a bare array.
-		var probe struct {
-			Type string `json:"type"`
-		}
-		if unmarshalErr := json.Unmarshal(encoded, &probe); unmarshalErr != nil {
-			t.Errorf("tool %q: unmarshal output schema: %v", tool.Name, unmarshalErr)
-			continue
-		}
-		if probe.Type != "object" {
-			t.Errorf("tool %q declares a %q-rooted output schema; every tool must name its payload inside an object", tool.Name, probe.Type)
-		}
-	}
-}
-
 // TestEveryToolResultConformsToItsOutputSchema drives every tool through a real
 // client-to-server round trip and validates what comes back against the schema
 // the same server advertises.
@@ -156,18 +112,30 @@ func TestEveryToolDeclaresAnOutputSchema(t *testing.T) {
 // Validating independently here proves that rather than trusting it, and pins
 // the two halves of the contract — the advertised schema and the returned
 // value — to each other.
-func TestEveryToolResultConformsToItsOutputSchema(t *testing.T) {
+// TestEveryToolReturnsAClientCompatibleResult calls every tool and checks the
+// two things about its result that the SDK does not.
+//
+// It used to validate the payload against the advertised output schema as well.
+// That is now redundant: the SDK derives the schema from the handler's Out type
+// and applies it to the marshalled result before it leaves the process
+// (server.go, applySchema). A test asserting the same thing afterwards was
+// re-checking the framework.
+//
+// What the framework does not check is client compatibility, which is the whole
+// reason issue #416 was filed:
+//
+//   - structuredContent must be a JSON object. A schema saying "array" and a
+//     result that is an array both satisfy the SDK, and a pre-SEP-2106 client
+//     still rejects the response with "expected record, received array" before
+//     it can read the text fallback.
+//   - a text fallback must exist, for clients that do not read
+//     structuredContent at all.
+//
+// Calling every tool is also the only place each handler body runs in a unit
+// test, so the file keeps that coverage whatever else changes.
+func TestEveryToolReturnsAClientCompatibleResult(t *testing.T) {
 	session := connect(t, clientsForURL(t, fixtureServer(t)), nil, nil, true)
 	ctx := context.Background()
-
-	listed, err := session.ListTools(ctx, nil)
-	if err != nil {
-		t.Fatalf("tools/list: %v", err)
-	}
-	schemas := make(map[string]*jsonschema.Schema, len(listed.Tools))
-	for _, tool := range listed.Tools {
-		schemas[tool.Name] = compileSchema(t, tool.Name, tool.OutputSchema)
-	}
 
 	for _, spec := range AllSpecs() {
 		name := spec.Tool.Name
@@ -205,10 +173,6 @@ func TestEveryToolResultConformsToItsOutputSchema(t *testing.T) {
 				t.Fatalf("structuredContent is %T, want a JSON object: %s", decoded, encoded)
 			}
 
-			if err := schemas[name].Validate(decoded); err != nil {
-				t.Errorf("structuredContent does not conform to the advertised output schema: %v\npayload: %s", err, encoded)
-			}
-
 			// The spec requires a text fallback for clients that do not read
 			// structuredContent at all. The SDK supplies the JSON encoding of
 			// the output unless the handler sets its own, which get_pr_diff and
@@ -218,32 +182,6 @@ func TestEveryToolResultConformsToItsOutputSchema(t *testing.T) {
 			}
 		})
 	}
-}
-
-// compileSchema turns an advertised output schema into a validator.
-func compileSchema(t *testing.T, toolName string, schema any) *jsonschema.Schema {
-	t.Helper()
-	if schema == nil {
-		t.Fatalf("tool %q declares no output schema", toolName)
-	}
-	encoded, err := json.Marshal(schema)
-	if err != nil {
-		t.Fatalf("tool %q: marshal output schema: %v", toolName, err)
-	}
-	doc, err := jsonschema.UnmarshalJSON(strings.NewReader(string(encoded)))
-	if err != nil {
-		t.Fatalf("tool %q: parse output schema: %v", toolName, err)
-	}
-	compiler := jsonschema.NewCompiler()
-	resource := "https://bb.invalid/" + toolName + ".schema.json"
-	if err := compiler.AddResource(resource, doc); err != nil {
-		t.Fatalf("tool %q: add output schema: %v", toolName, err)
-	}
-	compiled, err := compiler.Compile(resource)
-	if err != nil {
-		t.Fatalf("tool %q: compile output schema: %v", toolName, err)
-	}
-	return compiled
 }
 
 // contentText flattens a result's text content for failure messages.
