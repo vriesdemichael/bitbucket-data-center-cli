@@ -440,6 +440,19 @@ func New(deps Dependencies) *cobra.Command {
 			"  # Create a pull request without default reviewers or CODEOWNERS\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --no-default-reviewers --no-codeowners",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Before the configuration is loaded, because MarkFlagRequired ran
+			// before RunE and this replaces it. Loading first would report "no
+			// Bitbucket host configured" to someone whose real problem is a
+			// missing --title, which is the round trip this is meant to remove.
+			// FillMissing needs nothing from the config.
+			if err := prompt.FillMissing(prompt.RequestFor(cmd, deps.JSONEnabled()), []prompt.Missing{
+				{Flag: "--from-ref", Question: "Source branch", Value: &createFromRef},
+				{Flag: "--to-ref", Question: "Target branch", Value: &createToRef},
+				{Flag: "--title", Question: "Title", Value: &createTitle},
+			}); err != nil {
+				return err
+			}
+
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -450,21 +463,6 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
-
-			// Ask a person who is there; name every missing flag to one who is
-			// not. This is what MarkFlagRequired used to do, minus the part
-			// that made asking impossible.
-			if err := prompt.FillMissing(prompt.Request{
-				In:            cmd.InOrStdin(),
-				Out:           cmd.OutOrStdout(),
-				MachineOutput: deps.JSONEnabled(),
-			}, []prompt.Missing{
-				{Flag: "--from-ref", Question: "Source branch", Value: &createFromRef},
-				{Flag: "--to-ref", Question: "Target branch", Value: &createToRef},
-				{Flag: "--title", Question: "Title", Value: &createTitle},
-			}); err != nil {
-				return err
-			}
 
 			if deps.DryRunEnabled() {
 				checker := deps.PermissionChecker(apiClient)
