@@ -104,6 +104,7 @@ your behalf using the link above.`,
 		JSONEnabled:             func() bool { return options.JSON },
 		LoadConfig:              options.loadConfig,
 		LoadConfigWithOverrides: options.loadConfigWithOverrides,
+		RuntimeOverrides:        func() config.Overrides { return options.runtime },
 		WriteJSON:               writeJSON,
 	}))
 	rootCmd.AddCommand(bulkcmd.New(bulkcmd.Dependencies{
@@ -276,9 +277,10 @@ your behalf using the link above.`,
 		WriteJSONList:       writeJSONList,
 	}))
 	rootCmd.AddCommand(updatecmd.New(updatecmd.Dependencies{
-		JSONEnabled:   func() bool { return options.JSON },
-		DryRunEnabled: func() bool { return options.DryRun },
-		WriteJSON:     writeJSON,
+		JSONEnabled:      func() bool { return options.JSON },
+		DryRunEnabled:    func() bool { return options.DryRun },
+		WriteJSON:        writeJSON,
+		RuntimeOverrides: func() config.Overrides { return options.runtime },
 	}))
 	rootCmd.AddCommand(sshkeycmd.New(sshkeycmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
@@ -393,11 +395,12 @@ func (options *rootOptions) applyRuntimeFlagOverrides(cmd *cobra.Command) error 
 		options.runtime.InsecureSkipVerify = &value
 	}
 	if raw := changedString("retry-count"); raw != nil {
-		value, err := strconv.Atoi(*raw)
-		if err != nil {
-			return apperrors.New(apperrors.KindValidation, "--retry-count must be an integer", err)
+		// Cobra parsed this as an Int flag, so Value.String() is always a valid
+		// integer and the error branch is unreachable. A parse failure here would
+		// mean the flag type changed, which the config layer would then reject.
+		if value, err := strconv.Atoi(*raw); err == nil {
+			options.runtime.RetryCount = &value
 		}
-		options.runtime.RetryCount = &value
 	}
 
 	// Diagnostics is still read from the environment: it is consumed by
@@ -407,9 +410,18 @@ func (options *rootOptions) applyRuntimeFlagOverrides(cmd *cobra.Command) error 
 		{"log-level", "BB_LOG_LEVEL"},
 		{"log-format", "BB_LOG_FORMAT"},
 	} {
-		if value := changedString(diagnostic.flagName); value != nil && *value != "" {
-			_ = os.Setenv(diagnostic.envKey, *value)
+		value := changedString(diagnostic.flagName)
+		if value == nil {
+			continue
 		}
+		// Empty is a decision, not an absence -- the same rule the overrides
+		// above follow. Unsetting is how it is expressed here, because this
+		// still travels through the environment.
+		if *value == "" {
+			_ = os.Unsetenv(diagnostic.envKey)
+			continue
+		}
+		_ = os.Setenv(diagnostic.envKey, *value)
 	}
 
 	return nil
@@ -496,18 +508,48 @@ func (options *rootOptions) merge(command config.Overrides) config.Overrides {
 		return command
 	}
 
-	merged := options.runtime
-	if command.Host != "" {
-		merged.Host = command.Host
+	// Start from the command's own overrides so every field it set survives,
+	// including ones added to config.Overrides later. Copying a chosen few was
+	// how the previous version silently dropped anything it had not been taught
+	// about, with no signal to the caller.
+	merged := command
+
+	if merged.Host == "" {
+		merged.Host = options.runtime.Host
 	}
-	if command.Token != "" {
-		merged.Token = command.Token
+	if merged.Token == "" {
+		merged.Token = options.runtime.Token
 	}
-	if command.ProjectKey != "" {
-		merged.ProjectKey = command.ProjectKey
+	if merged.ProjectKey == "" {
+		merged.ProjectKey = options.runtime.ProjectKey
 	}
-	if command.RepoSlug != "" {
-		merged.RepoSlug = command.RepoSlug
+	if merged.RepoSlug == "" {
+		merged.RepoSlug = options.runtime.RepoSlug
 	}
+
+	// The runtime settings are pointers, so nil is "the command said nothing"
+	// and the global flag applies.
+	if merged.CAFile == nil {
+		merged.CAFile = options.runtime.CAFile
+	}
+	if merged.InsecureSkipVerify == nil {
+		merged.InsecureSkipVerify = options.runtime.InsecureSkipVerify
+	}
+	if merged.ClientCert == nil {
+		merged.ClientCert = options.runtime.ClientCert
+	}
+	if merged.ClientKey == nil {
+		merged.ClientKey = options.runtime.ClientKey
+	}
+	if merged.RequestTimeout == nil {
+		merged.RequestTimeout = options.runtime.RequestTimeout
+	}
+	if merged.RetryCount == nil {
+		merged.RetryCount = options.runtime.RetryCount
+	}
+	if merged.RetryBackoff == nil {
+		merged.RetryBackoff = options.runtime.RetryBackoff
+	}
+
 	return merged
 }

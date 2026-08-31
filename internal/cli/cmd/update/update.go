@@ -94,23 +94,22 @@ func trustSourceDescription(trust config.UpdateTrust) string {
 	}
 }
 
-func LoadUpdateCommandHTTPConfig(optionalBaseURL ...string) (UpdateCommandHTTPConfig, error) {
-	requestTimeout := defaultUpdateRequestTimeout
-	if raw := strings.TrimSpace(os.Getenv("BB_REQUEST_TIMEOUT")); raw != "" {
-		parsed, err := time.ParseDuration(raw)
-		if err != nil {
-			return UpdateCommandHTTPConfig{}, apperrors.New(apperrors.KindValidation, "BB_REQUEST_TIMEOUT must be a valid duration (example: 20s)", err)
-		}
-		if parsed <= 0 {
-			return UpdateCommandHTTPConfig{}, apperrors.New(apperrors.KindValidation, "BB_REQUEST_TIMEOUT must be greater than 0", nil)
-		}
-		requestTimeout = parsed
+// LoadUpdateCommandHTTPConfig resolves the transport settings for the update
+// path, honouring the global flags.
+//
+// overrides carries them. This command runs without a configured Bitbucket
+// host, so it cannot go through LoadWithOverrides, and it used to read BB_*
+// itself -- which worked only while flags were written into those variables.
+func LoadUpdateCommandHTTPConfig(overrides config.Overrides, optionalBaseURL ...string) (UpdateCommandHTTPConfig, error) {
+	requestTimeout, err := config.ResolveRequestTimeoutWith(overrides, defaultUpdateRequestTimeout)
+	if err != nil {
+		return UpdateCommandHTTPConfig{}, err
 	}
 
 	// The update path downloads and then executes a new binary, so it resolves
 	// TLS through the same policy-aware helper the API client uses rather than
 	// reading BB_* variables directly (issue #448).
-	tlsSettings, err := config.ResolveTLSSettings()
+	tlsSettings, err := config.ResolveTLSSettingsWith(overrides)
 	if err != nil {
 		return UpdateCommandHTTPConfig{}, err
 	}
@@ -146,6 +145,10 @@ type Dependencies struct {
 	JSONEnabled   func() bool
 	DryRunEnabled func() bool
 	WriteJSON     func(io.Writer, any) error
+	// RuntimeOverrides carries the global flags. This command has no Bitbucket
+	// host and so no config load to inherit them from; without it, --ca-file and
+	// --request-timeout stop reaching the path that downloads a binary.
+	RuntimeOverrides func() config.Overrides
 }
 
 func (d Dependencies) withDefaults() Dependencies {
@@ -182,7 +185,7 @@ func New(deps Dependencies) *cobra.Command {
 				return apperrors.New(apperrors.KindAuthorization, msg, nil)
 			}
 
-			httpConfig, err := LoadUpdateCommandHTTPConfig(baseURL)
+			httpConfig, err := LoadUpdateCommandHTTPConfig(d.runtimeOverrides(), baseURL)
 			if err != nil {
 				return err
 			}
@@ -271,4 +274,12 @@ func writeVerificationDetail(writer io.Writer, result updateworkflow.Result) {
 	if result.ChecksumAvailable {
 		fmt.Fprintf(writer, "%s %s\n", style.Secondary.Render("Checksum"), style.Success.Render(fmt.Sprintf("entry present for %s", result.AssetName)))
 	}
+}
+
+// runtimeOverrides is the global flags, or none when the caller wired nothing.
+func (d Dependencies) runtimeOverrides() config.Overrides {
+	if d.RuntimeOverrides == nil {
+		return config.Overrides{}
+	}
+	return d.RuntimeOverrides()
 }

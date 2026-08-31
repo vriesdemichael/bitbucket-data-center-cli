@@ -1823,3 +1823,48 @@ func TestAliasDiscoverPreservesManualAliases(t *testing.T) {
 		t.Fatalf("expected --replace to drop the manual alias, got: %s", afterReplace)
 	}
 }
+
+// TestLoginUsesTheGlobalClientCertificate covers the second regression that had
+// no error to notice it by.
+//
+// bb --client-cert x.pem auth login reached the alias probe and the stored
+// credential through a BB_CLIENT_CERT fallback, which worked only while the
+// global flag was written into that variable. Once flags became values it
+// silently stopped, with the subcommand's own --client-cert still working --
+// which is the kind of partial breakage nobody reports.
+func TestLoginUsesTheGlobalClientCertificate(t *testing.T) {
+	deps := Dependencies{
+		JSONEnabled: func() bool { return false },
+		LoadConfig:  func() (config.AppConfig, error) { return config.AppConfig{}, nil },
+		RuntimeOverrides: func() config.Overrides {
+			cert := "/tmp/global-cert.pem"
+			key := "/tmp/global-key.pem"
+			return config.Overrides{ClientCert: &cert, ClientKey: &key}
+		},
+	}
+
+	globals := deps.runtimeOverrides()
+	if got := firstNonBlank("", derefString(globals.ClientCert), os.Getenv("BB_CLIENT_CERT")); got != "/tmp/global-cert.pem" {
+		t.Errorf("client cert = %q, want the global flag's value", got)
+	}
+	if got := firstNonBlank("", derefString(globals.ClientKey), os.Getenv("BB_CLIENT_KEY")); got != "/tmp/global-key.pem" {
+		t.Errorf("client key = %q, want the global flag's value", got)
+	}
+
+	// The subcommand's own flag still wins over the global one.
+	if got := firstNonBlank("/tmp/own.pem", derefString(globals.ClientCert), ""); got != "/tmp/own.pem" {
+		t.Errorf("client cert = %q, want the subcommand flag to win", got)
+	}
+}
+
+// TestNoGlobalCertificateFallsBackToTheEnvironment keeps the third layer.
+func TestNoGlobalCertificateFallsBackToTheEnvironment(t *testing.T) {
+	t.Setenv("BB_CLIENT_CERT", "/tmp/from-env.pem")
+
+	deps := Dependencies{}
+	globals := deps.runtimeOverrides()
+
+	if got := firstNonBlank("", derefString(globals.ClientCert), os.Getenv("BB_CLIENT_CERT")); got != "/tmp/from-env.pem" {
+		t.Errorf("client cert = %q, want the environment's value when no flag was passed", got)
+	}
+}

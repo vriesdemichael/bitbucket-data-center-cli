@@ -37,20 +37,24 @@ type AppConfig struct {
 	BitbucketURL           string
 	BitbucketVersionTarget string
 	ProjectKey             string
-	BitbucketToken         string
-	BitbucketUsername      string
-	BitbucketPassword      string
-	CAFile                 string
-	InsecureSkipVerify     bool
-	ClientCertFile         string
-	ClientKeyFile          string
-	RequestTimeout         time.Duration
-	RetryCount             int
-	RetryBackoff           time.Duration
-	LogLevel               string
-	LogFormat              string
-	DiagnosticsEnabled     bool
-	AuthSource             string
+	// RepoSlug is the repository within ProjectKey, from the environment or an
+	// inferred git context. Commands that take --repo use the flag instead; this
+	// is the fallback for the ones that do not.
+	RepoSlug           string
+	BitbucketToken     string
+	BitbucketUsername  string
+	BitbucketPassword  string
+	CAFile             string
+	InsecureSkipVerify bool
+	ClientCertFile     string
+	ClientKeyFile      string
+	RequestTimeout     time.Duration
+	RetryCount         int
+	RetryBackoff       time.Duration
+	LogLevel           string
+	LogFormat          string
+	DiagnosticsEnabled bool
+	AuthSource         string
 	// UsedInsecureStorage reports that a credential in use was read from the
 	// plaintext config fallback rather than the OS keyring. It is set only when
 	// such a credential is actually used, not merely present in the file.
@@ -259,13 +263,9 @@ var (
 	settingRetryBackoff       = runtimeSetting{"BB_RETRY_BACKOFF", "--retry-backoff"}
 )
 
-// nameFor reports which spelling to use when reporting a problem with a
-// setting: the flag when the value came from one, the variable otherwise.
+// nameFor is nameOf against the sources this configuration was resolved from.
 func (config AppConfig) nameFor(setting runtimeSetting) string {
-	if config.flagSourced[setting.environment] {
-		return setting.flag
-	}
-	return setting.environment
+	return nameOf(config.flagSourced, setting)
 }
 
 // LoadFromEnv resolves configuration from the environment and stored
@@ -365,7 +365,10 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		)
 	}
 
-	projectKey := envOrDefault("BITBUCKET_PROJECT_KEY", "")
+	// An inferred repository context outranks the environment for this
+	// invocation, the same way a flag does. It used to arrive as the variable,
+	// because inference wrote it there.
+	projectKey := firstNonEmpty(strings.TrimSpace(overrides.ProjectKey), envOrDefault("BITBUCKET_PROJECT_KEY", ""))
 	if projectKey == "" {
 		projectKey = workspaceConfig.ProjectKey
 	}
@@ -377,6 +380,7 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		BitbucketURL:           resolvedURL,
 		BitbucketVersionTarget: envOrDefault("BITBUCKET_VERSION_TARGET", defaultBitbucketVersionTarget),
 		ProjectKey:             projectKey,
+		RepoSlug:               firstNonEmpty(strings.TrimSpace(overrides.RepoSlug), envOrDefault("BITBUCKET_REPO_SLUG", "")),
 		BitbucketToken:         firstNonEmpty(strings.TrimSpace(overrides.Token), envOrDefault("BITBUCKET_TOKEN", "")),
 		BitbucketUsername:      envOrDefault("BITBUCKET_USERNAME", envOrDefault("BITBUCKET_USER", envOrDefault("ADMIN_USER", ""))),
 		BitbucketPassword:      envOrDefault("BITBUCKET_PASSWORD", envOrDefault("ADMIN_PASSWORD", "")),
@@ -1152,6 +1156,21 @@ type TLSSettings struct {
 // commands that run without a configured Bitbucket host — `bb update` in
 // particular — inherit the same policy as the API client instead of reading the
 // environment on their own.
+// ResolveTLSSettingsWith is ResolveTLSSettings for a caller that has global
+// flags to apply. bb update is the one that matters: it downloads and executes
+// a new binary, and --ca-file, --insecure-skip-verify and --client-cert have to
+// reach it. They used to, by being written into BB_*; carrying them as values
+// broke that until this existed.
+func ResolveTLSSettingsWith(overrides Overrides) (TLSSettings, error) {
+	policy, err := LoadPolicy()
+	if err != nil {
+		return TLSSettings{}, err
+	}
+	sysConfig, _ := LoadSystemConfig()
+
+	return resolveTLSSettings(policy, sysConfig, overrides, map[string]bool{})
+}
+
 func ResolveTLSSettings() (TLSSettings, error) {
 	policy, err := LoadPolicy()
 	if err != nil {
@@ -1164,8 +1183,7 @@ func ResolveTLSSettings() (TLSSettings, error) {
 // ResolveTLSSettingsFrom is ResolveTLSSettings for callers that have already
 // loaded policy and system configuration.
 // ResolveTLSSettingsFrom is ResolveTLSSettings for callers that have already
-// loaded policy and system configuration. overrides and sourced may be zero and
-// nil for a caller with no flags to apply.
+// loaded policy and system configuration, and have no flags to apply.
 func ResolveTLSSettingsFrom(policy PolicyConfig, sysConfig SystemConfigFile) (TLSSettings, error) {
 	return resolveTLSSettings(policy, sysConfig, Overrides{}, map[string]bool{})
 }
@@ -2043,4 +2061,26 @@ func resolveBool(sourced map[string]bool, setting runtimeSetting, override *bool
 
 	sourced[setting.environment] = true
 	return *override, nil
+}
+
+// ResolveRequestTimeoutWith resolves the HTTP request timeout, honouring a
+// --request-timeout flag ahead of BB_REQUEST_TIMEOUT.
+//
+// It exists for the same reason as ResolveTLSSettingsWith: bb update runs
+// without a configured host, so it cannot go through LoadWithOverrides, and
+// parsing the variable itself meant the flag stopped reaching it once flags
+// became values.
+func ResolveRequestTimeoutWith(overrides Overrides, fallback time.Duration) (time.Duration, error) {
+	sourced := map[string]bool{}
+
+	timeout, err := resolveDuration(sourced, settingRequestTimeout, overrides.RequestTimeout, fallback)
+	if err != nil {
+		return 0, apperrors.New(apperrors.KindValidation,
+			nameOf(sourced, settingRequestTimeout)+" must be a valid duration (example: 20s)", err)
+	}
+	if timeout <= 0 {
+		return 0, apperrors.New(apperrors.KindValidation,
+			nameOf(sourced, settingRequestTimeout)+" must be greater than 0", nil)
+	}
+	return timeout, nil
 }
