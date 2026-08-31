@@ -37,7 +37,8 @@ agent_instructions: >
   path, so the name is what tells it what it is looking at.
   Return a Go error for a failure. The SDK packs it into the result content with IsError set, so
   there is no need to build an error result by hand, and no need to return a nil error alongside one.
-  Add an entry to toolArguments in internal/mcp/client_compat_test.go in the same change.
+  Add an entry to toolArguments in the client compatibility test under internal/mcp in the same
+  change.
   TestEveryToolHasCallArguments fails without one, and without it the new tool is never called
   by any test.
   Do not add an enum to an input schema for a value the service layer normalises. Pinning the

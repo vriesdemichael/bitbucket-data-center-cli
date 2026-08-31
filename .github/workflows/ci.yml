@@ -347,10 +347,15 @@ jobs:
     needs:
       - live-tests
       - coverage-gates
-    # Publishes coverage history and the README badge. It runs even when the
-    # gates fail, because a red build's coverage is still the number the badge
-    # should be reporting.
-    if: always() && needs.live-tests.result == 'success'
+    # Publishes coverage history and the README badge. It runs when the gates
+    # ran, pass or fail, because a red build's coverage is still the number the
+    # badge should report.
+    #
+    # It must not run when the gates were skipped. Coverage Gates needs both
+    # test jobs, so a unit test failure skips it, and Codecov then failed trying
+    # to download an artifact that was never produced -- turning one real
+    # failure into two red jobs and burying the one that mattered.
+    if: always() && needs.coverage-gates.result != 'skipped' && needs.coverage-gates.result != 'cancelled'
     steps:
       - name: Checkout
         uses: actions/checkout@v7

@@ -7,7 +7,7 @@ decision: >
   A PR is ready for auto-merge when review feedback is addressed, required checks pass,
   and user approval/review is complete.
 agent_instructions: >
-  Before opening a PR, run repository checks (task quality:check and relevant live tests),
+  Before opening a PR, run repository checks (task quality:verify and relevant live tests),
   ensure no partial implementations, and remove TODO/FIXME/debug leftovers.
   Ask user confirmation before opening a PR.
   Before enabling auto-merge, ensure comments are resolved and required checks are green.

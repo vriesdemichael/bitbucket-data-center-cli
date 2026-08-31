@@ -66,8 +66,8 @@ var exemptFromParity = map[string]string{
 	// coverage profile is written. The hook skips the profile because nothing
 	// local reads it and instrumentation costs time on every commit; CI writes
 	// it because the coverage gates consume it.
-	"test:go:safe":       "the pre-commit form of test:unit:coverage, without the profile",
-	"test:unit:coverage": "the CI form of test:go:safe, which also writes the profile the gates read",
+	"test:unit":          "the pre-commit form of test:unit:coverage, without the profile",
+	"test:unit:coverage": "the CI form of test:unit, which also writes the profile the gates read",
 }
 
 func TestEveryHookRunnableGateRunsOnBothSides(t *testing.T) {
@@ -203,7 +203,7 @@ func taskInvocations(lines []string) []string {
 	names := []string{}
 	for _, line := range lines {
 		// Comments name tasks in prose -- lefthook.yml suggests running
-		// `task quality:coverage:origin-main` by hand -- and matching those
+		// `task quality:coverage` by hand -- and matching those
 		// invents gates that neither side runs. Strip them before matching.
 		if index := strings.Index(line, "#"); index >= 0 {
 			line = line[:index]

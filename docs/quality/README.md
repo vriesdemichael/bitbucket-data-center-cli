@@ -29,7 +29,7 @@ and in the pre-push hook.
 | Thresholds | `.github/coverage-thresholds.env` |
 | Trend history | Codecov |
 | Raw profiles | workflow artifacts on each CI run, retained 14 days |
-| Locally, full | `task quality:coverage:origin-main` — needs the stack up, ~8 minutes |
+| Locally, full | `task quality:coverage` — needs the stack up, ~8 minutes |
 | Locally, re-check | `task quality:coverage:replay` — reuses the profiles in `.tmp/`, seconds |
 
 Nothing needs regenerating after a rebase. `task pr:rebase` is a plain rebase.

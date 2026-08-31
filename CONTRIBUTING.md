@@ -200,7 +200,7 @@ Both hooks are heavier than most projects', and neither is hung when it appears
 to stall. [lefthook](https://github.com/evilmartians/lefthook) runs them; they
 install with `lefthook install`.
 
-**`pre-commit` — roughly 3 minutes.** Runs `task test:go:safe`, which is the
+**`pre-commit` — roughly 3 minutes.** Runs `task test:unit`, which is the
 whole non-live Go test suite across `./cmd/...`, `./internal/...` and
 `./tools/...`. Not a fast subset of tests related to your change: all of them,
 on every commit. `internal/cli` alone accounts for most of it. Amending several
@@ -219,7 +219,7 @@ want it — before a large change, for instance:
 
 ```bash
 task stack:up
-BITBUCKET_URL=http://localhost:7990 ADMIN_USER=admin ADMIN_PASSWORD=admin task quality:coverage:origin-main
+BITBUCKET_URL=http://localhost:7990 ADMIN_USER=admin ADMIN_PASSWORD=admin task quality:coverage
 ```
 
 Do not bypass hooks with `--no-verify`.

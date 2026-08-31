@@ -2,7 +2,7 @@ pre-commit:
   parallel: false
   commands:
     safe-go-tests:
-      run: task test:go:safe
+      run: task test:unit
 
 # The live coverage gate deliberately does not run here.
 #
@@ -18,8 +18,8 @@ pre-commit:
 # artifacts, an invalid ADR, a command that lost live coverage, and a docs build
 # that does not compile.
 #
-# Run `task quality:coverage:origin-main` yourself when you want the full gate
-# locally, for instance before a large change.
+# Run `task quality:coverage` yourself when you want the full gate locally, for
+# instance before a large change. It needs the stack up.
 pre-push:
   parallel: false
   commands:
