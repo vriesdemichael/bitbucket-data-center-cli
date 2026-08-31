@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -66,7 +67,7 @@ your behalf using the link above.`,
 		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			diagnostics.SetOutputWriter(cmd.ErrOrStderr())
-			if err := applyRuntimeFlagOverrides(cmd); err != nil {
+			if err := options.applyRuntimeFlagOverrides(cmd); err != nil {
 				return err
 			}
 			style.Init(options.NoColor)
@@ -90,31 +91,31 @@ your behalf using the link above.`,
 
 	rootCmd.AddCommand(aicmd.New(aicmd.Dependencies{
 		Version:    func() string { return rootCmd.Version },
-		LoadConfig: loadConfigWithOverrides,
+		LoadConfig: options.loadConfigWithOverrides,
 		WriteJSON:  writeJSON,
 	}))
 	rootCmd.AddCommand(apicmd.New(apicmd.Dependencies{
 		JSONEnabled:   func() bool { return options.JSON },
 		DryRunEnabled: func() bool { return options.DryRun },
-		LoadConfig:    loadConfigWithOverrides,
+		LoadConfig:    options.loadConfigWithOverrides,
 		WriteJSON:     writeJSON,
 	}))
 	rootCmd.AddCommand(authcmd.New(authcmd.Dependencies{
 		JSONEnabled:             func() bool { return options.JSON },
-		LoadConfig:              loadConfig,
-		LoadConfigWithOverrides: loadConfigWithOverrides,
+		LoadConfig:              options.loadConfig,
+		LoadConfigWithOverrides: options.loadConfigWithOverrides,
 		WriteJSON:               writeJSON,
 	}))
 	rootCmd.AddCommand(bulkcmd.New(bulkcmd.Dependencies{
 		JSONEnabled: func() bool { return options.JSON },
-		LoadConfig:  loadConfig,
+		LoadConfig:  options.loadConfig,
 		WriteJSON:   writeJSON,
 	}))
 	rootCmd.AddCommand(repocmd.New(repocmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
 		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) repocmd.PermissionChecker {
@@ -124,16 +125,16 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(repocmd.NewClone(repocmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
 		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 	}))
 	rootCmd.AddCommand(tagcmd.New(tagcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
 		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) tagcmd.PermissionChecker {
@@ -143,8 +144,8 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(branchcmd.New(branchcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
 		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) branchcmd.PermissionChecker {
@@ -153,15 +154,15 @@ your behalf using the link above.`,
 	}))
 	rootCmd.AddCommand(diffcmd.New(diffcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 	}))
 	rootCmd.AddCommand(buildcmd.New(buildcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
 		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) buildcmd.PermissionChecker {
@@ -171,8 +172,8 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(deploymentcmd.New(deploymentcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
 		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) deploymentcmd.PermissionChecker {
 			return options.permissionCheckerFor(client)
@@ -181,8 +182,8 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(insightscmd.New(insightscmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
 		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) insightscmd.PermissionChecker {
@@ -192,8 +193,8 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(prcmd.New(prcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
 		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 		GitBackend:          gitBackendFactory,
@@ -203,27 +204,27 @@ your behalf using the link above.`,
 	}))
 	rootCmd.AddCommand(admincmd.New(admincmd.Dependencies{
 		JSONEnabled: func() bool { return options.JSON },
-		LoadConfig:  loadConfig,
+		LoadConfig:  options.loadConfig,
 		WriteJSON:   writeJSON,
 	}))
 	rootCmd.AddCommand(commitcmd.New(commitcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 	}))
 	rootCmd.AddCommand(refcmd.New(refcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 	}))
 	rootCmd.AddCommand(projectcmd.New(projectcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
 		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) projectcmd.PermissionChecker {
@@ -233,8 +234,8 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(reviewercmd.New(reviewercmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
 		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) reviewercmd.PermissionChecker {
 			return options.permissionCheckerFor(client)
@@ -243,8 +244,8 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(reviewergroupcmd.New(reviewergroupcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
 		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) reviewergroupcmd.PermissionChecker {
 			return options.permissionCheckerFor(client)
@@ -253,8 +254,8 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(webhookcmd.New(webhookcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
 		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) webhookcmd.PermissionChecker {
 			return options.permissionCheckerFor(client)
@@ -262,13 +263,13 @@ your behalf using the link above.`,
 	}))
 	rootCmd.AddCommand(browsecmd.New(browsecmd.Dependencies{
 		JSONEnabled: func() bool { return options.JSON },
-		LoadConfig:  loadConfig,
+		LoadConfig:  options.loadConfig,
 		WriteJSON:   writeJSON,
 	}))
 	rootCmd.AddCommand(searchcmd.New(searchcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 	}))
@@ -279,8 +280,8 @@ your behalf using the link above.`,
 	}))
 	rootCmd.AddCommand(sshkeycmd.New(sshkeycmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
-		LoadConfig:          loadConfig,
-		LoadConfigAndClient: loadConfigAndClient,
+		LoadConfig:          options.loadConfig,
+		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 	}))
@@ -292,9 +293,15 @@ your behalf using the link above.`,
 }
 
 type rootOptions struct {
-	JSON              bool
-	DryRun            bool
-	NoColor           bool
+	JSON    bool
+	DryRun  bool
+	NoColor bool
+	// runtime carries the values the global flags supplied, resolved once in
+	// PersistentPreRunE. It lives here rather than in the environment so a flag
+	// outranks BB_* for this invocation instead of destroying it, and so the
+	// value does not outlive the command -- which matters for bb ai mcp serve
+	// (issue #458).
+	runtime           config.Overrides
 	permissionChecker *PermissionChecker
 }
 
@@ -308,14 +315,14 @@ func (options *rootOptions) permissionCheckerFor(client *openapigenerated.Client
 	return options.permissionChecker
 }
 
-func loadConfig() (config.AppConfig, error) {
-	return loadConfigWithOverrides(config.Overrides{})
+func (options *rootOptions) loadConfig() (config.AppConfig, error) {
+	return options.loadConfigWithOverrides(config.Overrides{})
 }
 
 // loadConfigWithOverrides is loadConfig for the commands that take a --host or
 // --token flag, which have to steer the resolution rather than inherit it.
-func loadConfigWithOverrides(overrides config.Overrides) (config.AppConfig, error) {
-	cfg, err := config.LoadWithOverrides(overrides)
+func (options *rootOptions) loadConfigWithOverrides(overrides config.Overrides) (config.AppConfig, error) {
+	cfg, err := config.LoadWithOverrides(options.merge(overrides))
 	if err != nil {
 		return config.AppConfig{}, err
 	}
@@ -342,7 +349,7 @@ var insecureTLSWarningOnce sync.Once
 
 var insecureStorageWarningOnce sync.Once
 
-func applyRuntimeFlagOverrides(cmd *cobra.Command) error {
+func (options *rootOptions) applyRuntimeFlagOverrides(cmd *cobra.Command) error {
 	if cmd == nil {
 		return nil
 	}
@@ -354,46 +361,56 @@ func applyRuntimeFlagOverrides(cmd *cobra.Command) error {
 		return cmd.PersistentFlags().Lookup(flagName)
 	}
 
-	setIfChanged := func(flagName, envKey string) {
+	// changedString returns the flag's value, or nil when it was not passed.
+	//
+	// The distinction is the whole point: nil leaves the environment its own
+	// precedence slot, where writing the flag into BB_* destroyed whatever the
+	// user had set. A flag passed empty is still a decision and is carried as
+	// an empty string rather than as nil.
+	changedString := func(flagName string) *string {
 		flag := lookupFlag(flagName)
 		if flag == nil || !flag.Changed {
-			return
+			return nil
 		}
-
 		value := strings.TrimSpace(flag.Value.String())
+		return &value
+	}
 
-		if value == "" {
-			_ = os.Unsetenv(envKey)
-			return
+	options.runtime.CAFile = changedString("ca-file")
+	options.runtime.ClientCert = changedString("client-cert")
+	options.runtime.ClientKey = changedString("client-key")
+	options.runtime.RequestTimeout = changedString("request-timeout")
+	options.runtime.RetryBackoff = changedString("retry-backoff")
+
+	if raw := changedString("insecure-skip-verify"); raw != nil {
+		value := strings.EqualFold(*raw, "true")
+		options.runtime.InsecureSkipVerify = &value
+	}
+	if raw := changedString("retry-count"); raw != nil {
+		value, err := strconv.Atoi(*raw)
+		if err != nil {
+			return apperrors.New(apperrors.KindValidation, "--retry-count must be an integer", err)
 		}
-
-		_ = os.Setenv(envKey, value)
+		options.runtime.RetryCount = &value
 	}
 
-	overrides := []struct {
-		flagName string
-		envKey   string
-	}{
-		{flagName: "ca-file", envKey: "BB_CA_FILE"},
-		{flagName: "insecure-skip-verify", envKey: "BB_INSECURE_SKIP_VERIFY"},
-		{flagName: "client-cert", envKey: "BB_CLIENT_CERT"},
-		{flagName: "client-key", envKey: "BB_CLIENT_KEY"},
-		{flagName: "request-timeout", envKey: "BB_REQUEST_TIMEOUT"},
-		{flagName: "retry-count", envKey: "BB_RETRY_COUNT"},
-		{flagName: "retry-backoff", envKey: "BB_RETRY_BACKOFF"},
-		{flagName: "log-level", envKey: "BB_LOG_LEVEL"},
-		{flagName: "log-format", envKey: "BB_LOG_FORMAT"},
-	}
-
-	for _, override := range overrides {
-		setIfChanged(override.flagName, override.envKey)
+	// Diagnostics is still read from the environment: it is consumed by
+	// package-level state in internal/diagnostics rather than through
+	// config.AppConfig, so it has no override to carry. Left for its own change.
+	for _, diagnostic := range []struct{ flagName, envKey string }{
+		{"log-level", "BB_LOG_LEVEL"},
+		{"log-format", "BB_LOG_FORMAT"},
+	} {
+		if value := changedString(diagnostic.flagName); value != nil && *value != "" {
+			_ = os.Setenv(diagnostic.envKey, *value)
+		}
 	}
 
 	return nil
 }
 
-func loadConfigAndClient() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
-	cfg, err := loadConfig()
+func (options *rootOptions) loadConfigAndClient() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+	cfg, err := options.loadConfig()
 	if err != nil {
 		return config.AppConfig{}, nil, err
 	}
@@ -406,8 +423,8 @@ func loadConfigAndClient() (config.AppConfig, *openapigenerated.ClientWithRespon
 	return cfg, client, nil
 }
 
-func loadQualityRepoAndService(selector string) (qualityservice.RepositoryRef, *qualityservice.Service, error) {
-	cfg, client, err := loadConfigAndClient()
+func (options *rootOptions) loadQualityRepoAndService(selector string) (qualityservice.RepositoryRef, *qualityservice.Service, error) {
+	cfg, client, err := options.loadConfigAndClient()
 	if err != nil {
 		return qualityservice.RepositoryRef{}, nil, err
 	}
@@ -460,4 +477,31 @@ func hasPositionalPlaceholder(use string) bool {
 		}
 	}
 	return false
+}
+
+// merge layers a command's own overrides on top of the invocation's flags.
+//
+// A command that takes --host or --token steers resolution for itself; the
+// global flags apply to every command. Both are per-invocation values now, so
+// the two compose here rather than racing to write the same environment
+// variable.
+func (options *rootOptions) merge(command config.Overrides) config.Overrides {
+	if options == nil {
+		return command
+	}
+
+	merged := options.runtime
+	if command.Host != "" {
+		merged.Host = command.Host
+	}
+	if command.Token != "" {
+		merged.Token = command.Token
+	}
+	if command.ProjectKey != "" {
+		merged.ProjectKey = command.ProjectKey
+	}
+	if command.RepoSlug != "" {
+		merged.RepoSlug = command.RepoSlug
+	}
+	return merged
 }

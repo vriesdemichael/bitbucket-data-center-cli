@@ -748,7 +748,7 @@ func TestLoadQualityRepoServiceAndClientReturnsSelectorValidationError(t *testin
 	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
 	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
 
-	_, _, err := loadQualityRepoAndService("bad-selector")
+	_, _, err := (&rootOptions{}).loadQualityRepoAndService("bad-selector")
 	if !apperrors.IsKind(err, apperrors.KindValidation) {
 		t.Fatalf("expected validation error, got: %v", err)
 	}
@@ -759,7 +759,7 @@ func TestLoadConfigAndClientPropagatesConfigValidationError(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "http://example.local")
 	t.Setenv("BB_CA_FILE", "/definitely/missing-ca.pem")
 
-	_, _, err := loadConfigAndClient()
+	_, _, err := (&rootOptions{}).loadConfigAndClient()
 	if !apperrors.IsKind(err, apperrors.KindValidation) {
 		t.Fatalf("expected validation error, got: %v", err)
 	}

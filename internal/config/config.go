@@ -55,6 +55,12 @@ type AppConfig struct {
 	// plaintext config fallback rather than the OS keyring. It is set only when
 	// such a credential is actually used, not merely present in the file.
 	UsedInsecureStorage bool
+
+	// flagSourced records which settings arrived from a command-line flag,
+	// keyed by the environment variable that would otherwise have supplied
+	// them. It exists so a validation failure can name the input the user
+	// actually used; see nameFor.
+	flagSourced map[string]bool
 }
 
 type StoredConfig struct {
@@ -208,6 +214,58 @@ type Overrides struct {
 	// Token supplies the credential directly, ahead of BITBUCKET_TOKEN and any
 	// stored credential.
 	Token string
+	// ProjectKey and RepoSlug carry a repository context resolved from the git
+	// remote, ahead of BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG.
+	ProjectKey string
+	RepoSlug   string
+
+	// Runtime settings supplied by a flag.
+	//
+	// These are pointers because "not passed" and "passed empty" are different:
+	// a flag left alone must let the environment keep its own precedence slot,
+	// which is the layer ADR-021 describes and the implementation did not have.
+	// They used to reach here by being written into BB_* with os.Setenv, which
+	// destroyed the user's real value rather than outranking it for one
+	// invocation.
+	CAFile             *string
+	InsecureSkipVerify *bool
+	ClientCert         *string
+	ClientKey          *string
+	RequestTimeout     *string
+	RetryCount         *int
+	RetryBackoff       *string
+}
+
+// runtimeSetting names one setting in both spellings, so an error can blame the
+// input the user actually used.
+//
+// A flag written into BB_* loses its origin, and validation then reports the
+// environment variable: `bb --retry-count -5` said "BB_RETRY_COUNT must be
+// greater than or equal to 0", sending the user to look for a variable they
+// never set. ADR-054 asks for a message naming the flag; this is what lets one
+// exist.
+type runtimeSetting struct {
+	environment string
+	flag        string
+}
+
+var (
+	settingCAFile             = runtimeSetting{"BB_CA_FILE", "--ca-file"}
+	settingInsecureSkipVerify = runtimeSetting{"BB_INSECURE_SKIP_VERIFY", "--insecure-skip-verify"}
+	settingClientCert         = runtimeSetting{"BB_CLIENT_CERT", "--client-cert"}
+	settingClientKey          = runtimeSetting{"BB_CLIENT_KEY", "--client-key"}
+	settingRequestTimeout     = runtimeSetting{"BB_REQUEST_TIMEOUT", "--request-timeout"}
+	settingRetryCount         = runtimeSetting{"BB_RETRY_COUNT", "--retry-count"}
+	settingRetryBackoff       = runtimeSetting{"BB_RETRY_BACKOFF", "--retry-backoff"}
+)
+
+// nameFor reports which spelling to use when reporting a problem with a
+// setting: the flag when the value came from one, the variable otherwise.
+func (config AppConfig) nameFor(setting runtimeSetting) string {
+	if config.flagSourced[setting.environment] {
+		return setting.flag
+	}
+	return setting.environment
 }
 
 // LoadFromEnv resolves configuration from the environment and stored
@@ -230,6 +288,11 @@ func firstNonEmpty(values ...string) string {
 func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 	loadDotEnv()
 
+	// flagSourced records which settings a flag supplied, so every message
+	// below can name the input the user actually used rather than the variable
+	// a flag was once written into.
+	flagSourced := map[string]bool{}
+
 	policy, err := LoadPolicy()
 	if err != nil {
 		return AppConfig{}, err
@@ -239,24 +302,27 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 	workspaceConfig, _ := LoadWorkspaceConfig()
 	storedConfig, _ := LoadStoredConfig()
 
-	tlsSettings, err := ResolveTLSSettingsFrom(policy, sysConfig)
+	tlsSettings, err := resolveTLSSettings(policy, sysConfig, overrides, flagSourced)
 	if err != nil {
 		return AppConfig{}, err
 	}
 
-	requestTimeout, err := envDurationOrDefault("BB_REQUEST_TIMEOUT", defaultRequestTimeout)
+	requestTimeout, err := resolveDuration(flagSourced, settingRequestTimeout, overrides.RequestTimeout, defaultRequestTimeout)
 	if err != nil {
-		return AppConfig{}, apperrors.New(apperrors.KindValidation, "BB_REQUEST_TIMEOUT must be a valid duration (example: 20s)", err)
+		return AppConfig{}, apperrors.New(apperrors.KindValidation,
+			nameOf(flagSourced, settingRequestTimeout)+" must be a valid duration (example: 20s)", err)
 	}
 
-	retryCount, err := envIntOrDefault("BB_RETRY_COUNT", defaultRetryCount)
+	retryCount, err := resolveInt(flagSourced, settingRetryCount, overrides.RetryCount, defaultRetryCount)
 	if err != nil {
-		return AppConfig{}, apperrors.New(apperrors.KindValidation, "BB_RETRY_COUNT must be a non-negative integer", err)
+		return AppConfig{}, apperrors.New(apperrors.KindValidation,
+			nameOf(flagSourced, settingRetryCount)+" must be a non-negative integer", err)
 	}
 
-	retryBackoff, err := envDurationOrDefault("BB_RETRY_BACKOFF", defaultRetryBackoff)
+	retryBackoff, err := resolveDuration(flagSourced, settingRetryBackoff, overrides.RetryBackoff, defaultRetryBackoff)
 	if err != nil {
-		return AppConfig{}, apperrors.New(apperrors.KindValidation, "BB_RETRY_BACKOFF must be a valid duration (example: 250ms)", err)
+		return AppConfig{}, apperrors.New(apperrors.KindValidation,
+			nameOf(flagSourced, settingRetryBackoff)+" must be a valid duration (example: 250ms)", err)
 	}
 
 	rawLogLevel := strings.TrimSpace(os.Getenv("BB_LOG_LEVEL"))
@@ -325,6 +391,7 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		LogFormat:              strings.ToLower(strings.TrimSpace(logFormat)),
 		DiagnosticsEnabled:     diagnosticsEnabled,
 		AuthSource:             "env/default",
+		flagSourced:            flagSourced,
 	}
 
 	if os.Getenv("BB_DISABLE_STORED_CONFIG") != "1" {
@@ -1096,16 +1163,23 @@ func ResolveTLSSettings() (TLSSettings, error) {
 
 // ResolveTLSSettingsFrom is ResolveTLSSettings for callers that have already
 // loaded policy and system configuration.
+// ResolveTLSSettingsFrom is ResolveTLSSettings for callers that have already
+// loaded policy and system configuration. overrides and sourced may be zero and
+// nil for a caller with no flags to apply.
 func ResolveTLSSettingsFrom(policy PolicyConfig, sysConfig SystemConfigFile) (TLSSettings, error) {
-	insecureSkipVerify, err := envBoolOrDefault("BB_INSECURE_SKIP_VERIFY", false)
+	return resolveTLSSettings(policy, sysConfig, Overrides{}, map[string]bool{})
+}
+
+func resolveTLSSettings(policy PolicyConfig, sysConfig SystemConfigFile, overrides Overrides, sourced map[string]bool) (TLSSettings, error) {
+	insecureSkipVerify, err := resolveBool(sourced, settingInsecureSkipVerify, overrides.InsecureSkipVerify, false)
 	if err != nil {
-		return TLSSettings{}, apperrors.New(apperrors.KindValidation, "BB_INSECURE_SKIP_VERIFY must be a boolean", err)
+		return TLSSettings{}, apperrors.New(apperrors.KindValidation, nameOf(sourced, settingInsecureSkipVerify)+" must be a boolean", err)
 	}
 	if policy.AllowInsecureSkipVerify != nil && !*policy.AllowInsecureSkipVerify && insecureSkipVerify {
 		return TLSSettings{}, apperrors.New(apperrors.KindAuthorization, "insecure TLS verification is disabled by administrative policy", nil)
 	}
 
-	caFile := strings.TrimSpace(os.Getenv("BB_CA_FILE"))
+	caFile := resolveString(sourced, settingCAFile, overrides.CAFile)
 	if policy.CAFile != "" {
 		if caFile == "" {
 			caFile = policy.CAFile
@@ -1123,8 +1197,8 @@ func ResolveTLSSettingsFrom(policy PolicyConfig, sysConfig SystemConfigFile) (TL
 	return TLSSettings{
 		CAFile:             caFile,
 		InsecureSkipVerify: insecureSkipVerify,
-		ClientCertFile:     strings.TrimSpace(os.Getenv("BB_CLIENT_CERT")),
-		ClientKeyFile:      strings.TrimSpace(os.Getenv("BB_CLIENT_KEY")),
+		ClientCertFile:     resolveString(sourced, settingClientCert, overrides.ClientCert),
+		ClientKeyFile:      resolveString(sourced, settingClientKey, overrides.ClientKey),
 	}, nil
 }
 
@@ -1594,15 +1668,15 @@ func (config AppConfig) Validate() error {
 	}
 
 	if config.RequestTimeout <= 0 {
-		return apperrors.New(apperrors.KindValidation, "BB_REQUEST_TIMEOUT must be greater than 0", nil)
+		return apperrors.New(apperrors.KindValidation, config.nameFor(settingRequestTimeout)+" must be greater than 0", nil)
 	}
 
 	if config.RetryCount < 0 {
-		return apperrors.New(apperrors.KindValidation, "BB_RETRY_COUNT must be greater than or equal to 0", nil)
+		return apperrors.New(apperrors.KindValidation, config.nameFor(settingRetryCount)+" must be greater than or equal to 0", nil)
 	}
 
 	if config.RetryBackoff <= 0 {
-		return apperrors.New(apperrors.KindValidation, "BB_RETRY_BACKOFF must be greater than 0", nil)
+		return apperrors.New(apperrors.KindValidation, config.nameFor(settingRetryBackoff)+" must be greater than 0", nil)
 	}
 
 	levelToValidate := strings.TrimSpace(config.LogLevel)
@@ -1624,30 +1698,30 @@ func (config AppConfig) Validate() error {
 	if config.CAFile != "" {
 		info, err := os.Stat(config.CAFile)
 		if err != nil {
-			return apperrors.New(apperrors.KindValidation, fmt.Sprintf("BB_CA_FILE is invalid: %q", config.CAFile), err)
+			return apperrors.New(apperrors.KindValidation, fmt.Sprintf("%s is invalid: %q", config.nameFor(settingCAFile), config.CAFile), err)
 		}
 		if info.IsDir() {
-			return apperrors.New(apperrors.KindValidation, "BB_CA_FILE must be a file path", nil)
+			return apperrors.New(apperrors.KindValidation, config.nameFor(settingCAFile)+" must be a file path", nil)
 		}
 	}
 
 	if config.ClientCertFile != "" || config.ClientKeyFile != "" {
 		if config.ClientCertFile == "" || config.ClientKeyFile == "" {
-			return apperrors.New(apperrors.KindValidation, "BB_CLIENT_CERT and BB_CLIENT_KEY must be set together", nil)
+			return apperrors.New(apperrors.KindValidation, config.nameFor(settingClientCert)+" and "+config.nameFor(settingClientKey)+" must be set together", nil)
 		}
 		certInfo, err := os.Stat(config.ClientCertFile)
 		if err != nil {
-			return apperrors.New(apperrors.KindValidation, fmt.Sprintf("BB_CLIENT_CERT is invalid: %q", config.ClientCertFile), err)
+			return apperrors.New(apperrors.KindValidation, fmt.Sprintf("%s is invalid: %q", config.nameFor(settingClientCert), config.ClientCertFile), err)
 		}
 		if certInfo.IsDir() {
-			return apperrors.New(apperrors.KindValidation, "BB_CLIENT_CERT must be a file path", nil)
+			return apperrors.New(apperrors.KindValidation, config.nameFor(settingClientCert)+" must be a file path", nil)
 		}
 		keyInfo, err := os.Stat(config.ClientKeyFile)
 		if err != nil {
-			return apperrors.New(apperrors.KindValidation, fmt.Sprintf("BB_CLIENT_KEY is invalid: %q", config.ClientKeyFile), err)
+			return apperrors.New(apperrors.KindValidation, fmt.Sprintf("%s is invalid: %q", config.nameFor(settingClientKey), config.ClientKeyFile), err)
 		}
 		if keyInfo.IsDir() {
-			return apperrors.New(apperrors.KindValidation, "BB_CLIENT_KEY must be a file path", nil)
+			return apperrors.New(apperrors.KindValidation, config.nameFor(settingClientKey)+" must be a file path", nil)
 		}
 	}
 
@@ -1908,4 +1982,65 @@ func mergeAliases(existing []string, additions []string) []string {
 	}
 
 	return merged
+}
+
+// nameOf reports which spelling to blame for a setting: the flag when the
+// value came from one, the environment variable otherwise.
+//
+// A flag written into BB_* loses its origin, and validation then reported the
+// variable: `bb --retry-count -5` said "BB_RETRY_COUNT must be greater than or
+// equal to 0", sending the user to look for something they never set. ADR-054
+// asks for a message naming the flag; this is what lets one exist.
+func nameOf(sourced map[string]bool, setting runtimeSetting) string {
+	if sourced[setting.environment] {
+		return setting.flag
+	}
+	return setting.environment
+}
+
+// resolveString picks a setting's value, recording a flag as its source.
+//
+// An override outranks the environment for this invocation only. Writing the
+// flag into the variable, as this used to, destroyed the user's own value
+// rather than outranking it, and left nothing able to tell the two apart.
+func resolveString(sourced map[string]bool, setting runtimeSetting, override *string) string {
+	if override != nil {
+		sourced[setting.environment] = true
+		return strings.TrimSpace(*override)
+	}
+	return strings.TrimSpace(os.Getenv(setting.environment))
+}
+
+// resolveDuration is resolveString for a duration, falling back to a default.
+func resolveDuration(sourced map[string]bool, setting runtimeSetting, override *string, fallback time.Duration) (time.Duration, error) {
+	if override == nil {
+		return envDurationOrDefault(setting.environment, fallback)
+	}
+
+	sourced[setting.environment] = true
+	raw := strings.TrimSpace(*override)
+	if raw == "" {
+		return fallback, nil
+	}
+	return time.ParseDuration(raw)
+}
+
+// resolveInt is resolveString for an integer, falling back to a default.
+func resolveInt(sourced map[string]bool, setting runtimeSetting, override *int, fallback int) (int, error) {
+	if override == nil {
+		return envIntOrDefault(setting.environment, fallback)
+	}
+
+	sourced[setting.environment] = true
+	return *override, nil
+}
+
+// resolveBool is resolveString for a boolean, falling back to a default.
+func resolveBool(sourced map[string]bool, setting runtimeSetting, override *bool, fallback bool) (bool, error) {
+	if override == nil {
+		return envBoolOrDefault(setting.environment, fallback)
+	}
+
+	sourced[setting.environment] = true
+	return *override, nil
 }

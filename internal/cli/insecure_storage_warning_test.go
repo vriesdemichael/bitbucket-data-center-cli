@@ -80,7 +80,7 @@ func TestLoadConfigWarnsOncePerProcessAboutPlaintextStorage(t *testing.T) {
 	t.Cleanup(func() { insecureStorageWarningOnce = sync.Once{} })
 
 	output := captureStderr(t, func() {
-		cfg, err := loadConfig()
+		cfg, err := (&rootOptions{}).loadConfig()
 		if err != nil {
 			t.Fatalf("loadConfig failed: %v", err)
 		}
@@ -89,7 +89,7 @@ func TestLoadConfigWarnsOncePerProcessAboutPlaintextStorage(t *testing.T) {
 		}
 
 		// A second load in the same process must stay quiet.
-		if _, err := loadConfig(); err != nil {
+		if _, err := (&rootOptions{}).loadConfig(); err != nil {
 			t.Fatalf("second loadConfig failed: %v", err)
 		}
 	})
