@@ -231,13 +231,36 @@ func FailureMessage(differences []string) string {
 // not this process at all. Prevention narrows the class; it does not close it.
 //
 // Guard calls os.Exit and does not return.
-// Guard is deliberately three lines. It ends in os.Exit, which cannot be called
-// from a test, so everything it decides lives in the two functions below where
-// it can be.
+// Guard is deliberately four lines. It ends in os.Exit, which cannot be called
+// from a test, so everything it decides lives in the functions below where it
+// can be.
 func Guard(m *testing.M) {
+	releaseInheritedRepository(os.Stderr)
 	placeRepositoryOutOfReach(os.Stderr)
 	before := SnapshotAmbientConfig()
 	os.Exit(exitCode(m.Run(), before, os.Stderr))
+}
+
+// releaseInheritedRepository drops the variables that name a repository
+// outright, so the ceiling placed below is the only thing left deciding what a
+// git command can reach.
+//
+// It has to come first, and it is not redundant with the ceiling. git exports
+// GIT_DIR to every hook it runs, absolute whenever the hook runs in a linked
+// worktree because no relative path reaches .git/worktrees/<name> from the
+// checkout. A git command that inherits it never searches upward, so no ceiling
+// can stop it: in a worktree the guard was installed, ran, and reached this
+// repository anyway, in the pre-commit hook of every commit made from one.
+//
+// Nothing here is fatal, for the same reason the ceiling is not. The comparison
+// is the guarantee; this narrows what can reach the repository before the
+// comparison has to notice.
+func releaseInheritedRepository(complaints io.Writer) bool {
+	if err := execgit.ClearRepositoryLocators(); err != nil {
+		fmt.Fprintf(complaints, "gittest: could not release the inherited repository: %v\n", err)
+		return false
+	}
+	return true
 }
 
 // placeRepositoryOutOfReach sets a ceiling at the repository root and returns
