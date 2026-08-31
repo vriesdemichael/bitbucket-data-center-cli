@@ -15,7 +15,7 @@ A PR is ready to open only when code is fully reviewable and local quality gates
 
 ## Agent Instructions
 
-Before opening a PR, run repository checks (task quality:check and relevant live tests), ensure no partial implementations, and remove TODO/FIXME/debug leftovers. Ask user confirmation before opening a PR. Before enabling auto-merge, ensure comments are resolved and required checks are green. Use rebase auto-merge when appropriate.
+Before opening a PR, run repository checks (task quality:verify and relevant live tests), ensure no partial implementations, and remove TODO/FIXME/debug leftovers. Ask user confirmation before opening a PR. Before enabling auto-merge, ensure comments are resolved and required checks are green. Use rebase auto-merge when appropriate.
 
 ## Rationale
 

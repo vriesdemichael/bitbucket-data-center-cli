@@ -62,6 +62,18 @@ tasks:
     desc: Export ADR markdown pages from decision YAML records
     cmd: go run ./tools/adr-markdown-export -in docs/decisions -out docs/site/adr
 
+  docs:export-bulk-schemas:
+    desc: Export JSON Schemas for bulk policy artifacts
+    cmd: go run ./tools/bulk-schema-export -out docs/reference/schemas
+
+  docs:export-config-schema:
+    desc: Export JSON Schema for bb configuration and policy files
+    cmd: go run ./tools/config-schema-export -out docs/reference/schemas
+
+  docs:export-output-schemas:
+    desc: Export per-command JSON output schemas for the bb.machine v2 envelope
+    cmd: go run ./tools/output-schema-export -out docs/reference/schemas/output
+
   docs:publish-bulk-schemas:
     desc: Publish bulk JSON schema files into MkDocs docs directory
     cmds:
@@ -165,23 +177,6 @@ tasks:
     desc: Validate ADR decision records with Go validator
     cmd: go run ./tools/adr-validator --validate
 
-  docs:export-bulk-schemas:
-    desc: Export JSON Schemas for bulk policy artifacts
-    cmd: go run ./tools/bulk-schema-export -out docs/reference/schemas
-
-  docs:export-config-schema:
-    desc: Export JSON Schema for bb configuration and policy files
-    cmd: go run ./tools/config-schema-export -out docs/reference/schemas
-
-  docs:export-output-schemas:
-    desc: Export per-command JSON output schemas for the bb.machine v2 envelope
-    cmd: go run ./tools/output-schema-export -out docs/reference/schemas/output
-
-  quality:check:
-    desc: Run core quality checks that need no Bitbucket instance
-    deps:
-      - quality:verify
-
   pr:rebase:
     desc: Rebase the current branch onto origin/main
     cmds:
@@ -189,7 +184,7 @@ tasks:
       - git rebase origin/main
 
   quality:verify:
-    desc: Run every quality gate that needs no Bitbucket instance (fast; the same set the CI jobs run before the live job)
+    desc: Run every gate a git hook can afford (seconds; the same set CI runs outside the live job)
     # The ordering claim in the description is load-bearing, so the list is kept
     # in step with .github/workflows/ci.yml deliberately. It had drifted in both
     # directions: openapi:verify, openapi:operation-paths:verify and
@@ -261,20 +256,16 @@ tasks:
         fi
 
   quality:coverage:
-    desc: Run combined (unit + live) global + patch coverage checks and generated-operation coverage metric
+    desc: Run the combined (unit + live) global and patch coverage gates. Needs the stack up
+    # COVERAGE_BASE_REF is the branch the patch gate diffs against, and it is a
+    # variable because the answer stopped being "main" when next arrived:
+    # working on a branch off the v4 integration branch means
+    # COVERAGE_BASE_REF=origin/next, or the whole divergence reads as the patch.
     cmds:
       - git fetch origin main
       - task: test:unit:coverage
       - task: test:live:coverage
       - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref {{.COVERAGE_BASE_REF}} -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}}
-
-  quality:coverage:origin-main:
-    desc: Run combined (unit + live) global + patch coverage gates against origin/main (requires live infra)
-    cmds:
-      - git fetch origin main
-      - task: test:unit:coverage
-      - task: test:live:coverage
-      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref origin/main -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}}
 
   quality:coverage:replay:
     desc: Re-run the coverage gates against the profiles already in .tmp/ (seconds; no tests, no live infra)
@@ -284,7 +275,7 @@ tasks:
       - sh: test -f .tmp/coverage.live.out
         msg: ".tmp/coverage.live.out is missing — run `task test:live:coverage` first (needs the stack up)"
     cmds:
-      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref origin/main -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}}
+      - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref {{.COVERAGE_BASE_REF}} -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}}
 
   quality:spec-coverage:
     desc: Print OpenAPI spec path coverage across both transports (generated client + raw httpclient)
@@ -318,10 +309,6 @@ tasks:
 
   test:unit:
     desc: Run Go unit tests
-    cmd: go test ./cmd/... ./internal/... ./tools/...
-
-  test:go:safe:
-    desc: Run targeted non-live Go tests over maintained Go packages
     cmd: go test ./cmd/... ./internal/... ./tools/...
 
   test:unit:coverage:

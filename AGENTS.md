@@ -31,7 +31,7 @@ These are small, readable in a diff, and verified by static analysis with no Bit
 diff in them is the point: it is how a reviewer sees that a command lost live coverage.
 
 Run `task quality:verify` for every gate that needs no Bitbucket instance, and
-`task quality:coverage:origin-main` for the full coverage gate when you want it locally. The latter
+`task quality:coverage` for the full coverage gate when you want it locally. The latter
 needs the stack up and takes about eight minutes; CI runs it on every pull request regardless.
 
 ### Iterating on patch coverage
