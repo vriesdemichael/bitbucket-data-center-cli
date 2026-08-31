@@ -90,14 +90,8 @@ rationale: >
   those the test does catch. Only running both sabotages told them apart, which is the argument for
   doing it rather than reasoning about it.
 
-  The set also had a hole in a direction nobody had looked. Two guards check that a record names
-  something real -- a test that exists, an MCP tool that was not removed -- and neither checked that
-  a record names a real record. ADR-065 shipped citing a record number that had never been
-  allocated to anything, and passed every check in this list. The guard was written against that
-  defect and observed to fail on it, which is the only reason it is trusted. It reads every ADR-NNN
-  in a record as a live citation and cannot tell one from a discussion of an absent record, so the
-  number itself is named beside the test rather than here -- the same split governanceTestsNamedIn
-  makes for deleted test names.
+  A record that cites a record which does not exist sends a reader nowhere. That is the same
+  failure as naming a test or a tool that was removed, and it is checked the same way.
 
   Keeping the list here rather than only in AGENTS.md is deliberate. Three guards were missed when
   the set was first inventoried by grepping for TestEvery and TestAll, because they follow neither
