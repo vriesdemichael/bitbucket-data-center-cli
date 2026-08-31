@@ -1,7 +1,8 @@
 number: 54
 title: Strict non-interactive CLI contract and fail-fast validation invariant
 category: architecture
-status: accepted
+status: superseded
+superseded_by: 73
 decision: >
   The `bb` CLI operates under a strict non-interactive contract across all commands and subcommands.
   Commands must never block on standard input (`os.Stdin` / `cmd.InOrStdin()`) to conduct interactive

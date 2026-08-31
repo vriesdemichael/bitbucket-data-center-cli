@@ -290,6 +290,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			var configData []byte
+			stdinRequested := len(args) > 0 && args[0] == "-"
 			if len(args) > 0 && args[0] != "-" {
 				configData = []byte(args[0])
 			} else if configFile != "" {
@@ -298,6 +299,14 @@ func New(deps Dependencies) *cobra.Command {
 					return fmt.Errorf("failed to read config file: %w", err)
 				}
 			} else {
+				// Only read stdin when the caller asked for it. An implicit
+				// fallback blocks forever when stdin is an open pipe with
+				// nothing coming, which is the shape a CI runner provides
+				// (ADR-073).
+				if !stdinRequested {
+					return apperrors.New(apperrors.KindValidation,
+						"no condition given: pass it as an argument, use --config-file, or pass - to read it from standard input", nil)
+				}
 				configData, err = io.ReadAll(cmd.InOrStdin())
 				if err != nil {
 					return fmt.Errorf("failed to read condition from stdin: %w", err)
@@ -458,6 +467,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			var configData []byte
+			stdinRequested := len(args) > 1 && args[1] == "-"
 			if len(args) > 1 && args[1] != "-" {
 				configData = []byte(args[1])
 			} else if configFile != "" {
@@ -466,6 +476,14 @@ func New(deps Dependencies) *cobra.Command {
 					return fmt.Errorf("failed to read config file: %w", err)
 				}
 			} else {
+				// Only read stdin when the caller asked for it. An implicit
+				// fallback blocks forever when stdin is an open pipe with
+				// nothing coming, which is the shape a CI runner provides
+				// (ADR-073).
+				if !stdinRequested {
+					return apperrors.New(apperrors.KindValidation,
+						"no condition given: pass it as an argument, use --config-file, or pass - to read it from standard input", nil)
+				}
 				configData, err = io.ReadAll(cmd.InOrStdin())
 				if err != nil {
 					return fmt.Errorf("failed to read condition from stdin: %w", err)

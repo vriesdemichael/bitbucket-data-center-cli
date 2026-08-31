@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -161,14 +162,19 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 		Use:   "clear",
 		Short: "Clear all personal GPG keys",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if !yesFlag && !isJSON() {
-				fmt.Fprint(cmd.OutOrStdout(), "Are you sure you want to clear all GPG keys? (y/N): ")
-				var response string
-				_, _ = fmt.Scanln(&response)
-				response = strings.ToLower(strings.TrimSpace(response))
-				if response != "y" && response != "yes" {
-					return apperrors.New(apperrors.KindValidation, "action cancelled", nil)
-				}
+			// This used to be a bare fmt.Scanln with no guard at all: it read
+			// the process's real stdin rather than the command's, so it hung on
+			// a CI runner and silently cancelled under an agent. ADR-073 routes
+			// every confirmation through one place that knows whether anyone is
+			// there to answer.
+			if err := prompt.ConfirmAction(prompt.Request{
+				In:            cmd.InOrStdin(),
+				Out:           cmd.OutOrStdout(),
+				Yes:           yesFlag,
+				Flag:          "--yes",
+				MachineOutput: isJSON(),
+			}, "clear all GPG keys"); err != nil {
+				return err
 			}
 
 			cfg, err := deps.LoadConfig()

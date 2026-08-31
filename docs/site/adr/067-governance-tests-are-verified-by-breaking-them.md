@@ -33,6 +33,7 @@ A governance test asserts an invariant about the codebase rather than a behaviou
    - TestVerbClassificationExemptionsNameRealCommands: an exemption names a real command and gives a reason.
    - TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit: a package running git installs the guard.
    - TestOnlyTheSharedHelperDecidesInteractivity: only the shared helper asks whether a stream is a terminal.
+   - TestOnlyExplicitlyRequestedStdinIsRead: no command reads standard input unless the caller asked.
    - TestGovernanceTestsNamedInThisRecordExist: this list names only tests that exist.
 
 ## Agent Instructions

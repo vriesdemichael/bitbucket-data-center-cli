@@ -5,7 +5,8 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `054`
 - Title: `Strict non-interactive CLI contract and fail-fast validation invariant`
 - Category: `architecture`
-- Status: `accepted`
+- Status: `superseded`
+- Superseded By: `073`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/054-strict-non-interactive-cli-contract.yaml`
 

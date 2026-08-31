@@ -263,17 +263,25 @@ func TestAuthGpgKeyCommandsAdditionalCoverage(t *testing.T) {
 				}, nil
 			},
 		}
+		// This used to swap os.Stdin for a pipe carrying "y\n", because the
+		// command read the process's stdin with a bare fmt.Scanln rather than
+		// its own. It now goes through prompt.ConfirmAction, which refuses when
+		// nobody is there to answer -- so what is asserted here is the refusal
+		// and the flag it names. Reading a typed answer is covered in
+		// internal/cli/prompt, where the environment is injectable.
 		cmd := New(deps)
-		oldStdin := os.Stdin
-		r, w, _ := os.Pipe()
-		os.Stdin = r
-		_, _ = w.Write([]byte("y\n"))
-		_ = w.Close()
+		out := new(bytes.Buffer)
+		cmd.SetOut(out)
+		cmd.SetErr(out)
+		cmd.SetIn(strings.NewReader("y\n"))
 		cmd.SetArgs([]string{"gpg-key", "clear"})
+
 		err := cmd.Execute()
-		os.Stdin = oldStdin
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
+		if err == nil {
+			t.Fatal("all GPG keys were cleared with no confirmation and no --yes")
+		}
+		if !strings.Contains(err.Error(), "--yes is required") {
+			t.Errorf("error = %q, want it to name the flag that would have confirmed", err.Error())
 		}
 	}
 }

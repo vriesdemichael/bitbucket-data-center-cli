@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	reposervice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
@@ -229,17 +230,20 @@ func newRepoForkCommand(deps Dependencies, repositorySelector *string, isAlias b
 
 func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias bool) *cobra.Command {
 	var localRepoSelector string
+	var confirmed bool
 
 	shortDesc := "Delete a repository"
-	longDesc := "Delete a repository.\n\nAlso available as bb repo admin delete."
+	longDesc := "Delete a repository.\n\nThe repository must be named explicitly, as a PROJECT/slug argument or with --repo.\n" +
+		"--yes is ignored otherwise: a safety flag that works on an inferred target is not one.\n\nAlso available as bb repo admin delete."
 	if isAlias {
 		longDesc = "Delete a repository.\n\nAlias for bb repo delete."
 	}
 
 	deleteCmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete [PROJECT/slug]",
 		Short: shortDesc,
 		Long:  longDesc,
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -249,6 +253,17 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 			selector := localRepoSelector
 			if repositorySelector != nil && *repositorySelector != "" {
 				selector = *repositorySelector
+			}
+
+			// A named target is the one the caller wrote down. The environment
+			// carries an inferred one too -- applyInferredRepositoryContext
+			// fills BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG from the git
+			// remote -- and that is indistinguishable from an operator setting
+			// them, so neither counts as naming the repository here (ADR-073).
+			targetExplicit := cmd.Flags().Changed("repo")
+			if len(args) == 1 {
+				selector = args[0]
+				targetExplicit = true
 			}
 			repoRef, err := resolveRepoReference(selector, cfg)
 			if err != nil {
@@ -291,12 +306,25 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
+			fullName := repoRef.ProjectKey + "/" + repoRef.Slug
+			if err := prompt.ConfirmDestructive(prompt.Request{
+				In:             cmd.InOrStdin(),
+				Out:            cmd.OutOrStdout(),
+				Yes:            confirmed,
+				TargetExplicit: targetExplicit,
+				Resource:       fullName,
+				Flag:           "--yes",
+				MachineOutput:  deps.JSONEnabled(),
+			}); err != nil {
+				return err
+			}
+
 			if err := service.Delete(cmd.Context(), repo); err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "repository": repoRef.ProjectKey + "/" + repoRef.Slug})
+				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "repository": fullName})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted repository"), style.Resource.Render(repoRef.ProjectKey+"/"+repoRef.Slug))
@@ -306,6 +334,7 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 	if repositorySelector == nil {
 		deleteCmd.Flags().StringVar(&localRepoSelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	}
+	deleteCmd.Flags().BoolVar(&confirmed, "yes", false, "Skip the confirmation. Only applies when the repository is named explicitly.")
 	return deleteCmd
 }
 
