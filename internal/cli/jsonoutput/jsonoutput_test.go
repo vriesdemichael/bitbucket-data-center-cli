@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
 
@@ -69,7 +70,7 @@ func TestEnvelopeSchemaFor(t *testing.T) {
 	if schema["$schema"] != jsonSchemaVersion {
 		t.Errorf("expected $schema=%q, got %q", jsonSchemaVersion, schema["$schema"])
 	}
-	expected := SchemaBaseURL + "test.schema.json"
+	expected := SchemaBaseURL(docsite.LatestVersion) + "test.schema.json"
 	if schema["$id"] != expected {
 		t.Errorf("expected $id=%q, got %q", expected, schema["$id"])
 	}
