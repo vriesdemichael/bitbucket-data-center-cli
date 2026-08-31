@@ -55,6 +55,8 @@ A governance test asserts an invariant about the codebase rather than a behaviou
      CI.
    - TestNoGateIsDefinedAndNeverRun: a task named like a check is reachable from something that
      runs it.
+   - TestEveryADRCrossReferenceResolves: a decision record does not cite a record that was
+     never written.
    - TestGovernanceTestsNamedInThisRecordExist: this list names only tests that exist.
 
 ## Agent Instructions
@@ -66,6 +68,7 @@ Break a governance test before adding it, and before trusting one you did not wr
 Two of the guards here had stopped guarding anything. TestAllMutatingCommandsHaveDryRunProfile asked whether every mutating command was registered in dryRunProfiles while defining "mutating" as "present in dryRunProfiles", so it asserted that the map contains what the map contains. It ran, passed, and held the slot for a check nobody had. Its replacement compares the classification against the command's own name, which is chosen by whoever adds the command and derived from nothing, so the two can disagree. It found a real ambiguity on its first run: "resolve" writes in `pr comment resolve` and reads in `ref resolve`.
 The MCP safety flag and the destructive annotation were checked one way only -- a gated tool claiming to be harmless failed, a tool exposed without --yolo while annotating itself destructive did not. The unguarded direction was the dangerous one, because the annotation is advice a client may ignore while the flag is what the server enforces. That pair is now derived rather than checked, which is the better answer wherever it is available.
 The exercise also separated two cases that read identically from the code. TestAllRunnableCommandsDeclareArgsPolicy looked tautological for the same reason as the first: enforceNoArgsDefaults fills in a missing policy immediately before the test reads it. It is not tautological -- the enforcer skips commands whose usage carries a positional placeholder, and those the test does catch. Only running both sabotages told them apart, which is the argument for doing it rather than reasoning about it.
+The set also had a hole in a direction nobody had looked. Two guards check that a record names something real -- a test that exists, an MCP tool that was not removed -- and neither checked that a record names a real record. ADR-065 shipped citing a record number that had never been allocated to anything, and passed every check in this list. The guard was written against that defect and observed to fail on it, which is the only reason it is trusted. It reads every ADR-NNN in a record as a live citation and cannot tell one from a discussion of an absent record, so the number itself is named beside the test rather than here -- the same split governanceTestsNamedIn makes for deleted test names.
 Keeping the list here rather than only in AGENTS.md is deliberate. Three guards were missed when the set was first inventoried by grepping for TestEvery and TestAll, because they follow neither convention. A list is only worth having if something checks it, which is why this one is checked.
 
 ## Rejected Alternatives
