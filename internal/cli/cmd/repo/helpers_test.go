@@ -25,6 +25,10 @@ func NewRootCommand() *cobra.Command {
 	root := &cobra.Command{Use: "bb"}
 	jsonFlag := root.PersistentFlags().Bool("json", false, "")
 	dryRunFlag := root.PersistentFlags().Bool("dry-run", false, "")
+	// Mirrors the real root (internal/cli/root.go). prompt.RequestFor reads this
+	// flag off the command, so a harness without it makes the flag untestable and
+	// the command behave differently here than it does for a user.
+	root.PersistentFlags().Bool("no-input", false, "")
 	deps := Dependencies{
 		JSONEnabled:       func() bool { return *jsonFlag },
 		DryRunEnabled:     func() bool { return *dryRunFlag },

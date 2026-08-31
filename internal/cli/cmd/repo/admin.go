@@ -8,6 +8,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
+	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	reposervice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
@@ -233,8 +234,10 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 	var confirmed bool
 
 	shortDesc := "Delete a repository"
-	longDesc := "Delete a repository.\n\nThe repository must be named explicitly, as a PROJECT/slug argument or with --repo.\n" +
-		"--yes is ignored otherwise: a safety flag that works on an inferred target is not one.\n\nAlso available as bb repo admin delete."
+	longDesc := "Delete a repository.\n\nName the repository as a PROJECT/slug argument or with --repo. Without one it is\n" +
+		"inferred from the git remote, and --yes does not apply to an inferred target:\n" +
+		"a safety flag that works on a target you did not name is not one. At a terminal\n" +
+		"the confirmation names what will be deleted.\n\nAlso available as bb repo admin delete."
 	if isAlias {
 		longDesc = "Delete a repository.\n\nAlias for bb repo delete."
 	}
@@ -262,6 +265,18 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 			// them, so neither counts as naming the repository here (ADR-073).
 			targetExplicit := cmd.Flags().Changed("repo")
 			if len(args) == 1 {
+				// Two named targets that disagree is not something to resolve
+				// by precedence. The caller believes one of them is about to be
+				// deleted and the other is; for an irreversible command that is
+				// worth stopping for, even though every other command here
+				// silently prefers the argument.
+				if targetExplicit && strings.TrimSpace(args[0]) != strings.TrimSpace(selector) {
+					return apperrors.New(
+						apperrors.KindValidation,
+						fmt.Sprintf("two different repositories named: %q as an argument and %q with --repo; pass one", args[0], selector),
+						nil,
+					)
+				}
 				selector = args[0]
 				targetExplicit = true
 			}
@@ -307,15 +322,12 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 			}
 
 			fullName := repoRef.ProjectKey + "/" + repoRef.Slug
-			if err := prompt.ConfirmDestructive(prompt.Request{
-				In:             cmd.InOrStdin(),
-				Out:            cmd.OutOrStdout(),
-				Yes:            confirmed,
-				TargetExplicit: targetExplicit,
-				Resource:       fullName,
-				Flag:           "--yes",
-				MachineOutput:  deps.JSONEnabled(),
-			}); err != nil {
+			request := prompt.RequestFor(cmd, deps.JSONEnabled())
+			request.Yes = confirmed
+			request.TargetExplicit = targetExplicit
+			request.Resource = fullName
+			request.Flag = "--yes"
+			if err := prompt.ConfirmDestructive(request); err != nil {
 				return err
 			}
 

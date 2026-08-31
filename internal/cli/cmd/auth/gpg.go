@@ -167,13 +167,10 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 			// a CI runner and silently cancelled under an agent. ADR-073 routes
 			// every confirmation through one place that knows whether anyone is
 			// there to answer.
-			if err := prompt.ConfirmAction(prompt.Request{
-				In:            cmd.InOrStdin(),
-				Out:           cmd.OutOrStdout(),
-				Yes:           yesFlag,
-				Flag:          "--yes",
-				MachineOutput: isJSON(),
-			}, "clear all GPG keys"); err != nil {
+			request := prompt.RequestFor(cmd, isJSON())
+			request.Yes = yesFlag
+			request.Flag = "--yes"
+			if err := prompt.ConfirmAction(request, "clear all GPG keys"); err != nil {
 				return err
 			}
 

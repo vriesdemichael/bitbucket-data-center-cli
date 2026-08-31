@@ -11,6 +11,9 @@ decision: >
   fall back to a default, and it does not run with the value blank. This is the nuance ADR-054
   missed: it read "do not prompt" as "do not ask", which is right, and no record said the
   non-interactive path must still complain.
+  Machine-readable output is not a confirmation. --json used to skip the question and act; it now
+  refuses like any other caller with nobody to ask, because a format flag saying nothing about
+  intent should not be the thing that authorises a deletion.
   Destructive commands confirm when a person is present and require --yes when not. A confirmation of
   something irreversible asks for the resource name, not a keystroke. --yes is inert unless the target
   is named explicitly: a safety flag that works on an inferred target is not a safety flag.
