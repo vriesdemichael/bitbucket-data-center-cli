@@ -86,7 +86,7 @@ func TestRepoAdminCLICommandsMock(t *testing.T) {
 	}
 
 	// Delete
-	out, err = executeTestCLI(t, "repo", "admin", "delete")
+	out, err = executeTestCLI(t, "repo", "admin", "delete", "PRJ/repo", "--yes")
 	if err != nil {
 		t.Fatalf("delete failed: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestRepoAdminCLICommandsMock(t *testing.T) {
 		t.Fatalf("unexpected delete output: %s", out)
 	}
 
-	out, err = executeTestCLI(t, "--json", "repo", "admin", "delete")
+	out, err = executeTestCLI(t, "--json", "repo", "admin", "delete", "PRJ/repo", "--yes")
 	if err != nil {
 		t.Fatalf("delete json failed: %v", err)
 	}
@@ -176,11 +176,11 @@ func TestRepoCanonicalCRUDAndAliasEquivalence(t *testing.T) {
 	}
 
 	// Canonical Delete vs Alias Delete
-	outCanonical, err = executeTestCLI(t, "repo", "delete")
+	outCanonical, err = executeTestCLI(t, "repo", "delete", "PRJ/repo", "--yes")
 	if err != nil {
 		t.Fatalf("canonical delete failed: %v", err)
 	}
-	outAlias, err = executeTestCLI(t, "repo", "admin", "delete")
+	outAlias, err = executeTestCLI(t, "repo", "admin", "delete", "PRJ/repo", "--yes")
 	if err != nil {
 		t.Fatalf("alias delete failed: %v", err)
 	}

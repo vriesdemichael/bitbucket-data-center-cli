@@ -876,13 +876,21 @@ func newRepoEditCommand(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
+			// Reading stdin requires --content -, never an empty --content.
+			// The implicit fallback blocked forever when stdin was an open pipe
+			// with nothing coming -- the shape a CI runner provides -- and under
+			// an agent it returned nothing instead, committing an empty file
+			// over the real one. Both are ADR-073's reason for the rule.
 			editContent := content
-			if editContent == "" {
+			if content == "-" {
 				inBytes, err := io.ReadAll(cmd.InOrStdin())
 				if err != nil {
 					return err
 				}
 				editContent = string(inBytes)
+			} else if content == "" {
+				return apperrors.New(apperrors.KindValidation,
+					"no content given: pass --content, or --content - to read the file body from standard input", nil)
 			}
 
 			res, err := service.Edit(cmd.Context(), repo, args[0], browseservice.EditInput{

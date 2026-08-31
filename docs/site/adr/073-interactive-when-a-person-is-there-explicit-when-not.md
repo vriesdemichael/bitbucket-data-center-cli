@@ -1,0 +1,29 @@
+# ADR 073: Interactive when a person is there, explicit when not
+
+This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
+
+- Number: `073`
+- Title: `Interactive when a person is there, explicit when not`
+- Category: `architecture`
+- Status: `accepted`
+- Supersedes: `054`
+- Provenance: `guided-ai`
+- Source: `docs/decisions/073-interactive-when-a-person-is-there-explicit-when-not.yaml`
+
+## Decision
+
+bb may prompt, and never guesses whether it should. interactive.Detect (ADR-072) decides; a command never asks that question itself. Refusing to prompt is not the same as proceeding. When Detect refuses and a required value is missing, the command fails with a message naming the flag that would have supplied it. It does not fall back to a default, and it does not run with the value blank. This is the nuance ADR-054 missed: it read "do not prompt" as "do not ask", which is right, and no record said the non-interactive path must still complain. Destructive commands confirm when a person is present and require --yes when not. A confirmation of something irreversible asks for the resource name, not a keystroke. --yes is inert unless the target is named explicitly: a safety flag that works on an inferred target is not a safety flag. No command reads standard input unless the caller asked it to, with a `-` argument or a named --*-stdin flag. An implicit fallback to stdin is prohibited even where nothing is printed, because stdin held open with no data is indistinguishable from stdin about to deliver data. Kept from ADR-054: missing or ambiguous input terminates with a non-zero exit and an actionable message, and every command stays completely drivable by flags, pipes and environment variables.
+
+## Agent Instructions
+
+Call interactive.Detect before prompting. Never test isatty in a command, and never add an environment check beside a prompt. When Detect refuses, return an error naming the flag. Never substitute a default for a value a person would have been asked for. Prompt through internal/cli/prompt. Do not add a prompt package or hand-roll a scan. Give every destructive command an explicit target argument, and make --yes inert without one. Do not read stdin without an explicit `-` or a --*-stdin flag.
+
+## Rationale
+
+ADR-054 was right about the hazard and wrong about the remedy, and its own worked example proves it. It named bb repo delete as a command made safe by explicit flags, target arguments or --dry-run. That command has none of the three: no positional argument, no --yes, and --repo is filled in from the git remote, so it deletes the repository you are standing in with no arguments at all. A blanket ban also failed to reach the thing that actually hangs. Prompts are visible and get reviewed; an unguarded read of stdin is neither, and three of them plus a bare Scanln were in the tree while the record said the contract was strict. Forbidding prompts and saying nothing about reads guarded the wrong half. What makes prompting safe is not detection, which ADR-072 shows cannot be trusted on its own, but that the non-interactive path is complete: it refuses, says which flag is missing, and exits. An agent that meets that message can fix its own call, which is worth more than never being asked.
+
+## Rejected Alternatives
+
+- `Keep the blanket ban and fix bb repo delete with a target argument`: Closes the one example and leaves the rule that produced it. The ban also drove a confirmation into a bare Scanln with no guard, which is the shape it was meant to prevent.
+- `Prompt whenever a terminal is attached, without an escape hatch`: A terminal is not evidence that anyone will answer; ADR-072 has the measurements.
+- `Let a refused prompt fall back to a safe default`: Silently proceeds with a value nobody chose. Refusing to ask is not permission to guess.
