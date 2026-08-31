@@ -165,6 +165,34 @@ git add docs/quality/spec-coverage.json
 
 CI verifies it via `task quality:spec-coverage:verify` (CI-safe, no live infra).
 
+### Adding a governance test: break it first
+
+A governance test asserts an invariant about the codebase rather than a
+behaviour — every command is classified, every MCP tool has a scope rule, no
+decision record names a tool that does not exist. They are the strongest thing
+here, and their failure mode is silent: one that has stopped guarding still runs,
+still passes, and still occupies the slot.
+
+Before you add one, and before you trust one you did not write, break the thing
+it guards and confirm it fails. Then write down the invariant, what breaks it,
+and that you saw it fail.
+
+Two have already been found tautological this way. `TestAllMutatingCommandsHaveDryRunProfile`
+asked whether every mutating command was in `dryRunProfiles` while defining
+"mutating" as "in `dryRunProfiles`", so it could not fail; it is now
+`TestCommandVerbsAgreeWithTheirDryRunClassification`, which compares the
+classification against the command name — a signal from outside the registry.
+`TestAllRunnableCommandsDeclareArgsPolicy` looked tautological for the same
+reason, because `enforceNoArgsDefaults` fills in a missing policy immediately
+before the test reads it; it turned out to guard the narrower case the enforcer
+skips, a command whose `Use` carries a positional placeholder. The sabotage is
+what told the two apart.
+
+Where the sabotage can be expressed as a test, write it as one — see
+`TestCommandVerbClassificationDetectsAMisplacedCommand` and
+`TestParityComparisonDetectsDrift`. That turns "verified once" into something CI
+re-verifies.
+
 ### When running tests also uncovers a broken test
 
 If the rebase brought in API changes from `main` (e.g. a command's flag changed from `--host` to a positional argument), tests added on the branch may need updating. Fix them in the same amend so history stays clean.
