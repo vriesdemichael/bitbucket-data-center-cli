@@ -132,3 +132,39 @@ func containsEnvVar(environment []string, name string) bool {
 	}
 	return false
 }
+
+func TestClearRepositoryLocatorsRemovesEveryLocator(t *testing.T) {
+	for _, name := range repositoryLocatorVars {
+		t.Setenv(name, "/somewhere/else")
+	}
+	t.Setenv("BB_EXECGIT_SENTINEL", "kept")
+
+	if err := ClearRepositoryLocators(); err != nil {
+		t.Fatalf("ClearRepositoryLocators: %v", err)
+	}
+
+	for _, name := range repositoryLocatorVars {
+		if value, set := os.LookupEnv(name); set {
+			t.Errorf("%s survived as %q; a git command started anywhere would still go there", name, value)
+		}
+	}
+
+	if os.Getenv("BB_EXECGIT_SENTINEL") != "kept" {
+		t.Error("unrelated environment variables must be preserved")
+	}
+}
+
+// The ceiling bounds a search rather than naming a repository, and a caller
+// that has set one is relying on it to still be there after the locators go.
+func TestClearRepositoryLocatorsLeavesTheCeilingAlone(t *testing.T) {
+	t.Setenv("GIT_DIR", "/somewhere/else/.git")
+	t.Setenv("GIT_CEILING_DIRECTORIES", "/somewhere")
+
+	if err := ClearRepositoryLocators(); err != nil {
+		t.Fatalf("ClearRepositoryLocators: %v", err)
+	}
+
+	if got := os.Getenv("GIT_CEILING_DIRECTORIES"); got != "/somewhere" {
+		t.Errorf("GIT_CEILING_DIRECTORIES = %q, want it untouched", got)
+	}
+}
