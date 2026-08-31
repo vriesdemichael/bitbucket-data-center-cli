@@ -265,3 +265,18 @@ func TestBothTerminalsPermitPrompting(t *testing.T) {
 		t.Fatalf("prompting was refused because %q; a clean environment on two terminals should permit it", decision.Reason)
 	}
 }
+
+// TestIsTerminalOnARealFile covers the descriptor check itself.
+//
+// os.Stdin is an *os.File under `go test` but not a terminal, so this reaches
+// the syscall and asserts the answer rather than the type switch above it.
+func TestIsTerminalOnARealFile(t *testing.T) {
+	t.Parallel()
+
+	if isTerminal(os.Stdin) {
+		t.Error("os.Stdin reported as a terminal under go test")
+	}
+	if isTerminal(&bytes.Buffer{}) {
+		t.Error("a buffer reported as a terminal")
+	}
+}
