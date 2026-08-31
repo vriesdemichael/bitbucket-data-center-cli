@@ -306,3 +306,76 @@ func repositoryRoot(t *testing.T) string {
 		directory = parent
 	}
 }
+
+// gateNamePattern matches the tasks that look like checks rather than actions.
+//
+// A heuristic, and deliberately a loose one: a task whose name says verify,
+// lint, vulncheck or ensure is claiming to enforce something, and a claim
+// nothing runs is worse than no claim.
+var gateNamePattern = regexp.MustCompile(`(verify|lint|vulncheck|ensure)`)
+
+// TestNoGateIsDefinedAndNeverRun closes the hole the parity test above leaves.
+//
+// That test compares the local and CI lists to each other. A gate present in
+// neither satisfies it perfectly: both sides agree, and the check runs nowhere.
+// Adding a task and forgetting to wire it up is the easiest mistake to make
+// here and the only one that produces no signal at all -- the task exists, it
+// passes when run by hand, and nothing ever runs it.
+func TestNoGateIsDefinedAndNeverRun(t *testing.T) {
+	root := repositoryRoot(t)
+
+	defined := gateShapedTasks(t, filepath.Join(root, taskfilePath))
+	if len(defined) < 5 {
+		t.Fatalf("expected several gate-shaped tasks, found %v; the parser has stopped matching", defined)
+	}
+
+	references := taskReferences(t, filepath.Join(root, taskfilePath))
+	reachable := map[string]struct{}{}
+	for _, name := range closure(localEntryPoints(t, filepath.Join(root, lefthookPath)), references) {
+		reachable[name] = struct{}{}
+	}
+	for _, name := range closure(ciEntryPoints(t, filepath.Join(root, ciWorkflowPath)), references) {
+		reachable[name] = struct{}{}
+	}
+	// A task that only delegates is reachable through the tasks it delegates
+	// to, which the closure already flattened away.
+	for name := range references {
+		reachable[name] = struct{}{}
+	}
+
+	for _, gate := range defined {
+		if _, ok := reachable[gate]; ok {
+			continue
+		}
+		if reason, exempt := exemptFromParity[gate]; exempt {
+			t.Logf("%s is not wired up, by design: %s", gate, reason)
+			continue
+		}
+		t.Errorf(
+			"task %q is named like a gate and nothing runs it.\n"+
+				"Add it to quality:verify, or to a CI job if it needs a Bitbucket instance,\n"+
+				"or rename it if it is not a check.",
+			gate,
+		)
+	}
+}
+
+// gateShapedTasks lists the Taskfile tasks whose names claim to check something.
+func gateShapedTasks(t *testing.T, path string) []string {
+	t.Helper()
+
+	header := regexp.MustCompile(`^  ([a-z0-9:._-]+):\s*$`)
+
+	names := []string{}
+	for _, line := range readLines(t, path) {
+		match := header.FindStringSubmatch(line)
+		if match == nil {
+			continue
+		}
+		if gateNamePattern.MatchString(match[1]) {
+			names = append(names, match[1])
+		}
+	}
+
+	return normalise(names)
+}

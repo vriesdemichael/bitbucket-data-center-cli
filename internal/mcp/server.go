@@ -81,6 +81,15 @@ type Spec struct {
 // by construction rather than by wrapping non-objects at the choke point, which
 // is what this package did before (issue #416, ADR-061).
 func toolSpec[In, Out any](tool *mcp.Tool, safe bool, handler func(Clients) mcp.ToolHandlerFor[In, Out]) Spec {
+	// DestructiveHint is derived, never declared. It and Safe answer the same
+	// question, so declaring both invites them to disagree; deriving makes the
+	// contradiction unrepresentable rather than merely tested for.
+	if tool.Annotations == nil {
+		tool.Annotations = &mcp.ToolAnnotations{}
+	}
+	destructive := !safe
+	tool.Annotations.DestructiveHint = &destructive
+
 	return Spec{
 		Tool: tool,
 		Safe: safe,
@@ -120,16 +129,24 @@ func enumInputSchema[In any](enums map[string][]string) *jsonschema.Schema {
 	return schema
 }
 
-// readOnly and mutating build the annotations an MCP client reads to decide how
-// much ceremony a tool call deserves. They mirror the Safe classification a
-// level up: everything withheld without --yolo is destructive, but not
-// everything destructive-free is read-only — creating a pull request writes.
+// readOnly and mutating say whether a tool writes at all. That is the one thing
+// they say: DestructiveHint is not set here, because it answers the same
+// question as Safe and is derived from it in toolSpec.
+//
+// Two hand-written answers to "is this dangerous" can disagree, and the
+// disagreement points the wrong way. Safe is what the server enforces;
+// DestructiveHint is advice a client may ignore. A tool exposed without --yolo
+// while annotating itself destructive would hand an agent something it was
+// never gated on, and only one of the two directions was ever checked.
+//
+// Writing is not the same question as destroying, so this distinction stays:
+// create_pull_request writes and destroys nothing.
 func readOnly() *mcp.ToolAnnotations {
 	return &mcp.ToolAnnotations{ReadOnlyHint: true}
 }
 
-func mutating(destructive bool) *mcp.ToolAnnotations {
-	return &mcp.ToolAnnotations{DestructiveHint: &destructive}
+func mutating() *mcp.ToolAnnotations {
+	return &mcp.ToolAnnotations{}
 }
 
 // AllSpecs returns the full catalog of MCP tool specifications in stable order.
