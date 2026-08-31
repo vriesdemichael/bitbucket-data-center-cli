@@ -166,7 +166,7 @@ func specCreatePullRequest() Spec {
 	tool := &mcp.Tool{
 		Name:        "create_pull_request",
 		Description: "Create a new pull request.",
-		Annotations: mutating(false),
+		Annotations: mutating(),
 	}
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[CreatePullRequestInput, PullRequestOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
@@ -294,7 +294,7 @@ func specAddPRComment() Spec {
 		Description: "Add a comment to a pull request. Provide path and line to create an inline comment on a specific file line. Provide parent_id to reply to an existing comment.",
 		// No enum on line_type: commentanchor.Validate owns that vocabulary and
 		// reports a better message than a schema violation would.
-		Annotations: mutating(false),
+		Annotations: mutating(),
 	}
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[AddPRCommentInput, AddPRCommentOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
@@ -347,7 +347,7 @@ func specSubmitPRReview() Spec {
 	tool := &mcp.Tool{
 		Name:        "submit_pr_review",
 		Description: "Set review status on a pull request: approve, unapprove, or request changes (needs_work).",
-		Annotations: mutating(true),
+		Annotations: mutating(),
 		InputSchema: enumInputSchema[SubmitPRReviewInput](map[string][]string{
 			"action": {"approve", "unapprove", "needs_work"},
 		}),
@@ -391,7 +391,7 @@ func specMergePullRequest() Spec {
 	tool := &mcp.Tool{
 		Name:        "merge_pull_request",
 		Description: "Merge a pull request. All required build checks must pass and all reviewers must have approved.",
-		Annotations: mutating(true),
+		Annotations: mutating(),
 	}
 	return toolSpec(tool, false, func(c Clients) mcp.ToolHandlerFor[MergePullRequestInput, PullRequestOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
@@ -426,7 +426,7 @@ func specEnableAutoMerge() Spec {
 	tool := &mcp.Tool{
 		Name:        "enable_auto_merge",
 		Description: "Enable auto-merge on a pull request. The PR will be merged automatically once all required checks pass and reviewers have approved. Requires Bitbucket DC 8.0+.",
-		Annotations: mutating(true),
+		Annotations: mutating(),
 		InputSchema: enumInputSchema[EnableAutoMergeInput](map[string][]string{
 			"strategy": {"no-ff", "ff-only", "rebase-no-ff", "rebase-ff-only", "squash", "squash-ff-only"},
 		}),
@@ -462,7 +462,7 @@ func specDisableAutoMerge() Spec {
 	tool := &mcp.Tool{
 		Name:        "disable_auto_merge",
 		Description: "Disable auto-merge on a pull request. The PR will no longer be merged automatically.",
-		Annotations: mutating(false),
+		Annotations: mutating(),
 	}
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[DisableAutoMergeInput, AutoMergeOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
@@ -607,7 +607,7 @@ func specUpdatePullRequest() Spec {
 		Description: "Update a pull request's title, description, or draft state. Use draft=false to mark a " +
 			"draft pull request ready for review. Requires the current version from get_pull_request for optimistic " +
 			"locking; a stale version is rejected rather than overwriting someone else's edit.",
-		Annotations: mutating(false),
+		Annotations: mutating(),
 	}
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[UpdatePullRequestInput, PullRequestOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)

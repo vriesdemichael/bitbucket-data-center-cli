@@ -62,7 +62,7 @@ func specSetBuildStatus() Spec {
 	tool := &mcp.Tool{
 		Name:        "set_build_status",
 		Description: "Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views.",
-		Annotations: mutating(true),
+		Annotations: mutating(),
 		InputSchema: enumInputSchema[SetBuildStatusInput](map[string][]string{
 			"state": {"SUCCESSFUL", "FAILED", "INPROGRESS"},
 		}),
