@@ -3,6 +3,7 @@ package prompt
 import (
 	"bytes"
 	"errors"
+	"io"
 	"strings"
 	"testing"
 	"testing/iotest"
@@ -340,5 +341,132 @@ func TestACommandWithoutTheFlagStillWorks(t *testing.T) {
 	request := RequestFor(&cobra.Command{Use: "x"}, false)
 	if request.Disabled {
 		t.Error("Disabled was set for a command that has no --no-input flag")
+	}
+}
+
+// TestFillMissingAsksForEachAbsentValue covers the prompting half.
+//
+// Under `go test` the gate always refuses, so without the decide seam every
+// line below the refusal is unreachable -- and unreachable code in the one
+// place that asks a person for input is exactly what should not go unchecked.
+func TestFillMissingAsksForEachAbsentValue(t *testing.T) {
+	allowPrompting(t)
+
+	var fromRef, toRef, title string
+	out := &bytes.Buffer{}
+
+	err := FillMissing(Request{
+		In:  strings.NewReader("feature\nmain\nMy change\n"),
+		Out: out,
+	}, []Missing{
+		{Flag: "--from-ref", Question: "Source branch", Value: &fromRef},
+		{Flag: "--to-ref", Question: "Target branch", Value: &toRef},
+		{Flag: "--title", Question: "Title", Value: &title},
+	})
+	if err != nil {
+		t.Fatalf("filling from answers failed: %v", err)
+	}
+
+	for _, got := range []struct{ name, value, want string }{
+		{"from-ref", fromRef, "feature"},
+		{"to-ref", toRef, "main"},
+		{"title", title, "My change"},
+	} {
+		if got.value != got.want {
+			t.Errorf("%s = %q, want %q", got.name, got.value, got.want)
+		}
+	}
+
+	// Each question is asked, in order, naming what it wants.
+	asked := out.String()
+	for _, question := range []string{"Source branch", "Target branch", "Title"} {
+		if !strings.Contains(asked, question) {
+			t.Errorf("never asked for %q: %q", question, asked)
+		}
+	}
+}
+
+// TestFillMissingOnlyAsksForWhatIsAbsent guards against re-asking.
+func TestFillMissingOnlyAsksForWhatIsAbsent(t *testing.T) {
+	allowPrompting(t)
+
+	supplied := "already given"
+	var title string
+	out := &bytes.Buffer{}
+
+	if err := FillMissing(Request{In: strings.NewReader("My change\n"), Out: out}, []Missing{
+		{Flag: "--from-ref", Question: "Source branch", Value: &supplied},
+		{Flag: "--title", Question: "Title", Value: &title},
+	}); err != nil {
+		t.Fatalf("filling failed: %v", err)
+	}
+
+	if supplied != "already given" {
+		t.Errorf("a supplied value was overwritten with %q", supplied)
+	}
+	if title != "My change" {
+		t.Errorf("title = %q, want the typed answer", title)
+	}
+	if strings.Contains(out.String(), "Source branch") {
+		t.Errorf("asked for a value that was already supplied: %q", out.String())
+	}
+}
+
+// TestFillMissingRefusesAnEmptyAnswer is ADR-073's rule that refusing to ask is
+// not permission to guess -- and neither is being answered with nothing.
+func TestFillMissingRefusesAnEmptyAnswer(t *testing.T) {
+	allowPrompting(t)
+
+	var title string
+	err := FillMissing(Request{In: strings.NewReader("\n"), Out: &bytes.Buffer{}}, []Missing{
+		{Flag: "--title", Question: "Title", Value: &title},
+	})
+	if err == nil {
+		t.Fatal("an empty answer was accepted as a value")
+	}
+	if !strings.Contains(err.Error(), "--title") {
+		t.Errorf("error = %q, want it to name the flag", err.Error())
+	}
+	if title != "" {
+		t.Errorf("title = %q, want it left alone", title)
+	}
+}
+
+// TestFillMissingWithNothingAbsentAsksNothing covers the early return.
+func TestFillMissingWithNothingAbsentAsksNothing(t *testing.T) {
+	value := "given"
+	out := &bytes.Buffer{}
+
+	// No seam: with nothing missing this must not reach the gate at all, or a
+	// complete invocation would fail wherever nobody can answer.
+	if err := FillMissing(Request{
+		In:  iotest.ErrReader(errors.New("stdin must not be read when nothing is missing")),
+		Out: out,
+	}, []Missing{{Flag: "--title", Question: "Title", Value: &value}}); err != nil {
+		t.Fatalf("a complete invocation was refused: %v", err)
+	}
+	if out.Len() != 0 {
+		t.Errorf("a question was asked with nothing missing: %q", out.String())
+	}
+}
+
+// TestReadsThatFailAreReported covers the error branches of both readers.
+func TestReadsThatFailAreReported(t *testing.T) {
+	allowPrompting(t)
+
+	broken := func() io.Reader { return iotest.ErrReader(errors.New("stdin exploded")) }
+
+	if err := confirmYesNo(broken(), &bytes.Buffer{}, "do the thing"); err == nil {
+		t.Error("a failed read was treated as a yes")
+	}
+	if err := confirmDeletion(broken(), &bytes.Buffer{}, "PRJ/demo"); err == nil {
+		t.Error("a failed read was treated as a confirmation")
+	}
+
+	var title string
+	if err := FillMissing(Request{In: broken(), Out: &bytes.Buffer{}}, []Missing{
+		{Flag: "--title", Question: "Title", Value: &title},
+	}); err == nil {
+		t.Error("a failed read was treated as an answer")
 	}
 }
