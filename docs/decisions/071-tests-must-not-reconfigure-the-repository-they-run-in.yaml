@@ -6,6 +6,10 @@ decision: >
   A test that shells out to git operates on a directory it created, never on the working copy. Any
   package whose tests start a git process installs the guard in internal/git/gittest, which snapshots
   the ambient git configuration before the run and fails the package if it differs after.
+  Guard also places the repository out of git's reach for the run, by setting a ceiling at its
+  root, so a command that would find it by searching upward fails instead. Both incidents took
+  that shape. Prevention narrows the class; the comparison stays, because an explicit path still
+  reaches the repository and a sibling worktree is not this process at all.
   The guard reports; it does not repair. It compares before and after rather than checking a list of
   forbidden keys, so a key nobody anticipated is still caught, and it scrubs the git environment
   variables that would otherwise leak scope into a subprocess.
@@ -14,6 +18,8 @@ decision: >
 agent_instructions: >
   Create a temporary repository for any test that runs git. Never point one at the working copy, and
   never at a path derived from the working directory.
+  Install it as func TestMain(m *testing.M) { gittest.Guard(m) }. Do not hand-write the snapshot
+  and comparison; a copied block drifts.
   Add the guard when you add the first git-invoking test to a package. The governance test computes
   the set and will tell you.
   If the guard fires, believe it and find the write. Do not make it repair what it found, and do not

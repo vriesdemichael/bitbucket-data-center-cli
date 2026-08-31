@@ -34,9 +34,12 @@
 package gittest
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
+	"testing"
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/execgit"
 )
@@ -203,4 +206,74 @@ func FailureMessage(differences []string) string {
 	)
 
 	return message.String()
+}
+
+// Guard runs a package's tests with the ambient repository placed out of reach,
+// and fails the package if they changed it anyway.
+//
+// It replaces a TestMain that snapshots, runs and compares by hand. That block
+// was copied into every package whose tests start a git process, and a copied
+// block is one that drifts: the version in one package can gain a check the
+// others never get, and the difference is invisible until it matters.
+//
+// The reach-removal is the part a hand-written TestMain did not do. Both
+// incidents this package exists for were a git command finding the wrong
+// repository by walking up from the working directory -- a helper that lost its
+// cmd.Dir, and a git init that honoured an inherited GIT_DIR. Setting a ceiling
+// at the repository root stops that search, so such a command fails with
+// "not inside a git repository" at the moment of the mistake rather than
+// succeeding against the developer's own checkout.
+//
+// The comparison is kept regardless, because a ceiling does not stop everything.
+// A test that passes an explicit path, or sets GIT_DIR itself, still reaches the
+// repository -- and a sibling worktree writing to the shared configuration is
+// not this process at all. Prevention narrows the class; it does not close it.
+//
+// Guard calls os.Exit and does not return.
+func Guard(m *testing.M) {
+	if root, err := repositoryRoot(); err == nil {
+		// Ceilings are consulted only when git searches upward, so this does
+		// not affect a repository the tests create and address directly.
+		// execgit.ScopeFreeEnv strips this variable, which is what lets the
+		// snapshot below still read the repository the tests may not.
+		if previous, set := os.LookupEnv(ceilingVariable); set {
+			defer func() { _ = os.Setenv(ceilingVariable, previous) }()
+			root = root + string(os.PathListSeparator) + previous
+		}
+		if err := os.Setenv(ceilingVariable, root); err != nil {
+			// Not fatal: the comparison below is the guarantee, and the
+			// ceiling only narrows what can reach the repository first.
+			fmt.Fprintf(os.Stderr, "gittest: could not place the repository out of reach: %v\n", err)
+		}
+	}
+
+	before := SnapshotAmbientConfig()
+	code := m.Run()
+
+	if differences := Diff(before, SnapshotAmbientConfig()); len(differences) > 0 {
+		fmt.Fprint(os.Stderr, FailureMessage(differences))
+		if code == 0 {
+			code = 1
+		}
+	}
+
+	os.Exit(code)
+}
+
+// ceilingVariable stops git's upward search for a repository.
+const ceilingVariable = "GIT_CEILING_DIRECTORIES"
+
+// repositoryRoot locates the repository the tests are running inside.
+//
+// It asks git rather than walking for a .git entry, so a linked worktree
+// answers with its own root rather than the main checkout's.
+func repositoryRoot() (string, error) {
+	command := exec.Command("git", "rev-parse", "--show-toplevel")
+	command.Env = execgit.ScopeFreeEnv()
+
+	output, err := command.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
 }

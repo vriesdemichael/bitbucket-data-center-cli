@@ -18,7 +18,10 @@ var gitSubprocessPattern = regexp.MustCompile(`exec\.Command(?:Context)?\([^)]*"
 // TestMain, and the snapshot call that makes it one.
 var (
 	testMainPattern = regexp.MustCompile(`func TestMain\(`)
-	snapshotPattern = regexp.MustCompile(`gittest\.SnapshotAmbientConfig\(`)
+	// Guard is how a package installs this now. SnapshotAmbientConfig is still
+	// accepted because it remains the exported way to compare by hand, and a
+	// package with a reason to do so is guarded just as well.
+	snapshotPattern = regexp.MustCompile(`gittest\.(Guard|SnapshotAmbientConfig)\(`)
 )
 
 // TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit is the guard on
@@ -112,9 +115,9 @@ func TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit(t *testing.T) {
 		sort.Strings(offenders)
 		t.Fatalf(
 			"%d package(s) start git in their tests without the ambient-config guard:\n  %s\n\n"+
-				"Add a TestMain that calls gittest.SnapshotAmbientConfig before m.Run, compares with\n"+
-				"gittest.Diff afterwards, and fails the package on any difference. Copy the one in\n"+
-				"internal/cli/main_test.go. ADR-071 explains why.",
+				"Add: func TestMain(m *testing.M) { gittest.Guard(m) }\n"+
+				"It puts this repository out of git's reach for the run, and fails the package if\n"+
+				"the tests changed it anyway. ADR-071 explains why.",
 			len(offenders), strings.Join(offenders, "\n  "),
 		)
 	}
