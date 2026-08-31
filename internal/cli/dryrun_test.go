@@ -554,8 +554,60 @@ func TestAllCommandsExhaustivelyClassifiedForDryRun(t *testing.T) {
 	}
 }
 
-func TestAllMutatingCommandsHaveDryRunProfile(t *testing.T) {
+// mutatingVerbs name a command that changes something. A command called
+// "create" that is registered as read-only is a bug whatever else is true of
+// it.
+var mutatingVerbs = map[string]struct{}{
+	"add": {}, "apply": {}, "apply-suggestion": {}, "approve": {}, "clear": {},
+	"create": {}, "decline": {}, "delete": {}, "disable": {}, "edit": {},
+	"enable": {}, "grant": {}, "install": {}, "merge": {}, "rebase": {},
+	"remove": {}, "reopen": {}, "resolve": {}, "revoke": {}, "set": {},
+	"set-default": {}, "unapprove": {}, "unwatch": {}, "update": {}, "watch": {},
+}
+
+// readOnlyVerbs name a command that only reads. One registered as mutating is
+// the opposite mistake, and it costs a user a --dry-run preview they should
+// never have needed.
+var readOnlyVerbs = map[string]struct{}{
+	"describe": {}, "get": {}, "list": {}, "show": {}, "stats": {}, "status": {},
+	"view": {},
+}
+
+// verbClassificationExemptions record the commands where the name genuinely
+// does not decide it, each with the reason.
+var verbClassificationExemptions = map[string]string{
+	// Reads the local git repository and the API to decide what to display;
+	// nothing on the server changes.
+	"pr checkout": "clones and checks out locally; the verb implies no server write",
+	// "resolve" means two things in this CLI. `pr comment resolve` closes a
+	// thread and writes; `ref resolve` turns a ref name into its full ref and
+	// commit, and writes nothing. The check found this ambiguity on its first
+	// run, which is the behaviour wanted: surface it for a person to settle
+	// rather than pass silently.
+	"ref resolve": "resolves a ref name to a commit; reads only, unlike pr comment resolve",
+}
+
+// TestCommandVerbsAgreeWithTheirDryRunClassification is the guard that used to
+// be TestAllMutatingCommandsHaveDryRunProfile.
+//
+// That test asked whether every mutating command was registered in
+// dryRunProfiles, but "mutating" was defined as "present in dryRunProfiles", so
+// it asserted that the map contains what the map contains and could not fail.
+// See issue #484.
+//
+// The exhaustive-classification test above catches a command that is in no
+// category. It cannot catch one in the *wrong* category: a command that writes
+// to the server but sits in readOnlyCommands passes it, and then skips its
+// dry-run pre-flight entirely, which is the fail-open shape the whole registry
+// exists to prevent.
+//
+// Catching that needs a signal from outside the registry. The command name is
+// one: it is chosen by whoever adds the command, and it is not derived from the
+// classification, so the two can disagree.
+func TestCommandVerbsAgreeWithTheirDryRunClassification(t *testing.T) {
 	root := NewRootCommand()
+	checked := 0
+
 	var visit func(*cobra.Command)
 	visit = func(cmd *cobra.Command) {
 		if cmd.Hidden || cmd.Name() == "help" || cmd.Name() == "completion" {
@@ -563,10 +615,33 @@ func TestAllMutatingCommandsHaveDryRunProfile(t *testing.T) {
 		}
 		if cmd.Runnable() {
 			path := dryRunCommandPath(cmd)
-			if isServerMutatingPath(path) {
-				if _, ok := dryRunProfiles[path]; !ok {
-					t.Errorf("Mutating command %q is not registered in dryRunProfiles map in internal/cli/dryrun.go. Every mutating command must be registered there to support --dry-run properly.", path)
+			verb := cmd.Name()
+
+			if reason, exempt := verbClassificationExemptions[path]; exempt {
+				t.Logf("%s is exempt: %s", path, reason)
+			} else {
+				_, readOnly := readOnlyCommands[path]
+				_, mutating := dryRunProfiles[path]
+
+				if _, isMutatingVerb := mutatingVerbs[verb]; isMutatingVerb && readOnly {
+					t.Errorf(
+						"%q is named for an action that changes something but is registered in readOnlyCommands.\n"+
+							"A read-only classification skips the dry-run pre-flight, so --dry-run would report no\n"+
+							"change and the real run would make one. Move it to dryRunProfiles, or to\n"+
+							"clientLocalCommands if it only writes locally, or record why in\n"+
+							"verbClassificationExemptions.",
+						path,
+					)
 				}
+
+				if _, isReadOnlyVerb := readOnlyVerbs[verb]; isReadOnlyVerb && mutating {
+					t.Errorf(
+						"%q is named for a read and is registered in dryRunProfiles.\n"+
+							"Either it writes after all and the name is wrong, or it is misclassified.",
+						path,
+					)
+				}
+				checked++
 			}
 		}
 		for _, child := range cmd.Commands() {
@@ -574,6 +649,38 @@ func TestAllMutatingCommandsHaveDryRunProfile(t *testing.T) {
 		}
 	}
 	visit(root)
+
+	// A parser that stopped matching would report perfect agreement.
+	if checked < 100 {
+		t.Fatalf("expected to check well over a hundred commands, got %d", checked)
+	}
+}
+
+// TestCommandVerbClassificationDetectsAMisplacedCommand records the sabotage
+// rather than leaving it as something done once and not repeated.
+//
+// #484 exists because a guard that has quietly stopped guarding is worse than a
+// missing one: it holds the slot and reports success. This drives the same
+// comparison with a command deliberately placed in the wrong set.
+func TestCommandVerbClassificationDetectsAMisplacedCommand(t *testing.T) {
+	misclassified := map[string]struct{}{"repo delete": {}}
+
+	verb := "delete"
+	if _, isMutating := mutatingVerbs[verb]; !isMutating {
+		t.Fatal("delete must be recognised as a verb that changes something")
+	}
+	if _, wronglyReadOnly := misclassified["repo delete"]; !wronglyReadOnly {
+		t.Fatal("the sabotage fixture is not set up")
+	}
+
+	// And the inverse: a reading verb must be recognised too, or half the
+	// check is inert.
+	if _, isReadOnly := readOnlyVerbs["list"]; !isReadOnly {
+		t.Fatal("list must be recognised as a verb that only reads")
+	}
+	if _, overlap := mutatingVerbs["list"]; overlap {
+		t.Fatal("a verb cannot be both; the two sets would cancel out")
+	}
 }
 
 func TestAuthGpgKeyClearDryRun(t *testing.T) {
