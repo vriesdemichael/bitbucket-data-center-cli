@@ -260,13 +260,13 @@ jobs:
           cache: true
 
       - name: Download unit coverage profile
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: coverage-profile-unit
           path: .tmp
 
       - name: Download live coverage profile
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: coverage-profile-live
           path: .tmp
@@ -356,7 +356,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Download scoped coverage profile
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: coverage-profile-scoped
           path: .tmp
