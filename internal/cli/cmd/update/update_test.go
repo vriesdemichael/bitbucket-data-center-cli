@@ -343,13 +343,13 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 
 	t.Run("LoadUpdateCommandHTTPConfig validation errors", func(t *testing.T) {
 		t.Setenv("BB_REQUEST_TIMEOUT", "0s")
-		if _, err := LoadUpdateCommandHTTPConfig(); err == nil {
+		if _, err := LoadUpdateCommandHTTPConfig(config.Overrides{}); err == nil {
 			t.Fatal("expected error for 0s timeout")
 		}
 
 		t.Setenv("BB_REQUEST_TIMEOUT", "20s")
 		t.Setenv("BB_INSECURE_SKIP_VERIFY", "not-a-bool")
-		if _, err := LoadUpdateCommandHTTPConfig(); err == nil {
+		if _, err := LoadUpdateCommandHTTPConfig(config.Overrides{}); err == nil {
 			t.Fatal("expected error for invalid bool")
 		}
 	})
@@ -549,7 +549,7 @@ func TestUpdateCommandPolicyError(t *testing.T) {
 }
 
 func TestLoadUpdateCommandHTTPConfigInvalidBaseURL(t *testing.T) {
-	_, err := LoadUpdateCommandHTTPConfig(":\x7finvalid-url")
+	_, err := LoadUpdateCommandHTTPConfig(config.Overrides{}, ":\x7finvalid-url")
 	if err == nil {
 		t.Fatal("expected error for control characters in base URL")
 	}
@@ -567,7 +567,7 @@ func TestLoadUpdateCommandHTTPConfigHonoursSystemPolicy(t *testing.T) {
 		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
 		t.Setenv("BB_INSECURE_SKIP_VERIFY", "1")
 
-		_, err := LoadUpdateCommandHTTPConfig()
+		_, err := LoadUpdateCommandHTTPConfig(config.Overrides{})
 		if err == nil {
 			t.Fatal("expected BB_INSECURE_SKIP_VERIFY to be refused under policy, got nil")
 		}
@@ -591,7 +591,7 @@ func TestLoadUpdateCommandHTTPConfigHonoursSystemPolicy(t *testing.T) {
 		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
 		t.Setenv("BB_CA_FILE", "")
 
-		httpConfig, err := LoadUpdateCommandHTTPConfig()
+		httpConfig, err := LoadUpdateCommandHTTPConfig(config.Overrides{})
 		if err != nil {
 			t.Fatalf("expected success, got %v", err)
 		}
@@ -607,7 +607,7 @@ func TestLoadUpdateCommandHTTPConfigHonoursSystemPolicy(t *testing.T) {
 		t.Setenv("BB_CLIENT_CERT", "/tmp/client.crt")
 		t.Setenv("BB_CLIENT_KEY", "/tmp/client.key")
 
-		httpConfig, err := LoadUpdateCommandHTTPConfig()
+		httpConfig, err := LoadUpdateCommandHTTPConfig(config.Overrides{})
 		if err != nil {
 			t.Fatalf("expected success, got %v", err)
 		}
@@ -633,7 +633,7 @@ func TestLoadUpdateCommandHTTPConfigResolvesUpdateTrust(t *testing.T) {
 		t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
 		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
 
-		httpConfig, err := LoadUpdateCommandHTTPConfig()
+		httpConfig, err := LoadUpdateCommandHTTPConfig(config.Overrides{})
 		if err != nil {
 			t.Fatalf("expected success, got %v", err)
 		}
@@ -653,7 +653,7 @@ func TestLoadUpdateCommandHTTPConfigResolvesUpdateTrust(t *testing.T) {
 		t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
 		t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
 
-		if _, err := LoadUpdateCommandHTTPConfig(); !apperrors.IsKind(err, apperrors.KindValidation) {
+		if _, err := LoadUpdateCommandHTTPConfig(config.Overrides{}); !apperrors.IsKind(err, apperrors.KindValidation) {
 			t.Fatalf("expected KindValidation, got %v", err)
 		}
 	})
@@ -742,5 +742,51 @@ func TestUpdateCommandWarnsWhenSignatureVerificationIsSkipped(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "Trust material") {
 		t.Fatalf("expected the dry run to report the trust material in use, got: %q", stdout.String())
+	}
+}
+
+// TestUpdateHonoursTheGlobalFlags covers a regression that had no error to
+// notice it by.
+//
+// This path downloads and then executes a new binary. It reads no Bitbucket
+// host, so it cannot inherit configuration from a normal load, and it used to
+// read BB_* itself -- which worked only while the global flags were written
+// into those variables. Once they became values, --ca-file,
+// --insecure-skip-verify and --request-timeout stopped reaching it silently.
+func TestUpdateHonoursTheGlobalFlags(t *testing.T) {
+	caFile := "/tmp/corp-ca.pem"
+	skip := true
+	timeout := "60s"
+
+	httpConfig, err := LoadUpdateCommandHTTPConfig(config.Overrides{
+		CAFile:             &caFile,
+		InsecureSkipVerify: &skip,
+		RequestTimeout:     &timeout,
+	})
+	if err != nil {
+		t.Fatalf("loading the update transport config failed: %v", err)
+	}
+
+	if httpConfig.RequestTimeout != 60*time.Second {
+		t.Errorf("request timeout = %v, want the value --request-timeout supplied", httpConfig.RequestTimeout)
+	}
+	if httpConfig.TLSOptions.CAFile != caFile {
+		t.Errorf("CA file = %q, want the value --ca-file supplied", httpConfig.TLSOptions.CAFile)
+	}
+	if !httpConfig.TLSOptions.InsecureSkipVerify {
+		t.Error("--insecure-skip-verify did not reach the path that downloads a binary")
+	}
+}
+
+// TestUpdateBlamesTheFlagItWasGiven keeps the message honest on this path too.
+func TestUpdateBlamesTheFlagItWasGiven(t *testing.T) {
+	bad := "0s"
+
+	_, err := LoadUpdateCommandHTTPConfig(config.Overrides{RequestTimeout: &bad})
+	if err == nil {
+		t.Fatal("a non-positive timeout was accepted")
+	}
+	if !strings.Contains(err.Error(), "--request-timeout") {
+		t.Errorf("error = %q, want it to name the flag rather than BB_REQUEST_TIMEOUT", err.Error())
 	}
 }

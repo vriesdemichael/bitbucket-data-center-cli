@@ -53,7 +53,9 @@ type repositorySelector struct {
 func resolveRepositorySelector(selector string, cfg config.AppConfig) (repositorySelector, error) {
 	trimmed := strings.TrimSpace(selector)
 	if trimmed == "" {
-		repoSlug := strings.TrimSpace(os.Getenv("BITBUCKET_REPO_SLUG"))
+		// Read from the resolved configuration rather than the environment, so an
+		// inferred context reaches it as a value (issue #458).
+		repoSlug := strings.TrimSpace(cfg.RepoSlug)
 		if strings.TrimSpace(cfg.ProjectKey) == "" || repoSlug == "" {
 			return repositorySelector{}, apperrors.New(
 				apperrors.KindValidation,
