@@ -462,70 +462,6 @@ func TestRootTransportFlagsOverrideEnvironment(t *testing.T) {
 	}
 }
 
-func TestApplyRuntimeFlagOverridesBranches(t *testing.T) {
-	// applyRuntimeFlagOverrides writes these with os.Setenv, so without
-	// registering them here they would leak into every test that runs after
-	// this one — including BB_RETRY_BACKOFF, which this package deliberately
-	// shortens in init() and which this test would otherwise leave at 500ms.
-	for _, key := range []string{"BB_CLIENT_CERT", "BB_CLIENT_KEY", "BB_INSECURE_SKIP_VERIFY", "BB_REQUEST_TIMEOUT", "BB_RETRY_COUNT", "BB_RETRY_BACKOFF"} {
-		t.Setenv(key, os.Getenv(key))
-	}
-
-	if err := applyRuntimeFlagOverrides(nil); err != nil {
-		t.Fatalf("expected nil command to be a no-op, got: %v", err)
-	}
-
-	command := NewRootCommand()
-	if err := command.PersistentFlags().Set("ca-file", " "); err != nil {
-		t.Fatalf("set ca-file: %v", err)
-	}
-	if err := command.PersistentFlags().Set("client-cert", "/path/to/client.crt"); err != nil {
-		t.Fatalf("set client-cert: %v", err)
-	}
-	if err := command.PersistentFlags().Set("client-key", "/path/to/client.key"); err != nil {
-		t.Fatalf("set client-key: %v", err)
-	}
-	if err := command.PersistentFlags().Set("insecure-skip-verify", "true"); err != nil {
-		t.Fatalf("set insecure-skip-verify: %v", err)
-	}
-	if err := command.PersistentFlags().Set("request-timeout", "30s"); err != nil {
-		t.Fatalf("set request-timeout: %v", err)
-	}
-	if err := command.PersistentFlags().Set("retry-count", "4"); err != nil {
-		t.Fatalf("set retry-count: %v", err)
-	}
-	if err := command.PersistentFlags().Set("retry-backoff", "500ms"); err != nil {
-		t.Fatalf("set retry-backoff: %v", err)
-	}
-
-	t.Setenv("BB_CA_FILE", "/tmp/keep")
-	if err := applyRuntimeFlagOverrides(command); err != nil {
-		t.Fatalf("expected runtime overrides to apply, got: %v", err)
-	}
-
-	if value := os.Getenv("BB_CA_FILE"); value != "" {
-		t.Fatalf("expected BB_CA_FILE to be unset by blank flag value, got %q", value)
-	}
-	if value := os.Getenv("BB_CLIENT_CERT"); value != "/path/to/client.crt" {
-		t.Fatalf("unexpected BB_CLIENT_CERT value: %q", value)
-	}
-	if value := os.Getenv("BB_CLIENT_KEY"); value != "/path/to/client.key" {
-		t.Fatalf("unexpected BB_CLIENT_KEY value: %q", value)
-	}
-	if value := os.Getenv("BB_INSECURE_SKIP_VERIFY"); value != "true" {
-		t.Fatalf("unexpected BB_INSECURE_SKIP_VERIFY value: %q", value)
-	}
-	if value := os.Getenv("BB_REQUEST_TIMEOUT"); value != "30s" {
-		t.Fatalf("unexpected BB_REQUEST_TIMEOUT value: %q", value)
-	}
-	if value := os.Getenv("BB_RETRY_COUNT"); value != "4" {
-		t.Fatalf("unexpected BB_RETRY_COUNT value: %q", value)
-	}
-	if value := os.Getenv("BB_RETRY_BACKOFF"); value != "500ms" {
-		t.Fatalf("unexpected BB_RETRY_BACKOFF value: %q", value)
-	}
-}
-
 func TestAdminHealthSmoke(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -2148,7 +2084,7 @@ func TestLoadConfigAndClientAndClientFactoryBranches(t *testing.T) {
 		t.Setenv("BITBUCKET_URL", "://broken")
 		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
 
-		_, _, err := loadConfigAndClient()
+		_, _, err := (&rootOptions{}).loadConfigAndClient()
 		if err == nil {
 			t.Fatal("expected config load failure")
 		}
@@ -2176,7 +2112,7 @@ func TestLoadQualityRepoAndServiceBranches(t *testing.T) {
 		t.Setenv("BITBUCKET_URL", "://broken")
 		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
 
-		_, _, err := loadQualityRepoAndService("")
+		_, _, err := (&rootOptions{}).loadQualityRepoAndService("")
 		if err == nil {
 			t.Fatal("expected config load failure")
 		}
@@ -2188,7 +2124,7 @@ func TestLoadQualityRepoAndServiceBranches(t *testing.T) {
 		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
 		t.Setenv("BITBUCKET_REPO_SLUG", "demo")
 
-		_, _, err := loadQualityRepoAndService("bad-format")
+		_, _, err := (&rootOptions{}).loadQualityRepoAndService("bad-format")
 		if err == nil {
 			t.Fatal("expected repository selector validation error")
 		}
@@ -2208,7 +2144,7 @@ func TestLoadQualityRepoAndServiceBranches(t *testing.T) {
 		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
 		t.Setenv("BITBUCKET_REPO_SLUG", "demo")
 
-		repo, service, err := loadQualityRepoAndService("")
+		repo, service, err := (&rootOptions{}).loadQualityRepoAndService("")
 		if err != nil {
 			t.Fatalf("expected no error, got: %v", err)
 		}
@@ -4376,4 +4312,79 @@ func (stub inferenceGitBackendStub) BranchExists(context.Context, string, string
 
 func (stub inferenceGitBackendStub) FastForward(context.Context, string, string) error {
 	return nil
+}
+
+// TestRuntimeFlagsBecomeOverridesNotEnvironment replaces a test that asserted
+// the opposite.
+//
+// The bridge used to write each global flag into a BB_* variable, and the old
+// test checked those variables afterwards. That is the defect issue #458 is
+// about: the write destroyed a value the user had set rather than outranking it
+// for one invocation, and it outlived the command.
+//
+// Because the flags are values now, this test sets no environment at all --
+// which is why it can be parallel. The old one could not: it needed six
+// t.Setenv calls simply to stop the bridge leaking into later tests, and
+// t.Setenv disqualifies a test from t.Parallel.
+func TestRuntimeFlagsBecomeOverridesNotEnvironment(t *testing.T) {
+	t.Parallel()
+
+	options := &rootOptions{}
+	if err := options.applyRuntimeFlagOverrides(nil); err != nil {
+		t.Fatalf("a nil command should be a no-op, got: %v", err)
+	}
+
+	command := NewRootCommand()
+	for flagName, value := range map[string]string{
+		"ca-file":              " ",
+		"client-cert":          "/path/to/client.crt",
+		"client-key":           "/path/to/client.key",
+		"insecure-skip-verify": "true",
+		"request-timeout":      "30s",
+		"retry-count":          "4",
+		"retry-backoff":        "500ms",
+	} {
+		if err := command.PersistentFlags().Set(flagName, value); err != nil {
+			t.Fatalf("set %s: %v", flagName, err)
+		}
+	}
+
+	if err := options.applyRuntimeFlagOverrides(command); err != nil {
+		t.Fatalf("applying overrides failed: %v", err)
+	}
+
+	runtime := options.runtime
+	if runtime.CAFile == nil || *runtime.CAFile != "" {
+		t.Errorf("a flag passed blank should be carried as empty, not dropped: %v", runtime.CAFile)
+	}
+	if runtime.ClientCert == nil || *runtime.ClientCert != "/path/to/client.crt" {
+		t.Errorf("client cert = %v, want /path/to/client.crt", runtime.ClientCert)
+	}
+	if runtime.InsecureSkipVerify == nil || !*runtime.InsecureSkipVerify {
+		t.Errorf("insecure-skip-verify = %v, want true", runtime.InsecureSkipVerify)
+	}
+	if runtime.RetryCount == nil || *runtime.RetryCount != 4 {
+		t.Errorf("retry count = %v, want 4", runtime.RetryCount)
+	}
+	if runtime.RequestTimeout == nil || *runtime.RequestTimeout != "30s" {
+		t.Errorf("request timeout = %v, want 30s", runtime.RequestTimeout)
+	}
+}
+
+// TestAFlagLeftAloneDoesNotDisplaceTheEnvironment is the precedence layer
+// ADR-021 describes and the implementation did not have.
+func TestAFlagLeftAloneDoesNotDisplaceTheEnvironment(t *testing.T) {
+	t.Parallel()
+
+	options := &rootOptions{}
+	if err := options.applyRuntimeFlagOverrides(NewRootCommand()); err != nil {
+		t.Fatalf("applying overrides failed: %v", err)
+	}
+
+	if options.runtime.RetryCount != nil {
+		t.Errorf("an unpassed flag produced an override (%v); the environment must keep its slot", options.runtime.RetryCount)
+	}
+	if options.runtime.CAFile != nil {
+		t.Errorf("an unpassed flag produced an override (%v)", options.runtime.CAFile)
+	}
 }
