@@ -17,7 +17,7 @@
 // unschema'd command has no guarantee at all.
 //
 // Schemas are organized by command group. Schemas() merges all group schemas
-// and is consumed by tools/output-schema-export.
+// and is consumed by --describe.
 package outputschemas
 
 import (
@@ -34,9 +34,7 @@ func Schemas() map[string]map[string]any {
 }
 
 // SchemasFor returns the same schemas, each claiming the identity it has when
-// published under siteVersion.  The tool tools/output-schema-export writes them
-// to disk; a release passes the version it is publishing so that snapshot does
-// not claim the identity of every other one.
+// published under siteVersion.
 func SchemasFor(siteVersion string) map[string]map[string]any {
 	all := make(map[string]map[string]any)
 
