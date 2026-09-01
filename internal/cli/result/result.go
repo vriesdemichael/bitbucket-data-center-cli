@@ -28,6 +28,16 @@
 //
 // Describe fields with the jsonschema struct tag. It is the only description a
 // consumer gets, since there is no prose file beside the schema any more.
+//
+// # When not to declare one
+//
+// A command whose payload is a published artifact keeps its hand-written schema
+// instead, and --describe falls back to it. bb bulk plan, apply and status are
+// the case: their payloads are the bulk artifacts, whose schemas encode
+// conditional rules a Go type cannot express -- "if the selector has a
+// repoPattern then projectKey is required", "if auto-decline is enabled then
+// inactivityWeeks is required". Deriving from the struct would lose exactly the
+// part that makes those files checkable.
 package result
 
 import (

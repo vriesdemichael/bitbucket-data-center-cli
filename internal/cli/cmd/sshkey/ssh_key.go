@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -84,30 +85,20 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			reported := keysFrom(keys)
+
 			if d.JSONEnabled() {
-				return d.WriteJSONList(cmd.OutOrStdout(), keys, paging.LimitReached(listPaging, len(keys)))
+				return d.WriteJSONList(cmd.OutOrStdout(), reported, paging.LimitReached(listPaging, len(reported)))
 			}
 
-			if len(keys) == 0 {
+			if len(reported) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "No SSH keys found")
 				return nil
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%-8s %-30s %-50s\n", "ID", "LABEL", "FINGERPRINT")
-			for _, k := range keys {
-				id := ""
-				if k.Id != nil {
-					id = fmt.Sprintf("%d", *k.Id)
-				}
-				label := ""
-				if k.Label != nil {
-					label = *k.Label
-				}
-				fingerprint := ""
-				if k.Fingerprint != nil {
-					fingerprint = *k.Fingerprint
-				}
-				fmt.Fprintf(cmd.OutOrStdout(), "%-8s %-30s %-50s\n", id, label, fingerprint)
+			for _, key := range reported {
+				fmt.Fprintf(cmd.OutOrStdout(), "%-8d %-30s %-50s\n", key.ID, key.Label, key.Fingerprint)
 			}
 			return nil
 		},
@@ -138,19 +129,13 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			reported := keyFrom(key)
+
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), key)
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
 			}
 
-			id := 0
-			if key.Id != nil {
-				id = int(*key.Id)
-			}
-			lbl := ""
-			if key.Label != nil {
-				lbl = *key.Label
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "SSH key %d (%s) added successfully\n", id, lbl)
+			fmt.Fprintf(cmd.OutOrStdout(), "SSH key %d (%s) added successfully\n", reported.ID, reported.Label)
 			return nil
 		},
 	}
@@ -172,11 +157,13 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			reported := Removal{Status: result.OK(), Key: args[0]}
+
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok"})
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "SSH key %s removed successfully\n", args[0])
+			fmt.Fprintf(cmd.OutOrStdout(), "SSH key %s removed successfully\n", reported.Key)
 			return nil
 		},
 	}

@@ -207,7 +207,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), result)
+				return d.WriteJSON(cmd.OutOrStdout(), updateFrom(result))
 			}
 
 			writeUpdateHuman(cmd, result)
