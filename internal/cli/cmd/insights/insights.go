@@ -12,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -179,7 +180,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			return d.WriteJSON(cmd.OutOrStdout(), report)
+			return d.WriteJSON(cmd.OutOrStdout(), reportFrom(report))
 		},
 	}
 	setReportCmd.Flags().StringVar(&reportBody, "body", "", "Raw JSON payload for Code Insights report")
@@ -201,7 +202,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			return d.WriteJSON(cmd.OutOrStdout(), report)
+			return d.WriteJSON(cmd.OutOrStdout(), reportFrom(report))
 		},
 	})
 
@@ -267,7 +268,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "commit": args[0], "key": args[1]})
+				return d.WriteJSON(cmd.OutOrStdout(), ReportChange{Status: result.OK(), Commit: args[0], Key: args[1]})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Deleted report %s for commit %s\n", args[1], args[0])
@@ -291,7 +292,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSONList(cmd.OutOrStdout(), reports, paging.LimitReached(reportPaging, len(reports)))
+				return d.WriteJSONList(cmd.OutOrStdout(), reportsFrom(reports), paging.LimitReached(reportPaging, len(reports)))
 			}
 
 			if len(reports) == 0 {
@@ -362,7 +363,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "count": len(annotations)})
+				return d.WriteJSON(cmd.OutOrStdout(), AnnotationsAdded{Status: result.OK(), Count: len(annotations)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Added %d annotations to report %s\n", len(annotations), args[1])
@@ -394,7 +395,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSONList(cmd.OutOrStdout(), annotations, paging.LimitReached(reportPaging, len(annotations)))
+				return d.WriteJSONList(cmd.OutOrStdout(), annotationsFrom(annotations), paging.LimitReached(reportPaging, len(annotations)))
 			}
 
 			if len(annotations) == 0 {
@@ -500,7 +501,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), ann)
+				return d.WriteJSON(cmd.OutOrStdout(), annotationFrom(ann))
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Annotation %s set on report %s for commit %s\n", args[2], args[1], args[0])
@@ -586,7 +587,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "external_id": externalID})
+				return d.WriteJSON(cmd.OutOrStdout(), AnnotationChange{Status: result.OK(), ExternalID: externalID})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Deleted annotations for external id %s\n", externalID)
