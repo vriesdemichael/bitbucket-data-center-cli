@@ -20,9 +20,28 @@ under `latest/` carries the `$id` of whichever version `latest` currently points
 to a version directory — `.../v3.4.0/reference/schemas/output/` — when you need a contract
 that cannot change under you.
 
+### Getting a schema from the binary
+
+Every command answers `--describe` with its own schema, read from the copy compiled into the
+binary:
+
+```bash
+bb pr get --describe
+bb pr get --describe --json    # wrapped in a bb.machine envelope
+```
+
+This needs no network, no configuration, and no arguments -- asking what a command returns does
+not require knowing what it takes. It also cannot disagree with the binary that printed it,
+which is the failure mode of fetching a schema from a docs site whose version may not match
+what is installed.
+
+The payload has a fixed shape: `command`, `described`, and then either `schema` or `reason`.
+Check `described` first.
+
 ### How much of the surface is covered
 
-Not all of it. Most commands publish no schema. That gap closes when each schema is derived
+Not all of it. Most commands answer `--describe` with "no output schema is published for this
+command yet". That gap closes when each schema is derived
 from a typed result the command already builds, rather than being maintained as a file per
 command.
 
