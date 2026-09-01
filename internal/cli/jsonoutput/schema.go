@@ -112,7 +112,6 @@ func metaSchema() map[string]any {
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"contract": map[string]any{"const": ContractName},
 			"bb_version": map[string]any{
 				"type":        "string",
 				"minLength":   1,
@@ -123,6 +122,6 @@ func metaSchema() map[string]any {
 				"description": "Present on listing commands: true when the result set came back at --limit and there may be more behind it.",
 			},
 		},
-		"required": []any{"contract", "bb_version"},
+		"required": []any{"bb_version"},
 	}
 }

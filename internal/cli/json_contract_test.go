@@ -110,15 +110,15 @@ func TestSkillInstallAndRemoveEmitAnEnvelope(t *testing.T) {
 				Skill  string `json:"skill"`
 			} `json:"data"`
 			Meta struct {
-				Contract string `json:"contract"`
+				BBVersion string `json:"bb_version"`
 			} `json:"meta"`
 		}
 		if err := json.Unmarshal(out.Bytes(), &envelope); err != nil {
 			t.Fatalf("%v did not emit JSON: %v\n%s", arguments, err, out.String())
 		}
 
-		if envelope.Meta.Contract != "bb.machine" {
-			t.Errorf("%v contract = %q, want bb.machine", arguments, envelope.Meta.Contract)
+		if envelope.Meta.BBVersion == "" {
+			t.Errorf("%v carries no meta.bb_version", arguments)
 		}
 		if envelope.Data.Path == "" {
 			t.Errorf("%v carried no path, which is the value a caller cannot compute itself", arguments)

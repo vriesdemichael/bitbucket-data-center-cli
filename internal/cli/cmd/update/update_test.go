@@ -113,8 +113,8 @@ func TestUpdateCommandJSONDryRun(t *testing.T) {
 	if err := json.Unmarshal(buffer.Bytes(), &envelope); err != nil {
 		t.Fatalf("failed to decode json output: %v", err)
 	}
-	if envelope.Meta.Contract != jsonoutput.ContractName {
-		t.Fatalf("expected contract %q, got %q", jsonoutput.ContractName, envelope.Meta.Contract)
+	if envelope.Meta.BBVersion == "" {
+		t.Fatalf("envelope carries no meta.bb_version: %+v", envelope)
 	}
 
 	encodedData, err := json.Marshal(envelope.Data)

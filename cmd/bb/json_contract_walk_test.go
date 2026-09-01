@@ -22,7 +22,7 @@ import (
 // nothing at all and assert nothing -- a guard that only covered the four
 // commands reaching a success path without a server.
 //
-// Two properties are checked: stdout under --json is valid bb.machine JSON, and
+// Two properties are checked: stdout under --json is a valid envelope, and
 // it is exactly one document (ADR-075).
 //
 // What this does not cover is worth stating, because it was claimed once and
@@ -67,16 +67,32 @@ func TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope(t *testing.T) {
 
 			decoder := json.NewDecoder(bytes.NewReader(raw))
 
-			var envelope struct {
-				Meta struct {
-					Contract string `json:"contract"`
-				} `json:"meta"`
-			}
+			// Checked structurally rather than by a tag. The envelope used to
+			// carry a constant meta.contract saying "bb.machine", which made
+			// this assertion easy and meaningless -- a constant proves only
+			// that the constant was written. What identifies the document is
+			// its shape: meta.bb_version, and exactly one of data or error,
+			// since which key is present is how a consumer tells success from
+			// failure (ADR-046).
+			var envelope map[string]json.RawMessage
 			if err := decoder.Decode(&envelope); err != nil {
 				t.Fatalf("wrote non-JSON to stdout under --json: %v\n%s", err, raw)
 			}
-			if envelope.Meta.Contract != "bb.machine" {
-				t.Errorf("contract = %q, want bb.machine\n%s", envelope.Meta.Contract, raw)
+
+			var meta struct {
+				BBVersion string `json:"bb_version"`
+			}
+			if rawMeta, present := envelope["meta"]; !present {
+				t.Errorf("no meta on the envelope\n%s", raw)
+			} else if err := json.Unmarshal(rawMeta, &meta); err != nil || meta.BBVersion == "" {
+				t.Errorf("meta carries no bb_version\n%s", raw)
+			}
+
+			_, hasData := envelope["data"]
+			_, hasError := envelope["error"]
+			if hasData == hasError {
+				t.Errorf("the envelope carries %s data and error; which key is present is how success is told from failure\n%s",
+					map[bool]string{true: "both", false: "neither"}[hasData], raw)
 			}
 
 			// Anything after the first document is a second document. A strict

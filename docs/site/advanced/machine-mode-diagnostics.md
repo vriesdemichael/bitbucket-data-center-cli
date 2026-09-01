@@ -10,7 +10,6 @@ Envelope shape:
 {
   "data": {},
   "meta": {
-    "contract": "bb.machine",
     "bb_version": "v4.0.0"
   }
 }
@@ -36,7 +35,6 @@ When a command fails while `--json` is set, stdout carries an `error` object whe
     "exit_code": 2
   },
   "meta": {
-    "contract": "bb.machine",
     "bb_version": "v4.0.0"
   }
 }
@@ -167,8 +165,7 @@ bb --json repo list --nonexistent-flag
     "message": "unknown flag: --nonexistent-flag",
     "exit_code": 2
   },
-  "meta": { "contract": "bb.machine",
-    "bb_version": "v4.0.0" }
+  "meta": { "bb_version": "v4.0.0" }
 }
 ```
 
