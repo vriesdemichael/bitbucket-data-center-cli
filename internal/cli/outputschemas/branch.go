@@ -51,10 +51,10 @@ func branchSchemas() map[string]map[string]any {
 				"required": []any{"status", "repository", "branch"},
 			},
 		),
-		"output.branch.get-default.schema.json": jsonoutput.EnvelopeSchemaFor(
-			"output.branch.get-default.schema.json",
-			"bb branch get-default output",
-			"JSON output schema for `bb branch get-default --json`. Data contains the repository and its current default branch name.",
+		"output.branch.default.get.schema.json": jsonoutput.EnvelopeSchemaFor(
+			"output.branch.default.get.schema.json",
+			"bb branch default get output",
+			"JSON output schema for `bb branch default get --json`. Data contains the repository and its current default branch name.",
 			map[string]any{
 				"type":                 "object",
 				"additionalProperties": true,
@@ -65,10 +65,10 @@ func branchSchemas() map[string]map[string]any {
 				"required": []any{"repository", "default_branch"},
 			},
 		),
-		"output.branch.set-default.schema.json": jsonoutput.EnvelopeSchemaFor(
-			"output.branch.set-default.schema.json",
-			"bb branch set-default output",
-			"JSON output schema for `bb branch set-default --json`. Data confirms the new default branch.",
+		"output.branch.default.set.schema.json": jsonoutput.EnvelopeSchemaFor(
+			"output.branch.default.set.schema.json",
+			"bb branch default set output",
+			"JSON output schema for `bb branch default set --json`. Data confirms the new default branch.",
 			map[string]any{
 				"type":                 "object",
 				"additionalProperties": false,

@@ -22,6 +22,11 @@ var Version = "dev"
 func main() {
 	cmd := cli.NewRootCommand()
 	cmd.Version = Version
+
+	// Machine output reports which binary produced it (ADR-064). Set here, once,
+	// because the version is stamped into this package at build time and the
+	// ~250 sites that write an envelope have no reason to know it.
+	jsonoutput.SetReleaseVersion(Version)
 	os.Exit(executeRootCommand(cmd, os.Args[1:], os.Stdout, os.Stderr))
 }
 

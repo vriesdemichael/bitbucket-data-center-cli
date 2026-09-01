@@ -199,8 +199,11 @@ func TestExecuteRootCommandEmitsErrorEnvelopeUnderJSON(t *testing.T) {
 		t.Fatalf("expected parseable stdout, got %q (%v)", stdout.String(), err)
 	}
 
-	if envelope["version"] != "v2" {
-		t.Fatalf("expected version v2, got %v", envelope["version"])
+	if _, present := envelope["version"]; present {
+		t.Fatalf("the failure envelope still carries a contract version (ADR-064): %v", envelope)
+	}
+	if meta, _ := envelope["meta"].(map[string]any); meta["bb_version"] == nil {
+		t.Fatalf("the failure envelope carries no meta.bb_version: %v", envelope)
 	}
 	if _, present := envelope["data"]; present {
 		t.Fatal("expected no data key on the failure envelope")

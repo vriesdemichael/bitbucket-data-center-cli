@@ -42,8 +42,7 @@ func TestLiveErrorTaxonomy404NotFound(t *testing.T) {
 		t.Fatalf("expected exit code 4 (not found) for PR get, got %d (err: %v)", apperrors.ExitCode(jsonErr), jsonErr)
 	}
 	var errorEnvelope struct {
-		Version string `json:"version"`
-		Error   struct {
+		Error struct {
 			Kind     string `json:"kind"`
 			Message  string `json:"message"`
 			ExitCode int    `json:"exit_code"`

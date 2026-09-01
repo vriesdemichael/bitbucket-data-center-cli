@@ -3,37 +3,14 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/outputschemas"
 )
-
-// exemptionSourceFile is the internal/cli file that owns the exemption list.
-//
-// The list is read out of it rather than copied here. A second copy is a second
-// thing to keep right, and a path exempted here but not there would drop a
-// command out of the walk with no reason recorded and nothing failing -- an
-// earlier version of this file claimed a test guarded that, and no such test
-// existed.
-const exemptionSourceFile = "../../internal/cli/json_contract_test.go"
-
-// exemptionSourcePath is resolved once, at init, because the walk changes the
-// working directory to a sealed scratch directory before it reads anything and
-// a relative path would then point nowhere.
-var exemptionSourcePath = func() string {
-	absolute, err := filepath.Abs(exemptionSourceFile)
-	if err != nil {
-		return exemptionSourceFile
-	}
-	return absolute
-}()
 
 // TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope walks the whole command
 // tree through the real entry point.
@@ -123,49 +100,27 @@ func TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope(t *testing.T) {
 	}
 }
 
-// exemptCommands reads the exemption list out of internal/cli.
+// exemptCommands returns the one exemption list, imported rather than copied.
 //
-// Reading it is what stops the walk and the list disagreeing. The alternative
-// -- a copy here, plus a test that compares the two -- was what an earlier
-// version of this file claimed to have and did not.
+// It used to be a copy here, justified by a drift guard named in a comment that
+// did not exist. It then briefly became an AST read of the internal/cli test
+// file. Both were working around the list living somewhere this package could
+// not import; moving it to outputschemas -- which needs it anyway, to count
+// which commands owe a published schema -- makes the drift impossible instead
+// of guarded.
 func exemptCommands(t *testing.T) map[string]bool {
 	t.Helper()
 
-	fileSet := token.NewFileSet()
-	file, err := parser.ParseFile(fileSet, exemptionSourcePath, nil, 0)
-	if err != nil {
-		t.Fatalf("parsing %s failed: %v", exemptionSourcePath, err)
+	exempt := map[string]bool{}
+	for path, reason := range outputschemas.CommandsWithoutDataContract {
+		if strings.TrimSpace(reason) == "" {
+			t.Errorf("%q is exempt with no reason; the reason is the part that gets reviewed", path)
+		}
+		exempt[path] = true
 	}
 
-	exempt := map[string]bool{}
-
-	ast.Inspect(file, func(node ast.Node) bool {
-		value, ok := node.(*ast.ValueSpec)
-		if !ok || len(value.Names) != 1 || value.Names[0].Name != "commandsThatDoNotEmitJSON" {
-			return true
-		}
-		for _, expression := range value.Values {
-			literal, ok := expression.(*ast.CompositeLit)
-			if !ok {
-				continue
-			}
-			for _, element := range literal.Elts {
-				pair, ok := element.(*ast.KeyValueExpr)
-				if !ok {
-					continue
-				}
-				key, ok := pair.Key.(*ast.BasicLit)
-				if !ok || key.Kind != token.STRING {
-					continue
-				}
-				exempt[strings.Trim(key.Value, `"`)] = true
-			}
-		}
-		return false
-	})
-
 	if len(exempt) == 0 {
-		t.Fatalf("found no exemptions in %s; the reader has stopped matching how the list is written, so the walk would run commands that are meant to be excluded", exemptionSourceFile)
+		t.Fatal("the exemption list is empty; the walk would run commands meant to be excluded")
 	}
 
 	return exempt
@@ -191,25 +146,21 @@ func TestEveryExemptionIsAReachableLeaf(t *testing.T) {
 	}
 }
 
-// TestTheExemptionReaderFindsTheRealList is the sabotage, kept as a test
-// (ADR-067).
+// TestTheExemptionListStaysSmallEnoughToReview bounds the escape hatch.
 //
-// A reader that silently returns nothing would exempt nothing, which fails
-// loudly; a reader that silently returned everything would exempt the whole
-// tree and the walk would pass having checked nothing. Pin the contents.
-func TestTheExemptionReaderFindsTheRealList(t *testing.T) {
+// Every entry removes a command from the walk, so a list that grew would
+// quietly shrink what the contract covers. Five is not a meaningful ceiling in
+// itself; it is low enough that crossing it is a conversation.
+func TestTheExemptionListStaysSmallEnoughToReview(t *testing.T) {
 	exempt := exemptCommands(t)
 
 	for _, path := range []string{"ai skill show", "api"} {
 		if !exempt[path] {
-			t.Errorf("the reader missed the exemption for %q", path)
+			t.Errorf("the exemption for %q is gone; the walk now holds it to a contract it does not keep", path)
 		}
 	}
-	if exempt["repo delete"] {
-		t.Error("the reader invented an exemption; every command would be excluded from the walk")
-	}
 	if len(exempt) > 5 {
-		t.Errorf("the reader found %d exemptions; the list is meant to stay small enough to review", len(exempt))
+		t.Errorf("%d commands are exempt; the list is meant to stay small enough to review", len(exempt))
 	}
 }
 

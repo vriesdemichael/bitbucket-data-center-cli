@@ -7,28 +7,17 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/outputschemas"
 )
 
-// commandsThatDoNotEmitJSON are the commands whose stdout is deliberately not a
-// bb.machine envelope, each with the reason.
+// commandsThatDoNotEmitJSON aliases the one exemption list, which lives in
+// outputschemas because the coverage report needs it too.
 //
-// This list is the rule, made checkable. A command absent from it that prints
-// something other than JSON under --json is a defect: the caller cannot tell
-// "this command does not do JSON" from "this command failed to", which is how
-// ai skill install and remove went unnoticed while 229 of 233 commands were
-// correct.
-//
-// Adding an entry is a decision, not a formality. The question to answer is
-// whether the command returns *data* or produces a *document or stream*. Data
-// owes the caller an envelope (ADR-014). A document does not, because wrapping
-// markdown or a diff in a JSON string helps nobody.
-// help and completion are not listed: Cobra injects them at execute time, so
-// they are not in the command tree and are not part of the surface this
-// project documents or ships schemas for.
-var commandsThatDoNotEmitJSON = map[string]string{
-	"ai skill show": "prints a SKILL.md document; wrapping markdown in a data string helps nobody",
-	"api":           "streams the upstream response body verbatim, which is the point of the escape hatch",
-}
+// A command absent from it that prints something other than JSON under --json
+// is a defect: the caller cannot tell "this command does not do JSON" from
+// "this command failed to", which is how ai skill install and remove went
+// unnoticed while 229 of 233 commands were correct.
+var commandsThatDoNotEmitJSON = outputschemas.CommandsWithoutDataContract
 
 // TestEveryJSONExemptionIsARealCommandWithAReason checks the exemption list
 // itself.

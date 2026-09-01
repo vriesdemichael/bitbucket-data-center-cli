@@ -128,7 +128,6 @@ bb --json auth status
 
 ```json
 {
-  "version": "v2",
   "data": {
     "bitbucket_url": "https://bitbucket.acme.corp",
     "bitbucket_version_target": "",
@@ -136,7 +135,8 @@ bb --json auth status
     "auth_source": "stored/default"
   },
   "meta": {
-    "contract": "bb.machine"
+    "contract": "bb.machine",
+    "bb_version": "v4.0.0"
   }
 }
 ```

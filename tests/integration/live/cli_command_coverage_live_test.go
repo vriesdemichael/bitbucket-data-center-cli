@@ -665,16 +665,18 @@ func decodeJSONMap(t *testing.T, value string) map[string]any {
 	t.Helper()
 
 	var envelope struct {
-		Version string         `json:"version"`
-		Data    map[string]any `json:"data"`
+		Data map[string]any `json:"data"`
+		Meta struct {
+			Contract string `json:"contract"`
+		} `json:"meta"`
 	}
 
 	if err := json.Unmarshal([]byte(value), &envelope); err != nil {
 		t.Fatalf("expected json object output, got parse error %v for: %s", err, value)
 	}
 
-	if strings.TrimSpace(envelope.Version) == "" {
-		t.Fatalf("expected json envelope version in output: %s", value)
+	if strings.TrimSpace(envelope.Meta.Contract) == "" {
+		t.Fatalf("expected a bb.machine envelope in output: %s", value)
 	}
 
 	if envelope.Data == nil {
@@ -688,16 +690,18 @@ func decodeJSONData(t *testing.T, value string, target any) {
 	t.Helper()
 
 	var envelope struct {
-		Version string `json:"version"`
-		Data    any    `json:"data"`
+		Data any `json:"data"`
+		Meta struct {
+			Contract string `json:"contract"`
+		} `json:"meta"`
 	}
 
 	if err := json.Unmarshal([]byte(value), &envelope); err != nil {
 		t.Fatalf("expected json envelope output, got parse error %v for: %s", err, value)
 	}
 
-	if strings.TrimSpace(envelope.Version) == "" {
-		t.Fatalf("expected json envelope version in output: %s", value)
+	if strings.TrimSpace(envelope.Meta.Contract) == "" {
+		t.Fatalf("expected a bb.machine envelope in output: %s", value)
 	}
 
 	if envelope.Data == nil {
