@@ -33,6 +33,7 @@ package result
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -74,30 +75,53 @@ func List[T any](enums map[string][]string) *jsonschema.Schema {
 	}
 }
 
-// applyEnums sets the allowed values on named properties, looking through a
-// list schema to the item it describes.
+// applyEnums sets the allowed values on properties named by a dotted path.
+//
+// "type" reaches a field on the payload itself; "refs.type" reaches one on
+// every element of the refs list. Nesting is the normal case -- most payloads
+// wrap their subject in a repository and a list -- so a flat lookup would only
+// ever work for the shallowest of them.
 func applyEnums(schema *jsonschema.Schema, enums map[string][]string, typeName string) {
-	if len(enums) == 0 {
-		return
-	}
-
-	// Items rather than the type string: a slice derives as null-or-array, so
-	// Type is empty and the union sits in Types.
-	target := schema
-	if target.Items != nil {
-		target = target.Items
-	}
-
-	for property, values := range enums {
-		field, ok := target.Properties[property]
-		if !ok {
-			panic(fmt.Sprintf("enum declared for property %q which %s does not have", property, typeName))
+	for path, values := range enums {
+		field := resolveProperty(schema, path)
+		if field == nil {
+			panic(fmt.Sprintf("enum declared for %q which %s does not have", path, typeName))
 		}
+
 		field.Enum = make([]any, 0, len(values))
 		for _, value := range values {
 			field.Enum = append(field.Enum, value)
 		}
 	}
+}
+
+// resolveProperty walks a dotted path, stepping through list items wherever it
+// meets one, and returns nil if any segment is missing.
+func resolveProperty(schema *jsonschema.Schema, path string) *jsonschema.Schema {
+	current := schema
+
+	for _, segment := range strings.Split(path, ".") {
+		// A list is transparent: naming a property means naming it on the
+		// element, since a list has no properties of its own.
+		for current != nil && current.Items != nil {
+			current = current.Items
+		}
+		if current == nil {
+			return nil
+		}
+
+		next, ok := current.Properties[segment]
+		if !ok {
+			return nil
+		}
+		current = next
+	}
+
+	for current != nil && current.Items != nil {
+		current = current.Items
+	}
+
+	return current
 }
 
 var (

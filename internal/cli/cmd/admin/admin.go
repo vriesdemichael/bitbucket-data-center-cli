@@ -62,16 +62,18 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			reported := healthFrom(health)
+
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), health)
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
 			}
 
-			if health.Authenticated {
-				fmt.Fprintf(cmd.OutOrStdout(), "Bitbucket health: OK (status=%d, auth=ok)\n", health.StatusCode)
+			if reported.Authenticated {
+				fmt.Fprintf(cmd.OutOrStdout(), "Bitbucket health: OK (status=%d, auth=ok)\n", reported.StatusCode)
 				return nil
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Bitbucket health: OK (status=%d, auth=limited)\n", health.StatusCode)
+			fmt.Fprintf(cmd.OutOrStdout(), "Bitbucket health: OK (status=%d, auth=limited)\n", reported.StatusCode)
 			return nil
 		},
 	})
