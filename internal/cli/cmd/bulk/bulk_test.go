@@ -200,9 +200,30 @@ func TestBulkApplyReturnsStructuredFailure(t *testing.T) {
 		t.Fatalf("expected conflict exit code, got %d (%v)", apperrors.ExitCode(err), err)
 	}
 
+	// Nothing on stdout. This test used to require the status envelope here,
+	// which is what made the failure path write two documents: cmd/bb writes
+	// the error envelope for the returned error, and `| jq` fails on the
+	// second. Under --json the failure envelope is the one document (ADR-075).
+	if written := strings.TrimSpace(buffer.String()); written != "" {
+		t.Fatalf("a failing apply wrote to stdout under --json; cmd/bb appends the error envelope after it:\n%s", written)
+	}
+
+	// The operation id is in the error, because it is the only handle the
+	// caller is left with -- `bb bulk status <id>` returns the artifact.
+	operationID := operationIDFrom(t, err)
+
+	statusCommand := New(testDependencies(server.URL))
+	statusBuffer := &bytes.Buffer{}
+	statusCommand.SetOut(statusBuffer)
+	statusCommand.SetErr(statusBuffer)
+	statusCommand.SetArgs([]string{"status", operationID})
+	if statusErr := statusCommand.Execute(); statusErr != nil {
+		t.Fatalf("the id named in the error does not resolve: %v", statusErr)
+	}
+
 	var status bulkworkflow.ApplyStatus
-	if decodeErr := decodeJSONEnvelopeData(buffer.Bytes(), &status); decodeErr != nil {
-		t.Fatalf("expected structured JSON status, got %q (%v)", buffer.String(), decodeErr)
+	if decodeErr := decodeJSONEnvelopeData(statusBuffer.Bytes(), &status); decodeErr != nil {
+		t.Fatalf("expected structured JSON status, got %q (%v)", statusBuffer.String(), decodeErr)
 	}
 	if status.Status != "failed" {
 		t.Fatalf("expected failed apply status, got %s", status.Status)
@@ -210,6 +231,20 @@ func TestBulkApplyReturnsStructuredFailure(t *testing.T) {
 	if status.Targets[0].Operations[0].Status != "failed" {
 		t.Fatalf("expected failed operation, got %#v", status.Targets[0].Operations)
 	}
+}
+
+// operationIDFrom pulls the op-... identifier out of an apply error message.
+func operationIDFrom(t *testing.T, err error) string {
+	t.Helper()
+
+	for _, field := range strings.Fields(err.Error()) {
+		if strings.HasPrefix(field, "op-") {
+			return field
+		}
+	}
+
+	t.Fatalf("the error names no operation id, so the artifact cannot be reached: %v", err)
+	return ""
 }
 
 func TestBulkCommandErrorPaths(t *testing.T) {
@@ -448,4 +483,134 @@ func decodeJSONEnvelopeData(raw []byte, target any) error {
 	}
 
 	return json.Unmarshal(encodedData, target)
+}
+
+// TestBulkApplyReportsCancellationWithoutLosingTheArtifact covers the two
+// halves of ADR-075 for an interrupted run.
+//
+// Under --json the failure envelope is the one document cmd/bb writes, so the
+// command must put nothing on stdout and must name the operation id in the
+// error -- otherwise the caller is holding a saved artifact with no handle to
+// fetch it with. Under human output the status is printed instead, because the
+// error line goes to stderr and the two do not collide.
+//
+// The context is cancelled before the command runs. That is the between-target
+// check firing on the first target, which is deterministic; the in-flight case
+// is covered where it belongs, in the workflow package.
+func TestBulkApplyReportsCancellationWithoutLosingTheArtifact(t *testing.T) {
+	tempDir := t.TempDir()
+	statusDir := filepath.Join(tempDir, "status")
+	t.Setenv("BB_BULK_STATUS_DIR", statusDir)
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "config.yaml"))
+
+	planner := bulkworkflow.NewPlanner(fakeCatalog{repositories: map[string][]repository.Repository{
+		"PRJ": {
+			{ProjectKey: "PRJ", Slug: "repo-a", Name: "Repo A"},
+			{ProjectKey: "PRJ", Slug: "repo-b", Name: "Repo B"},
+		},
+	}})
+	plan, err := planner.Plan(context.TODO(), bulkworkflow.Policy{
+		APIVersion: bulkworkflow.APIVersion,
+		Selector:   bulkworkflow.Selector{ProjectKey: "PRJ"},
+		Operations: []bulkworkflow.OperationSpec{{Type: bulkworkflow.OperationRepoPullRequestRequiredAllTasksComplete, RequiredAllTasksComplete: boolPointer(true)}},
+	})
+	if err != nil {
+		t.Fatalf("plan failed: %v", err)
+	}
+
+	planPath := filepath.Join(tempDir, "plan.json")
+	encodedPlan, err := json.Marshal(plan)
+	if err != nil {
+		t.Fatalf("marshal plan: %v", err)
+	}
+	if err := os.WriteFile(planPath, encodedPlan, 0o600); err != nil {
+		t.Fatalf("write plan: %v", err)
+	}
+
+	// No server: an interrupted run must not reach one.
+	runCancelled := func(t *testing.T, jsonEnabled bool) (string, error) {
+		t.Helper()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		deps := testDependencies("http://127.0.0.1:1")
+		deps.JSONEnabled = func() bool { return jsonEnabled }
+
+		command := New(deps)
+		buffer := &bytes.Buffer{}
+		command.SetOut(buffer)
+		command.SetErr(&bytes.Buffer{})
+		command.SetArgs([]string{"apply", "--from-plan", planPath})
+
+		// Run first: Go evaluates return operands left to right, so reading the
+		// buffer in the return statement reads it before the command has run.
+		executeErr := command.ExecuteContext(ctx)
+
+		return buffer.String(), executeErr
+	}
+
+	t.Run("machine output writes nothing and names the id", func(t *testing.T) {
+		stdout, err := runCancelled(t, true)
+		if err == nil {
+			t.Fatal("an interrupted run reported success")
+		}
+
+		// Exit 12, not 10. Transient is documented to agents as "retry later",
+		// and retrying a bulk apply replays mutations across the whole plan.
+		if code := apperrors.ExitCode(err); code != 12 {
+			t.Errorf("exit code = %d, want 12 (cancelled); %v", code, err)
+		}
+		if kind := apperrors.KindOf(err); kind != apperrors.KindCancelled {
+			t.Errorf("kind = %q, want %q", kind, apperrors.KindCancelled)
+		}
+
+		if written := strings.TrimSpace(stdout); written != "" {
+			t.Fatalf("wrote to stdout under --json; cmd/bb appends the error envelope after it (ADR-075):\n%s", written)
+		}
+
+		operationID := operationIDFrom(t, err)
+
+		// The handle has to actually resolve, which is the whole reason it is
+		// in the message.
+		statusCommand := New(testDependencies("http://127.0.0.1:1"))
+		statusBuffer := &bytes.Buffer{}
+		statusCommand.SetOut(statusBuffer)
+		statusCommand.SetErr(statusBuffer)
+		statusCommand.SetArgs([]string{"status", operationID})
+		if statusErr := statusCommand.Execute(); statusErr != nil {
+			t.Fatalf("the id named in the error does not resolve: %v", statusErr)
+		}
+
+		var status bulkworkflow.ApplyStatus
+		if decodeErr := decodeJSONEnvelopeData(statusBuffer.Bytes(), &status); decodeErr != nil {
+			t.Fatalf("saved artifact is not readable: %v\n%s", decodeErr, statusBuffer.String())
+		}
+		if status.Status != "cancelled" {
+			t.Errorf("saved status = %q, want cancelled", status.Status)
+		}
+		if status.Summary.CancelledTargets != len(plan.Targets) {
+			t.Errorf("cancelled targets = %d, want %d; the artifact must account for every repository",
+				status.Summary.CancelledTargets, len(plan.Targets))
+		}
+		if status.Summary.FailedTargets != 0 {
+			t.Errorf("failed targets = %d, want 0; nothing was tried", status.Summary.FailedTargets)
+		}
+	})
+
+	t.Run("human output prints the status", func(t *testing.T) {
+		stdout, err := runCancelled(t, false)
+		if err == nil {
+			t.Fatal("an interrupted run reported success")
+		}
+
+		// stderr carries the error line, so stdout keeps the detail and the
+		// reader needs no handle to recover it.
+		if !strings.Contains(stdout, "cancelled") {
+			t.Errorf("the human status does not say the run was cancelled:\n%s", stdout)
+		}
+		if !strings.Contains(stdout, "bb bulk status ") {
+			t.Errorf("the human status does not say how to reach the artifact:\n%s", stdout)
+		}
+	})
 }

@@ -480,7 +480,14 @@ func (executor *Executor) Apply(ctx context.Context, plan Plan) (ApplyStatus, er
 	}
 
 	if cancellation != nil {
-		return status, apperrors.New(apperrors.KindCancelled, "bulk apply was cancelled before every repository was attempted", cancellation)
+		// The id is in the message because under --json it is all the caller
+		// gets: the failure envelope is the one document on stdout (ADR-075),
+		// and the artifact is reached with `bb bulk status <id>`.
+		return status, apperrors.New(
+			apperrors.KindCancelled,
+			fmt.Sprintf("bulk apply %s was cancelled before every repository was attempted", status.OperationID),
+			cancellation,
+		)
 	}
 
 	return status, nil

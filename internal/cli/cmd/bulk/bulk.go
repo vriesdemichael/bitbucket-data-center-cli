@@ -130,36 +130,35 @@ func New(deps Dependencies) *cobra.Command {
 				bulkworkflow.NewStatusStore(statusDir),
 			)
 
-			writeStatus := func(status bulkworkflow.ApplyStatus) error {
-				if isJSON() {
-					return deps.WriteJSON(cmd.OutOrStdout(), status)
-				}
-				writeStatusHuman(cmd.OutOrStdout(), status)
-				return nil
+			status, applyErr := executor.Apply(cmd.Context(), plan)
+			if applyErr == nil {
+				applyErr = applyFailureError(status)
 			}
 
-			status, applyErr := executor.Apply(cmd.Context(), plan)
-
-			// An interrupted run has an operation id and a saved artifact, and
-			// that id is the only way to reach it: `bb bulk status` takes one
-			// as its argument. Returning the error before printing left the
-			// caller holding a recoverable run they had no name for, which is
-			// the whole point of saving the artifact on cancellation.
+			// Human output prints the status whatever happened. The error line
+			// goes to stderr, so the two do not collide, and the reader gets
+			// the detail without needing a handle to fetch it with.
 			//
-			// An empty id means Apply refused the plan before starting, so
-			// there is no run to report -- only the error.
-			if applyErr != nil && status.OperationID == "" {
+			// An empty operation id means Apply refused the plan before
+			// starting: there is no run to report, only the error.
+			if !isJSON() {
+				if status.OperationID != "" {
+					writeStatusHuman(cmd.OutOrStdout(), status)
+				}
 				return applyErr
 			}
 
-			if err := writeStatus(status); err != nil {
-				return err
-			}
+			// Machine output gets exactly one document (ADR-075). Printing the
+			// status and then returning put a second envelope after it, from
+			// cmd/bb, and `| jq` fails on the second -- which is the parse
+			// error #474 was about. The failure envelope wins, and its message
+			// names the operation id, so the artifact is one
+			// `bb bulk status <id> --json` away.
 			if applyErr != nil {
 				return applyErr
 			}
 
-			return applyFailureError(status)
+			return deps.WriteJSON(cmd.OutOrStdout(), status)
 		},
 	}
 	applyCmd.Flags().StringVar(&planInputFile, "from-plan", "", "Path to reviewed bulk plan JSON file")
