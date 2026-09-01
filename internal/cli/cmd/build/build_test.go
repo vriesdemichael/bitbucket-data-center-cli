@@ -362,8 +362,10 @@ func TestBuildRepoScopedCommands(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on build delete JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), "status") || !strings.Contains(buf.String(), "PRJ/demo") {
-		t.Fatalf("expected status and repository in JSON output: %s", buf.String())
+	if !strings.Contains(buf.String(), `"status": "ok"`) ||
+		!strings.Contains(buf.String(), `"projectKey": "PRJ"`) ||
+		!strings.Contains(buf.String(), `"slug": "demo"`) {
+		t.Fatalf("expected status and structured repository in JSON output: %s", buf.String())
 	}
 
 	// 4. build required list (human & JSON)

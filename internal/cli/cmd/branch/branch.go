@@ -12,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -260,10 +261,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"repository": repo,
-					"branches":   branches,
-				})
+				return d.WriteJSON(cmd.OutOrStdout(), Branches{Repository: repositoryOf(repo), Branches: branchesFrom(branches)})
 			}
 
 			if len(branches) == 0 {
@@ -373,7 +371,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "branch": created})
+				return d.WriteJSON(cmd.OutOrStdout(), BranchCreation{Repository: repositoryOf(repo), Branch: branchFrom(created)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created branch"), style.Resource.Render(safeString(created.DisplayId)))
@@ -433,7 +431,7 @@ func New(deps Dependencies) *cobra.Command {
 					})
 				}
 
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": repo, "branch": args[0]})
+				return d.WriteJSON(cmd.OutOrStdout(), BranchDeletion{Status: result.OK(), Repository: repositoryOf(repo), Branch: args[0]})
 			}
 
 			if d.DryRunEnabled() {
@@ -471,7 +469,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "default_branch": defaultBranch})
+				return d.WriteJSON(cmd.OutOrStdout(), DefaultBranch{Repository: repositoryOf(repo), DefaultBranch: result.RefFrom(defaultBranch)})
 			}
 
 			style.WriteTable(cmd.OutOrStdout(), [][]string{{style.Resource.Render(safeString(defaultBranch.DisplayId)), style.Secondary.Render(safeString(defaultBranch.Id))}})
@@ -554,7 +552,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": repo, "default_branch": args[0]})
+				return d.WriteJSON(cmd.OutOrStdout(), DefaultBranchChange{Status: result.OK(), Repository: repositoryOf(repo), DefaultBranch: args[0]})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Default branch set to"), style.Resource.Render(args[0]))
@@ -588,7 +586,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "commit": args[0], "refs": refs})
+				return d.WriteJSON(cmd.OutOrStdout(), CommitRefs{Repository: repositoryOf(repo), Commit: args[0], Refs: result.RefsFrom(refs)})
 			}
 
 			if len(refs) == 0 {
@@ -681,7 +679,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": repo, "default_branch": args[0]})
+				return d.WriteJSON(cmd.OutOrStdout(), DefaultBranchChange{Status: result.OK(), Repository: repositoryOf(repo), DefaultBranch: args[0]})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Branch model default updated to"), style.Resource.Render(args[0]))
@@ -722,7 +720,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "restrictions": restrictions})
+				return d.WriteJSON(cmd.OutOrStdout(), Restrictions{Repository: repositoryOf(repo), Restrictions: restrictionsFrom(restrictions)})
 			}
 
 			if len(restrictions) == 0 {
@@ -779,7 +777,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "restriction": restriction})
+				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: restrictionFrom(restriction)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", style.Secondary.Render(fmt.Sprintf("id=%d", safeInt32(restriction.Id))), safeString(restriction.Type))
@@ -885,7 +883,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "restriction": created})
+				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: restrictionFrom(created)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created restriction"), style.Secondary.Render(fmt.Sprintf("%d", safeInt32(created.Id))))
@@ -993,7 +991,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "restriction": updated})
+				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: restrictionFrom(updated)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated restriction"), style.Secondary.Render(fmt.Sprintf("%d", safeInt32(updated.Id))))
@@ -1081,7 +1079,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": repo, "restriction_id": args[0]})
+				return d.WriteJSON(cmd.OutOrStdout(), RestrictionDeletion{Status: result.OK(), Repository: repositoryOf(repo), RestrictionID: args[0]})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted restriction"), style.Resource.Render(args[0]))

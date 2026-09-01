@@ -627,7 +627,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), Users{Users: restUsersFrom(users)})
+				return d.WriteJSON(cmd.OutOrStdout(), Users{Users: result.RestUsersFrom(users)})
 			}
 
 			printUsers(cmd, users)

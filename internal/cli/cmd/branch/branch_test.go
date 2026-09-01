@@ -505,8 +505,8 @@ func TestBranchJSONAndFlagModes(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on default get JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), "default_branch") {
-		t.Fatalf("expected default_branch in JSON output: %s", buf.String())
+	if !strings.Contains(buf.String(), "defaultBranch") {
+		t.Fatalf("expected defaultBranch in JSON output: %s", buf.String())
 	}
 
 	// Default set JSON mode
@@ -518,8 +518,8 @@ func TestBranchJSONAndFlagModes(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on default set JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), "default_branch") {
-		t.Fatalf("expected default_branch in JSON output: %s", buf.String())
+	if !strings.Contains(buf.String(), "defaultBranch") {
+		t.Fatalf("expected defaultBranch in JSON output: %s", buf.String())
 	}
 
 	// Model update JSON mode
@@ -531,8 +531,8 @@ func TestBranchJSONAndFlagModes(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on model update JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), "default_branch") {
-		t.Fatalf("expected default_branch in JSON output: %s", buf.String())
+	if !strings.Contains(buf.String(), "defaultBranch") {
+		t.Fatalf("expected defaultBranch in JSON output: %s", buf.String())
 	}
 
 	// Restriction list JSON mode & with filter flags
