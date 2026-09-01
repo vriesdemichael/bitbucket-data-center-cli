@@ -63,10 +63,6 @@ func SchemasFor(siteVersion string) map[string]map[string]any {
 		all[k] = v
 	}
 
-	for k, v := range updateSchemas() {
-		all[k] = v
-	}
-
 	// AI command group schemas
 	for k, v := range aiSchemas() {
 		all[k] = v

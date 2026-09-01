@@ -122,15 +122,19 @@ func TestUpdateCommandJSONDryRun(t *testing.T) {
 		t.Fatalf("failed to re-encode json data: %v", err)
 	}
 
-	var result updateworkflow.Result
-	if err := json.Unmarshal(encodedData, &result); err != nil {
+	// Decoded into the published shape, not the workflow's own Result. The two
+	// are deliberately different now: the workflow carries 28 flat fields, and
+	// what a caller reads groups the release, trust and path fields so that
+	// "may this binary be trusted" has one place to look.
+	var reported Update
+	if err := json.Unmarshal(encodedData, &reported); err != nil {
 		t.Fatalf("failed to decode update result: %v", err)
 	}
-	if !result.DryRun || !result.UpdateAvailable || result.Applied {
-		t.Fatalf("unexpected update result: %+v", result)
+	if !reported.DryRun || !reported.UpdateAvailable || reported.Applied {
+		t.Fatalf("unexpected update result: %+v", reported)
 	}
-	if result.AssetName != "bb_1.2.0_linux_amd64.tar.gz" {
-		t.Fatalf("expected asset name in result, got %+v", result)
+	if reported.Release.AssetName != "bb_1.2.0_linux_amd64.tar.gz" {
+		t.Fatalf("expected asset name in result, got %+v", reported)
 	}
 }
 
