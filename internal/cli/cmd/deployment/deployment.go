@@ -9,6 +9,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -186,8 +187,10 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			reported := deploymentFrom(created)
+
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), created)
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Deployment %s (%s) set on %s/%s at %s\n", key, displayName, repo.ProjectKey, repo.Slug, args[0])
@@ -245,28 +248,22 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			reported := deploymentFrom(dep)
+
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), dep)
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
 			}
 
-			stateStr := "UNKNOWN"
-			if dep.State != nil {
-				stateStr = string(*dep.State)
+			stateStr := reported.State
+			if stateStr == "" {
+				stateStr = "UNKNOWN"
 			}
-
-			displayNameStr := ""
-			if dep.DisplayName != nil {
-				displayNameStr = *dep.DisplayName
-			}
-
-			urlStr := ""
-			if dep.Url != nil {
-				urlStr = *dep.Url
-			}
+			displayNameStr := reported.DisplayName
+			urlStr := reported.URL
 
 			rows := [][]string{
 				{
-					style.Resource.Render(safeString(dep.Key)),
+					style.Resource.Render(reported.Key),
 					displayNameStr,
 					style.ActionStyle(stateStr).Render(stateStr),
 					style.Secondary.Render(urlStr),
@@ -364,8 +361,15 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			reported := Deletion{
+				Status:     result.OK(),
+				Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+				Commit:     args[0],
+				Key:        getKey,
+			}
+
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": getKey})
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Deleted deployment on %s/%s at %s\n", repo.ProjectKey, repo.Slug, args[0])

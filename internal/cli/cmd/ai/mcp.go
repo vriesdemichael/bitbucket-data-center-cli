@@ -253,18 +253,9 @@ server exposes by default.`,
 			}
 
 			if isJSON, _ := cmd.Root().PersistentFlags().GetBool("json"); isJSON {
-				type toolEntry struct {
-					Name        string `json:"name"`
-					Description string `json:"description"`
-					// Safe mirrors the server's classification; Exposure is the
-					// same fact as a stable string, so a consumer can render it
-					// without re-deriving the vocabulary.
-					Safe     bool   `json:"safe"`
-					Exposure string `json:"exposure"`
-				}
-				entries := make([]toolEntry, len(specs))
+				entries := make([]Tool, len(specs))
 				for i, spec := range specs {
-					entries[i] = toolEntry{
+					entries[i] = Tool{
 						Name:        spec.Tool.Name,
 						Description: toolDescription(spec),
 						Safe:        spec.Safe,
