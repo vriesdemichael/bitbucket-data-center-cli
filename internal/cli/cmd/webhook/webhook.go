@@ -12,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -106,7 +107,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"webhook": hook})
+				return d.WriteJSON(cmd.OutOrStdout(), SingleWebhook{Webhook: webhookFrom(hook)})
 			}
 			pretty, err := json.MarshalIndent(hook, "", "  ")
 			if err != nil {
@@ -180,7 +181,11 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "webhook": updated})
+				return d.WriteJSON(cmd.OutOrStdout(), Change{
+					Status:     result.OK(),
+					Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+					Webhook:    webhookFrom(updated),
+				})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated webhook:"), style.Secondary.Render(args[0]))
 			return nil
@@ -317,7 +322,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), res.Payload)
+				return d.WriteJSON(cmd.OutOrStdout(), Webhooks{Webhooks: webhooksFrom(res.Payload)})
 			}
 
 			var webhooks []WebhookModel
@@ -438,7 +443,11 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhook": payload})
+				return d.WriteJSON(cmd.OutOrStdout(), Change{
+					Status:     result.OK(),
+					Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+					Webhook:    webhookFrom(payload),
+				})
 			}
 
 			var hook WebhookModel
@@ -513,7 +522,11 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhook_id": args[0]})
+				return d.WriteJSON(cmd.OutOrStdout(), Deletion{
+					Status:     result.OK(),
+					Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+					WebhookID:  args[0],
+				})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted webhook:"), style.Secondary.Render(args[0]))
