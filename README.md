@@ -129,10 +129,16 @@ bb --json auth status
 ```json
 {
   "data": {
+    "ok": true,
     "bitbucket_url": "https://bitbucket.acme.corp",
     "bitbucket_version_target": "",
     "auth_mode": "token",
-    "auth_source": "stored/default"
+    "auth_source": "stored/default",
+    "credential_storage": "keyring",
+    "checks": [
+      { "name": "authentication", "ok": true },
+      { "name": "git credential helper", "ok": true, "advisory": true }
+    ]
   },
   "meta": {
     "contract": "bb.machine",
@@ -140,6 +146,9 @@ bb --json auth status
   }
 }
 ```
+
+`ok` is the one field a script needs: false when any non-advisory check failed. `checks` entries
+carry a `detail` and a `remedy` when they fail, omitted here for brevity.
 
 **Ready for daily workflows?** See the **[Developer Cheatsheet & Cookbook](docs/site/cheatsheet.md)** for scannable reference tables and top 10 daily developer recipes (PR reviews, local checkout, auto-merge, and IDE setup).
 
