@@ -248,8 +248,8 @@ func TestCommitPRs(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on prs JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), "pull_requests") {
-		t.Fatalf("expected pull_requests in JSON output, got: %s", buf.String())
+	if !strings.Contains(buf.String(), "pullRequests") {
+		t.Fatalf("expected pullRequests in JSON output, got: %s", buf.String())
 	}
 }
 

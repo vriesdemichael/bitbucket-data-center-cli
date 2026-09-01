@@ -9,6 +9,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -121,18 +122,23 @@ func New(deps Dependencies) *cobra.Command {
 				}
 			}
 
-			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "commits": commits})
+			reported := Commits{
+				Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+				Commits:    result.CommitsFrom(commits),
 			}
 
-			if len(commits) == 0 {
+			if d.JSONEnabled() {
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
+			}
+
+			if len(reported.Commits) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No commits found"))
 				return nil
 			}
 
-			rows := make([][]string, len(commits))
-			for i, commit := range commits {
-				rows[i] = []string{style.Secondary.Render(safeString(commit.DisplayId)), strings.Split(safeString(commit.Message), "\n")[0]}
+			rows := make([][]string, len(reported.Commits))
+			for i, commit := range reported.Commits {
+				rows[i] = []string{style.Secondary.Render(commit.DisplayID), commit.Subject()}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
 
@@ -164,12 +170,17 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "commit": commit})
+			reported := SingleCommit{
+				Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+				Commit:     result.CommitFrom(commit),
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Commit:"), style.Secondary.Render(safeString(commit.Id)))
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Message:"), safeString(commit.Message))
+			if d.JSONEnabled() {
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Commit:"), style.Secondary.Render(reported.Commit.ID))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Message:"), reported.Commit.Message)
 			return nil
 		},
 	}
@@ -200,18 +211,23 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "commits": commits})
+			reported := Commits{
+				Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+				Commits:    result.CommitsFrom(commits),
 			}
 
-			if len(commits) == 0 {
+			if d.JSONEnabled() {
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
+			}
+
+			if len(reported.Commits) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No commits found between refs"))
 				return nil
 			}
 
-			rows := make([][]string, len(commits))
-			for i, commit := range commits {
-				rows[i] = []string{style.Secondary.Render(safeString(commit.DisplayId)), strings.Split(safeString(commit.Message), "\n")[0]}
+			rows := make([][]string, len(reported.Commits))
+			for i, commit := range reported.Commits {
+				rows[i] = []string{style.Secondary.Render(commit.DisplayID), commit.Subject()}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
 
@@ -243,17 +259,22 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_requests": prs})
+			reported := ContainingPullRequests{
+				Repository:   result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+				PullRequests: result.PullRequestsFrom(prs),
 			}
 
-			if len(prs) == 0 {
+			if d.JSONEnabled() {
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
+			}
+
+			if len(reported.PullRequests) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No pull requests containing commit found"))
 				return nil
 			}
 
-			rows := make([][]string, len(prs))
-			for i, pr := range prs {
+			rows := make([][]string, len(reported.PullRequests))
+			for i, pr := range reported.PullRequests {
 				idStr := fmt.Sprintf("#%d", pr.ID)
 				rows[i] = []string{style.Secondary.Render(idStr), pr.Title, pr.State}
 			}
