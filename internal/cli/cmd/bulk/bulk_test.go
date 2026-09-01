@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -620,4 +622,70 @@ func TestBulkApplyReportsCancellationWithoutLosingTheArtifact(t *testing.T) {
 			t.Errorf("the human status does not say how to reach the artifact:\n%s", stdout)
 		}
 	})
+}
+
+// TestEveryNonZeroSummaryCounterReachesTheHumanOutput is the guard on the
+// second renderer.
+//
+// bb has two renderings of the same result: the JSON payload and the human
+// summary. Nothing tied them together, so cancelledTargets and
+// cancelledOperations were added to the model, the JSON and the published
+// schema -- with tests, through four rounds of review -- and the human summary
+// was never updated. An interrupted run printed "successful=0 failed=0" out of
+// three targets, which reads as nothing having happened.
+//
+// Reflecting over the summary is what makes this hold for the next counter
+// rather than only for that one. A field added to ApplySummary and left out of
+// writeStatusHuman fails here.
+func TestEveryNonZeroSummaryCounterReachesTheHumanOutput(t *testing.T) {
+	summary := bulkworkflow.ApplySummary{}
+
+	// Distinct values, so a counter rendered in the wrong place is still
+	// caught: two fields sharing a value could cover for each other.
+	summaryValue := reflect.ValueOf(&summary).Elem()
+	for index := 0; index < summaryValue.NumField(); index++ {
+		if field := summaryValue.Field(index); field.Kind() == reflect.Int {
+			field.SetInt(int64(index + 11))
+		}
+	}
+
+	buffer := &bytes.Buffer{}
+	writeStatusHuman(buffer, bulkworkflow.ApplyStatus{
+		OperationID: "op-1",
+		Status:      "cancelled",
+		Summary:     summary,
+	})
+	rendered := buffer.String()
+
+	summaryType := summaryValue.Type()
+	for index := 0; index < summaryValue.NumField(); index++ {
+		field := summaryValue.Field(index)
+		if field.Kind() != reflect.Int {
+			continue
+		}
+		value := fmt.Sprintf("%d", field.Int())
+		if !strings.Contains(rendered, value) {
+			t.Errorf("summary field %s = %s never reaches the human output, so a reader cannot see it:\n%s",
+				summaryType.Field(index).Name, value, rendered)
+		}
+	}
+}
+
+// TestTheHumanSummaryOmitsCancelledWhenThereIsNone keeps the other direction:
+// `cancelled=0` on every successful apply is noise, and the JSON omits it too.
+func TestTheHumanSummaryOmitsCancelledWhenThereIsNone(t *testing.T) {
+	buffer := &bytes.Buffer{}
+	writeStatusHuman(buffer, bulkworkflow.ApplyStatus{
+		OperationID: "op-1",
+		Status:      "success",
+		Summary: bulkworkflow.ApplySummary{
+			TargetCount:       2,
+			OperationCount:    2,
+			SuccessfulTargets: 2,
+		},
+	})
+
+	if strings.Contains(buffer.String(), "cancelled") {
+		t.Errorf("an uninterrupted run mentions cancellation:\n%s", buffer.String())
+	}
 }
