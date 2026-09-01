@@ -387,6 +387,7 @@ func (executor *Executor) Apply(ctx context.Context, plan Plan) (ApplyStatus, er
 		}
 
 		targetFailed := false
+		targetCancelled := false
 		for _, operation := range target.Operations {
 			if targetFailed {
 				targetResult.Operations = append(targetResult.Operations, OperationResult{
@@ -394,6 +395,25 @@ func (executor *Executor) Apply(ctx context.Context, plan Plan) (ApplyStatus, er
 					Status: resultStatusSkipped,
 				})
 				status.Summary.SkippedOperations++
+				continue
+			}
+
+			// Checked before every operation, not only before every target.
+			// The between-target check alone left the target that was in
+			// flight when the signal arrived recording `failed` with "context
+			// canceled" as the reason -- for operations nobody ran. A target
+			// carrying several operations is the ordinary shape here, so that
+			// was the common case rather than the edge one.
+			if err := ctx.Err(); err != nil {
+				cancellation = err
+				targetCancelled = true
+			}
+			if targetCancelled {
+				targetResult.Operations = append(targetResult.Operations, OperationResult{
+					Type:   operation.Type,
+					Status: resultStatusCancelled,
+				})
+				status.Summary.CancelledOperations++
 				continue
 			}
 
@@ -420,10 +440,17 @@ func (executor *Executor) Apply(ctx context.Context, plan Plan) (ApplyStatus, er
 			targetResult.Operations = append(targetResult.Operations, operationResult)
 		}
 
-		if targetResult.Status == resultStatusSuccess {
-			status.Summary.SuccessfulTargets++
-		} else {
+		// A failure that already happened is still a failure; the run being cut
+		// short afterwards does not unmake it. Only a target that was going
+		// fine and was interrupted counts as cancelled.
+		switch {
+		case targetResult.Status == resultStatusFailed:
 			status.Summary.FailedTargets++
+		case targetCancelled:
+			targetResult.Status = resultStatusCancelled
+			status.Summary.CancelledTargets++
+		default:
+			status.Summary.SuccessfulTargets++
 		}
 
 		status.Targets = append(status.Targets, targetResult)
@@ -453,7 +480,7 @@ func (executor *Executor) Apply(ctx context.Context, plan Plan) (ApplyStatus, er
 	}
 
 	if cancellation != nil {
-		return status, apperrors.New(apperrors.KindTransient, "bulk apply was cancelled before every repository was attempted", cancellation)
+		return status, apperrors.New(apperrors.KindCancelled, "bulk apply was cancelled before every repository was attempted", cancellation)
 	}
 
 	return status, nil

@@ -494,8 +494,12 @@ present tells you which happened:
 
 Check for `error` before reading `data`. `kind` is one of `authentication`,
 `authorization`, `validation`, `not_found`, `conflict`, `transient`, `permanent`,
-`not_implemented`, `internal` — so you can tell "fix your invocation" from "retry later"
-without parsing the message. `exit_code` matches the process exit status.
+`not_implemented`, `cancelled`, `internal` — so you can tell "fix your invocation" from
+"retry later" without parsing the message. `exit_code` matches the process exit status.
+
+`cancelled` / exit `12` means somebody interrupted the command or a deadline expired. Do
+not retry it automatically: for a mutating command like `bb bulk apply` that re-runs the
+work the operator just stopped. Report it and wait for instruction.
 
 A malformed invocation — unknown flag, unknown command, bad flag value, wrong number of
 arguments — reports `validation` / exit `2`. Treat that as your own mistake to correct, not

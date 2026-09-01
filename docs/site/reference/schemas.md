@@ -91,6 +91,21 @@ them:
 | [output.bulk.apply.schema.json](schemas/output/output.bulk.apply.schema.json) | `bb bulk apply --json` |
 | [output.bulk.status.schema.json](schemas/output/output.bulk.status.schema.json) | `bb bulk status --json` |
 
+An interrupted `bb bulk apply` reports `status: "cancelled"` and records the repositories it
+never reached as `cancelled` rather than `failed`, with `summary.cancelledTargets` and
+`summary.cancelledOperations` counting them. The command exits `12`, which is
+[`cancelled`](../advanced/machine-mode-diagnostics.md#error-kinds-and-exit-codes) — not
+something to retry automatically.
+
+### AI command output schemas
+
+| Schema file | Command |
+|---|---|
+| [output.ai.skill.install.schema.json](schemas/output/output.ai.skill.install.schema.json) | `bb ai skill install --json` |
+| [output.ai.skill.remove.schema.json](schemas/output/output.ai.skill.remove.schema.json) | `bb ai skill remove --json` |
+
+`bb ai skill show` has no output schema: it prints a SKILL.md document rather than data.
+
 Output schema source-of-truth is in `internal/cli/outputschemas/` and `internal/cli/cmd/*/schema.go`.
 
 ---

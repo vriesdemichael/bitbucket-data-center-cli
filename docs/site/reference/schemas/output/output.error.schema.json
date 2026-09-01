@@ -16,7 +16,8 @@
             4,
             5,
             10,
-            11
+            11,
+            12
           ],
           "type": "integer"
         },
@@ -31,6 +32,7 @@
             "transient",
             "permanent",
             "not_implemented",
+            "cancelled",
             "internal"
           ]
         },
