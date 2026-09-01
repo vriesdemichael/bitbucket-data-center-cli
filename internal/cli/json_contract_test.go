@@ -30,14 +30,14 @@ var commandsThatDoNotEmitJSON = map[string]string{
 	"api":           "streams the upstream response body verbatim, which is the point of the escape hatch",
 }
 
-// TestEveryCommandEitherEmitsJSONOrSaysWhyNot walks the command tree and holds
-// each command to one of the two contracts.
+// TestEveryJSONExemptionIsARealCommandWithAReason checks the exemption list
+// itself.
 //
-// It cannot invoke them -- most need a server -- so it checks the property that
-// is statically visible: a command that writes to stdout on its success path
-// either goes through the shared JSON writer or is named above. That is weaker
-// than running them, and it is the half that would have caught this one.
-func TestEveryCommandEitherEmitsJSONOrSaysWhyNot(t *testing.T) {
+// It is only the list that is checked here. The contract the list carves out of
+// -- every other command emitting an envelope under --json -- is enforced by
+// walking and invoking the tree, in
+// TestEveryLeafCommandUnderJSONWritesAnEnvelopeOrNothing.
+func TestEveryJSONExemptionIsARealCommandWithAReason(t *testing.T) {
 	t.Parallel()
 
 	root := NewRootCommand()

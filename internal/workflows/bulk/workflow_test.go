@@ -1139,6 +1139,72 @@ func TestApplyStopsOnCancellationRatherThanFailingTheRest(t *testing.T) {
 	}
 }
 
+// TestApplyDoesNotFailTheRestOfAnInterruptedTarget covers the target that was
+// already in flight when the signal arrived.
+//
+// Checking the context between targets is not enough: the operations left in
+// the current target still ran, met the cancelled context inside runner.Run,
+// and were written to the artifact as `failed` with "context canceled" as the
+// reason. That is the same lie the between-target check was added to stop,
+// confined to one repository -- and multi-operation targets are the ordinary
+// shape of a bulk policy, not an unusual one.
+func TestApplyDoesNotFailTheRestOfAnInterruptedTarget(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Cancel during the first target's first operation, so the second
+	// operation of that same target is the one at issue.
+	plan := planWithMultiOperationTargets(t, 3, 2)
+	runner := &cancellingRunner{cancel: cancel, afterCalls: 1}
+
+	status, err := NewExecutor(runner, nil).Apply(ctx, plan)
+	if err == nil {
+		t.Fatal("an interrupted run reported success")
+	}
+
+	if status.Summary.FailedOperations != 0 {
+		t.Errorf("failed operations = %d, want 0; nothing was tried and found wanting", status.Summary.FailedOperations)
+	}
+	if status.Summary.FailedTargets != 0 {
+		t.Errorf("failed targets = %d, want 0", status.Summary.FailedTargets)
+	}
+
+	interrupted := status.Targets[0]
+	if interrupted.Status != resultStatusCancelled {
+		t.Errorf("the interrupted target has status %q, want %q -- it was not completed",
+			interrupted.Status, resultStatusCancelled)
+	}
+	if len(interrupted.Operations) != 2 {
+		t.Fatalf("the interrupted target recorded %d operations of 2; the artifact must account for both",
+			len(interrupted.Operations))
+	}
+	if interrupted.Operations[0].Status != resultStatusSuccess {
+		t.Errorf("the operation that did run has status %q, want success", interrupted.Operations[0].Status)
+	}
+	if interrupted.Operations[1].Status != resultStatusCancelled {
+		t.Errorf("the operation that never ran has status %q, want %q",
+			interrupted.Operations[1].Status, resultStatusCancelled)
+	}
+
+	// Every operation in the plan is accounted for exactly once.
+	recorded := 0
+	for _, target := range status.Targets {
+		recorded += len(target.Operations)
+		for _, operation := range target.Operations {
+			if operation.Status == resultStatusFailed {
+				t.Errorf("operation %+v on %v was recorded as failed", operation, target.Repository)
+			}
+		}
+	}
+	if recorded != plan.Summary.OperationCount {
+		t.Errorf("recorded %d operations of %d", recorded, plan.Summary.OperationCount)
+	}
+	if status.Summary.SuccessfulOperations+status.Summary.CancelledOperations != recorded {
+		t.Errorf("the summary counts %d operations, the targets carry %d",
+			status.Summary.SuccessfulOperations+status.Summary.CancelledOperations, recorded)
+	}
+}
+
 // TestApplyRunsEveryTargetWhenNotCancelled guards the other direction: the
 // context check must not stop a healthy run.
 func TestApplyRunsEveryTargetWhenNotCancelled(t *testing.T) {
@@ -1164,13 +1230,34 @@ func TestApplyRunsEveryTargetWhenNotCancelled(t *testing.T) {
 func planWithTargets(t *testing.T, n int) Plan {
 	t.Helper()
 
+	return planWithMultiOperationTargets(t, n, 1)
+}
+
+// planWithMultiOperationTargets builds a verifiable plan of n targets carrying
+// operationsPerTarget operations each.
+//
+// A target with more than one operation is what the between-target check alone
+// could not handle, and every plan here had exactly one -- so the tests agreed
+// with the code about a case neither of them covered.
+func planWithMultiOperationTargets(t *testing.T, n, operationsPerTarget int) Plan {
+	t.Helper()
+
 	enabled := true
+	disabled := false
+	available := []OperationSpec{
+		{Type: OperationRepoSettingsAutoMerge, Enabled: &enabled},
+		{Type: OperationRepoSettingsAutoDecline, Enabled: &disabled},
+	}
+	if operationsPerTarget > len(available) {
+		t.Fatalf("only %d distinct operations are available, %d asked for", len(available), operationsPerTarget)
+	}
+
 	targets := make([]TargetPlan, 0, n)
 	for i := 0; i < n; i++ {
 		targets = append(targets, TargetPlan{
 			Repository: RepositoryTarget{ProjectKey: "PRJ", Slug: fmt.Sprintf("repo-%d", i)},
 			Validation: ValidationResult{Valid: true},
-			Operations: []OperationSpec{{Type: OperationRepoSettingsAutoMerge, Enabled: &enabled}},
+			Operations: append([]OperationSpec(nil), available[:operationsPerTarget]...),
 		})
 	}
 
@@ -1178,7 +1265,7 @@ func planWithTargets(t *testing.T, n int) Plan {
 		APIVersion: APIVersion,
 		Kind:       PlanKind,
 		Validation: ValidationResult{Valid: true},
-		Summary:    PlanSummary{TargetCount: n, OperationCount: n},
+		Summary:    PlanSummary{TargetCount: n, OperationCount: n * operationsPerTarget},
 		Targets:    targets,
 	}
 
@@ -1188,4 +1275,74 @@ func planWithTargets(t *testing.T, n int) Plan {
 	}
 	plan.PlanHash = hash
 	return plan
+}
+
+// TestAnInterruptedRunWritesAnArtifactThatMatchesItsPublishedSchema is the
+// check that was missing when `cancelled` was introduced.
+//
+// The status was added to the artifact and to none of the three published
+// enums, and the two new summary counters were added to a summary that forbids
+// additional properties. So the run that the cancellation work exists to make
+// recoverable wrote a file that `bb bulk status` republishes and that fails
+// bulk-apply-status.schema.json -- the document consumers are told to validate
+// against.
+func TestAnInterruptedRunWritesAnArtifactThatMatchesItsPublishedSchema(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Cancels inside the first target, so the artifact carries all three of
+	// cancelled operations, a cancelled target, and a cancelled run.
+	plan := planWithMultiOperationTargets(t, 3, 2)
+	runner := &cancellingRunner{cancel: cancel, afterCalls: 1}
+
+	status, err := NewExecutor(runner, NewStatusStore(t.TempDir())).Apply(ctx, plan)
+	if err == nil {
+		t.Fatal("an interrupted run reported success")
+	}
+	if status.Status != resultStatusCancelled {
+		t.Fatalf("status = %q, want %q", status.Status, resultStatusCancelled)
+	}
+	if status.Summary.CancelledOperations == 0 || status.Summary.CancelledTargets == 0 {
+		t.Fatalf("the artifact carries no cancelled counts: %+v", status.Summary)
+	}
+
+	// Round-tripped through JSON, because that is the form the schema
+	// describes and the form the store writes.
+	raw, err := json.Marshal(status)
+	if err != nil {
+		t.Fatalf("marshalling the status failed: %v", err)
+	}
+	var document any
+	if err := json.Unmarshal(raw, &document); err != nil {
+		t.Fatalf("decoding the status failed: %v", err)
+	}
+
+	if err := validateSchema(ApplyStatusJSONSchema(), document, "bulk apply status"); err != nil {
+		t.Errorf("the artifact an interrupted run writes fails its own schema: %v\n%s", err, raw)
+	}
+}
+
+// TestThePublishedErrorKindEnumCoversTheWholeTaxonomy stops the bulk schema
+// drifting from internal/domain/errors.
+//
+// The enum was a hand-written copy of the kind list, so a kind added to the
+// taxonomy was emitted in errorKind by an operation result the schema then
+// rejected. ADR-046 requires the published enum to derive from Kinds() for
+// exactly this reason.
+func TestThePublishedErrorKindEnumCoversTheWholeTaxonomy(t *testing.T) {
+	t.Parallel()
+
+	published := make(map[string]bool)
+	for _, name := range errorKindEnum() {
+		published[name] = true
+	}
+
+	for _, kind := range apperrors.Kinds() {
+		if !published[string(kind)] {
+			t.Errorf("kind %q is emittable but absent from the published enum", kind)
+		}
+	}
+	if len(published) != len(apperrors.Kinds()) {
+		t.Errorf("the enum lists %d kinds, the taxonomy has %d", len(published), len(apperrors.Kinds()))
+	}
 }

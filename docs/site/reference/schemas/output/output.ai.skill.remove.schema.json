@@ -1,0 +1,67 @@
+{
+  "$id": "https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/output/output.ai.skill.remove.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON output schema for `bb ai skill remove --json`. Data names the skill, the absolute path considered, and the scope. Removing a skill that is already absent is not an error: status distinguishes the two outcomes.",
+  "properties": {
+    "data": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "scope": {
+          "enum": [
+            "project",
+            "global"
+          ],
+          "type": "string"
+        },
+        "skill": {
+          "enum": [
+            "bb",
+            "bb-bulk"
+          ],
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "removed",
+            "not_found"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "skill",
+        "path",
+        "scope"
+      ],
+      "type": "object"
+    },
+    "meta": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "bb.machine"
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": "v2"
+    }
+  },
+  "required": [
+    "version",
+    "data",
+    "meta"
+  ],
+  "title": "bb ai skill remove output",
+  "type": "object"
+}

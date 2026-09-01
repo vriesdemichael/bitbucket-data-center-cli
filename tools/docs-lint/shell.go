@@ -358,17 +358,23 @@ func extractInlineBBInvocations(contents string) []bbInvocation {
 func resolvePlaceholders(args []string) (cleaned []string, flagsToVerify []string, usable bool) {
 	cleaned = make([]string, 0, len(args))
 
-	for index, arg := range args {
+	for _, arg := range args {
 		if !isPlaceholder(arg) {
 			cleaned = append(cleaned, arg)
 			continue
 		}
 
-		if index == 0 || !strings.HasPrefix(args[index-1], "-") {
+		// The token still standing before it is what decides, not the one that
+		// was there in the original arguments. Consulting args let a
+		// placeholder treat a previous placeholder as its flag, and then pop
+		// something that never was one: `bb -f -<x> <y>` popped past the end
+		// and panicked, and `bb branch list --filter -* <repo>` popped the
+		// subcommand and reported `unknown flag: list`.
+		if len(cleaned) == 0 || !strings.HasPrefix(cleaned[len(cleaned)-1], "-") {
 			return nil, nil, false
 		}
 
-		// Drop the flag that precedes it along with the value.
+		// Drop the flag along with its placeholder value.
 		flagsToVerify = append(flagsToVerify, cleaned[len(cleaned)-1])
 		cleaned = cleaned[:len(cleaned)-1]
 	}

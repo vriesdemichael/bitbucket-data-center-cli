@@ -3,6 +3,14 @@
     "ApplySummary": {
       "additionalProperties": false,
       "properties": {
+        "cancelledOperations": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "cancelledTargets": {
+          "minimum": 0,
+          "type": "integer"
+        },
         "failedOperations": {
           "minimum": 0,
           "type": "integer"
@@ -106,6 +114,7 @@
             "transient",
             "permanent",
             "not_implemented",
+            "cancelled",
             "internal"
           ],
           "type": "string"
@@ -115,7 +124,8 @@
           "enum": [
             "success",
             "failed",
-            "skipped"
+            "skipped",
+            "cancelled"
           ],
           "type": "string"
         },
@@ -530,7 +540,8 @@
         "status": {
           "enum": [
             "success",
-            "failed"
+            "failed",
+            "cancelled"
           ],
           "type": "string"
         }

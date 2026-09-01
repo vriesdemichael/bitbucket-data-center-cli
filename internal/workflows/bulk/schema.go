@@ -90,7 +90,7 @@ func applyStatusJSONSchema(siteVersion string) map[string]any {
 			"kind":        map[string]any{"const": ApplyStatusKind},
 			"operationId": identifierSchema(),
 			"planHash":    planHashSchema(),
-			"status":      map[string]any{"type": "string", "enum": s(resultStatusSuccess, resultStatusFailed, "partial_failure")},
+			"status":      map[string]any{"type": "string", "enum": s(resultStatusSuccess, resultStatusFailed, resultStatusPartialFailure, resultStatusCancelled)},
 			"summary":     refSchema("ApplySummary"),
 			"targets":     map[string]any{"type": "array", "minItems": 1, "items": refSchema("TargetResult")},
 		},
@@ -307,7 +307,7 @@ func targetPlanDefinition() map[string]any {
 }
 
 func applySummaryDefinition() map[string]any {
-	return countSummaryDefinition([]string{
+	definition := countSummaryDefinition([]string{
 		"targetCount",
 		"operationCount",
 		"successfulTargets",
@@ -316,6 +316,18 @@ func applySummaryDefinition() map[string]any {
 		"failedOperations",
 		"skippedOperations",
 	})
+
+	// Optional rather than required: they are omitempty on the Go side, so a
+	// run that was never interrupted writes an artifact without them, and
+	// requiring them would invalidate every status file already on disk. The
+	// summary forbids additional properties, so leaving them out here made the
+	// artifact an interrupted run writes fail its own published schema.
+	properties, _ := definition["properties"].(map[string]any)
+	for _, name := range []string{"cancelledTargets", "cancelledOperations"} {
+		properties[name] = map[string]any{"type": "integer", "minimum": 0}
+	}
+
+	return definition
 }
 
 func operationResultDefinition() map[string]any {
@@ -324,7 +336,7 @@ func operationResultDefinition() map[string]any {
 		"additionalProperties": false,
 		"properties": map[string]any{
 			"type":      map[string]any{"type": "string", "enum": s(supportedOperationTypes...)},
-			"status":    map[string]any{"type": "string", "enum": s(resultStatusSuccess, resultStatusFailed, resultStatusSkipped)},
+			"status":    map[string]any{"type": "string", "enum": s(resultStatusSuccess, resultStatusFailed, resultStatusSkipped, resultStatusCancelled)},
 			"output":    map[string]any{},
 			"error":     map[string]any{"type": "string"},
 			"errorKind": map[string]any{"type": "string", "enum": s(errorKindEnum()...)},
@@ -339,7 +351,7 @@ func targetResultDefinition() map[string]any {
 		"additionalProperties": false,
 		"properties": map[string]any{
 			"repository": refSchema("RepositoryTarget"),
-			"status":     map[string]any{"type": "string", "enum": s(resultStatusSuccess, resultStatusFailed)},
+			"status":     map[string]any{"type": "string", "enum": s(resultStatusSuccess, resultStatusFailed, resultStatusCancelled)},
 			"operations": map[string]any{"type": "array", "minItems": 1, "items": refSchema("OperationResult")},
 		},
 		"required": s("repository", "status", "operations"),
@@ -411,18 +423,22 @@ func identifierSchema() map[string]any {
 	return map[string]any{"type": "string", "pattern": `^[A-Za-z0-9._-]+$`}
 }
 
+// errorKindEnum derives the published enum from the taxonomy rather than
+// restating it.
+//
+// ADR-046 says a kind added to internal/domain/errors must reach the schema
+// through Kinds(), because a schema that lists fewer kinds than the CLI can
+// emit publishes a contract the CLI violates. This copy did restate it, and
+// went stale the first time a kind was added.
 func errorKindEnum() []string {
-	return []string{
-		string(apperrors.KindAuthentication),
-		string(apperrors.KindAuthorization),
-		string(apperrors.KindValidation),
-		string(apperrors.KindNotFound),
-		string(apperrors.KindConflict),
-		string(apperrors.KindTransient),
-		string(apperrors.KindPermanent),
-		string(apperrors.KindNotImplemented),
-		string(apperrors.KindInternal),
+	kinds := apperrors.Kinds()
+
+	names := make([]string, 0, len(kinds))
+	for _, kind := range kinds {
+		names = append(names, string(kind))
 	}
+
+	return names
 }
 
 func s(items ...string) []any {

@@ -235,6 +235,11 @@ When queried via `bb bulk status <operation-id> --json`, the response `data` obj
   - `success`: All targets and operations completed successfully.
   - `partial_failure`: Some targets succeeded, while one or more targets encountered failures.
   - `failed`: All targets failed, or a fatal error halted execution.
+  - `cancelled`: The run was interrupted (Ctrl-C, or an expired deadline) before every
+    repository was attempted. Repositories the run never reached are recorded as
+    `cancelled` rather than `failed`, so the artifact still says what was applied.
+    The command exits `12`. Do not re-run it unattended: read the artifact first and
+    plan from what was actually applied.
 - `summary`:
   - `targetCount`: Total number of repositories targeted.
   - `operationCount`: Total operations across all targets.
@@ -243,12 +248,15 @@ When queried via `bb bulk status <operation-id> --json`, the response `data` obj
   - `successfulOperations`: Operations successfully applied.
   - `failedOperations`: Operations that produced an error.
   - `skippedOperations`: Operations skipped on a target because an earlier operation on that same repository failed.
+  - `cancelledTargets`, `cancelledOperations`: Work an interrupted run never reached.
+    Absent when the run was not interrupted. Kept apart from failed and skipped so you
+    can tell "never attempted" from "tried and did not work".
 - `targets`: List of target repository results:
   - `repository`: `{ "projectKey": "PROJ", "slug": "repo-name" }`
-  - `status`: `success` or `failed`
+  - `status`: `success`, `failed`, or `cancelled`
   - `operations`: List of per-operation results:
     - `type`: Operation name (e.g. `repo.permission.user.grant`).
-    - `status`: `success`, `failed`, or `skipped`.
+    - `status`: `success`, `failed`, `skipped`, or `cancelled`.
     - `output`: Returned API payload on success.
     - `error`: Error message on failure.
     - `errorKind`: Machine-readable error kind (e.g. `authorization`, `conflict`, `not_found`, `validation`).
