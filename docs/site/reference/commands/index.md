@@ -57,6 +57,7 @@ Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -88,6 +89,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -120,6 +122,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -150,6 +153,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -182,6 +186,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -258,6 +263,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -300,6 +306,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -331,6 +338,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -371,6 +379,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -400,6 +409,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -446,6 +456,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -510,6 +521,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -549,6 +561,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -583,6 +596,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -614,6 +628,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -648,6 +663,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -677,6 +693,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -706,6 +723,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -739,6 +757,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -771,6 +790,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -799,6 +819,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -828,6 +849,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -858,6 +880,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -884,6 +907,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -916,6 +940,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -963,6 +988,7 @@ Flags:
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -992,6 +1018,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1022,6 +1049,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1050,6 +1078,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1079,6 +1108,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1114,6 +1144,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1165,6 +1196,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1203,6 +1235,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1236,6 +1269,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1265,6 +1299,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1298,6 +1333,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1327,6 +1363,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1360,6 +1397,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1392,6 +1430,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1432,6 +1471,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1464,6 +1504,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1498,6 +1539,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1530,6 +1572,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1560,6 +1603,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1593,6 +1637,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1629,6 +1674,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1663,6 +1709,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1695,6 +1742,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1725,6 +1773,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1762,6 +1811,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1803,6 +1853,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1833,6 +1884,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1863,6 +1915,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1898,6 +1951,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1937,6 +1991,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -1975,6 +2030,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2011,6 +2067,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2042,6 +2099,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2072,6 +2130,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2109,6 +2168,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2142,6 +2202,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2171,6 +2232,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2200,6 +2262,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2232,6 +2295,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2271,6 +2335,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2309,6 +2374,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2339,6 +2405,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --include-unique           Include unique result details when available
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2381,6 +2448,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --include-unique           Include unique result details when available
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2412,6 +2480,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --include-unique           Include unique result details when available
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2447,6 +2516,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2478,6 +2548,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2508,6 +2579,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2534,6 +2606,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2566,6 +2639,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2604,6 +2678,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2633,6 +2708,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2663,6 +2739,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2697,6 +2774,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2727,6 +2805,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2764,6 +2843,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2804,6 +2884,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2836,6 +2917,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2868,6 +2950,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2903,6 +2986,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2934,6 +3018,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -2968,6 +3053,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3001,6 +3087,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3035,6 +3122,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3069,6 +3157,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3101,6 +3190,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3131,6 +3221,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3158,6 +3249,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3193,6 +3285,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3230,6 +3323,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3260,6 +3354,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3289,6 +3384,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3318,6 +3414,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3350,6 +3447,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3407,6 +3505,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3438,6 +3537,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3471,6 +3571,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3503,6 +3604,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3532,6 +3634,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3569,6 +3672,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3596,6 +3700,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3630,6 +3735,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3660,6 +3766,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3697,6 +3804,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3733,6 +3841,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3791,6 +3900,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3824,6 +3934,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3851,6 +3962,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3893,6 +4005,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3923,6 +4036,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3950,6 +4064,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -3977,6 +4092,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4009,6 +4125,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4065,6 +4182,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4095,6 +4213,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4128,6 +4247,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4162,6 +4282,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4197,6 +4318,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4229,6 +4351,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4256,6 +4379,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4292,6 +4416,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4322,6 +4447,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4349,6 +4475,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4379,6 +4506,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4409,6 +4537,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4439,6 +4568,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4474,6 +4604,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4503,6 +4634,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4534,6 +4666,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4561,6 +4694,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4588,6 +4722,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4619,6 +4754,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4672,6 +4808,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4702,6 +4839,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4729,6 +4867,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4762,6 +4901,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4789,6 +4929,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4832,6 +4973,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4859,6 +5001,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4902,6 +5045,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4938,6 +5082,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -4978,6 +5123,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5007,6 +5153,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5036,6 +5183,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5070,6 +5218,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5108,6 +5257,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5141,6 +5291,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5176,6 +5327,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5211,6 +5363,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5240,6 +5393,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5269,6 +5423,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5303,6 +5458,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5332,6 +5488,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5361,6 +5518,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5393,6 +5551,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5430,6 +5589,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5466,6 +5626,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5500,6 +5661,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5533,6 +5695,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5567,6 +5730,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5597,6 +5761,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5632,6 +5797,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5665,6 +5831,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5694,6 +5861,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5728,6 +5896,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5761,6 +5930,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5795,6 +5965,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5825,6 +5996,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5858,6 +6030,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5895,6 +6068,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5930,6 +6104,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5959,6 +6134,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -5992,6 +6168,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6022,6 +6199,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6054,6 +6232,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6089,6 +6268,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6124,6 +6304,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6155,6 +6336,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6182,6 +6364,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6236,6 +6419,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6274,6 +6458,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6314,6 +6499,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6349,6 +6535,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6385,6 +6572,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6420,6 +6608,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6458,6 +6647,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6497,6 +6687,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6531,6 +6722,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6564,6 +6756,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6597,6 +6790,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6629,6 +6823,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6663,6 +6858,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6696,6 +6892,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6731,6 +6928,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6771,6 +6969,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6806,6 +7005,7 @@ Global Flags:
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
       --commit string            Commit ID context
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6842,6 +7042,7 @@ Global Flags:
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
       --commit string            Commit ID context
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6878,6 +7079,7 @@ Global Flags:
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
       --commit string            Commit ID context
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6914,6 +7116,7 @@ Global Flags:
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
       --commit string            Commit ID context
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6949,6 +7152,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -6987,6 +7191,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7025,6 +7230,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7060,6 +7266,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7090,6 +7297,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7120,6 +7328,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7155,6 +7364,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7196,6 +7406,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7233,6 +7444,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7269,6 +7481,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7306,6 +7519,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7337,6 +7551,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7367,6 +7582,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7397,6 +7613,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7430,6 +7647,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7468,6 +7686,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7504,6 +7723,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7540,6 +7760,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7574,6 +7795,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7604,6 +7826,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7644,6 +7867,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7683,6 +7907,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7714,6 +7939,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7744,6 +7970,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7778,6 +8005,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7816,6 +8044,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7847,6 +8076,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7877,6 +8107,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7910,6 +8141,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7947,6 +8179,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -7979,6 +8212,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8012,6 +8246,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8044,6 +8279,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8074,6 +8310,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8107,6 +8344,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8140,6 +8378,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8173,6 +8412,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8209,6 +8449,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8246,6 +8487,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8280,6 +8522,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8315,6 +8558,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8346,6 +8590,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8381,6 +8626,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8415,6 +8661,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8450,6 +8697,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8481,6 +8729,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8514,6 +8763,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8551,6 +8801,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8587,6 +8838,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8617,6 +8869,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8647,6 +8900,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8686,6 +8940,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8723,6 +8978,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8757,6 +9013,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8787,6 +9044,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8829,6 +9087,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8860,6 +9119,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8890,6 +9150,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8920,6 +9181,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8953,6 +9215,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -8985,6 +9248,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9023,6 +9287,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9058,6 +9323,7 @@ Global Flags:
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
       --config-file string       JSON file containing condition settings
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9089,6 +9355,7 @@ Global Flags:
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
       --config-file string       JSON file containing condition settings
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9118,6 +9385,7 @@ Global Flags:
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
       --config-file string       JSON file containing condition settings
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9147,6 +9415,7 @@ Global Flags:
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
       --config-file string       JSON file containing condition settings
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9176,6 +9445,7 @@ Global Flags:
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
       --config-file string       JSON file containing condition settings
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9215,6 +9485,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9246,6 +9517,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9274,6 +9546,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9302,6 +9575,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9334,6 +9608,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9362,6 +9637,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9395,6 +9671,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9433,6 +9710,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9467,6 +9745,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9499,6 +9778,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9530,6 +9810,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9561,6 +9842,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9592,6 +9874,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9618,6 +9901,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9658,6 +9942,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9691,6 +9976,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --filter string            Filter text for tag names
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9723,6 +10009,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --filter string            Filter text for tag names
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9755,6 +10042,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --filter string            Filter text for tag names
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9787,6 +10075,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --filter string            Filter text for tag names
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9821,6 +10110,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9859,6 +10149,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9891,6 +10182,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9918,6 +10210,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9945,6 +10238,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -9977,6 +10271,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -10007,6 +10302,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -10037,6 +10333,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
@@ -10070,6 +10367,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
+      --describe                 Print the command's output schema instead of running it
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON

@@ -484,6 +484,30 @@ bb pr get --repo MYPROJ/payments 42 --json
 bb tag list --repo MYPROJ/payments --json
 ```
 
+### Asking what a command returns
+
+`--describe` prints a command's output schema instead of running it. Use it rather than
+inferring the payload shape from one sample run — a sample cannot tell you which fields are
+optional, or that a field can be null.
+
+```bash
+bb pr get --describe          # the JSON Schema for bb pr get --json
+bb pr get --describe --json   # the same, wrapped in a bb.machine envelope
+```
+
+It needs no arguments, no required flags, no configuration and no server: the schemas are
+compiled into the binary, so the answer always matches the `bb` you are holding.
+
+Check `described` before reading `schema`. Three answers are possible:
+
+- `"described": true` — `schema` is the published contract for that command.
+- `"described": false` with a reason saying no schema is published **yet** — the payload shape
+  is real but not guaranteed. Parse defensively.
+- `"described": false` with a reason saying the command returns no data payload — `bb api` and
+  `bb ai skill show` produce a stream or a document. No schema is coming; do not wait for one.
+
+Most commands are currently in the second group.
+
 Success and failure both produce a `bb.machine` envelope on stdout. Which key is
 present tells you which happened:
 
