@@ -138,11 +138,11 @@ Re-run after upgrading bb to keep the skill file current.`,
 			}
 
 			if deps.jsonEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"status": "installed",
-					"skill":  skill.name,
-					"path":   dest,
-					"scope":  installScope(global),
+				return deps.WriteJSON(cmd.OutOrStdout(), SkillFile{
+					Status: "installed",
+					Skill:  skill.name,
+					Path:   dest,
+					Scope:  installScope(global),
 				})
 			}
 
@@ -182,11 +182,11 @@ func newSkillRemoveCommand(deps Dependencies) *cobra.Command {
 				// caller in the state they asked for. The status says which
 				// of the two happened, which the English sentence also did.
 				if deps.jsonEnabled() {
-					return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-						"status": "not_found",
-						"skill":  skill.name,
-						"path":   dest,
-						"scope":  installScope(global),
+					return deps.WriteJSON(cmd.OutOrStdout(), SkillFile{
+						Status: "not_found",
+						Skill:  skill.name,
+						Path:   dest,
+						Scope:  installScope(global),
 					})
 				}
 
@@ -199,11 +199,11 @@ func newSkillRemoveCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.jsonEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"status": "removed",
-					"skill":  skill.name,
-					"path":   dest,
-					"scope":  installScope(global),
+				return deps.WriteJSON(cmd.OutOrStdout(), SkillFile{
+					Status: "removed",
+					Skill:  skill.name,
+					Path:   dest,
+					Scope:  installScope(global),
 				})
 			}
 
