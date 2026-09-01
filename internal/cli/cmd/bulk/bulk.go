@@ -283,16 +283,17 @@ func writeStatusHuman(writer io.Writer, status bulkworkflow.ApplyStatus) {
 	)
 	fmt.Fprintf(writer, "%s %s\n", style.Label.Render("Plan hash:"), style.Secondary.Render(status.PlanHash))
 	fmt.Fprintf(writer,
-		"%s total=%d %s=%d %s=%d\n",
+		"%s total=%d %s=%d %s=%d%s\n",
 		style.Label.Render("Targets:"),
 		status.Summary.TargetCount,
 		style.Success.Render("successful"),
 		status.Summary.SuccessfulTargets,
 		style.Deleted.Render("failed"),
 		status.Summary.FailedTargets,
+		cancelledCount(status.Summary.CancelledTargets),
 	)
 	fmt.Fprintf(writer,
-		"%s total=%d %s=%d %s=%d skipped=%d\n",
+		"%s total=%d %s=%d %s=%d skipped=%d%s\n",
 		style.Label.Render("Operations:"),
 		status.Summary.OperationCount,
 		style.Success.Render("successful"),
@@ -300,6 +301,7 @@ func writeStatusHuman(writer io.Writer, status bulkworkflow.ApplyStatus) {
 		style.Deleted.Render("failed"),
 		status.Summary.FailedOperations,
 		status.Summary.SkippedOperations,
+		cancelledCount(status.Summary.CancelledOperations),
 	)
 	for _, target := range status.Targets {
 		fmt.Fprintf(writer, "%s  %s\n",
@@ -362,4 +364,20 @@ func parseErrorKind(value string) apperrors.Kind {
 	default:
 		return ""
 	}
+}
+
+// cancelledCount renders the cancelled tally, and nothing at all when there is
+// none.
+//
+// Shown only when non-zero, matching the omitempty on the JSON counters: a
+// cancelled run is the exceptional case, and `cancelled=0` on every successful
+// apply is noise. Its absence from the human summary is what made an
+// interrupted run read as "nothing happened" -- `successful=0 failed=0` out of
+// three targets -- while the JSON for the same run counted three cancelled.
+func cancelledCount(count int) string {
+	if count == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf(" %s=%d", style.Warning.Render("cancelled"), count)
 }
