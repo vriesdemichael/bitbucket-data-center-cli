@@ -7,6 +7,7 @@ import (
 	"go/parser"
 	"go/token"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -220,5 +221,113 @@ func TestMessageOf(t *testing.T) {
 				t.Fatalf("MessageOf() = %q, want %q", got, testCase.expected)
 			}
 		})
+	}
+}
+
+// TestWithDetailDoesNotMutateTheErrorItWasGiven covers the shared-error case.
+//
+// The helper reads as functional -- it returns an error -- so a caller may
+// reasonably hand it something held elsewhere: a sentinel, a cached failure, an
+// error another goroutine already has. The first version wrote into that
+// error's own map and returned the same pointer, so every holder silently
+// acquired the detail.
+func TestWithDetailDoesNotMutateTheErrorItWasGiven(t *testing.T) {
+	t.Parallel()
+
+	shared := New(KindCancelled, "bulk apply was cancelled", nil)
+
+	first := WithDetail(shared, "operation_id", "op-one")
+	second := WithDetail(shared, "operation_id", "op-two")
+
+	if details := DetailsOf(shared); details != nil {
+		t.Errorf("the shared error acquired details: %v", details)
+	}
+	if got := DetailsOf(first)["operation_id"]; got != "op-one" {
+		t.Errorf("first copy carries %q, want op-one", got)
+	}
+	if got := DetailsOf(second)["operation_id"]; got != "op-two" {
+		t.Errorf("second copy carries %q, want op-two", got)
+	}
+
+	// The copy is a copy in both directions: mutating what DetailsOf returns
+	// must not reach back into the error either.
+	DetailsOf(first)["operation_id"] = "tampered"
+	if got := DetailsOf(first)["operation_id"]; got != "op-one" {
+		t.Errorf("DetailsOf handed out the live map: %q", got)
+	}
+}
+
+// TestWithDetailIsSafeUnderConcurrentUse is the same property stated as the
+// failure it would actually produce: concurrent callers writing into one map.
+//
+// The assertion does not depend on the race detector, which this project does
+// not currently run -- the shared error visibly acquiring a detail is enough to
+// fail. Under -race the mutating version would additionally be reported as the
+// data race it is.
+func TestWithDetailIsSafeUnderConcurrentUse(t *testing.T) {
+	t.Parallel()
+
+	shared := New(KindConflict, "conflict", nil)
+
+	var waiter sync.WaitGroup
+	for index := 0; index < 8; index++ {
+		waiter.Add(1)
+		go func(index int) {
+			defer waiter.Done()
+			_ = WithDetail(shared, "operation_id", fmt.Sprintf("op-%d", index))
+		}(index)
+	}
+	waiter.Wait()
+
+	if details := DetailsOf(shared); details != nil {
+		t.Errorf("concurrent callers wrote into the shared error: %v", details)
+	}
+}
+
+// TestWithDetailPreservesEverythingElse guards the copy against dropping a
+// field: a copy that loses the cause or the kind would reclassify the failure.
+func TestWithDetailPreservesEverythingElse(t *testing.T) {
+	t.Parallel()
+
+	cause := errors.New("underlying")
+	original := WithDetail(New(KindCancelled, "cancelled", cause), "first", "1")
+	extended := WithDetail(original, "second", "2")
+
+	if KindOf(extended) != KindCancelled {
+		t.Errorf("kind = %q, want cancelled", KindOf(extended))
+	}
+	if !errors.Is(extended, cause) {
+		t.Error("the copy lost the cause, so errors.Is stopped working")
+	}
+	if MessageOf(extended) != MessageOf(original) {
+		t.Errorf("message = %q, want %q", MessageOf(extended), MessageOf(original))
+	}
+
+	details := DetailsOf(extended)
+	if details["first"] != "1" || details["second"] != "2" {
+		t.Errorf("details = %v, want both keys", details)
+	}
+	if got := DetailsOf(original); len(got) != 1 {
+		t.Errorf("extending the copy changed the original: %v", got)
+	}
+}
+
+// TestWithDetailLeavesWrappedErrorsAlone pins the documented limit.
+//
+// Reaching through a wrapper would mean returning the inner error and losing
+// the context the wrapping added, so the helper does nothing. This is a test
+// rather than a comment because "does nothing" is the kind of behaviour that
+// gets silently changed.
+func TestWithDetailLeavesWrappedErrorsAlone(t *testing.T) {
+	t.Parallel()
+
+	wrapped := fmt.Errorf("loading config: %w", New(KindNotFound, "missing", nil))
+
+	got := WithDetail(wrapped, "operation_id", "op-1")
+	if got.Error() != wrapped.Error() {
+		t.Errorf("a wrapped error came back changed: %q", got.Error())
+	}
+	if details := DetailsOf(got); details != nil {
+		t.Errorf("a wrapped error reported details: %v", details)
 	}
 }
