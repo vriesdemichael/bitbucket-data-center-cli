@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/outputschemas"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 )
 
 // describeFlag is the persistent flag that makes a command print its own output
@@ -86,16 +88,16 @@ func installDescribe(root *cobra.Command, describe *bool) {
 // writeDescription emits the output contract for one command.
 func writeDescription(cmd *cobra.Command) error {
 	path := commandPathWithoutRoot(cmd)
-	result := describeCommand(path)
+	described := describeCommand(path)
 
 	jsonRequested, _ := cmd.Root().PersistentFlags().GetBool("json")
 	if jsonRequested {
-		return jsonoutput.Write(cmd.OutOrStdout(), result)
+		return jsonoutput.Write(cmd.OutOrStdout(), described)
 	}
 
 	// Without --json the schema is still a JSON document, so it is printed as
 	// one. There is no table form of a JSON Schema worth having.
-	encoded, err := jsonoutput.MarshalIndent(result)
+	encoded, err := jsonoutput.MarshalIndent(described)
 	if err != nil {
 		return err
 	}
@@ -112,24 +114,41 @@ func writeDescription(cmd *cobra.Command) error {
 // visible pressure on the gap, which closes when each schema is derived from a
 // typed result the command already builds rather than hand-maintained.
 func describeCommand(path string) DescribeResult {
-	result := DescribeResult{Command: path}
+	described := DescribeResult{Command: path}
 
 	if reason := outputschemas.CommandsWithoutDataContract[path]; reason != "" {
-		result.Reason = "this command does not return a data payload: " + reason
-		return result
+		described.Reason = "this command does not return a data payload: " + reason
+		return described
+	}
+
+	// A schema derived from the command's own result type wins. It cannot drift
+	// from what the command emits, because it is the same declaration; the
+	// hand-written fallback is what is being retired (#521), and every command
+	// that moves across stops being able to disagree with itself.
+	if schema, ok := result.SchemaFor(path); ok {
+		encoded, err := json.Marshal(schema)
+		if err == nil {
+			var document map[string]any
+			if json.Unmarshal(encoded, &document) == nil {
+				described.Described = true
+				described.Schema = document
+
+				return described
+			}
+		}
 	}
 
 	fileName := "output." + strings.ReplaceAll(path, " ", ".") + ".schema.json"
 	schema, ok := outputschemas.Schemas()[fileName]
 	if !ok {
-		result.Reason = "no output schema is published for this command yet; the payload shape is not guaranteed"
-		return result
+		described.Reason = "no output schema is published for this command yet; the payload shape is not guaranteed"
+		return described
 	}
 
-	result.Described = true
-	result.Schema = schema
+	described.Described = true
+	described.Schema = schema
 
-	return result
+	return described
 }
 
 // commandPathWithoutRoot renders the command path the way the rest of the

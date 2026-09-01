@@ -1,0 +1,147 @@
+// Package result holds the typed values commands return, and derives their
+// published schemas from those types.
+//
+// A command builds one result value and renders it: serialised for --json,
+// formatted for a human. Both read the same value, so the two cannot disagree
+// about what happened -- which they have, silently: cancelledTargets reached
+// the JSON payload, the schema and the tests, while the human summary kept
+// printing "successful=0 failed=0" for three cancelled repositories.
+//
+// The schema is derived from the type rather than written beside it. A
+// hand-written schema is a second description of the same shape, and the second
+// one drifts: two published schemas described `bb branch get-default`, a
+// command that has never existed, and the meta schema forbade a field every
+// listing command emits. ADR-010 asked for this -- "keep schemas generated from
+// the model source of truth rather than hand-maintained files" -- and output
+// schemas were the one place it was not done.
+//
+// # Writing a result type
+//
+// Use value fields, not pointers. The reflector maps a pointer to a nullable
+// type, and encoding/json with omitempty omits a nil pointer rather than
+// writing null -- so a pointer field publishes a null the command cannot
+// actually emit. Reach for a pointer only where null is a value the caller must
+// tell apart from absent.
+//
+// Mark optional fields omitempty. Everything else becomes required in the
+// schema, which is a promise the command has to keep on every run.
+//
+// Describe fields with the jsonschema struct tag. It is the only description a
+// consumer gets, since there is no prose file beside the schema any more.
+package result
+
+import (
+	"fmt"
+	"sort"
+	"sync"
+
+	"github.com/google/jsonschema-go/jsonschema"
+)
+
+// For derives the schema for a result type, with optional enums by property
+// name.
+//
+// Enums are applied after derivation because Go has no enum: a string field is
+// a string to the reflector, and the set of values it actually takes is
+// knowledge the command has. Naming a property the type does not have is a
+// wiring mistake, so it panics rather than silently doing nothing -- the same
+// choice internal/mcp makes for tool input schemas.
+func For[T any](enums map[string][]string) *jsonschema.Schema {
+	schema, err := jsonschema.For[T](nil)
+	if err != nil {
+		panic(fmt.Sprintf("deriving output schema for %T: %v", *new(T), err))
+	}
+
+	applyEnums(schema, enums, fmt.Sprintf("%T", *new(T)))
+
+	return schema
+}
+
+// List derives the schema for a command whose payload is a list of T.
+//
+// Not For[[]T]. A Go slice can be nil, so the reflector types it as null-or-array
+// -- and a consumer reading that has to handle a null the command never sends,
+// because a list command builds its slice with make and writes [] when there is
+// nothing to report. Saying array here is the narrower claim and the true one.
+//
+// It is also the claim worth keeping true: a command that starts returning null
+// for an empty list breaks every caller iterating the result, and the schema is
+// what says that must not happen.
+func List[T any](enums map[string][]string) *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:  "array",
+		Items: For[T](enums),
+	}
+}
+
+// applyEnums sets the allowed values on named properties, looking through a
+// list schema to the item it describes.
+func applyEnums(schema *jsonschema.Schema, enums map[string][]string, typeName string) {
+	if len(enums) == 0 {
+		return
+	}
+
+	// Items rather than the type string: a slice derives as null-or-array, so
+	// Type is empty and the union sits in Types.
+	target := schema
+	if target.Items != nil {
+		target = target.Items
+	}
+
+	for property, values := range enums {
+		field, ok := target.Properties[property]
+		if !ok {
+			panic(fmt.Sprintf("enum declared for property %q which %s does not have", property, typeName))
+		}
+		field.Enum = make([]any, 0, len(values))
+		for _, value := range values {
+			field.Enum = append(field.Enum, value)
+		}
+	}
+}
+
+var (
+	declaredMutex sync.RWMutex
+	declared      = map[string]*jsonschema.Schema{}
+)
+
+// Declare records the schema for a command's --json data payload, keyed by the
+// command path as `bb` spells it: "tag list", "pr get".
+//
+// Called from an init in the command's own package, so the declaration sits
+// beside the type it describes and happens once per process rather than once
+// per constructed command tree.
+func Declare(commandPath string, schema *jsonschema.Schema) {
+	declaredMutex.Lock()
+	defer declaredMutex.Unlock()
+
+	declared[commandPath] = schema
+}
+
+// SchemaFor returns the declared schema for a command path.
+func SchemaFor(commandPath string) (*jsonschema.Schema, bool) {
+	declaredMutex.RLock()
+	defer declaredMutex.RUnlock()
+
+	schema, ok := declared[commandPath]
+
+	return schema, ok
+}
+
+// DeclaredPaths returns every command path with a declared result, sorted.
+//
+// Used by the tests that hold the declarations to the command tree: a path that
+// resolves to nothing describes a command that does not exist, and a command
+// with no declaration is one whose payload nothing has modelled yet.
+func DeclaredPaths() []string {
+	declaredMutex.RLock()
+	defer declaredMutex.RUnlock()
+
+	paths := make([]string, 0, len(declared))
+	for path := range declared {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+
+	return paths
+}
