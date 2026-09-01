@@ -109,6 +109,28 @@ bb bulk status "$operation_id" --json
 
 Read handles from `error.details`, not by parsing `error.message`.
 
+#### Changed in v4: `bb bulk apply --json` on the failure path
+
+Through v3, a `bb bulk apply --json` run that failed printed **two** documents: the status
+envelope, then the failure envelope. A strict JSON parser rejects that outright; `jq` reads a
+value stream, so it prints a result per document and exits `0` — meaning a pipeline that took
+the last line silently read the wrong one.
+
+From v4 a failing or cancelled run writes only the failure envelope, so `.data` is absent.
+Scripts that read the artifact from `bb bulk apply` output must fetch it by id instead:
+
+```bash
+# Through v3 — no longer returns the artifact
+bb bulk apply --from-plan plan.json --json | jq -r '.data.summary.failedTargets'
+
+# v4
+output=$(bb bulk apply --from-plan plan.json --json) || true
+operation_id=$(printf '%s' "$output" | jq -r '.error.details.operation_id // empty')
+bb bulk status "$operation_id" --json | jq -r '.data.summary.failedTargets'
+```
+
+Human output is unchanged: the status still goes to stdout and the error line to stderr.
+
 Example failure behavior:
 
 ```bash
