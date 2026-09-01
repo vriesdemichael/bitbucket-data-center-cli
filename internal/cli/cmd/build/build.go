@@ -13,6 +13,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -118,6 +119,16 @@ func safeStringFromBuildState(state *openapigenerated.RestBuildStatusState) stri
 	return string(*state)
 }
 
+// requiredCheckRow is the human rendering of one required build merge check,
+// shared by list, create and update so the three describe the same check the
+// same way.
+func requiredCheckRow(check RequiredBuildCheck) []string {
+	return []string{
+		style.Secondary.Render(fmt.Sprintf("id=%d", check.ID)),
+		fmt.Sprintf("buildParentKeys=%v", check.BuildParentKeys),
+	}
+}
+
 func New(deps Dependencies) *cobra.Command {
 	d := deps.withDefaults()
 
@@ -210,7 +221,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "commit": args[0], "key": setKey})
+				return d.WriteJSON(cmd.OutOrStdout(), StatusChange{Status: result.OK(), Commit: args[0], Key: setKey})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Build status %s set on %s\n", setKey, args[0])
@@ -250,7 +261,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSONList(cmd.OutOrStdout(), statuses, paging.LimitReached(getPaging, len(statuses)))
+				return d.WriteJSONList(cmd.OutOrStdout(), buildStatusesFrom(statuses), paging.LimitReached(getPaging, len(statuses)))
 			}
 
 			if len(statuses) == 0 {
@@ -290,7 +301,7 @@ func New(deps Dependencies) *cobra.Command {
 				}
 
 				if d.JSONEnabled() {
-					return d.WriteJSON(cmd.OutOrStdout(), stats)
+					return d.WriteJSON(cmd.OutOrStdout(), []CommitBuildStats{statsFrom(args[0], stats)})
 				}
 
 				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Successful:"), style.Success.Render(fmt.Sprintf("%d", safeInt32(stats.Successful))))
@@ -307,7 +318,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), statsMap)
+				return d.WriteJSON(cmd.OutOrStdout(), statsListFrom(args, statsMap))
 			}
 
 			rows := make([][]string, 0, len(args)+1)
@@ -363,18 +374,19 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			converted := requiredChecksFrom(checks)
 			if d.JSONEnabled() {
-				return d.WriteJSONList(cmd.OutOrStdout(), checks, paging.LimitReached(requiredPaging, len(checks)))
+				return d.WriteJSONList(cmd.OutOrStdout(), converted, paging.LimitReached(requiredPaging, len(checks)))
 			}
 
-			if len(checks) == 0 {
+			if len(converted) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No required build merge checks found"))
 				return nil
 			}
 
-			rows := make([][]string, len(checks))
-			for i, check := range checks {
-				rows[i] = []string{style.Secondary.Render(fmt.Sprintf("id=%d", safeInt64(check.Id))), fmt.Sprintf("buildParentKeys=%v", safeStringSlice(check.BuildParentKeys))}
+			rows := make([][]string, len(converted))
+			for i, check := range converted {
+				rows[i] = requiredCheckRow(check)
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
 
@@ -431,7 +443,13 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			return d.WriteJSON(cmd.OutOrStdout(), created)
+			check := requiredCheckFromMap(created)
+			if d.JSONEnabled() {
+				return d.WriteJSON(cmd.OutOrStdout(), check)
+			}
+
+			style.WriteTable(cmd.OutOrStdout(), [][]string{requiredCheckRow(check)})
+			return nil
 		},
 	}
 	createRequiredCmd.Flags().StringVar(&createBody, "body", "", "Raw JSON payload for required build merge check")
@@ -493,7 +511,13 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			return d.WriteJSON(cmd.OutOrStdout(), updated)
+			check := requiredCheckFromMap(updated)
+			if d.JSONEnabled() {
+				return d.WriteJSON(cmd.OutOrStdout(), check)
+			}
+
+			style.WriteTable(cmd.OutOrStdout(), [][]string{requiredCheckRow(check)})
+			return nil
 		},
 	}
 	updateRequiredCmd.Flags().StringVar(&updateBody, "body", "", "Raw JSON payload for required build merge check")
@@ -570,7 +594,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "id": id})
+				return d.WriteJSON(cmd.OutOrStdout(), RequiredCheckDeletion{Status: result.OK(), Repository: repositoryOf(repo), ID: id})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted required build merge check"), style.Secondary.Render(fmt.Sprintf("%d", id)))
@@ -659,7 +683,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": scopedSetKey})
+				return d.WriteJSON(cmd.OutOrStdout(), ScopedStatusChange{Status: result.OK(), Repository: repositoryOf(repo), Commit: args[0], Key: scopedSetKey})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Repository-scoped build status %s set on %s/%s at %s\n", scopedSetKey, repo.ProjectKey, repo.Slug, args[0])
@@ -696,7 +720,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), build)
+				return d.WriteJSON(cmd.OutOrStdout(), buildStatusFrom(build))
 			}
 
 			state := safeStringFromBuildState(build.State)
@@ -774,7 +798,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": scopedDeleteKey})
+				return d.WriteJSON(cmd.OutOrStdout(), ScopedStatusChange{Status: result.OK(), Repository: repositoryOf(repo), Commit: args[0], Key: scopedDeleteKey})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Deleted repository-scoped build status %s on %s/%s at %s\n", scopedDeleteKey, repo.ProjectKey, repo.Slug, args[0])
