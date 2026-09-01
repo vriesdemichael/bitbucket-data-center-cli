@@ -154,26 +154,43 @@ func ExitCode(err error) int {
 	return 1
 }
 
-// WithDetail returns err carrying one machine-readable detail.
+// WithDetail returns a copy of err carrying one machine-readable detail.
+//
+// The copy is the point. Writing into the error's own map would contaminate
+// every other holder of it -- a package-level sentinel, a cached value, an
+// error already handed to another goroutine -- and two calls would race on the
+// map. Nothing shares an *AppError today, which is exactly when a helper that
+// reads as functional and mutates is cheapest to fix.
 //
 // Only *AppError can carry details, because only a classified error reaches the
-// failure envelope with a kind. A plain error is returned unchanged rather than
+// failure envelope with a kind. Anything else is returned unchanged rather than
 // wrapped: wrapping here would silently reclassify it as internal.
+//
+// It is the error itself that must be the *AppError, not something it wraps.
+// Reaching inside a wrapper would mean returning the inner error and dropping
+// the context the wrapping added, so attach the detail to the error you are
+// about to return, before anything wraps it.
 func WithDetail(err error, key, value string) error {
-	var appError *AppError
-	if !errors.As(err, &appError) {
+	appError, ok := err.(*AppError)
+	if !ok || appError == nil {
 		return err
 	}
 	if strings.TrimSpace(key) == "" || strings.TrimSpace(value) == "" {
 		return err
 	}
 
-	if appError.Details == nil {
-		appError.Details = map[string]string{}
+	details := make(map[string]string, len(appError.Details)+1)
+	for existingKey, existingValue := range appError.Details {
+		details[existingKey] = existingValue
 	}
-	appError.Details[key] = value
+	details[key] = value
 
-	return err
+	return &AppError{
+		Kind:    appError.Kind,
+		Message: appError.Message,
+		Cause:   appError.Cause,
+		Details: details,
+	}
 }
 
 // DetailsOf returns the machine-readable details attached to err, if any.
