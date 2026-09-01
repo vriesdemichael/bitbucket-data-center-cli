@@ -43,11 +43,6 @@ func SchemasFor(siteVersion string) map[string]map[string]any {
 		all[k] = v
 	}
 
-	// Tag command group schemas
-	for k, v := range tagSchemas() {
-		all[k] = v
-	}
-
 	// Repo command group schemas
 	for k, v := range repoSchemas() {
 		all[k] = v
