@@ -82,13 +82,6 @@ func safeString(value *string) string {
 	return *value
 }
 
-func safeStringFromTagType(tagType *openapigenerated.RestTagType) string {
-	if tagType == nil {
-		return ""
-	}
-	return string(*tagType)
-}
-
 func New(deps Dependencies) *cobra.Command {
 	d := deps.withDefaults()
 
@@ -129,17 +122,21 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// One value, rendered two ways. The human listing used to read the
+			// upstream struct directly, so the two paths agreed only by hand.
+			reported := tagsFrom(tags)
+
 			if d.JSONEnabled() {
-				return d.WriteJSONList(cmd.OutOrStdout(), tags, paging.LimitReached(listPaging, len(tags)))
+				return d.WriteJSONList(cmd.OutOrStdout(), reported, paging.LimitReached(listPaging, len(reported)))
 			}
 
-			if len(tags) == 0 {
+			if len(reported) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "No tags found")
 				return nil
 			}
 
-			for _, tag := range tags {
-				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", safeString(tag.DisplayId), safeStringFromTagType(tag.Type), safeString(tag.LatestCommit))
+			for _, tag := range reported {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", tag.DisplayID, tag.Type, tag.LatestCommit)
 			}
 
 			return nil
@@ -225,11 +222,13 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			reported := tagFrom(createdTag)
+
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), createdTag)
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Created tag %s (%s)\n", safeString(createdTag.DisplayId), safeString(createdTag.LatestCommit))
+			fmt.Fprintf(cmd.OutOrStdout(), "Created tag %s (%s)\n", reported.DisplayID, reported.LatestCommit)
 			return nil
 		},
 	}
@@ -259,13 +258,15 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			reported := tagFrom(tag)
+
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), tag)
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Tag: %s\n", safeString(tag.DisplayId))
-			fmt.Fprintf(cmd.OutOrStdout(), "Type: %s\n", safeStringFromTagType(tag.Type))
-			fmt.Fprintf(cmd.OutOrStdout(), "Commit: %s\n", safeString(tag.LatestCommit))
+			fmt.Fprintf(cmd.OutOrStdout(), "Tag: %s\n", reported.DisplayID)
+			fmt.Fprintf(cmd.OutOrStdout(), "Type: %s\n", reported.Type)
+			fmt.Fprintf(cmd.OutOrStdout(), "Commit: %s\n", reported.LatestCommit)
 			return nil
 		},
 	})
@@ -337,11 +338,13 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			reported := Deletion{Status: "ok", Tag: args[0]}
+
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "tag": args[0]})
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Deleted tag %s\n", args[0])
+			fmt.Fprintf(cmd.OutOrStdout(), "Deleted tag %s\n", reported.Tag)
 			return nil
 		},
 	})
