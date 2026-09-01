@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
@@ -99,22 +100,10 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"url": targetURL,
-					"repository": map[string]string{
-						"project_key": repoRef.ProjectKey,
-						"slug":        repoRef.Slug,
-					},
-					"target": map[string]any{
-						"kind":   string(target.kind),
-						"arg":    target.rawArg,
-						"number": target.number,
-						"path":   target.path,
-						"line":   target.line,
-						"branch": target.branch,
-						"commit": target.commit,
-						"blame":  target.blame,
-					},
+				return d.WriteJSON(cmd.OutOrStdout(), Destination{
+					URL:        targetURL,
+					Repository: result.Repository{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug},
+					Target:     targetFrom(target),
 				})
 			}
 

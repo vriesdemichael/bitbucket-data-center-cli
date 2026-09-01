@@ -2595,8 +2595,8 @@ func TestBranchCommandPaths(t *testing.T) {
 	if err := jsonRestrictionDeleteCommand.Execute(); err != nil {
 		t.Fatalf("branch restriction delete json failed: %v", err)
 	}
-	if !strings.Contains(jsonRestrictionDeleteBuffer.String(), `"restriction_id": "12"`) {
-		t.Fatalf("expected restriction_id in delete output, got: %s", jsonRestrictionDeleteBuffer.String())
+	if !strings.Contains(jsonRestrictionDeleteBuffer.String(), `"restrictionId": "12"`) {
+		t.Fatalf("expected restrictionId in delete output, got: %s", jsonRestrictionDeleteBuffer.String())
 	}
 
 	jsonRestrictionCreateWithAccessKeyCommand := NewRootCommand()

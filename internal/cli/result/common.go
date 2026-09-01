@@ -9,17 +9,15 @@ import (
 // It exists because 49 payloads embedded a service's RepositoryRef directly,
 // and those structs carry no JSON tags -- so bb published
 // {"repository":{"ProjectKey":"PRJ","Slug":"payments"}}, Go field names and
-// all, while every other field it emits is snake_case. That is what happens
-// when the payload is whatever struct was in scope rather than something
-// chosen: the internal type becomes the contract without anyone deciding it
-// should.
+// all. That is what happens when the payload is whatever struct was in scope
+// rather than something chosen: the internal type becomes the contract without
+// anyone deciding it should.
 //
-// snake_case, because these are bb's own field names. Fields mirroring an
-// upstream Bitbucket object keep the upstream spelling instead -- displayId,
-// latestCommit -- so a reader comparing bb output against the Bitbucket API
+// The names follow ADR-076: camelCase, matching what the Bitbucket API calls
+// the same things, so a reader comparing bb output against the Bitbucket API
 // docs sees the same words.
 type Repository struct {
-	ProjectKey string `json:"project_key" jsonschema:"Project key the repository belongs to."`
+	ProjectKey string `json:"projectKey" jsonschema:"Project key the repository belongs to."`
 	Slug       string `json:"slug" jsonschema:"Repository slug."`
 }
 

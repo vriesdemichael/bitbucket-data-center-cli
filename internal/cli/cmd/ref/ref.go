@@ -103,7 +103,7 @@ func New(deps Dependencies) *cobra.Command {
 
 			reported := Refs{
 				Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
-				Refs:       refsFrom(refs),
+				Refs:       result.RefsFrom(refs),
 			}
 
 			if d.JSONEnabled() {
@@ -150,11 +150,11 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			// Find exact match
-			var foundRef *Ref
+			var foundRef *result.Ref
 
 			for _, ref := range refs {
 				if ref.DisplayId != nil && *ref.DisplayId == args[0] {
-					converted := refFrom(ref)
+					converted := result.RefFrom(ref)
 					foundRef = &converted
 					break
 				}
