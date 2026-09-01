@@ -171,6 +171,12 @@ func ExitCode(err error) int {
 // the context the wrapping added, so attach the detail to the error you are
 // about to return, before anything wraps it.
 func WithDetail(err error, key, value string) error {
+	// errors.As is the right tool for asking "is there an AppError in here",
+	// and the wrong one for this: it would find an AppError inside a wrapper,
+	// and the copy returned in its place would be the inner error, silently
+	// dropping the context the wrapping added -- which then also drops out of
+	// the message the failure envelope publishes.
+	//nolint:errorlint // deliberately not reaching through wrappers; see above
 	appError, ok := err.(*AppError)
 	if !ok || appError == nil {
 		return err
