@@ -135,6 +135,15 @@ func New(deps Dependencies) *cobra.Command {
 				applyErr = applyFailureError(status)
 			}
 
+			// The id goes on the error as a field, not only into its sentence.
+			// Under --json the failure envelope is the only document, so this
+			// is the caller's sole handle on the artifact -- and telling them
+			// to find it in the message is the scraping the machine contract
+			// exists to end (#474, ADR-075).
+			if applyErr != nil && status.OperationID != "" {
+				applyErr = apperrors.WithDetail(applyErr, "operation_id", status.OperationID)
+			}
+
 			// Human output prints the status whatever happened. The error line
 			// goes to stderr, so the two do not collide, and the reader gets
 			// the detail without needing a handle to fetch it with.
@@ -150,9 +159,11 @@ func New(deps Dependencies) *cobra.Command {
 
 			// Machine output gets exactly one document (ADR-075). Printing the
 			// status and then returning put a second envelope after it, from
-			// cmd/bb, and `| jq` fails on the second -- which is the parse
-			// error #474 was about. The failure envelope wins, and its message
-			// names the operation id, so the artifact is one
+			// cmd/bb: a strict decoder rejects that outright, and jq -- which
+			// reads a value stream -- quietly emits a result per document and
+			// exits 0, so a script taking the last line gets the error
+			// envelope's null. The failure envelope wins, and carries the
+			// operation id in error.details, so the artifact is one
 			// `bb bulk status <id> --json` away.
 			if applyErr != nil {
 				return applyErr

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
@@ -283,5 +284,108 @@ func TestWriteListWriterFailure(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "failed to write JSON output") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// TestErrorEnvelopeCarriesDetailsAsFields covers the handle a caller needs to
+// act on a failure.
+//
+// It exists because the first version of the bulk cancellation work put the
+// operation id only in the message and told consumers to find it there. An
+// identifier no schema describes, recovered by scanning a sentence, is the
+// failure the machine contract exists to end (#474).
+func TestErrorEnvelopeCarriesDetailsAsFields(t *testing.T) {
+	t.Parallel()
+
+	err := apperrors.WithDetail(
+		apperrors.New(apperrors.KindCancelled, "bulk apply op-abc123 was cancelled", nil),
+		"operation_id", "op-abc123",
+	)
+
+	buffer := &bytes.Buffer{}
+	if writeErr := WriteError(buffer, err); writeErr != nil {
+		t.Fatalf("writing the envelope failed: %v", writeErr)
+	}
+
+	var envelope ErrorEnvelope
+	if decodeErr := json.Unmarshal(buffer.Bytes(), &envelope); decodeErr != nil {
+		t.Fatalf("envelope is not valid JSON: %v\n%s", decodeErr, buffer.String())
+	}
+
+	if got := envelope.Error.Details["operation_id"]; got != "op-abc123" {
+		t.Errorf("error.details.operation_id = %q, want op-abc123\n%s", got, buffer.String())
+	}
+	if envelope.Error.ExitCode != 12 {
+		t.Errorf("exit_code = %d, want 12", envelope.Error.ExitCode)
+	}
+
+	// The envelope must still validate against the published schema, which is
+	// what a consumer is told to check it with.
+	var document any
+	if decodeErr := json.Unmarshal(buffer.Bytes(), &document); decodeErr != nil {
+		t.Fatalf("decoding failed: %v", decodeErr)
+	}
+	validateAgainstErrorSchema(t, document)
+}
+
+// TestAnErrorWithoutDetailsOmitsTheField keeps absence meaningful: a consumer
+// reading no details knows the message is all there is, rather than finding an
+// empty object it has to distinguish from a missing one.
+func TestAnErrorWithoutDetailsOmitsTheField(t *testing.T) {
+	t.Parallel()
+
+	buffer := &bytes.Buffer{}
+	if err := WriteError(buffer, apperrors.New(apperrors.KindNotFound, "missing", nil)); err != nil {
+		t.Fatalf("writing the envelope failed: %v", err)
+	}
+
+	if strings.Contains(buffer.String(), "details") {
+		t.Errorf("an error with nothing to carry still published a details field:\n%s", buffer.String())
+	}
+
+	var document any
+	if err := json.Unmarshal(buffer.Bytes(), &document); err != nil {
+		t.Fatalf("decoding failed: %v", err)
+	}
+	validateAgainstErrorSchema(t, document)
+}
+
+// TestDetailsOnlyAttachToClassifiedErrors guards the other direction: a plain
+// error has no kind, so it has nowhere to carry a detail and must come back
+// unchanged rather than being silently reclassified as internal.
+func TestDetailsOnlyAttachToClassifiedErrors(t *testing.T) {
+	t.Parallel()
+
+	plain := errors.New("not classified")
+	got := apperrors.WithDetail(plain, "operation_id", "op-1")
+
+	// The property is that nothing was wrapped. errors.Is would be satisfied by
+	// a wrapper too, and a wrapper is exactly what must not happen here: it
+	// would give an unclassified error a kind it never earned.
+	var classified *apperrors.AppError
+	if errors.As(got, &classified) {
+		t.Errorf("WithDetail turned a plain error into a classified one: %v", got)
+	}
+	if got.Error() != plain.Error() {
+		t.Errorf("WithDetail changed a plain error: %q, want %q", got.Error(), plain.Error())
+	}
+	if details := apperrors.DetailsOf(plain); details != nil {
+		t.Errorf("a plain error reported details: %v", details)
+	}
+}
+
+func validateAgainstErrorSchema(t *testing.T, document any) {
+	t.Helper()
+
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("error.json", ErrorEnvelopeSchema("output.error.schema.json")); err != nil {
+		t.Fatalf("adding the schema failed: %v", err)
+	}
+	schema, err := compiler.Compile("error.json")
+	if err != nil {
+		t.Fatalf("compiling the schema failed: %v", err)
+	}
+	if err := schema.Validate(document); err != nil {
+		t.Errorf("the envelope fails its own published schema: %v", err)
 	}
 }

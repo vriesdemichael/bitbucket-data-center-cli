@@ -397,19 +397,30 @@ bb bulk status <operation-id> --json
 
 **A run that fails or is interrupted emits the error envelope, not the status envelope.**
 Under `--json` a command writes exactly one document (ADR-075), and on failure that document
-is the error. The status artifact is not lost — the error message names the operation id, and
-`bb bulk status <id> --json` returns it:
+is the error. The status artifact is not lost: `error.details.operation_id` names it.
 
-```bash
-bb bulk apply --from-plan .tmp/bulk-plan.json --json
-# exit 5, stdout: {"version":"v2","error":{"kind":"conflict",
-#                  "message":"bulk apply op-… completed with failures","exit_code":5}, …}
+On failure, stdout is the error envelope and exit is non-zero:
 
-bb bulk status op-… --json    # the full artifact: what applied, what failed, what was skipped
+```json
+{
+  "version": "v2",
+  "error": {
+    "kind": "conflict",
+    "message": "bulk apply op-… completed with failures",
+    "exit_code": 5,
+    "details": { "operation_id": "op-…" }
+  },
+  "meta": { "contract": "bb.machine" }
+}
 ```
 
-So parse the id out of `.error.message` and fetch the artifact. Do not expect target detail
-on the failure path.
+```bash
+operation_id=$(bb bulk apply --from-plan .tmp/bulk-plan.json --json | jq -r '.error.details.operation_id // empty')
+bb bulk status "$operation_id" --json   # what applied, what failed, what was never reached
+```
+
+Read the id from `error.details.operation_id`. Do not parse it out of `error.message`, and do
+not expect target detail on the failure path.
 
 ### JSON Error Kinds
 

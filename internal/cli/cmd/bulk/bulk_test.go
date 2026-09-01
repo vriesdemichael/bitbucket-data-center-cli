@@ -202,8 +202,10 @@ func TestBulkApplyReturnsStructuredFailure(t *testing.T) {
 
 	// Nothing on stdout. This test used to require the status envelope here,
 	// which is what made the failure path write two documents: cmd/bb writes
-	// the error envelope for the returned error, and `| jq` fails on the
-	// second. Under --json the failure envelope is the one document (ADR-075).
+	// the error envelope for the returned error, and a consumer then reads one
+	// document too many -- a strict decoder errors, jq quietly returns a result
+	// per document and exits 0. Under --json the failure envelope is the one
+	// document (ADR-075).
 	if written := strings.TrimSpace(buffer.String()); written != "" {
 		t.Fatalf("a failing apply wrote to stdout under --json; cmd/bb appends the error envelope after it:\n%s", written)
 	}
@@ -233,17 +235,22 @@ func TestBulkApplyReturnsStructuredFailure(t *testing.T) {
 	}
 }
 
-// operationIDFrom pulls the op-... identifier out of an apply error message.
+// operationIDFrom reads the operation id off the error as a field.
+//
+// Deliberately not by scanning the message. An earlier version did exactly
+// that, which meant the test agreed with the skill in telling callers to scrape
+// a sentence for an identifier no schema described -- the failure #474 was
+// about. Reading error.details is what a consumer does, so it is what the test
+// does.
 func operationIDFrom(t *testing.T, err error) string {
 	t.Helper()
 
-	for _, field := range strings.Fields(err.Error()) {
-		if strings.HasPrefix(field, "op-") {
-			return field
-		}
+	details := apperrors.DetailsOf(err)
+	if id := details["operation_id"]; id != "" {
+		return id
 	}
 
-	t.Fatalf("the error names no operation id, so the artifact cannot be reached: %v", err)
+	t.Fatalf("the error carries no operation_id detail, so the artifact cannot be reached: %v (details: %v)", err, details)
 	return ""
 }
 

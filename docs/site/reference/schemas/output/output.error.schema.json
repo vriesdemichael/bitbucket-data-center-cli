@@ -7,6 +7,15 @@
     "error": {
       "additionalProperties": false,
       "properties": {
+        "details": {
+          "additionalProperties": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": "Machine-readable handles the caller needs to act on the failure, keyed by name. Absent when there are none. bb bulk apply sets operation_id, which `bb bulk status \u003cid\u003e` takes.",
+          "minProperties": 1,
+          "type": "object"
+        },
         "exit_code": {
           "description": "Process exit status, determined by kind.",
           "enum": [
