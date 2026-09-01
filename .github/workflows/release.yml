@@ -358,7 +358,18 @@ jobs:
           records = [record for record in raw.split("\x1e") if record.strip()]
 
           conventional_pattern = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]+)\))?(?P<bang>!)?: (?P<description>.+)$")
-          breaking_footer_pattern = re.compile(r"^BREAKING(?:-| )CHANGE:\s*(.+)$", re.MULTILINE)
+          # Captures the whole footer, not its first line.  `(.+)$` stopped at
+          # the first newline, so a footer wrapped at the usual commit width
+          # reached the release notes cut off -- five of the six breaking
+          # changes accumulated for the next release ended mid-sentence, one of
+          # them mid-word.  Since CHANGELOG.md only points at these generated
+          # notes, that truncation was the migration instructions.
+          # Ends at a blank line so a footer stays separable from anything
+          # following it in the body.
+          breaking_footer_pattern = re.compile(
+              r"^BREAKING(?:-| )CHANGE:\s*(.+?)(?=\n\s*\n|\Z)",
+              re.MULTILINE | re.DOTALL,
+          )
 
           section_titles = {
               "feat": "Features",
@@ -428,7 +439,10 @@ jobs:
               if is_breaking:
                   footer_match = breaking_footer_pattern.search(body)
                   entry_with_note = dict(entry)
-                  entry_with_note["breakingNote"] = footer_match.group(1).strip() if footer_match else ""
+                  # Collapsed to one line: the note goes into a Markdown list
+                  # item, where the commit's own hard wrapping would otherwise
+                  # break the bullet.
+                  entry_with_note["breakingNote"] = " ".join(footer_match.group(1).split()) if footer_match else ""
                   breaking_changes.append(entry_with_note)
 
           compare_url = ""
