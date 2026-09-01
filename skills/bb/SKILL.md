@@ -501,6 +501,14 @@ Check for `error` before reading `data`. `kind` is one of `authentication`,
 not retry it automatically: for a mutating command like `bb bulk apply` that re-runs the
 work the operator just stopped. Report it and wait for instruction.
 
+A failure may carry an optional `error.details` object — a flat string map of handles you
+need to act on it. `bb bulk apply` puts `operation_id` there, which `bb bulk status <id>`
+takes. Read handles from those fields; never scrape them out of `error.message`.
+
+Exactly one JSON document reaches stdout per command, so decode it as one value. Two
+documents would be a bug — report it rather than working around it, because `jq` reads a
+value stream and would hide it by printing a result per document and exiting 0.
+
 A malformed invocation — unknown flag, unknown command, bad flag value, wrong number of
 arguments — reports `validation` / exit `2`. Treat that as your own mistake to correct, not
 something to retry. `internal` / exit `1` means the CLI or the server genuinely failed.
