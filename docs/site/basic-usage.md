@@ -187,7 +187,7 @@ See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and co
 {
   "data": {},
   "meta": {
-    "bb_version": "v4.0.0"
+    "bbVersion": "v4.0.0"
   }
 }
 ```
@@ -196,7 +196,7 @@ See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and co
 - Adding a field to `data` is additive. Removing or renaming one, changing its type, or changing
   whether it can be null is a breaking change and cuts a new major release, because the binary
   version is the contract version ([ADR-064](adr/064-machine-output-carries-no-contract-version.md)).
-  `meta.bb_version` reports which binary produced the document.
+  `meta.bbVersion` reports which binary produced the document.
 
 Example machine output (`bb --json auth status`):
 
@@ -209,7 +209,7 @@ Example machine output (`bb --json auth status`):
     "auth_source": "stored/default"
   },
   "meta": {
-    "bb_version": "v4.0.0"
+    "bbVersion": "v4.0.0"
   }
 }
 ```

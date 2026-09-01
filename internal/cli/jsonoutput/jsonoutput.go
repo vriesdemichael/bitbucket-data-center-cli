@@ -49,13 +49,13 @@ type EnvelopeMeta struct {
 	// Without it a consumer cannot tell a complete result set from the first
 	// --limit of an unknown number — the difference between finishing and
 	// needing to ask again with a higher --limit or --all.
-	LimitReached *bool `json:"limit_reached,omitempty"`
+	LimitReached *bool `json:"limitReached,omitempty"`
 	// BBVersion is the version of the binary that produced the document.
 	//
 	// Provenance, for an operator auditing stored output -- not a compatibility
 	// switch. Nothing in bb branches on it and nothing outside bb should: the
 	// way to pin a contract is to pin the binary (ADR-064).
-	BBVersion string `json:"bb_version"`
+	BBVersion string `json:"bbVersion"`
 }
 
 // ErrorEnvelope is the bb.machine document written to stdout when a command
@@ -76,7 +76,7 @@ type ErrorEnvelope struct {
 type EnvelopeError struct {
 	Kind     string `json:"kind"`
 	Message  string `json:"message"`
-	ExitCode int    `json:"exit_code"`
+	ExitCode int    `json:"exitCode"`
 	// Details carries handles the caller needs to act on the failure, keyed by
 	// name -- bb bulk apply puts operation_id here, so the artifact of a failed
 	// or cancelled run can be fetched without scraping the message.

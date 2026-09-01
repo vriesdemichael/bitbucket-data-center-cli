@@ -582,7 +582,7 @@ func TestApiNonJSONOutput(t *testing.T) {
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if !strings.Contains(buf.String(), `"bb_version"`) {
+		if !strings.Contains(buf.String(), `"bbVersion"`) {
 			t.Fatalf("expected machine envelope, got: %s", buf.String())
 		}
 	}

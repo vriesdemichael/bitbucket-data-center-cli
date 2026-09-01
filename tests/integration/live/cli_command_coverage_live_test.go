@@ -667,7 +667,7 @@ func decodeJSONMap(t *testing.T, value string) map[string]any {
 	var envelope struct {
 		Data map[string]any `json:"data"`
 		Meta struct {
-			BBVersion string `json:"bb_version"`
+			BBVersion string `json:"bbVersion"`
 		} `json:"meta"`
 	}
 
@@ -676,7 +676,7 @@ func decodeJSONMap(t *testing.T, value string) map[string]any {
 	}
 
 	if strings.TrimSpace(envelope.Meta.BBVersion) == "" {
-		t.Fatalf("expected a bb envelope carrying meta.bb_version: %s", value)
+		t.Fatalf("expected a bb envelope carrying meta.bbVersion: %s", value)
 	}
 
 	if envelope.Data == nil {
@@ -692,7 +692,7 @@ func decodeJSONData(t *testing.T, value string, target any) {
 	var envelope struct {
 		Data any `json:"data"`
 		Meta struct {
-			BBVersion string `json:"bb_version"`
+			BBVersion string `json:"bbVersion"`
 		} `json:"meta"`
 	}
 
@@ -701,7 +701,7 @@ func decodeJSONData(t *testing.T, value string, target any) {
 	}
 
 	if strings.TrimSpace(envelope.Meta.BBVersion) == "" {
-		t.Fatalf("expected a bb envelope carrying meta.bb_version: %s", value)
+		t.Fatalf("expected a bb envelope carrying meta.bbVersion: %s", value)
 	}
 
 	if envelope.Data == nil {

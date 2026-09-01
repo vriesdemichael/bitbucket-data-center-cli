@@ -407,10 +407,10 @@ On failure, stdout is the error envelope and exit is non-zero:
   "error": {
     "kind": "conflict",
     "message": "bulk apply op-… completed with failures",
-    "exit_code": 5,
+    "exitCode": 5,
     "details": { "operation_id": "op-…" }
   },
-  "meta": { "bb_version": "v4.0.0" }
+  "meta": { "bbVersion": "v4.0.0" }
 }
 ```
 

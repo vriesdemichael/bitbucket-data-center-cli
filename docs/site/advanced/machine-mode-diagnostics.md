@@ -10,12 +10,12 @@ Envelope shape:
 {
   "data": {},
   "meta": {
-    "bb_version": "v4.0.0"
+    "bbVersion": "v4.0.0"
   }
 }
 ```
 
-`data` holds command-specific payloads. `meta.bb_version` reports which binary produced the
+`data` holds command-specific payloads. `meta.bbVersion` reports which binary produced the
 document -- provenance for stored output, not a compatibility switch.
 
 There is no contract version. Adding a field to `data` is additive; removing or renaming one,
@@ -32,17 +32,17 @@ When a command fails while `--json` is set, stdout carries an `error` object whe
   "error": {
     "kind": "validation",
     "message": "no Bitbucket host configured: set BITBUCKET_URL or run 'bb auth login <host>'",
-    "exit_code": 2
+    "exitCode": 2
   },
   "meta": {
-    "bb_version": "v4.0.0"
+    "bbVersion": "v4.0.0"
   }
 }
 ```
 
 **Which key is present tells you the outcome:** `data` on success, `error` on failure. Never both. This stays unambiguous for a command whose successful `data` is legitimately `null`.
 
-`kind` and `exit_code` come from the taxonomy below, so you can branch on either without parsing `message`. `exit_code` always matches the process exit status.
+`kind` and `exitCode` come from the taxonomy below, so you can branch on either without parsing `message`. `exitCode` always matches the process exit status.
 
 The human-readable line still goes to stderr, exactly as it does without `--json`.
 
@@ -163,9 +163,9 @@ bb --json repo list --nonexistent-flag
   "error": {
     "kind": "validation",
     "message": "unknown flag: --nonexistent-flag",
-    "exit_code": 2
+    "exitCode": 2
   },
-  "meta": { "bb_version": "v4.0.0" }
+  "meta": { "bbVersion": "v4.0.0" }
 }
 ```
 

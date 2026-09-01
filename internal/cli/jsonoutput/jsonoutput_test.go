@@ -24,8 +24,8 @@ func TestWriteSuccess(t *testing.T) {
 	if strings.Contains(output, "\"version\"") {
 		t.Fatalf("the envelope carries a contract version, which ADR-064 removed: %s", output)
 	}
-	if !strings.Contains(output, "\"bb_version\"") {
-		t.Fatalf("expected bb_version in meta, got %s", output)
+	if !strings.Contains(output, "\"bbVersion\"") {
+		t.Fatalf("expected bbVersion in meta, got %s", output)
 	}
 	if strings.Contains(output, "\"contract\"") {
 		t.Fatalf("the envelope carries a constant contract tag: %s", output)
@@ -125,7 +125,7 @@ func TestWriteErrorEmitsClassifiedEnvelope(t *testing.T) {
 		t.Fatalf("expected conflict kind, got %q", envelope.Error.Kind)
 	}
 	if envelope.Error.ExitCode != 5 {
-		t.Fatalf("expected exit_code 5, got %d", envelope.Error.ExitCode)
+		t.Fatalf("expected exitCode 5, got %d", envelope.Error.ExitCode)
 	}
 	// The cause is preserved; only the redundant kind prefix is dropped.
 	if envelope.Error.Message != "branch already exists (409)" {
@@ -206,7 +206,7 @@ func TestErrorEnvelopeSchemaMatchesTheTaxonomy(t *testing.T) {
 
 	// Every kind's exit code must be an allowed value, or the CLI can emit an
 	// envelope that fails validation against its own published schema.
-	codeEnum := errorProperties["exit_code"].(map[string]any)["enum"].([]any)
+	codeEnum := errorProperties["exitCode"].(map[string]any)["enum"].([]any)
 	allowed := map[int]bool{}
 	for _, code := range codeEnum {
 		allowed[code.(int)] = true
@@ -241,21 +241,21 @@ func TestWriteListCarriesLimitReached(t *testing.T) {
 
 		var envelope struct {
 			Meta struct {
-				BBVersion    string `json:"bb_version"`
-				LimitReached *bool  `json:"limit_reached"`
+				BBVersion    string `json:"bbVersion"`
+				LimitReached *bool  `json:"limitReached"`
 			} `json:"meta"`
 		}
 		if err := json.Unmarshal(buffer.Bytes(), &envelope); err != nil {
 			t.Fatalf("expected a parseable envelope, got %q (%v)", buffer.String(), err)
 		}
 		if envelope.Meta.LimitReached == nil {
-			t.Fatal("expected limit_reached to be present on a list envelope")
+			t.Fatal("expected limitReached to be present on a list envelope")
 		}
 		if *envelope.Meta.LimitReached != reached {
-			t.Fatalf("limit_reached = %v, want %v", *envelope.Meta.LimitReached, reached)
+			t.Fatalf("limitReached = %v, want %v", *envelope.Meta.LimitReached, reached)
 		}
 		if envelope.Meta.BBVersion == "" {
-			t.Fatalf("a list envelope carries no meta.bb_version: %+v", envelope.Meta)
+			t.Fatalf("a list envelope carries no meta.bbVersion: %+v", envelope.Meta)
 		}
 	}
 }
@@ -268,8 +268,8 @@ func TestWriteOmitsLimitReached(t *testing.T) {
 		t.Fatalf("Write returned %v", err)
 	}
 
-	if strings.Contains(buffer.String(), "limit_reached") {
-		t.Fatalf("non-list envelope carries limit_reached: %s", buffer.String())
+	if strings.Contains(buffer.String(), "limitReached") {
+		t.Fatalf("non-list envelope carries limitReached: %s", buffer.String())
 	}
 }
 
@@ -396,10 +396,10 @@ func validateAgainstErrorSchema(t *testing.T, document any) {
 	}
 }
 
-// TestAListEnvelopeValidatesAgainstItsOwnSchema covers meta.limit_reached.
+// TestAListEnvelopeValidatesAgainstItsOwnSchema covers meta.limitReached.
 //
 // The meta schema declared only contract and forbade additional properties,
-// while every listing command emits limit_reached — so the output of every
+// while every listing command emits limitReached — so the output of every
 // listing command failed the schema published to describe it. Nothing noticed
 // because nothing validated a real envelope against a real schema, which is the
 // same blind spot the output schema coverage report exists to expose.
@@ -433,7 +433,7 @@ func TestAListEnvelopeValidatesAgainstItsOwnSchema(t *testing.T) {
 			t.Fatalf("decoding failed: %v", err)
 		}
 		if err := compiled.Validate(document); err != nil {
-			t.Errorf("limit_reached=%v: a list envelope fails its own schema: %v\n%s", limitReached, err, buffer.String())
+			t.Errorf("limitReached=%v: a list envelope fails its own schema: %v\n%s", limitReached, err, buffer.String())
 		}
 	}
 }
@@ -443,7 +443,7 @@ func TestAListEnvelopeValidatesAgainstItsOwnSchema(t *testing.T) {
 // The contract version was a single global constant shared by all 233 commands,
 // so a breaking change to one payload could not be signalled without falsely
 // signalling it for the other 232. It therefore never moved. Compatibility now
-// rides the release major, and meta.bb_version reports which binary wrote the
+// rides the release major, and meta.bbVersion reports which binary wrote the
 // document — provenance, not a switch.
 func TestTheEnvelopeCarriesTheBinaryVersionAndNoContractVersion(t *testing.T) {
 	buffer := &bytes.Buffer{}
@@ -461,8 +461,8 @@ func TestTheEnvelopeCarriesTheBinaryVersionAndNoContractVersion(t *testing.T) {
 	}
 
 	meta, _ := document["meta"].(map[string]any)
-	if meta["bb_version"] == "" || meta["bb_version"] == nil {
-		t.Errorf("meta.bb_version is missing:\n%s", buffer.String())
+	if meta["bbVersion"] == "" || meta["bbVersion"] == nil {
+		t.Errorf("meta.bbVersion is missing:\n%s", buffer.String())
 	}
 	if _, present := meta["contract"]; present {
 		t.Errorf("meta still carries a constant contract tag:\n%s", buffer.String())
