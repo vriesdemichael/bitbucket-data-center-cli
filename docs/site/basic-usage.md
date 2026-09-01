@@ -187,7 +187,6 @@ See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and co
 {
   "data": {},
   "meta": {
-    "contract": "bb.machine",
     "bb_version": "v4.0.0"
   }
 }
@@ -210,7 +209,6 @@ Example machine output (`bb --json auth status`):
     "auth_source": "stored/default"
   },
   "meta": {
-    "contract": "bb.machine",
     "bb_version": "v4.0.0"
   }
 }

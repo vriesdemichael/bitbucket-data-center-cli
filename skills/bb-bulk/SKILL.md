@@ -410,7 +410,7 @@ On failure, stdout is the error envelope and exit is non-zero:
     "exit_code": 5,
     "details": { "operation_id": "op-…" }
   },
-  "meta": { "contract": "bb.machine" }
+  "meta": { "bb_version": "v4.0.0" }
 }
 ```
 
@@ -424,7 +424,7 @@ not expect target detail on the failure path.
 
 ### JSON Error Kinds
 
-Responses follow the `bb.machine` v2 contract:
+Responses follow the machine output contract:
 
 - `validation` (`exit 2`): Invalid policy syntax or unresolvable selectors.
 - `authentication` (`exit 3`): Missing or invalid Bitbucket token.

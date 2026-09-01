@@ -26,7 +26,7 @@ hide:
 	<article class="bb-card">
 		<p class="bb-card-kicker">Automation Contract</p>
 		<h2>Stable output for CI, tooling, and agents</h2>
-		<p>The CLI exposes a versioned <code>bb.machine</code> envelope so scripts, pipelines, and LLM agents are not parsing human prose.</p>
+		<p>The CLI wraps every <code>--json</code> payload in the same small envelope, so scripts, pipelines and LLM agents are not parsing human prose.</p>
 	</article>
 	<article class="bb-card">
 		<p class="bb-card-kicker">Live-Tested</p>

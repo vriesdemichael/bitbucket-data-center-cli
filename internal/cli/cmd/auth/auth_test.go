@@ -123,7 +123,7 @@ func decodeJSONEnvelopeData(raw []byte, target any) error {
 	var envelope struct {
 		Data any `json:"data"`
 		Meta struct {
-			Contract string `json:"contract"`
+			BBVersion string `json:"bb_version"`
 		} `json:"meta"`
 	}
 
@@ -131,9 +131,9 @@ func decodeJSONEnvelopeData(raw []byte, target any) error {
 		return err
 	}
 
-	// The contract name, not a payload version: ADR-064 removed the latter, and
-	// meta.contract is what identifies the document either way.
-	if strings.TrimSpace(envelope.Meta.Contract) == "" {
+	// meta.bb_version, not a payload version: ADR-064 removed the latter, and a
+	// constant contract tag with it. What identifies the document is its shape.
+	if strings.TrimSpace(envelope.Meta.BBVersion) == "" {
 		return os.ErrInvalid
 	}
 

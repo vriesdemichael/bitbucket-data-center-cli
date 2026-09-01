@@ -3,10 +3,11 @@ title: Machine output carries no contract version; breaking payload changes ride
 category: architecture
 status: accepted
 decision: >
-  The bb.machine envelope carries no contract version. meta.contract stays, because it identifies
-  the document type, and meta.bb_version is added, reporting the binary that produced it.
-  bb_version is provenance for an operator reading stored output. It is not a compatibility
-  switch: nothing in bb branches on it and nothing outside bb should.
+  The machine envelope carries no constant fields. The contract version is removed, and so is
+  meta.contract, which named the format and never varied. meta.bb_version is added, reporting the
+  binary that produced the document: provenance for an operator reading stored output, not a
+  compatibility switch. Nothing in bb branches on it and nothing outside bb should.
+  What identifies the document is its shape -- meta.bb_version, and exactly one of data or error.
   Compatibility rides the release major instead. Adding a field to data is additive. Removing or
   renaming one, changing its type, or changing whether it can be null is breaking, and the commit
   must carry a ! or a BREAKING CHANGE footer so the release automation cuts a major.
@@ -48,4 +49,11 @@ rejected_alternatives:
     reason: >
       A field that never changes reads as a guarantee. Leaving it publishes a compatibility
       signal that is always the same value, which is worse than none.
+  - alternative: Keep meta.contract as a document-type tag
+    reason: >
+      The same objection, one field over. It never varies, and the job a type tag exists to do --
+      telling one document from another -- is already done by which key is present, since the
+      success and failure envelopes are distinguished by data versus error rather than by it.
+      Persistent artifacts do need identity, which is why the bulk policy, plan and apply-status
+      files keep apiVersion and kind; transient stdout from a command you just ran does not.
 provenance: guided-ai

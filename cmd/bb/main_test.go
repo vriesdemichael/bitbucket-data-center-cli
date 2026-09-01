@@ -210,8 +210,8 @@ func TestExecuteRootCommandEmitsErrorEnvelopeUnderJSON(t *testing.T) {
 	}
 
 	meta, ok := envelope["meta"].(map[string]any)
-	if !ok || meta["contract"] != "bb.machine" {
-		t.Fatalf("expected bb.machine meta contract, got %v", envelope["meta"])
+	if !ok || meta["bb_version"] == nil || meta["bb_version"] == "" {
+		t.Fatalf("the failure envelope carries no meta.bb_version, got %v", envelope["meta"])
 	}
 
 	payload, ok := envelope["error"].(map[string]any)

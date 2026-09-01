@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
@@ -26,18 +27,11 @@ func newTestDependencies(serverURL string, jsonMode bool, dryRun bool) Dependenc
 				BitbucketToken: "test-token",
 			}, nil
 		},
-		WriteJSON: func(w io.Writer, value any) error {
-			envelope := map[string]any{
-				"version": "v2",
-				"data":    value,
-				"meta": map[string]string{
-					"contract": "bb.machine",
-				},
-			}
-			enc := json.NewEncoder(w)
-			enc.SetIndent("", "  ")
-			return enc.Encode(envelope)
-		},
+		// The real writer, not a hand-rolled envelope. This double used to
+		// build its own, which meant the tests asserted against a copy that
+		// drifted: it was still emitting the "version" field ADR-064 removed,
+		// so it proved the double worked rather than the command did.
+		WriteJSON: jsonoutput.Write,
 	}
 }
 
@@ -105,8 +99,8 @@ func TestApiGetJSONEnvelope(t *testing.T) {
 		t.Fatalf("failed to decode JSON envelope: %v\nOutput: %s", err, buf.String())
 	}
 
-	if env["version"] != "v2" {
-		t.Fatalf("expected version v2, got %v", env["version"])
+	if _, present := env["version"]; present {
+		t.Fatalf("the envelope still carries a contract version: %v", env)
 	}
 	data, ok := env["data"].(map[string]any)
 	if !ok || data["name"] != "demo" {
@@ -588,7 +582,7 @@ func TestApiNonJSONOutput(t *testing.T) {
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if !strings.Contains(buf.String(), `"contract": "bb.machine"`) {
+		if !strings.Contains(buf.String(), `"bb_version"`) {
 			t.Fatalf("expected machine envelope, got: %s", buf.String())
 		}
 	}

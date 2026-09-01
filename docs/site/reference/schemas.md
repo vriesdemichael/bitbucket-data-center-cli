@@ -7,7 +7,7 @@ its own `--json` output, read from the copy compiled in:
 
 ```bash
 bb pr get --describe
-bb pr get --describe --json    # wrapped in a bb.machine envelope
+bb pr get --describe --json    # wrapped in the standard envelope
 ```
 
 This needs no network, no configuration and no arguments — asking what a command returns does
