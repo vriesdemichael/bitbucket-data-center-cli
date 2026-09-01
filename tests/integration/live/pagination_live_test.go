@@ -31,8 +31,7 @@ func TestLiveCommitPaginationOverRealStream(t *testing.T) {
 	}
 
 	var envelope struct {
-		Version string `json:"version"`
-		Data    struct {
+		Data struct {
 			Commits []map[string]any `json:"commits"`
 		} `json:"data"`
 	}
@@ -51,8 +50,7 @@ func TestLiveCommitPaginationOverRealStream(t *testing.T) {
 	}
 
 	var envelopeShort struct {
-		Version string `json:"version"`
-		Data    struct {
+		Data struct {
 			Commits []map[string]any `json:"commits"`
 		} `json:"data"`
 	}
@@ -94,8 +92,7 @@ func TestLiveBranchPaginationOverRealStream(t *testing.T) {
 	}
 
 	var envelope struct {
-		Version string `json:"version"`
-		Data    struct {
+		Data struct {
 			Branches []map[string]any `json:"branches"`
 		} `json:"data"`
 	}

@@ -1,9 +1,23 @@
 // Package outputschemas defines and exports JSON schemas for each bb command's
-// --json output.  Each schema describes the full bb.machine v2 envelope
-// (version, data, meta fields) that the command emits to stdout.
+// --json output. Each schema describes the full bb.machine envelope (data and
+// meta) that the command emits to stdout.
 //
-// Schema is organized by command group.  A central Schemas() function merges
-// all group schemas and is consumed by the output-schema-export tool.
+// These schemas are a published contract, and ADR-064 is the record that
+// governs them. Read it before changing one.
+//
+// Adding a field to data is additive and needs no ceremony. Removing a field,
+// renaming one, changing its type, or changing whether it can be null is a
+// BREAKING CHANGE: mark the commit with a ! or a BREAKING CHANGE footer so the
+// release automation cuts a major. The release version is the only
+// compatibility signal consumers have, so an unmarked break reaches them
+// silently through package managers and bb update.
+//
+// If the command you are changing has no schema here, add one in the same
+// change. A schema diff cannot see a payload it does not have, so an
+// unschema'd command has no guarantee at all.
+//
+// Schemas are organized by command group. Schemas() merges all group schemas
+// and is consumed by tools/output-schema-export.
 package outputschemas
 
 import (

@@ -1,8 +1,8 @@
 {
-  "$id": "https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/output/output.branch.set-default.schema.json",
+  "$id": "https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/output/output.branch.default.set.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "JSON output schema for `bb branch set-default --json`. Data confirms the new default branch.",
+  "description": "JSON output schema for `bb branch default set --json`. Data confirms the new default branch.",
   "properties": {
     "data": {
       "additionalProperties": false,
@@ -36,24 +36,30 @@
     "meta": {
       "additionalProperties": false,
       "properties": {
+        "bb_version": {
+          "description": "Version of the bb binary that produced this document. Provenance for stored output, not a compatibility switch: pin the binary to pin the contract (ADR-064).",
+          "minLength": 1,
+          "type": "string"
+        },
         "contract": {
           "const": "bb.machine"
+        },
+        "limit_reached": {
+          "description": "Present on listing commands: true when the result set came back at --limit and there may be more behind it.",
+          "type": "boolean"
         }
       },
       "required": [
-        "contract"
+        "contract",
+        "bb_version"
       ],
       "type": "object"
-    },
-    "version": {
-      "const": "v2"
     }
   },
   "required": [
-    "version",
     "data",
     "meta"
   ],
-  "title": "bb branch set-default output",
+  "title": "bb branch default set output",
   "type": "object"
 }

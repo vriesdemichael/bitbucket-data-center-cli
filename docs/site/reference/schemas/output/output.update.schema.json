@@ -117,21 +117,27 @@
     "meta": {
       "additionalProperties": false,
       "properties": {
+        "bb_version": {
+          "description": "Version of the bb binary that produced this document. Provenance for stored output, not a compatibility switch: pin the binary to pin the contract (ADR-064).",
+          "minLength": 1,
+          "type": "string"
+        },
         "contract": {
           "const": "bb.machine"
+        },
+        "limit_reached": {
+          "description": "Present on listing commands: true when the result set came back at --limit and there may be more behind it.",
+          "type": "boolean"
         }
       },
       "required": [
-        "contract"
+        "contract",
+        "bb_version"
       ],
       "type": "object"
-    },
-    "version": {
-      "const": "v2"
     }
   },
   "required": [
-    "version",
     "data",
     "meta"
   ],

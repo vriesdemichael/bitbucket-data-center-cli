@@ -3,7 +3,7 @@
 ## Per-command `--json` output schemas
 
 Every data-returning command that supports `--json` has a published JSON Schema describing its full
-`bb.machine v2` envelope (the `version`, `data`, and `meta` fields).  Use these schemas to:
+`bb.machine` envelope (the `data` and `meta` fields).  Use these schemas to:
 
 - Validate `bb` output in scripts without running the binary.
 - Enable IDE auto-completion for piped JSON in tooling that honours `$schema`.
@@ -19,6 +19,12 @@ Each published snapshot identifies itself by the release it belongs to: the copy
 under `latest/` carries the `$id` of whichever version `latest` currently points at.  Pin
 to a version directory — `.../v3.4.0/reference/schemas/output/` — when you need a contract
 that cannot change under you.
+
+### How much of the surface is covered
+
+Not all of it. Most commands publish no schema. That gap closes when each schema is derived
+from a typed result the command already builds, rather than being maintained as a file per
+command.
 
 ### Auth command output schemas
 
@@ -60,8 +66,8 @@ that cannot change under you.
 |---|---|
 | [output.branch.create.schema.json](schemas/output/output.branch.create.schema.json) | `bb branch create --json` |
 | [output.branch.delete.schema.json](schemas/output/output.branch.delete.schema.json) | `bb branch delete --json` |
-| [output.branch.get-default.schema.json](schemas/output/output.branch.get-default.schema.json) | `bb branch default get --json` |
-| [output.branch.set-default.schema.json](schemas/output/output.branch.set-default.schema.json) | `bb branch default set --json` |
+| [output.branch.default.get.schema.json](schemas/output/output.branch.default.get.schema.json) | `bb branch default get --json` |
+| [output.branch.default.set.schema.json](schemas/output/output.branch.default.set.schema.json) | `bb branch default set --json` |
 
 ### Pull request command output schemas
 

@@ -4,7 +4,7 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `74`
+- Total ADRs: `75`
 - Accepted ADRs: `67`
 
 ## ADR List
@@ -22,7 +22,7 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 011: Error taxonomy and CLI exit contract](011-error-taxonomy-and-cli-exit-contract.md) (`architecture`, `accepted`)
 - [ADR 012: Git backend abstraction for repository operations](012-git-backend-abstraction-for-repository-operations.md) (`architecture`, `accepted`)
 - [ADR 013: CLI framework and command tree standard](013-cli-framework-and-command-tree-standard.md) (`architecture`, `accepted`)
-- [ADR 014: Output contract for human and machine modes](014-output-contract-for-human-and-machine-modes.md) (`architecture`, `accepted`)
+- [ADR 014: Output contract for human and machine modes](014-output-contract-for-human-and-machine-modes.md) (`architecture`, `superseded`)
 - [ADR 015: Live test harness and deterministic seeding](015-live-test-harness-and-deterministic-seeding.md) (`development`, `accepted`)
 - [ADR 016: Test classification and execution policy](016-test-classification-and-execution-policy.md) (`development`, `accepted`)
 - [ADR 017: Undocumented behavior registry via live tests](017-undocumented-behavior-registry-via-live-tests.md) (`development`, `accepted`)
@@ -72,6 +72,7 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 061: The MCP surface runs on the official SDK and every tool names its payload](061-mcp-output-contract-on-the-official-sdk.md) (`architecture`, `accepted`)
 - [ADR 062: The MCP server can be confined to a workspace, and records what agents attempt there](062-mcp-workspace-scoping-and-agent-audit-trail.md) (`architecture`, `accepted`)
 - [ADR 063: Offline release signature verification and update trust policy](063-offline-release-signature-verification.md) (`architecture`, `accepted`)
+- [ADR 064: Machine output carries no contract version; breaking payload changes ride the release major](064-machine-output-carries-no-contract-version.md) (`architecture`, `accepted`)
 - [ADR 065: What the quality apparatus measures, and why each part exists](065-what-the-quality-apparatus-measures.md) (`development`, `accepted`)
 - [ADR 066: Major releases integrate on a next branch, and only main releases](066-major-releases-integrate-on-a-next-branch.md) (`development`, `accepted`)
 - [ADR 067: Governance tests are verified by breaking them](067-governance-tests-are-verified-by-breaking-them.md) (`development`, `accepted`)

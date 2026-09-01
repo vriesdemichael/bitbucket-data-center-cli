@@ -121,15 +121,19 @@ func TestStatusJSONUsesHostOverride(t *testing.T) {
 
 func decodeJSONEnvelopeData(raw []byte, target any) error {
 	var envelope struct {
-		Version string `json:"version"`
-		Data    any    `json:"data"`
+		Data any `json:"data"`
+		Meta struct {
+			Contract string `json:"contract"`
+		} `json:"meta"`
 	}
 
 	if err := json.Unmarshal(raw, &envelope); err != nil {
 		return err
 	}
 
-	if strings.TrimSpace(envelope.Version) == "" {
+	// The contract name, not a payload version: ADR-064 removed the latter, and
+	// meta.contract is what identifies the document either way.
+	if strings.TrimSpace(envelope.Meta.Contract) == "" {
 		return os.ErrInvalid
 	}
 

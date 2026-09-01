@@ -21,8 +21,11 @@ func TestWriteSuccess(t *testing.T) {
 	}
 
 	output := buffer.String()
-	if !strings.Contains(output, "\"version\": \"v2\"") {
-		t.Fatalf("expected version field in output, got %s", output)
+	if strings.Contains(output, "\"version\"") {
+		t.Fatalf("the envelope carries a contract version, which ADR-064 removed: %s", output)
+	}
+	if !strings.Contains(output, "\"bb_version\"") {
+		t.Fatalf("expected bb_version in meta, got %s", output)
 	}
 	if !strings.Contains(output, "\"contract\": \"bb.machine\"") {
 		t.Fatalf("expected contract field in output, got %s", output)
@@ -86,18 +89,21 @@ func TestEnvelopeSchemaFor(t *testing.T) {
 	if !ok {
 		t.Fatal("expected properties map")
 	}
-	for _, field := range []string{"version", "data", "meta"} {
+	for _, field := range []string{"data", "meta"} {
 		if _, ok := props[field]; !ok {
 			t.Errorf("missing envelope property %q", field)
 		}
+	}
+	if _, present := props["version"]; present {
+		t.Error("the published schema still declares a contract version, which ADR-064 removed")
 	}
 	if props["data"] == nil {
 		t.Error("expected data property to be set")
 	}
 
 	req, ok := schema["required"].([]any)
-	if !ok || len(req) != 3 {
-		t.Fatalf("expected required=[version,data,meta], got %v", schema["required"])
+	if !ok || len(req) != 2 {
+		t.Fatalf("expected required=[data,meta], got %v", schema["required"])
 	}
 }
 
@@ -112,7 +118,7 @@ func TestWriteErrorEmitsClassifiedEnvelope(t *testing.T) {
 		t.Fatalf("expected parseable output, got %q (%v)", buffer.String(), err)
 	}
 
-	if envelope.Version != ContractVersion || envelope.Meta.Contract != ContractName {
+	if envelope.Meta.Contract != ContractName || envelope.Meta.BBVersion == "" {
 		t.Fatalf("unexpected envelope header %+v", envelope)
 	}
 	if envelope.Error.Kind != string(apperrors.KindConflict) {
@@ -387,5 +393,92 @@ func validateAgainstErrorSchema(t *testing.T, document any) {
 	}
 	if err := schema.Validate(document); err != nil {
 		t.Errorf("the envelope fails its own published schema: %v", err)
+	}
+}
+
+// TestAListEnvelopeValidatesAgainstItsOwnSchema covers meta.limit_reached.
+//
+// The meta schema declared only contract and forbade additional properties,
+// while every listing command emits limit_reached — so the output of every
+// listing command failed the schema published to describe it. Nothing noticed
+// because nothing validated a real envelope against a real schema, which is the
+// same blind spot the output schema coverage report exists to expose.
+func TestAListEnvelopeValidatesAgainstItsOwnSchema(t *testing.T) {
+	t.Parallel()
+
+	for _, limitReached := range []bool{true, false} {
+		buffer := &bytes.Buffer{}
+		if err := WriteList(buffer, []string{"a"}, limitReached); err != nil {
+			t.Fatalf("writing the list envelope failed: %v", err)
+		}
+
+		schema := EnvelopeSchemaFor(
+			"output.example.schema.json",
+			"example",
+			"example",
+			map[string]any{"type": "array"},
+		)
+
+		compiler := jsonschema.NewCompiler()
+		if err := compiler.AddResource("example.json", schema); err != nil {
+			t.Fatalf("adding the schema failed: %v", err)
+		}
+		compiled, err := compiler.Compile("example.json")
+		if err != nil {
+			t.Fatalf("compiling the schema failed: %v", err)
+		}
+
+		var document any
+		if err := json.Unmarshal(buffer.Bytes(), &document); err != nil {
+			t.Fatalf("decoding failed: %v", err)
+		}
+		if err := compiled.Validate(document); err != nil {
+			t.Errorf("limit_reached=%v: a list envelope fails its own schema: %v\n%s", limitReached, err, buffer.String())
+		}
+	}
+}
+
+// TestTheEnvelopeCarriesTheBinaryVersionAndNoContractVersion is ADR-064.
+//
+// The contract version was a single global constant shared by all 233 commands,
+// so a breaking change to one payload could not be signalled without falsely
+// signalling it for the other 232. It therefore never moved. Compatibility now
+// rides the release major, and meta.bb_version reports which binary wrote the
+// document — provenance, not a switch.
+func TestTheEnvelopeCarriesTheBinaryVersionAndNoContractVersion(t *testing.T) {
+	buffer := &bytes.Buffer{}
+	if err := Write(buffer, map[string]any{"ok": true}); err != nil {
+		t.Fatalf("writing failed: %v", err)
+	}
+
+	var document map[string]any
+	if err := json.Unmarshal(buffer.Bytes(), &document); err != nil {
+		t.Fatalf("decoding failed: %v", err)
+	}
+
+	if _, present := document["version"]; present {
+		t.Errorf("the envelope still carries a contract version:\n%s", buffer.String())
+	}
+
+	meta, _ := document["meta"].(map[string]any)
+	if meta["bb_version"] == "" || meta["bb_version"] == nil {
+		t.Errorf("meta.bb_version is missing:\n%s", buffer.String())
+	}
+	if meta["contract"] != ContractName {
+		t.Errorf("meta.contract = %v, want %s", meta["contract"], ContractName)
+	}
+
+	// The failure path drops it too, or a consumer could tell the two documents
+	// apart by something other than which key is present.
+	errorBuffer := &bytes.Buffer{}
+	if err := WriteError(errorBuffer, apperrors.New(apperrors.KindNotFound, "missing", nil)); err != nil {
+		t.Fatalf("writing the failure envelope failed: %v", err)
+	}
+	var failure map[string]any
+	if err := json.Unmarshal(errorBuffer.Bytes(), &failure); err != nil {
+		t.Fatalf("decoding the failure envelope failed: %v", err)
+	}
+	if _, present := failure["version"]; present {
+		t.Errorf("the failure envelope still carries a contract version:\n%s", errorBuffer.String())
 	}
 }
