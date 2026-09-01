@@ -512,19 +512,19 @@ Success and failure both produce the same envelope on stdout. Which key is
 present tells you which happened:
 
 ```json
-{ "data": { }, "meta": { "bb_version": "v4.0.0" } }
-{ "error": { "kind": "not_found", "message": "…", "exit_code": 4 }, "meta": { "bb_version": "v4.0.0" } }
+{ "data": { }, "meta": { "bbVersion": "v4.0.0" } }
+{ "error": { "kind": "not_found", "message": "…", "exitCode": 4 }, "meta": { "bbVersion": "v4.0.0" } }
 ```
 
 There is no contract version field. The binary version is the contract version, so a breaking
-change to any payload cuts a new major release. `meta.bb_version` tells you which binary wrote
+change to any payload cuts a new major release. `meta.bbVersion` tells you which binary wrote
 the document — treat it as provenance, not as something to branch on. To pin a contract, pin
 the installed version.
 
 Check for `error` before reading `data`. `kind` is one of `authentication`,
 `authorization`, `validation`, `not_found`, `conflict`, `transient`, `permanent`,
 `not_implemented`, `cancelled`, `internal` — so you can tell "fix your invocation" from
-"retry later" without parsing the message. `exit_code` matches the process exit status.
+"retry later" without parsing the message. `exitCode` matches the process exit status.
 
 `cancelled` / exit `12` means somebody interrupted the command or a deadline expired. Do
 not retry it automatically: for a mutating command like `bb bulk apply` that re-runs the

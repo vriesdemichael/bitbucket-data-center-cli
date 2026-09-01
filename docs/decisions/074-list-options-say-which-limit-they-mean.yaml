@@ -36,6 +36,6 @@ rejected_alternatives:
       knows the page boundaries. Worth revisiting if a service ever needs both.
   - alternative: Return a truncated flag alongside the results
     reason: >
-      Composes with the envelope's meta.limit_reached and is worth having, but it makes truncation
+      Composes with the envelope's meta.limitReached and is worth having, but it makes truncation
       observable rather than unambiguous. Naming does the second, which is what was wrong.
 provenance: guided-ai

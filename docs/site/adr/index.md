@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `75`
-- Accepted ADRs: `67`
+- Total ADRs: `76`
+- Accepted ADRs: `68`
 
 ## ADR List
 
@@ -84,4 +84,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 073: Interactive when a person is there, explicit when not](073-interactive-when-a-person-is-there-explicit-when-not.md) (`architecture`, `accepted`)
 - [ADR 074: List options say which limit they mean](074-list-options-say-which-limit-they-mean.md) (`architecture`, `accepted`)
 - [ADR 075: A machine-mode command emits one document, and a failed run is named by its id](075-a-machine-run-emits-one-document.md) (`architecture`, `accepted`)
+- [ADR 076: Machine output field names are camelCase, matching the Bitbucket API](076-machine-output-field-names-are-camelcase.md) (`architecture`, `accepted`)
 

@@ -110,7 +110,7 @@ func TestSkillInstallAndRemoveEmitAnEnvelope(t *testing.T) {
 				Skill  string `json:"skill"`
 			} `json:"data"`
 			Meta struct {
-				BBVersion string `json:"bb_version"`
+				BBVersion string `json:"bbVersion"`
 			} `json:"meta"`
 		}
 		if err := json.Unmarshal(out.Bytes(), &envelope); err != nil {
@@ -118,7 +118,7 @@ func TestSkillInstallAndRemoveEmitAnEnvelope(t *testing.T) {
 		}
 
 		if envelope.Meta.BBVersion == "" {
-			t.Errorf("%v carries no meta.bb_version", arguments)
+			t.Errorf("%v carries no meta.bbVersion", arguments)
 		}
 		if envelope.Data.Path == "" {
 			t.Errorf("%v carried no path, which is the value a caller cannot compute itself", arguments)

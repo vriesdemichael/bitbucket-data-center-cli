@@ -4,7 +4,7 @@ category: architecture
 status: accepted
 decision: >
   When --json is set and a command fails, write a bb.machine v2 envelope to stdout carrying an
-  error object in place of data, with kind, message and exit_code drawn from the ADR-011 taxonomy.
+  error object in place of data, with kind, message and exitCode drawn from the ADR-011 taxonomy.
   The human-readable line continues to go to stderr unchanged, and exit codes are unaffected.
   A consumer decides success or failure by which key is present: data on success, error on failure.
   The failure shape does not vary by command, so it is published once as
@@ -24,7 +24,7 @@ agent_instructions: >
   When adding an error kind to internal/domain/errors, add it to Kinds(). The published schema
   derives its enum from that function and tests validate real emitted envelopes against it, so a
   kind missing there publishes a contract the CLI can violate.
-  Exit codes stay owned by the taxonomy. The envelope reports exit_code; it does not decide it.
+  Exit codes stay owned by the taxonomy. The envelope reports exitCode; it does not decide it.
   Route errors from cmd/bb through cli.ClassifyUsageError before reporting them. It maps pflag's
   typed errors and Cobra's usage errors onto validation and leaves everything else untouched, so a
   transport or server failure still reports internal and exit 1.

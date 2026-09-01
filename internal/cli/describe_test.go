@@ -155,14 +155,14 @@ func TestDescribeUnderJSONIsAnEnvelope(t *testing.T) {
 	var envelope struct {
 		Data DescribeResult `json:"data"`
 		Meta struct {
-			BBVersion string `json:"bb_version"`
+			BBVersion string `json:"bbVersion"`
 		} `json:"meta"`
 	}
 	if err := json.Unmarshal(out.Bytes(), &envelope); err != nil {
 		t.Fatalf("not an envelope: %v\n%s", err, out.String())
 	}
 	if envelope.Meta.BBVersion == "" {
-		t.Error("the envelope carries no meta.bb_version")
+		t.Error("the envelope carries no meta.bbVersion")
 	}
 	if envelope.Data.Command != "tag list" {
 		t.Errorf("command = %q, want tag list", envelope.Data.Command)

@@ -84,7 +84,7 @@ func ErrorEnvelopeSchema(schemaFileName string) map[string]any {
 						"type":        "string",
 						"description": "Human-readable failure description, without the kind prefix shown on stderr.",
 					},
-					"exit_code": map[string]any{
+					"exitCode": map[string]any{
 						"description": "Process exit status, determined by kind.",
 						"type":        "integer",
 						"enum":        codeValues,
@@ -99,7 +99,7 @@ func ErrorEnvelopeSchema(schemaFileName string) map[string]any {
 						"minProperties": 1,
 					},
 				},
-				"required": []any{"kind", "message", "exit_code"},
+				"required": []any{"kind", "message", "exitCode"},
 			},
 			"meta": metaSchema(),
 		},
@@ -112,16 +112,16 @@ func metaSchema() map[string]any {
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"bb_version": map[string]any{
+			"bbVersion": map[string]any{
 				"type":        "string",
 				"minLength":   1,
 				"description": "Version of the bb binary that produced this document. Provenance for stored output, not a compatibility switch: pin the binary to pin the contract (ADR-064).",
 			},
-			"limit_reached": map[string]any{
+			"limitReached": map[string]any{
 				"type":        "boolean",
 				"description": "Present on listing commands: true when the result set came back at --limit and there may be more behind it.",
 			},
 		},
-		"required": []any{"bb_version"},
+		"required": []any{"bbVersion"},
 	}
 }
