@@ -45,12 +45,12 @@ func TestLiveErrorTaxonomy404NotFound(t *testing.T) {
 		Error struct {
 			Kind     string `json:"kind"`
 			Message  string `json:"message"`
-			ExitCode int    `json:"exit_code"`
+			ExitCode int    `json:"exitCode"`
 		} `json:"error"`
 	}
 	if err := json.Unmarshal([]byte(jsonOutput), &errorEnvelope); err == nil {
 		if errorEnvelope.Error.ExitCode != 0 && errorEnvelope.Error.ExitCode != 4 {
-			t.Fatalf("expected exit_code 4 in json error envelope, got: %#v", errorEnvelope)
+			t.Fatalf("expected exitCode 4 in json error envelope, got: %#v", errorEnvelope)
 		}
 	}
 }

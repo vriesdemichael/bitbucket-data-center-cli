@@ -4,10 +4,10 @@ category: architecture
 status: accepted
 decision: >
   The machine envelope carries no constant fields. The contract version is removed, and so is
-  meta.contract, which named the format and never varied. meta.bb_version is added, reporting the
+  meta.contract, which named the format and never varied. meta.bbVersion is added, reporting the
   binary that produced the document: provenance for an operator reading stored output, not a
   compatibility switch. Nothing in bb branches on it and nothing outside bb should.
-  What identifies the document is its shape -- meta.bb_version, and exactly one of data or error.
+  What identifies the document is its shape -- meta.bbVersion, and exactly one of data or error.
   Compatibility rides the release major instead. Adding a field to data is additive. Removing or
   renaming one, changing its type, or changing whether it can be null is breaking, and the commit
   must carry a ! or a BREAKING CHANGE footer so the release automation cuts a major.

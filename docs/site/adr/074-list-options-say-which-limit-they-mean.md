@@ -25,4 +25,4 @@ Both semantics are legitimate: a display command wants a total, a lookup wants t
 
 - `Document the two meanings consistently instead`: Documentation is what was already missing, and it does not fail a build.
 - `Make every list exhaustive and cap at the CLI layer`: Better shape, much larger change, and it would move truncation away from the service that knows the page boundaries. Worth revisiting if a service ever needs both.
-- `Return a truncated flag alongside the results`: Composes with the envelope's meta.limit_reached and is worth having, but it makes truncation observable rather than unambiguous. Naming does the second, which is what was wrong.
+- `Return a truncated flag alongside the results`: Composes with the envelope's meta.limitReached and is worth having, but it makes truncation observable rather than unambiguous. Naming does the second, which is what was wrong.

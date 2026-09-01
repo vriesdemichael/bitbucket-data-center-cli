@@ -202,16 +202,16 @@ func TestExecuteRootCommandEmitsErrorEnvelopeUnderJSON(t *testing.T) {
 	if _, present := envelope["version"]; present {
 		t.Fatalf("the failure envelope still carries a contract version (ADR-064): %v", envelope)
 	}
-	if meta, _ := envelope["meta"].(map[string]any); meta["bb_version"] == nil {
-		t.Fatalf("the failure envelope carries no meta.bb_version: %v", envelope)
+	if meta, _ := envelope["meta"].(map[string]any); meta["bbVersion"] == nil {
+		t.Fatalf("the failure envelope carries no meta.bbVersion: %v", envelope)
 	}
 	if _, present := envelope["data"]; present {
 		t.Fatal("expected no data key on the failure envelope")
 	}
 
 	meta, ok := envelope["meta"].(map[string]any)
-	if !ok || meta["bb_version"] == nil || meta["bb_version"] == "" {
-		t.Fatalf("the failure envelope carries no meta.bb_version, got %v", envelope["meta"])
+	if !ok || meta["bbVersion"] == nil || meta["bbVersion"] == "" {
+		t.Fatalf("the failure envelope carries no meta.bbVersion, got %v", envelope["meta"])
 	}
 
 	payload, ok := envelope["error"].(map[string]any)
@@ -224,8 +224,8 @@ func TestExecuteRootCommandEmitsErrorEnvelopeUnderJSON(t *testing.T) {
 	if payload["message"] != "repository does not exist" {
 		t.Fatalf("expected message without kind prefix, got %v", payload["message"])
 	}
-	if payload["exit_code"] != float64(4) {
-		t.Fatalf("expected exit_code 4, got %v", payload["exit_code"])
+	if payload["exitCode"] != float64(4) {
+		t.Fatalf("expected exitCode 4, got %v", payload["exitCode"])
 	}
 
 	// The human-readable line stays on stderr regardless of --json.
@@ -252,7 +252,7 @@ func TestExecuteRootCommandEveryKindRoundTrips(t *testing.T) {
 				Error struct {
 					Kind     string `json:"kind"`
 					Message  string `json:"message"`
-					ExitCode int    `json:"exit_code"`
+					ExitCode int    `json:"exitCode"`
 				} `json:"error"`
 			}
 			if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
@@ -268,7 +268,7 @@ func TestExecuteRootCommandEveryKindRoundTrips(t *testing.T) {
 			// The envelope's exit_code must agree with the process exit status,
 			// or a script branching on the payload disagrees with $?.
 			if envelope.Error.ExitCode != exitCode {
-				t.Fatalf("envelope exit_code %d disagrees with process exit %d", envelope.Error.ExitCode, exitCode)
+				t.Fatalf("envelope exitCode %d disagrees with process exit %d", envelope.Error.ExitCode, exitCode)
 			}
 			if exitCode != apperrors.ExitCode(runErr) {
 				t.Fatalf("expected exit %d, got %d", apperrors.ExitCode(runErr), exitCode)
@@ -321,7 +321,7 @@ func TestExecuteRootCommandEmitsEnvelopeWhenFlagParsingFails(t *testing.T) {
 		Error struct {
 			Kind     string `json:"kind"`
 			Message  string `json:"message"`
-			ExitCode int    `json:"exit_code"`
+			ExitCode int    `json:"exitCode"`
 		} `json:"error"`
 	}
 	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {

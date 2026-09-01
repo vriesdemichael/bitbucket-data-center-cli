@@ -427,7 +427,7 @@ func decodeJSONEnvelopeDataMap(t *testing.T, raw []byte) map[string]any {
 	var envelope struct {
 		Data map[string]any `json:"data"`
 		Meta struct {
-			BBVersion string `json:"bb_version"`
+			BBVersion string `json:"bbVersion"`
 		} `json:"meta"`
 	}
 
@@ -436,7 +436,7 @@ func decodeJSONEnvelopeDataMap(t *testing.T, raw []byte) map[string]any {
 	}
 
 	if envelope.Meta.BBVersion == "" {
-		t.Fatalf("envelope carries no meta.bb_version: %+v", envelope)
+		t.Fatalf("envelope carries no meta.bbVersion: %+v", envelope)
 	}
 
 	if envelope.Data == nil {
@@ -2389,8 +2389,8 @@ func TestTagViewDeleteAndListCommandPaths(t *testing.T) {
 	if err := jsonListCommand.Execute(); err != nil {
 		t.Fatalf("tag list json failed: %v", err)
 	}
-	if !strings.Contains(jsonListBuffer.String(), "\"limit_reached\": true") {
-		t.Fatalf("expected limit_reached true for a capped tag list, got: %s", jsonListBuffer.String())
+	if !strings.Contains(jsonListBuffer.String(), "\"limitReached\": true") {
+		t.Fatalf("expected limitReached true for a capped tag list, got: %s", jsonListBuffer.String())
 	}
 
 	jsonViewCommand := NewRootCommand()

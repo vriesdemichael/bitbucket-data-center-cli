@@ -71,7 +71,7 @@ func TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope(t *testing.T) {
 			// carry a constant meta.contract saying "bb.machine", which made
 			// this assertion easy and meaningless -- a constant proves only
 			// that the constant was written. What identifies the document is
-			// its shape: meta.bb_version, and exactly one of data or error,
+			// its shape: meta.bbVersion, and exactly one of data or error,
 			// since which key is present is how a consumer tells success from
 			// failure (ADR-046).
 			var envelope map[string]json.RawMessage
@@ -80,12 +80,12 @@ func TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope(t *testing.T) {
 			}
 
 			var meta struct {
-				BBVersion string `json:"bb_version"`
+				BBVersion string `json:"bbVersion"`
 			}
 			if rawMeta, present := envelope["meta"]; !present {
 				t.Errorf("no meta on the envelope\n%s", raw)
 			} else if err := json.Unmarshal(rawMeta, &meta); err != nil || meta.BBVersion == "" {
-				t.Errorf("meta carries no bb_version\n%s", raw)
+				t.Errorf("meta carries no bbVersion\n%s", raw)
 			}
 
 			_, hasData := envelope["data"]

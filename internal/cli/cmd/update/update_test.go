@@ -114,7 +114,7 @@ func TestUpdateCommandJSONDryRun(t *testing.T) {
 		t.Fatalf("failed to decode json output: %v", err)
 	}
 	if envelope.Meta.BBVersion == "" {
-		t.Fatalf("envelope carries no meta.bb_version: %+v", envelope)
+		t.Fatalf("envelope carries no meta.bbVersion: %+v", envelope)
 	}
 
 	encodedData, err := json.Marshal(envelope.Data)
