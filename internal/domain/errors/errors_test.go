@@ -3,6 +3,9 @@ package errors
 import (
 	"errors"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"strings"
 	"testing"
 )
@@ -102,13 +105,83 @@ func TestKindsCoversEveryDeclaredKind(t *testing.T) {
 		}
 	}
 
-	for _, kind := range []Kind{
-		KindAuthentication, KindAuthorization, KindValidation, KindNotFound,
-		KindConflict, KindTransient, KindPermanent, KindNotImplemented, KindInternal,
-	} {
+	// Read out of the source rather than restated here. A hand-written copy
+	// of the list cannot detect a kind missing from Kinds(), because the same
+	// omission is made twice: KindCancelled was added to the taxonomy, left
+	// out of this list, and deleting it from Kinds() failed nothing -- while
+	// the published errorKind enum, which derives from Kinds(), silently
+	// narrowed. That is the drift this test exists to catch.
+	for _, kind := range declaredKindsFromSource(t) {
 		if !seen[kind] {
 			t.Fatalf("declared kind %q is missing from Kinds()", kind)
 		}
+	}
+}
+
+// declaredKindsFromSource returns every Kind constant declared in errors.go.
+func declaredKindsFromSource(t *testing.T) []Kind {
+	t.Helper()
+
+	fileSet := token.NewFileSet()
+	file, err := parser.ParseFile(fileSet, "errors.go", nil, 0)
+	if err != nil {
+		t.Fatalf("parsing errors.go failed: %v", err)
+	}
+
+	var declared []Kind
+
+	for _, declaration := range file.Decls {
+		general, ok := declaration.(*ast.GenDecl)
+		if !ok || general.Tok != token.CONST {
+			continue
+		}
+		for _, spec := range general.Specs {
+			value, ok := spec.(*ast.ValueSpec)
+			if !ok {
+				continue
+			}
+			// Only `X Kind = "y"`, which is how every kind is declared.
+			if name, ok := value.Type.(*ast.Ident); !ok || name.Name != "Kind" {
+				continue
+			}
+			for _, expression := range value.Values {
+				literal, ok := expression.(*ast.BasicLit)
+				if !ok || literal.Kind != token.STRING {
+					continue
+				}
+				declared = append(declared, Kind(strings.Trim(literal.Value, `"`)))
+			}
+		}
+	}
+
+	if len(declared) == 0 {
+		t.Fatal("no kind constants found; the scanner has stopped matching how they are declared")
+	}
+
+	return declared
+}
+
+// TestTheKindScannerSeesEveryKind is the sabotage, kept as a test (ADR-067).
+//
+// The scanner is only worth having if it would notice. It reads the real
+// errors.go, so a change to how kinds are declared must fail here rather than
+// quietly reducing the guard to nothing.
+func TestTheKindScannerSeesEveryKind(t *testing.T) {
+	found := make(map[Kind]bool)
+	for _, kind := range declaredKindsFromSource(t) {
+		found[kind] = true
+	}
+
+	if len(found) != len(Kinds()) {
+		t.Errorf("the scanner found %d kinds, Kinds() returns %d", len(found), len(Kinds()))
+	}
+	for _, kind := range Kinds() {
+		if !found[kind] {
+			t.Errorf("the scanner missed %q", kind)
+		}
+	}
+	if found["not_a_kind"] {
+		t.Error("the scanner invented a kind")
 	}
 }
 

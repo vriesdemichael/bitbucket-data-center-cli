@@ -395,6 +395,22 @@ bb bulk apply --from-plan .tmp/bulk-plan.json --json
 bb bulk status <operation-id> --json
 ```
 
+**A run that fails or is interrupted emits the error envelope, not the status envelope.**
+Under `--json` a command writes exactly one document (ADR-075), and on failure that document
+is the error. The status artifact is not lost — the error message names the operation id, and
+`bb bulk status <id> --json` returns it:
+
+```bash
+bb bulk apply --from-plan .tmp/bulk-plan.json --json
+# exit 5, stdout: {"version":"v2","error":{"kind":"conflict",
+#                  "message":"bulk apply op-… completed with failures","exit_code":5}, …}
+
+bb bulk status op-… --json    # the full artifact: what applied, what failed, what was skipped
+```
+
+So parse the id out of `.error.message` and fetch the artifact. Do not expect target detail
+on the failure path.
+
 ### JSON Error Kinds
 
 Responses follow the `bb.machine` v2 contract:
@@ -403,6 +419,8 @@ Responses follow the `bb.machine` v2 contract:
 - `authentication` (`exit 3`): Missing or invalid Bitbucket token.
 - `authorization` (`exit 4`): Insufficient permissions (e.g. requires project or repo admin).
 - `conflict` (`exit 5`): One or more targets failed during execution.
+- `cancelled` (`exit 12`): Interrupted, or a deadline expired, before every repository was
+  attempted. Not a retry signal — re-running replays mutations across the whole plan.
 - `transient` / `internal`: Network connectivity issue or server failure.
 
 ## Error Reporting
