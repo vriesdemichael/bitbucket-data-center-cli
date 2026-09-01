@@ -12,7 +12,7 @@ repository cloning and browser navigation ergonomics tailored to Bitbucket-hoste
 ## Why teams adopt `bb`
 
 - **Operationally safe by default**: dry-run planning for server mutations and explicit bulk plan/apply workflows.
-- **Automation friendly**: stable JSON envelope contract (`bb.machine`, `v2`) for CI/CD and internal tooling.
+- **Automation friendly**: every `--json` payload arrives in the same envelope, for CI/CD and internal tooling.
 - **Spec-driven API interactions**: client/server interactions are derived from Bitbucket Data Center's official OpenAPI spec.
 - **Git-native ergonomics**: repository discovery from matching remotes to reduce repetitive `--repo` usage.
 - **Enterprise-ready auth model**: token/basic auth with persisted server contexts and secure credential handling.
@@ -141,7 +141,6 @@ bb --json auth status
     ]
   },
   "meta": {
-    "contract": "bb.machine",
     "bb_version": "v4.0.0"
   }
 }
@@ -177,7 +176,7 @@ carry a `detail` and a `remedy` when they fail, omitted here for brevity.
   (`docs/reference/atlassian/bitbucket-openapi.json`). This fixes the endpoint and payload
   shapes the generated client is built from — it is the provenance of the spec, not a statement
   about which server versions work. Behavior is established by live tests, not the spec.
-- CLI identity and machine contract: `bb` / `bb.machine` `v2`
+- CLI identity and machine contract: `bb`, with the envelope described in [ADR-064](docs/site/adr/064-machine-output-carries-no-contract-version.md)
 - JSON schemas for bulk policy/plan/status published in docs and versioned with releases
 
 ## For contributors

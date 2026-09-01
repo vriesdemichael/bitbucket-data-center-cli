@@ -9,8 +9,6 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
 
-const ContractName = "bb.machine"
-
 // releaseVersion is the binary's own version, reported as meta.bb_version.
 //
 // A package-level value because it is a property of the process rather than of
@@ -44,7 +42,6 @@ type Envelope struct {
 }
 
 type EnvelopeMeta struct {
-	Contract string `json:"contract"`
 	// LimitReached reports that the result set came back at --limit, so there
 	// may be more behind it. Omitted for commands that do not list, so its
 	// presence is itself the signal that a result set is bounded.
@@ -107,7 +104,6 @@ func WriteError(writer io.Writer, err error) error {
 			Details:  apperrors.DetailsOf(err),
 		},
 		Meta: EnvelopeMeta{
-			Contract:  ContractName,
 			BBVersion: releaseVersion,
 		},
 	}
@@ -128,7 +124,6 @@ func Write(writer io.Writer, payload any) error {
 	envelope := Envelope{
 		Data: payload,
 		Meta: EnvelopeMeta{
-			Contract:  ContractName,
 			BBVersion: releaseVersion,
 		},
 	}
@@ -174,7 +169,7 @@ func marshalEnvelope(envelope any) ([]byte, error) {
 func WriteList(writer io.Writer, payload any, limitReached bool) error {
 	envelope := Envelope{
 		Data: payload,
-		Meta: EnvelopeMeta{Contract: ContractName, LimitReached: &limitReached, BBVersion: releaseVersion},
+		Meta: EnvelopeMeta{LimitReached: &limitReached, BBVersion: releaseVersion},
 	}
 
 	encoded, marshalErr := marshalEnvelope(envelope)

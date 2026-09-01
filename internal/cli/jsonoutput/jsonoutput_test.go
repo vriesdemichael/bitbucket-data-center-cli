@@ -27,8 +27,8 @@ func TestWriteSuccess(t *testing.T) {
 	if !strings.Contains(output, "\"bb_version\"") {
 		t.Fatalf("expected bb_version in meta, got %s", output)
 	}
-	if !strings.Contains(output, "\"contract\": \"bb.machine\"") {
-		t.Fatalf("expected contract field in output, got %s", output)
+	if strings.Contains(output, "\"contract\"") {
+		t.Fatalf("the envelope carries a constant contract tag: %s", output)
 	}
 	if !strings.Contains(output, "\"status\": \"ok\"") {
 		t.Fatalf("expected payload field in output, got %s", output)
@@ -118,7 +118,7 @@ func TestWriteErrorEmitsClassifiedEnvelope(t *testing.T) {
 		t.Fatalf("expected parseable output, got %q (%v)", buffer.String(), err)
 	}
 
-	if envelope.Meta.Contract != ContractName || envelope.Meta.BBVersion == "" {
+	if envelope.Meta.BBVersion == "" {
 		t.Fatalf("unexpected envelope header %+v", envelope)
 	}
 	if envelope.Error.Kind != string(apperrors.KindConflict) {
@@ -241,7 +241,7 @@ func TestWriteListCarriesLimitReached(t *testing.T) {
 
 		var envelope struct {
 			Meta struct {
-				Contract     string `json:"contract"`
+				BBVersion    string `json:"bb_version"`
 				LimitReached *bool  `json:"limit_reached"`
 			} `json:"meta"`
 		}
@@ -254,8 +254,8 @@ func TestWriteListCarriesLimitReached(t *testing.T) {
 		if *envelope.Meta.LimitReached != reached {
 			t.Fatalf("limit_reached = %v, want %v", *envelope.Meta.LimitReached, reached)
 		}
-		if envelope.Meta.Contract != ContractName {
-			t.Fatalf("unexpected contract %q", envelope.Meta.Contract)
+		if envelope.Meta.BBVersion == "" {
+			t.Fatalf("a list envelope carries no meta.bb_version: %+v", envelope.Meta)
 		}
 	}
 }
@@ -464,8 +464,8 @@ func TestTheEnvelopeCarriesTheBinaryVersionAndNoContractVersion(t *testing.T) {
 	if meta["bb_version"] == "" || meta["bb_version"] == nil {
 		t.Errorf("meta.bb_version is missing:\n%s", buffer.String())
 	}
-	if meta["contract"] != ContractName {
-		t.Errorf("meta.contract = %v, want %s", meta["contract"], ContractName)
+	if _, present := meta["contract"]; present {
+		t.Errorf("meta still carries a constant contract tag:\n%s", buffer.String())
 	}
 
 	// The failure path drops it too, or a consumer could tell the two documents

@@ -492,7 +492,7 @@ optional, or that a field can be null.
 
 ```bash
 bb pr get --describe          # the JSON Schema for bb pr get --json
-bb pr get --describe --json   # the same, wrapped in a bb.machine envelope
+bb pr get --describe --json   # the same, wrapped in the standard envelope
 ```
 
 It needs no arguments, no required flags, no configuration and no server: the schemas are
@@ -508,12 +508,12 @@ Check `described` before reading `schema`. Three answers are possible:
 
 Most commands are currently in the second group.
 
-Success and failure both produce a `bb.machine` envelope on stdout. Which key is
+Success and failure both produce the same envelope on stdout. Which key is
 present tells you which happened:
 
 ```json
-{ "data": { }, "meta": { "contract": "bb.machine", "bb_version": "v4.0.0" } }
-{ "error": { "kind": "not_found", "message": "…", "exit_code": 4 }, "meta": { "contract": "bb.machine", "bb_version": "v4.0.0" } }
+{ "data": { }, "meta": { "bb_version": "v4.0.0" } }
+{ "error": { "kind": "not_found", "message": "…", "exit_code": 4 }, "meta": { "bb_version": "v4.0.0" } }
 ```
 
 There is no contract version field. The binary version is the contract version, so a breaking
