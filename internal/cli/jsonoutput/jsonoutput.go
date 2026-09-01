@@ -49,6 +49,13 @@ type EnvelopeError struct {
 	Kind     string `json:"kind"`
 	Message  string `json:"message"`
 	ExitCode int    `json:"exit_code"`
+	// Details carries handles the caller needs to act on the failure, keyed by
+	// name -- bb bulk apply puts operation_id here, so the artifact of a failed
+	// or cancelled run can be fetched without scraping the message.
+	//
+	// Omitted when there is nothing to carry, so its absence means the message
+	// is all there is.
+	Details map[string]string `json:"details,omitempty"`
 }
 
 // WriteError emits the failure envelope for err.
@@ -67,6 +74,7 @@ func WriteError(writer io.Writer, err error) error {
 			Kind:     string(apperrors.KindOf(err)),
 			Message:  apperrors.MessageOf(err),
 			ExitCode: apperrors.ExitCode(err),
+			Details:  apperrors.DetailsOf(err),
 		},
 		Meta: EnvelopeMeta{
 			Contract: ContractName,

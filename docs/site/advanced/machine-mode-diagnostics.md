@@ -94,6 +94,21 @@ Command failures use deterministic exit codes by error kind.
 - `cancelled` -> exit code `12` (interrupted or timed out; not something to retry automatically)
 - `permanent` and `internal` (or unknown) -> exit code `1`
 
+### Handles on the failure envelope
+
+A failure may carry an optional `error.details` object: a flat map of strings naming what you
+need to act on it. It is absent when there is nothing to carry.
+
+`bb bulk apply` sets `operation_id` there, because on the failure path the error envelope is
+the only document written (ADR-075) and the status artifact is reached by id:
+
+```bash
+operation_id=$(bb bulk apply --from-plan plan.json --json | jq -r '.error.details.operation_id // empty')
+bb bulk status "$operation_id" --json
+```
+
+Read handles from `error.details`, not by parsing `error.message`.
+
 Example failure behavior:
 
 ```bash

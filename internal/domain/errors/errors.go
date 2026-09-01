@@ -32,6 +32,16 @@ type AppError struct {
 	Kind    Kind
 	Message string
 	Cause   error
+	// Details carries machine-readable handles that belong with the failure --
+	// an identifier the caller needs to act on it, not a restatement of the
+	// message.
+	//
+	// It exists because the alternative is putting the handle in the message
+	// and telling callers to scrape it back out, which is the sentence-parsing
+	// the machine contract exists to end (#474). ADR-046 forbids data beside
+	// error; this sits inside the error object, so which key is present still
+	// decides success from failure.
+	Details map[string]string
 }
 
 func New(kind Kind, message string, cause error) *AppError {
@@ -142,4 +152,41 @@ func ExitCode(err error) int {
 	}
 
 	return 1
+}
+
+// WithDetail returns err carrying one machine-readable detail.
+//
+// Only *AppError can carry details, because only a classified error reaches the
+// failure envelope with a kind. A plain error is returned unchanged rather than
+// wrapped: wrapping here would silently reclassify it as internal.
+func WithDetail(err error, key, value string) error {
+	var appError *AppError
+	if !errors.As(err, &appError) {
+		return err
+	}
+	if strings.TrimSpace(key) == "" || strings.TrimSpace(value) == "" {
+		return err
+	}
+
+	if appError.Details == nil {
+		appError.Details = map[string]string{}
+	}
+	appError.Details[key] = value
+
+	return err
+}
+
+// DetailsOf returns the machine-readable details attached to err, if any.
+func DetailsOf(err error) map[string]string {
+	var appError *AppError
+	if !errors.As(err, &appError) || len(appError.Details) == 0 {
+		return nil
+	}
+
+	details := make(map[string]string, len(appError.Details))
+	for key, value := range appError.Details {
+		details[key] = value
+	}
+
+	return details
 }

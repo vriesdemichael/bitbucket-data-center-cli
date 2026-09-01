@@ -3,7 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -11,17 +15,25 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli"
 )
 
-// commandsThatDoNotEmitJSON mirrors the exemption list in internal/cli, for the
-// two commands whose stdout is deliberately not an envelope.
+// exemptionSourceFile is the internal/cli file that owns the exemption list.
 //
-// It is duplicated rather than exported because the list is a statement about
-// the command surface, and the test that keeps it honest -- every name resolves
-// to a real command, every entry carries a reason -- lives next to it there.
-// TestTheTwoJSONExemptionListsAgree stops the copies drifting.
-var commandsThatDoNotEmitJSON = map[string]bool{
-	"ai skill show": true,
-	"api":           true,
-}
+// The list is read out of it rather than copied here. A second copy is a second
+// thing to keep right, and a path exempted here but not there would drop a
+// command out of the walk with no reason recorded and nothing failing -- an
+// earlier version of this file claimed a test guarded that, and no such test
+// existed.
+const exemptionSourceFile = "../../internal/cli/json_contract_test.go"
+
+// exemptionSourcePath is resolved once, at init, because the walk changes the
+// working directory to a sealed scratch directory before it reads anything and
+// a relative path would then point nowhere.
+var exemptionSourcePath = func() string {
+	absolute, err := filepath.Abs(exemptionSourceFile)
+	if err != nil {
+		return exemptionSourceFile
+	}
+	return absolute
+}()
 
 // TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope walks the whole command
 // tree through the real entry point.
@@ -33,13 +45,20 @@ var commandsThatDoNotEmitJSON = map[string]bool{
 // nothing at all and assert nothing -- a guard that only covered the four
 // commands reaching a success path without a server.
 //
-// Two properties are checked, and it is the second that ADR-075 turns on:
-// stdout under --json is valid bb.machine JSON, and it is exactly one document.
-// `bb bulk apply` printed its status and then returned an error, so cmd/bb
-// appended a second envelope after it and `| jq` failed on the second -- which
-// is the parse failure #474 was filed about.
+// Two properties are checked: stdout under --json is valid bb.machine JSON, and
+// it is exactly one document (ADR-075).
+//
+// What this does not cover is worth stating, because it was claimed once and
+// was wrong. It does not catch the `bb bulk apply` double-write that ADR-075
+// was written for: apply requires --from-plan, so it fails argument validation
+// before Apply runs and never reaches the code that wrote two documents. That
+// case is covered in internal/cli/cmd/bulk. What this catches is a command
+// whose reachable path prints a payload and then fails -- the same shape,
+// wherever it appears next.
 func TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope(t *testing.T) {
 	sealEnvironment(t)
+
+	commandsThatDoNotEmitJSON := exemptCommands(t)
 
 	reported := 0
 
@@ -83,8 +102,11 @@ func TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope(t *testing.T) {
 				t.Errorf("contract = %q, want bb.machine\n%s", envelope.Meta.Contract, raw)
 			}
 
-			// Anything after the first document is a second document, which is
-			// what breaks `| jq`.
+			// Anything after the first document is a second document. A strict
+			// decoder rejects the input outright; jq reads a value stream, so it
+			// prints a result per document and exits 0 -- which is the quieter
+			// and worse failure, because a script reading the last line gets the
+			// wrong answer with no error.
 			if decoder.More() {
 				var trailing json.RawMessage
 				_ = decoder.Decode(&trailing)
@@ -101,16 +123,63 @@ func TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope(t *testing.T) {
 	}
 }
 
-// TestEveryWalkExemptionIsAReachableLeaf checks this copy of the exemption
-// list still describes the command tree.
+// exemptCommands reads the exemption list out of internal/cli.
+//
+// Reading it is what stops the walk and the list disagreeing. The alternative
+// -- a copy here, plus a test that compares the two -- was what an earlier
+// version of this file claimed to have and did not.
+func exemptCommands(t *testing.T) map[string]bool {
+	t.Helper()
+
+	fileSet := token.NewFileSet()
+	file, err := parser.ParseFile(fileSet, exemptionSourcePath, nil, 0)
+	if err != nil {
+		t.Fatalf("parsing %s failed: %v", exemptionSourcePath, err)
+	}
+
+	exempt := map[string]bool{}
+
+	ast.Inspect(file, func(node ast.Node) bool {
+		value, ok := node.(*ast.ValueSpec)
+		if !ok || len(value.Names) != 1 || value.Names[0].Name != "commandsThatDoNotEmitJSON" {
+			return true
+		}
+		for _, expression := range value.Values {
+			literal, ok := expression.(*ast.CompositeLit)
+			if !ok {
+				continue
+			}
+			for _, element := range literal.Elts {
+				pair, ok := element.(*ast.KeyValueExpr)
+				if !ok {
+					continue
+				}
+				key, ok := pair.Key.(*ast.BasicLit)
+				if !ok || key.Kind != token.STRING {
+					continue
+				}
+				exempt[strings.Trim(key.Value, `"`)] = true
+			}
+		}
+		return false
+	})
+
+	if len(exempt) == 0 {
+		t.Fatalf("found no exemptions in %s; the reader has stopped matching how the list is written, so the walk would run commands that are meant to be excluded", exemptionSourceFile)
+	}
+
+	return exempt
+}
+
+// TestEveryExemptionIsAReachableLeaf checks the exemption list still describes
+// the command tree.
 //
 // An exemption that no longer resolves silently excludes nothing, so the walk
 // would keep passing while the command it was written for went unchecked --
-// the ADR-039 failure with a different filename. The reasons for the two
-// entries live with the copy in internal/cli, next to the test that requires
-// each one to carry a reason.
-func TestEveryWalkExemptionIsAReachableLeaf(t *testing.T) {
-	for path := range commandsThatDoNotEmitJSON {
+// the ADR-039 failure with a different filename. This is the cmd/bb half; the
+// internal/cli half additionally requires each entry to carry a reason.
+func TestEveryExemptionIsAReachableLeaf(t *testing.T) {
+	for path := range exemptCommands(t) {
 		leaf := findLeaf(t, path)
 		if leaf == nil {
 			t.Errorf("%q is exempt but is not a command", path)
@@ -119,6 +188,28 @@ func TestEveryWalkExemptionIsAReachableLeaf(t *testing.T) {
 		if !leaf.Runnable() {
 			t.Errorf("%q is exempt but is not runnable, so the walk never reached it anyway", path)
 		}
+	}
+}
+
+// TestTheExemptionReaderFindsTheRealList is the sabotage, kept as a test
+// (ADR-067).
+//
+// A reader that silently returns nothing would exempt nothing, which fails
+// loudly; a reader that silently returned everything would exempt the whole
+// tree and the walk would pass having checked nothing. Pin the contents.
+func TestTheExemptionReaderFindsTheRealList(t *testing.T) {
+	exempt := exemptCommands(t)
+
+	for _, path := range []string{"ai skill show", "api"} {
+		if !exempt[path] {
+			t.Errorf("the reader missed the exemption for %q", path)
+		}
+	}
+	if exempt["repo delete"] {
+		t.Error("the reader invented an exemption; every command would be excluded from the walk")
+	}
+	if len(exempt) > 5 {
+		t.Errorf("the reader found %d exemptions; the list is meant to stay small enough to review", len(exempt))
 	}
 }
 
