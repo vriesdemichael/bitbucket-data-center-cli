@@ -70,10 +70,6 @@ tasks:
     desc: Export JSON Schema for bb configuration and policy files
     cmd: go run ./tools/config-schema-export -out docs/reference/schemas
 
-  docs:export-output-schemas:
-    desc: Export per-command JSON output schemas for the bb.machine v2 envelope
-    cmd: go run ./tools/output-schema-export -out docs/reference/schemas/output
-
   docs:publish-bulk-schemas:
     desc: Publish bulk JSON schema files into MkDocs docs directory
     cmds:
@@ -88,12 +84,6 @@ tasks:
       - mkdir -p docs/site/reference/schemas
       - cp docs/reference/schemas/config.schema.json docs/site/reference/schemas/config.schema.json
 
-  docs:publish-output-schemas:
-    desc: Publish per-command output JSON schema files into MkDocs docs directory
-    cmds:
-      - mkdir -p docs/site/reference/schemas/output
-      - cp docs/reference/schemas/output/*.schema.json docs/site/reference/schemas/output/
-
   docs:generate:
     desc: Generate all docs artifacts committed to repo
     cmds:
@@ -103,8 +93,6 @@ tasks:
       - task: docs:publish-bulk-schemas
       - task: docs:export-config-schema
       - task: docs:publish-config-schema
-      - task: docs:export-output-schemas
-      - task: docs:publish-output-schemas
 
   docs:verify-generated:
     desc: Verify generated docs artifacts are up to date
@@ -140,7 +128,6 @@ tasks:
       # Re-exported here, into the working tree the site is built from, so the
       # published snapshot names the version it belongs to while the committed
       # copies stay on the alias and docs:verify-generated stays stable.
-      - go run ./tools/output-schema-export -out docs/site/reference/schemas/output -site-version '{{.VERSION}}'
       - go run ./tools/bulk-schema-export -out docs/site/reference/schemas -site-version '{{.VERSION}}'
       - uv run --project '{{.DOCS_PROJECT_DIR}}' mike deploy --push --update-aliases {{.VERSION}} latest
       - uv run --project '{{.DOCS_PROJECT_DIR}}' mike set-default --push latest

@@ -55,9 +55,8 @@ This applies to usage errors too — an unknown flag or command produces an enve
 bb --json repo list --nonexistent-flag
 ```
 
-The published schema is
-[`output.error.schema.json`](../reference/schemas/output/output.error.schema.json), and it is the
-same document for every command.
+The failure envelope has the same shape for every command, so there is one schema for it rather
+than one per command.
 
 ## Diagnostics behavior
 
