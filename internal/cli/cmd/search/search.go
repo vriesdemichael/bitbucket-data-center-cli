@@ -3,12 +3,12 @@ package searchcmd
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -112,17 +112,19 @@ func newSearchReposCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			reported := result.RepositorySummariesFrom(repos)
+
 			if deps.JSONEnabled() {
-				return deps.WriteJSONList(cmd.OutOrStdout(), repos, paging.LimitReached(listPaging, len(repos)))
+				return deps.WriteJSONList(cmd.OutOrStdout(), reported, paging.LimitReached(listPaging, len(reported)))
 			}
 
-			if len(repos) == 0 {
+			if len(reported) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No repositories found"))
 				return nil
 			}
 
-			rows := make([][]string, len(repos))
-			for i, repo := range repos {
+			rows := make([][]string, len(reported))
+			for i, repo := range reported {
 				rows[i] = []string{style.Resource.Render(repo.ProjectKey + "/" + repo.Slug), repo.Name}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
@@ -178,18 +180,23 @@ func newSearchCommitsCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "commits": commits})
+			reported := Commits{
+				Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+				Commits:    result.CommitsFrom(commits),
 			}
 
-			if len(commits) == 0 {
+			if deps.JSONEnabled() {
+				return deps.WriteJSON(cmd.OutOrStdout(), reported)
+			}
+
+			if len(reported.Commits) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No commits found"))
 				return nil
 			}
 
-			rows := make([][]string, len(commits))
-			for i, commit := range commits {
-				rows[i] = []string{style.Secondary.Render(safeString(commit.DisplayId)), strings.Split(safeString(commit.Message), "\n")[0]}
+			rows := make([][]string, len(reported.Commits))
+			for i, commit := range reported.Commits {
+				rows[i] = []string{style.Secondary.Render(commit.DisplayID), commit.Subject()}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
 
@@ -262,19 +269,21 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			reported := PullRequests{PullRequests: result.PullRequestsFrom(prs)}
+
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"pull_requests": prs})
+				return deps.WriteJSON(cmd.OutOrStdout(), reported)
 			}
 
-			if len(prs) == 0 {
+			if len(reported.PullRequests) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No pull requests found"))
 				return nil
 			}
 
-			rows := make([][]string, len(prs))
-			for i, pr := range prs {
+			rows := make([][]string, len(reported.PullRequests))
+			for i, pr := range reported.PullRequests {
 				repoStr := ""
-				if pr.Repository != nil && pr.Repository.ProjectKey != "" {
+				if pr.Repository.ProjectKey != "" {
 					repoStr = fmt.Sprintf("[%s/%s] ", pr.Repository.ProjectKey, pr.Repository.Slug)
 				}
 				rows[i] = []string{style.Resource.Render(fmt.Sprintf("%s#%d", repoStr, pr.ID)), style.ActionStyle(pr.State).Render(pr.State), pr.Title}

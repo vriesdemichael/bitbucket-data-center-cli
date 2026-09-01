@@ -1,5 +1,9 @@
 package result
 
+import (
+	repositoryservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
+)
+
 // Repository names a repository in a payload.
 //
 // It exists because 49 payloads embedded a service's RepositoryRef directly,
@@ -40,4 +44,34 @@ type Status struct {
 // OK is the common case: the command did what it was asked.
 func OK() Status {
 	return Status{Status: "ok"}
+}
+
+// RepositorySummary is a repository in a listing: the reference plus what a
+// reader needs to pick one out.
+//
+// Distinct from Repository, which names a repository a payload is about. A
+// listing needs the display name and visibility; a payload that is scoped to a
+// repository does not, and carrying them there would publish two fields per
+// command that nothing reads.
+type RepositorySummary struct {
+	ProjectKey string `json:"projectKey" jsonschema:"Project key the repository belongs to."`
+	Slug       string `json:"slug" jsonschema:"Repository slug, as it appears in URLs."`
+	Name       string `json:"name,omitempty" jsonschema:"Display name, which may differ from the slug."`
+	Public     bool   `json:"public" jsonschema:"Whether the repository is readable without authentication."`
+}
+
+// RepositorySummariesFrom converts a service listing, preserving order and
+// never returning nil.
+func RepositorySummariesFrom(upstream []repositoryservice.Repository) []RepositorySummary {
+	converted := make([]RepositorySummary, 0, len(upstream))
+	for _, one := range upstream {
+		converted = append(converted, RepositorySummary{
+			ProjectKey: one.ProjectKey,
+			Slug:       one.Slug,
+			Name:       one.Name,
+			Public:     one.Public,
+		})
+	}
+
+	return converted
 }
