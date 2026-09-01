@@ -109,8 +109,8 @@ func TestReviewerGroupCommands(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on list repo JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), `"reviewer_groups"`) {
-		t.Fatalf("expected reviewer_groups in JSON output: %s", buf.String())
+	if !strings.Contains(buf.String(), `"reviewerGroups"`) {
+		t.Fatalf("expected reviewerGroups in JSON output: %s", buf.String())
 	}
 	jsonEnabled = false
 

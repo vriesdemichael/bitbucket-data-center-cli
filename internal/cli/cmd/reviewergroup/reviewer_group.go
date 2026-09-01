@@ -10,6 +10,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -105,7 +106,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 				if d.JSONEnabled() {
-					return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"reviewer_groups": groups})
+					return d.WriteJSON(cmd.OutOrStdout(), Groups{ReviewerGroups: groupsFrom(groups)})
 				}
 				printReviewerGroups(cmd, groups)
 				return nil
@@ -123,7 +124,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"reviewer_groups": groups})
+				return d.WriteJSON(cmd.OutOrStdout(), Groups{ReviewerGroups: groupsFrom(groups)})
 			}
 			printReviewerGroups(cmd, groups)
 			return nil
@@ -208,7 +209,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 				if d.JSONEnabled() {
-					return d.WriteJSON(cmd.OutOrStdout(), group)
+					return d.WriteJSON(cmd.OutOrStdout(), groupFrom(group))
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s %s for repository %s\n", style.Success.Render("Created reviewer group"), style.Resource.Render(name), style.Resource.Render(pk+"/"+slug))
 				return nil
@@ -275,7 +276,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), group)
+				return d.WriteJSON(cmd.OutOrStdout(), groupFrom(group))
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s for project %s\n", style.Success.Render("Created reviewer group"), style.Resource.Render(name), projectKey)
 			return nil
@@ -369,7 +370,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 				if d.JSONEnabled() {
-					return d.WriteJSON(cmd.OutOrStdout(), group)
+					return d.WriteJSON(cmd.OutOrStdout(), groupFrom(group))
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s %s for repository %s\n", style.Updated.Render("Updated reviewer group"), style.Resource.Render(id), style.Resource.Render(pk+"/"+slug))
 				return nil
@@ -444,7 +445,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), group)
+				return d.WriteJSON(cmd.OutOrStdout(), groupFrom(group))
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s for project %s\n", style.Updated.Render("Updated reviewer group"), style.Resource.Render(id), projectKey)
 			return nil
@@ -527,7 +528,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 				if d.JSONEnabled() {
-					return d.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "id": id})
+					return d.WriteJSON(cmd.OutOrStdout(), Deletion{Status: result.OK(), ID: id})
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s %s for repository %s\n", style.Deleted.Render("Deleted reviewer group"), style.Resource.Render(id), style.Resource.Render(pk+"/"+slug))
 				return nil
@@ -590,7 +591,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "id": id})
+				return d.WriteJSON(cmd.OutOrStdout(), Deletion{Status: result.OK(), ID: id})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s for project %s\n", style.Deleted.Render("Deleted reviewer group"), style.Resource.Render(id), projectKey)
 			return nil
@@ -626,7 +627,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"users": users})
+				return d.WriteJSON(cmd.OutOrStdout(), Users{Users: restUsersFrom(users)})
 			}
 
 			printUsers(cmd, users)
