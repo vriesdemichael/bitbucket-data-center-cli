@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -100,22 +101,23 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "refs": refs})
+			reported := Refs{
+				Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+				Refs:       refsFrom(refs),
 			}
 
-			if len(refs) == 0 {
+			if d.JSONEnabled() {
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
+			}
+
+			if len(reported.Refs) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No refs found"))
 				return nil
 			}
 
-			rows := make([][]string, len(refs))
-			for i, ref := range refs {
-				t := ""
-				if ref.Type != nil {
-					t = string(*ref.Type)
-				}
-				rows[i] = []string{style.Resource.Render(safeString(ref.DisplayId)), t, style.Secondary.Render(safeString(ref.Id))}
+			rows := make([][]string, len(reported.Refs))
+			for i, ref := range reported.Refs {
+				rows[i] = []string{style.Resource.Render(ref.DisplayID), ref.Type, style.Secondary.Render(ref.ID)}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
 
@@ -148,17 +150,12 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			// Find exact match
-			var foundRef map[string]any
+			var foundRef *Ref
 
 			for _, ref := range refs {
 				if ref.DisplayId != nil && *ref.DisplayId == args[0] {
-					foundRef = map[string]any{
-						"id":        safeString(ref.Id),
-						"displayId": safeString(ref.DisplayId),
-					}
-					if ref.Type != nil {
-						foundRef["type"] = string(*ref.Type)
-					}
+					converted := refFrom(ref)
+					foundRef = &converted
 					break
 				}
 			}
@@ -168,15 +165,15 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "ref": foundRef})
+			reported := Resolution{
+				Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+				Ref:        *foundRef,
 			}
 
-			t := ""
-			if val, ok := foundRef["type"].(string); ok {
-				t = val
+			if d.JSONEnabled() {
+				return d.WriteJSON(cmd.OutOrStdout(), reported)
 			}
-			style.WriteTable(cmd.OutOrStdout(), [][]string{{style.Resource.Render(fmt.Sprintf("%v", foundRef["displayId"])), t, style.Secondary.Render(fmt.Sprintf("%v", foundRef["id"]))}})
+			style.WriteTable(cmd.OutOrStdout(), [][]string{{style.Resource.Render(reported.Ref.DisplayID), reported.Ref.Type, style.Secondary.Render(reported.Ref.ID)}})
 			return nil
 		},
 	}
