@@ -13,6 +13,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -112,7 +113,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 				if d.JSONEnabled() {
-					return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"conditions": conditions})
+					return d.WriteJSON(cmd.OutOrStdout(), Conditions{Conditions: conditionsFrom(conditions)})
 				}
 				printReviewerConditions(cmd, conditions)
 				return nil
@@ -130,7 +131,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]any{"conditions": conditions})
+				return d.WriteJSON(cmd.OutOrStdout(), Conditions{Conditions: conditionsFrom(conditions)})
 			}
 			printReviewerConditions(cmd, conditions)
 			return nil
@@ -203,7 +204,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 				if d.JSONEnabled() {
-					return d.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "id": id})
+					return d.WriteJSON(cmd.OutOrStdout(), ConditionDeletion{Status: result.OK(), ID: id})
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s %s for repository %s\n", style.Deleted.Render("Deleted condition"), style.Resource.Render(id), style.Resource.Render(pk+"/"+slug))
 				return nil
@@ -264,7 +265,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "id": id})
+				return d.WriteJSON(cmd.OutOrStdout(), ConditionDeletion{Status: result.OK(), ID: id})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s for project %s\n", style.Deleted.Render("Deleted condition"), style.Resource.Render(id), projectKey)
 			return nil
@@ -373,7 +374,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 				if d.JSONEnabled() {
-					return d.WriteJSON(cmd.OutOrStdout(), created)
+					return d.WriteJSON(cmd.OutOrStdout(), conditionFrom(created))
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s for repository %s\n", style.Success.Render("Created reviewer condition"), style.Resource.Render(pk+"/"+slug))
 				return nil
@@ -440,7 +441,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), created)
+				return d.WriteJSON(cmd.OutOrStdout(), conditionFrom(created))
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s for project %s\n", style.Success.Render("Created reviewer condition"), projectKey)
 			return nil
@@ -556,7 +557,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 				if d.JSONEnabled() {
-					return d.WriteJSON(cmd.OutOrStdout(), updated)
+					return d.WriteJSON(cmd.OutOrStdout(), conditionFrom(updated))
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s %s for repository %s\n", style.Updated.Render("Updated reviewer condition"), style.Resource.Render(id), style.Resource.Render(pk+"/"+slug))
 				return nil
@@ -629,7 +630,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), updated)
+				return d.WriteJSON(cmd.OutOrStdout(), conditionFrom(updated))
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s for project %s\n", style.Updated.Render("Updated reviewer condition"), style.Resource.Render(id), projectKey)
 			return nil
