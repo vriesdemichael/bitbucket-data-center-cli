@@ -53,9 +53,67 @@ func For[T any](enums map[string][]string) *jsonschema.Schema {
 		panic(fmt.Sprintf("deriving output schema for %T: %v", *new(T), err))
 	}
 
+	tightenOptionalNullables(schema)
 	applyEnums(schema, enums, fmt.Sprintf("%T", *new(T)))
 
 	return schema
+}
+
+// tightenOptionalNullables drops null from optional fields that can never be
+// null.
+//
+// The reflector types a Go pointer as null-or-something, which is right for a
+// field that marshals nil as null. It is wrong for every field carrying
+// omitempty, because encoding/json omits a nil pointer there rather than
+// writing null -- so the schema would publish a null the command cannot emit,
+// and a consumer would write a branch that never runs.
+//
+// The reflector marks exactly the omitempty and omitzero fields optional, so
+// "not required" is the signal. A pointer field without omitempty keeps its
+// null, because that one really does marshal to null.
+func tightenOptionalNullables(schema *jsonschema.Schema) {
+	if schema == nil {
+		return
+	}
+
+	required := make(map[string]bool, len(schema.Required))
+	for _, name := range schema.Required {
+		required[name] = true
+	}
+
+	for name, property := range schema.Properties {
+		if !required[name] {
+			dropNull(property)
+		}
+		tightenOptionalNullables(property)
+	}
+
+	tightenOptionalNullables(schema.Items)
+}
+
+// dropNull removes the null member of a type union, collapsing what is left to
+// a single type when only one remains.
+func dropNull(schema *jsonschema.Schema) {
+	if schema == nil || len(schema.Types) == 0 {
+		return
+	}
+
+	kept := make([]string, 0, len(schema.Types))
+	for _, candidate := range schema.Types {
+		if candidate != "null" {
+			kept = append(kept, candidate)
+		}
+	}
+
+	switch len(kept) {
+	case 0:
+		return
+	case 1:
+		schema.Type = kept[0]
+		schema.Types = nil
+	default:
+		schema.Types = kept
+	}
 }
 
 // List derives the schema for a command whose payload is a list of T.
