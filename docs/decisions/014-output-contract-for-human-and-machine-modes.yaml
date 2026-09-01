@@ -1,7 +1,8 @@
 number: 14
 title: Output contract for human and machine modes
 category: architecture
-status: accepted
+status: superseded
+superseded_by: 64
 decision: >
   Provide consistent human-readable output by default and a stable machine mode via --json.
   JSON responses must use versioned envelopes for forward-compatible parsing.

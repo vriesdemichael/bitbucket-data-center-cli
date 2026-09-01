@@ -146,7 +146,7 @@ func authServerUseDataSchema() map[string]any {
 }
 
 // Schemas returns all auth command output schemas keyed by file name.  The
-// schemas describe the full bb.machine v2 envelope emitted by each command.
+// schemas describe the full bb.machine envelope emitted by each command.
 func Schemas() map[string]map[string]any {
 	return map[string]map[string]any{
 		"output.auth.status.schema.json": jsonoutput.EnvelopeSchemaFor(

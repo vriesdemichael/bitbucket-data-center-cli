@@ -20,7 +20,7 @@ func SchemaID(siteVersion, schemaFileName string) string {
 	return SchemaBaseURL(siteVersion) + schemaFileName
 }
 
-// EnvelopeSchemaFor builds a full bb.machine v2 envelope schema whose data
+// EnvelopeSchemaFor builds a full bb.machine envelope schema whose data
 // field is constrained to the supplied dataSchema.  title and description are
 // shown in documentation tooling.
 func EnvelopeSchemaFor(schemaFileName, title, description string, dataSchema map[string]any) map[string]any {
@@ -32,11 +32,10 @@ func EnvelopeSchemaFor(schemaFileName, title, description string, dataSchema map
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"version": map[string]any{"const": ContractVersion},
-			"data":    dataSchema,
-			"meta":    metaSchema(),
+			"data": dataSchema,
+			"meta": metaSchema(),
 		},
-		"required": []any{"version", "data", "meta"},
+		"required": []any{"data", "meta"},
 	}
 }
 
@@ -73,7 +72,6 @@ func ErrorEnvelopeSchema(schemaFileName string) map[string]any {
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"version": map[string]any{"const": ContractVersion},
 			"error": map[string]any{
 				"type":                 "object",
 				"additionalProperties": false,
@@ -105,7 +103,7 @@ func ErrorEnvelopeSchema(schemaFileName string) map[string]any {
 			},
 			"meta": metaSchema(),
 		},
-		"required": []any{"version", "error", "meta"},
+		"required": []any{"error", "meta"},
 	}
 }
 
@@ -115,7 +113,16 @@ func metaSchema() map[string]any {
 		"additionalProperties": false,
 		"properties": map[string]any{
 			"contract": map[string]any{"const": ContractName},
+			"bb_version": map[string]any{
+				"type":        "string",
+				"minLength":   1,
+				"description": "Version of the bb binary that produced this document. Provenance for stored output, not a compatibility switch: pin the binary to pin the contract (ADR-064).",
+			},
+			"limit_reached": map[string]any{
+				"type":        "boolean",
+				"description": "Present on listing commands: true when the result set came back at --limit and there may be more behind it.",
+			},
 		},
-		"required": []any{"contract"},
+		"required": []any{"contract", "bb_version"},
 	}
 }

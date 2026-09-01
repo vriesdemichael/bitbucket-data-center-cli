@@ -122,13 +122,13 @@ Expected JSON output (example):
 
 ```json
 {
-  "version": "v2",
   "data": {
     "status": "ok",
     "default_host": "https://bitbucket.acme.corp"
   },
   "meta": {
-    "contract": "bb.machine"
+    "contract": "bb.machine",
+    "bb_version": "v4.0.0"
   }
 }
 ```

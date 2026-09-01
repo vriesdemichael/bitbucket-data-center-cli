@@ -185,22 +185,24 @@ See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and co
 
 ```json
 {
-  "version": "v2",
   "data": {},
   "meta": {
-    "contract": "bb.machine"
+    "contract": "bb.machine",
+    "bb_version": "v4.0.0"
   }
 }
 ```
 
 - `data` contains the command-specific payload shape.
-- Contract changes are additive within version `v2`; breaking changes require a version bump.
+- Adding a field to `data` is additive. Removing or renaming one, changing its type, or changing
+  whether it can be null is a breaking change and cuts a new major release, because the binary
+  version is the contract version ([ADR-064](adr/064-machine-output-carries-no-contract-version.md)).
+  `meta.bb_version` reports which binary produced the document.
 
 Example machine output (`bb --json auth status`):
 
 ```json
 {
-  "version": "v2",
   "data": {
     "bitbucket_url": "https://bitbucket.acme.corp",
     "bitbucket_version_target": "9.4.16",
@@ -208,7 +210,8 @@ Example machine output (`bb --json auth status`):
     "auth_source": "stored/default"
   },
   "meta": {
-    "contract": "bb.machine"
+    "contract": "bb.machine",
+    "bb_version": "v4.0.0"
   }
 }
 ```

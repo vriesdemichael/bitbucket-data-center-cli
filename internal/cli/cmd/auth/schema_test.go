@@ -44,7 +44,7 @@ func TestAuthSchemasEnvelopeShape(t *testing.T) {
 			t.Errorf("%s: missing envelope properties", name)
 			continue
 		}
-		for _, field := range []string{"version", "data", "meta"} {
+		for _, field := range []string{"data", "meta"} {
 			if _, ok := props[field]; !ok {
 				t.Errorf("%s: missing envelope property %q", name, field)
 			}

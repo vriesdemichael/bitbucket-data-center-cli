@@ -426,16 +426,18 @@ func decodeJSONEnvelopeDataMap(t *testing.T, raw []byte) map[string]any {
 	t.Helper()
 
 	var envelope struct {
-		Version string         `json:"version"`
-		Data    map[string]any `json:"data"`
+		Data map[string]any `json:"data"`
+		Meta struct {
+			Contract string `json:"contract"`
+		} `json:"meta"`
 	}
 
 	if err := json.Unmarshal(raw, &envelope); err != nil {
 		t.Fatalf("expected valid json output, got: %s (%v)", string(raw), err)
 	}
 
-	if envelope.Version != jsonoutput.ContractVersion {
-		t.Fatalf("expected json envelope version %q, got %q", jsonoutput.ContractVersion, envelope.Version)
+	if envelope.Meta.Contract != jsonoutput.ContractName {
+		t.Fatalf("expected contract %q, got %q", jsonoutput.ContractName, envelope.Meta.Contract)
 	}
 
 	if envelope.Data == nil {

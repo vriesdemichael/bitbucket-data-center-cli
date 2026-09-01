@@ -5,7 +5,8 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `014`
 - Title: `Output contract for human and machine modes`
 - Category: `architecture`
-- Status: `accepted`
+- Status: `superseded`
+- Superseded By: `064`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/014-output-contract-for-human-and-machine-modes.yaml`
 

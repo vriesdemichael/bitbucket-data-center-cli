@@ -8,15 +8,21 @@ Envelope shape:
 
 ```json
 {
-  "version": "v2",
   "data": {},
   "meta": {
-    "contract": "bb.machine"
+    "contract": "bb.machine",
+    "bb_version": "v4.0.0"
   }
 }
 ```
 
-`data` holds command-specific payloads. Additive fields are allowed in `v2`; breaking changes require versioning.
+`data` holds command-specific payloads. `meta.bb_version` reports which binary produced the
+document -- provenance for stored output, not a compatibility switch.
+
+There is no contract version. Adding a field to `data` is additive; removing or renaming one,
+changing its type, or changing whether it can be null is a breaking change that cuts a new
+major release ([ADR-064](../adr/064-machine-output-carries-no-contract-version.md)). Pin the
+binary version to pin the contract.
 
 ### Failure envelope
 
@@ -24,14 +30,14 @@ When a command fails while `--json` is set, stdout carries an `error` object whe
 
 ```json
 {
-  "version": "v2",
   "error": {
     "kind": "validation",
     "message": "no Bitbucket host configured: set BITBUCKET_URL or run 'bb auth login <host>'",
     "exit_code": 2
   },
   "meta": {
-    "contract": "bb.machine"
+    "contract": "bb.machine",
+    "bb_version": "v4.0.0"
   }
 }
 ```
@@ -157,13 +163,13 @@ bb --json repo list --nonexistent-flag
 
 ```json
 {
-  "version": "v2",
   "error": {
     "kind": "validation",
     "message": "unknown flag: --nonexistent-flag",
     "exit_code": 2
   },
-  "meta": { "contract": "bb.machine" }
+  "meta": { "contract": "bb.machine",
+    "bb_version": "v4.0.0" }
 }
 ```
 

@@ -38,7 +38,7 @@ func TestSchemasReturnNonEmpty(t *testing.T) {
 			continue
 		}
 
-		for _, field := range []string{"version", "meta"} {
+		for _, field := range []string{"meta"} {
 			if _, ok := props[field]; !ok {
 				t.Errorf("schema %s missing envelope property %q", name, field)
 			}
