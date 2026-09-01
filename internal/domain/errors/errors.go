@@ -18,6 +18,14 @@ const (
 	KindPermanent      Kind = "permanent"
 	KindNotImplemented Kind = "not_implemented"
 	KindInternal       Kind = "internal"
+	// KindCancelled is work the operator stopped, or a deadline that expired,
+	// before it finished.
+	//
+	// It is deliberately not transient. Transient is documented as "retry
+	// later", and a caller that retries a Ctrl-C re-runs the very thing
+	// somebody just interrupted -- for `bb bulk apply` that means replaying
+	// mutations across every repository in the plan.
+	KindCancelled Kind = "cancelled"
 )
 
 type AppError struct {
@@ -82,6 +90,7 @@ func Kinds() []Kind {
 		KindTransient,
 		KindPermanent,
 		KindNotImplemented,
+		KindCancelled,
 		KindInternal,
 	}
 }
@@ -125,6 +134,8 @@ func ExitCode(err error) int {
 			return 10
 		case KindNotImplemented:
 			return 11
+		case KindCancelled:
+			return 12
 		default:
 			return 1
 		}

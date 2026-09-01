@@ -91,6 +91,7 @@ Command failures use deterministic exit codes by error kind.
 - `conflict` -> exit code `5`
 - `transient` -> exit code `10`
 - `not_implemented` -> exit code `11`
+- `cancelled` -> exit code `12` (interrupted or timed out; not something to retry automatically)
 - `permanent` and `internal` (or unknown) -> exit code `1`
 
 Example failure behavior:

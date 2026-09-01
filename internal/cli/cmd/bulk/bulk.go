@@ -130,19 +130,35 @@ func New(deps Dependencies) *cobra.Command {
 				bulkworkflow.NewStatusStore(statusDir),
 			)
 
-			status, err := executor.Apply(cmd.Context(), plan)
-			if err != nil {
+			writeStatus := func(status bulkworkflow.ApplyStatus) error {
+				if isJSON() {
+					return deps.WriteJSON(cmd.OutOrStdout(), status)
+				}
+				writeStatusHuman(cmd.OutOrStdout(), status)
+				return nil
+			}
+
+			status, applyErr := executor.Apply(cmd.Context(), plan)
+
+			// An interrupted run has an operation id and a saved artifact, and
+			// that id is the only way to reach it: `bb bulk status` takes one
+			// as its argument. Returning the error before printing left the
+			// caller holding a recoverable run they had no name for, which is
+			// the whole point of saving the artifact on cancellation.
+			//
+			// An empty id means Apply refused the plan before starting, so
+			// there is no run to report -- only the error.
+			if applyErr != nil && status.OperationID == "" {
+				return applyErr
+			}
+
+			if err := writeStatus(status); err != nil {
 				return err
 			}
-
-			if isJSON() {
-				if err := deps.WriteJSON(cmd.OutOrStdout(), status); err != nil {
-					return err
-				}
-				return applyFailureError(status)
+			if applyErr != nil {
+				return applyErr
 			}
 
-			writeStatusHuman(cmd.OutOrStdout(), status)
 			return applyFailureError(status)
 		},
 	}
