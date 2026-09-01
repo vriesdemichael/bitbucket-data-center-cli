@@ -67,6 +67,16 @@ your behalf using the link above.`,
 		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			diagnostics.SetOutputWriter(cmd.ErrOrStderr())
+
+			// --describe answers from schemas compiled into this binary, so it
+			// must not need configuration, a server, or a git checkout. Running
+			// the rest of this would make asking what a command returns fail in
+			// exactly the situations where the answer is most wanted.
+			if options.Describe {
+				style.Init(options.NoColor)
+				return nil
+			}
+
 			if err := options.applyRuntimeFlagOverrides(cmd); err != nil {
 				return err
 			}
@@ -79,6 +89,7 @@ your behalf using the link above.`,
 	rootCmd.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "Preview server mutations without applying them")
 	rootCmd.PersistentFlags().BoolVar(&options.NoColor, "no-color", false, "Disable colored output")
 	rootCmd.PersistentFlags().Bool("no-input", false, "Never prompt; fail instead when a value is missing")
+	rootCmd.PersistentFlags().BoolVar(&options.Describe, describeFlag, false, "Print the command's output schema instead of running it")
 	rootCmd.PersistentFlags().String("ca-file", "", "Path to PEM CA bundle for TLS trust")
 	rootCmd.PersistentFlags().Bool("insecure-skip-verify", false, "Disable TLS certificate verification (unsafe; local/dev only)")
 	rootCmd.PersistentFlags().String("client-cert", "", "Path to PEM client certificate for mTLS")
@@ -294,6 +305,11 @@ your behalf using the link above.`,
 	registerGlobalDryRunInterceptors(rootCmd, options)
 	enforceNoArgsDefaults(rootCmd)
 
+	// Installed last, over the finished tree, because it wraps every runnable
+	// command it finds. Anything added after this point would not answer
+	// --describe.
+	installDescribe(rootCmd, &options.Describe)
+
 	return rootCmd
 }
 
@@ -301,6 +317,10 @@ type rootOptions struct {
 	JSON    bool
 	DryRun  bool
 	NoColor bool
+	// Describe makes a command print its own output contract instead of running
+	// it. A pointer to this is handed to installDescribe, so the wrappers see the
+	// parsed value rather than the value at construction time.
+	Describe bool
 	// runtime carries the values the global flags supplied, resolved once in
 	// PersistentPreRunE. It lives here rather than in the environment so a flag
 	// outranks BB_* for this invocation instead of destroying it, and so the
