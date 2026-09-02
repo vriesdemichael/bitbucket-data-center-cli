@@ -161,12 +161,11 @@ func TestServicePullRequestPaginationAndCRUDFallbacks(t *testing.T) {
 		t.Fatalf("expected resolved version 7, got: %v", resolvedVersion)
 	}
 
-	got, err := service.Get(context.Background(), target, "22")
-	if err != nil {
-		t.Fatalf("expected pr get to succeed, got: %v", err)
-	}
-	if got.Id != nil || got.Text != nil {
-		t.Fatalf("expected zero-value comment for empty successful response, got: %#v", got)
+	// A read has no fallback. An empty body is not a comment, and answering
+	// with a zero-value one made the version lookup behind update, delete and
+	// resolve return nothing -- so the write went out unlocked and succeeded.
+	if _, err := service.Get(context.Background(), target, "22"); err == nil {
+		t.Fatal("an empty successful response was reported as a readable comment")
 	}
 }
 
@@ -771,30 +770,37 @@ func TestServiceFallbacks(t *testing.T) {
 			t.Fatalf("expected fallback create body, got %v err=%v", created, err)
 		}
 
-		// 3. Update blocker
-		updated, err := service.Update(context.Background(), blockerTarget, "100", "hello", nil)
+		// 3. Update with an explicit version still falls back to the request
+		// body: the write happened, and reporting a failure would invite a retry
+		// that edits the comment twice.
+		version := int32(4)
+		updated, err := service.Update(context.Background(), blockerTarget, "100", "hello", &version)
 		if err != nil || *updated.Text != "hello" {
 			t.Fatalf("expected fallback update body, got %v err=%v", updated, err)
 		}
 
-		// 4. Delete blocker (uses fallback version resolution)
-		// If delete returns StatusNoContent, it tries to get the current version. We mock get returning StatusNoContent.
+		// 4. A write that has to look the version up first refuses instead.
+		// An empty body is not a comment, and treating it as one sent the write
+		// with no version at all -- which Bitbucket reads as "no optimistic
+		// locking wanted" and applies over whatever a concurrent edit did.
+		if _, err := service.Update(context.Background(), blockerTarget, "100", "hello", nil); err == nil {
+			t.Fatal("an update proceeded after an unreadable version lookup")
+		}
 		deleteService := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodDelete {
 				w.WriteHeader(http.StatusNoContent)
-			} else {
-				w.WriteHeader(http.StatusOK) // empty body for Get
+				return
 			}
+			w.WriteHeader(http.StatusOK) // empty body for Get
 		})
-		resolvedVersion, err := deleteService.Delete(context.Background(), blockerTarget, "100", nil)
-		if err != nil || resolvedVersion != nil {
-			t.Fatalf("expected nil resolved version, got %v err=%v", resolvedVersion, err)
+		if _, err := deleteService.Delete(context.Background(), blockerTarget, "100", nil); err == nil {
+			t.Fatal("a delete proceeded after an unreadable version lookup")
 		}
 
-		// 5. Get blocker
-		got, err := service.Get(context.Background(), blockerTarget, "100")
-		if err != nil || got.Id != nil {
-			t.Fatalf("expected empty get body, got %v err=%v", got, err)
+		// 5. And the read that fails says so, rather than answering with a
+		// comment that has no fields.
+		if _, err := service.Get(context.Background(), blockerTarget, "100"); err == nil {
+			t.Fatal("an empty body was reported as a readable comment")
 		}
 
 		// 6. React
@@ -1309,12 +1315,12 @@ func TestSetStateRepairsAnAnchoredBlocker(t *testing.T) {
 	}
 }
 
-// TestSetStateRefusesABlockerOnACommit keeps the two comment worlds apart.
+// TestCreateRefusesABlockerOnACommit keeps the two comment worlds apart.
 //
 // Blocker comments are a pull request concept -- they are posted to a separate
 // endpoint and they are what a merge gate counts. A commit has no such thing,
 // and saying so here is more use than a 404 from the server.
-func TestSetStateRefusesABlockerOnACommit(t *testing.T) {
+func TestCreateRefusesABlockerOnACommit(t *testing.T) {
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		t.Errorf("a request was made for a target that should have been refused: %s", r.URL)
 	})
@@ -1330,5 +1336,62 @@ func TestSetStateRefusesABlockerOnACommit(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "only supported for pull requests") {
 		t.Errorf("error = %v, want it to say why", err)
+	}
+}
+
+// TestAnUnreadableVersionLookupStopsTheWrite is the hazard a read with no error
+// created.
+//
+// Get answered an undecodable body with an empty comment and no error, so the
+// version lookup behind update, delete and resolve returned nothing, and the
+// write went out with no version at all. Bitbucket reads a missing version as
+// "no optimistic locking wanted": it applies the change over whatever a
+// concurrent edit did and answers success. Two reviewers resolving the same
+// thread, and one of them silently loses their text.
+//
+// Resolving a blocker always takes this path, because resolve passes no
+// version of its own.
+func TestAnUnreadableVersionLookupStopsTheWrite(t *testing.T) {
+	writes := 0
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writes++
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"id":1,"version":9}`))
+			return
+		}
+		// A truncated body: valid-looking, and not a comment.
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":1,"version":`))
+	})
+
+	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "7"}
+
+	if _, err := service.Get(context.Background(), target, "1"); err == nil {
+		t.Fatal("a truncated body was reported as a readable comment")
+	}
+	for _, attempt := range []struct {
+		what string
+		run  func() error
+	}{
+		{"resolve", func() error {
+			_, err := service.SetState(context.Background(), target, "1", CommentStateResolved, nil)
+			return err
+		}},
+		{"update", func() error {
+			_, err := service.Update(context.Background(), target, "1", "edited", nil)
+			return err
+		}},
+		{"delete", func() error {
+			_, err := service.Delete(context.Background(), target, "1", nil)
+			return err
+		}},
+	} {
+		if err := attempt.run(); err == nil {
+			t.Errorf("%s proceeded after an unreadable version lookup", attempt.what)
+		}
+	}
+	if writes != 0 {
+		t.Errorf("%d write requests were sent after the lookup failed; want none", writes)
 	}
 }

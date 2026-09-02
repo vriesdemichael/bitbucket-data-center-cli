@@ -581,6 +581,14 @@ func TestLivePullRequestBlockerReviewLoop(t *testing.T) {
 		if summary["resolvedTasks"] != wantResolved {
 			t.Errorf("%s: resolvedTasks = %v, want %v\n%#v", stage, summary["resolvedTasks"], wantResolved, summary)
 		}
+		// actionRequired stays true at every stage here, the last one included:
+		// the two ordinary remarks are still open. That is the distinction
+		// worth pinning -- clearing every blocker does not mean there is
+		// nothing left to read, and a gate that said otherwise would wave
+		// through a pull request with unanswered review feedback on it.
+		if summary["actionRequired"] != true {
+			t.Errorf("%s: actionRequired = %v, want true while any feedback is open\n%#v", stage, summary["actionRequired"], summary)
+		}
 	}
 	assertTaskCounts("two blockers open", 2, 0)
 

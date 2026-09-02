@@ -100,7 +100,7 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 	results := make([]openapigenerated.RestComment, 0)
 
 	for {
-		page, err := service.commentPage(ctx, target, trimmedPath, start, pageLimit)
+		page, err := service.fetchCommentPage(ctx, target, trimmedPath, start, pageLimit)
 		if err != nil {
 			return nil, err
 		}
@@ -128,7 +128,7 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 // The raw methods rather than their WithResponse wrappers, for the reason
 // decodeCommentPage gives: the wrappers decode into RestComment, whose
 // anchor.path is an object, and Bitbucket sends a plain string here.
-func (service *Service) commentPage(ctx context.Context, target Target, path string, start float32, limit float32) (commentPage, error) {
+func (service *Service) fetchCommentPage(ctx context.Context, target Target, path string, start float32, limit float32) (commentPage, error) {
 	if strings.TrimSpace(target.CommitID) != "" {
 		response, err := service.client.GetComments(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, &openapigenerated.GetCommentsParams{Path: &path, Start: &start, Limit: &limit})
 		return decodeCommentPage(response, err, "failed to list commit comments")
@@ -233,17 +233,17 @@ func (service *Service) Create(ctx context.Context, target Target, text string) 
 	// the shape.
 	if strings.TrimSpace(target.CommitID) != "" {
 		response, err := service.client.CreateCommentWithBody(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, nil, jsonContentType, bytes.NewReader(encoded))
-		return decodeCreatedComment(response, err, "failed to create commit comment", echo)
+		return decodeWrittenComment(response, err, "failed to create commit comment", echo)
 	}
 
 	if target.Blocker {
 		response, err := service.client.CreateComment1WithBody(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, jsonContentType, bytes.NewReader(encoded))
-		return decodeCreatedComment(response, err, "failed to create pull request blocker comment", echo)
+		return decodeWrittenComment(response, err, "failed to create pull request blocker comment", echo)
 	}
 
 	response, err := service.client.CreateComment2WithBody(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, jsonContentType, bytes.NewReader(encoded))
 
-	created, createErr := decodeCreatedComment(response, err, "failed to create pull request comment", echo)
+	created, createErr := decodeWrittenComment(response, err, "failed to create pull request comment", echo)
 
 	return created, commentanchor.ExplainRejection(createErr, target.anchorOptions())
 }
@@ -257,7 +257,7 @@ const jsonContentType = "application/json"
 // will not decode must not be reported as a failed create — the caller would
 // retry and post a duplicate. Anchor paths are normalised first because
 // Bitbucket sends them as strings while the generated model expects objects.
-func decodeCreatedComment(response *http.Response, requestErr error, failureMessage string, echo openapigenerated.RestComment) (openapigenerated.RestComment, error) {
+func decodeWrittenComment(response *http.Response, requestErr error, failureMessage string, echo openapigenerated.RestComment) (openapigenerated.RestComment, error) {
 	if requestErr != nil {
 		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, failureMessage, requestErr)
 	}
@@ -303,13 +303,9 @@ func (service *Service) Update(ctx context.Context, target Target, commentID str
 		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindValidation, "comment text is required", nil)
 	}
 
-	resolvedVersion := version
-	if resolvedVersion == nil {
-		current, err := service.Get(ctx, target, trimmedCommentID)
-		if err != nil {
-			return openapigenerated.RestComment{}, err
-		}
-		resolvedVersion = current.Version
+	resolvedVersion, err := service.resolveVersion(ctx, target, trimmedCommentID, version)
+	if err != nil {
+		return openapigenerated.RestComment{}, err
 	}
 
 	body := openapigenerated.RestComment{Text: &trimmedText, Version: resolvedVersion}
@@ -321,17 +317,17 @@ func (service *Service) Update(ctx context.Context, target Target, commentID str
 	// happened as a transient failure, which invites a retry.
 	if strings.TrimSpace(target.CommitID) != "" {
 		response, err := service.client.UpdateComment(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, trimmedCommentID, body)
-		return decodeCreatedComment(response, err, "failed to update commit comment", body)
+		return decodeWrittenComment(response, err, "failed to update commit comment", body)
 	}
 
 	if target.Blocker {
 		response, err := service.client.UpdateComment1(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, body)
-		return decodeCreatedComment(response, err, "failed to update pull request blocker comment", body)
+		return decodeWrittenComment(response, err, "failed to update pull request blocker comment", body)
 	}
 
 	response, err := service.client.UpdateComment2(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, body)
 
-	return decodeCreatedComment(response, err, "failed to update pull request comment", body)
+	return decodeWrittenComment(response, err, "failed to update pull request comment", body)
 }
 
 func (service *Service) Delete(ctx context.Context, target Target, commentID string, version *int32) (*int32, error) {
@@ -344,13 +340,9 @@ func (service *Service) Delete(ctx context.Context, target Target, commentID str
 		return nil, apperrors.New(apperrors.KindValidation, "comment id is required", nil)
 	}
 
-	resolvedVersion := version
-	if resolvedVersion == nil {
-		current, err := service.Get(ctx, target, trimmedCommentID)
-		if err != nil {
-			return nil, err
-		}
-		resolvedVersion = current.Version
+	resolvedVersion, err := service.resolveVersion(ctx, target, trimmedCommentID, version)
+	if err != nil {
+		return nil, err
 	}
 
 	var versionParam *string
@@ -407,17 +399,17 @@ func (service *Service) Get(ctx context.Context, target Target, commentID string
 	// not be edited or removed either -- the read they depend on failed first.
 	if strings.TrimSpace(target.CommitID) != "" {
 		response, err := service.client.GetComment(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, trimmedCommentID)
-		return decodeCreatedComment(response, err, "failed to get commit comment", openapigenerated.RestComment{})
+		return decodeReadComment(response, err, "failed to get commit comment")
 	}
 
 	if target.Blocker {
 		response, err := service.client.GetComment1(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID)
-		return decodeCreatedComment(response, err, "failed to get pull request blocker comment", openapigenerated.RestComment{})
+		return decodeReadComment(response, err, "failed to get pull request blocker comment")
 	}
 
 	response, err := service.client.GetComment2(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID)
 
-	return decodeCreatedComment(response, err, "failed to get pull request comment", openapigenerated.RestComment{})
+	return decodeReadComment(response, err, "failed to get pull request comment")
 }
 
 func (service *Service) React(ctx context.Context, repo RepositoryRef, prID string, commentID string, emoticon string) (openapigenerated.RestUserReaction, error) {
@@ -551,13 +543,9 @@ func (service *Service) SetState(ctx context.Context, target Target, commentID s
 		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindValidation, "state must be OPEN or RESOLVED", nil)
 	}
 
-	resolvedVersion := version
-	if resolvedVersion == nil {
-		current, err := service.Get(ctx, target, trimmedCommentID)
-		if err != nil {
-			return openapigenerated.RestComment{}, err
-		}
-		resolvedVersion = current.Version
+	resolvedVersion, err := service.resolveVersion(ctx, target, trimmedCommentID, version)
+	if err != nil {
+		return openapigenerated.RestComment{}, err
 	}
 
 	stateValue := string(state)
@@ -570,7 +558,7 @@ func (service *Service) SetState(ctx context.Context, target Target, commentID s
 	// which is every comment worth blocking on.
 	response, err := service.client.UpdateComment2(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, body)
 
-	return decodeCreatedComment(response, err, "failed to update pull request comment state", body)
+	return decodeWrittenComment(response, err, "failed to update pull request comment state", body)
 }
 
 // commentPage is one page of a comment listing, decoded after the anchor paths
@@ -624,4 +612,70 @@ func decodeCommentPage(response *http.Response, requestErr error, failureMessage
 	}
 
 	return page, nil
+}
+
+// decodeReadComment decodes a comment fetched from the server.
+//
+// A read has no echo, and must not invent one. decodeWrittenComment answers an
+// undecodable body with what the caller sent, which is right for a write --
+// the change happened, and reporting a failure invites a retry that would post
+// a duplicate. For a read there is nothing that happened and nothing to fall
+// back on, so an empty comment would be a claim that the comment is empty.
+//
+// That claim was load-bearing. Get is how Update, Delete and SetState resolve a
+// version when the caller supplies none, so a silently empty read produced a
+// write with no version at all -- an unlocked update that clobbers a concurrent
+// edit, reported as a success. Resolving a blocker always takes that path.
+func decodeReadComment(response *http.Response, requestErr error, failureMessage string) (openapigenerated.RestComment, error) {
+	if requestErr != nil {
+		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, failureMessage, requestErr)
+	}
+
+	raw, readErr := io.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if readErr != nil {
+		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, failureMessage, readErr)
+	}
+
+	if err := openapi.MapStatusError(response.StatusCode, raw); err != nil {
+		return openapigenerated.RestComment{}, err
+	}
+
+	normalized, err := commentanchor.NormalizeResponsePaths(raw)
+	if err != nil {
+		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindPermanent, failureMessage, err)
+	}
+
+	var comment openapigenerated.RestComment
+	if err := json.Unmarshal(normalized, &comment); err != nil {
+		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindPermanent, failureMessage, err)
+	}
+
+	return comment, nil
+}
+
+// resolveVersion reads the comment.s current version when the caller did not
+// supply one.
+//
+// A read that fails is an error rather than a nil version, which is the whole
+// point: decodeReadComment used to answer an unreadable body with an empty
+// comment, so the lookup returned nothing and the write went out with no
+// version at all -- and Bitbucket reads a missing version as "no optimistic
+// locking wanted", applies it over whatever a concurrent edit did, and answers
+// success.
+//
+// A version that is genuinely absent from a comment the server did return is
+// left alone. bb supports a version-less delete deliberately, and inventing a
+// requirement the server does not have is the other way to get this wrong.
+func (service *Service) resolveVersion(ctx context.Context, target Target, commentID string, supplied *int32) (*int32, error) {
+	if supplied != nil {
+		return supplied, nil
+	}
+
+	current, err := service.Get(ctx, target, commentID)
+	if err != nil {
+		return nil, err
+	}
+
+	return current.Version, nil
 }
