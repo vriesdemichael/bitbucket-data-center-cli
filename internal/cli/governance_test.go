@@ -2,7 +2,7 @@ package cli
 
 import (
 	"bytes"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"net/http"
 	"net/http/httptest"
 	"os"

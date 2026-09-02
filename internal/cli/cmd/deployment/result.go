@@ -2,8 +2,8 @@ package deploymentcmd
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 )
 
 // Environment is where a deployment went.
@@ -101,7 +101,11 @@ func deploymentFrom(upstream openapigenerated.RestDeployment) Deployment {
 }
 
 // environmentTypes are the deployment environments Bitbucket recognises.
-// UNKNOWN is in the set although the help text omitted it: the server's own
-// enum has it, and leaving it out would reject a value the server accepts --
-// the same oversight the build --state help had with CANCELLED.
+//
+// UNKNOWN is in the set although the help text omitted it. Unlike the states
+// beside it there is no generated enum to appeal to -- the spec types this
+// field as a plain string -- so the set is the documented four plus the
+// UNKNOWN the other deployment enums all carry. Erring wide is deliberate:
+// rejecting a value the server accepts is the worse failure, and it is the
+// mistake the build --state help made with CANCELLED.
 var environmentTypes = []string{"PRODUCTION", "STAGING", "TESTING", "DEVELOPMENT", "UNKNOWN"}

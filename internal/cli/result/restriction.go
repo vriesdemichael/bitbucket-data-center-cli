@@ -1,8 +1,8 @@
 package result
 
 import (
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 )
 
 // AccessKey is an SSH key granted an exemption from a branch restriction.

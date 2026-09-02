@@ -1,7 +1,7 @@
 package result
 
 import (
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"strings"
 
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -94,9 +94,3 @@ func CommitsFrom(upstream []openapigenerated.RestCommit) []Commit {
 
 	return converted
 }
-
-// stringValue dereferences an upstream optional string.
-//
-// The generated types make every field a pointer, so this appears wherever a
-// model is built from one. It lives here rather than being redefined in each
-// command package, which is where safeString already had 38 copies.

@@ -2,9 +2,9 @@ package auth
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 )
 
 // Check is one thing `bb auth status` verified rather than merely reported.
