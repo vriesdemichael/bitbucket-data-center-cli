@@ -665,8 +665,8 @@ func TestLiveProjectPermissionsShowAsAdmin(t *testing.T) {
 	}
 
 	result := decodeJSONMap(t, output)
-	if asString(result["projectKey"]) != seeded.Key {
-		t.Errorf("expected projectKey=%q, got %q", seeded.Key, asString(result["projectKey"]))
+	if asString(result["project"]) != seeded.Key {
+		t.Errorf("expected project=%q, got %q", seeded.Key, asString(result["project"]))
 	}
 	granted := grantedPermissions(t, result, output)
 	for _, level := range []string{"PROJECT_READ", "PROJECT_WRITE", "PROJECT_ADMIN"} {

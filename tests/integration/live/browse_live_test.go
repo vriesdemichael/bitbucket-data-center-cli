@@ -50,6 +50,17 @@ func TestLiveCLIBrowseLifecycle(t *testing.T) {
 		t.Fatalf("expected structured file output content, got: %s", fileOutput)
 	}
 
+	// A text file that fits in one page says both: not binary, and complete.
+	// Without them a caller cannot tell an empty file from a binary one, nor a
+	// whole file from the first page of a longer one.
+	fileJSON, err := executeLiveCLI(t, "--json", "repo", "browse", "file", "seed.txt")
+	if err != nil {
+		t.Fatalf("file (json) failed: %v\noutput: %s", err, fileJSON)
+	}
+	if !strings.Contains(fileJSON, `"binary": false`) || !strings.Contains(fileJSON, `"complete": true`) {
+		t.Errorf("expected binary=false and complete=true for a short text file, got: %s", fileJSON)
+	}
+
 	// Blame
 	blameOutput, err := executeLiveCLI(t, "repo", "browse", "blame", "seed.txt")
 	if err != nil {
