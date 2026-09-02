@@ -2,6 +2,7 @@ package repocmd
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -115,7 +116,7 @@ func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {
 				return deps.WriteJSON(cmd.OutOrStdout(), SingleRepository{Repository: result.RepositoryDetailFrom(created)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created repository"), style.Resource.Render(createProject+"/"+safeString(created.Name)))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created repository"), style.Resource.Render(createProject+"/"+safederef.String(created.Name)))
 			return nil
 		},
 	}
@@ -212,7 +213,7 @@ func newRepoForkCommand(deps Dependencies, repositorySelector *string, isAlias b
 				return deps.WriteJSON(cmd.OutOrStdout(), SingleRepository{Repository: result.RepositoryDetailFrom(forked)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Forked repository to"), style.Resource.Render(safeString(forked.Name)))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Forked repository to"), style.Resource.Render(safederef.String(forked.Name)))
 			return nil
 		},
 	}
@@ -427,7 +428,7 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 				return deps.WriteJSON(cmd.OutOrStdout(), SingleRepository{Repository: result.RepositoryDetailFrom(updated)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated repository"), style.Resource.Render(safeString(updated.Name)))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated repository"), style.Resource.Render(safederef.String(updated.Name)))
 			return nil
 		},
 	}

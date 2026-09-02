@@ -60,13 +60,6 @@ func resolveRefRepositoryReference(selector string, cfg config.AppConfig) (commi
 	return commitservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}, nil
 }
 
-func safeString(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
-}
-
 func New(deps Dependencies) *cobra.Command {
 	d := deps.withDefaults()
 

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
@@ -233,10 +234,10 @@ func serverContextsFrom(contexts []config.ServerContext) []ServerContext {
 // gpgKeyFrom converts one upstream GPG key.
 func gpgKeyFrom(upstream openapigenerated.RestGpgKey) GpgKey {
 	converted := GpgKey{
-		ID:           safeString(upstream.Id),
-		EmailAddress: safeString(upstream.EmailAddress),
-		Fingerprint:  safeString(upstream.Fingerprint),
-		Text:         safeString(upstream.Text),
+		ID:           safederef.String(upstream.Id),
+		EmailAddress: safederef.String(upstream.EmailAddress),
+		Fingerprint:  safederef.String(upstream.Fingerprint),
+		Text:         safederef.String(upstream.Text),
 	}
 	if upstream.ExpiryDate != nil {
 		converted.ExpiryDate = *upstream.ExpiryDate
@@ -244,7 +245,7 @@ func gpgKeyFrom(upstream openapigenerated.RestGpgKey) GpgKey {
 	if upstream.SubKeys != nil {
 		converted.SubKeys = make([]GpgSubKey, 0, len(*upstream.SubKeys))
 		for _, sub := range *upstream.SubKeys {
-			entry := GpgSubKey{Fingerprint: safeString(sub.Fingerprint)}
+			entry := GpgSubKey{Fingerprint: safederef.String(sub.Fingerprint)}
 			if sub.ExpiryDate != nil {
 				entry.ExpiryDate = sub.ExpiryDate.UnixMilli()
 			}
@@ -268,8 +269,8 @@ func gpgKeysFrom(upstream []openapigenerated.RestGpgKey) []GpgKey {
 // accessTokenFrom converts one upstream token.
 func accessTokenFrom(upstream openapigenerated.RestAccessToken) AccessToken {
 	converted := AccessToken{
-		ID:   safeString(upstream.Id),
-		Name: safeString(upstream.Name),
+		ID:   safederef.String(upstream.Id),
+		Name: safederef.String(upstream.Name),
 	}
 	if upstream.CreatedDate != nil {
 		converted.CreatedDate = *upstream.CreatedDate
@@ -292,10 +293,10 @@ func accessTokensFrom(upstream []openapigenerated.RestAccessToken) []AccessToken
 func createdAccessTokenFrom(upstream openapigenerated.RestRawAccessToken) CreatedAccessToken {
 	converted := CreatedAccessToken{
 		AccessToken: AccessToken{
-			ID:   safeString(upstream.Id),
-			Name: safeString(upstream.Name),
+			ID:   safederef.String(upstream.Id),
+			Name: safederef.String(upstream.Name),
 		},
-		Token: safeString(upstream.Token),
+		Token: safederef.String(upstream.Token),
 	}
 	if upstream.CreatedDate != nil {
 		converted.AccessToken.CreatedDate = *upstream.CreatedDate

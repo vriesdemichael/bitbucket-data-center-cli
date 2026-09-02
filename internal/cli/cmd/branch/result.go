@@ -2,6 +2,7 @@ package branchcmd
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	branchservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/branch"
 )
@@ -119,9 +120,9 @@ func repositoryOf(repo branchservice.RepositoryRef) result.Repository {
 // branchFrom converts one upstream branch.
 func branchFrom(upstream openapigenerated.RestBranch) Branch {
 	converted := Branch{
-		ID:           safeString(upstream.Id),
-		DisplayID:    safeString(upstream.DisplayId),
-		LatestCommit: safeString(upstream.LatestCommit),
+		ID:           safederef.String(upstream.Id),
+		DisplayID:    safederef.String(upstream.DisplayId),
+		LatestCommit: safederef.String(upstream.LatestCommit),
 	}
 	if upstream.Default != nil {
 		converted.Default = *upstream.Default

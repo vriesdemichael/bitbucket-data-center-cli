@@ -2,6 +2,7 @@ package tagcmd
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -54,11 +55,11 @@ func init() {
 // render site -- which is what safeString was doing at every call.
 func tagFrom(upstream openapigenerated.RestTag) Tag {
 	converted := Tag{
-		ID:              safeString(upstream.Id),
-		DisplayID:       safeString(upstream.DisplayId),
-		LatestCommit:    safeString(upstream.LatestCommit),
-		LatestChangeset: safeString(upstream.LatestChangeset),
-		Hash:            safeString(upstream.Hash),
+		ID:              safederef.String(upstream.Id),
+		DisplayID:       safederef.String(upstream.DisplayId),
+		LatestCommit:    safederef.String(upstream.LatestCommit),
+		LatestChangeset: safederef.String(upstream.LatestChangeset),
+		Hash:            safederef.String(upstream.Hash),
 	}
 	if upstream.Type != nil {
 		converted.Type = string(*upstream.Type)

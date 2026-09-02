@@ -2,6 +2,7 @@ package repocmd
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"strconv"
 	"strings"
 
@@ -230,7 +231,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 				predicted := "update"
 				reason := "comment will be updated"
 				blocking := []string{}
-				if strings.EqualFold(strings.TrimSpace(safeString(current.Text)), strings.TrimSpace(updateText)) {
+				if strings.EqualFold(strings.TrimSpace(safederef.String(current.Text)), strings.TrimSpace(updateText)) {
 					predicted = "no-op"
 					reason = "comment text already matches requested value"
 				} else if currentUser != "" && !commentOwnedByUser(current, currentUser) {

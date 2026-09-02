@@ -481,10 +481,3 @@ func New(deps Dependencies) *cobra.Command {
 func boolPtr(v bool) *bool {
 	return &v
 }
-
-func safeString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}

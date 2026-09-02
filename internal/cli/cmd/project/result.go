@@ -2,6 +2,7 @@ package projectcmd
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	projectservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/project"
 )
@@ -209,10 +210,10 @@ func init() {
 // projectFrom converts one upstream project.
 func projectFrom(upstream openapigenerated.RestProject) Project {
 	converted := Project{
-		Key:         safeString(upstream.Key),
-		Name:        safeString(upstream.Name),
-		Description: safeString(upstream.Description),
-		Scope:       safeString(upstream.Scope),
+		Key:         safederef.String(upstream.Key),
+		Name:        safederef.String(upstream.Name),
+		Description: safederef.String(upstream.Description),
+		Scope:       safederef.String(upstream.Scope),
 	}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
@@ -268,20 +269,20 @@ func effectivePermissionsFrom(probed map[string]bool) []EffectivePermission {
 
 // defaultTaskFrom converts one upstream default task.
 func defaultTaskFrom(upstream projectservice.DefaultTask) result.DefaultTask {
-	converted := result.DefaultTask{Description: safeString(upstream.Description)}
+	converted := result.DefaultTask{Description: safederef.String(upstream.Description)}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
 	}
 	if upstream.SourceMatcher != nil {
 		converted.SourceMatcher = result.DefaultTaskMatcher{
-			ID:        safeString(upstream.SourceMatcher.Id),
-			DisplayID: safeString(upstream.SourceMatcher.DisplayId),
+			ID:        safederef.String(upstream.SourceMatcher.Id),
+			DisplayID: safederef.String(upstream.SourceMatcher.DisplayId),
 		}
 	}
 	if upstream.TargetMatcher != nil {
 		converted.TargetMatcher = result.DefaultTaskMatcher{
-			ID:        safeString(upstream.TargetMatcher.Id),
-			DisplayID: safeString(upstream.TargetMatcher.DisplayId),
+			ID:        safederef.String(upstream.TargetMatcher.Id),
+			DisplayID: safederef.String(upstream.TargetMatcher.DisplayId),
 		}
 	}
 

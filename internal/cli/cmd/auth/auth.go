@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"io"
 	"net/url"
 	"os"
@@ -670,11 +671,11 @@ func resolveIdentity(ctx context.Context, cfg config.AppConfig, newUsersClient f
 		if err == nil && userResponse.StatusCode() == 200 && userResponse.ApplicationjsonCharsetUTF8200 != nil {
 			user := userResponse.ApplicationjsonCharsetUTF8200
 			return result.User{
-				Name:         strings.TrimSpace(safeString(user.Name)),
-				Slug:         strings.TrimSpace(safeString(user.Slug)),
-				DisplayName:  strings.TrimSpace(safeString(user.DisplayName)),
-				EmailAddress: strings.TrimSpace(safeString(user.EmailAddress)),
-				ID:           safeInt32(user.Id),
+				Name:         strings.TrimSpace(safederef.String(user.Name)),
+				Slug:         strings.TrimSpace(safederef.String(user.Slug)),
+				DisplayName:  strings.TrimSpace(safederef.String(user.DisplayName)),
+				EmailAddress: strings.TrimSpace(safederef.String(user.EmailAddress)),
+				ID:           safederef.Int32(user.Id),
 				Type:         strings.TrimSpace(safeStringFromEnum(user.Type)),
 				Active:       safeBool(user.Active),
 			}, nil
@@ -685,11 +686,11 @@ func resolveIdentity(ctx context.Context, cfg config.AppConfig, newUsersClient f
 	if response.ApplicationjsonCharsetUTF8200 != nil {
 		user := response.ApplicationjsonCharsetUTF8200
 		return result.User{
-			Name:         strings.TrimSpace(safeString(user.Name)),
-			Slug:         strings.TrimSpace(safeString(user.Slug)),
-			DisplayName:  strings.TrimSpace(safeString(user.DisplayName)),
-			EmailAddress: strings.TrimSpace(safeString(user.EmailAddress)),
-			ID:           safeInt32(user.Id),
+			Name:         strings.TrimSpace(safederef.String(user.Name)),
+			Slug:         strings.TrimSpace(safederef.String(user.Slug)),
+			DisplayName:  strings.TrimSpace(safederef.String(user.DisplayName)),
+			EmailAddress: strings.TrimSpace(safederef.String(user.EmailAddress)),
+			ID:           safederef.Int32(user.Id),
 			Type:         strings.TrimSpace(safeStringFromEnum(user.Type)),
 			Active:       safeBool(user.Active),
 		}, nil
@@ -727,20 +728,6 @@ func identityHumanSummary(identity result.User) string {
 	}
 
 	return strings.Join(parts, ", ")
-}
-
-func safeString(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
-}
-
-func safeInt32(value *int32) int32 {
-	if value == nil {
-		return 0
-	}
-	return *value
 }
 
 func safeBool(value *bool) bool {

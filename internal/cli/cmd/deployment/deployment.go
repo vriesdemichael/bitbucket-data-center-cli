@@ -77,13 +77,6 @@ func resolveQualityRepoServiceAndClient(selector string, deps Dependencies) (qua
 	return qualityservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}, service, client, nil
 }
 
-func safeString(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
-}
-
 func New(deps Dependencies) *cobra.Command {
 	d := deps.withDefaults()
 

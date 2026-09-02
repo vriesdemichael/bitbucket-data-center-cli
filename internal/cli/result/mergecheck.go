@@ -2,6 +2,7 @@ package result
 
 import (
 	"encoding/json"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
@@ -31,8 +32,8 @@ func RequiredBuildCheckFrom(upstream openapigenerated.RestRequiredBuildCondition
 	}
 	if upstream.RefMatcher != nil {
 		converted.RefMatcher = RefMatcher{
-			ID:        stringValue(upstream.RefMatcher.Id),
-			DisplayID: stringValue(upstream.RefMatcher.DisplayId),
+			ID:        safederef.String(upstream.RefMatcher.Id),
+			DisplayID: safederef.String(upstream.RefMatcher.DisplayId),
 		}
 		if upstream.RefMatcher.Type != nil {
 			converted.RefMatcher.Type = string(upstream.RefMatcher.Type.Id)
@@ -40,8 +41,8 @@ func RequiredBuildCheckFrom(upstream openapigenerated.RestRequiredBuildCondition
 	}
 	if upstream.ExemptRefMatcher != nil {
 		converted.ExemptRefMatcher = RefMatcher{
-			ID:        stringValue(upstream.ExemptRefMatcher.Id),
-			DisplayID: stringValue(upstream.ExemptRefMatcher.DisplayId),
+			ID:        safederef.String(upstream.ExemptRefMatcher.Id),
+			DisplayID: safederef.String(upstream.ExemptRefMatcher.DisplayId),
 		}
 		if upstream.ExemptRefMatcher.Type != nil {
 			converted.ExemptRefMatcher.Type = string(upstream.ExemptRefMatcher.Type.Id)

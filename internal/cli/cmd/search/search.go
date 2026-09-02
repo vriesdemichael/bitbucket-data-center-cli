@@ -302,10 +302,3 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 
 	return cmd
 }
-
-func safeString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}

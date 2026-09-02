@@ -2,6 +2,7 @@ package prcmd
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	jiraservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/jira"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
@@ -221,8 +222,8 @@ func rebaseResultFrom(repo result.Repository, upstream *openapigenerated.RestPul
 	}
 
 	change := upstream.RefChange
-	converted.FromHash = stringValue(change.FromHash)
-	converted.ToHash = stringValue(change.ToHash)
+	converted.FromHash = safederef.String(change.FromHash)
+	converted.ToHash = safederef.String(change.ToHash)
 	if change.Ref != nil {
 		converted.Ref = result.Ref{
 			ID:        change.Ref.Id,
@@ -299,14 +300,6 @@ func threadSummaryFrom(upstream pullrequestactivityservice.Summary) ThreadSummar
 		ResolvedTasks:    upstream.ResolvedTasks,
 		UnresolvedInline: upstream.UnresolvedInline,
 	}
-}
-
-func stringValue(value *string) string {
-	if value == nil {
-		return ""
-	}
-
-	return *value
 }
 
 // activityFrom converts one timeline entry.

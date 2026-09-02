@@ -2,6 +2,7 @@ package projectcmd
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"math"
 	"slices"
 	"strings"
@@ -65,11 +66,11 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 				}
 
 				rows[i] = []string{
-					style.Secondary.Render(fmt.Sprintf("%d", safeInt32(r.Id))),
-					safeString(r.Type),
+					style.Secondary.Render(fmt.Sprintf("%d", safederef.Int32(r.Id))),
+					safederef.String(r.Type),
 					matcher,
 					fmt.Sprintf("users=%d", len(safeUsers(r.Users))),
-					fmt.Sprintf("groups=%d", len(safeStringSlice(r.Groups))),
+					fmt.Sprintf("groups=%d", len(safederef.StringSlice(r.Groups))),
 				}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
@@ -101,7 +102,7 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 				return deps.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Project: args[0], Restriction: result.RestrictionFrom(restriction)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", style.Secondary.Render(fmt.Sprintf("id=%d", safeInt32(restriction.Id))), safeString(restriction.Type))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", style.Secondary.Render(fmt.Sprintf("id=%d", safederef.Int32(restriction.Id))), safederef.String(restriction.Type))
 			return nil
 		},
 	}
@@ -198,7 +199,7 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 				return deps.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Project: args[0], Restriction: result.RestrictionFrom(created)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created restriction:"), style.Secondary.Render(fmt.Sprintf("%d", safeInt32(created.Id))))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created restriction:"), style.Secondary.Render(fmt.Sprintf("%d", safederef.Int32(created.Id))))
 			return nil
 		},
 	}
@@ -376,7 +377,7 @@ func normalizeAccessKeyIDs(values []int) ([]int32, error) {
 }
 
 func matchesProjectRestrictionSignature(restriction openapigenerated.RestRefRestriction, restrictionType, matcherType, matcherID string) bool {
-	currentType := strings.TrimSpace(strings.ToLower(safeString(restriction.Type)))
+	currentType := strings.TrimSpace(strings.ToLower(safederef.String(restriction.Type)))
 	requestedType := strings.TrimSpace(strings.ToLower(restrictionType))
 	if currentType != requestedType {
 		return false
@@ -388,7 +389,7 @@ func matchesProjectRestrictionSignature(restriction openapigenerated.RestRefRest
 		if restriction.Matcher.Type != nil {
 			currentMatcherType = strings.TrimSpace(strings.ToUpper(string(restriction.Matcher.Type.Id)))
 		}
-		currentMatcherID = strings.TrimSpace(safeString(restriction.Matcher.Id))
+		currentMatcherID = strings.TrimSpace(safederef.String(restriction.Matcher.Id))
 	}
 
 	requestedMatcherType := strings.TrimSpace(strings.ToUpper(matcherType))
@@ -397,12 +398,12 @@ func matchesProjectRestrictionSignature(restriction openapigenerated.RestRefRest
 }
 
 func matchesProjectRestrictionUpdate(restriction openapigenerated.RestRefRestriction, restrictionType, matcherType, matcherID string, users, groups []string, accessKeyIDs []int32) bool {
-	if restrictionType != "" && !strings.EqualFold(safeString(restriction.Type), restrictionType) {
+	if restrictionType != "" && !strings.EqualFold(safederef.String(restriction.Type), restrictionType) {
 		return false
 	}
 
 	if restriction.Matcher != nil {
-		if matcherID != "" && safeString(restriction.Matcher.Id) != matcherID {
+		if matcherID != "" && safederef.String(restriction.Matcher.Id) != matcherID {
 			return false
 		}
 		if matcherType != "" && restriction.Matcher.Type != nil {

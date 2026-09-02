@@ -3,6 +3,7 @@ package insightscmd
 import (
 	"bytes"
 	"context"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,12 +15,12 @@ import (
 )
 
 func TestInsightsSafeHelpers(t *testing.T) {
-	if safeString(nil) != "" {
-		t.Fatal("expected empty for safeString(nil)")
+	if safederef.String(nil) != "" {
+		t.Fatal("expected empty for safederef.String(nil)")
 	}
 	s := "hello"
-	if safeString(&s) != "hello" {
-		t.Fatal("expected hello for safeString(&s)")
+	if safederef.String(&s) != "hello" {
+		t.Fatal("expected hello for safederef.String(&s)")
 	}
 
 	if safeStringFromInsightResult(nil) != "" {
