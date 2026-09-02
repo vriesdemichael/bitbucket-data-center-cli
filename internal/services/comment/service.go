@@ -112,6 +112,14 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 		if page.NextPageStart == nil {
 			break
 		}
+		// A page that points back at itself ends the walk, the way the browse
+		// service already does it. Without this an instance that answers with a
+		// stationary nextPageStart makes the listing loop until the process is
+		// killed, collecting the same page each time -- a hang rather than a
+		// wrong answer, which is the worse of the two.
+		if *page.NextPageStart <= start {
+			break
+		}
 		start = *page.NextPageStart
 	}
 
@@ -282,6 +290,14 @@ func decodeWrittenComment(response *http.Response, requestErr error, failureMess
 
 	var created openapigenerated.RestComment
 	if err := json.Unmarshal(normalized, &created); err != nil {
+		return echo, nil
+	}
+
+	// Decoding is not the test; carrying a comment is. A body of null or {}
+	// unmarshals into a struct of nils without complaint, so it slipped past
+	// the fallback above and published a comment with neither an id nor the
+	// text that was just written -- strictly less than the echo it skipped.
+	if created.Id == nil {
 		return echo, nil
 	}
 
@@ -649,6 +665,16 @@ func decodeReadComment(response *http.Response, requestErr error, failureMessage
 	var comment openapigenerated.RestComment
 	if err := json.Unmarshal(normalized, &comment); err != nil {
 		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindPermanent, failureMessage, err)
+	}
+
+	// A comment without an id is not a comment. Decoding is not enough of a
+	// check on its own: a body of null or {} unmarshals into a struct of nils
+	// without complaint, so refusing only malformed JSON left the same silent
+	// empty read reachable through two other bodies. The id is the field the
+	// request was addressed by, so a response that lacks it did not answer it.
+	if comment.Id == nil {
+		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindPermanent,
+			failureMessage+" (the response carried no comment)", nil)
 	}
 
 	return comment, nil
