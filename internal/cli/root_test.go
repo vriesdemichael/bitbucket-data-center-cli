@@ -899,7 +899,7 @@ func TestRepoCommentListCommitJSON(t *testing.T) {
 		t.Fatalf("expected context payload, got: %#v", parsed["context"])
 	}
 
-	if contextPayload["type"] != "commit" || contextPayload["commit_id"] != "abc123" {
+	if contextPayload["type"] != "commit" || contextPayload["commitId"] != "abc123" {
 		t.Fatalf("unexpected context payload: %#v", contextPayload)
 	}
 
@@ -947,7 +947,7 @@ func TestRepoCommentCreatePRJSON(t *testing.T) {
 	parsed := decodeJSONEnvelopeDataMap(t, buffer.Bytes())
 
 	contextPayload, ok := parsed["context"].(map[string]any)
-	if !ok || contextPayload["type"] != "pull_request" || contextPayload["pull_request_id"] != "77" {
+	if !ok || contextPayload["type"] != "pull_request" || contextPayload["pullRequestId"] != "77" {
 		t.Fatalf("unexpected context payload: %#v", parsed["context"])
 	}
 }
@@ -3224,8 +3224,8 @@ func TestRepoCommentCommandPathsCommitAndPR(t *testing.T) {
 	if err := deletePRJSON.Execute(); err != nil {
 		t.Fatalf("repo comment delete pr json failed: %v", err)
 	}
-	if !strings.Contains(deletePRJSONBuffer.String(), `"deleted"`) {
-		t.Fatalf("expected deleted payload in json output, got: %s", deletePRJSONBuffer.String())
+	if !strings.Contains(deletePRJSONBuffer.String(), `"status": "ok"`) {
+		t.Fatalf("expected the deletion payload in json output, got: %s", deletePRJSONBuffer.String())
 	}
 }
 
@@ -3574,14 +3574,14 @@ func TestRepoSettingsJSONCommandPaths(t *testing.T) {
 		args          []string
 		expectSnippet string
 	}{
-		{name: "permissions users list json", args: []string{"--json", "repo", "settings", "security", "permissions", "users", "list"}, expectSnippet: `"users"`},
+		{name: "permissions users list json", args: []string{"--json", "repo", "settings", "security", "permissions", "users", "list"}, expectSnippet: `"subject": "user"`},
 		{name: "permissions users grant json", args: []string{"--json", "repo", "settings", "security", "permissions", "users", "grant", "alice", "repo_read"}, expectSnippet: `"status": "ok"`},
 		{name: "webhooks list json", args: []string{"--json", "repo", "settings", "workflow", "webhooks", "list"}, expectSnippet: `"webhooks"`},
 		{name: "webhooks create json", args: []string{"--json", "repo", "settings", "workflow", "webhooks", "create", "ci-hook", "http://example.local/hook"}, expectSnippet: `"webhook"`},
-		{name: "webhooks delete json", args: []string{"--json", "repo", "settings", "workflow", "webhooks", "delete", "42"}, expectSnippet: `"webhook_id": "42"`},
-		{name: "pull requests get json", args: []string{"--json", "repo", "settings", "pull-requests", "get"}, expectSnippet: `"pull_request_settings"`},
-		{name: "pull requests update json", args: []string{"--json", "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=true"}, expectSnippet: `"status": "ok"`},
-		{name: "pull requests update approvers json", args: []string{"--json", "repo", "settings", "pull-requests", "update-approvers", "--count", "2"}, expectSnippet: `"status": "ok"`},
+		{name: "webhooks delete json", args: []string{"--json", "repo", "settings", "workflow", "webhooks", "delete", "42"}, expectSnippet: `"webhookId": "42"`},
+		{name: "pull requests get json", args: []string{"--json", "repo", "settings", "pull-requests", "get"}, expectSnippet: `"requiredApprovers": 2`},
+		{name: "pull requests update json", args: []string{"--json", "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=true"}, expectSnippet: `"requiredAllTasksComplete": true`},
+		{name: "pull requests update approvers json", args: []string{"--json", "repo", "settings", "pull-requests", "update-approvers", "--count", "2"}, expectSnippet: `"requiredAllTasksComplete": true`},
 	}
 
 	for _, testCase := range tests {
@@ -3773,8 +3773,8 @@ func TestRepoSettingsPullRequestsMergeChecksList(t *testing.T) {
 		t.Fatalf("execute failed: %v", err)
 	}
 
-	if !strings.Contains(buffer.String(), `"merge_checks"`) {
-		t.Fatalf("expected merge_checks in output, got: %s", buffer.String())
+	if !strings.Contains(buffer.String(), `"checks"`) {
+		t.Fatalf("expected the merge checks in output, got: %s", buffer.String())
 	}
 }
 

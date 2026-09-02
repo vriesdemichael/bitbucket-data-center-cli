@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/interactive"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
@@ -106,7 +107,7 @@ func newCloneCommand(deps Dependencies) *cobra.Command {
 				// the repository simply had no parent. A repository with no
 				// parent, or one whose parent the user cannot read, is not a
 				// clone failure -- the remote is not added, and the JSON output
-				// reports that as upstream_added: false.
+				// reports that as upstream.configured: false.
 				upstreamOwner, upstreamURL, _ = lookupParentCloneURL(cmd.Context(), cfg, cloneHost, repo)
 				if strings.TrimSpace(upstreamURL) != "" {
 					if strings.EqualFold(strings.TrimSpace(upstreamRemoteName), "@owner") && strings.TrimSpace(upstreamOwner) != "" {
@@ -120,24 +121,18 @@ func newCloneCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"status": "ok",
-					"repository": map[string]string{
-						"project_key": repo.ProjectKey,
-						"slug":        repo.Slug,
+				return deps.WriteJSON(cmd.OutOrStdout(), Clone{
+					Status:     result.OK(),
+					Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+					CloneURL:   cloneURL,
+					Directory:  directory,
+					NoUpstream: noUpstream,
+					Upstream: CloneUpstream{
+						Configured: upstreamAdded,
+						Name:       resolvedUpstreamName,
+						URL:        upstreamURL,
 					},
-					"clone_url":   cloneURL,
-					"directory":   directory,
-					"no_upstream": noUpstream,
-					"upstream": map[string]any{
-						"configured": upstreamAdded,
-						"name":       resolvedUpstreamName,
-						"url":        upstreamURL,
-					},
-					"repository_input": map[string]any{
-						"raw":      args[0],
-						"used_url": usedURLInput,
-					},
+					RepositoryInput: CloneInput{Raw: args[0], UsedURL: usedURLInput},
 				})
 			}
 

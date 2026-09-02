@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -121,7 +122,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"webhooks": webhooks.Payload})
+				return deps.WriteJSON(cmd.OutOrStdout(), Webhooks{Repository: settingsRepositoryOf(repo), Count: webhooks.Count, Webhooks: result.WebhooksFrom(webhooks.Payload)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Webhooks configured:"), webhooks.Count)
@@ -210,7 +211,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "webhook": payload})
+				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Repository: settingsRepositoryOf(repo), Webhook: result.WebhookFrom(payload)})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Webhook created:"), style.Resource.Render(args[0]))
 			return nil
@@ -289,7 +290,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "webhook_id": args[0]})
+				return deps.WriteJSON(cmd.OutOrStdout(), WebhookDeletion{Status: result.OK(), Repository: settingsRepositoryOf(repo), WebhookID: args[0]})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Webhook deleted:"), style.Resource.Render(args[0]))
 			return nil
@@ -323,7 +324,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"pull_request_settings": settings})
+				return deps.WriteJSON(cmd.OutOrStdout(), pullRequestSettingsFrom(settingsRepositoryOf(repo), settings))
 			}
 
 			requiredTasks := false
@@ -391,7 +392,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"merge_checks": checks})
+				return deps.WriteJSON(cmd.OutOrStdout(), MergeChecks{Repository: settingsRepositoryOf(repo), Checks: result.RequiredBuildChecksFromAny(checks)})
 			}
 
 			fmt.Fprintln(cmd.OutOrStdout(), "Configured merge checks:")
@@ -494,7 +495,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "pull_request_settings": settings})
+				return deps.WriteJSON(cmd.OutOrStdout(), pullRequestSettingsFrom(settingsRepositoryOf(repo), settings))
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Updated pull-request settings: requiredAllTasksComplete=%t\n", requiredAllTasksComplete)
 			return nil
@@ -590,7 +591,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "pull_request_settings": settings})
+				return deps.WriteJSON(cmd.OutOrStdout(), pullRequestSettingsFrom(settingsRepositoryOf(repo), settings))
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Updated pull-request settings: requiredApprovers=%d\n", requiredApproversCount)
 			return nil
@@ -688,7 +689,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "pull_request_settings": updated})
+				return deps.WriteJSON(cmd.OutOrStdout(), pullRequestSettingsFrom(settingsRepositoryOf(repo), updated))
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Updated default merge strategy to %s\n", mergeStrategyID)
 			return nil
@@ -734,7 +735,7 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), res)
+				return deps.WriteJSON(cmd.OutOrStdout(), autoMergeSettingsFrom(settingsRepositoryOf(repo), res))
 			}
 			enabled := false
 			if res != nil && res.Enabled != nil {
@@ -791,7 +792,7 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), res)
+				return deps.WriteJSON(cmd.OutOrStdout(), autoMergeSettingsFrom(settingsRepositoryOf(repo), res))
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Updated auto-merge settings: enabled=%t\n", setEnabled)
 			return nil
@@ -844,7 +845,7 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "deleted"})
+				return deps.WriteJSON(cmd.OutOrStdout(), SettingsDeletion{Status: result.Status{Status: "deleted"}, Repository: settingsRepositoryOf(repo), Setting: "autoMerge"})
 			}
 			fmt.Fprintln(cmd.OutOrStdout(), "Deleted auto-merge settings")
 			return nil
@@ -885,7 +886,7 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), res)
+				return deps.WriteJSON(cmd.OutOrStdout(), autoDeclineSettingsFrom(settingsRepositoryOf(repo), res))
 			}
 			enabled := false
 			inactivityWeeks := int32(0)
@@ -955,7 +956,7 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), res)
+				return deps.WriteJSON(cmd.OutOrStdout(), autoDeclineSettingsFrom(settingsRepositoryOf(repo), res))
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Updated auto-decline settings: enabled=%t inactivityWeeks=%d\n", setEnabled, inactivityWeeks)
 			return nil
@@ -1009,7 +1010,7 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "deleted"})
+				return deps.WriteJSON(cmd.OutOrStdout(), SettingsDeletion{Status: result.Status{Status: "deleted"}, Repository: settingsRepositoryOf(repo), Setting: "autoDecline"})
 			}
 			fmt.Fprintln(cmd.OutOrStdout(), "Deleted auto-decline settings")
 			return nil

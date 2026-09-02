@@ -9,6 +9,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -114,7 +115,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"context": target.Context(), "comments": comments})
+				return deps.WriteJSON(cmd.OutOrStdout(), Comments{Context: commentContextFrom(target.Context()), Comments: commentsFrom(comments)})
 			}
 
 			if len(comments) == 0 {
@@ -185,7 +186,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"context": target.Context(), "comment": created})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Context: commentContextFrom(target.Context()), Comment: commentFrom(created)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created comment"), style.Secondary.Render(commentIDString(created)))
@@ -281,7 +282,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"context": target.Context(), "comment": updated})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Context: commentContextFrom(target.Context()), Comment: commentFrom(updated)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated comment"), style.Secondary.Render(commentIDString(updated)))
@@ -381,9 +382,11 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"context": target.Context(),
-					"deleted": map[string]any{"id": deleteCommentID, "version": resolvedVersion},
+				return deps.WriteJSON(cmd.OutOrStdout(), CommentDeletion{
+					Status:  result.OK(),
+					Context: commentContextFrom(target.Context()),
+					ID:      deleteCommentID,
+					Version: intPointer(resolvedVersion),
 				})
 			}
 

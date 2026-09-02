@@ -278,7 +278,7 @@ func TestRepoCLIErrorAndEdgeCases(t *testing.T) {
 	if err != nil {
 		t.Fatalf("archive json failed: %v", err)
 	}
-	if !strings.Contains(out, `"status"`) || !strings.Contains(out, `"success"`) {
+	if !strings.Contains(out, `"status": "ok"`) || !strings.Contains(out, `"file"`) {
 		t.Fatalf("expected JSON success response, got %s", out)
 	}
 

@@ -145,8 +145,9 @@ func TestRepoPermissionAliasGroupFlagPicksTheSubject(t *testing.T) {
 	}
 }
 
-// TestRepoPermissionAliasJSONNamesTheSubject pins the machine contract: the key
-// is "username" for a user and "group" for a group, in both spellings.
+// TestRepoPermissionAliasJSONNamesTheSubject pins the machine contract: the
+// subject is a field and the holder is always "name", so one command reports
+// one shape whichever subject --group resolved to.
 func TestRepoPermissionAliasJSONNamesTheSubject(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	recorded := []string{}
@@ -154,23 +155,23 @@ func TestRepoPermissionAliasJSONNamesTheSubject(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", server.URL)
 
 	userOutput := runRepoPermissionCommand(t, "--json", "repo", "permissions", "grant", "alice", "repo_write", "--repo", "PRJ/demo")
-	if !strings.Contains(userOutput, `"username": "alice"`) {
-		t.Fatalf("expected username key for a user grant, got: %s", userOutput)
+	if !strings.Contains(userOutput, `"subject": "user"`) || !strings.Contains(userOutput, `"name": "alice"`) {
+		t.Fatalf("expected subject and name for a user grant, got: %s", userOutput)
 	}
 
 	groupOutput := runRepoPermissionCommand(t, "--json", "repo", "permissions", "grant", "--group", "admins", "repo_admin", "--repo", "PRJ/demo")
-	if !strings.Contains(groupOutput, `"group": "admins"`) {
-		t.Fatalf("expected group key for a group grant, got: %s", groupOutput)
+	if !strings.Contains(groupOutput, `"subject": "group"`) || !strings.Contains(groupOutput, `"name": "admins"`) {
+		t.Fatalf("expected subject and name for a group grant, got: %s", groupOutput)
 	}
 
 	listOutput := runRepoPermissionCommand(t, "--json", "repo", "permissions", "list", "--repo", "PRJ/demo")
-	if !strings.Contains(listOutput, `"users"`) || !strings.Contains(listOutput, `"display_name": "Alice A"`) {
-		t.Fatalf("expected users payload with display name, got: %s", listOutput)
+	if !strings.Contains(listOutput, `"subject": "user"`) || !strings.Contains(listOutput, `"displayName": "Alice A"`) {
+		t.Fatalf("expected a user listing with display name, got: %s", listOutput)
 	}
 
 	groupListOutput := runRepoPermissionCommand(t, "--json", "repo", "permissions", "list", "--group", "--repo", "PRJ/demo")
-	if !strings.Contains(groupListOutput, `"groups"`) || !strings.Contains(groupListOutput, `"admins"`) {
-		t.Fatalf("expected groups payload, got: %s", groupListOutput)
+	if !strings.Contains(groupListOutput, `"subject": "group"`) || !strings.Contains(groupListOutput, `"admins"`) {
+		t.Fatalf("expected a group listing, got: %s", groupListOutput)
 	}
 }
 
@@ -212,7 +213,7 @@ func TestRepoPermissionAliasDryRunIntentFollowsTheSubject(t *testing.T) {
 	if !strings.Contains(groupPreview, `"repo.permission.group.grant"`) {
 		t.Fatalf("expected group grant intent, got: %s", groupPreview)
 	}
-	if !strings.Contains(groupPreview, `"group": "admins"`) {
+	if !strings.Contains(groupPreview, `"subject": "group"`) || !strings.Contains(groupPreview, `"name": "admins"`) {
 		t.Fatalf("expected the group named in the dry-run target, got: %s", groupPreview)
 	}
 

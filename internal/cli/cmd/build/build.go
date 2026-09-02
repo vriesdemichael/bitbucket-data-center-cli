@@ -122,7 +122,7 @@ func safeStringFromBuildState(state *openapigenerated.RestBuildStatusState) stri
 // requiredCheckRow is the human rendering of one required build merge check,
 // shared by list, create and update so the three describe the same check the
 // same way.
-func requiredCheckRow(check RequiredBuildCheck) []string {
+func requiredCheckRow(check result.RequiredBuildCheck) []string {
 	return []string{
 		style.Secondary.Render(fmt.Sprintf("id=%d", check.ID)),
 		fmt.Sprintf("buildParentKeys=%v", check.BuildParentKeys),
@@ -374,7 +374,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			converted := requiredChecksFrom(checks)
+			converted := result.RequiredBuildChecksFrom(checks)
 			if d.JSONEnabled() {
 				return d.WriteJSONList(cmd.OutOrStdout(), converted, paging.LimitReached(requiredPaging, len(checks)))
 			}
@@ -443,7 +443,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			check := requiredCheckFromMap(created)
+			check := result.RequiredBuildCheckFromMap(created)
 			if d.JSONEnabled() {
 				return d.WriteJSON(cmd.OutOrStdout(), check)
 			}
@@ -511,7 +511,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			check := requiredCheckFromMap(updated)
+			check := result.RequiredBuildCheckFromMap(updated)
 			if d.JSONEnabled() {
 				return d.WriteJSON(cmd.OutOrStdout(), check)
 			}

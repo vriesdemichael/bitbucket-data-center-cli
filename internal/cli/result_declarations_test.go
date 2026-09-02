@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/outputschemas"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 )
 
@@ -54,36 +56,59 @@ func TestDeclaredResultsAreReachableThroughDescribe(t *testing.T) {
 	}
 }
 
-// TestTagIsFullyModelled pins the pilot.
+// TestEveryCommandIsModelled is the gate this whole change exists to pass.
 //
-// tag was converted first because all four of its commands are small and three
-// already returned a typed value, so a mismatch would be the mechanism's fault
-// rather than the command's. Losing one of these means the conversion regressed.
-func TestTagIsFullyModelled(t *testing.T) {
+// Every runnable command must answer --describe with something true: a schema
+// derived from the result type it fills in, a hand-written schema for the bulk
+// artifacts, or a stated reason it has no data payload at all. Nothing may
+// simply have been forgotten -- that was the state this replaced, where most of
+// the surface published no contract and nothing said so.
+//
+// A new command fails this test until its author decides which of the three it
+// is. That decision is the point.
+func TestEveryCommandIsModelled(t *testing.T) {
 	t.Parallel()
 
 	declared := map[string]bool{}
 	for _, path := range result.DeclaredPaths() {
 		declared[path] = true
 	}
+	published := outputschemas.Schemas()
 
-	for _, path := range []string{"tag list", "tag view", "tag create", "tag delete"} {
-		if !declared[path] {
-			t.Errorf("%q no longer declares a result type", path)
+	root := NewRootCommand()
+
+	var walk func(command *cobra.Command)
+	walk = func(command *cobra.Command) {
+		if command.Runnable() && command != root {
+			path := commandPathWithoutRoot(command)
+			switch {
+			case declared[path]:
+			case outputschemas.CommandsWithoutDataContract[path] != "":
+			case outputschemas.CommandsWithoutDeclarableShape[path] != "":
+			case published["output."+strings.ReplaceAll(path, " ", ".")+".schema.json"] != nil:
+			default:
+				t.Errorf("%q neither declares a result type nor says why it has none", path)
+			}
+		}
+		for _, child := range command.Commands() {
+			walk(child)
 		}
 	}
+	walk(root)
 }
 
-// TestUnmodelledCommandsSaySoRatherThanGuessing covers the other side of the
-// migration: a command that has not been converted yet must answer honestly.
+// TestUnmodelledCommandsSaySoRatherThanGuessing covers the third answer.
+//
+// A command whose payload has no shape bb can promise must say that, rather than
+// reporting an empty schema that looks like a guarantee.
 func TestUnmodelledCommandsSaySoRatherThanGuessing(t *testing.T) {
 	t.Parallel()
 
-	described := describeCommand("repo create")
+	described := describeCommand("webhook test")
 	if described.Described {
-		t.Fatalf("repo create is not modelled but reported a schema: %+v", described)
+		t.Fatalf("webhook test has no data payload but reported a schema: %+v", described)
 	}
-	if !strings.Contains(described.Reason, "no output schema") {
-		t.Errorf("reason = %q, want it to say no schema is published yet", described.Reason)
+	if !strings.Contains(described.Reason, "no shape bb can promise") {
+		t.Errorf("reason = %q, want it to say the payload has no shape bb can promise", described.Reason)
 	}
 }

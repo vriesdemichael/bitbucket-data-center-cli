@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -51,7 +52,7 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"labels": labels})
+				return deps.WriteJSON(cmd.OutOrStdout(), Labels{Repository: settingsRepositoryOf(repo), Labels: labels})
 			}
 			if len(labels) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No labels found"))
@@ -109,7 +110,7 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "label": args[0]})
+				return deps.WriteJSON(cmd.OutOrStdout(), LabelChange{Status: result.OK(), Repository: settingsRepositoryOf(repo), Label: args[0]})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Added label:"), style.Resource.Render(args[0]))
 			return nil
@@ -161,7 +162,7 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "label": args[0]})
+				return deps.WriteJSON(cmd.OutOrStdout(), LabelChange{Status: result.OK(), Repository: settingsRepositoryOf(repo), Label: args[0]})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Removed label:"), style.Resource.Render(args[0]))
 			return nil
@@ -221,7 +222,7 @@ func newRepoWatchCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "watching": true})
+				return deps.WriteJSON(cmd.OutOrStdout(), WatchState{Status: result.OK(), Repository: settingsRepositoryOf(repo), Watching: true})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Watching repository %s/%s\n", repo.ProjectKey, repo.Slug)
 			return nil
@@ -278,7 +279,7 @@ func newRepoUnwatchCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "watching": false})
+				return deps.WriteJSON(cmd.OutOrStdout(), WatchState{Status: result.OK(), Repository: settingsRepositoryOf(repo), Watching: false})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Unwatched repository %s/%s\n", repo.ProjectKey, repo.Slug)
 			return nil
@@ -316,7 +317,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), tasks)
+				return deps.WriteJSON(cmd.OutOrStdout(), DefaultTasks{Repository: settingsRepositoryOf(repo), Tasks: defaultTasksFrom(tasks)})
 			}
 			if len(tasks) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No default checklist tasks found"))
@@ -403,7 +404,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), task)
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleDefaultTask{Repository: settingsRepositoryOf(repo), Task: defaultTaskValue(task)})
 			}
 			idStr := ""
 			if task != nil && task.Id != nil {
@@ -471,7 +472,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), task)
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleDefaultTask{Repository: settingsRepositoryOf(repo), Task: defaultTaskValue(task)})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated default task:"), style.Secondary.Render(args[0]))
 			return nil
@@ -527,7 +528,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "id": args[0]})
+				return deps.WriteJSON(cmd.OutOrStdout(), DefaultTaskDeletion{Status: result.OK(), Repository: settingsRepositoryOf(repo), ID: args[0]})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted default task:"), style.Secondary.Render(args[0]))
 			return nil
@@ -604,7 +605,7 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "sync": "triggered", "ref": syncRef, "action": strings.ToUpper(syncAction)})
+				return deps.WriteJSON(cmd.OutOrStdout(), SyncTriggered{Status: result.OK(), Repository: settingsRepositoryOf(repo), Ref: syncRef, Action: strings.ToUpper(syncAction)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Synchronization triggered for fork %s/%s on %s from upstream\n", repo.ProjectKey, repo.Slug, syncRef)
@@ -635,7 +636,7 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), status)
+				return deps.WriteJSON(cmd.OutOrStdout(), syncStatusFrom(settingsRepositoryOf(repo), status))
 			}
 
 			enabled := false
@@ -699,7 +700,7 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), status)
+				return deps.WriteJSON(cmd.OutOrStdout(), syncStatusFrom(settingsRepositoryOf(repo), status))
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Automatic synchronization enabled for fork %s/%s\n", repo.ProjectKey, repo.Slug)
@@ -754,7 +755,7 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), status)
+				return deps.WriteJSON(cmd.OutOrStdout(), syncStatusFrom(settingsRepositoryOf(repo), status))
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Automatic synchronization disabled for fork %s/%s\n", repo.ProjectKey, repo.Slug)
@@ -796,10 +797,11 @@ func newRepoCatCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"content": string(content),
-					"path":    args[0],
-					"at":      at,
+				return deps.WriteJSON(cmd.OutOrStdout(), RawFile{
+					Repository: browseRepositoryOf(repo),
+					Path:       args[0],
+					At:         at,
+					Content:    string(content),
 				})
 			}
 
@@ -905,7 +907,7 @@ func newRepoEditCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), res)
+				return deps.WriteJSON(cmd.OutOrStdout(), fileEditFrom(browseRepositoryOf(repo), args[0], branch, res))
 			}
 
 			commitID := safeString(res.Id)
@@ -955,11 +957,17 @@ func newRepoCompareCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
+				text := diffservice.FormatRestDiff(diffResult)
 				if deps.JSONEnabled() {
-					return deps.WriteJSON(cmd.OutOrStdout(), diffResult)
+					return deps.WriteJSON(cmd.OutOrStdout(), Comparison{
+						Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+						From:       from,
+						To:         to,
+						Changes:    []Change{},
+						Patch:      text,
+					})
 				}
 
-				text := diffservice.FormatRestDiff(diffResult)
 				fmt.Fprint(cmd.OutOrStdout(), text)
 				return nil
 			}
@@ -970,10 +978,11 @@ func newRepoCompareCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"from":    from,
-					"to":      to,
-					"changes": changes,
+				return deps.WriteJSON(cmd.OutOrStdout(), Comparison{
+					Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+					From:       from,
+					To:         to,
+					Changes:    changesFrom(changes),
 				})
 			}
 
@@ -1105,10 +1114,7 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 
 			if output != "-" {
 				if deps.JSONEnabled() {
-					return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{
-						"status": "success",
-						"file":   targetMsg,
-					})
+					return deps.WriteJSON(cmd.OutOrStdout(), Archive{Status: result.OK(), Repository: repositoryOf(repoRef), File: targetMsg})
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "Successfully downloaded repository archive to %s\n", targetMsg)
 			}
@@ -1194,7 +1200,7 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSONList(cmd.OutOrStdout(), keys, paging.LimitReached(listPaging, len(keys)))
+				return deps.WriteJSON(cmd.OutOrStdout(), SSHKeys{Keys: sshKeysFrom(keys)})
 			}
 
 			if len(keys) == 0 {
@@ -1294,7 +1300,7 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), added)
+				return deps.WriteJSON(cmd.OutOrStdout(), AddedSSHKey{Key: sshKeyFrom(added)})
 			}
 
 			id := 0
@@ -1348,7 +1354,7 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok"})
+				return deps.WriteJSON(cmd.OutOrStdout(), result.OK())
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "SSH access key %s removed successfully\n", args[0])
