@@ -3668,7 +3668,7 @@ Examples:
   bb pr auto-merge enable 42 --repo PROJ/repo --strategy rebase-ff-only
 
 Flags:
-      --strategy string   Merge strategy (one of: no-ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only) (default "no-ff")
+      --strategy string   Merge strategy (one of: no-ff, ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only) (default "no-ff")
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -5116,8 +5116,8 @@ Flags:
       --group strings            Allowed group names
       --matcher-display string   Matcher display value
       --matcher-id string        Matcher id value
-      --matcher-type string      Matcher type (default "BRANCH")
-      --type string              Restriction type
+      --matcher-type string      Matcher type (one of: BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN) (default "BRANCH")
+      --type string              Restriction type (one of: read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)
       --user strings             Allowed user slugs
 
 Global Flags:
@@ -5250,8 +5250,8 @@ Flags:
       --group strings            Allowed group names
       --matcher-display string   Matcher display value
       --matcher-id string        Matcher id value
-      --matcher-type string      Matcher type
-      --type string              Restriction type
+      --matcher-type string      Matcher type (one of: BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN)
+      --type string              Restriction type (one of: read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)
       --user strings             Allowed user slugs
 
 Global Flags:
@@ -10366,7 +10366,7 @@ Usage:
   bb webhook update <id> [flags]
 
 Flags:
-      --active string   Active status (true or false); unchanged when omitted
+      --active string   Active status, unchanged when omitted (one of: true, false)
       --event strings   New list of webhook events to subscribe to
       --name string     New name of the webhook
       --url string      New URL of the webhook
