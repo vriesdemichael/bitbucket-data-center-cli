@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 func TestRepoCatEditCLI(t *testing.T) {
@@ -161,6 +162,27 @@ func TestRepoArchiveCLI(t *testing.T) {
 	}
 	if out != "fake zip data" {
 		t.Fatalf("unexpected stdout content: %s", out)
+	}
+
+	// The archive and the envelope both want stdout, and only one can have
+	// it. This used to resolve itself by writing the archive and dropping the
+	// envelope in silence, which a caller cannot tell from a command that
+	// failed to produce one -- and repo archive publishes a schema, so the
+	// contract promised a document this path never emitted.
+	out, err = executeTestCLI(t, "--json", "repo", "archive", "-o", "-")
+	if err == nil {
+		t.Fatalf("--json with --output - was accepted, output: %s", out)
+	}
+	if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
+		t.Errorf("refusal kind = %v, want validation so a caller can branch on it", kind)
+	}
+	for _, want := range []string{"--json", "--output -", "stdout"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("refusal does not mention %q: %v", want, err)
+		}
+	}
+	if strings.Contains(out, "fake zip data") {
+		t.Errorf("the archive was streamed before the refusal: %s", out)
 	}
 }
 

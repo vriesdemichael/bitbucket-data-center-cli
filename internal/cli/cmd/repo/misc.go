@@ -1022,6 +1022,22 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 		Use:   "archive",
 		Short: "Download repository archive",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Refused rather than ignored. The archive and the envelope both
+			// want stdout and only one can have it, so this used to resolve
+			// itself by writing the archive and dropping the envelope in
+			// silence -- and a caller could not tell that from a command that
+			// had failed to produce one. Worse here than elsewhere, because
+			// `repo archive --describe` publishes a schema, so the contract
+			// promised a document this path never emitted.
+			//
+			// Checked before anything is fetched: erroring after streaming an
+			// archive would be both wasteful and too late to act on.
+			if output == "-" && deps.JSONEnabled() {
+				return apperrors.New(apperrors.KindValidation,
+					"--json cannot be combined with --output - because the archive itself is written to stdout; "+
+						"drop --json to stream the archive, or give --output a filename to get the envelope", nil)
+			}
+
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -1107,6 +1123,11 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// Streaming to stdout reports nothing on stdout: the archive is
+			// already there, and a success line appended to it would corrupt
+			// the file the caller is redirecting. The --json half of this can
+			// no longer arrive, being refused above; what is left is the human
+			// line, which has the same problem for the same reason.
 			if output != "-" {
 				if deps.JSONEnabled() {
 					return deps.WriteJSON(cmd.OutOrStdout(), Archive{Status: result.OK(), Repository: repositoryOf(repoRef), File: targetMsg})
