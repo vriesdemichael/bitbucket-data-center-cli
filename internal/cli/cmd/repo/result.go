@@ -320,7 +320,7 @@ type WebhookDeletion struct {
 
 // MergeStrategy is one merge strategy a repository offers.
 type MergeStrategy struct {
-	ID      string `json:"id" jsonschema:"Strategy id, which set-strategy takes: no-ff, ff, ff-only, rebase-no-ff, rebase-ff-only or squash."`
+	ID      string `json:"id" jsonschema:"Strategy id, which set-strategy takes: no-ff, ff, ff-only, rebase-no-ff, rebase-ff-only, squash or squash-ff-only."`
 	Name    string `json:"name,omitempty" jsonschema:"Human-readable name."`
 	Enabled bool   `json:"enabled" jsonschema:"Whether it is offered on this repository."`
 }

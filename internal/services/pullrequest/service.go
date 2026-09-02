@@ -699,7 +699,8 @@ func (service *Service) GetAutoMerge(ctx context.Context, repository RepositoryR
 }
 
 // EnableAutoMerge enables auto-merge on a pull request using the given merge strategy.
-// Valid strategy values: no-ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only.
+// Valid strategy values: no-ff, ff, ff-only, rebase-no-ff, rebase-ff-only, squash,
+// squash-ff-only -- openapi.MergeStrategies is the one declaration.
 // EnableAutoMerge arms auto-merge so the pull request merges once its checks
 // pass.
 //

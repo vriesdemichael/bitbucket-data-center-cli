@@ -47,3 +47,23 @@ var (
 	// asking for both -- so this set has no generated counterpart.
 	PullRequestStateFilters = []string{"open", "closed", "all"}
 )
+
+// MergeStrategies are the pull request merge strategy ids Bitbucket accepts.
+//
+// There is no generated enum for this one: the auto-merge request body is
+// assembled as a raw map, and the settings response types the id as a plain
+// string. So this set was read off a running Bitbucket Data Center, from
+// GET .../settings/pull-requests, rather than inferred.
+//
+// It replaces four disagreeing lists, two of which were wrong in opposite
+// directions -- the --strategy help text omitted "ff", and the output schema
+// text omitted "squash-ff-only". Each looked authoritative on its own.
+var MergeStrategies = []string{
+	"no-ff",
+	"ff",
+	"ff-only",
+	"rebase-no-ff",
+	"rebase-ff-only",
+	"squash",
+	"squash-ff-only",
+}
