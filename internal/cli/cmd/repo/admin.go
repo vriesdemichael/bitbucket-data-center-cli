@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
@@ -44,13 +45,8 @@ func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {
 
 			service := reposervice.NewAdminService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectWrite(cmd.Context(), createProject); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectWrite(cmd.Context(), deps.PermissionChecker, client, createProject); err != nil {
+					return err
 				}
 
 				repoQueryService := reposervice.NewService(httpclient.NewFromConfig(cfg))
@@ -166,17 +162,15 @@ func newRepoForkCommand(deps Dependencies, repositorySelector *string, isAlias b
 			repo := reposervice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
 			service := reposervice.NewAdminService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
-							return err
-						}
-						if forkProject != "" {
-							if err := checker.CheckProjectWrite(cmd.Context(), forkProject); err != nil {
-								return err
-							}
-						}
+				// Two checks, because a fork reads one repository and writes into
+				// another project. The second is conditional on a destination
+				// having been named at all.
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
+					return err
+				}
+				if forkProject != "" {
+					if err := preflight.ProjectWrite(cmd.Context(), deps.PermissionChecker, client, forkProject); err != nil {
+						return err
 					}
 				}
 
@@ -295,13 +289,8 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 			repo := reposervice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
 			service := reposervice.NewAdminService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
-							return err
-						}
-					}
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
+					return err
 				}
 
 				intent := "repo.delete"
@@ -390,13 +379,8 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 			repo := reposervice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
 			service := reposervice.NewAdminService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
-							return err
-						}
-					}
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
+					return err
 				}
 
 				predicted := "update"

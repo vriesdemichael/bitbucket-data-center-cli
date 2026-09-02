@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -131,13 +132,8 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), args[0]); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
+					return err
 				}
 
 				restrictions, err := service.ListRestrictions(cmd.Context(), args[0], projectservice.RestrictionListOptions{MaxResults: 1000})
@@ -242,13 +238,8 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), args[0]); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
+					return err
 				}
 
 				current, err := service.GetRestriction(cmd.Context(), args[0], args[1])
@@ -329,13 +320,8 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), args[0]); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
+					return err
 				}
 
 				preview := dryrunpreview.Preview{

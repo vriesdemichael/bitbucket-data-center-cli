@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
@@ -222,13 +223,8 @@ func runPermissionGrantDryRun(
 	name string,
 	permission string,
 ) error {
-	if deps.PermissionChecker != nil {
-		checker := deps.PermissionChecker(client)
-		if checker != nil {
-			if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
-				return err
-			}
-		}
+	if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
+		return err
 	}
 
 	entries, err := subject.list(cmd.Context(), service, repo, permissionLookupLimit)
@@ -288,13 +284,8 @@ func runPermissionRevokeDryRun(
 	repo reposettings.RepositoryRef,
 	name string,
 ) error {
-	if deps.PermissionChecker != nil {
-		checker := deps.PermissionChecker(client)
-		if checker != nil {
-			if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
-				return err
-			}
-		}
+	if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
+		return err
 	}
 
 	entries, err := subject.list(cmd.Context(), service, repo, permissionLookupLimit)

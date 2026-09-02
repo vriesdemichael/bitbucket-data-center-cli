@@ -17,6 +17,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/giturl"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prsel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
@@ -474,8 +475,7 @@ func New(deps Dependencies) *cobra.Command {
 			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 			}
@@ -684,8 +684,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 
@@ -773,8 +772,7 @@ func New(deps Dependencies) *cobra.Command {
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 
@@ -862,8 +860,7 @@ func New(deps Dependencies) *cobra.Command {
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 
@@ -943,8 +940,7 @@ func New(deps Dependencies) *cobra.Command {
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 
@@ -1026,8 +1022,7 @@ func New(deps Dependencies) *cobra.Command {
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
 
@@ -1100,8 +1095,7 @@ func New(deps Dependencies) *cobra.Command {
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
 
@@ -1195,8 +1189,7 @@ func New(deps Dependencies) *cobra.Command {
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 			}
@@ -1428,8 +1421,7 @@ func New(deps Dependencies) *cobra.Command {
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 
@@ -1567,8 +1559,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(client)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 
@@ -1628,8 +1619,7 @@ func New(deps Dependencies) *cobra.Command {
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(client)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 
@@ -1992,8 +1982,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(client)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
 
@@ -2104,8 +2093,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			emoticon := normalizeEmoticon(args[2])
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(client)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
 
@@ -2218,8 +2206,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(client)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
 
@@ -2430,8 +2417,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 
@@ -2511,8 +2497,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 
@@ -2586,8 +2571,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
 
@@ -2646,8 +2630,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
 
@@ -2707,8 +2690,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			repo := target.RepositoryRef()
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(apiClient)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 

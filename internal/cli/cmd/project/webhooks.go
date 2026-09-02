@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -85,13 +86,8 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), args[0]); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
+					return err
 				}
 
 				preview := dryrunpreview.Preview{
@@ -158,13 +154,8 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), args[0]); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
+					return err
 				}
 
 				preview := dryrunpreview.Preview{
@@ -216,13 +207,8 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), args[0]); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
+					return err
 				}
 
 				preview := dryrunpreview.Preview{
@@ -270,13 +256,8 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), args[0]); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
+					return err
 				}
 
 				preview := dryrunpreview.Preview{

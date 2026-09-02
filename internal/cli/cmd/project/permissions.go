@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	projectservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/project"
@@ -162,13 +163,8 @@ func newProjectPermissionGrantCommand(deps Dependencies, subjectFor projectPermi
 			permission := strings.ToUpper(strings.TrimSpace(args[2]))
 
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), projectKey); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, projectKey); err != nil {
+					return err
 				}
 
 				entries, err := subject.list(cmd.Context(), service, projectKey, permissionLookupLimit)
@@ -262,13 +258,8 @@ func newProjectPermissionRevokeCommand(deps Dependencies, subjectFor projectPerm
 			name := args[1]
 
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), projectKey); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, projectKey); err != nil {
+					return err
 				}
 
 				entries, err := subject.list(cmd.Context(), service, projectKey, permissionLookupLimit)
