@@ -167,8 +167,14 @@ func sanitize(inputPath, outputPath string) error {
 // listed. Other date fields in the spec (expiryDate, lastSeenDate,
 // lockAcquireTime and similar) are left alone until someone confirms what the
 // server actually sends for them.
+//
+// lastSync is here for the second reason rather than the first: the spec types
+// it as a bare number, and bb decoded it as one for a year. A float32 mantissa
+// is 24 bits, so an epoch millisecond quantises to 131072 ms steps -- every fork
+// sync time bb reported was up to a minute out, and nothing said so.
 var epochMillisFieldNames = map[string]struct{}{
 	"createdDate": {},
+	"lastSync":    {},
 }
 
 // fixEpochMillisFields rewrites the listed properties to integer/int64 so the

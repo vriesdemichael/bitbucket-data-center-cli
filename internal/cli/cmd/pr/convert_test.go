@@ -88,8 +88,8 @@ func TestCommentFromDropsThePullRequestItIsAnchoredTo(t *testing.T) {
 		t.Fatalf("a pull-request-level comment reported an anchor: %+v", plain.Anchor)
 	}
 
-	if list := commentsFrom(nil); list == nil || len(list) != 0 {
-		t.Fatalf("commentsFrom(nil) = %v, want an empty slice rather than nil", list)
+	if list := result.FlattenComments(nil); list == nil || len(list) != 0 {
+		t.Fatalf("FlattenComments(nil) = %v, want an empty slice rather than nil", list)
 	}
 }
 

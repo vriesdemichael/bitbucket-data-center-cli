@@ -129,7 +129,11 @@ func TestPRReviewCommands(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, "[10 v?] draft1") {
+	// v0, not v? -- the line is rendered from the published model now, and the
+	// model states a comment Bitbucket sent no version for is at version 0.
+	// The two renderings said different things about the same comment while the
+	// human one read the raw object.
+	if !strings.Contains(out, "[10 v0] draft1") {
 		t.Fatalf("unexpected output: %s", out)
 	}
 

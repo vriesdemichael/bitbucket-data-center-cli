@@ -6993,12 +6993,15 @@ Use "bb repo comment [command] --help" for more information about a command.
 Create a comment
 
 ```text
-Create a comment
+Create a comment on a commit or a pull request.
+
+Pass --parent to reply to an existing comment rather than start a new thread. The id to pass is the one `bb repo comment list` reports; a reply carries reply and parentId in that listing, so a thread can be walked back to its root.
 
 Usage:
   bb repo comment create [flags]
 
 Flags:
+      --parent int    Reply to this comment id instead of starting a new thread
       --text string   Comment text
 
 Global Flags:

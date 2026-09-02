@@ -201,6 +201,36 @@ func TestLivePullRequestCommentReaction(t *testing.T) {
 	if strings.Contains(afterRemove, "thumbsup") {
 		t.Fatalf("expected the reaction to be gone, got: %s", afterRemove)
 	}
+
+	// A reply, and then the listing that has to show it. Bitbucket nests a
+	// reply under its root, and the flat model reduced that to a count -- so
+	// the reply body reached no bb command at all. Only a real server nests
+	// anything, so only a live run proves the flattening reads it back.
+	replyText := "a reply that has to survive the flattening"
+	replyOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID,
+		"--text", replyText, "--parent-id", commentID)
+	if err != nil {
+		t.Fatalf("pr comment add --parent-id failed: %v\noutput: %s", err, replyOutput)
+	}
+
+	listOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--full", "--state", "all")
+	if err != nil {
+		t.Fatalf("pr comment list --full failed: %v\noutput: %s", err, listOutput)
+	}
+	if !strings.Contains(listOutput, replyText) {
+		t.Fatalf("the reply body did not reach the ungrouped listing: %s", listOutput)
+	}
+	if !strings.Contains(listOutput, `"reply": true`) || !strings.Contains(listOutput, `"parentId"`) {
+		t.Fatalf("the reply did not say what it answers: %s", listOutput)
+	}
+
+	humanList, err := executeLiveCLI(t, "pr", "comment", "list", pullRequestID, "--full", "--state", "all")
+	if err != nil {
+		t.Fatalf("pr comment list --full (human) failed: %v\noutput: %s", err, humanList)
+	}
+	if !strings.Contains(humanList, replyText) {
+		t.Fatalf("the human listing dropped the reply the payload carries: %s", humanList)
+	}
 }
 
 // TestLivePullRequestApplySuggestion covers bb pr comment apply-suggestion.

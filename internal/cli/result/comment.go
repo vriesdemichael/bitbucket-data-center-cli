@@ -1,6 +1,7 @@
 package result
 
 import (
+	"fmt"
 	"strings"
 
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
@@ -175,4 +176,76 @@ func joinCommentPath(path *struct {
 	}
 
 	return strings.Join(*path.Components, "/")
+}
+
+// FlattenComments returns every comment in the listing, replies included.
+//
+// Bitbucket nests a thread: the endpoint returns root comments, each carrying
+// its replies under comments, and those carrying theirs. The model is flat on
+// purpose -- a recursive struct would publish a schema that describes itself,
+// and the nesting is what made a single comment arrive with tens of kilobytes
+// of repeated context. So the tree is flattened instead, and every entry says
+// where it sits: reply marks it as one, parentId names what it answers.
+//
+// This is what makes a reply reachable at all for a commit comment. `bb pr
+// comment list` reaches them through its thread view; `bb repo comment` has no
+// thread view, so before this the reply bodies were counted and discarded, and
+// no bb command could show them.
+//
+// Order is the one a reader expects: each root, then its replies depth first,
+// so a thread reads top to bottom.
+func FlattenComments(upstream []openapigenerated.RestComment) []Comment {
+	flattened := make([]Comment, 0, len(upstream))
+	for _, one := range upstream {
+		flattened = appendCommentTree(flattened, one, 0)
+	}
+
+	return flattened
+}
+
+// appendCommentTree appends one comment and everything below it.
+//
+// parentID is threaded down rather than read off each reply: nesting is how
+// Bitbucket expresses the relationship on this endpoint, and a nested reply
+// does not always repeat its parent as a field.
+func appendCommentTree(into []Comment, upstream openapigenerated.RestComment, parentID int64) []Comment {
+	converted := CommentFrom(upstream)
+	if parentID != 0 {
+		converted.Reply = true
+		converted.ParentID = parentID
+	}
+	into = append(into, converted)
+
+	if upstream.Comments == nil {
+		return into
+	}
+	for _, reply := range *upstream.Comments {
+		into = appendCommentTree(into, reply, converted.ID)
+	}
+
+	return into
+}
+
+// FormatComment renders one comment as a line for a person.
+//
+// Here rather than in a command package because both bb pr comment and bb repo
+// comment print it, from the same model. Rendering from the model is also what
+// lets a reply be shown at all: the upstream object nests replies, so a
+// renderer walking the flat list never saw one.
+//
+// A reply is indented under what it answers. FlattenComments orders each root
+// before its replies, so the indent reads as the thread without the parent id
+// having to be spelled out on every line.
+func FormatComment(comment Comment) string {
+	text := strings.TrimSpace(comment.Text)
+	if text == "" {
+		text = "<empty>"
+	}
+
+	indent := ""
+	if comment.Reply {
+		indent = "  "
+	}
+
+	return fmt.Sprintf("%s[%d v%d] %s", indent, comment.ID, comment.Version, text)
 }
