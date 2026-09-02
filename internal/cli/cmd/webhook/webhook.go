@@ -18,7 +18,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
@@ -135,14 +134,9 @@ func New(deps Dependencies) *cobra.Command {
 
 			var active *bool
 			if cmd.Flags().Changed("active") {
-				val := strings.ToLower(strings.TrimSpace(activeVal))
-				if val == "true" {
-					active = boolPtr(true)
-				} else if val == "false" {
-					active = boolPtr(false)
-				} else {
-					return apperrors.New(apperrors.KindValidation, "active must be true or false", nil)
-				}
+				// enumflag has already refused anything but true or false, at
+				// parse time, and normalised the case.
+				active = boolPtr(activeVal == "true")
 			}
 			service := reposettings.NewService(client)
 			if d.DryRunEnabled() {

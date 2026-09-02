@@ -29,8 +29,9 @@
 // one of these flags behaved that way before this package existed, because the
 // service layer normalised "" to the default -- "" to open, "" to ADDED, "" to
 // MERGE. Refusing it broke `bb pr list --state "$STATE"` with $STATE unset,
-// which is an ordinary thing for a script to write, and on the twenty-three
-// flags whose default is itself "" it meant the flag rejected its own default.
+// which is an ordinary thing for a script to write. On the flags whose
+// default is itself "" -- most of them -- it meant the flag rejected the very
+// value it defaults to.
 //
 // Use RegisterStrict where an empty value has to be an error rather than an
 // omission.
