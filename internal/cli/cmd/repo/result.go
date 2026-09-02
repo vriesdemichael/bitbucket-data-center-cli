@@ -44,12 +44,18 @@ type FileContent struct {
 	Lines      []FileLine        `json:"lines" jsonschema:"The file's lines, in order. Empty rather than absent for an empty file."`
 }
 
-// RawFile is what `bb repo cat` returns under --json.
+// RawFile is what `bb repo cat` and `bb repo browse raw` return under --json.
+//
+// encoding exists because a JSON string cannot hold arbitrary bytes: Go's
+// encoder replaces invalid UTF-8 with U+FFFD, which would return a corrupted
+// file and say nothing about it. A file that is not valid UTF-8 is base64
+// instead, and encoding says which was used so a caller does not have to guess.
 type RawFile struct {
 	Repository result.Repository `json:"repository"`
 	Path       string            `json:"path" jsonschema:"File that was read."`
 	At         string            `json:"at,omitempty" jsonschema:"Commit or ref it was read at, when --at was given."`
-	Content    string            `json:"content" jsonschema:"The file, verbatim. Without --json the bytes go to stdout unwrapped."`
+	Encoding   string            `json:"encoding" jsonschema:"How content is encoded: utf-8 for text, base64 for anything that is not valid UTF-8."`
+	Content    string            `json:"content" jsonschema:"The file. Without --json the bytes go to stdout unwrapped, whatever they are."`
 }
 
 // FileHistory is what `bb repo browse history` returns.
