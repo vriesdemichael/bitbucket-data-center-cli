@@ -1,12 +1,14 @@
 package cli
 
 import (
+	"io"
 	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // The marker enumflag.Register puts in every usage string it builds. It is the
@@ -196,4 +198,81 @@ func TestNoFlagEnumeratesValuesWithoutEnforcingThem(t *testing.T) {
 			"usage text from the same slice it validates against.",
 			cmd.CommandPath(), flag.Name, flag.Usage)
 	})
+}
+
+// TestEveryEnumPositionalIsEnforced is the positional half of the same policy,
+// and its list is maintained by hand.
+//
+// It has to be. A flag carries its set in its own registration, so the two
+// tests above can walk the command tree and find every one; a positional is
+// just args[N], and nothing in the tree says whether it is a repository slug
+// or a closed set. There is no walk that discovers these -- only reading the
+// commands, which is how these three were found.
+//
+// What the test does buy is the other half: once a positional is known to take
+// a set, this pins that it refuses everything else, names the alternatives, and
+// reports kind=validation like its flag counterparts -- so the three cannot
+// quietly regress, and a fourth added below is checked the same way.
+//
+// The tell, when looking for more: a positional that is upper- or lower-cased
+// before use is almost always an enum.
+func TestEveryEnumPositionalIsEnforced(t *testing.T) {
+	testCases := []struct {
+		name    string
+		args    []string
+		allowed []string
+	}{
+		{
+			name:    "project permissions users grant",
+			args:    []string{"project", "permissions", "users", "grant", "PRJ", "alice", "bb-not-a-permission"},
+			allowed: []string{"PROJECT_READ", "PROJECT_WRITE", "PROJECT_ADMIN"},
+		},
+		{
+			name:    "project permissions groups grant",
+			args:    []string{"project", "permissions", "groups", "grant", "PRJ", "devs", "bb-not-a-permission"},
+			allowed: []string{"PROJECT_READ", "PROJECT_WRITE", "PROJECT_ADMIN"},
+		},
+		{
+			name:    "repo permissions grant",
+			args:    []string{"repo", "permissions", "grant", "alice", "bb-not-a-permission"},
+			allowed: []string{"REPO_READ", "REPO_WRITE", "REPO_ADMIN"},
+		},
+		{
+			name:    "repo settings pull-requests set-strategy",
+			args:    []string{"repo", "settings", "pull-requests", "set-strategy", "bb-not-a-strategy"},
+			allowed: []string{"no-ff", "ff", "ff-only", "rebase-no-ff", "rebase-ff-only", "squash", "squash-ff-only"},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+			t.Setenv("BITBUCKET_URL", "http://bb-governance.invalid")
+			t.Setenv("BITBUCKET_TOKEN", "token")
+			t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
+			t.Setenv("BITBUCKET_REPO_SLUG", "repo")
+
+			root := NewRootCommand()
+			root.SetOut(io.Discard)
+			root.SetErr(io.Discard)
+			root.SetArgs(testCase.args)
+
+			err := ClassifyUsageError(root.Execute())
+			if err == nil {
+				t.Fatalf("%v was accepted", testCase.args)
+			}
+
+			// Rejected before the request: an unreachable host would give a
+			// transient error instead, which is how this test would notice the
+			// check being dropped.
+			if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
+				t.Errorf("kind = %v, want validation (error: %v)", kind, err)
+			}
+			for _, want := range testCase.allowed {
+				if !strings.Contains(err.Error(), want) {
+					t.Errorf("rejection does not name %q, which ADR-054 requires: %v", want, err)
+				}
+			}
+		})
+	}
 }

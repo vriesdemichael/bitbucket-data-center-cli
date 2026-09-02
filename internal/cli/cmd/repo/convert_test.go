@@ -350,9 +350,9 @@ func TestPullRequestSettingsFromReadsBothSpellingsOfTheCount(t *testing.T) {
 	// Bitbucket answers set-strategy with the default alone, so the strategy
 	// list is absent and the default must still come through.
 	defaultOnly := pullRequestSettingsFrom(repository, map[string]any{
-		"mergeConfig": map[string]any{"defaultStrategy": map[string]any{"id": "merge-base"}},
+		"mergeConfig": map[string]any{"defaultStrategy": map[string]any{"id": "squash"}},
 	})
-	if valueOf(defaultOnly.DefaultMergeStrategy) != "merge-base" {
+	if valueOf(defaultOnly.DefaultMergeStrategy) != "squash" {
 		t.Fatalf("default-only response = %+v", defaultOnly)
 	}
 	// The configuration was reported and the strategies key was not, so the

@@ -154,7 +154,7 @@ func TestGovernanceAndRepoDryRunPredictionBranches(t *testing.T) {
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/webhooks":
 			_, _ = writer.Write([]byte(`[{"id":42,"name":"ci","url":"http://h"}]`))
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/settings/pull-requests":
-			_, _ = writer.Write([]byte(`{"requiredAllTasksComplete":true,"requiredApprovers":{"enabled":true,"count":"2"},"mergeConfig":{"defaultStrategy":{"id":"merge-base"}}}`))
+			_, _ = writer.Write([]byte(`{"requiredAllTasksComplete":true,"requiredApprovers":{"enabled":true,"count":"2"},"mergeConfig":{"defaultStrategy":{"id":"squash"}}}`))
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/comments/1":
 			_, _ = writer.Write([]byte(`{"id":1,"text":"same comment","version":1}`))
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/comments/2":
@@ -223,7 +223,7 @@ func TestGovernanceAndRepoDryRunPredictionBranches(t *testing.T) {
 		t.Fatalf("expected pull-request update-approvers no-op prediction, err=%v output=%s", err, out)
 	}
 
-	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "settings", "pull-requests", "set-strategy", "merge-base")
+	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "settings", "pull-requests", "set-strategy", "squash")
 	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
 		t.Fatalf("expected pull-request set-strategy no-op prediction, err=%v output=%s", err, out)
 	}
@@ -488,7 +488,7 @@ func TestDryRunRepoPermissionPrechecksFailBeforePlanning(t *testing.T) {
 		{name: "repo webhook delete", args: []string{"--json", "--dry-run", "repo", "settings", "workflow", "webhooks", "delete", "42"}},
 		{name: "repo pr settings update", args: []string{"--json", "--dry-run", "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=true"}},
 		{name: "repo pr settings update approvers", args: []string{"--json", "--dry-run", "repo", "settings", "pull-requests", "update-approvers", "--count", "2"}},
-		{name: "repo pr settings set strategy", args: []string{"--json", "--dry-run", "repo", "settings", "pull-requests", "set-strategy", "merge-base"}},
+		{name: "repo pr settings set strategy", args: []string{"--json", "--dry-run", "repo", "settings", "pull-requests", "set-strategy", "squash"}},
 		{name: "insights report set", args: []string{"--json", "--dry-run", "insights", "report", "set", "abc", "lint", "--body", `{"title":"Lint","result":"PASS"}`}},
 		{name: "insights report delete", args: []string{"--json", "--dry-run", "insights", "report", "delete", "abc", "lint"}},
 		{name: "insights annotation add", args: []string{"--json", "--dry-run", "insights", "annotation", "add", "abc", "lint", "--body", `[{"externalId":"ann1","message":"m","severity":"LOW"}]`}},

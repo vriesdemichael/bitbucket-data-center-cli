@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
@@ -161,7 +162,10 @@ func newRepoPermissionGrantCommand(deps Dependencies, repositorySelector *string
 			}
 
 			service := reposettings.NewService(client)
-			permission := strings.ToUpper(strings.TrimSpace(args[1]))
+			permission, err := enumflag.Value("permission", args[1], repoPermissionNames)
+			if err != nil {
+				return err
+			}
 			if deps.DryRunEnabled() {
 				return runPermissionGrantDryRun(cmd, deps, client, service, subject, repo, args[0], permission)
 			}

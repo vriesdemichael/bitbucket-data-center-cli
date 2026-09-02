@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
@@ -160,7 +161,10 @@ func newProjectPermissionGrantCommand(deps Dependencies, subjectFor projectPermi
 			service := projectservice.NewService(client)
 			projectKey := args[0]
 			name := args[1]
-			permission := strings.ToUpper(strings.TrimSpace(args[2]))
+			permission, err := enumflag.Value("permission", args[2], permissionNames)
+			if err != nil {
+				return err
+			}
 
 			if deps.DryRunEnabled() {
 				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, projectKey); err != nil {

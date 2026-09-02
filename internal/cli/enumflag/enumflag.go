@@ -42,6 +42,7 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // value is a pflag.Value that accepts only what it was told to.
@@ -149,4 +150,31 @@ func contains(allowed []string, want string) bool {
 // so the help text cannot name a value the validator does not accept.
 func usageFor(description string, allowed []string) string {
 	return fmt.Sprintf("%s (one of: %s)", strings.TrimSuffix(strings.TrimSpace(description), "."), strings.Join(allowed, ", "))
+}
+
+// Value normalises a positional argument against a closed set.
+//
+// The flags in this package are validated by pflag before a command runs.
+// A positional has no such hook, so a command with an enum-shaped argument --
+// `permissions grant <name> <permission>`, `set-strategy <strategy-id>` --
+// has to ask. Sharing the check keeps one message format and one place to
+// change the rule, and lets the argument reuse whichever slice already
+// declares the set.
+//
+// cobra.OnlyValidArgs is the built-in answer and does not fit: it checks every
+// positional against a single list, and in two of the three cases here the
+// enum is the last of several arguments.
+//
+// Unlike Set, this returns an apperrors error, because nothing downstream will
+// classify it -- the value goes straight from RunE to the caller.
+func Value(name string, raw string, allowed []string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	for _, candidate := range allowed {
+		if strings.EqualFold(trimmed, candidate) {
+			return candidate, nil
+		}
+	}
+
+	return "", apperrors.New(apperrors.KindValidation,
+		fmt.Sprintf("%s must be one of: %s", name, strings.Join(allowed, ", ")), nil)
 }

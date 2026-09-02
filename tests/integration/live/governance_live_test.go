@@ -87,7 +87,7 @@ func TestLiveGovernanceCLI(t *testing.T) {
 	}
 
 	// Test updating PR strategy (safe update)
-	output, err = executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "set-strategy", "merge-base", "--repo", seeded.Key+"/"+repo.Slug)
+	output, err = executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "set-strategy", "squash", "--repo", seeded.Key+"/"+repo.Slug)
 	if err != nil {
 		// Some strategies might not be available depending on plugin config, but we try anyway
 		t.Logf("repo set-strategy attempt output: %s", output)
