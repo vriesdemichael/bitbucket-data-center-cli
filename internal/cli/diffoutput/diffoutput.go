@@ -33,7 +33,7 @@ type Diff struct {
 	// Stats is left open. Bitbucket declares the diff stats summary as an
 	// untyped value in its own specification -- the generated client renders it
 	// as interface{} -- so bb has nothing to promise about its fields.
-	Stats map[string]any `json:"stats,omitempty" jsonschema:"Per-file addition and deletion counts, when output is stat. Left open because Bitbucket declares this summary as an untyped value."`
+	Stats map[string]any `json:"stats,omitempty" jsonschema:"Per-file addition and deletion counts, when output is stat. Absent when the server returned no summary, which output still reports as stat. Left open because Bitbucket declares this summary as an untyped value."`
 }
 
 // Outputs is the closed set of forms a diff command can produce.
