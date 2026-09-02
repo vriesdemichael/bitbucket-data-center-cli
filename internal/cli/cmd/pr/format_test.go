@@ -312,7 +312,7 @@ func TestFormatPullRequestActivitySummary(t *testing.T) {
 }
 
 func TestFormatHelpers(t *testing.T) {
-	// The pointer helpers moved to internal/cli/safederef and are tested
+	// The pointer helpers moved to internal/safederef and are tested
 	// there. safeUsers is this package's own and stays.
 	s := "hello"
 

@@ -36,25 +36,31 @@ func advertisedValues(usage string) []string {
 	return values
 }
 
-// enumerationInProse matches a value set written out by hand. Two shapes:
+// enumerationInProse matches a value set written out by hand. Three shapes,
+// each of which earns its place by catching something the others do not:
 //
-//	A: three or more bare tokens separated by commas, anywhere in the text
-//	B: two joined by "or", but only just after a ":" or "("
+//	A: ":" or "(", then three or more comma-separated tokens, then the end of
+//	   the text or a ";". Catches "Diagnostics verbosity: error, warn, info,
+//	   debug".
+//	B: the same markers, then two tokens joined by "or". Catches "Active status
+//	   (true or false); unchanged when omitted".
+//	C: two or more SHOUTING_TOKENS in a list, no marker needed, because
+//	   upper-case tokens in a series are values rather than prose. Catches
+//	   "Order by NEWEST, OLDEST, or STATUS", which has no marker at all, and
+//	   "ADDED (default), REMOVED, or CONTEXT", where a parenthetical breaks the
+//	   run that A would need.
 //
-// The first version of this anchored both shapes to the end of the string and
-// required the marker for both. That let a real offender through --
-// `bb webhook update --active`, whose trailing "; unchanged when omitted" put
-// the list in the middle -- and would also have missed two of the flags that
-// were converted by hand ("Order by NEWEST, OLDEST, or STATUS" has no marker).
+// The first version had only A and B, both anchored to the end of the string.
+// That let `bb webhook update --active` through on its trailing "; unchanged
+// when omitted", and would have missed two of the flags converted by hand.
 //
-// B still needs the marker, because without it "Commit ID or ref" and "should
-// be modified or created" both match, and a governance test that cries wolf
-// gets deleted. A has one known false positive, exempted below with its reason.
+// A and B keep their markers. Without one, "Commit ID or ref" and "should be
+// modified or created" both match, and a governance test that cries wolf gets
+// deleted. B still has one false positive, exempted below with its reason.
 //
-// It still cannot see a list broken up by a parenthetical: "ADDED (default),
-// REMOVED, or CONTEXT" reads as an enumeration to a person and not to this.
-// The gap is narrow -- a flag has to both enumerate unusually and never be
-// registered -- but it is a gap, not a guarantee.
+// The gap is a lower-case value set with no marker -- "either alphabetical or
+// modification" is invisible to all three. A flag would have to enumerate that
+// way and never be registered, but it is a gap, not a guarantee.
 const (
 	// A bare value token, and the ways an enumeration can end: at the close of
 	// a bracket, at the end of the text, or at a semicolon introducing a
