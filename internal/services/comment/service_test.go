@@ -1254,3 +1254,81 @@ func TestGetAndUpdateRepairAnchorPaths(t *testing.T) {
 		t.Errorf("update did not repair the anchor path: %+v", updated.Anchor)
 	}
 }
+
+// TestSetStateRepairsAnAnchoredBlocker is the guard for the defect that
+// mattered most.
+//
+// Resolving an inline blocker is how a reviewer -- or an agent -- closes out
+// feedback on a specific line, and it is the action a merge gate reads. The
+// generated wrapper decoded straight into RestComment, so it failed on every
+// comment that had a line to point at, which is every comment worth blocking
+// on. A live run is what found it; this is what keeps it found.
+func TestSetStateRepairsAnAnchoredBlocker(t *testing.T) {
+	var states []string
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			body, _ := io.ReadAll(r.Body)
+			var sent map[string]any
+			_ = json.Unmarshal(body, &sent)
+			state, _ := sent["state"].(string)
+			states = append(states, state)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":21,"version":2,"text":"fix this line","severity":"BLOCKER",
+			"state":"RESOLVED","anchor":{"line":12,"path":"internal/cli/root.go"}}`))
+	})
+
+	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "7"}
+	resolved, err := service.SetState(context.Background(), target, "21", CommentStateResolved, nil)
+	if err != nil {
+		t.Fatalf("resolve an anchored blocker: %v", err)
+	}
+	if resolved.Anchor == nil || resolved.Anchor.Path == nil || resolved.Anchor.Path.Components == nil {
+		t.Fatalf("resolving lost the anchor: %+v", resolved.Anchor)
+	}
+	if resolved.State == nil || *resolved.State != "RESOLVED" {
+		t.Fatalf("state = %+v", resolved.State)
+	}
+	if len(states) != 1 || states[0] != "RESOLVED" {
+		t.Fatalf("sent states = %v, want one RESOLVED", states)
+	}
+
+	// Reopening is the same call with the other state, and has to survive the
+	// same anchor.
+	if _, err := service.SetState(context.Background(), target, "21", CommentStateOpen, nil); err != nil {
+		t.Fatalf("reopen an anchored blocker: %v", err)
+	}
+	if len(states) != 2 || states[1] != "OPEN" {
+		t.Fatalf("sent states = %v, want RESOLVED then OPEN", states)
+	}
+
+	// Anything else is refused before a request is made: Bitbucket would answer
+	// with a generic rejection that names neither the field nor the values.
+	if _, err := service.SetState(context.Background(), target, "21", CommentState("PENDING"), nil); err == nil {
+		t.Error("an unsupported state was sent to the server")
+	}
+}
+
+// TestSetStateRefusesABlockerOnACommit keeps the two comment worlds apart.
+//
+// Blocker comments are a pull request concept -- they are posted to a separate
+// endpoint and they are what a merge gate counts. A commit has no such thing,
+// and saying so here is more use than a 404 from the server.
+func TestSetStateRefusesABlockerOnACommit(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("a request was made for a target that should have been refused: %s", r.URL)
+	})
+
+	target := Target{
+		Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"},
+		CommitID:   "abc",
+		Blocker:    true,
+	}
+	_, err := service.Create(context.Background(), target, "a blocker on a commit")
+	if err == nil {
+		t.Fatal("a blocker on a commit was accepted")
+	}
+	if !strings.Contains(err.Error(), "only supported for pull requests") {
+		t.Errorf("error = %v, want it to say why", err)
+	}
+}

@@ -563,18 +563,14 @@ func (service *Service) SetState(ctx context.Context, target Target, commentID s
 	stateValue := string(state)
 	body := openapigenerated.RestComment{State: &stateValue, Version: resolvedVersion}
 
-	response, err := service.client.UpdateComment2WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, body)
-	if err != nil {
-		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to update pull request comment state", err)
-	}
-	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-		return openapigenerated.RestComment{}, err
-	}
-	if response.ApplicationjsonCharsetUTF8200 != nil {
-		return *response.ApplicationjsonCharsetUTF8200, nil
-	}
+	// The raw method, so an anchored comment's path is repaired before decoding
+	// (ADR-077). This is the one that mattered most: resolving an inline
+	// blocker is how a reviewer closes out feedback on a specific line, and the
+	// wrapper made it fail on every comment that had a line to point at --
+	// which is every comment worth blocking on.
+	response, err := service.client.UpdateComment2(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, body)
 
-	return body, nil
+	return decodeCreatedComment(response, err, "failed to update pull request comment state", body)
 }
 
 // commentPage is one page of a comment listing, decoded after the anchor paths

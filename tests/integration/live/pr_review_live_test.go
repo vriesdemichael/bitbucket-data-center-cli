@@ -6,19 +6,22 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
 
 // postLiveJSON sends a raw authenticated POST, for fixtures bb has no command
-// for. Inline comments are the case here: bb can add a pull request comment but
-// not anchor one to a file and line, and an unanchored comment cannot carry a
-// suggestion.
+// for -- setting a repository up as a fork is the remaining case.
+//
+// It is deliberately not used for anchored comments any more: bb anchors them
+// itself now, and a fixture that reaches past the CLI is a fixture that cannot
+// notice the CLI is broken.
 func postLiveJSON(t *testing.T, path string, payload any) map[string]any {
 	t.Helper()
 
@@ -328,17 +331,19 @@ func TestLivePullRequestApplySuggestion(t *testing.T) {
 
 	const suggested = "branch=rewritten-by-suggestion"
 	suggestionText := "please change this\n\n" + "```suggestion\n" + suggested + "\n```"
-	comment := postLiveJSON(t, fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/comments",
-		seeded.Key, repo.Slug, pullRequestID), map[string]any{
-		"text": suggestionText,
-		"anchor": map[string]any{
-			"line":     1,
-			"lineType": "ADDED",
-			"fileType": "TO",
-			"path":     fileName,
-			"diffType": "EFFECTIVE",
-		},
-	})
+	// Through bb rather than a raw POST: a suggestion only exists on an inline
+	// comment, and bb can anchor one, so posting it any other way would leave
+	// the command that has to produce it untested.
+	suggestionOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID,
+		"--text", suggestionText, "--path", fileName, "--line", "1", "--line-type", "ADDED")
+	if err != nil {
+		t.Fatalf("pr comment add (suggestion) failed: %v\noutput: %s", err, suggestionOutput)
+	}
+	suggestionPayload := decodeJSONMap(t, suggestionOutput)
+	comment, ok := suggestionPayload["comment"].(map[string]any)
+	if !ok {
+		comment = suggestionPayload
+	}
 
 	commentID, ok := numericOrStringID(comment["id"])
 	if !ok {
@@ -450,5 +455,196 @@ func TestLivePullRequestCommentResolveReopen(t *testing.T) {
 	}
 	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "reopen", pullRequestID, commentID); err != nil {
 		t.Fatalf("second reopen failed: %v", err)
+	}
+}
+
+// TestLivePullRequestBlockerReviewLoop walks the review flow bb exists to
+// support, through the CLI rather than the services underneath it.
+//
+// A reviewer -- a person or an agent -- leaves feedback in three shapes: a
+// remark on the pull request, a remark on a line, and a blocker on a line that
+// must be dealt with before the merge. Then something reads back whether any of
+// it is still outstanding, and resolves what has been addressed.
+//
+// Every one of those steps had live coverage of its parts and none of the
+// whole. The inline comment and the task in the visibility test are created
+// through the service, so `bb pr comment add --path --line` and
+// `--blocker --path --line` had never run against a server at all -- and an
+// inline blocker is the single most useful thing an automated reviewer emits.
+func TestLivePullRequestBlockerReviewLoop(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	branch := "feature/blocker-review-loop"
+	reviewedFile := "blocker-review-loop.txt"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, reviewedFile); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+	if err != nil {
+		t.Fatalf("create pull request failed: %v", err)
+	}
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	addComment := func(what string, args ...string) string {
+		t.Helper()
+		output, addErr := executeLiveCLI(t, append([]string{"--json", "pr", "comment", "add", pullRequestID}, args...)...)
+		if addErr != nil {
+			t.Fatalf("pr comment add (%s) failed: %v\noutput: %s", what, addErr, output)
+		}
+		payload := decodeJSONMap(t, output)
+		comment, ok := payload["comment"].(map[string]any)
+		if !ok {
+			comment = payload
+		}
+		id, ok := numericOrStringID(comment["id"])
+		if !ok {
+			t.Fatalf("no comment id in the %s output: %s", what, output)
+		}
+		return id
+	}
+
+	// 1. The three shapes of feedback, all through the CLI.
+	remarkText := "a remark on the pull request as a whole"
+	addComment("pull request remark", "--text", remarkText)
+
+	inlineText := "this line needs a guard"
+	inlineID := addComment("inline remark",
+		"--text", inlineText, "--path", reviewedFile, "--line", "1", "--line-type", "ADDED")
+
+	inlineBlockerText := "this line must change before merge"
+	inlineBlockerID := addComment("inline blocker",
+		"--text", inlineBlockerText, "--blocker", "--path", reviewedFile, "--line", "1", "--line-type", "ADDED")
+
+	prBlockerText := "add a regression test before merging"
+	prBlockerID := addComment("pull request blocker", "--text", prBlockerText, "--blocker")
+
+	// 2. An inline blocker has to keep both facts: that it blocks, and where it
+	// points. Losing the anchor makes it unactionable; losing the kind makes it
+	// invisible to the gate.
+	tasksOnly, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--tasks-only", "--state", "all")
+	if err != nil {
+		t.Fatalf("pr comment list --tasks-only failed: %v\noutput: %s", err, tasksOnly)
+	}
+	for _, want := range []string{inlineBlockerText, prBlockerText} {
+		if !strings.Contains(tasksOnly, want) {
+			t.Fatalf("the task listing dropped %q: %s", want, tasksOnly)
+		}
+	}
+	if strings.Contains(tasksOnly, remarkText) || strings.Contains(tasksOnly, inlineText) {
+		t.Fatalf("--tasks-only returned an ordinary comment: %s", tasksOnly)
+	}
+	if !strings.Contains(tasksOnly, `"kind": "task"`) {
+		t.Fatalf("a blocker did not report itself as a task: %s", tasksOnly)
+	}
+	if !strings.Contains(tasksOnly, reviewedFile) {
+		t.Fatalf("the inline blocker lost its anchor: %s", tasksOnly)
+	}
+
+	// 3. The blocker-comments endpoint is a different source from the timeline
+	// and must agree with it about what blocks.
+	blockerList, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--blocker", "--state", "all")
+	if err != nil {
+		t.Fatalf("pr comment list --blocker failed: %v\noutput: %s", err, blockerList)
+	}
+	if !strings.Contains(blockerList, `"source": "blocker_comments"`) {
+		t.Fatalf("--blocker did not report which endpoint answered: %s", blockerList)
+	}
+	for _, want := range []string{inlineBlockerText, prBlockerText} {
+		if !strings.Contains(blockerList, want) {
+			t.Fatalf("the blocker endpoint dropped %q: %s", want, blockerList)
+		}
+	}
+
+	// 4. The gate. This is what an agent reads to decide whether the pull
+	// request is done, so the counts have to move when the work does.
+	assertTaskCounts := func(stage string, wantOpen, wantResolved float64) {
+		t.Helper()
+		output, getErr := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
+		if getErr != nil {
+			t.Fatalf("pr get (%s) failed: %v\noutput: %s", stage, getErr, output)
+		}
+		summary, ok := decodeJSONMap(t, output)["reviewSummary"].(map[string]any)
+		if !ok {
+			t.Fatalf("no reviewSummary at %s: %s", stage, output)
+		}
+		if summary["openTasks"] != wantOpen {
+			t.Errorf("%s: openTasks = %v, want %v\n%#v", stage, summary["openTasks"], wantOpen, summary)
+		}
+		if summary["resolvedTasks"] != wantResolved {
+			t.Errorf("%s: resolvedTasks = %v, want %v\n%#v", stage, summary["resolvedTasks"], wantResolved, summary)
+		}
+	}
+	assertTaskCounts("two blockers open", 2, 0)
+
+	// 5. Resolving one moves the gate by exactly one, and the resolved blocker
+	// keeps its anchor -- a reviewer coming back needs to see what was fixed
+	// and where.
+	if output, resolveErr := executeLiveCLI(t, "--json", "pr", "comment", "resolve", pullRequestID, inlineBlockerID); resolveErr != nil {
+		t.Fatalf("pr comment resolve failed: %v\noutput: %s", resolveErr, output)
+	}
+	resolved, err := executeLiveCLI(t, "--json", "pr", "comment", "get", pullRequestID, inlineBlockerID)
+	if err != nil {
+		t.Fatalf("pr comment get after resolve failed: %v\noutput: %s", err, resolved)
+	}
+	if !strings.Contains(resolved, "RESOLVED") {
+		t.Fatalf("the blocker did not read as resolved: %s", resolved)
+	}
+	if !strings.Contains(resolved, reviewedFile) {
+		t.Fatalf("resolving the blocker lost its anchor: %s", resolved)
+	}
+	assertTaskCounts("one blocker resolved", 1, 1)
+
+	// 6. Reopening puts it back, so a reviewer who resolved too eagerly is not
+	// stuck.
+	if output, reopenErr := executeLiveCLI(t, "--json", "pr", "comment", "reopen", pullRequestID, inlineBlockerID); reopenErr != nil {
+		t.Fatalf("pr comment reopen failed: %v\noutput: %s", reopenErr, output)
+	}
+	assertTaskCounts("blocker reopened", 2, 0)
+
+	// 7. With every blocker resolved the task count clears, even though the two
+	// ordinary remarks are still open -- a remark is feedback, a blocker is a
+	// condition, and conflating them is what makes a gate useless.
+	for _, id := range []string{inlineBlockerID, prBlockerID} {
+		if output, resolveErr := executeLiveCLI(t, "--json", "pr", "comment", "resolve", pullRequestID, id); resolveErr != nil {
+			t.Fatalf("pr comment resolve %s failed: %v\noutput: %s", id, resolveErr, output)
+		}
+	}
+	assertTaskCounts("every blocker resolved", 0, 2)
+
+	// 8. And the ordinary comments are untouched by any of it.
+	remaining, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--unresolved")
+	if err != nil {
+		t.Fatalf("pr comment list --unresolved failed: %v\noutput: %s", err, remaining)
+	}
+	if !strings.Contains(remaining, inlineText) || !strings.Contains(remaining, remarkText) {
+		t.Fatalf("resolving the blockers disturbed the ordinary comments: %s", remaining)
+	}
+	if strings.Contains(remaining, inlineBlockerText) || strings.Contains(remaining, prBlockerText) {
+		t.Fatalf("a resolved blocker is still listed as unresolved: %s", remaining)
+	}
+
+	// 9. A blocker cannot be a reply, and bb says so itself rather than letting
+	// the server answer with something less specific.
+	replyBlocker, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID,
+		"--text", "a blocker that replies", "--blocker", "--parent-id", inlineID)
+	if err == nil {
+		t.Fatalf("a blocker reply was accepted: %s", replyBlocker)
+	}
+	// bb refuses this itself, so the message names the flags rather than
+	// whatever the server would have said about a payload it never received.
+	refusal := err.Error()
+	if !strings.Contains(refusal, "parent-id") || !strings.Contains(refusal, "blocker") {
+		t.Fatalf("the refusal did not name the two flags that conflict: %v\noutput: %s", err, replyBlocker)
+	}
+	if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
+		t.Errorf("refusal kind = %v, want validation so a caller can branch on it", kind)
 	}
 }
