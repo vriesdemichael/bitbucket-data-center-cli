@@ -125,7 +125,7 @@ func TestPRCreateDraftFlag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v output=%s", err, out)
 	}
-	if !strings.Contains(out, `"predicted_action": "create"`) {
+	if !strings.Contains(out, `"predictedAction": "create"`) {
 		t.Fatalf("expected create prediction, output=%s", out)
 	}
 	if !strings.Contains(out, `"draft": true`) {
@@ -152,7 +152,7 @@ func TestPRUpdateDraftToggle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v output=%s", err, out)
 	}
-	if !strings.Contains(out, `"predicted_action": "update"`) {
+	if !strings.Contains(out, `"predictedAction": "update"`) {
 		t.Fatalf("expected update prediction when toggling draft on, output=%s", out)
 	}
 
@@ -161,7 +161,7 @@ func TestPRUpdateDraftToggle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v output=%s", err, out)
 	}
-	if !strings.Contains(out, `"predicted_action": "no-op"`) {
+	if !strings.Contains(out, `"predictedAction": "no-op"`) {
 		t.Fatalf("expected no-op prediction when draft already matches, output=%s", out)
 	}
 
@@ -218,7 +218,7 @@ func TestPRAutoMergeEnable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v output=%s", err, out)
 	}
-	if !strings.Contains(out, `"predicted_action": "update"`) {
+	if !strings.Contains(out, `"predictedAction": "update"`) {
 		t.Fatalf("expected update prediction enabling auto-merge, output=%s", out)
 	}
 
@@ -227,7 +227,7 @@ func TestPRAutoMergeEnable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v output=%s", err, out)
 	}
-	if !strings.Contains(out, `"predicted_action": "no-op"`) {
+	if !strings.Contains(out, `"predictedAction": "no-op"`) {
 		t.Fatalf("expected no-op prediction for unchanged strategy, output=%s", out)
 	}
 
@@ -260,7 +260,7 @@ func TestPRAutoMergeDisable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v output=%s", err, out)
 	}
-	if !strings.Contains(out, `"predicted_action": "delete"`) {
+	if !strings.Contains(out, `"predictedAction": "delete"`) {
 		t.Fatalf("expected delete prediction disabling auto-merge, output=%s", out)
 	}
 
@@ -269,7 +269,7 @@ func TestPRAutoMergeDisable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v output=%s", err, out)
 	}
-	if !strings.Contains(out, `"predicted_action": "no-op"`) {
+	if !strings.Contains(out, `"predictedAction": "no-op"`) {
 		t.Fatalf("expected no-op prediction for unconfigured auto-merge, output=%s", out)
 	}
 

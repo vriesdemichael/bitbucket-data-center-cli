@@ -384,9 +384,9 @@ func assertDryRunPreview(t *testing.T, out string) {
 	t.Helper()
 
 	// Human output carries the rendered banner; --json carries the same
-	// preview as an envelope with dry_run true. Either proves a preview was
+	// preview as an envelope with dryRun true. Either proves a preview was
 	// produced, which is the thing being asserted.
-	if !strings.Contains(out, "Dry-run") && !strings.Contains(out, `"dry_run": true`) {
+	if !strings.Contains(out, "Dry-run") && !strings.Contains(out, `"dryRun": true`) {
 		t.Fatalf("expected a dry-run preview, got: %q", out)
 	}
 }

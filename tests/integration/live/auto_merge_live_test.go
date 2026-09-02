@@ -65,9 +65,9 @@ func TestLivePullRequestAutoMergeEnable(t *testing.T) {
 	if !ok {
 		data = payload
 	}
-	autoMerge, ok := data["auto_merge"].(map[string]any)
+	autoMerge, ok := data["autoMerge"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected auto_merge in the payload, got: %s", output)
+		t.Fatalf("expected autoMerge in the payload, got: %s", output)
 	}
 	if autoMerge["enabled"] != true {
 		t.Fatalf("expected auto-merge to be armed, got: %s", output)

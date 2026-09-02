@@ -232,27 +232,27 @@ func TestRepoPermissionAliasPredictsExistingEntries(t *testing.T) {
 
 	// alice already holds REPO_READ in the fixture.
 	noop := runRepoPermissionCommand(t, "--json", "--dry-run", "repo", "permissions", "grant", "alice", "repo_read", "--repo", "PRJ/demo")
-	if !strings.Contains(noop, `"predicted_action": "no-op"`) {
+	if !strings.Contains(noop, `"predictedAction": "no-op"`) {
 		t.Fatalf("expected no-op for an unchanged permission, got: %s", noop)
 	}
 
 	update := runRepoPermissionCommand(t, "--json", "--dry-run", "repo", "permissions", "grant", "alice", "repo_admin", "--repo", "PRJ/demo")
-	if !strings.Contains(update, `"predicted_action": "update"`) {
+	if !strings.Contains(update, `"predictedAction": "update"`) {
 		t.Fatalf("expected update for a changed permission, got: %s", update)
 	}
 
 	create := runRepoPermissionCommand(t, "--json", "--dry-run", "repo", "permissions", "grant", "bob", "repo_read", "--repo", "PRJ/demo")
-	if !strings.Contains(create, `"predicted_action": "create"`) {
+	if !strings.Contains(create, `"predictedAction": "create"`) {
 		t.Fatalf("expected create for an unknown user, got: %s", create)
 	}
 
 	deletePreview := runRepoPermissionCommand(t, "--json", "--dry-run", "repo", "permissions", "revoke", "alice", "--repo", "PRJ/demo")
-	if !strings.Contains(deletePreview, `"predicted_action": "delete"`) {
+	if !strings.Contains(deletePreview, `"predictedAction": "delete"`) {
 		t.Fatalf("expected delete for an existing entry, got: %s", deletePreview)
 	}
 
 	missingPreview := runRepoPermissionCommand(t, "--json", "--dry-run", "repo", "permissions", "revoke", "bob", "--repo", "PRJ/demo")
-	if !strings.Contains(missingPreview, `"predicted_action": "no-op"`) {
+	if !strings.Contains(missingPreview, `"predictedAction": "no-op"`) {
 		t.Fatalf("expected no-op for a missing entry, got: %s", missingPreview)
 	}
 }

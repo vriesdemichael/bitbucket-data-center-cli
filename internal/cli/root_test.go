@@ -2517,7 +2517,7 @@ func TestBranchCommandPaths(t *testing.T) {
 	if err := jsonDeleteDryRunCommand.Execute(); err != nil {
 		t.Fatalf("branch delete dry-run json failed: %v", err)
 	}
-	if !strings.Contains(jsonDeleteDryRunBuffer.String(), `"planning_mode": "stateful"`) {
+	if !strings.Contains(jsonDeleteDryRunBuffer.String(), `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful planning mode in output, got: %s", jsonDeleteDryRunBuffer.String())
 	}
 	if !strings.Contains(jsonDeleteDryRunBuffer.String(), `"intent": "branch.delete"`) {
@@ -3841,7 +3841,7 @@ func TestRepoSettingsSecurityPermissionsUsersGrantDryRunStateful(t *testing.T) {
 	}
 
 	output := buffer.String()
-	if !strings.Contains(output, `"planning_mode": "stateful"`) || !strings.Contains(output, `"predicted_action": "update"`) {
+	if !strings.Contains(output, `"planningMode": "stateful"`) || !strings.Contains(output, `"predictedAction": "update"`) {
 		t.Fatalf("expected stateful update preview output, got: %s", output)
 	}
 }
@@ -3878,7 +3878,7 @@ func TestProjectPermissionsUsersGrantDryRunStateful(t *testing.T) {
 	}
 
 	output := buffer.String()
-	if !strings.Contains(output, `"planning_mode": "stateful"`) || !strings.Contains(output, `"predicted_action": "update"`) {
+	if !strings.Contains(output, `"planningMode": "stateful"`) || !strings.Contains(output, `"predictedAction": "update"`) {
 		t.Fatalf("expected stateful update preview output, got: %s", output)
 	}
 }
@@ -3915,7 +3915,7 @@ func TestRepoSettingsWorkflowWebhooksCreateDryRunStateful(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatalf("execute failed: %v", err)
 	}
-	if !strings.Contains(buffer.String(), `"predicted_action": "create"`) {
+	if !strings.Contains(buffer.String(), `"predictedAction": "create"`) {
 		t.Fatalf("expected create prediction, got: %s", buffer.String())
 	}
 }
@@ -3952,7 +3952,7 @@ func TestRepoSettingsPullRequestsUpdateDryRunStateful(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatalf("execute failed: %v", err)
 	}
-	if !strings.Contains(buffer.String(), `"predicted_action": "update"`) {
+	if !strings.Contains(buffer.String(), `"predictedAction": "update"`) {
 		t.Fatalf("expected update prediction, got: %s", buffer.String())
 	}
 }
@@ -3989,7 +3989,7 @@ func TestBranchCreateDryRunStateful(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatalf("execute failed: %v", err)
 	}
-	if !strings.Contains(buffer.String(), `"planning_mode": "stateful"`) || !strings.Contains(buffer.String(), `"predicted_action": "create"`) {
+	if !strings.Contains(buffer.String(), `"planningMode": "stateful"`) || !strings.Contains(buffer.String(), `"predictedAction": "create"`) {
 		t.Fatalf("expected stateful create prediction, got: %s", buffer.String())
 	}
 }
@@ -4026,7 +4026,7 @@ func TestBranchDefaultSetDryRunStatefulNoop(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatalf("execute failed: %v", err)
 	}
-	if !strings.Contains(buffer.String(), `"predicted_action": "no-op"`) {
+	if !strings.Contains(buffer.String(), `"predictedAction": "no-op"`) {
 		t.Fatalf("expected no-op prediction, got: %s", buffer.String())
 	}
 }
@@ -4063,7 +4063,7 @@ func TestTagCreateDryRunStateful(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatalf("execute failed: %v", err)
 	}
-	if !strings.Contains(buffer.String(), `"planning_mode": "stateful"`) || !strings.Contains(buffer.String(), `"predicted_action": "create"`) {
+	if !strings.Contains(buffer.String(), `"planningMode": "stateful"`) || !strings.Contains(buffer.String(), `"predictedAction": "create"`) {
 		t.Fatalf("expected stateful create prediction, got: %s", buffer.String())
 	}
 }
@@ -4098,7 +4098,7 @@ func TestReviewerConditionCreateDryRunStateful(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatalf("execute failed: %v", err)
 	}
-	if !strings.Contains(buffer.String(), `"predicted_action": "create"`) {
+	if !strings.Contains(buffer.String(), `"predictedAction": "create"`) {
 		t.Fatalf("expected create prediction, got: %s", buffer.String())
 	}
 }
@@ -4137,7 +4137,7 @@ func TestProjectCreateDryRunStateful(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatalf("execute failed: %v", err)
 	}
-	if !strings.Contains(buffer.String(), `"predicted_action": "create"`) {
+	if !strings.Contains(buffer.String(), `"predictedAction": "create"`) {
 		t.Fatalf("expected create prediction, got: %s", buffer.String())
 	}
 }

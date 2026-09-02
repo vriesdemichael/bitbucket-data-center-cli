@@ -173,12 +173,12 @@ func TestLivePullRequestStatus(t *testing.T) {
 	}
 
 	payload := decodeJSONMap(t, output)
-	for _, section := range []string{"current_branch", "created_by_you", "requesting_your_review"} {
+	for _, section := range []string{"currentBranch", "createdByYou", "requestingYourReview"} {
 		value, ok := payload[section].(map[string]any)
 		if !ok {
 			t.Fatalf("expected %q section in pr status output: %s", section, output)
 		}
-		if _, ok := value["pull_requests"]; !ok {
+		if _, ok := value["pullRequests"]; !ok {
 			t.Fatalf("expected pull_requests in %q section: %s", section, output)
 		}
 	}
