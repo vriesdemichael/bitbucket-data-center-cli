@@ -204,7 +204,6 @@ func newProjectPermissionGrantCommand(deps Dependencies, subjectFor projectPermi
 					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{fmt.Sprintf("project permission %ss list", subject.noun)},
 				})
-				applyPermissionDryRunSummary(&preview, predicted)
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -285,7 +284,6 @@ func newProjectPermissionRevokeCommand(deps Dependencies, subjectFor projectPerm
 					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{fmt.Sprintf("project permission %ss list", subject.noun)},
 				})
-				applyPermissionDryRunSummary(&preview, predicted)
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -394,9 +392,6 @@ func alsoAvailableAs(shallowPath string, noun string) string {
 	}
 
 	return fmt.Sprintf("Also available as %s%s, one level shallower.", shallowPath, flag)
-}
-
-func applyPermissionDryRunSummary(preview *dryrunpreview.Preview, predicted string) {
 }
 
 func newProjectPermissionsCommand(deps Dependencies) *cobra.Command {
