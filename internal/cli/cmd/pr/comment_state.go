@@ -89,7 +89,7 @@ func newCommentStateCommand(
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          intent,
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "pr_id": prID, "comment_id": commentID, "state": string(state)},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "prId": prID, "commentId": commentID, "state": string(state)},
 						Action:          "update",
 						PredictedAction: "update",
 						Supported:       true,

@@ -306,3 +306,24 @@ func defaultTaskValue(upstream *projectservice.DefaultTask) result.DefaultTask {
 
 	return defaultTaskFrom(*upstream)
 }
+
+// pageOf applies --start and --limit to a list the service returned whole.
+//
+// Bitbucket's project webhook endpoint does not page, so bb does it here. Both
+// renderings read the paged list: applying it to only one of them made --json
+// and the table answer differently to the same flags.
+func pageOf(webhooks []result.Webhook, start int, limit int) []result.Webhook {
+	if start < 0 {
+		start = 0
+	}
+	if start >= len(webhooks) {
+		return []result.Webhook{}
+	}
+
+	end := start + limit
+	if limit <= 0 || end > len(webhooks) {
+		end = len(webhooks)
+	}
+
+	return webhooks[start:end]
+}

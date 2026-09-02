@@ -387,7 +387,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "repo.default-task.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "description": args[0], "source_ref": src, "target_ref": tgt},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "description": args[0], "sourceRef": src, "targetRef": tgt},
 						Action:          "create",
 						PredictedAction: "create",
 						Supported:       true,
@@ -455,7 +455,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "repo.default-task.update",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "description": updateDesc, "source_ref": src, "target_ref": tgt},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "description": updateDesc, "sourceRef": src, "targetRef": tgt},
 						Action:          "update",
 						PredictedAction: "update",
 						Supported:       true,

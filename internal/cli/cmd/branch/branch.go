@@ -339,7 +339,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "branch.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "start_point": createStartPoint},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "startPoint": createStartPoint},
 						Action:          "create",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -418,7 +418,7 @@ func New(deps Dependencies) *cobra.Command {
 							Target: map[string]any{
 								"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
 								"branch":     args[0],
-								"end_point":  strings.TrimSpace(deleteEndPoint),
+								"endPoint":   strings.TrimSpace(deleteEndPoint),
 							},
 							Action:          "delete",
 							PredictedAction: "delete",
@@ -525,7 +525,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "branch.default.set",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "default_branch": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "defaultBranch": args[0]},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -652,7 +652,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "branch.model.update",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "default_branch": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "defaultBranch": args[0]},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -844,7 +844,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "branch.restriction.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "type": createRestrictionType, "matcher_type": createMatcherType, "matcher_id": createMatcherID},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "type": createRestrictionType, "matcherType": createMatcherType, "matcherId": createMatcherID},
 						Action:          "create",
 						PredictedAction: predicted,
 						Supported:       true,

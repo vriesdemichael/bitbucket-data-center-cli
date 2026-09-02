@@ -106,7 +106,7 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "project.default-task.create",
-						Target:          map[string]any{"project": args[0], "description": args[1], "source_ref": src, "target_ref": tgt},
+						Target:          map[string]any{"project": args[0], "description": args[1], "sourceRef": src, "targetRef": tgt},
 						Action:          "create",
 						PredictedAction: "create",
 						Supported:       true,
@@ -176,7 +176,7 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "project.default-task.update",
-						Target:          map[string]any{"project": args[0], "id": args[1], "description": updateDesc, "source_ref": src, "target_ref": tgt},
+						Target:          map[string]any{"project": args[0], "id": args[1], "description": updateDesc, "sourceRef": src, "targetRef": tgt},
 						Action:          "update",
 						PredictedAction: "update",
 						Supported:       true,
