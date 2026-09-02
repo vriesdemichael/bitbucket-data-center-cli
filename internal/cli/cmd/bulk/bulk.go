@@ -141,7 +141,7 @@ func New(deps Dependencies) *cobra.Command {
 			// to find it in the message is the scraping the machine contract
 			// exists to end (#474, ADR-075).
 			if applyErr != nil && status.OperationID != "" {
-				applyErr = apperrors.WithDetail(applyErr, "operation_id", status.OperationID)
+				applyErr = apperrors.WithDetail(applyErr, "operationId", status.OperationID)
 			}
 
 			// Human output prints the status whatever happened. The error line

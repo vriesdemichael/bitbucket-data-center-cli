@@ -7,7 +7,7 @@ decision: >
   produced data and failed, the failure envelope wins: ADR-046 distinguishes the two by which
   key is present, so a run cannot report both.
   A handle the caller needs to act on the failure goes in error.details, a string map inside
-  the error object, not in the message. bb bulk apply sets operation_id there, and
+  the error object, not in the message. bb bulk apply sets operationId there, and
   bb bulk status <id> --json returns the full artifact.
   Human output is unaffected. The status goes to stdout and the error line to stderr, so the
   two do not collide and no handle is needed to recover the detail.
