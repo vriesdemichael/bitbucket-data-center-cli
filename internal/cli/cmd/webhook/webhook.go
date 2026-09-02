@@ -107,7 +107,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), SingleWebhook{Webhook: webhookFrom(hook)})
+				return d.WriteJSON(cmd.OutOrStdout(), SingleWebhook{Webhook: result.WebhookFrom(hook)})
 			}
 			pretty, err := json.MarshalIndent(hook, "", "  ")
 			if err != nil {
@@ -184,7 +184,7 @@ func New(deps Dependencies) *cobra.Command {
 				return d.WriteJSON(cmd.OutOrStdout(), Change{
 					Status:     result.OK(),
 					Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
-					Webhook:    webhookFrom(updated),
+					Webhook:    result.WebhookFrom(updated),
 				})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated webhook:"), style.Secondary.Render(args[0]))
@@ -322,7 +322,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), Webhooks{Webhooks: webhooksFrom(res.Payload)})
+				return d.WriteJSON(cmd.OutOrStdout(), Webhooks{Webhooks: result.WebhooksFrom(res.Payload)})
 			}
 
 			var webhooks []WebhookModel
@@ -446,7 +446,7 @@ func New(deps Dependencies) *cobra.Command {
 				return d.WriteJSON(cmd.OutOrStdout(), Change{
 					Status:     result.OK(),
 					Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
-					Webhook:    webhookFrom(payload),
+					Webhook:    result.WebhookFrom(payload),
 				})
 			}
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
@@ -45,7 +46,7 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"project": args[0], "restrictions": restrictions})
+				return deps.WriteJSON(cmd.OutOrStdout(), Restrictions{Project: args[0], Restrictions: result.RestrictionsFrom(restrictions)})
 			}
 
 			if len(restrictions) == 0 {
@@ -96,7 +97,7 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"project": args[0], "restriction": restriction})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Project: args[0], Restriction: result.RestrictionFrom(restriction)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", style.Secondary.Render(fmt.Sprintf("id=%d", safeInt32(restriction.Id))), safeString(restriction.Type))
@@ -198,7 +199,7 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"project": args[0], "restriction": created})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Project: args[0], Restriction: result.RestrictionFrom(created)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created restriction:"), style.Secondary.Render(fmt.Sprintf("%d", safeInt32(created.Id))))
@@ -300,7 +301,7 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"project": args[0], "restriction": updated})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Project: args[0], Restriction: result.RestrictionFrom(updated)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated restriction:"), style.Secondary.Render(args[1]))
@@ -361,7 +362,7 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "project": args[0], "restriction_id": args[1]})
+				return deps.WriteJSON(cmd.OutOrStdout(), RestrictionDeletion{Status: result.OK(), Project: args[0], RestrictionID: args[1]})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted restriction:"), style.Secondary.Render(args[1]))
