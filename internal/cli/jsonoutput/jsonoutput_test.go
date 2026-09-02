@@ -305,7 +305,7 @@ func TestErrorEnvelopeCarriesDetailsAsFields(t *testing.T) {
 
 	err := apperrors.WithDetail(
 		apperrors.New(apperrors.KindCancelled, "bulk apply op-abc123 was cancelled", nil),
-		"operation_id", "op-abc123",
+		"operationId", "op-abc123",
 	)
 
 	buffer := &bytes.Buffer{}
@@ -318,7 +318,7 @@ func TestErrorEnvelopeCarriesDetailsAsFields(t *testing.T) {
 		t.Fatalf("envelope is not valid JSON: %v\n%s", decodeErr, buffer.String())
 	}
 
-	if got := envelope.Error.Details["operation_id"]; got != "op-abc123" {
+	if got := envelope.Error.Details["operationId"]; got != "op-abc123" {
 		t.Errorf("error.details.operation_id = %q, want op-abc123\n%s", got, buffer.String())
 	}
 	if envelope.Error.ExitCode != 12 {

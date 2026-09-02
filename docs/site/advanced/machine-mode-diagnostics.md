@@ -102,12 +102,12 @@ Command failures use deterministic exit codes by error kind.
 A failure may carry an optional `error.details` object: a flat map of strings naming what you
 need to act on it. It is absent when there is nothing to carry.
 
-`bb bulk apply` sets `operation_id` there, because on the failure path the error envelope is
+`bb bulk apply` sets `operationId` there, because on the failure path the error envelope is
 the only document written (ADR-075) and the status artifact is reached by id:
 
 ```bash
-operation_id=$(bb bulk apply --from-plan plan.json --json | jq -r '.error.details.operation_id // empty')
-bb bulk status "$operation_id" --json
+operationId=$(bb bulk apply --from-plan plan.json --json | jq -r '.error.details.operationId // empty')
+bb bulk status "$operationId" --json
 ```
 
 Read handles from `error.details`, not by parsing `error.message`.
@@ -128,8 +128,8 @@ bb bulk apply --from-plan plan.json --json | jq -r '.data.summary.failedTargets'
 
 # v4
 output=$(bb bulk apply --from-plan plan.json --json) || true
-operation_id=$(printf '%s' "$output" | jq -r '.error.details.operation_id // empty')
-bb bulk status "$operation_id" --json | jq -r '.data.summary.failedTargets'
+operationId=$(printf '%s' "$output" | jq -r '.error.details.operationId // empty')
+bb bulk status "$operationId" --json | jq -r '.data.summary.failedTargets'
 ```
 
 Human output is unchanged: the status still goes to stdout and the error line to stderr.

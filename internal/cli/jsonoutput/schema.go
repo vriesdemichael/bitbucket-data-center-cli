@@ -90,7 +90,7 @@ func ErrorEnvelopeSchema(schemaFileName string) map[string]any {
 						"enum":        codeValues,
 					},
 					"details": map[string]any{
-						"description": "Machine-readable handles the caller needs to act on the failure, keyed by name. Absent when there are none. bb bulk apply sets operation_id, which `bb bulk status <id>` takes.",
+						"description": "Machine-readable handles the caller needs to act on the failure, keyed by name. Absent when there are none. bb bulk apply sets operationId, which `bb bulk status <id>` takes.",
 						"type":        "object",
 						"additionalProperties": map[string]any{
 							"type":      "string",

@@ -13,8 +13,12 @@ decision: >
   field description what it corresponds to upstream. Renaming because a name is merely unfamiliar
   is not a reason; renaming because it describes an implementation detail the caller does not
   have is.
+  It covers every document bb writes to stdout under --json, not only command payloads: the
+  dry-run preview and the keys inside error.details are output too, and both were missed on the
+  first pass because they are not what anyone pictures when they say "the output".
   This is a naming rule for output. Input flags stay kebab-case, which is what a CLI reader
-  expects and what every flag already uses.
+  expects and what every flag already uses. Structured log lines on stderr are a separate
+  surface and are left alone.
 agent_instructions: >
   Name a new output field in camelCase. Do not introduce snake_case, and do not publish a Go
   struct without JSON tags -- an untagged field publishes its Go name, which is PascalCase.
