@@ -3,6 +3,7 @@ package projectcmd
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -13,14 +14,6 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	projectservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/project"
 )
-
-type WebhookModel struct {
-	Id     *int     `json:"id,omitempty"`
-	Name   *string  `json:"name,omitempty"`
-	Url    *string  `json:"url,omitempty"`
-	Active *bool    `json:"active,omitempty"`
-	Events []string `json:"events,omitempty"`
-}
 
 func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	webhookCmd := &cobra.Command{
@@ -46,36 +39,13 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// Paged before either rendering, not only before the human one.
+			// --start and --limit used to narrow the table while --json returned
+			// every webhook, so the two answered differently to the same flags.
+			webhooks := pageOf(result.WebhooksFrom(payload), start, listPaging.ServiceLimit())
+
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), Webhooks{Project: args[0], Webhooks: result.WebhooksFrom(payload)})
-			}
-
-			var webhooks []WebhookModel
-			if payload != nil {
-				raw, err := json.Marshal(payload)
-				if err == nil {
-					_ = json.Unmarshal(raw, &webhooks)
-					if len(webhooks) == 0 {
-						var paginated struct {
-							Values []WebhookModel `json:"values"`
-						}
-						_ = json.Unmarshal(raw, &paginated)
-						webhooks = paginated.Values
-					}
-				}
-			}
-
-			if start < 0 {
-				start = 0
-			}
-			if start >= len(webhooks) {
-				webhooks = []WebhookModel{}
-			} else {
-				end := start + listPaging.ServiceLimit()
-				if end > len(webhooks) {
-					end = len(webhooks)
-				}
-				webhooks = webhooks[start:end]
+				return deps.WriteJSON(cmd.OutOrStdout(), Webhooks{Project: args[0], Webhooks: webhooks})
 			}
 
 			if len(webhooks) == 0 {
@@ -84,24 +54,13 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 			}
 
 			rows := make([][]string, len(webhooks))
-			for i, h := range webhooks {
-				idStr := ""
-				if h.Id != nil {
-					idStr = fmt.Sprintf("%d", *h.Id)
-				}
-				nameStr := safeString(h.Name)
-				urlStr := safeString(h.Url)
-				activeStr := "false"
-				if h.Active != nil && *h.Active {
-					activeStr = "true"
-				}
-				eventsStr := strings.Join(h.Events, ", ")
+			for i, hook := range webhooks {
 				rows[i] = []string{
-					style.Secondary.Render(idStr),
-					nameStr,
-					urlStr,
-					activeStr,
-					eventsStr,
+					style.Secondary.Render(strconv.Itoa(hook.ID)),
+					hook.Name,
+					hook.URL,
+					strconv.FormatBool(hook.Active),
+					strings.Join(hook.Events, ", "),
 				}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
@@ -158,24 +117,12 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			hook := result.WebhookFrom(created)
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Project: args[0], Webhook: result.WebhookFrom(created)})
+				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Project: args[0], Webhook: hook})
 			}
 
-			var hook WebhookModel
-			if created != nil {
-				raw, err := json.Marshal(created)
-				if err == nil {
-					_ = json.Unmarshal(raw, &hook)
-				}
-			}
-
-			idStr := ""
-			if hook.Id != nil {
-				idStr = fmt.Sprintf("%d", *hook.Id)
-			}
-
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook:"), style.Secondary.Render(idStr))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook:"), style.Secondary.Render(strconv.Itoa(hook.ID)))
 			return nil
 		},
 	}
@@ -226,7 +173,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "project.webhook.update",
-						Target:          map[string]any{"project": args[0], "webhook_id": args[1], "name": updateName, "url": updateURL, "events": updateEvents, "active": active},
+						Target:          map[string]any{"project": args[0], "webhookId": args[1], "name": updateName, "url": updateURL, "events": updateEvents, "active": active},
 						Action:          "update",
 						PredictedAction: "update",
 						Supported:       true,
@@ -284,7 +231,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "project.webhook.delete",
-						Target:          map[string]any{"project": args[0], "webhook_id": args[1]},
+						Target:          map[string]any{"project": args[0], "webhookId": args[1]},
 						Action:          "delete",
 						PredictedAction: "delete",
 						Supported:       true,
@@ -338,7 +285,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "project.webhook.test",
-						Target:          map[string]any{"project": args[0], "webhook_id": args[1]},
+						Target:          map[string]any{"project": args[0], "webhookId": args[1]},
 						Action:          "update",
 						PredictedAction: "update",
 						Supported:       true,

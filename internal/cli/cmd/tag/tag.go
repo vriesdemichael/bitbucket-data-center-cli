@@ -192,7 +192,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "tag.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "start_point": startPoint, "message": message},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "startPoint": startPoint, "message": message},
 						Action:          "create",
 						PredictedAction: predicted,
 						Supported:       true,

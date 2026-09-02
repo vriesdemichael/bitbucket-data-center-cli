@@ -161,7 +161,7 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "project.branch-restriction.create",
-						Target:          map[string]any{"project": args[0], "type": createType, "matcher_type": createMatcherType, "matcher_id": createMatcherID},
+						Target:          map[string]any{"project": args[0], "type": createType, "matcherType": createMatcherType, "matcherId": createMatcherID},
 						Action:          "create",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -269,7 +269,7 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "project.branch-restriction.update",
-						Target:          map[string]any{"project": args[0], "restriction_id": args[1], "type": updateType, "matcher_type": updateMatcherType, "matcher_id": updateMatcherID},
+						Target:          map[string]any{"project": args[0], "restrictionId": args[1], "type": updateType, "matcherType": updateMatcherType, "matcherId": updateMatcherID},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -344,7 +344,7 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "project.branch-restriction.delete",
-						Target:          map[string]any{"project": args[0], "restriction_id": args[1]},
+						Target:          map[string]any{"project": args[0], "restrictionId": args[1]},
 						Action:          "delete",
 						PredictedAction: "delete",
 						Supported:       true,

@@ -476,7 +476,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "insights.annotation.set",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": args[1], "external_id": args[2]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": args[1], "externalId": args[2]},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -563,7 +563,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityPartial,
 					Items: []dryrunpreview.Item{{
 						Intent:          "insights.annotation.delete",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": args[1], "external_id": externalID},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": args[1], "externalId": externalID},
 						Action:          "delete",
 						PredictedAction: predicted,
 						Supported:       true,
