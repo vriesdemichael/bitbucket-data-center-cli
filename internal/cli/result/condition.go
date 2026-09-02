@@ -1,6 +1,7 @@
 package result
 
 import (
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -51,8 +52,8 @@ func ConditionFrom(upstream openapigenerated.RestPullRequestCondition) Condition
 	}
 	if upstream.SourceRefMatcher != nil {
 		converted.SourceRefMatcher = RefMatcher{
-			ID:        stringValue(upstream.SourceRefMatcher.Id),
-			DisplayID: stringValue(upstream.SourceRefMatcher.DisplayId),
+			ID:        safederef.String(upstream.SourceRefMatcher.Id),
+			DisplayID: safederef.String(upstream.SourceRefMatcher.DisplayId),
 		}
 		if upstream.SourceRefMatcher.Type != nil {
 			converted.SourceRefMatcher.Type = string(upstream.SourceRefMatcher.Type.Id)
@@ -60,8 +61,8 @@ func ConditionFrom(upstream openapigenerated.RestPullRequestCondition) Condition
 	}
 	if upstream.TargetRefMatcher != nil {
 		converted.TargetRefMatcher = RefMatcher{
-			ID:        stringValue(upstream.TargetRefMatcher.Id),
-			DisplayID: stringValue(upstream.TargetRefMatcher.DisplayId),
+			ID:        safederef.String(upstream.TargetRefMatcher.Id),
+			DisplayID: safederef.String(upstream.TargetRefMatcher.DisplayId),
 		}
 		if upstream.TargetRefMatcher.Type != nil {
 			converted.TargetRefMatcher.Type = string(upstream.TargetRefMatcher.Type.Id)
@@ -91,7 +92,7 @@ func ConditionsFrom(upstream []openapigenerated.RestPullRequestCondition) []Cond
 func ParticipantsFrom(upstream []openapigenerated.RestReviewerGroup) []Participant {
 	converted := make([]Participant, 0, len(upstream))
 	for _, one := range upstream {
-		participant := Participant{Name: stringValue(one.Name)}
+		participant := Participant{Name: safederef.String(one.Name)}
 		if one.Id != nil {
 			participant.ID = *one.Id
 		}

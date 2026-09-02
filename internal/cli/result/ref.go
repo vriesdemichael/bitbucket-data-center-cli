@@ -1,6 +1,7 @@
 package result
 
 import (
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -26,8 +27,8 @@ var RefTypes = []string{"BRANCH", "TAG"}
 // RefFrom converts one upstream ref.
 func RefFrom(upstream openapigenerated.RestMinimalRef) Ref {
 	converted := Ref{
-		ID:        stringValue(upstream.Id),
-		DisplayID: stringValue(upstream.DisplayId),
+		ID:        safederef.String(upstream.Id),
+		DisplayID: safederef.String(upstream.DisplayId),
 	}
 	if upstream.Type != nil {
 		converted.Type = string(*upstream.Type)

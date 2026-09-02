@@ -1,6 +1,7 @@
 package result
 
 import (
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -27,10 +28,10 @@ type User struct {
 // UserFrom converts the nested account type.
 func UserFrom(upstream openapigenerated.ApplicationUser) User {
 	converted := User{
-		Name:         stringValue(upstream.Name),
-		DisplayName:  stringValue(upstream.DisplayName),
-		EmailAddress: stringValue(upstream.EmailAddress),
-		Slug:         stringValue(upstream.Slug),
+		Name:         safederef.String(upstream.Name),
+		DisplayName:  safederef.String(upstream.DisplayName),
+		EmailAddress: safederef.String(upstream.EmailAddress),
+		Slug:         safederef.String(upstream.Slug),
 	}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
@@ -58,10 +59,10 @@ func UsersFrom(upstream []openapigenerated.ApplicationUser) []User {
 // RestUserFrom converts the top-level account type.
 func RestUserFrom(upstream openapigenerated.RestApplicationUser) User {
 	converted := User{
-		Name:         stringValue(upstream.Name),
-		DisplayName:  stringValue(upstream.DisplayName),
-		EmailAddress: stringValue(upstream.EmailAddress),
-		Slug:         stringValue(upstream.Slug),
+		Name:         safederef.String(upstream.Name),
+		DisplayName:  safederef.String(upstream.DisplayName),
+		EmailAddress: safederef.String(upstream.EmailAddress),
+		Slug:         safederef.String(upstream.Slug),
 	}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id

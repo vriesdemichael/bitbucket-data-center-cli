@@ -3,6 +3,7 @@ package pullrequestactivity
 import (
 	"context"
 	"encoding/json"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -169,10 +170,10 @@ func TestRawActivityHelpers(t *testing.T) {
 		t.Fatal("expected mapActivity to fail for invalid comment payload")
 	}
 
-	if safeString(nil) != "" || safeString(stringPtr("ok")) != "ok" {
+	if safederef.String(nil) != "" || safederef.String(stringPtr("ok")) != "ok" {
 		t.Fatal("unexpected safeString behavior")
 	}
-	if safeInt64(nil) != 0 {
+	if safederef.Int64(nil) != 0 {
 		t.Fatal("expected zero safeInt64")
 	}
 

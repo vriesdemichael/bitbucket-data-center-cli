@@ -3,6 +3,7 @@ package prcmd
 import (
 	"context"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"strconv"
 	"strings"
 
@@ -49,10 +50,10 @@ func formatCommentDetail(comment openapigenerated.RestComment) string {
 	if author := commentAuthorName(comment); author != "" {
 		lines = append(lines, fmt.Sprintf("Author: %s", author))
 	}
-	if state := safeString(comment.State); state != "" {
+	if state := safederef.String(comment.State); state != "" {
 		lines = append(lines, fmt.Sprintf("State: %s", state))
 	}
-	if text := strings.TrimSpace(safeString(comment.Text)); text != "" {
+	if text := strings.TrimSpace(safederef.String(comment.Text)); text != "" {
 		lines = append(lines, "")
 		lines = append(lines, text)
 	}
@@ -340,34 +341,6 @@ func commentAuthorName(comment openapigenerated.RestComment) string {
 		return displayName
 	}
 	return strings.TrimSpace(comment.Author.Name)
-}
-
-func safeString(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
-}
-
-func safeInt32(value *int32) int32 {
-	if value == nil {
-		return 0
-	}
-	return *value
-}
-
-func safeInt64(value *int64) int64 {
-	if value == nil {
-		return 0
-	}
-	return *value
-}
-
-func safeStringSlice(values *[]string) []string {
-	if values == nil {
-		return nil
-	}
-	return *values
 }
 
 func safeUsers(values *[]openapigenerated.RestApplicationUser) []openapigenerated.RestApplicationUser {

@@ -21,38 +21,9 @@ func TestPRDefaults(t *testing.T) {
 }
 
 func TestPRFormatSafeHelpers(t *testing.T) {
-	if safeString(nil) != "" {
-		t.Fatal("expected empty string for safeString(nil)")
-	}
+	// The pointer helpers moved to internal/cli/safederef and are tested
+	// there. safeUsers is this package's own and stays.
 	s := "test"
-	if safeString(&s) != "test" {
-		t.Fatal("expected test for safeString(&s)")
-	}
-
-	if safeInt32(nil) != 0 {
-		t.Fatal("expected 0 for safeInt32(nil)")
-	}
-	i32 := int32(42)
-	if safeInt32(&i32) != 42 {
-		t.Fatal("expected 42 for safeInt32(&i32)")
-	}
-
-	if safeInt64(nil) != 0 {
-		t.Fatal("expected 0 for safeInt64(nil)")
-	}
-	i64 := int64(420)
-	if safeInt64(&i64) != 420 {
-		t.Fatal("expected 420 for safeInt64(&i64)")
-	}
-
-	if safeStringSlice(nil) != nil {
-		t.Fatal("expected nil for safeStringSlice(nil)")
-	}
-	sl := []string{"a", "b"}
-	if len(safeStringSlice(&sl)) != 2 {
-		t.Fatal("expected 2 elements for safeStringSlice(&sl)")
-	}
-
 	if safeUsers(nil) != nil {
 		t.Fatal("expected nil for safeUsers(nil)")
 	}

@@ -3,6 +3,7 @@ package searchcmd
 import (
 	"bytes"
 	"context"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -170,12 +171,12 @@ func TestSearchReposEmptyResult(t *testing.T) {
 }
 
 func TestSearchDefaultsAndSafeString(t *testing.T) {
-	if safeString(nil) != "" {
-		t.Fatal("expected empty string for safeString(nil)")
+	if safederef.String(nil) != "" {
+		t.Fatal("expected empty string for safederef.String(nil)")
 	}
 	s := "test"
-	if safeString(&s) != "test" {
-		t.Fatal("expected test for safeString(&s)")
+	if safederef.String(&s) != "test" {
+		t.Fatal("expected test for safederef.String(&s)")
 	}
 
 	t.Setenv("BITBUCKET_URL", "http://localhost:7990")

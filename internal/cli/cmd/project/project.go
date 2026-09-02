@@ -3,6 +3,7 @@ package projectcmd
 import (
 	"context"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"io"
 	"strings"
 
@@ -119,7 +120,7 @@ func New(deps Dependencies) *cobra.Command {
 
 			rows := make([][]string, len(projects))
 			for i, p := range projects {
-				rows[i] = []string{style.Resource.Render(safeString(p.Key)), safeString(p.Name)}
+				rows[i] = []string{style.Resource.Render(safederef.String(p.Key)), safederef.String(p.Name)}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
 
@@ -149,9 +150,9 @@ func New(deps Dependencies) *cobra.Command {
 				return d.WriteJSON(cmd.OutOrStdout(), SingleProject{Project: projectFrom(project)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Key:"), safeString(project.Key))
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Name:"), safeString(project.Name))
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Description:"), safeString(project.Description))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Key:"), safederef.String(project.Key))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Name:"), safederef.String(project.Name))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Description:"), safederef.String(project.Description))
 			return nil
 		},
 	}
@@ -229,7 +230,7 @@ func New(deps Dependencies) *cobra.Command {
 				return d.WriteJSON(cmd.OutOrStdout(), SingleProject{Project: projectFrom(created)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created project"), style.Resource.Render(safeString(created.Key)))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created project"), style.Resource.Render(safederef.String(created.Key)))
 			return nil
 		},
 	}
@@ -263,8 +264,8 @@ func New(deps Dependencies) *cobra.Command {
 
 				predicted := "update"
 				reason := "project details will be updated"
-				currentName := strings.TrimSpace(safeString(current.Name))
-				currentDesc := strings.TrimSpace(safeString(current.Description))
+				currentName := strings.TrimSpace(safederef.String(current.Name))
+				currentDesc := strings.TrimSpace(safederef.String(current.Description))
 				if strings.EqualFold(currentName, strings.TrimSpace(updateName)) && strings.EqualFold(currentDesc, strings.TrimSpace(updateDesc)) {
 					predicted = "no-op"
 					reason = "project already matches requested values"
@@ -307,7 +308,7 @@ func New(deps Dependencies) *cobra.Command {
 				return d.WriteJSON(cmd.OutOrStdout(), SingleProject{Project: projectFrom(updated)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated project"), style.Resource.Render(safeString(updated.Key)))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated project"), style.Resource.Render(safederef.String(updated.Key)))
 			return nil
 		},
 	}
@@ -390,30 +391,9 @@ func New(deps Dependencies) *cobra.Command {
 	return projectCmd
 }
 
-func safeString(ptr *string) string {
-	if ptr == nil {
-		return ""
-	}
-	return *ptr
-}
-
-func safeInt32(ptr *int32) int32 {
-	if ptr == nil {
-		return 0
-	}
-	return *ptr
-}
-
 func safeUsers(users *[]openapigenerated.RestApplicationUser) []openapigenerated.RestApplicationUser {
 	if users == nil {
 		return nil
 	}
 	return *users
-}
-
-func safeStringSlice(s *[]string) []string {
-	if s == nil {
-		return nil
-	}
-	return *s
 }

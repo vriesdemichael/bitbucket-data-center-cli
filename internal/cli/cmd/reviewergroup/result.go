@@ -2,6 +2,7 @@ package reviewergroupcmd
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -44,9 +45,9 @@ func init() {
 // groupFrom converts one upstream reviewer group.
 func groupFrom(upstream openapigenerated.RestReviewerGroup) Group {
 	converted := Group{
-		Name:        safeString(upstream.Name),
-		Description: safeString(upstream.Description),
-		AvatarURL:   safeString(upstream.AvatarUrl),
+		Name:        safederef.String(upstream.Name),
+		Description: safederef.String(upstream.Description),
+		AvatarURL:   safederef.String(upstream.AvatarUrl),
 	}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
@@ -69,12 +70,4 @@ func groupsFrom(upstream []openapigenerated.RestReviewerGroup) []Group {
 	}
 
 	return converted
-}
-
-func safeString(value *string) string {
-	if value == nil {
-		return ""
-	}
-
-	return *value
 }

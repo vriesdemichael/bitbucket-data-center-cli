@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -2248,23 +2249,23 @@ func TestCommentHelpersAndSafeHelpers(t *testing.T) {
 		t.Fatalf("unexpected comment summary: %s", formatCommentSummary(comment))
 	}
 
-	if safeString(nil) != "" {
+	if safederef.String(nil) != "" {
 		t.Fatal("expected empty safe string")
 	}
-	if safeInt32(nil) != 0 {
+	if safederef.Int32(nil) != 0 {
 		t.Fatal("expected zero safe int32")
 	}
-	if safeInt64(nil) != 0 {
+	if safederef.Int64(nil) != 0 {
 		t.Fatal("expected zero safe int64")
 	}
-	if len(safeStringSlice(nil)) != 0 {
+	if len(safederef.StringSlice(nil)) != 0 {
 		t.Fatal("expected empty safe string slice")
 	}
 
 	s := "x"
 	i32 := int32(9)
 	i64 := int64(10)
-	if safeString(&s) != "x" || safeInt32(&i32) != 9 || safeInt64(&i64) != 10 {
+	if safederef.String(&s) != "x" || safederef.Int32(&i32) != 9 || safederef.Int64(&i64) != 10 {
 		t.Fatal("expected pointer helper values")
 	}
 

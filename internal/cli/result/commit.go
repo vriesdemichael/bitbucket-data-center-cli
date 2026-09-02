@@ -1,6 +1,7 @@
 package result
 
 import (
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"strings"
 
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -49,23 +50,23 @@ func (commit Commit) Subject() string {
 // CommitFrom converts one upstream commit.
 func CommitFrom(upstream openapigenerated.RestCommit) Commit {
 	converted := Commit{
-		ID:        stringValue(upstream.Id),
-		DisplayID: stringValue(upstream.DisplayId),
-		Message:   stringValue(upstream.Message),
+		ID:        safederef.String(upstream.Id),
+		DisplayID: safederef.String(upstream.DisplayId),
+		Message:   safederef.String(upstream.Message),
 	}
 
 	if upstream.Author != nil {
 		converted.Author = Person{
 			Name:         upstream.Author.Name,
-			EmailAddress: stringValue(upstream.Author.EmailAddress),
-			AvatarURL:    stringValue(upstream.Author.AvatarUrl),
+			EmailAddress: safederef.String(upstream.Author.EmailAddress),
+			AvatarURL:    safederef.String(upstream.Author.AvatarUrl),
 		}
 	}
 	if upstream.Committer != nil {
 		converted.Committer = Person{
 			Name:         upstream.Committer.Name,
-			EmailAddress: stringValue(upstream.Committer.EmailAddress),
-			AvatarURL:    stringValue(upstream.Committer.AvatarUrl),
+			EmailAddress: safederef.String(upstream.Committer.EmailAddress),
+			AvatarURL:    safederef.String(upstream.Committer.AvatarUrl),
 		}
 	}
 	if upstream.AuthorTimestamp != nil {
@@ -77,7 +78,7 @@ func CommitFrom(upstream openapigenerated.RestCommit) Commit {
 	if upstream.Parents != nil {
 		converted.Parents = make([]string, 0, len(*upstream.Parents))
 		for _, parent := range *upstream.Parents {
-			converted.Parents = append(converted.Parents, stringValue(parent.Id))
+			converted.Parents = append(converted.Parents, safederef.String(parent.Id))
 		}
 	}
 
@@ -99,10 +100,3 @@ func CommitsFrom(upstream []openapigenerated.RestCommit) []Commit {
 // The generated types make every field a pointer, so this appears wherever a
 // model is built from one. It lives here rather than being redefined in each
 // command package, which is where safeString already had 38 copies.
-func stringValue(value *string) string {
-	if value == nil {
-		return ""
-	}
-
-	return *value
-}

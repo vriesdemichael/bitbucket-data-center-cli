@@ -2,6 +2,7 @@ package insightscmd
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -88,12 +89,12 @@ func init() {
 // reportFrom converts one upstream report.
 func reportFrom(upstream openapigenerated.RestInsightReport) Report {
 	converted := Report{
-		Key:      safeString(upstream.Key),
-		Title:    safeString(upstream.Title),
-		Details:  safeString(upstream.Details),
-		Reporter: safeString(upstream.Reporter),
-		Link:     safeString(upstream.Link),
-		LogoURL:  safeString(upstream.LogoUrl),
+		Key:      safederef.String(upstream.Key),
+		Title:    safederef.String(upstream.Title),
+		Details:  safederef.String(upstream.Details),
+		Reporter: safederef.String(upstream.Reporter),
+		Link:     safederef.String(upstream.Link),
+		LogoURL:  safederef.String(upstream.LogoUrl),
 	}
 	if upstream.Result != nil {
 		converted.Result = string(*upstream.Result)
@@ -105,8 +106,8 @@ func reportFrom(upstream openapigenerated.RestInsightReport) Report {
 		converted.Data = make([]ReportDatum, 0, len(*upstream.Data))
 		for _, datum := range *upstream.Data {
 			entry := ReportDatum{
-				Title: safeString(datum.Title),
-				Type:  safeString(datum.Type),
+				Title: safederef.String(datum.Title),
+				Type:  safederef.String(datum.Type),
 			}
 			if datum.Value != nil {
 				entry.Value = *datum.Value
@@ -131,13 +132,13 @@ func reportsFrom(upstream []openapigenerated.RestInsightReport) []Report {
 // annotationFrom converts one upstream annotation.
 func annotationFrom(upstream openapigenerated.RestInsightAnnotation) Annotation {
 	converted := Annotation{
-		ExternalID: safeString(upstream.ExternalId),
-		ReportKey:  safeString(upstream.ReportKey),
-		Path:       safeString(upstream.Path),
-		Message:    safeString(upstream.Message),
-		Severity:   safeString(upstream.Severity),
-		Type:       safeString(upstream.Type),
-		Link:       safeString(upstream.Link),
+		ExternalID: safederef.String(upstream.ExternalId),
+		ReportKey:  safederef.String(upstream.ReportKey),
+		Path:       safederef.String(upstream.Path),
+		Message:    safederef.String(upstream.Message),
+		Severity:   safederef.String(upstream.Severity),
+		Type:       safederef.String(upstream.Type),
+		Link:       safederef.String(upstream.Link),
 	}
 	if upstream.Line != nil {
 		converted.Line = *upstream.Line

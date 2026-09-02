@@ -312,29 +312,9 @@ func TestFormatPullRequestActivitySummary(t *testing.T) {
 }
 
 func TestFormatHelpers(t *testing.T) {
-	// safeString
+	// The pointer helpers moved to internal/cli/safederef and are tested
+	// there. safeUsers is this package's own and stays.
 	s := "hello"
-	if safeString(&s) != "hello" || safeString(nil) != "" {
-		t.Fatal("unexpected safeString result")
-	}
-
-	// safeInt32
-	var i32 int32 = 42
-	if safeInt32(&i32) != 42 || safeInt32(nil) != 0 {
-		t.Fatal("unexpected safeInt32 result")
-	}
-
-	// safeInt64
-	var i64 int64 = 100
-	if safeInt64(&i64) != 100 || safeInt64(nil) != 0 {
-		t.Fatal("unexpected safeInt64 result")
-	}
-
-	// safeStringSlice
-	slice := []string{"a", "b"}
-	if len(safeStringSlice(&slice)) != 2 || safeStringSlice(nil) != nil {
-		t.Fatal("unexpected safeStringSlice result")
-	}
 
 	// safeUsers
 	users := []openapigenerated.RestApplicationUser{{Name: &s}}
