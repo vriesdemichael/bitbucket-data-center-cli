@@ -2,6 +2,7 @@ package repocmd
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -268,7 +269,7 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 
 			rows := make([][]string, len(commits))
 			for i, commit := range commits {
-				rows[i] = []string{style.Secondary.Render(safeString(commit.DisplayId)), strings.Split(safeString(commit.Message), "\n")[0]}
+				rows[i] = []string{style.Secondary.Render(safederef.String(commit.DisplayId)), strings.Split(safederef.String(commit.Message), "\n")[0]}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
 

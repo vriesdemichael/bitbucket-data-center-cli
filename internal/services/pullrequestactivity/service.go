@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"strconv"
 	"strings"
 
@@ -168,9 +169,9 @@ func decodeActivityPage(body []byte) (activityPage, error) {
 
 func mapActivity(item rawActivity) (Activity, error) {
 	mapped := Activity{
-		ID:          safeInt64(item.ID),
-		Action:      safeString(item.Action),
-		CreatedDate: safeInt64(item.CreatedDate),
+		ID:          safederef.Int64(item.ID),
+		Action:      safederef.String(item.Action),
+		CreatedDate: safederef.Int64(item.CreatedDate),
 		Raw:         map[string]any{},
 	}
 
@@ -265,20 +266,4 @@ func mapActivityStatusError(statusCode int, body []byte) error {
 	}
 
 	return apperrors.New(apperrors.KindInternal, message, nil)
-}
-
-func safeString(value *string) string {
-	if value == nil {
-		return ""
-	}
-
-	return *value
-}
-
-func safeInt64(value *int64) int64 {
-	if value == nil {
-		return 0
-	}
-
-	return *value
 }

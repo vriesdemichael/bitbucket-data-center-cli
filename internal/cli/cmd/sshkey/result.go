@@ -2,6 +2,7 @@ package sshkeycmd
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -38,12 +39,12 @@ func init() {
 // keyFrom converts one upstream key.
 func keyFrom(upstream openapigenerated.RestSshKey) Key {
 	converted := Key{
-		Label:             stringValue(upstream.Label),
-		Fingerprint:       stringValue(upstream.Fingerprint),
-		AlgorithmType:     stringValue(upstream.AlgorithmType),
-		LastAuthenticated: stringValue(upstream.LastAuthenticated),
-		Warning:           stringValue(upstream.Warning),
-		Text:              stringValue(upstream.Text),
+		Label:             safederef.String(upstream.Label),
+		Fingerprint:       safederef.String(upstream.Fingerprint),
+		AlgorithmType:     safederef.String(upstream.AlgorithmType),
+		LastAuthenticated: safederef.String(upstream.LastAuthenticated),
+		Warning:           safederef.String(upstream.Warning),
+		Text:              safederef.String(upstream.Text),
 	}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
@@ -69,12 +70,4 @@ func keysFrom(upstream []openapigenerated.RestSshKey) []Key {
 	}
 
 	return converted
-}
-
-func stringValue(value *string) string {
-	if value == nil {
-		return ""
-	}
-
-	return *value
 }

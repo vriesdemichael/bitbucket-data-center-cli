@@ -3,6 +3,7 @@ package pullrequestactivity
 import (
 	"context"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"net/url"
 	"regexp"
 	"sort"
@@ -282,11 +283,11 @@ func sortThreads(threads []Thread) {
 func mapThread(comment openapigenerated.RestComment, options ThreadOptions) Thread {
 	thread := Thread{
 		Kind:        ThreadKindComment,
-		State:       strings.ToUpper(strings.TrimSpace(safeString(comment.State))),
+		State:       strings.ToUpper(strings.TrimSpace(safederef.String(comment.State))),
 		Author:      commentAuthor(comment),
-		CreatedDate: safeInt64(comment.CreatedDate),
-		UpdatedDate: safeInt64(comment.UpdatedDate),
-		Text:        strings.TrimSpace(safeString(comment.Text)),
+		CreatedDate: safederef.Int64(comment.CreatedDate),
+		UpdatedDate: safederef.Int64(comment.UpdatedDate),
+		Text:        strings.TrimSpace(safederef.String(comment.Text)),
 	}
 
 	if comment.Id != nil {
@@ -295,7 +296,7 @@ func mapThread(comment openapigenerated.RestComment, options ThreadOptions) Thre
 	if comment.Version != nil {
 		thread.Version = int(*comment.Version)
 	}
-	if severity := strings.ToUpper(strings.TrimSpace(safeString(comment.Severity))); severity == "BLOCKER" {
+	if severity := strings.ToUpper(strings.TrimSpace(safederef.String(comment.Severity))); severity == "BLOCKER" {
 		thread.Kind = ThreadKindTask
 	}
 
@@ -397,8 +398,8 @@ func collectReplies(comments *[]openapigenerated.RestComment) []Reply {
 	for _, comment := range *comments {
 		reply := Reply{
 			Author: commentAuthor(comment),
-			Date:   safeInt64(comment.CreatedDate),
-			Text:   strings.TrimSpace(safeString(comment.Text)),
+			Date:   safederef.Int64(comment.CreatedDate),
+			Text:   strings.TrimSpace(safederef.String(comment.Text)),
 		}
 		if comment.Id != nil {
 			reply.ID = *comment.Id

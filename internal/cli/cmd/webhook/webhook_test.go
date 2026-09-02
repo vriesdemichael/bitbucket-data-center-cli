@@ -3,6 +3,7 @@ package webhookcmd
 import (
 	"bytes"
 	"context"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -27,12 +28,12 @@ func TestWebhookHelperFunctions(t *testing.T) {
 		t.Fatal("expected boolPtr(true) to be non-nil and true")
 	}
 
-	if safeString(nil) != "" {
-		t.Fatal("expected safeString(nil) to be empty string")
+	if safederef.String(nil) != "" {
+		t.Fatal("expected safederef.String(nil) to be empty string")
 	}
 	s := "hello"
-	if safeString(&s) != "hello" {
-		t.Fatal("expected safeString(&s) to be hello")
+	if safederef.String(&s) != "hello" {
+		t.Fatal("expected safederef.String(&s) to be hello")
 	}
 }
 

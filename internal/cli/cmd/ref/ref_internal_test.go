@@ -1,18 +1,19 @@
 package refcmd
 
 import (
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
 
 func TestRefInternalHelpers(t *testing.T) {
-	if safeString(nil) != "" {
-		t.Fatal("expected safeString(nil) to be empty")
+	if safederef.String(nil) != "" {
+		t.Fatal("expected safederef.String(nil) to be empty")
 	}
 	s := "test"
-	if safeString(&s) != "test" {
-		t.Fatal("expected safeString(&s) to be test")
+	if safederef.String(&s) != "test" {
+		t.Fatal("expected safederef.String(&s) to be test")
 	}
 }
 

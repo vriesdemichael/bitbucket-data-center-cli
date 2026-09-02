@@ -2,6 +2,7 @@ package result
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"strings"
 
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -63,9 +64,9 @@ type CommentAnchor struct {
 // CommentFrom converts one upstream comment.
 func CommentFrom(upstream openapigenerated.RestComment) Comment {
 	converted := Comment{
-		Text:     stringValue(upstream.Text),
-		State:    stringValue(upstream.State),
-		Severity: stringValue(upstream.Severity),
+		Text:     safederef.String(upstream.Text),
+		State:    safederef.String(upstream.State),
+		Severity: safederef.String(upstream.Severity),
 	}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
@@ -110,7 +111,7 @@ func CommentFrom(upstream openapigenerated.RestComment) Comment {
 		converted.Author = User{
 			Name:         upstream.Author.Name,
 			DisplayName:  upstream.Author.DisplayName,
-			EmailAddress: stringValue(upstream.Author.EmailAddress),
+			EmailAddress: safederef.String(upstream.Author.EmailAddress),
 			Slug:         upstream.Author.Slug,
 			Type:         string(upstream.Author.Type),
 		}
@@ -125,8 +126,8 @@ func CommentFrom(upstream openapigenerated.RestComment) Comment {
 		anchor := CommentAnchor{
 			Path:     joinCommentPath(upstream.Anchor.Path),
 			SrcPath:  joinCommentPath(upstream.Anchor.SrcPath),
-			FromHash: stringValue(upstream.Anchor.FromHash),
-			ToHash:   stringValue(upstream.Anchor.ToHash),
+			FromHash: safederef.String(upstream.Anchor.FromHash),
+			ToHash:   safederef.String(upstream.Anchor.ToHash),
 		}
 		if upstream.Anchor.Line != nil {
 			anchor.Line = *upstream.Anchor.Line

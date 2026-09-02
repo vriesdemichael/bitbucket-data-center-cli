@@ -9,22 +9,9 @@ import (
 )
 
 func TestProjectSafeHelpers(t *testing.T) {
-	if safeString(nil) != "" {
-		t.Fatal("expected empty string for safeString(nil)")
-	}
+	// The pointer helpers moved to internal/cli/safederef and are tested
+	// there. safeUsers is this package's own and stays.
 	s := "test"
-	if safeString(&s) != "test" {
-		t.Fatal("expected test for safeString(&s)")
-	}
-
-	if safeInt32(nil) != 0 {
-		t.Fatal("expected 0 for safeInt32(nil)")
-	}
-	i := int32(42)
-	if safeInt32(&i) != 42 {
-		t.Fatal("expected 42 for safeInt32(&i)")
-	}
-
 	if safeUsers(nil) != nil {
 		t.Fatal("expected nil for safeUsers(nil)")
 	}
@@ -33,13 +20,6 @@ func TestProjectSafeHelpers(t *testing.T) {
 		t.Fatal("expected 1 user for safeUsers(&u)")
 	}
 
-	if safeStringSlice(nil) != nil {
-		t.Fatal("expected nil for safeStringSlice(nil)")
-	}
-	sl := []string{"a", "b"}
-	if len(safeStringSlice(&sl)) != 2 {
-		t.Fatal("expected 2 elements for safeStringSlice(&sl)")
-	}
 }
 
 func TestProjectDefaults(t *testing.T) {

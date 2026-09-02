@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -1167,21 +1168,21 @@ func TestHookListEmptyCLI(t *testing.T) {
 
 func TestRootHelpersCLI(t *testing.T) {
 	// Exercise all safe helpers in root.go
-	_ = safeString(nil)
+	_ = safederef.String(nil)
 	s := "test"
-	_ = safeString(&s)
+	_ = safederef.String(&s)
 
-	_ = safeInt32(nil)
+	_ = safederef.Int32(nil)
 	i32 := int32(1)
-	_ = safeInt32(&i32)
+	_ = safederef.Int32(&i32)
 
-	_ = safeInt64(nil)
+	_ = safederef.Int64(nil)
 	i64 := int64(1)
-	_ = safeInt64(&i64)
+	_ = safederef.Int64(&i64)
 
-	_ = safeStringSlice(nil)
+	_ = safederef.StringSlice(nil)
 	ss := []string{"a"}
-	_ = safeStringSlice(&ss)
+	_ = safederef.StringSlice(&ss)
 
 	_ = safeUsers(nil)
 	_ = safeUsers(&[]openapigenerated.RestApplicationUser{})

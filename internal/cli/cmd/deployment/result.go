@@ -2,6 +2,7 @@ package deploymentcmd
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -60,10 +61,10 @@ func init() {
 // deploymentFrom converts one upstream deployment.
 func deploymentFrom(upstream openapigenerated.RestDeployment) Deployment {
 	converted := Deployment{
-		Key:         safeString(upstream.Key),
-		DisplayName: safeString(upstream.DisplayName),
-		Description: safeString(upstream.Description),
-		URL:         safeString(upstream.Url),
+		Key:         safederef.String(upstream.Key),
+		DisplayName: safederef.String(upstream.DisplayName),
+		Description: safederef.String(upstream.Description),
+		URL:         safederef.String(upstream.Url),
 	}
 
 	if upstream.State != nil {
@@ -79,16 +80,16 @@ func deploymentFrom(upstream openapigenerated.RestDeployment) Deployment {
 		converted.Environment = Environment{
 			Key:         upstream.Environment.Key,
 			DisplayName: upstream.Environment.DisplayName,
-			Type:        safeString(upstream.Environment.Type),
-			URL:         safeString(upstream.Environment.Url),
+			Type:        safederef.String(upstream.Environment.Type),
+			URL:         safederef.String(upstream.Environment.Url),
 		}
 	}
 	if upstream.FromCommit != nil {
-		converted.FromCommit = safeString(upstream.FromCommit.Id)
+		converted.FromCommit = safederef.String(upstream.FromCommit.Id)
 	}
 	if upstream.Repository != nil {
 		converted.Repository = result.Repository{
-			Slug: safeString(upstream.Repository.Slug),
+			Slug: safederef.String(upstream.Repository.Slug),
 		}
 		if upstream.Repository.Project != nil {
 			converted.Repository.ProjectKey = upstream.Repository.Project.Key

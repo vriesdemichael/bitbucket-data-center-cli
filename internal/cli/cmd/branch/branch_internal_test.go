@@ -1,6 +1,7 @@
 package branchcmd
 
 import (
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
@@ -10,13 +11,13 @@ import (
 func TestBranchInternalHelpers(t *testing.T) {
 	// safeString
 	s := "test-branch"
-	if safeString(&s) != "test-branch" || safeString(nil) != "" {
+	if safederef.String(&s) != "test-branch" || safederef.String(nil) != "" {
 		t.Fatal("unexpected safeString result")
 	}
 
 	// safeInt32
 	var i int32 = 42
-	if safeInt32(&i) != 42 || safeInt32(nil) != 0 {
+	if safederef.Int32(&i) != 42 || safederef.Int32(nil) != 0 {
 		t.Fatal("unexpected safeInt32 result")
 	}
 
@@ -28,7 +29,7 @@ func TestBranchInternalHelpers(t *testing.T) {
 
 	// safeStringSlice
 	slice := []string{"group1", "group2"}
-	if len(safeStringSlice(&slice)) != 2 || len(safeStringSlice(nil)) != 0 {
+	if len(safederef.StringSlice(&slice)) != 2 || len(safederef.StringSlice(nil)) != 0 {
 		t.Fatal("unexpected safeStringSlice result")
 	}
 

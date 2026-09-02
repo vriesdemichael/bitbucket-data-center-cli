@@ -2,6 +2,7 @@ package repocmd
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"io"
 	"os"
 	"path/filepath"
@@ -851,7 +852,7 @@ func newRepoEditCommand(deps Dependencies) *cobra.Command {
 				return deps.WriteJSON(cmd.OutOrStdout(), fileEditFrom(browseRepositoryOf(repo), args[0], branch, res))
 			}
 
-			commitID := safeString(res.Id)
+			commitID := safederef.String(res.Id)
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully edited %s in commit %s\n", args[0], commitID)
 			return nil
 		},

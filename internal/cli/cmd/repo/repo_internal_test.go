@@ -1,6 +1,7 @@
 package repocmd
 
 import (
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -38,12 +39,12 @@ func TestRepoDefaults(t *testing.T) {
 }
 
 func TestRepoHelpers(t *testing.T) {
-	if safeString(nil) != "" {
-		t.Fatal("expected empty string for safeString(nil)")
+	if safederef.String(nil) != "" {
+		t.Fatal("expected empty string for safederef.String(nil)")
 	}
 	s := "hello"
-	if safeString(&s) != "hello" {
-		t.Fatal("expected hello for safeString(&s)")
+	if safederef.String(&s) != "hello" {
+		t.Fatal("expected hello for safederef.String(&s)")
 	}
 
 	cfg := config.AppConfig{ProjectKey: "PRJ"}

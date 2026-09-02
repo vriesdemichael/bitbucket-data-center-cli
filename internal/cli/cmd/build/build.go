@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"io"
 	"strconv"
 	"strings"
@@ -83,34 +84,6 @@ func resolveQualityRepoServiceAndClient(selector string, deps Dependencies) (qua
 	}
 	service := qualityservice.NewService(client)
 	return qualityservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}, service, client, nil
-}
-
-func safeString(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
-}
-
-func safeInt32(value *int32) int32 {
-	if value == nil {
-		return 0
-	}
-	return *value
-}
-
-func safeInt64(value *int64) int64 {
-	if value == nil {
-		return 0
-	}
-	return *value
-}
-
-func safeStringSlice(values *[]string) []string {
-	if values == nil {
-		return []string{}
-	}
-	return *values
 }
 
 func safeStringFromBuildState(state *openapigenerated.RestBuildStatusState) string {
@@ -194,7 +167,7 @@ func New(deps Dependencies) *cobra.Command {
 				predicted := "create"
 				reason := "build status entry will be created"
 				for _, status := range statuses {
-					if strings.EqualFold(strings.TrimSpace(safeString(status.Key)), strings.TrimSpace(setKey)) {
+					if strings.EqualFold(strings.TrimSpace(safederef.String(status.Key)), strings.TrimSpace(setKey)) {
 						predicted = "update"
 						reason = "build status entry with this key will be updated"
 						break
@@ -292,7 +265,7 @@ func New(deps Dependencies) *cobra.Command {
 			rows := make([][]string, len(statuses))
 			for i, status := range statuses {
 				state := safeStringFromBuildState(status.State)
-				rows[i] = []string{style.Resource.Render(safeString(status.Key)), style.ActionStyle(state).Render(state), style.Secondary.Render(safeString(status.Url))}
+				rows[i] = []string{style.Resource.Render(safederef.String(status.Key)), style.ActionStyle(state).Render(state), style.Secondary.Render(safederef.String(status.Url))}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
 
@@ -331,11 +304,11 @@ func New(deps Dependencies) *cobra.Command {
 					return d.WriteJSON(cmd.OutOrStdout(), []CommitBuildStats{statsFrom(args[0], stats)})
 				}
 
-				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Successful:"), style.Success.Render(fmt.Sprintf("%d", safeInt32(stats.Successful))))
-				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Failed:"), style.Deleted.Render(fmt.Sprintf("%d", safeInt32(stats.Failed))))
-				fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("In Progress:"), safeInt32(stats.InProgress))
-				fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Unknown:"), safeInt32(stats.Unknown))
-				fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Cancelled:"), safeInt32(stats.Cancelled))
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Successful:"), style.Success.Render(fmt.Sprintf("%d", safederef.Int32(stats.Successful))))
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Failed:"), style.Deleted.Render(fmt.Sprintf("%d", safederef.Int32(stats.Failed))))
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("In Progress:"), safederef.Int32(stats.InProgress))
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Unknown:"), safederef.Int32(stats.Unknown))
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Cancelled:"), safederef.Int32(stats.Cancelled))
 				return nil
 			}
 
@@ -366,11 +339,11 @@ func New(deps Dependencies) *cobra.Command {
 				}
 				rows = append(rows, []string{
 					style.Resource.Render(commit),
-					style.Success.Render(fmt.Sprintf("%d", safeInt32(s.Successful))),
-					style.Deleted.Render(fmt.Sprintf("%d", safeInt32(s.Failed))),
-					fmt.Sprintf("%d", safeInt32(s.InProgress)),
-					fmt.Sprintf("%d", safeInt32(s.Unknown)),
-					fmt.Sprintf("%d", safeInt32(s.Cancelled)),
+					style.Success.Render(fmt.Sprintf("%d", safederef.Int32(s.Successful))),
+					style.Deleted.Render(fmt.Sprintf("%d", safederef.Int32(s.Failed))),
+					fmt.Sprintf("%d", safederef.Int32(s.InProgress)),
+					fmt.Sprintf("%d", safederef.Int32(s.Unknown)),
+					fmt.Sprintf("%d", safederef.Int32(s.Cancelled)),
 				})
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
@@ -569,7 +542,7 @@ func New(deps Dependencies) *cobra.Command {
 				predicted := "no-op"
 				reason := "required build check was not found"
 				for _, check := range checks {
-					if safeInt64(check.Id) == id {
+					if safederef.Int64(check.Id) == id {
 						predicted = "delete"
 						reason = "required build check will be deleted"
 						break
@@ -732,7 +705,7 @@ func New(deps Dependencies) *cobra.Command {
 
 			state := safeStringFromBuildState(build.State)
 			rows := [][]string{
-				{style.Resource.Render(safeString(build.Key)), style.ActionStyle(state).Render(state), style.Secondary.Render(safeString(build.Url))},
+				{style.Resource.Render(safederef.String(build.Key)), style.ActionStyle(state).Render(state), style.Secondary.Render(safederef.String(build.Url))},
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
 			return nil

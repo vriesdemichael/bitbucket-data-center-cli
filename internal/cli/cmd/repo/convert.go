@@ -3,6 +3,7 @@ package repocmd
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"strings"
 	"unicode/utf8"
 
@@ -192,20 +193,20 @@ func effectivePermissionsFrom(probed map[string]bool) []EffectivePermission {
 
 // defaultTaskFrom converts one upstream default task.
 func defaultTaskFrom(upstream reposettings.DefaultTask) result.DefaultTask {
-	converted := result.DefaultTask{Description: safeString(upstream.Description)}
+	converted := result.DefaultTask{Description: safederef.String(upstream.Description)}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
 	}
 	if upstream.SourceMatcher != nil {
 		converted.SourceMatcher = result.DefaultTaskMatcher{
-			ID:        safeString(upstream.SourceMatcher.Id),
-			DisplayID: safeString(upstream.SourceMatcher.DisplayId),
+			ID:        safederef.String(upstream.SourceMatcher.Id),
+			DisplayID: safederef.String(upstream.SourceMatcher.DisplayId),
 		}
 	}
 	if upstream.TargetMatcher != nil {
 		converted.TargetMatcher = result.DefaultTaskMatcher{
-			ID:        safeString(upstream.TargetMatcher.Id),
-			DisplayID: safeString(upstream.TargetMatcher.DisplayId),
+			ID:        safederef.String(upstream.TargetMatcher.Id),
+			DisplayID: safederef.String(upstream.TargetMatcher.DisplayId),
 		}
 	}
 
@@ -543,9 +544,9 @@ func sshKeyFrom(upstream openapigenerated.RestSshAccessKey) SSHKey {
 		if upstream.Key.Id != nil {
 			converted.ID = *upstream.Key.Id
 		}
-		converted.Label = safeString(upstream.Key.Label)
-		converted.Fingerprint = safeString(upstream.Key.Fingerprint)
-		converted.Text = safeString(upstream.Key.Text)
+		converted.Label = safederef.String(upstream.Key.Label)
+		converted.Fingerprint = safederef.String(upstream.Key.Fingerprint)
+		converted.Text = safederef.String(upstream.Key.Text)
 	}
 	if upstream.Permission != nil {
 		converted.Permission = string(*upstream.Permission)

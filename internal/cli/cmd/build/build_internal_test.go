@@ -3,6 +3,7 @@ package buildcmd
 import (
 	"bytes"
 	"context"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,36 +15,36 @@ import (
 )
 
 func TestBuildSafeHelpers(t *testing.T) {
-	if safeString(nil) != "" {
-		t.Fatal("expected empty for safeString(nil)")
+	if safederef.String(nil) != "" {
+		t.Fatal("expected empty for safederef.String(nil)")
 	}
 	s := "hello"
-	if safeString(&s) != "hello" {
-		t.Fatal("expected hello for safeString(&s)")
+	if safederef.String(&s) != "hello" {
+		t.Fatal("expected hello for safederef.String(&s)")
 	}
 
-	if safeInt32(nil) != 0 {
-		t.Fatal("expected 0 for safeInt32(nil)")
+	if safederef.Int32(nil) != 0 {
+		t.Fatal("expected 0 for safederef.Int32(nil)")
 	}
 	i32 := int32(42)
-	if safeInt32(&i32) != 42 {
-		t.Fatal("expected 42 for safeInt32(&i32)")
+	if safederef.Int32(&i32) != 42 {
+		t.Fatal("expected 42 for safederef.Int32(&i32)")
 	}
 
-	if safeInt64(nil) != 0 {
-		t.Fatal("expected 0 for safeInt64(nil)")
+	if safederef.Int64(nil) != 0 {
+		t.Fatal("expected 0 for safederef.Int64(nil)")
 	}
 	i64 := int64(100)
-	if safeInt64(&i64) != 100 {
-		t.Fatal("expected 100 for safeInt64(&i64)")
+	if safederef.Int64(&i64) != 100 {
+		t.Fatal("expected 100 for safederef.Int64(&i64)")
 	}
 
-	if len(safeStringSlice(nil)) != 0 {
-		t.Fatal("expected empty slice for safeStringSlice(nil)")
+	if len(safederef.StringSlice(nil)) != 0 {
+		t.Fatal("expected empty slice for safederef.StringSlice(nil)")
 	}
 	slice := []string{"a", "b"}
-	if len(safeStringSlice(&slice)) != 2 {
-		t.Fatal("expected 2 elements for safeStringSlice(&slice)")
+	if len(safederef.StringSlice(&slice)) != 2 {
+		t.Fatal("expected 2 elements for safederef.StringSlice(&slice)")
 	}
 
 	if safeStringFromBuildState(nil) != "" {

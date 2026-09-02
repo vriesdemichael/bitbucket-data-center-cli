@@ -2,6 +2,7 @@ package commitcmd
 
 import (
 	"bytes"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,12 +14,12 @@ import (
 )
 
 func TestCommitSafeHelpers(t *testing.T) {
-	if safeString(nil) != "" {
-		t.Fatal("expected empty string for safeString(nil)")
+	if safederef.String(nil) != "" {
+		t.Fatal("expected empty string for safederef.String(nil)")
 	}
 	s := "commit1"
-	if safeString(&s) != "commit1" {
-		t.Fatal("expected commit1 for safeString(&s)")
+	if safederef.String(&s) != "commit1" {
+		t.Fatal("expected commit1 for safederef.String(&s)")
 	}
 }
 

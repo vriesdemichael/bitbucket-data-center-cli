@@ -1,6 +1,7 @@
 package result
 
 import (
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -36,12 +37,12 @@ var RepositoryStates = []string{"AVAILABLE", "INITIALISING", "INITIALISATION_FAI
 // RepositoryDetailFrom converts one upstream repository.
 func RepositoryDetailFrom(upstream openapigenerated.RestRepository) RepositoryDetail {
 	converted := RepositoryDetail{
-		Slug:          stringValue(upstream.Slug),
-		Name:          stringValue(upstream.Name),
-		Description:   stringValue(upstream.Description),
-		DefaultBranch: stringValue(upstream.DefaultBranch),
-		ScmID:         stringValue(upstream.ScmId),
-		StatusMessage: stringValue(upstream.StatusMessage),
+		Slug:          safederef.String(upstream.Slug),
+		Name:          safederef.String(upstream.Name),
+		Description:   safederef.String(upstream.Description),
+		DefaultBranch: safederef.String(upstream.DefaultBranch),
+		ScmID:         safederef.String(upstream.ScmId),
+		StatusMessage: safederef.String(upstream.StatusMessage),
 	}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
@@ -62,7 +63,7 @@ func RepositoryDetailFrom(upstream openapigenerated.RestRepository) RepositoryDe
 		converted.State = string(*upstream.State)
 	}
 	if upstream.Origin != nil {
-		origin := Repository{Slug: stringValue(upstream.Origin.Slug)}
+		origin := Repository{Slug: safederef.String(upstream.Origin.Slug)}
 		if upstream.Origin.Project != nil {
 			origin.ProjectKey = upstream.Origin.Project.Key
 		}

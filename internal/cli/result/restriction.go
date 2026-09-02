@@ -1,6 +1,7 @@
 package result
 
 import (
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -41,7 +42,7 @@ var RestrictionScopes = []string{"PROJECT", "REPOSITORY"}
 
 // RestrictionFrom converts one upstream branch restriction.
 func RestrictionFrom(upstream openapigenerated.RestRefRestriction) Restriction {
-	converted := Restriction{Type: stringValue(upstream.Type)}
+	converted := Restriction{Type: safederef.String(upstream.Type)}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
 	}
@@ -50,8 +51,8 @@ func RestrictionFrom(upstream openapigenerated.RestRefRestriction) Restriction {
 	}
 	if upstream.Matcher != nil {
 		converted.Matcher = RefMatcher{
-			ID:        stringValue(upstream.Matcher.Id),
-			DisplayID: stringValue(upstream.Matcher.DisplayId),
+			ID:        safederef.String(upstream.Matcher.Id),
+			DisplayID: safederef.String(upstream.Matcher.DisplayId),
 		}
 		if upstream.Matcher.Type != nil {
 			converted.Matcher.Type = string(upstream.Matcher.Type.Id)
@@ -71,8 +72,8 @@ func RestrictionFrom(upstream openapigenerated.RestRefRestriction) Restriction {
 				if key.Key.Id != nil {
 					entry.ID = *key.Key.Id
 				}
-				entry.Label = stringValue(key.Key.Label)
-				entry.Fingerprint = stringValue(key.Key.Fingerprint)
+				entry.Label = safederef.String(key.Key.Label)
+				entry.Fingerprint = safederef.String(key.Key.Fingerprint)
 			}
 			if key.Permission != nil {
 				entry.Permission = string(*key.Permission)

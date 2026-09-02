@@ -1,6 +1,7 @@
 package tagcmd
 
 import (
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
@@ -35,12 +36,12 @@ func TestTagDefaults(t *testing.T) {
 }
 
 func TestTagHelpers(t *testing.T) {
-	if safeString(nil) != "" {
-		t.Fatal("expected empty string for safeString(nil)")
+	if safederef.String(nil) != "" {
+		t.Fatal("expected empty string for safederef.String(nil)")
 	}
 	s := "v1.0.0"
-	if safeString(&s) != "v1.0.0" {
-		t.Fatal("expected v1.0.0 for safeString(&s)")
+	if safederef.String(&s) != "v1.0.0" {
+		t.Fatal("expected v1.0.0 for safederef.String(&s)")
 	}
 
 	cfg := config.AppConfig{ProjectKey: "PRJ"}

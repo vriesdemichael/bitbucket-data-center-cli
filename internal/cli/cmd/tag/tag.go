@@ -3,6 +3,7 @@ package tagcmd
 import (
 	"context"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"io"
 	"strings"
 
@@ -74,13 +75,6 @@ func resolveTagRepositoryReference(selector string, cfg config.AppConfig) (tagse
 		return tagservice.RepositoryRef{}, err
 	}
 	return tagservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}, nil
-}
-
-func safeString(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
 }
 
 func New(deps Dependencies) *cobra.Command {
@@ -175,7 +169,7 @@ func New(deps Dependencies) *cobra.Command {
 				predicted := "create"
 				reason := "tag will be created"
 				for _, tag := range tags {
-					if strings.EqualFold(strings.TrimSpace(safeString(tag.DisplayId)), strings.TrimSpace(args[0])) || strings.EqualFold(strings.TrimSpace(safeString(tag.Id)), strings.TrimSpace(args[0])) {
+					if strings.EqualFold(strings.TrimSpace(safederef.String(tag.DisplayId)), strings.TrimSpace(args[0])) || strings.EqualFold(strings.TrimSpace(safederef.String(tag.Id)), strings.TrimSpace(args[0])) {
 						predicted = "conflict"
 						reason = "tag already exists"
 						break

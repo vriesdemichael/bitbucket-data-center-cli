@@ -1,6 +1,7 @@
 package buildcmd
 
 import (
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"strings"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
@@ -102,30 +103,30 @@ func repositoryOf(repo qualityservice.RepositoryRef) result.Repository {
 // buildStatusFrom converts one upstream build status.
 func buildStatusFrom(upstream openapigenerated.RestBuildStatus) BuildStatus {
 	converted := BuildStatus{
-		Key:         safeString(upstream.Key),
+		Key:         safederef.String(upstream.Key),
 		State:       safeStringFromBuildState(upstream.State),
-		URL:         safeString(upstream.Url),
-		Name:        safeString(upstream.Name),
-		Description: safeString(upstream.Description),
-		Ref:         safeString(upstream.Ref),
-		Parent:      safeString(upstream.Parent),
-		BuildNumber: safeString(upstream.BuildNumber),
-		Duration:    safeInt64(upstream.Duration),
-		CreatedDate: safeInt64(upstream.CreatedDate),
-		UpdatedDate: safeInt64(upstream.UpdatedDate),
+		URL:         safederef.String(upstream.Url),
+		Name:        safederef.String(upstream.Name),
+		Description: safederef.String(upstream.Description),
+		Ref:         safederef.String(upstream.Ref),
+		Parent:      safederef.String(upstream.Parent),
+		BuildNumber: safederef.String(upstream.BuildNumber),
+		Duration:    safederef.Int64(upstream.Duration),
+		CreatedDate: safederef.Int64(upstream.CreatedDate),
+		UpdatedDate: safederef.Int64(upstream.UpdatedDate),
 	}
 
-	projectKey := safeString(upstream.ProjectKey)
-	slug := safeString(upstream.RepositorySlug)
+	projectKey := safederef.String(upstream.ProjectKey)
+	slug := safederef.String(upstream.RepositorySlug)
 	if projectKey != "" || slug != "" {
 		converted.Repository = &result.Repository{ProjectKey: projectKey, Slug: slug}
 	}
 
 	if upstream.TestResults != nil {
 		converted.TestResults = &TestResults{
-			Successful: safeInt32(upstream.TestResults.Successful),
-			Failed:     safeInt32(upstream.TestResults.Failed),
-			Skipped:    safeInt32(upstream.TestResults.Skipped),
+			Successful: safederef.Int32(upstream.TestResults.Successful),
+			Failed:     safederef.Int32(upstream.TestResults.Failed),
+			Skipped:    safederef.Int32(upstream.TestResults.Skipped),
 		}
 	}
 
@@ -146,11 +147,11 @@ func buildStatusesFrom(upstream []openapigenerated.RestBuildStatus) []BuildStatu
 func statsFrom(commit string, upstream openapigenerated.RestBuildStats) CommitBuildStats {
 	return CommitBuildStats{
 		Commit:     commit,
-		Successful: safeInt32(upstream.Successful),
-		Failed:     safeInt32(upstream.Failed),
-		InProgress: safeInt32(upstream.InProgress),
-		Unknown:    safeInt32(upstream.Unknown),
-		Cancelled:  safeInt32(upstream.Cancelled),
+		Successful: safederef.Int32(upstream.Successful),
+		Failed:     safederef.Int32(upstream.Failed),
+		InProgress: safederef.Int32(upstream.InProgress),
+		Unknown:    safederef.Int32(upstream.Unknown),
+		Cancelled:  safederef.Int32(upstream.Cancelled),
 	}
 }
 

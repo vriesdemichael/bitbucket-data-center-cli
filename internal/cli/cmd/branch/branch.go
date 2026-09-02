@@ -3,6 +3,7 @@ package branchcmd
 import (
 	"context"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"io"
 	"slices"
 	"strings"
@@ -79,30 +80,9 @@ func resolveBranchRepositoryReference(selector string, cfg config.AppConfig) (br
 	return branchservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}, nil
 }
 
-func safeString(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
-}
-
-func safeInt32(value *int32) int32 {
-	if value == nil {
-		return 0
-	}
-	return *value
-}
-
 func safeUsers(values *[]openapigenerated.RestApplicationUser) []openapigenerated.RestApplicationUser {
 	if values == nil {
 		return []openapigenerated.RestApplicationUser{}
-	}
-	return *values
-}
-
-func safeStringSlice(values *[]string) []string {
-	if values == nil {
-		return []string{}
 	}
 	return *values
 }
@@ -128,7 +108,7 @@ func NormalizeBranchName(name string) string {
 }
 
 func MatchesRestrictionSignature(restriction openapigenerated.RestRefRestriction, restrictionType, matcherType, matcherID string) bool {
-	if !strings.EqualFold(safeString(restriction.Type), strings.TrimSpace(restrictionType)) {
+	if !strings.EqualFold(safederef.String(restriction.Type), strings.TrimSpace(restrictionType)) {
 		return false
 	}
 	if restriction.Matcher == nil || restriction.Matcher.Type == nil {
@@ -138,11 +118,11 @@ func MatchesRestrictionSignature(restriction openapigenerated.RestRefRestriction
 		return false
 	}
 	targetMatcherID := strings.TrimSpace(matcherID)
-	matcherIDVal := strings.TrimSpace(safeString(restriction.Matcher.Id))
+	matcherIDVal := strings.TrimSpace(safederef.String(restriction.Matcher.Id))
 	if strings.EqualFold(matcherIDVal, targetMatcherID) {
 		return true
 	}
-	if strings.EqualFold(strings.TrimSpace(safeString(restriction.Matcher.DisplayId)), targetMatcherID) {
+	if strings.EqualFold(strings.TrimSpace(safederef.String(restriction.Matcher.DisplayId)), targetMatcherID) {
 		return true
 	}
 	if strings.EqualFold(strings.TrimPrefix(matcherIDVal, "refs/heads/"), strings.TrimPrefix(targetMatcherID, "refs/heads/")) {
@@ -158,7 +138,7 @@ func MatchesRestrictionUpdate(restriction openapigenerated.RestRefRestriction, r
 
 	actualUsers := make([]string, 0)
 	for _, u := range safeUsers(restriction.Users) {
-		if name := safeString(u.Name); name != "" {
+		if name := safederef.String(u.Name); name != "" {
 			actualUsers = append(actualUsers, strings.ToLower(strings.TrimSpace(name)))
 		}
 	}
@@ -176,7 +156,7 @@ func MatchesRestrictionUpdate(restriction openapigenerated.RestRefRestriction, r
 	}
 
 	actualGroups := make([]string, 0)
-	for _, g := range safeStringSlice(restriction.Groups) {
+	for _, g := range safederef.StringSlice(restriction.Groups) {
 		trimmed := strings.ToLower(strings.TrimSpace(g))
 		if trimmed != "" {
 			actualGroups = append(actualGroups, trimmed)
@@ -273,9 +253,9 @@ func New(deps Dependencies) *cobra.Command {
 			rows := make([][]string, len(branches))
 			for i, branch := range branches {
 				rows[i] = []string{
-					style.Resource.Render(safeString(branch.DisplayId)),
-					style.Secondary.Render(safeString(branch.Id)),
-					style.Secondary.Render(safeString(branch.LatestCommit)),
+					style.Resource.Render(safederef.String(branch.DisplayId)),
+					style.Secondary.Render(safederef.String(branch.Id)),
+					style.Secondary.Render(safederef.String(branch.LatestCommit)),
 					fmt.Sprintf("default=%t", branch.Default != nil && *branch.Default),
 				}
 			}
@@ -321,8 +301,8 @@ func New(deps Dependencies) *cobra.Command {
 				reason := "branch will be created"
 				normalizedRequested := NormalizeBranchName(args[0])
 				for _, branch := range branches {
-					if strings.EqualFold(strings.TrimSpace(safeString(branch.DisplayId)), strings.TrimSpace(args[0])) ||
-						strings.EqualFold(strings.TrimSpace(safeString(branch.Id)), normalizedRequested) {
+					if strings.EqualFold(strings.TrimSpace(safederef.String(branch.DisplayId)), strings.TrimSpace(args[0])) ||
+						strings.EqualFold(strings.TrimSpace(safederef.String(branch.Id)), normalizedRequested) {
 						predicted = "conflict"
 						reason = "branch already exists"
 						break
@@ -370,7 +350,7 @@ func New(deps Dependencies) *cobra.Command {
 				return d.WriteJSON(cmd.OutOrStdout(), BranchCreation{Repository: repositoryOf(repo), Branch: branchFrom(created)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created branch"), style.Resource.Render(safeString(created.DisplayId)))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created branch"), style.Resource.Render(safederef.String(created.DisplayId)))
 			return nil
 		},
 	}
@@ -468,7 +448,7 @@ func New(deps Dependencies) *cobra.Command {
 				return d.WriteJSON(cmd.OutOrStdout(), DefaultBranch{Repository: repositoryOf(repo), DefaultBranch: result.RefFrom(defaultBranch)})
 			}
 
-			style.WriteTable(cmd.OutOrStdout(), [][]string{{style.Resource.Render(safeString(defaultBranch.DisplayId)), style.Secondary.Render(safeString(defaultBranch.Id))}})
+			style.WriteTable(cmd.OutOrStdout(), [][]string{{style.Resource.Render(safederef.String(defaultBranch.DisplayId)), style.Secondary.Render(safederef.String(defaultBranch.Id))}})
 			return nil
 		},
 	}
@@ -501,9 +481,9 @@ func New(deps Dependencies) *cobra.Command {
 				}
 				predicted := "update"
 				reason := "default branch will be updated"
-				currentDefaultID := strings.TrimSpace(safeString(currentDefault.DisplayId))
+				currentDefaultID := strings.TrimSpace(safederef.String(currentDefault.DisplayId))
 				if currentDefaultID == "" {
-					currentDefaultID = strings.TrimPrefix(strings.TrimSpace(safeString(currentDefault.Id)), "refs/heads/")
+					currentDefaultID = strings.TrimPrefix(strings.TrimSpace(safederef.String(currentDefault.Id)), "refs/heads/")
 				}
 				if strings.EqualFold(currentDefaultID, strings.TrimSpace(args[0])) {
 					predicted = "no-op"
@@ -587,7 +567,7 @@ func New(deps Dependencies) *cobra.Command {
 
 			rows := make([][]string, len(refs))
 			for i, ref := range refs {
-				rows[i] = []string{style.Resource.Render(safeString(ref.DisplayId)), style.Secondary.Render(safeString(ref.Id))}
+				rows[i] = []string{style.Resource.Render(safederef.String(ref.DisplayId)), style.Secondary.Render(safederef.String(ref.Id))}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
 
@@ -623,9 +603,9 @@ func New(deps Dependencies) *cobra.Command {
 				}
 				predicted := "update"
 				reason := "branch model default will be updated"
-				currentDefaultID := strings.TrimSpace(safeString(currentDefault.DisplayId))
+				currentDefaultID := strings.TrimSpace(safederef.String(currentDefault.DisplayId))
 				if currentDefaultID == "" {
-					currentDefaultID = strings.TrimPrefix(strings.TrimSpace(safeString(currentDefault.Id)), "refs/heads/")
+					currentDefaultID = strings.TrimPrefix(strings.TrimSpace(safederef.String(currentDefault.Id)), "refs/heads/")
 				}
 				if strings.EqualFold(currentDefaultID, strings.TrimSpace(args[0])) {
 					predicted = "no-op"
@@ -724,11 +704,11 @@ func New(deps Dependencies) *cobra.Command {
 				}
 
 				rows[i] = []string{
-					style.Secondary.Render(fmt.Sprintf("%d", safeInt32(restriction.Id))),
-					safeString(restriction.Type),
+					style.Secondary.Render(fmt.Sprintf("%d", safederef.Int32(restriction.Id))),
+					safederef.String(restriction.Type),
 					matcher,
 					fmt.Sprintf("users=%d", len(safeUsers(restriction.Users))),
-					fmt.Sprintf("groups=%d", len(safeStringSlice(restriction.Groups))),
+					fmt.Sprintf("groups=%d", len(safederef.StringSlice(restriction.Groups))),
 				}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
@@ -766,7 +746,7 @@ func New(deps Dependencies) *cobra.Command {
 				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: result.RestrictionFrom(restriction)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", style.Secondary.Render(fmt.Sprintf("id=%d", safeInt32(restriction.Id))), safeString(restriction.Type))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", style.Secondary.Render(fmt.Sprintf("id=%d", safederef.Int32(restriction.Id))), safederef.String(restriction.Type))
 			return nil
 		},
 	}
@@ -867,7 +847,7 @@ func New(deps Dependencies) *cobra.Command {
 				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: result.RestrictionFrom(created)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created restriction"), style.Secondary.Render(fmt.Sprintf("%d", safeInt32(created.Id))))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created restriction"), style.Secondary.Render(fmt.Sprintf("%d", safederef.Int32(created.Id))))
 			return nil
 		},
 	}
@@ -970,7 +950,7 @@ func New(deps Dependencies) *cobra.Command {
 				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: result.RestrictionFrom(updated)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated restriction"), style.Secondary.Render(fmt.Sprintf("%d", safeInt32(updated.Id))))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated restriction"), style.Secondary.Render(fmt.Sprintf("%d", safederef.Int32(updated.Id))))
 			return nil
 		},
 	}

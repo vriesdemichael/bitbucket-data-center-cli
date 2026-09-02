@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"io"
 	"strings"
 
@@ -81,13 +82,6 @@ func resolveQualityRepoServiceAndClient(selector string, deps Dependencies) (qua
 	}
 	service := qualityservice.NewService(client)
 	return qualityservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}, service, client, nil
-}
-
-func safeString(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
 }
 
 func safeStringFromInsightResult(result *openapigenerated.RestInsightReportResult) string {
@@ -292,7 +286,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			for _, report := range reports {
-				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", safeString(report.Key), safeString(report.Title), safeStringFromInsightResult(report.Result))
+				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", safederef.String(report.Key), safederef.String(report.Title), safeStringFromInsightResult(report.Result))
 			}
 
 			return nil
@@ -390,7 +384,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			for _, annotation := range annotations {
-				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", safeString(annotation.ExternalId), safeString(annotation.Severity), safeString(annotation.Message))
+				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", safederef.String(annotation.ExternalId), safederef.String(annotation.Severity), safederef.String(annotation.Message))
 			}
 
 			return nil
@@ -441,7 +435,7 @@ func New(deps Dependencies) *cobra.Command {
 				reason := "insights annotation will be created"
 				if err == nil {
 					for _, annotation := range annotations {
-						if strings.EqualFold(strings.TrimSpace(safeString(annotation.ExternalId)), strings.TrimSpace(args[2])) {
+						if strings.EqualFold(strings.TrimSpace(safederef.String(annotation.ExternalId)), strings.TrimSpace(args[2])) {
 							predicted = "update"
 							reason = "insights annotation will be updated"
 							break
@@ -526,7 +520,7 @@ func New(deps Dependencies) *cobra.Command {
 				predicted := "no-op"
 				reason := "no matching annotation found"
 				for _, annotation := range annotations {
-					if strings.EqualFold(strings.TrimSpace(safeString(annotation.ExternalId)), strings.TrimSpace(externalID)) {
+					if strings.EqualFold(strings.TrimSpace(safederef.String(annotation.ExternalId)), strings.TrimSpace(externalID)) {
 						predicted = "delete"
 						reason = "annotation will be deleted"
 						break
