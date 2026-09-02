@@ -159,22 +159,16 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityPartial,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.comment.create",
-						Target:          createTargetPreview(target, createText, createParentID),
-						Action:          "create",
-						PredictedAction: "create",
-						Supported:       true,
-						Reason:          "comment will be created",
-						Confidence:      dryrunpreview.CapabilityPartial,
-						RequiredState:   []string{"comment target context"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1, CreateCount: 1},
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityPartial, dryrunpreview.Item{
+					Intent:          "repo.comment.create",
+					Target:          createTargetPreview(target, createText, createParentID),
+					Action:          "create",
+					PredictedAction: "create",
+					Supported:       true,
+					Reason:          "comment will be created",
+					Confidence:      dryrunpreview.CapabilityPartial,
+					RequiredState:   []string{"comment target context"},
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
@@ -240,30 +234,17 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					blocking = []string{"comment owned by another user"}
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityPartial,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.comment.update",
-						Target:          map[string]any{"context": target.Context(), "id": updateCommentID, "text": updateText},
-						Action:          "update",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityPartial,
-						RequiredState:   []string{"comment get"},
-						BlockingReasons: blocking,
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				if predicted == "update" {
-					preview.Summary.UpdateCount = 1
-				} else if predicted == "no-op" {
-					preview.Summary.NoopCount = 1
-				} else {
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityPartial, dryrunpreview.Item{
+					Intent:          "repo.comment.update",
+					Target:          map[string]any{"context": target.Context(), "id": updateCommentID, "text": updateText},
+					Action:          "update",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityPartial,
+					RequiredState:   []string{"comment get"},
+					BlockingReasons: blocking,
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -335,30 +316,17 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityPartial,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.comment.delete",
-						Target:          map[string]any{"context": target.Context(), "id": deleteCommentID},
-						Action:          "delete",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityPartial,
-						RequiredState:   []string{"comment get"},
-						BlockingReasons: blocking,
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				if predicted == "delete" {
-					preview.Summary.DeleteCount = 1
-				} else if predicted == "no-op" {
-					preview.Summary.NoopCount = 1
-				} else {
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityPartial, dryrunpreview.Item{
+					Intent:          "repo.comment.delete",
+					Target:          map[string]any{"context": target.Context(), "id": deleteCommentID},
+					Action:          "delete",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityPartial,
+					RequiredState:   []string{"comment get"},
+					BlockingReasons: blocking,
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}

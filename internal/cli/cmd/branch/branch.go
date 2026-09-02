@@ -309,34 +309,22 @@ func New(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "branch.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "startPoint": createStartPoint},
-						Action:          "create",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"branch list (filtered by name)"},
-						BlockingReasons: func() []string {
-							if predicted == "conflict" {
-								return []string{"branch already exists"}
-							}
-							return nil
-						}(),
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				switch predicted {
-				case "create":
-					preview.Summary.CreateCount = 1
-				default:
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "branch.create",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "startPoint": createStartPoint},
+					Action:          "create",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"branch list (filtered by name)"},
+					BlockingReasons: func() []string {
+						if predicted == "conflict" {
+							return []string{"branch already exists"}
+						}
+						return nil
+					}(),
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
@@ -385,11 +373,9 @@ func New(deps Dependencies) *cobra.Command {
 					if strings.TrimSpace(deleteEndPoint) != "" {
 						reason = "validated through Bitbucket branch delete dry-run endpoint with end-point precondition"
 					}
-					return d.WriteJSON(cmd.OutOrStdout(), dryrunpreview.Preview{
-						DryRun:       true,
-						PlanningMode: dryrunpreview.PlanningModeStateful,
-						Capability:   dryrunpreview.CapabilityFull,
-						Items: []dryrunpreview.Item{{
+					return d.WriteJSON(cmd.OutOrStdout(), dryrunpreview.New(
+						dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull,
+						dryrunpreview.Item{
 							Intent: "branch.delete",
 							Target: map[string]any{
 								"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
@@ -397,14 +383,12 @@ func New(deps Dependencies) *cobra.Command {
 								"endPoint":   strings.TrimSpace(deleteEndPoint),
 							},
 							Action:          "delete",
-							PredictedAction: "delete",
+							PredictedAction: dryrunpreview.PredictedDelete,
 							Supported:       true,
 							Reason:          reason,
 							Confidence:      dryrunpreview.CapabilityFull,
 							RequiredState:   []string{"branch delete preflight validation"},
-						}},
-						Summary: dryrunpreview.Summary{Total: 1, Supported: 1, DeleteCount: 1},
-					})
+						}))
 				}
 
 				return d.WriteJSON(cmd.OutOrStdout(), BranchDeletion{Status: result.OK(), Repository: repositoryOf(repo), Branch: args[0]})
@@ -490,30 +474,16 @@ func New(deps Dependencies) *cobra.Command {
 					reason = "default branch already set to requested value"
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "branch.default.set",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "defaultBranch": args[0]},
-						Action:          "update",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"default branch"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				switch predicted {
-				case "update":
-					preview.Summary.UpdateCount = 1
-				case "no-op":
-					preview.Summary.NoopCount = 1
-				default:
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "branch.default.set",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "defaultBranch": args[0]},
+					Action:          "update",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"default branch"},
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
@@ -612,30 +582,16 @@ func New(deps Dependencies) *cobra.Command {
 					reason = "branch model default already set to requested value"
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "branch.model.update",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "defaultBranch": args[0]},
-						Action:          "update",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"default branch"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				switch predicted {
-				case "update":
-					preview.Summary.UpdateCount = 1
-				case "no-op":
-					preview.Summary.NoopCount = 1
-				default:
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "branch.model.update",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "defaultBranch": args[0]},
+					Action:          "update",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"default branch"},
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
@@ -799,34 +755,22 @@ func New(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "branch.restriction.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "type": createRestrictionType, "matcherType": createMatcherType, "matcherId": createMatcherID},
-						Action:          "create",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"branch restrictions list"},
-						BlockingReasons: func() []string {
-							if predicted == "conflict" {
-								return []string{"matching restriction exists"}
-							}
-							return nil
-						}(),
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				switch predicted {
-				case "create":
-					preview.Summary.CreateCount = 1
-				default:
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "branch.restriction.create",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "type": createRestrictionType, "matcherType": createMatcherType, "matcherId": createMatcherID},
+					Action:          "create",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"branch restrictions list"},
+					BlockingReasons: func() []string {
+						if predicted == "conflict" {
+							return []string{"matching restriction exists"}
+						}
+						return nil
+					}(),
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
@@ -906,30 +850,16 @@ func New(deps Dependencies) *cobra.Command {
 					reason = "branch restriction already matches requested values"
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "branch.restriction.update",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
-						Action:          "update",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"branch restriction"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				switch predicted {
-				case "update":
-					preview.Summary.UpdateCount = 1
-				case "no-op":
-					preview.Summary.NoopCount = 1
-				default:
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "branch.restriction.update",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+					Action:          "update",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"branch restriction"},
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
@@ -998,30 +928,16 @@ func New(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "branch.restriction.delete",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
-						Action:          "delete",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"branch restriction"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				switch predicted {
-				case "delete":
-					preview.Summary.DeleteCount = 1
-				case "no-op":
-					preview.Summary.NoopCount = 1
-				default:
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "branch.restriction.delete",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
+					Action:          "delete",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"branch restriction"},
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
