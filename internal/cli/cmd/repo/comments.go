@@ -186,7 +186,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Context: commentContextFrom(target.Context()), Comment: commentFrom(created)})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Context: commentContextFrom(target.Context()), Comment: result.CommentFrom(created)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created comment"), style.Secondary.Render(commentIDString(created)))
@@ -282,7 +282,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Context: commentContextFrom(target.Context()), Comment: commentFrom(updated)})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Context: commentContextFrom(target.Context()), Comment: result.CommentFrom(updated)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated comment"), style.Secondary.Render(commentIDString(updated)))

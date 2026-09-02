@@ -83,49 +83,6 @@ type ThreadSummary struct {
 	UnresolvedInline int `json:"unresolvedInline,omitempty" jsonschema:"The subset of unresolved anchored to a file."`
 }
 
-// CommentAnchor locates a comment in the diff.
-//
-// Only the fields that say where the comment is. The upstream anchor nests the
-// entire pull request -- its author, both refs, and both refs' repositories and
-// projects -- underneath, which is how a single comment used to arrive carrying
-// tens of kilobytes of context the caller already had.
-type CommentAnchor struct {
-	Path     string `json:"path,omitempty" jsonschema:"File the comment is anchored to."`
-	SrcPath  string `json:"srcPath,omitempty" jsonschema:"Path before a rename, when the file was renamed."`
-	Line     int32  `json:"line,omitempty" jsonschema:"Line within that file."`
-	LineType string `json:"lineType,omitempty" jsonschema:"ADDED, REMOVED or CONTEXT."`
-	FileType string `json:"fileType,omitempty" jsonschema:"FROM or TO, which side of the diff the line is on."`
-	DiffType string `json:"diffType,omitempty" jsonschema:"COMMIT, EFFECTIVE or RANGE."`
-	FromHash string `json:"fromHash,omitempty" jsonschema:"Commit the diff was taken from."`
-	ToHash   string `json:"toHash,omitempty" jsonschema:"Commit the diff was taken to."`
-}
-
-// Comment is one pull request comment.
-type Comment struct {
-	ID           int64          `json:"id,omitempty" jsonschema:"Comment identifier."`
-	Version      int32          `json:"version" jsonschema:"Optimistic-locking version. Pass it back when updating, or the update is refused. Always present: a never-edited comment is at version 0."`
-	Text         string         `json:"text,omitempty" jsonschema:"The comment text."`
-	State        string         `json:"state,omitempty" jsonschema:"OPEN, RESOLVED or PENDING."`
-	Severity     string         `json:"severity,omitempty" jsonschema:"NORMAL for an ordinary comment, BLOCKER for a task."`
-	Pending      bool           `json:"pending" jsonschema:"Whether this is an unpublished draft comment."`
-	Resolved     bool           `json:"resolved" jsonschema:"Whether the thread this comment belongs to is resolved."`
-	Anchored     bool           `json:"anchored" jsonschema:"Whether the comment is attached to a line rather than to the pull request."`
-	Reply        bool           `json:"reply" jsonschema:"Whether this comment is a reply to another rather than the root of a thread."`
-	ParentID     int64          `json:"parentId,omitempty" jsonschema:"Comment this one replies to. Absent on a thread root, which is what resolve, reopen and react address -- so a caller holding a reply id follows this to reach the comment those commands take."`
-	Anchor       *CommentAnchor `json:"anchor,omitempty" jsonschema:"Where in the diff it sits. Absent for a pull-request-level comment."`
-	Author       result.User    `json:"author,omitzero" jsonschema:"Who wrote it."`
-	ReplyCount   int            `json:"replyCount" jsonschema:"Direct replies to this comment."`
-	CreatedDate  int64          `json:"createdDate,omitempty" jsonschema:"When it was written, in milliseconds since the epoch."`
-	UpdatedDate  int64          `json:"updatedDate,omitempty" jsonschema:"When it last changed, in milliseconds since the epoch."`
-	ResolvedDate int64          `json:"resolvedDate,omitempty" jsonschema:"When it was resolved, in milliseconds since the epoch."`
-
-	// Properties is left open. Bitbucket stores per-comment extras here without
-	// documenting them, and reactions -- what bb pr comment react writes and a
-	// caller reads back -- are among them. Dropping it would lose the reaction;
-	// claiming a shape for it would describe whichever instance was looked at.
-	Properties map[string]any `json:"properties,omitempty" jsonschema:"Per-comment extras Bitbucket attaches, reactions among them. Left open because Bitbucket does not document what goes here."`
-}
-
 // Change is one file changed in a pull request.
 type Change struct {
 	Path       string `json:"path" jsonschema:"Path after the change."`
@@ -166,11 +123,11 @@ type JiraIssue struct {
 // so bb names the three every entry has and leaves the rest as it arrived,
 // rather than claiming a shape that only holds for some actions.
 type Activity struct {
-	ID          int64          `json:"id,omitempty" jsonschema:"Activity identifier."`
-	Action      string         `json:"action,omitempty" jsonschema:"What happened: OPENED, COMMENTED, APPROVED, RESCOPED, MERGED, DECLINED and so on."`
-	CreatedDate int64          `json:"createdDate,omitempty" jsonschema:"When, in milliseconds since the epoch."`
-	Comment     *Comment       `json:"comment,omitempty" jsonschema:"The comment, when the action was COMMENTED."`
-	Raw         map[string]any `json:"raw" jsonschema:"The upstream activity entry, unchanged. Which fields it carries depends on action."`
+	ID          int64           `json:"id,omitempty" jsonschema:"Activity identifier."`
+	Action      string          `json:"action,omitempty" jsonschema:"What happened: OPENED, COMMENTED, APPROVED, RESCOPED, MERGED, DECLINED and so on."`
+	CreatedDate int64           `json:"createdDate,omitempty" jsonschema:"When, in milliseconds since the epoch."`
+	Comment     *result.Comment `json:"comment,omitempty" jsonschema:"The comment, when the action was COMMENTED."`
+	Raw         map[string]any  `json:"raw" jsonschema:"The upstream activity entry, unchanged. Which fields it carries depends on action."`
 }
 
 // Participant is someone who has taken part in a pull request.
@@ -269,7 +226,7 @@ type ReviewChange struct {
 type DraftReview struct {
 	Repository    result.Repository `json:"repository"`
 	PullRequestID string            `json:"pullRequestId" jsonschema:"Pull request the draft belongs to."`
-	Comments      []Comment         `json:"comments" jsonschema:"Unpublished draft comments. Empty rather than absent when there are none."`
+	Comments      []result.Comment  `json:"comments" jsonschema:"Unpublished draft comments. Empty rather than absent when there are none."`
 }
 
 // CommentThreads is what `bb pr comment list` returns.
@@ -286,14 +243,14 @@ type CommentThreads struct {
 	State         string            `json:"state,omitempty" jsonschema:"State filter that was applied: open, resolved, pending or all."`
 	Summary       ThreadSummary     `json:"summary"`
 	Threads       []Thread          `json:"threads" jsonschema:"Comment threads, unresolved first. Empty rather than absent when there are none."`
-	Comments      *[]Comment        `json:"comments,omitempty" jsonschema:"Every comment, ungrouped. Present only with --full, and then present even when there are none: its absence means the flag was not passed, not that the file has no comments."`
+	Comments      *[]result.Comment `json:"comments,omitempty" jsonschema:"Every comment, ungrouped. Present only with --full, and then present even when there are none: its absence means the flag was not passed, not that the file has no comments."`
 }
 
 // SingleComment is what `bb pr comment get`, `resolve` and `reopen` return.
 type SingleComment struct {
 	Repository    result.Repository `json:"repository"`
 	PullRequestID string            `json:"pullRequestId" jsonschema:"Pull request the comment belongs to."`
-	Comment       Comment           `json:"comment"`
+	Comment       result.Comment    `json:"comment"`
 }
 
 // AddedComment is what `bb pr comment add` returns.
@@ -305,7 +262,7 @@ type SingleComment struct {
 type AddedComment struct {
 	Repository    result.Repository `json:"repository"`
 	PullRequestID string            `json:"pullRequestId" jsonschema:"Pull request the comment was added to."`
-	Comment       Comment           `json:"comment" jsonschema:"The comment as Bitbucket stored it."`
+	Comment       result.Comment    `json:"comment" jsonschema:"The comment as Bitbucket stored it."`
 	Blocker       bool              `json:"blocker" jsonschema:"Whether it was posted as a task rather than an ordinary comment."`
 	Pending       bool              `json:"pending" jsonschema:"Whether it was posted as an unpublished draft."`
 	Path          string            `json:"path,omitempty" jsonschema:"File it was asked to be anchored to, when --path was given."`

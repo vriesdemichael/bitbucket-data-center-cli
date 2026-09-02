@@ -1,8 +1,6 @@
 package prcmd
 
 import (
-	"strings"
-
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	jiraservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/jira"
@@ -303,113 +301,14 @@ func threadSummaryFrom(upstream pullrequestactivityservice.Summary) ThreadSummar
 	}
 }
 
-// commentFrom converts one upstream comment.
-//
-// The upstream anchor nests the entire pull request, and the comment nests its
-// replies, each of which nests the same again. Only what identifies and locates
-// the comment survives; the reply bodies are a count, and bb pr comment list
-// is the command that returns them properly.
-func commentFrom(upstream openapigenerated.RestComment) Comment {
-	converted := Comment{
-		Text:     stringValue(upstream.Text),
-		State:    stringValue(upstream.State),
-		Severity: stringValue(upstream.Severity),
-	}
-	if upstream.Id != nil {
-		converted.ID = *upstream.Id
-	}
-	if upstream.Version != nil {
-		converted.Version = *upstream.Version
-	}
-	if upstream.Pending != nil {
-		converted.Pending = *upstream.Pending
-	}
-	if upstream.ThreadResolved != nil {
-		converted.Resolved = *upstream.ThreadResolved
-	}
-	if upstream.Anchored != nil {
-		converted.Anchored = *upstream.Anchored
-	}
-	if upstream.CreatedDate != nil {
-		converted.CreatedDate = *upstream.CreatedDate
-	}
-	if upstream.UpdatedDate != nil {
-		converted.UpdatedDate = *upstream.UpdatedDate
-	}
-	if upstream.ResolvedDate != nil {
-		converted.ResolvedDate = *upstream.ResolvedDate
-	}
-	if upstream.Comments != nil {
-		converted.ReplyCount = len(*upstream.Comments)
-	}
-	if upstream.Properties != nil {
-		converted.Properties = *upstream.Properties
-	}
-	if upstream.Reply != nil {
-		converted.Reply = *upstream.Reply
-	}
-	// Only the id. The upstream parent is a whole comment, and its anchor nests
-	// the pull request again -- the id is what a caller follows to reach the
-	// thread root that resolve, reopen and react take.
-	if upstream.Parent != nil && upstream.Parent.Id != nil {
-		converted.ParentID = *upstream.Parent.Id
-	}
-	if upstream.Author != nil {
-		converted.Author = result.User{
-			Name:         upstream.Author.Name,
-			DisplayName:  upstream.Author.DisplayName,
-			EmailAddress: stringValue(upstream.Author.EmailAddress),
-			Slug:         upstream.Author.Slug,
-			Type:         string(upstream.Author.Type),
-		}
-		if upstream.Author.Id != nil {
-			converted.Author.ID = *upstream.Author.Id
-		}
-		if upstream.Author.Active != nil {
-			converted.Author.Active = *upstream.Author.Active
-		}
-	}
-	if upstream.Anchor != nil {
-		anchor := CommentAnchor{
-			Path:     joinCommentPath(pathComponents(upstream.Anchor.Path)),
-			SrcPath:  joinCommentPath(pathComponents(upstream.Anchor.SrcPath)),
-			FromHash: stringValue(upstream.Anchor.FromHash),
-			ToHash:   stringValue(upstream.Anchor.ToHash),
-		}
-		if upstream.Anchor.Line != nil {
-			anchor.Line = *upstream.Anchor.Line
-		}
-		if upstream.Anchor.LineType != nil {
-			anchor.LineType = string(*upstream.Anchor.LineType)
-		}
-		if upstream.Anchor.FileType != nil {
-			anchor.FileType = string(*upstream.Anchor.FileType)
-		}
-		if upstream.Anchor.DiffType != nil {
-			anchor.DiffType = string(*upstream.Anchor.DiffType)
-		}
-		converted.Anchor = &anchor
-	}
-
-	return converted
-}
-
 // commentsFrom converts a list, preserving order and never returning nil.
-func commentsFrom(upstream []openapigenerated.RestComment) []Comment {
-	converted := make([]Comment, 0, len(upstream))
+func commentsFrom(upstream []openapigenerated.RestComment) []result.Comment {
+	converted := make([]result.Comment, 0, len(upstream))
 	for _, one := range upstream {
-		converted = append(converted, commentFrom(one))
+		converted = append(converted, result.CommentFrom(one))
 	}
 
 	return converted
-}
-
-// joinCommentPath renders Bitbucket's path object as a path.
-//
-// The upstream splits a path into components, a parent and a name, all of which
-// say the same thing. A caller wants the path.
-func joinCommentPath(components []string) string {
-	return strings.Join(components, "/")
 }
 
 func stringValue(value *string) string {
@@ -418,20 +317,6 @@ func stringValue(value *string) string {
 	}
 
 	return *value
-}
-
-// pathComponents reads the components out of Bitbucket's path object.
-func pathComponents(path *struct {
-	Components *[]string `json:"components,omitempty"`
-	Extension  *string   `json:"extension,omitempty"`
-	Name       *string   `json:"name,omitempty"`
-	Parent     *string   `json:"parent,omitempty"`
-}) []string {
-	if path == nil || path.Components == nil {
-		return nil
-	}
-
-	return *path.Components
 }
 
 // activityFrom converts one timeline entry.
@@ -446,7 +331,7 @@ func activityFrom(upstream pullrequestactivityservice.Activity) Activity {
 		converted.Raw = map[string]any{}
 	}
 	if upstream.Comment != nil {
-		comment := commentFrom(*upstream.Comment)
+		comment := result.CommentFrom(*upstream.Comment)
 		converted.Comment = &comment
 	}
 
@@ -461,11 +346,6 @@ func activitiesFrom(upstream []pullrequestactivityservice.Activity) []Activity {
 	}
 
 	return converted
-}
-
-// checkoutFrom converts the internal checkout outcome.
-func checkoutFrom(outcome checkoutResult) Checkout {
-	return Checkout(outcome)
 }
 
 // commentsInThreads keeps the comments that survived the thread filters.

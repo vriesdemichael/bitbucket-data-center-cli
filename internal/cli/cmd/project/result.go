@@ -35,7 +35,7 @@ type SingleProject struct {
 // ProjectDeletion is what `bb project delete` reports.
 type ProjectDeletion struct {
 	result.Status
-	ProjectKey string `json:"projectKey" jsonschema:"Key of the project that was deleted."`
+	Project string `json:"project" jsonschema:"Key of the project that was deleted."`
 }
 
 // PermissionEntry is one user or group holding a project permission.
@@ -90,7 +90,7 @@ type EffectivePermission struct {
 // Bitbucket's SCREAMING_SNAKE constants, which is not how anything else bb
 // emits names a field, and a fixed list is what --describe can state.
 type EffectivePermissions struct {
-	ProjectKey  string                `json:"projectKey" jsonschema:"Project the permissions were probed on."`
+	Project     string                `json:"project" jsonschema:"Project key the permissions were probed on."`
 	Permissions []EffectivePermission `json:"permissions" jsonschema:"One entry per permission level, in increasing order of privilege."`
 }
 

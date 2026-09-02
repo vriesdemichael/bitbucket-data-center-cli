@@ -113,7 +113,7 @@ func newCommentStateCommand(
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, PullRequestID: prID, Comment: commentFrom(updated)})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, PullRequestID: prID, Comment: result.CommentFrom(updated)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s comment %s\n", style.Success.Render(doneWord), style.Resource.Render(commentID))

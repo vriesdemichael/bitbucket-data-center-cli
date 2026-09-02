@@ -87,7 +87,7 @@ func newPullRequestCheckoutCommand(deps Dependencies, repositorySelector *string
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), checkoutFrom(outcome))
+				return deps.WriteJSON(cmd.OutOrStdout(), outcome)
 			}
 
 			writeCheckoutResult(cmd, pullRequest, outcome)
@@ -102,19 +102,6 @@ func newPullRequestCheckoutCommand(deps Dependencies, repositorySelector *string
 	command.MarkFlagsMutuallyExclusive("branch", "detach")
 
 	return command
-}
-
-type checkoutResult struct {
-	PullRequest      int64  `json:"pull_request"`
-	Branch           string `json:"branch,omitempty"`
-	Detached         bool   `json:"detached"`
-	Remote           string `json:"remote"`
-	RemoteURL        string `json:"remote_url"`
-	RemoteAdded      bool   `json:"remote_added"`
-	SourceBranch     string `json:"source_branch"`
-	SourceRepository string `json:"source_repository"`
-	Fork             bool   `json:"fork"`
-	FastForwarded    bool   `json:"fast_forwarded"`
 }
 
 func planPullRequestCheckout(
@@ -308,8 +295,8 @@ func applyPullRequestCheckout(
 	plan checkoutPlan,
 	force bool,
 	detach bool,
-) (checkoutResult, error) {
-	result := checkoutResult{
+) (Checkout, error) {
+	result := Checkout{
 		PullRequest:      plan.pullRequest,
 		Branch:           plan.localBranch,
 		Detached:         detach,
@@ -323,7 +310,7 @@ func applyPullRequestCheckout(
 
 	if plan.remoteIsNew {
 		if err := backend.AddRemote(ctx, plan.repositoryRoot, git.Remote{Name: plan.remoteName, URL: plan.remoteURL}); err != nil {
-			return checkoutResult{}, err
+			return Checkout{}, err
 		}
 	}
 
@@ -334,22 +321,22 @@ func applyPullRequestCheckout(
 		Refspecs:    []string{refspec},
 		Credentials: plan.credentials,
 	}); err != nil {
-		return checkoutResult{}, err
+		return Checkout{}, err
 	}
 
 	if detach {
 		if err := backend.Checkout(ctx, plan.repositoryRoot, git.CheckoutOptions{Ref: remoteTrackingRef, Detach: true, Force: force}); err != nil {
-			return checkoutResult{}, err
+			return Checkout{}, err
 		}
 		return result, nil
 	}
 
 	if plan.branchExists {
 		if err := backend.Checkout(ctx, plan.repositoryRoot, git.CheckoutOptions{Ref: plan.localBranch, Force: force}); err != nil {
-			return checkoutResult{}, err
+			return Checkout{}, err
 		}
 		if err := backend.FastForward(ctx, plan.repositoryRoot, remoteTrackingRef); err != nil {
-			return checkoutResult{}, err
+			return Checkout{}, err
 		}
 		result.FastForwarded = true
 	} else if err := backend.Checkout(ctx, plan.repositoryRoot, git.CheckoutOptions{
@@ -357,11 +344,11 @@ func applyPullRequestCheckout(
 		NewBranch: plan.localBranch,
 		Force:     force,
 	}); err != nil {
-		return checkoutResult{}, err
+		return Checkout{}, err
 	}
 
 	if err := setBranchUpstream(ctx, backend, plan); err != nil {
-		return checkoutResult{}, err
+		return Checkout{}, err
 	}
 
 	return result, nil
@@ -390,7 +377,7 @@ func setBranchUpstream(ctx context.Context, backend git.Backend, plan checkoutPl
 	return nil
 }
 
-func writeCheckoutResult(cmd *cobra.Command, pullRequest pullrequestservice.PullRequest, result checkoutResult) {
+func writeCheckoutResult(cmd *cobra.Command, pullRequest pullrequestservice.PullRequest, result Checkout) {
 	writer := cmd.OutOrStdout()
 
 	if result.RemoteAdded {
