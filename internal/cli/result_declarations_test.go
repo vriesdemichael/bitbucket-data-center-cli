@@ -52,7 +52,7 @@ func TestDeclaredResultsAreReachableThroughDescribe(t *testing.T) {
 		if !described.Described {
 			t.Errorf("%q has a declared result but --describe reports it undescribed: %s", path, described.Reason)
 		}
-		if len(described.Schema) == 0 {
+		if len(schemaDocument(t, described)) == 0 {
 			t.Errorf("%q described with an empty schema", path)
 		}
 	}
@@ -177,9 +177,10 @@ func TestDescribeAnswersAtTheDataLevel(t *testing.T) {
 	if !described.Described {
 		t.Fatalf("bulk plan is published but not described: %+v", described)
 	}
-	properties, ok := described.Schema["properties"].(map[string]any)
+	document := schemaDocument(t, described)
+	properties, ok := document["properties"].(map[string]any)
 	if !ok {
-		t.Fatalf("schema has no properties: %+v", described.Schema)
+		t.Fatalf("schema has no properties: %+v", document)
 	}
 	if _, envelope := properties["meta"]; envelope {
 		t.Error("--describe answered with the envelope rather than the payload")
@@ -187,7 +188,7 @@ func TestDescribeAnswersAtTheDataLevel(t *testing.T) {
 	if _, ok := properties["planHash"]; !ok {
 		t.Errorf("the payload's own fields are missing: %+v", properties)
 	}
-	if _, stale := described.Schema["$id"]; stale {
+	if _, stale := document["$id"]; stale {
 		t.Error("the payload schema kept the envelope's $id, which points at a directory bb no longer publishes")
 	}
 }
@@ -242,6 +243,27 @@ func TestExemptionsNameRealCommandsAndDoNotOverlapDeclarations(t *testing.T) {
 	for path := range outputschemas.CommandsWithoutDataContract {
 		if outputschemas.CommandsWithoutDeclarableShape[path] != "" {
 			t.Errorf("%q is in both exemption maps, which answer different questions", path)
+		}
+	}
+}
+
+// TestEveryDeclarationResolves is where the startup panic went.
+//
+// Declarations are lazy, so a bad enum path -- a property the type does not
+// have, usually left behind by a rename -- no longer blows up at init. Reading
+// every declaration here restores the guard, and puts it in a test run rather
+// than in a user's terminal.
+func TestEveryDeclarationResolves(t *testing.T) {
+	t.Parallel()
+
+	for _, path := range result.DeclaredPaths() {
+		schema, ok := result.SchemaFor(path)
+		if !ok {
+			t.Errorf("%q is a declared path with no declaration", path)
+			continue
+		}
+		if schema == nil {
+			t.Errorf("%q derived a nil schema", path)
 		}
 	}
 }

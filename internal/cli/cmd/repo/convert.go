@@ -162,117 +162,14 @@ func commentContextFrom(context commentservice.Context) CommentContext {
 	}
 }
 
-// commentFrom converts one upstream comment.
-func commentFrom(upstream openapigenerated.RestComment) Comment {
-	converted := Comment{
-		Text:     safeString(upstream.Text),
-		State:    safeString(upstream.State),
-		Severity: safeString(upstream.Severity),
-	}
-	if upstream.Id != nil {
-		converted.ID = *upstream.Id
-	}
-	if upstream.Version != nil {
-		converted.Version = *upstream.Version
-	}
-	if upstream.Pending != nil {
-		converted.Pending = *upstream.Pending
-	}
-	if upstream.ThreadResolved != nil {
-		converted.Resolved = *upstream.ThreadResolved
-	}
-	if upstream.Anchored != nil {
-		converted.Anchored = *upstream.Anchored
-	}
-	if upstream.CreatedDate != nil {
-		converted.CreatedDate = *upstream.CreatedDate
-	}
-	if upstream.UpdatedDate != nil {
-		converted.UpdatedDate = *upstream.UpdatedDate
-	}
-	if upstream.ResolvedDate != nil {
-		converted.ResolvedDate = *upstream.ResolvedDate
-	}
-	if upstream.Comments != nil {
-		converted.ReplyCount = len(*upstream.Comments)
-	}
-	if upstream.Properties != nil {
-		converted.Properties = *upstream.Properties
-	}
-	if upstream.Reply != nil {
-		converted.Reply = *upstream.Reply
-	}
-	// Only the id. The upstream parent is a whole comment, and its anchor nests
-	// the pull request again -- the id is what a caller follows to reach the
-	// thread root that resolve, reopen and react take.
-	if upstream.Parent != nil && upstream.Parent.Id != nil {
-		converted.ParentID = *upstream.Parent.Id
-	}
-	if upstream.Author != nil {
-		converted.Author = result.User{
-			Name:         upstream.Author.Name,
-			DisplayName:  upstream.Author.DisplayName,
-			EmailAddress: safeString(upstream.Author.EmailAddress),
-			Slug:         upstream.Author.Slug,
-			Type:         string(upstream.Author.Type),
-		}
-		if upstream.Author.Id != nil {
-			converted.Author.ID = *upstream.Author.Id
-		}
-		if upstream.Author.Active != nil {
-			converted.Author.Active = *upstream.Author.Active
-		}
-	}
-	if upstream.Anchor != nil {
-		anchor := CommentAnchor{
-			Path:     joinPathComponents(upstream.Anchor.Path),
-			SrcPath:  joinPathComponents(upstream.Anchor.SrcPath),
-			FromHash: safeString(upstream.Anchor.FromHash),
-			ToHash:   safeString(upstream.Anchor.ToHash),
-		}
-		if upstream.Anchor.Line != nil {
-			anchor.Line = *upstream.Anchor.Line
-		}
-		if upstream.Anchor.LineType != nil {
-			anchor.LineType = string(*upstream.Anchor.LineType)
-		}
-		if upstream.Anchor.FileType != nil {
-			anchor.FileType = string(*upstream.Anchor.FileType)
-		}
-		if upstream.Anchor.DiffType != nil {
-			anchor.DiffType = string(*upstream.Anchor.DiffType)
-		}
-		converted.Anchor = &anchor
-	}
-
-	return converted
-}
-
 // commentsFrom converts a list, preserving order and never returning nil.
-func commentsFrom(upstream []openapigenerated.RestComment) []Comment {
-	converted := make([]Comment, 0, len(upstream))
+func commentsFrom(upstream []openapigenerated.RestComment) []result.Comment {
+	converted := make([]result.Comment, 0, len(upstream))
 	for _, one := range upstream {
-		converted = append(converted, commentFrom(one))
+		converted = append(converted, result.CommentFrom(one))
 	}
 
 	return converted
-}
-
-// joinPathComponents renders Bitbucket's path object as a path.
-//
-// The upstream splits a path into components, a parent and a name, all of which
-// say the same thing. A caller wants the path.
-func joinPathComponents(path *struct {
-	Components *[]string `json:"components,omitempty"`
-	Extension  *string   `json:"extension,omitempty"`
-	Name       *string   `json:"name,omitempty"`
-	Parent     *string   `json:"parent,omitempty"`
-}) string {
-	if path == nil || path.Components == nil {
-		return ""
-	}
-
-	return strings.Join(*path.Components, "/")
 }
 
 // permissionEntriesFrom converts what the permission list commands resolved.

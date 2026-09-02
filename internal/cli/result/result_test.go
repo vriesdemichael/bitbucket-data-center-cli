@@ -30,7 +30,7 @@ type nested struct {
 func TestOptionalPointersAreNotPublishedAsNullable(t *testing.T) {
 	t.Parallel()
 
-	schema := For[sample](nil)
+	schema := For[sample](nil).Schema()
 
 	if got := schema.Properties["optionalPointer"].Type; got != "integer" {
 		t.Errorf("optionalPointer type = %q, want integer without null", got)
@@ -46,7 +46,7 @@ func TestOptionalPointersAreNotPublishedAsNullable(t *testing.T) {
 func TestOnlyNonOptionalFieldsAreRequired(t *testing.T) {
 	t.Parallel()
 
-	schema := For[sample](nil)
+	schema := For[sample](nil).Schema()
 
 	required := strings.Join(schema.Required, ",")
 	if !strings.Contains(required, "name") {
@@ -68,7 +68,7 @@ func TestOnlyNonOptionalFieldsAreRequired(t *testing.T) {
 func TestListIsAnArrayNotANullableOne(t *testing.T) {
 	t.Parallel()
 
-	schema := List[nested](nil)
+	schema := List[nested](nil).Schema()
 
 	if schema.Type != "array" || len(schema.Types) != 0 {
 		t.Errorf("list type = %q / %v, want a plain array", schema.Type, schema.Types)
@@ -91,7 +91,7 @@ func TestEnumsReachNestedAndListedFields(t *testing.T) {
 	schema := For[sample](map[string][]string{
 		"nested.flavour": {"sweet", "sour"},
 		"items.flavour":  {"salt"},
-	})
+	}).Schema()
 
 	if got := schema.Properties["nested"].Properties["flavour"].Enum; len(got) != 2 {
 		t.Errorf("nested enum = %v, want two values", got)
@@ -113,7 +113,10 @@ func TestAnEnumForAMissingFieldIsAWiringError(t *testing.T) {
 		}
 	}()
 
-	_ = For[sample](map[string][]string{"nested.nothing": {"x"}})
+	// The panic moved with the derivation: a declaration is lazy, so the
+	// wiring mistake surfaces when the schema is read rather than when it is
+	// declared.
+	_ = For[sample](map[string][]string{"nested.nothing": {"x"}}).Schema()
 }
 
 // TestDeclarationsRoundTripThroughJSON guards the path --describe actually
@@ -121,7 +124,7 @@ func TestAnEnumForAMissingFieldIsAWiringError(t *testing.T) {
 func TestDeclarationsRoundTripThroughJSON(t *testing.T) {
 	t.Parallel()
 
-	encoded, err := json.Marshal(For[sample](nil))
+	encoded, err := json.Marshal(For[sample](nil).Schema())
 	if err != nil {
 		t.Fatalf("encoding failed: %v", err)
 	}

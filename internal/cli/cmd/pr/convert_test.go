@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	jiraservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/jira"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
@@ -30,7 +31,7 @@ func upstreamFromJSON[T any](t *testing.T, body string) T {
 func TestCommentFromDropsThePullRequestItIsAnchoredTo(t *testing.T) {
 	t.Parallel()
 
-	converted := commentFrom(upstreamFromJSON[openapigenerated.RestComment](t, `{
+	converted := result.CommentFrom(upstreamFromJSON[openapigenerated.RestComment](t, `{
 		"id": 118,
 		"version": 2,
 		"text": "please rename this",
@@ -82,7 +83,7 @@ func TestCommentFromDropsThePullRequestItIsAnchoredTo(t *testing.T) {
 		t.Fatalf("properties = %+v, want the extras kept", converted.Properties)
 	}
 
-	plain := commentFrom(upstreamFromJSON[openapigenerated.RestComment](t, `{"id": 1, "text": "hi"}`))
+	plain := result.CommentFrom(upstreamFromJSON[openapigenerated.RestComment](t, `{"id": 1, "text": "hi"}`))
 	if plain.Anchor != nil {
 		t.Fatalf("a pull-request-level comment reported an anchor: %+v", plain.Anchor)
 	}
@@ -324,8 +325,10 @@ func TestCheckoutFromCarriesEveryFieldTheCommandFilledIn(t *testing.T) {
 
 	// The regression this guards: pullRequest and sourceRepository were
 	// declared on the result and never assigned, so every run published zero
-	// and an empty string.
-	converted := checkoutFrom(checkoutResult{
+	// and an empty string. The planner now fills in the published type
+	// directly -- there is no second struct to copy out of -- so this asserts
+	// on the document rather than on a conversion.
+	converted := Checkout{
 		PullRequest:      42,
 		Branch:           "jdoe/feature",
 		Detached:         false,
@@ -336,7 +339,7 @@ func TestCheckoutFromCarriesEveryFieldTheCommandFilledIn(t *testing.T) {
 		SourceRepository: "~jdoe/payments",
 		Fork:             true,
 		FastForwarded:    false,
-	})
+	}
 
 	if converted.PullRequest != 42 || converted.SourceRepository != "~jdoe/payments" {
 		t.Fatalf("checkout = %+v", converted)

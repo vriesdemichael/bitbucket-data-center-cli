@@ -52,8 +52,9 @@ func TestDescribeReturnsThePublishedSchemaForACommand(t *testing.T) {
 	if !result.Described {
 		t.Fatalf("pr get has a published schema but was reported undescribed: %+v", result)
 	}
-	if result.Schema["type"] != "object" || result.Schema["properties"] == nil {
-		t.Errorf("the returned document is not a JSON Schema: %v", result.Schema)
+	document := schemaDocument(t, result)
+	if document["type"] != "object" || document["properties"] == nil {
+		t.Errorf("the returned document is not a JSON Schema: %v", document)
 	}
 
 	// The document must be the schema the command declares, not a summary of
@@ -286,4 +287,26 @@ func TestEveryRunnableCommandAnswersDescribe(t *testing.T) {
 	if len(missing) > 0 {
 		t.Errorf("%d commands do not accept --describe: %v", len(missing), missing)
 	}
+}
+
+// schemaDocument reads the schema out of a description as the JSON document a
+// caller receives.
+//
+// DescribeResult.Schema is any, because a derived schema and a decoded one are
+// different Go values that encode to the same JSON. Every assertion about it
+// belongs on the encoded form, which is the only form anything outside bb sees.
+func schemaDocument(t *testing.T, described DescribeResult) map[string]any {
+	t.Helper()
+
+	encoded, err := json.Marshal(described.Schema)
+	if err != nil {
+		t.Fatalf("encode schema: %v", err)
+	}
+
+	var document map[string]any
+	if err := json.Unmarshal(encoded, &document); err != nil {
+		t.Fatalf("decode schema: %v", err)
+	}
+
+	return document
 }

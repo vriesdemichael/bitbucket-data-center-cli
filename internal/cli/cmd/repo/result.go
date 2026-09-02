@@ -109,14 +109,14 @@ type CommentContext struct {
 
 // Comments is what `bb repo comment list` returns.
 type Comments struct {
-	Context  CommentContext `json:"context"`
-	Comments []Comment      `json:"comments" jsonschema:"Comments in that context. Empty rather than absent when there are none."`
+	Context  CommentContext   `json:"context"`
+	Comments []result.Comment `json:"comments" jsonschema:"Comments in that context. Empty rather than absent when there are none."`
 }
 
 // SingleComment is what `bb repo comment create` and `update` return.
 type SingleComment struct {
 	Context CommentContext `json:"context"`
-	Comment Comment        `json:"comment"`
+	Comment result.Comment `json:"comment"`
 }
 
 // CommentDeletion is what `bb repo comment delete` reports.
@@ -125,46 +125,6 @@ type CommentDeletion struct {
 	Context CommentContext `json:"context"`
 	ID      string         `json:"id" jsonschema:"Identifier of the comment that was deleted, as it was given on the command line."`
 	Version *int           `json:"version,omitempty" jsonschema:"Version the delete was performed against. Absent when Bitbucket did not report one."`
-}
-
-// CommentAnchor locates a repository comment in a diff.
-type CommentAnchor struct {
-	Path     string `json:"path,omitempty" jsonschema:"File the comment is anchored to."`
-	SrcPath  string `json:"srcPath,omitempty" jsonschema:"Path before a rename, when the file was renamed."`
-	Line     int32  `json:"line,omitempty" jsonschema:"Line within that file."`
-	LineType string `json:"lineType,omitempty" jsonschema:"ADDED, REMOVED or CONTEXT."`
-	FileType string `json:"fileType,omitempty" jsonschema:"FROM or TO, which side of the diff the line is on."`
-	DiffType string `json:"diffType,omitempty" jsonschema:"COMMIT, EFFECTIVE or RANGE."`
-	FromHash string `json:"fromHash,omitempty" jsonschema:"Commit the diff was taken from."`
-	ToHash   string `json:"toHash,omitempty" jsonschema:"Commit the diff was taken to."`
-}
-
-// Comment is one comment on a commit or a pull request.
-//
-// The upstream object nests the entire pull request under its anchor, and every
-// reply nests the same again. Only what identifies and locates the comment is
-// published.
-type Comment struct {
-	ID           int64          `json:"id,omitempty" jsonschema:"Comment identifier."`
-	Version      int32          `json:"version" jsonschema:"Optimistic-locking version. Pass it back when updating or deleting, or the call is refused. Always present: a never-edited comment is at version 0."`
-	Text         string         `json:"text,omitempty" jsonschema:"The comment text."`
-	State        string         `json:"state,omitempty" jsonschema:"OPEN, RESOLVED or PENDING."`
-	Severity     string         `json:"severity,omitempty" jsonschema:"NORMAL for an ordinary comment, BLOCKER for a task."`
-	Pending      bool           `json:"pending" jsonschema:"Whether this is an unpublished draft comment."`
-	Resolved     bool           `json:"resolved" jsonschema:"Whether the thread this comment belongs to is resolved."`
-	Anchored     bool           `json:"anchored" jsonschema:"Whether the comment is attached to a line rather than to the commit or pull request."`
-	Reply        bool           `json:"reply" jsonschema:"Whether this comment is a reply to another rather than the root of a thread."`
-	ParentID     int64          `json:"parentId,omitempty" jsonschema:"Comment this one replies to. Absent on a thread root, which is what resolve, reopen and react address -- so a caller holding a reply id follows this to reach the comment those commands take."`
-	Anchor       *CommentAnchor `json:"anchor,omitempty" jsonschema:"Where in the diff it sits. Absent for a top-level comment."`
-	Author       result.User    `json:"author,omitzero" jsonschema:"Who wrote it."`
-	ReplyCount   int            `json:"replyCount" jsonschema:"Direct replies to this comment."`
-	CreatedDate  int64          `json:"createdDate,omitempty" jsonschema:"When it was written, in milliseconds since the epoch."`
-	UpdatedDate  int64          `json:"updatedDate,omitempty" jsonschema:"When it last changed, in milliseconds since the epoch."`
-	ResolvedDate int64          `json:"resolvedDate,omitempty" jsonschema:"When it was resolved, in milliseconds since the epoch."`
-
-	// Properties is left open, for the reason given on the pull request comment:
-	// Bitbucket stores undocumented extras here, reactions among them.
-	Properties map[string]any `json:"properties,omitempty" jsonschema:"Per-comment extras Bitbucket attaches, reactions among them. Left open because Bitbucket does not document what goes here."`
 }
 
 // PermissionEntry is one user or group holding a repository permission.
