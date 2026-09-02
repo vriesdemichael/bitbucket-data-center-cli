@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
+
 	"github.com/spf13/cobra"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
@@ -211,23 +213,23 @@ func TestFormatReviewSummaryLines(t *testing.T) {
 func TestFormatPullRequestCounts(t *testing.T) {
 	cases := []struct {
 		name        string
-		pullRequest pullrequestservice.PullRequest
+		pullRequest result.PullRequest
 		want        string
 	}{
-		{name: "no counters reported", pullRequest: pullrequestservice.PullRequest{}, want: ""},
+		{name: "no counters reported", pullRequest: result.PullRequest{}, want: ""},
 		{
 			name:        "zero counters are not noise",
-			pullRequest: pullrequestservice.PullRequest{OpenTaskCount: countPointer(0), CommentCount: countPointer(0)},
+			pullRequest: result.PullRequest{OpenTaskCount: countPointer(0), CommentCount: countPointer(0)},
 			want:        "",
 		},
 		{
 			name:        "tasks only",
-			pullRequest: pullrequestservice.PullRequest{OpenTaskCount: countPointer(2)},
+			pullRequest: result.PullRequest{OpenTaskCount: countPointer(2)},
 			want:        "[tasks:2]",
 		},
 		{
 			name:        "both",
-			pullRequest: pullrequestservice.PullRequest{OpenTaskCount: countPointer(1), CommentCount: countPointer(4)},
+			pullRequest: result.PullRequest{OpenTaskCount: countPointer(1), CommentCount: countPointer(4)},
 			want:        "[tasks:1 comments:4]",
 		},
 	}

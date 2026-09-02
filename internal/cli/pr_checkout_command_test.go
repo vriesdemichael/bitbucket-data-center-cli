@@ -256,7 +256,7 @@ func TestPullRequestCheckoutSameRepository(t *testing.T) {
 	if result["remote"] != "origin" {
 		t.Fatalf("expected the existing origin remote, got: %v", result)
 	}
-	if result["remote_added"] != false {
+	if result["remoteAdded"] != false {
 		t.Fatalf("expected no new remote, got: %v", result)
 	}
 	// The local branch keeps the source name: nothing to collide with.
@@ -307,7 +307,7 @@ func TestPullRequestCheckoutFromFork(t *testing.T) {
 	if result["fork"] != true {
 		t.Fatalf("expected a fork checkout, got: %v", result)
 	}
-	if result["remote"] != "jdoe" || result["remote_added"] != true {
+	if result["remote"] != "jdoe" || result["remoteAdded"] != true {
 		t.Fatalf("expected a new remote named after the fork owner, got: %v", result)
 	}
 	// Prefixed so it cannot collide with a local branch of the same name, or
@@ -347,7 +347,7 @@ func TestPullRequestCheckoutReusesAnExistingForkRemote(t *testing.T) {
 
 	result := decodeCheckoutResult(t, runCheckout(t, "--json", "pr", "checkout", "42"))
 
-	if result["remote"] != "myfork" || result["remote_added"] != false {
+	if result["remote"] != "myfork" || result["remoteAdded"] != false {
 		t.Fatalf("expected the existing fork remote to be reused, got: %v", result)
 	}
 	if len(stub.addedRemotes) != 0 {
@@ -392,7 +392,7 @@ func TestPullRequestCheckoutUpdatesAnExistingBranch(t *testing.T) {
 
 	result := decodeCheckoutResult(t, runCheckout(t, "--json", "pr", "checkout", "42"))
 
-	if result["fast_forwarded"] != true {
+	if result["fastForwarded"] != true {
 		t.Fatalf("expected the existing branch to be fast-forwarded, got: %v", result)
 	}
 	if stub.fastForwardRef != "refs/remotes/origin/feature/login" {

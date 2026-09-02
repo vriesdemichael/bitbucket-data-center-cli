@@ -253,7 +253,7 @@ func TestPRCommentResolveAndReopenCommands(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error resolving comment as JSON: %v", err)
 	}
-	if !strings.Contains(jsonOutput, `"comment"`) || !strings.Contains(jsonOutput, `"pull_request_id"`) {
+	if !strings.Contains(jsonOutput, `"comment"`) || !strings.Contains(jsonOutput, `"pullRequestId"`) {
 		t.Fatalf("expected the machine payload to carry the comment, got: %s", jsonOutput)
 	}
 

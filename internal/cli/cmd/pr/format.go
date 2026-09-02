@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
@@ -254,7 +255,7 @@ func formatReviewStatusIndicator(summary pullrequestservice.ReviewSummary) strin
 	return "[" + strings.Join(parts, " ") + "]"
 }
 
-func formatPullRequestCounts(pullRequest pullrequestservice.PullRequest) string {
+func formatPullRequestCounts(pullRequest result.PullRequest) string {
 	parts := make([]string, 0, 2)
 	if pullRequest.OpenTaskCount != nil && *pullRequest.OpenTaskCount > 0 {
 		parts = append(parts, fmt.Sprintf("tasks:%d", *pullRequest.OpenTaskCount))

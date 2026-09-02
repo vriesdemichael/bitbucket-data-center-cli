@@ -19,6 +19,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prsel"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
@@ -156,14 +157,21 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				payload := map[string]any{
-					"repository":    repo,
-					"filters":       map[string]any{"state": strings.ToLower(strings.TrimSpace(state)), "start": start, "limit": listPaging.ServiceLimit(), "source_branch": sourceBranch, "target_branch": targetBranch},
-					"pull_requests": pullRequests,
+				payload := PullRequests{
+					Repository: repositoryOf(repo),
+					Filters: ListFilters{
+						State:        strings.ToLower(strings.TrimSpace(state)),
+						Start:        start,
+						Limit:        listPaging.ServiceLimit(),
+						SourceBranch: sourceBranch,
+						TargetBranch: targetBranch,
+					},
+					PullRequests: result.PullRequestsFrom(pullRequests),
 				}
 				if reviewSummaries != nil {
-					payload["review_summaries"] = reviewSummaries
+					payload.ReviewSummaries = reviewSummariesFrom(reviewSummaries)
 				}
+
 				return deps.WriteJSONList(cmd.OutOrStdout(), payload, paging.LimitReached(listPaging, len(pullRequests)))
 			}
 
@@ -172,7 +180,7 @@ func New(deps Dependencies) *cobra.Command {
 				return nil
 			}
 
-			for index, pullRequest := range pullRequests {
+			for index, pullRequest := range result.PullRequestsFrom(pullRequests) {
 				indicator := formatPullRequestCounts(pullRequest)
 				if reviewSummaries != nil {
 					indicator = formatReviewStatusIndicator(reviewSummaries[index])
@@ -243,10 +251,10 @@ func New(deps Dependencies) *cobra.Command {
 			reviewSummary := pullrequestservice.BuildReviewSummary(pullRequest, counts)
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"repository":     repo,
-					"pull_request":   pullRequest,
-					"review_summary": reviewSummary,
+				return deps.WriteJSON(cmd.OutOrStdout(), SinglePullRequest{
+					Repository:    repositoryOf(repo),
+					PullRequest:   result.PullRequestFrom(pullRequest),
+					ReviewSummary: reviewSummaryFrom(reviewSummary),
 				})
 			}
 
@@ -315,7 +323,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "commits": commits})
+				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestCommits{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Commits: commitsFrom(commits)})
 			}
 
 			if len(commits) == 0 {
@@ -358,7 +366,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "changes": changes})
+				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestChanges{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Changes: changesFrom(changes)})
 			}
 
 			if len(changes) == 0 {
@@ -406,7 +414,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "merge_base": commit})
+				return deps.WriteJSON(cmd.OutOrStdout(), MergeBase{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, MergeBase: commitFrom(commit)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", shortCommitID(commit), firstMessageLine(commit.Message))
@@ -617,7 +625,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request": created})
+				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestChange{Repository: repositoryOf(repo), PullRequest: result.PullRequestFrom(created)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Created pull request #%d\n", created.ID)
@@ -731,7 +739,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request": updated})
+				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestChange{Repository: repositoryOf(repo), PullRequest: result.PullRequestFrom(updated)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Updated pull request #%d\n", updated.ID)
@@ -825,7 +833,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request": merged})
+				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestChange{Repository: repositoryOf(repo), PullRequest: result.PullRequestFrom(merged)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Merged pull request #%d\n", merged.ID)
@@ -906,7 +914,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request": declined})
+				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestChange{Repository: repositoryOf(repo), PullRequest: result.PullRequestFrom(declined)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Declined pull request #%d\n", declined.ID)
@@ -987,7 +995,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request": reopened})
+				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestChange{Repository: repositoryOf(repo), PullRequest: result.PullRequestFrom(reopened)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Reopened pull request #%d\n", reopened.ID)
@@ -1064,7 +1072,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request": pullRequest})
+				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestChange{Repository: repositoryOf(repo), PullRequest: result.PullRequestFrom(pullRequest)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Approved pull request #%d\n", pullRequest.ID)
@@ -1138,7 +1146,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request": pullRequest})
+				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestChange{Repository: repositoryOf(repo), PullRequest: result.PullRequestFrom(pullRequest)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Removed approval for pull request #%d\n", pullRequest.ID)
@@ -1366,12 +1374,12 @@ func New(deps Dependencies) *cobra.Command {
 					return partialReviewerAddError(addedReviewers, failedReviewers, addErrs)
 				}
 
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"repository":      repo,
-					"pull_request":    latestPR,
-					"added":           addedReviewers,
-					"skipped_author":  skippedAuthor,
-					"already_present": alreadyPresent,
+				return deps.WriteJSON(cmd.OutOrStdout(), ReviewerAddition{
+					Repository:     repositoryOf(repo),
+					PullRequest:    result.PullRequestFrom(latestPR),
+					Added:          addedReviewers,
+					SkippedAuthor:  skippedAuthor,
+					AlreadyPresent: alreadyPresent,
 				})
 			}
 
@@ -1465,7 +1473,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request": pullRequest})
+				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestChange{Repository: repositoryOf(repo), PullRequest: result.PullRequestFrom(pullRequest)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Removed reviewer %s from pull request #%d\n", removeReviewerUsername, pullRequest.ID)
@@ -1508,7 +1516,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "comments": comments})
+				return deps.WriteJSON(cmd.OutOrStdout(), DraftReview{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Comments: commentsFrom(comments)})
 			}
 
 			if len(comments) == 0 {
@@ -1586,7 +1594,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "status": "completed"})
+				return deps.WriteJSON(cmd.OutOrStdout(), ReviewChange{Status: result.OK(), Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Review: "completed"})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Completed review for pull request #%s\n", target.PullRequestID)
@@ -1647,7 +1655,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "status": "discarded"})
+				return deps.WriteJSON(cmd.OutOrStdout(), ReviewChange{Status: result.OK(), Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Review: "discarded"})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Discarded review for pull request #%s\n", target.PullRequestID)
@@ -1681,7 +1689,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "issues": issues})
+				return deps.WriteJSON(cmd.OutOrStdout(), LinkedIssues{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Issues: issuesFrom(issues)})
 			}
 
 			if len(issues) == 0 {
@@ -1717,8 +1725,8 @@ func New(deps Dependencies) *cobra.Command {
 			"returns reviewer comments and tasks in one view, each with its resolution state, anchor and reply count.\n\n" +
 			"Without --path this uses the pull request activity timeline to return the aggregate comment view. " +
 			"With --path it uses the path-scoped comments endpoint. With --blocker it lists blocker comments.\n\n" +
-			"Use --unresolved to show only threads still waiting on someone. Use --full to emit the raw Bitbucket " +
-			"comment payload instead of the summarised thread view.",
+			"Use --unresolved to show only threads still waiting on someone. Use --full to add every comment " +
+			"ungrouped, alongside the thread view rather than in place of it.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
@@ -1795,12 +1803,15 @@ func New(deps Dependencies) *cobra.Command {
 
 			if commentFull {
 				if deps.JSONEnabled() {
-					return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-						"repository":      repo,
-						"pull_request_id": target.PullRequestID,
-						"source":          source,
-						"path":            trimmedCommentPath,
-						"comments":        comments,
+					return deps.WriteJSON(cmd.OutOrStdout(), CommentThreads{
+						Repository:    repositoryOf(repo),
+						PullRequestID: target.PullRequestID,
+						Source:        source,
+						Path:          trimmedCommentPath,
+						State:         normalizedState,
+						Summary:       threadSummaryFrom(summary),
+						Threads:       threadsFrom(threads),
+						Comments:      commentsFrom(comments),
 					})
 				}
 
@@ -1816,14 +1827,14 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"repository":      repo,
-					"pull_request_id": target.PullRequestID,
-					"source":          source,
-					"path":            trimmedCommentPath,
-					"state":           normalizedState,
-					"summary":         summary,
-					"threads":         threads,
+				return deps.WriteJSON(cmd.OutOrStdout(), CommentThreads{
+					Repository:    repositoryOf(repo),
+					PullRequestID: target.PullRequestID,
+					Source:        source,
+					Path:          trimmedCommentPath,
+					State:         normalizedState,
+					Summary:       threadSummaryFrom(summary),
+					Threads:       threadsFrom(threads),
 				})
 			}
 
@@ -1854,7 +1865,7 @@ func New(deps Dependencies) *cobra.Command {
 	commentListCmd.Flags().BoolVar(&commentUnresolved, "unresolved", false, "Show only unresolved threads (shorthand for --state open)")
 	commentListCmd.Flags().BoolVar(&commentTasksOnly, "tasks-only", false, "Show only threads Bitbucket tracks as tasks (blocker comments)")
 	commentListCmd.Flags().BoolVar(&commentWithReplies, "with-replies", false, "Include the full text of every reply instead of only the most recent one")
-	commentListCmd.Flags().BoolVar(&commentFull, "full", false, "Emit the raw Bitbucket comment payload instead of the summarised thread view")
+	commentListCmd.Flags().BoolVar(&commentFull, "full", false, "Add every comment ungrouped, alongside the thread view")
 	commentCmd.AddCommand(commentListCmd)
 
 	commentGetCmd := &cobra.Command{
@@ -1884,7 +1895,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "comment": comment})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Comment: commentFrom(comment)})
 			}
 
 			fmt.Fprintln(cmd.OutOrStdout(), formatCommentDetail(comment))
@@ -2011,26 +2022,17 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.JSONEnabled() {
-				outMap := map[string]any{
-					"repository":      repo,
-					"pull_request_id": target.PullRequestID,
-					"comment":         created,
-					"blocker":         commentAddBlocker,
-					"pending":         commentAddPending,
-				}
-				if commentAddPath != "" {
-					outMap["path"] = commentAddPath
-				}
-				if commentAddLine > 0 {
-					outMap["line"] = commentAddLine
-				}
-				if commentAddLineType != "" {
-					outMap["line_type"] = commentAddLineType
-				}
-				if commentAddParentID > 0 {
-					outMap["parent_id"] = commentAddParentID
-				}
-				return deps.WriteJSON(cmd.OutOrStdout(), outMap)
+				return deps.WriteJSON(cmd.OutOrStdout(), AddedComment{
+					Repository:    repositoryOf(repo),
+					PullRequestID: target.PullRequestID,
+					Comment:       commentFrom(created),
+					Blocker:       commentAddBlocker,
+					Pending:       commentAddPending,
+					Path:          commentAddPath,
+					Line:          commentAddLine,
+					LineType:      commentAddLineType,
+					ParentID:      commentAddParentID,
+				})
 			}
 
 			commentID := ""
@@ -2128,20 +2130,20 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 				}
 
 				if deps.JSONEnabled() {
-					return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "action": "removed", "repository": repo, "pull_request_id": prID, "comment_id": commentID, "emoticon": emoticon})
+					return deps.WriteJSON(cmd.OutOrStdout(), Reaction{Status: result.OK(), Action: "removed", Repository: repositoryOf(repo), PullRequestID: prID, CommentID: commentID, Emoticon: emoticon})
 				}
 
 				fmt.Fprintf(cmd.OutOrStdout(), "Removed reaction :%s: from comment %s\n", emoticon, commentID)
 				return nil
 			}
 
-			reaction, err := service.React(cmd.Context(), commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, prID, commentID, emoticon)
+			_, err = service.React(cmd.Context(), commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, prID, commentID, emoticon)
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": prID, "comment_id": commentID, "reaction": reaction})
+				return deps.WriteJSON(cmd.OutOrStdout(), Reaction{Status: result.OK(), Action: "added", Repository: repositoryOf(repo), PullRequestID: prID, CommentID: commentID, Emoticon: emoticon})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Added reaction :%s: to comment %s\n", emoticon, commentID)
@@ -2226,7 +2228,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": repo, "pull_request_id": prID, "comment_id": commentID})
+				return deps.WriteJSON(cmd.OutOrStdout(), AppliedSuggestion{Status: result.OK(), Repository: repositoryOf(repo), PullRequestID: prID, CommentID: commentID})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Applied suggestion on comment %s for pull request %s\n", commentID, prID)
@@ -2272,7 +2274,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "activities": activities})
+				return deps.WriteJSON(cmd.OutOrStdout(), Activities{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Activities: activitiesFrom(activities)})
 			}
 
 			if len(activities) == 0 {
@@ -2321,10 +2323,10 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"repository":   repo,
-					"pull_request": target.PullRequestID,
-					"statuses":     statuses,
+				return deps.WriteJSON(cmd.OutOrStdout(), BuildStatuses{
+					Repository:    repositoryOf(repo),
+					PullRequestID: target.PullRequestID,
+					Statuses:      buildStatusesFrom(statuses),
 				})
 			}
 
@@ -2371,7 +2373,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "auto_merge": autoMerge})
+				return deps.WriteJSON(cmd.OutOrStdout(), AutoMergeState{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, AutoMerge: autoMergeFrom(autoMerge)})
 			}
 
 			if !autoMerge.Enabled {
@@ -2455,7 +2457,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "auto_merge": autoMerge})
+				return deps.WriteJSON(cmd.OutOrStdout(), AutoMergeState{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, AutoMerge: autoMergeFrom(autoMerge)})
 			}
 
 			if autoMerge.MergedImmediately {
@@ -2535,7 +2537,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "repository": repo, "pull_request_id": target.PullRequestID})
+				return deps.WriteJSON(cmd.OutOrStdout(), AutoMergeCancellation{Status: result.OK(), Repository: repositoryOf(repo), PullRequestID: target.PullRequestID})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Disabled auto-merge on pull request #%s\n", target.PullRequestID)
@@ -2596,7 +2598,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "watched": true})
+				return deps.WriteJSON(cmd.OutOrStdout(), WatchState{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Watched: true})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Watching pull request #%s\n", target.PullRequestID)
@@ -2656,7 +2658,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": target.PullRequestID, "watched": false})
+				return deps.WriteJSON(cmd.OutOrStdout(), WatchState{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Watched: false})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Unwatching pull request #%s\n", target.PullRequestID)
@@ -2751,13 +2753,13 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 				version = &rebaseVersion
 			}
 
-			result, err := service.Rebase(cmd.Context(), repo, target.PullRequestID, version)
+			rebased, err := service.Rebase(cmd.Context(), repo, target.PullRequestID, version)
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "rebase_result": result})
+				return deps.WriteJSON(cmd.OutOrStdout(), rebaseResultFrom(repositoryOf(repo), rebased))
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Rebased pull request #%s\n", target.PullRequestID)
@@ -2789,7 +2791,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "participants": participants})
+				return deps.WriteJSON(cmd.OutOrStdout(), Participants{Repository: repositoryOf(repo), Participants: participantsFrom(participants)})
 			}
 
 			if len(participants) == 0 {
@@ -2858,7 +2860,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"default_reviewers": conditions})
+				return deps.WriteJSON(cmd.OutOrStdout(), DefaultReviewers{DefaultReviewers: result.ConditionsFrom(conditions)})
 			}
 
 			printDefaultReviewers(cmd, conditions)

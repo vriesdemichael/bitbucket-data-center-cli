@@ -113,7 +113,7 @@ func TestPRCommitsAndMergeBaseJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v (output: %s)", err, mergeBaseOut)
 	}
-	if !strings.Contains(mergeBaseOut, "\"merge_base\"") || !strings.Contains(mergeBaseOut, "base123") {
+	if !strings.Contains(mergeBaseOut, "\"mergeBase\"") || !strings.Contains(mergeBaseOut, "base123") {
 		t.Fatalf("unexpected merge-base JSON: %s", mergeBaseOut)
 	}
 }

@@ -9,28 +9,12 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
 )
-
-type prStatusSection struct {
-	PullRequests []pullrequestservice.PullRequest `json:"pull_requests"`
-	Note         string                           `json:"note,omitempty"`
-}
-
-type prStatusCurrentBranchSection struct {
-	prStatusSection
-	Branch     string `json:"branch,omitempty"`
-	Repository string `json:"repository,omitempty"`
-}
-
-type prStatusPayload struct {
-	CurrentBranch        prStatusCurrentBranchSection `json:"current_branch"`
-	CreatedByYou         prStatusSection              `json:"created_by_you"`
-	RequestingYourReview prStatusSection              `json:"requesting_your_review"`
-}
 
 func newPullRequestStatusCommand(deps Dependencies, repositorySelector *string) *cobra.Command {
 	var listPaging paging.Options
@@ -50,7 +34,7 @@ func newPullRequestStatusCommand(deps Dependencies, repositorySelector *string) 
 			}
 
 			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
-			payload := prStatusPayload{}
+			payload := Status{}
 
 			payload.CurrentBranch = collectCurrentBranchPullRequests(cmd.Context(), deps, service, cfg, *repositorySelector, listPaging.ServiceLimit())
 
@@ -62,7 +46,7 @@ func newPullRequestStatusCommand(deps Dependencies, repositorySelector *string) 
 			if err != nil {
 				return err
 			}
-			payload.CreatedByYou = prStatusSection{PullRequests: created}
+			payload.CreatedByYou = StatusSection{PullRequests: result.PullRequestsFrom(created)}
 
 			reviewing, err := service.ListDashboard(cmd.Context(), pullrequestservice.DashboardListOptions{
 				State:             "open",
@@ -73,7 +57,7 @@ func newPullRequestStatusCommand(deps Dependencies, repositorySelector *string) 
 			if err != nil {
 				return err
 			}
-			payload.RequestingYourReview = prStatusSection{PullRequests: reviewing}
+			payload.RequestingYourReview = StatusSection{PullRequests: result.PullRequestsFrom(reviewing)}
 
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), payload)
@@ -96,10 +80,10 @@ func collectCurrentBranchPullRequests(
 	cfg config.AppConfig,
 	repositorySelector string,
 	limit int,
-) prStatusCurrentBranchSection {
-	empty := func(note string) prStatusCurrentBranchSection {
-		return prStatusCurrentBranchSection{
-			prStatusSection: prStatusSection{PullRequests: []pullrequestservice.PullRequest{}, Note: note},
+) CurrentBranchSection {
+	empty := func(note string) CurrentBranchSection {
+		return CurrentBranchSection{
+			StatusSection: StatusSection{PullRequests: []result.PullRequest{}, Note: note},
 		}
 	}
 
@@ -126,10 +110,10 @@ func collectCurrentBranchPullRequests(
 		return empty(fmt.Sprintf("could not list pull requests for %s: %s", branch, err.Error()))
 	}
 
-	return prStatusCurrentBranchSection{
-		prStatusSection: prStatusSection{PullRequests: pullRequests},
-		Branch:          branch,
-		Repository:      fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
+	return CurrentBranchSection{
+		StatusSection: StatusSection{PullRequests: result.PullRequestsFrom(pullRequests)},
+		Branch:        branch,
+		Repository:    fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
 	}
 }
 
@@ -163,21 +147,21 @@ func currentGitBranch(ctx context.Context, deps Dependencies) (string, error) {
 	return branch, nil
 }
 
-func writePullRequestStatus(cmd *cobra.Command, payload prStatusPayload) {
+func writePullRequestStatus(cmd *cobra.Command, payload Status) {
 	writer := cmd.OutOrStdout()
 
 	heading := "Current branch"
 	if payload.CurrentBranch.Branch != "" {
 		heading = fmt.Sprintf("Current branch (%s)", payload.CurrentBranch.Branch)
 	}
-	writePullRequestStatusSection(cmd, heading, payload.CurrentBranch.prStatusSection, "No pull request for the current branch")
+	writePullRequestStatusSection(cmd, heading, payload.CurrentBranch.StatusSection, "No pull request for the current branch")
 	fmt.Fprintln(writer)
 	writePullRequestStatusSection(cmd, "Created by you", payload.CreatedByYou, "You have no open pull requests")
 	fmt.Fprintln(writer)
 	writePullRequestStatusSection(cmd, "Requesting a code review from you", payload.RequestingYourReview, "You have no pull requests to review")
 }
 
-func writePullRequestStatusSection(cmd *cobra.Command, heading string, section prStatusSection, emptyMessage string) {
+func writePullRequestStatusSection(cmd *cobra.Command, heading string, section StatusSection, emptyMessage string) {
 	writer := cmd.OutOrStdout()
 	fmt.Fprintln(writer, style.Label.Render(heading))
 
@@ -196,7 +180,7 @@ func writePullRequestStatusSection(cmd *cobra.Command, heading string, section p
 
 	for _, pullRequest := range section.PullRequests {
 		repositoryPrefix := ""
-		if pullRequest.Repository != nil && pullRequest.Repository.ProjectKey != "" {
+		if pullRequest.Repository.ProjectKey != "" {
 			repositoryPrefix = fmt.Sprintf("[%s/%s] ", pullRequest.Repository.ProjectKey, pullRequest.Repository.Slug)
 		}
 

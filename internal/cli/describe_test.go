@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/outputschemas"
+	"reflect"
+
+	resultpkg "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 )
 
 // runDescribe invokes a command with --describe and returns its stdout.
@@ -50,14 +52,27 @@ func TestDescribeReturnsThePublishedSchemaForACommand(t *testing.T) {
 	if !result.Described {
 		t.Fatalf("pr get has a published schema but was reported undescribed: %+v", result)
 	}
-	if result.Schema["$schema"] == nil {
+	if result.Schema["type"] != "object" || result.Schema["properties"] == nil {
 		t.Errorf("the returned document is not a JSON Schema: %v", result.Schema)
 	}
 
-	// The document must be the published one, not a summary of it.
-	published := outputschemas.Schemas()["output.pr.get.schema.json"]
-	if result.Schema["$id"] != published["$id"] {
-		t.Errorf("$id = %v, want %v", result.Schema["$id"], published["$id"])
+	// The document must be the schema the command declares, not a summary of
+	// it. Comparing against the declaration is what makes --describe unable to
+	// drift from the payload: both come from the same type.
+	declared, ok := resultpkg.SchemaFor("pr get")
+	if !ok {
+		t.Fatal("pr get declares no schema")
+	}
+	encoded, err := json.Marshal(declared)
+	if err != nil {
+		t.Fatalf("encode declared schema: %v", err)
+	}
+	var expected map[string]any
+	if err := json.Unmarshal(encoded, &expected); err != nil {
+		t.Fatalf("decode declared schema: %v", err)
+	}
+	if !reflect.DeepEqual(result.Schema, expected) {
+		t.Errorf("--describe returned a different document than the command declares\ngot:  %v\nwant: %v", result.Schema, expected)
 	}
 }
 

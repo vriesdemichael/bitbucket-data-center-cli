@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prsel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
@@ -112,7 +113,7 @@ func newCommentStateCommand(
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "pull_request_id": prID, "comment": updated})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, PullRequestID: prID, Comment: commentFrom(updated)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s comment %s\n", style.Success.Render(doneWord), style.Resource.Render(commentID))

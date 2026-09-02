@@ -3985,7 +3985,7 @@ List pull request comment threads. Bitbucket models a task as a blocker comment,
 
 Without --path this uses the pull request activity timeline to return the aggregate comment view. With --path it uses the path-scoped comments endpoint. With --blocker it lists blocker comments.
 
-Use --unresolved to show only threads still waiting on someone. Use --full to emit the raw Bitbucket comment payload instead of the summarised thread view.
+Use --unresolved to show only threads still waiting on someone. Use --full to add every comment ungrouped, alongside the thread view rather than in place of it.
 
 Usage:
   bb pr comment list <id> [flags]
@@ -3993,7 +3993,7 @@ Usage:
 Flags:
       --all            Return every result rather than the first --limit
       --blocker        List pull request blocker comments
-      --full           Emit the raw Bitbucket comment payload instead of the summarised thread view
+      --full           Add every comment ungrouped, alongside the thread view
       --limit int      Maximum number of results to return (default 25)
       --path string    Optional file path for path-scoped pull request comment listing
       --state string   Filter threads by resolution state: open, resolved, pending, all (default "all")

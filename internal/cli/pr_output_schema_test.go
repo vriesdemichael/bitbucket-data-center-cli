@@ -5,41 +5,57 @@ import (
 	"testing"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/outputschemas"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 )
 
-// validateAgainstOutputSchema compiles a published output schema and validates a
-// real command's JSON against it. A schema that merely looks right is worth
-// little; this pins it to what the command actually emits, so the two cannot
-// drift apart silently.
-func validateAgainstOutputSchema(t *testing.T, schemaName string, output string) {
+// validateAgainstDeclaredSchema compiles the schema a command declares -- the
+// same one --describe publishes -- and validates a real invocation's payload
+// against it.
+//
+// This is the assertion the whole result package exists to make possible. A
+// schema that merely looks right is worth little; pinning it to what the
+// command actually emits is what stops the two drifting apart, and here they
+// cannot drift silently because the schema is derived from the type the command
+// fills in.
+func validateAgainstDeclaredSchema(t *testing.T, commandPath string, output string) {
 	t.Helper()
 
-	schemaMap, ok := outputschemas.Schemas()[schemaName]
+	declared, ok := result.SchemaFor(commandPath)
 	if !ok {
-		t.Fatalf("no published schema named %q", schemaName)
+		t.Fatalf("no schema is declared for %q", commandPath)
+	}
+
+	encoded, err := json.Marshal(declared)
+	if err != nil {
+		t.Fatalf("encode declared schema: %v", err)
+	}
+	var schemaMap map[string]any
+	if err := json.Unmarshal(encoded, &schemaMap); err != nil {
+		t.Fatalf("decode declared schema: %v", err)
 	}
 
 	compiler := jsonschema.NewCompiler()
-	if err := compiler.AddResource(schemaName, schemaMap); err != nil {
+	if err := compiler.AddResource(commandPath, schemaMap); err != nil {
 		t.Fatalf("add schema resource: %v", err)
 	}
-	schema, err := compiler.Compile(schemaName)
+	schema, err := compiler.Compile(commandPath)
 	if err != nil {
 		t.Fatalf("compile schema: %v", err)
 	}
 
-	var decoded any
-	if err := json.Unmarshal([]byte(output), &decoded); err != nil {
+	var envelope struct {
+		Data any `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(output), &envelope); err != nil {
 		t.Fatalf("decode command output: %v\noutput: %s", err, output)
 	}
 
-	if err := schema.Validate(decoded); err != nil {
-		t.Fatalf("%s output does not match its published schema: %v\noutput: %s", schemaName, err, output)
+	if err := schema.Validate(envelope.Data); err != nil {
+		t.Fatalf("%s output does not match its declared schema: %v\noutput: %s", commandPath, err, output)
 	}
 }
 
-func TestPRGetMatchesPublishedSchema(t *testing.T) {
+func TestPRGetMatchesDeclaredSchema(t *testing.T) {
 	server := newReviewVisibilityServer(t)
 	configureDryRunEnv(t, server.URL, "TEST", "demo")
 
@@ -48,12 +64,12 @@ func TestPRGetMatchesPublishedSchema(t *testing.T) {
 		t.Fatalf("pr get failed: %v\noutput: %s", err, output)
 	}
 
-	validateAgainstOutputSchema(t, "output.pr.get.schema.json", output)
+	validateAgainstDeclaredSchema(t, "pr get", output)
 }
 
 // The unmeasured case omits every count, so it exercises a different shape than
 // the fully populated summary.
-func TestPRGetUnmeasuredMatchesPublishedSchema(t *testing.T) {
+func TestPRGetUnmeasuredMatchesDeclaredSchema(t *testing.T) {
 	server := newReviewVisibilityServer(t)
 	configureDryRunEnv(t, server.URL, "TEST", "demo")
 
@@ -62,10 +78,10 @@ func TestPRGetUnmeasuredMatchesPublishedSchema(t *testing.T) {
 		t.Fatalf("pr get failed: %v\noutput: %s", err, output)
 	}
 
-	validateAgainstOutputSchema(t, "output.pr.get.schema.json", output)
+	validateAgainstDeclaredSchema(t, "pr get", output)
 }
 
-func TestPRCommentListMatchesPublishedSchema(t *testing.T) {
+func TestPRCommentListMatchesDeclaredSchema(t *testing.T) {
 	server := newReviewVisibilityServer(t)
 	configureDryRunEnv(t, server.URL, "TEST", "demo")
 
@@ -78,7 +94,7 @@ func TestPRCommentListMatchesPublishedSchema(t *testing.T) {
 		{name: "with replies", args: []string{"--with-replies"}},
 		{name: "tasks only", args: []string{"--tasks-only"}},
 		{name: "path scoped", args: []string{"--path", "internal/cli/root.go"}},
-		{name: "raw payload", args: []string{"--full"}},
+		{name: "full comment list", args: []string{"--full"}},
 	}
 
 	for _, testCase := range cases {
@@ -89,45 +105,44 @@ func TestPRCommentListMatchesPublishedSchema(t *testing.T) {
 				t.Fatalf("pr comment list failed: %v\noutput: %s", err, output)
 			}
 
-			validateAgainstOutputSchema(t, "output.pr.comment.list.schema.json", output)
+			validateAgainstDeclaredSchema(t, "pr comment list", output)
 		})
 	}
 }
 
-// The schema declares the two payload shapes as mutually exclusive, so a
-// document carrying both threads and comments must be rejected. This guards the
-// oneOf rather than the command.
-func TestPRCommentListSchemaRejectsMixedPayload(t *testing.T) {
-	schemaMap := outputschemas.Schemas()["output.pr.comment.list.schema.json"]
+// --full adds the ungrouped comment list; it does not swap one payload for
+// another. The previous contract made the two mutually exclusive, so one
+// command had two shapes and a consumer needed to know which flag had been
+// passed to know what it was reading.
+func TestPRCommentListFullAddsCommentsWithoutRemovingThreads(t *testing.T) {
+	server := newReviewVisibilityServer(t)
+	configureDryRunEnv(t, server.URL, "TEST", "demo")
 
-	compiler := jsonschema.NewCompiler()
-	if err := compiler.AddResource("mixed", schemaMap); err != nil {
-		t.Fatalf("add schema resource: %v", err)
-	}
-	schema, err := compiler.Compile("mixed")
+	full, err := executeTestCLI(t, "--json", "pr", "comment", "list", "7", "--full")
 	if err != nil {
-		t.Fatalf("compile schema: %v", err)
+		t.Fatalf("pr comment list --full failed: %v\noutput: %s", err, full)
 	}
 
-	var mixed any
-	if err := json.Unmarshal([]byte(`{
-      "version": "v2",
-      "meta": {"contract": "bb.machine"},
-      "data": {
-        "repository": {"project_key": "TEST", "slug": "demo"},
-        "pull_request_id": "7",
-        "source": "activities",
-        "path": "",
-        "state": "all",
-        "summary": {"total_threads":0,"unresolved":0,"resolved":0,"pending":0,"open_tasks":0,"resolved_tasks":0},
-        "threads": [],
-        "comments": []
-      }
-    }`), &mixed); err != nil {
-		t.Fatalf("decode fixture: %v", err)
+	var envelope struct {
+		Data struct {
+			Threads  []any `json:"threads"`
+			Comments []any `json:"comments"`
+			Summary  struct {
+				TotalThreads int `json:"totalThreads"`
+			} `json:"summary"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(full), &envelope); err != nil {
+		t.Fatalf("decode command output: %v\noutput: %s", err, full)
 	}
 
-	if err := schema.Validate(mixed); err == nil {
-		t.Fatal("expected a payload carrying both threads and comments to be rejected")
+	if len(envelope.Data.Comments) == 0 {
+		t.Fatalf("expected --full to carry the ungrouped comments, got: %s", full)
+	}
+	if len(envelope.Data.Threads) == 0 {
+		t.Fatalf("expected --full to keep the thread view, got: %s", full)
+	}
+	if envelope.Data.Summary.TotalThreads == 0 {
+		t.Fatalf("expected --full to keep the summary, got: %s", full)
 	}
 }

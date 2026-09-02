@@ -176,28 +176,28 @@ func TestPullRequestStatusJSONShape(t *testing.T) {
 	output := executeStatus(t, backend, server.URL, "--json")
 	payload := decodeStatusOutput(t, output)
 
-	currentBranch, ok := payload["current_branch"].(map[string]any)
+	currentBranch, ok := payload["currentBranch"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected current_branch section, got %#v", payload)
+		t.Fatalf("expected currentBranch section, got %#v", payload)
 	}
 	if currentBranch["branch"] != "feature/x" {
 		t.Fatalf("expected branch feature/x, got %v", currentBranch["branch"])
 	}
 
-	created, ok := payload["created_by_you"].(map[string]any)
+	created, ok := payload["createdByYou"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected created_by_you section, got %#v", payload)
+		t.Fatalf("expected createdByYou section, got %#v", payload)
 	}
-	createdPRs, _ := created["pull_requests"].([]any)
+	createdPRs, _ := created["pullRequests"].([]any)
 	if len(createdPRs) != 1 {
 		t.Fatalf("expected 1 created PR, got %v", createdPRs)
 	}
 
-	reviewing, ok := payload["requesting_your_review"].(map[string]any)
+	reviewing, ok := payload["requestingYourReview"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected requesting_your_review section, got %#v", payload)
+		t.Fatalf("expected requestingYourReview section, got %#v", payload)
 	}
-	reviewingPRs, _ := reviewing["pull_requests"].([]any)
+	reviewingPRs, _ := reviewing["pullRequests"].([]any)
 	if len(reviewingPRs) != 1 {
 		t.Fatalf("expected 1 reviewing PR, got %v", reviewingPRs)
 	}
@@ -210,9 +210,9 @@ func TestPullRequestStatusNotOnBranchNotesSection(t *testing.T) {
 	output := executeStatus(t, backend, server.URL, "--json")
 	payload := decodeStatusOutput(t, output)
 
-	currentBranch, ok := payload["current_branch"].(map[string]any)
+	currentBranch, ok := payload["currentBranch"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected current_branch section, got %#v", payload)
+		t.Fatalf("expected currentBranch section, got %#v", payload)
 	}
 	note, _ := currentBranch["note"].(string)
 	if !strings.Contains(note, "not on a branch") {
