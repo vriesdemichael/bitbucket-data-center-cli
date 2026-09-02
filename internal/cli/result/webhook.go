@@ -72,3 +72,26 @@ func WebhooksFrom(payload any) []Webhook {
 
 	return []Webhook{}
 }
+
+// PageOfWebhooks applies --start and --limit to a list the service returned
+// whole.
+//
+// Bitbucket's webhook endpoints do not page, so bb does it. Both renderings
+// read the paged list: applying it to only the human one -- which is what the
+// repository and project listings each did -- made --json and the table answer
+// differently to the same flags.
+func PageOfWebhooks(webhooks []Webhook, start int, limit int) []Webhook {
+	if start < 0 {
+		start = 0
+	}
+	if start >= len(webhooks) {
+		return []Webhook{}
+	}
+
+	end := start + limit
+	if limit <= 0 || end > len(webhooks) {
+		end = len(webhooks)
+	}
+
+	return webhooks[start:end]
+}

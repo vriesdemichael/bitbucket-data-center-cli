@@ -303,3 +303,18 @@ func createdAccessTokenFrom(upstream openapigenerated.RestRawAccessToken) Create
 
 	return converted
 }
+
+// listOrEmpty makes sure a list field is published as a list.
+//
+// A nil slice marshals to null, and every list on these payloads is declared
+// without omitempty -- so the schema promises an array while the document says
+// null. bb auth alias discover hit this on an instance whose repositories have
+// no clone links: nothing was discovered, and the field said null rather than
+// saying so.
+func listOrEmpty(values []string) []string {
+	if values == nil {
+		return []string{}
+	}
+
+	return values
+}

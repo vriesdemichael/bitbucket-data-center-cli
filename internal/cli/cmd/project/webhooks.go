@@ -42,7 +42,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 			// Paged before either rendering, not only before the human one.
 			// --start and --limit used to narrow the table while --json returned
 			// every webhook, so the two answered differently to the same flags.
-			webhooks := pageOf(result.WebhooksFrom(payload), start, listPaging.ServiceLimit())
+			webhooks := result.PageOfWebhooks(result.WebhooksFrom(payload), start, listPaging.ServiceLimit())
 
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), Webhooks{Project: args[0], Webhooks: webhooks})
