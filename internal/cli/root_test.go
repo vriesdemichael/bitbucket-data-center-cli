@@ -401,16 +401,16 @@ func TestAuthStatusJSON(t *testing.T) {
 
 	parsed := decodeJSONEnvelopeDataMap(t, buffer.Bytes())
 
-	if asString(parsed["bitbucket_url"]) != "http://localhost:7990" {
-		t.Fatalf("unexpected bitbucket_url: %q", asString(parsed["bitbucket_url"]))
+	if asString(parsed["bitbucketUrl"]) != "http://localhost:7990" {
+		t.Fatalf("unexpected bitbucketUrl: %q", asString(parsed["bitbucketUrl"]))
 	}
 
-	if asString(parsed["auth_mode"]) != "none" {
-		t.Fatalf("unexpected auth_mode: %q", asString(parsed["auth_mode"]))
+	if asString(parsed["authMode"]) != "none" {
+		t.Fatalf("unexpected authMode: %q", asString(parsed["authMode"]))
 	}
 
-	if asString(parsed["auth_source"]) != "env/default" {
-		t.Fatalf("unexpected auth_source: %q", asString(parsed["auth_source"]))
+	if asString(parsed["authSource"]) != "env/default" {
+		t.Fatalf("unexpected authSource: %q", asString(parsed["authSource"]))
 	}
 }
 
@@ -2945,7 +2945,7 @@ func TestAuthLoginAndLogoutJSON(t *testing.T) {
 	if err := loginCommand.Execute(); err != nil {
 		t.Fatalf("auth login json failed: %v", err)
 	}
-	if !strings.Contains(loginBuffer.String(), `"auth_mode": "token"`) {
+	if !strings.Contains(loginBuffer.String(), `"authMode": "token"`) {
 		t.Fatalf("expected token auth mode in login output, got: %s", loginBuffer.String())
 	}
 

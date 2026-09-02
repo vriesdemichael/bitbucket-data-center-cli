@@ -203,10 +203,16 @@ Example machine output (`bb --json auth status`):
 ```json
 {
   "data": {
-    "bitbucket_url": "https://bitbucket.acme.corp",
-    "bitbucket_version_target": "9.4.16",
-    "auth_mode": "token",
-    "auth_source": "stored/default"
+    "ok": true,
+    "bitbucketUrl": "https://bitbucket.acme.corp",
+    "bitbucketVersionTarget": "9.4.16",
+    "authMode": "token",
+    "authSource": "stored/default",
+    "credentialStorage": "keyring",
+    "checks": [
+      { "name": "authentication", "ok": true, "advisory": false },
+      { "name": "git credential helper", "ok": true, "advisory": true }
+    ]
   },
   "meta": {
     "bbVersion": "v4.0.0"

@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -111,11 +112,11 @@ func TestStatusJSONUsesHostOverride(t *testing.T) {
 		t.Fatalf("expected json output, got %q (%v)", buffer.String(), err)
 	}
 
-	if parsed["bitbucket_url"] != "http://override.example" {
-		t.Fatalf("expected overridden bitbucket_url, got %q", parsed["bitbucket_url"])
+	if parsed["bitbucketUrl"] != "http://override.example" {
+		t.Fatalf("expected overridden bitbucketUrl, got %q", parsed["bitbucketUrl"])
 	}
-	if parsed["auth_mode"] != "none" {
-		t.Fatalf("expected auth_mode none, got %q", parsed["auth_mode"])
+	if parsed["authMode"] != "none" {
+		t.Fatalf("expected authMode none, got %q", parsed["authMode"])
 	}
 }
 
@@ -412,8 +413,8 @@ func TestServerCommandsJSONAndEmptyStates(t *testing.T) {
 	if err := useCmd.Execute(); err != nil {
 		t.Fatalf("server use positional failed: %v", err)
 	}
-	if !strings.Contains(useBuffer.String(), "default_host") {
-		t.Fatalf("expected default_host in json output, got: %s", useBuffer.String())
+	if !strings.Contains(useBuffer.String(), "defaultHost") {
+		t.Fatalf("expected defaultHost in json output, got: %s", useBuffer.String())
 	}
 }
 
@@ -554,8 +555,8 @@ func TestTokenURLCommand(t *testing.T) {
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("token-url json command failed: %v", err)
 		}
-		if !strings.Contains(buffer.String(), `"token_url": "http://localhost:7990/plugins/servlet/access-tokens/manage"`) {
-			t.Fatalf("expected token_url in json output, got: %s", buffer.String())
+		if !strings.Contains(buffer.String(), `"tokenUrl": "http://localhost:7990/plugins/servlet/access-tokens/manage"`) {
+			t.Fatalf("expected tokenUrl in json output, got: %s", buffer.String())
 		}
 	})
 
@@ -729,7 +730,7 @@ func TestIdentityCommand(t *testing.T) {
 	})
 
 	t.Run("human summary fallback unknown", func(t *testing.T) {
-		if got := identityHumanSummary(authIdentity{}); !strings.Contains(got, "unknown") {
+		if got := identityHumanSummary(result.User{}); !strings.Contains(got, "unknown") {
 			t.Fatalf("expected unknown fallback, got %q", got)
 		}
 	})
@@ -910,8 +911,8 @@ func TestAuthNonJSONHumanOutputPaths(t *testing.T) {
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("auth login (JSON) failed: %v", err)
 		}
-		if !strings.Contains(out.String(), "auth_mode") {
-			t.Fatalf("expected auth_mode in JSON output, got: %s", out.String())
+		if !strings.Contains(out.String(), "authMode") {
+			t.Fatalf("expected authMode in JSON output, got: %s", out.String())
 		}
 	})
 
@@ -946,14 +947,14 @@ func TestAuthNonJSONHumanOutputPaths(t *testing.T) {
 // of identityHumanSummary (both skipped when DisplayName is set).
 func TestIdentityHumanSummaryNameAndSlugBranches(t *testing.T) {
 	t.Run("name branch when display name empty", func(t *testing.T) {
-		got := identityHumanSummary(authIdentity{Name: "alice"})
+		got := identityHumanSummary(result.User{Name: "alice"})
 		if !strings.Contains(got, "alice") {
 			t.Fatalf("expected 'alice' in summary, got %q", got)
 		}
 	})
 
 	t.Run("slug branch when name and display name empty", func(t *testing.T) {
-		got := identityHumanSummary(authIdentity{Slug: "alice-slug"})
+		got := identityHumanSummary(result.User{Slug: "alice-slug"})
 		if !strings.Contains(got, "alice-slug") {
 			t.Fatalf("expected slug in summary, got %q", got)
 		}

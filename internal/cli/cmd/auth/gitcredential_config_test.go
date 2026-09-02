@@ -368,13 +368,15 @@ func TestResolveGitCredentialWithHostButNoSecret(t *testing.T) {
 // setup-git reports what it configured in machine mode so automation can assert
 // the scope it landed on.
 func TestSetupGitEmitsJSONWhenMachineModeIsOn(t *testing.T) {
-	var payload map[string]any
+	var payload *GitCredentialSetup
 
 	cmd := newSetupGitCommand(Dependencies{
 		JSONEnabled: func() bool { return true },
 		LoadConfig:  func() (config.AppConfig, error) { return config.AppConfig{}, nil },
 		WriteJSON: func(_ io.Writer, value any) error {
-			payload, _ = value.(map[string]any)
+			if typed, ok := value.(GitCredentialSetup); ok {
+				payload = &typed
+			}
 			return nil
 		},
 		ConfigureGitCredentialHelper: func(context.Context, string, string, bool, bool) error { return nil },
@@ -390,11 +392,11 @@ func TestSetupGitEmitsJSONWhenMachineModeIsOn(t *testing.T) {
 	if payload == nil {
 		t.Fatal("expected a JSON payload in machine mode")
 	}
-	if payload["host"] != "https://bitbucket.example.com" {
-		t.Fatalf("unexpected host in payload: %v", payload["host"])
+	if payload.Host != "https://bitbucket.example.com" {
+		t.Fatalf("unexpected host in payload: %v", payload.Host)
 	}
-	if payload["scope"] != "global" {
-		t.Fatalf("unexpected scope in payload: %v", payload["scope"])
+	if payload.Scope != "global" {
+		t.Fatalf("unexpected scope in payload: %v", payload.Scope)
 	}
 }
 
