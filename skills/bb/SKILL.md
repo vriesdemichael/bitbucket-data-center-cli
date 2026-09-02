@@ -174,7 +174,7 @@ Needs work: carol
 
 ```bash
 # Machine-readable: one field to branch on
-bb pr get --repo MYPROJ/payments 42 --json | jq .data.review_summary.action_required
+bb pr get --repo MYPROJ/payments 42 --json | jq .data.reviewSummary.actionRequired
 
 # Check if any PR builds are still INPROGRESS or FAILED
 bb pr build status 42 --json | jq '.data[] | {key, state}'
@@ -248,10 +248,10 @@ never have worked.
 
 Re-run the listing afterwards to confirm the thread count dropped. Note that
 reviewers resolve their own threads, so an addressed comment stays unresolved
-until they mark it — `action_required` reflects Bitbucket's state, not yours.
+until they mark it — `actionRequired` reflects Bitbucket's state, not yours.
 
 A comment carrying a fenced ` ```suggestion ` block is flagged with
-`has_suggestion` and can be applied directly:
+`hasSuggestion` and can be applied directly:
 
 ```bash
 bb pr comment apply-suggestion --repo MYPROJ/payments 42 118

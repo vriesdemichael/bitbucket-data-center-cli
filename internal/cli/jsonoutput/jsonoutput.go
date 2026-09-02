@@ -78,7 +78,7 @@ type EnvelopeError struct {
 	Message  string `json:"message"`
 	ExitCode int    `json:"exitCode"`
 	// Details carries handles the caller needs to act on the failure, keyed by
-	// name -- bb bulk apply puts operation_id here, so the artifact of a failed
+	// name -- bb bulk apply puts operationId here, so the artifact of a failed
 	// or cancelled run can be fetched without scraping the message.
 	//
 	// Omitted when there is nothing to carry, so its absence means the message

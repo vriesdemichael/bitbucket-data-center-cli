@@ -248,11 +248,11 @@ func operationIDFrom(t *testing.T, err error) string {
 	t.Helper()
 
 	details := apperrors.DetailsOf(err)
-	if id := details["operation_id"]; id != "" {
+	if id := details["operationId"]; id != "" {
 		return id
 	}
 
-	t.Fatalf("the error carries no operation_id detail, so the artifact cannot be reached: %v (details: %v)", err, details)
+	t.Fatalf("the error carries no operationId detail, so the artifact cannot be reached: %v (details: %v)", err, details)
 	return ""
 }
 
