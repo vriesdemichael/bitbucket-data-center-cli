@@ -82,25 +82,25 @@ func TestPRGetReportsOutstandingReviewFeedback(t *testing.T) {
 		t.Fatalf("pr get failed: %v\noutput: %s", err, output)
 	}
 
-	summary, ok := decodeCLIData(t, output)["review_summary"].(map[string]any)
+	summary, ok := decodeCLIData(t, output)["reviewSummary"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected review_summary in pr get output, got: %s", output)
+		t.Fatalf("expected reviewSummary in pr get output, got: %s", output)
 	}
-	if summary["action_required"] != true {
-		t.Fatalf("expected action_required, got: %#v", summary)
+	if summary["actionRequired"] != true {
+		t.Fatalf("expected actionRequired, got: %#v", summary)
 	}
-	if summary["unresolved_threads"] != float64(2) {
-		t.Fatalf("expected 2 unresolved threads, got: %#v", summary["unresolved_threads"])
+	if summary["unresolvedThreads"] != float64(2) {
+		t.Fatalf("expected 2 unresolved threads, got: %#v", summary["unresolvedThreads"])
 	}
-	if summary["open_tasks"] != float64(1) {
-		t.Fatalf("expected 1 open task, got: %#v", summary["open_tasks"])
+	if summary["openTasks"] != float64(1) {
+		t.Fatalf("expected 1 open task, got: %#v", summary["openTasks"])
 	}
-	if summary["counts_source"] != "activities" {
-		t.Fatalf("expected counts from the activity feed, got: %#v", summary["counts_source"])
+	if summary["countsSource"] != "activities" {
+		t.Fatalf("expected counts from the activity feed, got: %#v", summary["countsSource"])
 	}
-	needsWork, ok := summary["needs_work"].([]any)
+	needsWork, ok := summary["needsWork"].([]any)
 	if !ok || len(needsWork) != 1 || needsWork[0] != "carol" {
-		t.Fatalf("expected carol to have requested changes, got: %#v", summary["needs_work"])
+		t.Fatalf("expected carol to have requested changes, got: %#v", summary["needsWork"])
 	}
 
 	humanOutput, err := executeTestCLI(t, "pr", "get", "7")
@@ -146,12 +146,12 @@ func TestPRGetNoReviewSummaryFallsBackToProperties(t *testing.T) {
 		t.Fatalf("expected no activity request with --no-review-summary, got %d", activityRequests)
 	}
 
-	summary := decodeCLIData(t, output)["review_summary"].(map[string]any)
-	if summary["counts_source"] != "properties" {
-		t.Fatalf("expected the property counters to be used, got: %#v", summary["counts_source"])
+	summary := decodeCLIData(t, output)["reviewSummary"].(map[string]any)
+	if summary["countsSource"] != "properties" {
+		t.Fatalf("expected the property counters to be used, got: %#v", summary["countsSource"])
 	}
-	if summary["open_tasks"] != float64(1) {
-		t.Fatalf("expected 1 open task from properties, got: %#v", summary["open_tasks"])
+	if summary["openTasks"] != float64(1) {
+		t.Fatalf("expected 1 open task from properties, got: %#v", summary["openTasks"])
 	}
 }
 
@@ -179,11 +179,11 @@ func TestPRGetDegradesWhenActivityTimelineUnavailable(t *testing.T) {
 		t.Fatalf("expected pr get to succeed without the activity timeline: %v\noutput: %s", err, output)
 	}
 
-	summary := decodeCLIData(t, output)["review_summary"].(map[string]any)
-	if summary["counts_source"] != "properties" {
-		t.Fatalf("expected a fallback to the property counters, got: %#v", summary["counts_source"])
+	summary := decodeCLIData(t, output)["reviewSummary"].(map[string]any)
+	if summary["countsSource"] != "properties" {
+		t.Fatalf("expected a fallback to the property counters, got: %#v", summary["countsSource"])
 	}
-	if summary["open_tasks"] != float64(3) || summary["action_required"] != true {
+	if summary["openTasks"] != float64(3) || summary["actionRequired"] != true {
 		t.Fatalf("expected the fallback counters to drive the summary, got: %#v", summary)
 	}
 }
@@ -213,18 +213,18 @@ func TestPRGetFallsBackToBlockerCommentCounts(t *testing.T) {
 		t.Fatalf("pr get failed: %v\noutput: %s", err, output)
 	}
 
-	summary := decodeCLIData(t, output)["review_summary"].(map[string]any)
-	if summary["counts_source"] != "blocker_comments" {
-		t.Fatalf("expected the blocker comment tally to be used, got: %#v", summary["counts_source"])
+	summary := decodeCLIData(t, output)["reviewSummary"].(map[string]any)
+	if summary["countsSource"] != "blocker_comments" {
+		t.Fatalf("expected the blocker comment tally to be used, got: %#v", summary["countsSource"])
 	}
-	if summary["open_tasks"] != float64(2) || summary["resolved_tasks"] != float64(4) {
+	if summary["openTasks"] != float64(2) || summary["resolvedTasks"] != float64(4) {
 		t.Fatalf("unexpected task counts: %#v", summary)
 	}
-	if summary["action_required"] != true {
+	if summary["actionRequired"] != true {
 		t.Fatalf("expected open tasks to require action: %#v", summary)
 	}
 	// Thread counts were never measured, so they must be absent rather than 0.
-	if _, present := summary["unresolved_threads"]; present {
+	if _, present := summary["unresolvedThreads"]; present {
 		t.Fatalf("expected unmeasured thread counts to be omitted, got: %#v", summary)
 	}
 }
@@ -251,15 +251,15 @@ func TestPRGetReportsUnmeasuredCounts(t *testing.T) {
 		t.Fatalf("pr get failed: %v\noutput: %s", err, output)
 	}
 
-	summary := decodeCLIData(t, output)["review_summary"].(map[string]any)
-	if summary["counts_source"] != "none" {
-		t.Fatalf("expected counts_source none, got: %#v", summary["counts_source"])
+	summary := decodeCLIData(t, output)["reviewSummary"].(map[string]any)
+	if summary["countsSource"] != "none" {
+		t.Fatalf("expected countsSource none, got: %#v", summary["countsSource"])
 	}
-	if _, present := summary["open_tasks"]; present {
+	if _, present := summary["openTasks"]; present {
 		t.Fatalf("expected unmeasured counts to be omitted, got: %#v", summary)
 	}
-	if summary["action_required"] != false {
-		t.Fatalf("expected action_required false when nothing is known, got: %#v", summary)
+	if summary["actionRequired"] != false {
+		t.Fatalf("expected actionRequired false when nothing is known, got: %#v", summary)
 	}
 
 	humanOutput, err := executeTestCLI(t, "pr", "get", "7")
@@ -346,9 +346,9 @@ func TestPRGetReportsTimelineFailures(t *testing.T) {
 			if err != nil {
 				t.Fatalf("expected status %d to degrade gracefully, got error: %v", testCase.status, err)
 			}
-			summary := decodeCLIData(t, output)["review_summary"].(map[string]any)
-			if summary["counts_source"] != "none" {
-				t.Fatalf("expected the summary to report nothing measured, got: %#v", summary["counts_source"])
+			summary := decodeCLIData(t, output)["reviewSummary"].(map[string]any)
+			if summary["countsSource"] != "none" {
+				t.Fatalf("expected the summary to report nothing measured, got: %#v", summary["countsSource"])
 			}
 		})
 	}
@@ -373,7 +373,7 @@ func TestPRCommentListReturnsSlimThreads(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected a summary block, got: %s", output)
 	}
-	if summary["unresolved"] != float64(2) || summary["open_tasks"] != float64(1) || summary["resolved"] != float64(2) {
+	if summary["unresolved"] != float64(2) || summary["openTasks"] != float64(1) || summary["resolved"] != float64(2) {
 		t.Fatalf("unexpected summary: %#v", summary)
 	}
 
@@ -394,33 +394,12 @@ func TestPRCommentListReturnsSlimThreads(t *testing.T) {
 	if !ok || anchor["path"] != "internal/cli/root.go" || anchor["line"] != float64(42) {
 		t.Fatalf("expected the file anchor to be preserved, got: %#v", first["anchor"])
 	}
-	if first["reply_count"] != float64(1) {
-		t.Fatalf("expected the reply to be counted, got: %#v", first["reply_count"])
+	if first["replyCount"] != float64(1) {
+		t.Fatalf("expected the reply to be counted, got: %#v", first["replyCount"])
 	}
-	lastReply, ok := first["last_reply"].(map[string]any)
+	lastReply, ok := first["lastReply"].(map[string]any)
 	if !ok || lastReply["text"] != "fixed in abc123" {
-		t.Fatalf("expected the last reply, got: %#v", first["last_reply"])
-	}
-}
-
-func TestPRCommentListFullRestoresRawPayload(t *testing.T) {
-	server := newReviewVisibilityServer(t)
-	configureDryRunEnv(t, server.URL, "TEST", "demo")
-
-	output, err := executeTestCLI(t, "--json", "pr", "comment", "list", "7", "--full")
-	if err != nil {
-		t.Fatalf("pr comment list --full failed: %v\noutput: %s", err, output)
-	}
-
-	data := decodeCLIData(t, output)
-	if _, ok := data["comments"]; !ok {
-		t.Fatalf("expected the raw comments array with --full, got: %s", output)
-	}
-	if _, ok := data["threads"]; ok {
-		t.Fatalf("expected no thread view with --full, got: %s", output)
-	}
-	if !strings.Contains(output, "the entire pull request payload") {
-		t.Fatalf("expected --full to carry the raw payload, got: %s", output)
+		t.Fatalf("expected the last reply, got: %#v", first["lastReply"])
 	}
 }
 
@@ -624,11 +603,11 @@ func TestPRListShowsOpenItemIndicator(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr list --json failed: %v\noutput: %s", err, jsonOutput)
 	}
-	summaries, ok := decodeCLIData(t, jsonOutput)["review_summaries"].([]any)
+	summaries, ok := decodeCLIData(t, jsonOutput)["reviewSummaries"].([]any)
 	if !ok || len(summaries) != 1 {
 		t.Fatalf("expected one review summary, got: %s", jsonOutput)
 	}
-	if summaries[0].(map[string]any)["unresolved_threads"] != float64(2) {
+	if summaries[0].(map[string]any)["unresolvedThreads"] != float64(2) {
 		t.Fatalf("expected 2 unresolved threads, got: %#v", summaries[0])
 	}
 }

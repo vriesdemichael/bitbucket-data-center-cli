@@ -113,7 +113,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 				if d.JSONEnabled() {
-					return d.WriteJSON(cmd.OutOrStdout(), Conditions{Conditions: conditionsFrom(conditions)})
+					return d.WriteJSON(cmd.OutOrStdout(), Conditions{Conditions: result.ConditionsFrom(conditions)})
 				}
 				printReviewerConditions(cmd, conditions)
 				return nil
@@ -131,7 +131,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), Conditions{Conditions: conditionsFrom(conditions)})
+				return d.WriteJSON(cmd.OutOrStdout(), Conditions{Conditions: result.ConditionsFrom(conditions)})
 			}
 			printReviewerConditions(cmd, conditions)
 			return nil
@@ -374,7 +374,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 				if d.JSONEnabled() {
-					return d.WriteJSON(cmd.OutOrStdout(), conditionFrom(created))
+					return d.WriteJSON(cmd.OutOrStdout(), result.ConditionFrom(created))
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s for repository %s\n", style.Success.Render("Created reviewer condition"), style.Resource.Render(pk+"/"+slug))
 				return nil
@@ -441,7 +441,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), conditionFrom(created))
+				return d.WriteJSON(cmd.OutOrStdout(), result.ConditionFrom(created))
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s for project %s\n", style.Success.Render("Created reviewer condition"), projectKey)
 			return nil
@@ -557,7 +557,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 				if d.JSONEnabled() {
-					return d.WriteJSON(cmd.OutOrStdout(), conditionFrom(updated))
+					return d.WriteJSON(cmd.OutOrStdout(), result.ConditionFrom(updated))
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s %s for repository %s\n", style.Updated.Render("Updated reviewer condition"), style.Resource.Render(id), style.Resource.Render(pk+"/"+slug))
 				return nil
@@ -630,7 +630,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), conditionFrom(updated))
+				return d.WriteJSON(cmd.OutOrStdout(), result.ConditionFrom(updated))
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s for project %s\n", style.Updated.Render("Updated reviewer condition"), style.Resource.Render(id), projectKey)
 			return nil

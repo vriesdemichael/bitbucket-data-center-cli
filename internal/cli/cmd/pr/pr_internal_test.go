@@ -5,9 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
+
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
 )
 
@@ -64,7 +65,7 @@ func TestPRFormatSafeHelpers(t *testing.T) {
 func TestFormatPullRequestCountsAndActivity(t *testing.T) {
 	tasks := 3
 	comments := 5
-	pr := pullrequestservice.PullRequest{
+	pr := result.PullRequest{
 		OpenTaskCount: &tasks,
 		CommentCount:  &comments,
 	}
@@ -74,7 +75,7 @@ func TestFormatPullRequestCountsAndActivity(t *testing.T) {
 	}
 
 	// Empty counts
-	if formatPullRequestCounts(pullrequestservice.PullRequest{}) != "" {
+	if formatPullRequestCounts(result.PullRequest{}) != "" {
 		t.Fatal("expected empty string for empty counts")
 	}
 
