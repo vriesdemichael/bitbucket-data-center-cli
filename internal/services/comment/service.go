@@ -81,22 +81,18 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 		return nil, err
 	}
 	trimmedPath := strings.TrimSpace(path)
-	onCommit := strings.TrimSpace(target.CommitID) != ""
-	// The pull request endpoint requires a path -- the spec types it as a plain
-	// string, not a pointer -- and the blocker endpoint takes none. The commit
-	// endpoint takes an optional one, and without it returns every comment on
-	// the commit. Requiring it there made the comments bb creates unlistable by
-	// bb: `repo comment create --commit` posts a comment anchored to nothing,
-	// and a path-scoped listing can never return it.
-	if !target.Blocker && !onCommit && trimmedPath == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "comment path is required when listing pull request comments", nil)
-	}
-
-	// Nil rather than a pointer to "", which would send path= and scope the
-	// listing to a file named nothing.
-	var commitPath *string
-	if trimmedPath != "" {
-		commitPath = &trimmedPath
+	// Every listing but the blocker one needs a path.
+	//
+	// The vendored spec types the commit endpoint's path as optional, and it is
+	// wrong: a real Bitbucket answers 400 "The path query parameter is required
+	// when retrieving comments." Believing the document over the server cost a
+	// live run, so the requirement stays and this note stays with it.
+	//
+	// What that means for a caller is that a comment must be anchored to a file
+	// to be listable, which is why `repo comment create` takes --path, --line
+	// and --line-type.
+	if !target.Blocker && trimmedPath == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "comment path is required for list operations", nil)
 	}
 	if limit <= 0 {
 		limit = 25
@@ -108,7 +104,7 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 
 	for {
 		if strings.TrimSpace(target.CommitID) != "" {
-			response, err := service.client.GetCommentsWithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, &openapigenerated.GetCommentsParams{Path: commitPath, Start: &start, Limit: &pageLimit})
+			response, err := service.client.GetCommentsWithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, &openapigenerated.GetCommentsParams{Path: &trimmedPath, Start: &start, Limit: &pageLimit})
 			if err != nil {
 				return nil, apperrors.New(apperrors.KindTransient, "failed to list commit comments", err)
 			}
