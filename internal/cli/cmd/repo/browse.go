@@ -105,12 +105,7 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 			// to write the file there instead, which is not a document at all.
 			// bb repo cat reads the same endpoint and already answered this way.
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), RawFile{
-					Repository: browseRepositoryOf(repo),
-					Path:       args[0],
-					At:         rawAt,
-					Content:    string(content),
-				})
+				return deps.WriteJSON(cmd.OutOrStdout(), rawFileFrom(browseRepositoryOf(repo), args[0], rawAt, content))
 			}
 
 			_, _ = cmd.OutOrStdout().Write(content)
