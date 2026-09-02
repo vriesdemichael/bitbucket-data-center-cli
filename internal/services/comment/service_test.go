@@ -3,6 +3,7 @@ package comment
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	"io"
 	"net/http"
@@ -1393,5 +1394,195 @@ func TestAnUnreadableVersionLookupStopsTheWrite(t *testing.T) {
 	}
 	if writes != 0 {
 		t.Errorf("%d write requests were sent after the lookup failed; want none", writes)
+	}
+}
+
+// TestAnExplicitVersionSkipsTheLookup pins the other half of resolveVersion.
+//
+// The lookup exists only for callers that did not supply a version. A refactor
+// that made it run anyway would add a request per write and, worse, would
+// overwrite the caller's version with the server's current one -- turning an
+// optimistic-locking check the caller asked for into a blind write that always
+// wins.
+func TestAnExplicitVersionSkipsTheLookup(t *testing.T) {
+	for _, operation := range []struct {
+		what string
+		run  func(service *Service, target Target, version int32) error
+	}{
+		{"update", func(service *Service, target Target, version int32) error {
+			_, err := service.Update(context.Background(), target, "1", "edited", &version)
+			return err
+		}},
+		{"resolve", func(service *Service, target Target, version int32) error {
+			_, err := service.SetState(context.Background(), target, "1", CommentStateResolved, &version)
+			return err
+		}},
+		{"delete", func(service *Service, target Target, version int32) error {
+			_, err := service.Delete(context.Background(), target, "1", &version)
+			return err
+		}},
+	} {
+		t.Run(operation.what, func(t *testing.T) {
+			reads := 0
+			var sentVersions []string
+			service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+				switch r.Method {
+				case http.MethodGet:
+					reads++
+				case http.MethodDelete:
+					sentVersions = append(sentVersions, r.URL.Query().Get("version"))
+					w.WriteHeader(http.StatusNoContent)
+					return
+				default:
+					body, _ := io.ReadAll(r.Body)
+					var sent map[string]any
+					_ = json.Unmarshal(body, &sent)
+					sentVersions = append(sentVersions, fmt.Sprintf("%v", sent["version"]))
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"id":1,"version":4}`))
+			})
+
+			target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "7"}
+			if err := operation.run(service, target, 3); err != nil {
+				t.Fatalf("%s with an explicit version: %v", operation.what, err)
+			}
+			if reads != 0 {
+				t.Errorf("%s issued %d read(s) despite being given a version", operation.what, reads)
+			}
+			// The caller's version, not the server's current one.
+			if len(sentVersions) != 1 || sentVersions[0] != "3" {
+				t.Errorf("%s sent versions %v, want the caller's 3", operation.what, sentVersions)
+			}
+		})
+	}
+}
+
+// TestEveryEmptyReadIsRefused enumerates the bodies a read can come back with,
+// rather than the one that happened to be tried.
+//
+// Refusing malformed JSON was not enough. A body of null or {} unmarshals into
+// a struct of nils without complaint, so two of the five shapes still produced
+// a silently empty comment -- and an empty comment is what turned a failed read
+// into a write with no version. Testing one shape and reasoning about the rest
+// is what let that stand.
+func TestEveryEmptyReadIsRefused(t *testing.T) {
+	for _, shape := range []struct {
+		what string
+		body string
+		want bool
+	}{
+		{"a comment", `{"id":1,"version":2}`, true},
+		{"no body at all", ``, false},
+		{"a JSON null", `null`, false},
+		{"an object with no fields", `{}`, false},
+		{"an array", `[]`, false},
+		{"truncated JSON", `{"id":1,"version":`, false},
+		{"a comment with no id", `{"version":2,"text":"orphan"}`, false},
+	} {
+		t.Run(shape.what, func(t *testing.T) {
+			service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(shape.body))
+			})
+
+			target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "7"}
+			got, err := service.Get(context.Background(), target, "1")
+			if shape.want {
+				if err != nil {
+					t.Fatalf("a real comment was refused: %v", err)
+				}
+				if got.Id == nil {
+					t.Fatalf("the comment came back without its id: %+v", got)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("%s was accepted as a comment: %+v", shape.what, got)
+			}
+		})
+	}
+}
+
+// TestAStationaryPageEndsTheListing stops a hang.
+//
+// The paging loop follows nextPageStart, and an instance that answers with one
+// that does not advance makes it walk forever, collecting the same page each
+// time. A wrong answer is recoverable; a command that never returns is not.
+// The browse service already guards this the same way.
+func TestAStationaryPageEndsTheListing(t *testing.T) {
+	requests := 0
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":0,"values":[{"id":1,"text":"stuck"}]}`))
+	})
+
+	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "7"}
+	listed, err := service.List(context.Background(), target, "a.go", 25)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if requests != 1 {
+		t.Errorf("the listing made %d requests for a page that never advanced; want 1", requests)
+	}
+	if len(listed) != 1 {
+		t.Errorf("listed = %d comments, want the one page that was returned", len(listed))
+	}
+}
+
+// TestEveryEmptyWriteFallsBackToWhatWasSent is the write half of the same
+// enumeration.
+//
+// A write that cannot read its response must answer with what it sent: the
+// change happened, and reporting a failure invites a retry that posts a second
+// comment. Refusing only malformed JSON left null and {} decoding cleanly into
+// a struct of nils, which slipped past the fallback and published a comment
+// with neither an id nor the text just written -- strictly less than the echo
+// it skipped.
+//
+// Reads refuse and writes fall back. That difference is the point: nothing
+// happened on a failed read, and something did on a failed write.
+func TestEveryEmptyWriteFallsBackToWhatWasSent(t *testing.T) {
+	for _, shape := range []struct {
+		what string
+		body string
+	}{
+		{"no body at all", ``},
+		{"a JSON null", `null`},
+		{"an object with no fields", `{}`},
+		{"truncated JSON", `{"id":9,"version":`},
+	} {
+		t.Run(shape.what, func(t *testing.T) {
+			service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				_, _ = w.Write([]byte(shape.body))
+			})
+
+			target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "7"}
+			created, err := service.Create(context.Background(), target, "the text that was written")
+			if err != nil {
+				t.Fatalf("a write that succeeded was reported as a failure: %v", err)
+			}
+			if created.Text == nil || *created.Text != "the text that was written" {
+				t.Fatalf("%s lost the text that was written: %+v", shape.what, created.Text)
+			}
+		})
+	}
+
+	// A real response still wins over the echo.
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":9,"version":3,"text":"as the server stored it"}`))
+	})
+	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "7"}
+	created, err := service.Create(context.Background(), target, "what was sent")
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if created.Id == nil || *created.Id != 9 || created.Text == nil || *created.Text != "as the server stored it" {
+		t.Fatalf("the echo won over a real response: %+v", created)
 	}
 }
