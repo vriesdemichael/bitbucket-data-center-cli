@@ -10,6 +10,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
@@ -170,13 +171,8 @@ func New(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectCreate(cmd.Context()); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectCreate(cmd.Context(), d.PermissionChecker, client); err != nil {
+					return err
 				}
 
 				_, err := service.Get(cmd.Context(), args[0])
@@ -256,13 +252,8 @@ func New(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), args[0]); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), d.PermissionChecker, client, args[0]); err != nil {
+					return err
 				}
 
 				current, err := service.Get(cmd.Context(), args[0])
@@ -336,13 +327,8 @@ func New(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), args[0]); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), d.PermissionChecker, client, args[0]); err != nil {
+					return err
 				}
 
 				_, err := service.Get(cmd.Context(), args[0])

@@ -12,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
@@ -436,13 +437,8 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
-							return err
-						}
-					}
+				if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
+					return err
 				}
 
 				preview := dryrunpreview.Preview{
@@ -504,13 +500,8 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
-							return err
-						}
-					}
+				if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
+					return err
 				}
 
 				preview := dryrunpreview.Preview{
@@ -566,13 +557,8 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
-							return err
-						}
-					}
+				if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
+					return err
 				}
 
 				checks, err := service.ListRequiredBuildChecks(cmd.Context(), repo, requiredPaging.ServiceLimit())
@@ -649,13 +635,8 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
-							return err
-						}
-					}
+				if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+					return err
 				}
 
 				_, err := service.GetScopedBuildStatus(cmd.Context(), repo, args[0], scopedSetKey)
@@ -772,13 +753,8 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
-							return err
-						}
-					}
+				if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+					return err
 				}
 
 				_, err := service.GetScopedBuildStatus(cmd.Context(), repo, args[0], scopedDeleteKey)
