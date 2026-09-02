@@ -150,6 +150,10 @@ type Comment struct {
 	CreatedDate  int64          `json:"createdDate,omitempty" jsonschema:"When it was written, in milliseconds since the epoch."`
 	UpdatedDate  int64          `json:"updatedDate,omitempty" jsonschema:"When it last changed, in milliseconds since the epoch."`
 	ResolvedDate int64          `json:"resolvedDate,omitempty" jsonschema:"When it was resolved, in milliseconds since the epoch."`
+
+	// Properties is left open, for the reason given on the pull request comment:
+	// Bitbucket stores undocumented extras here, reactions among them.
+	Properties map[string]any `json:"properties,omitempty" jsonschema:"Per-comment extras Bitbucket attaches, reactions among them. Left open because Bitbucket does not document what goes here."`
 }
 
 // PermissionEntry is one user or group holding a repository permission.

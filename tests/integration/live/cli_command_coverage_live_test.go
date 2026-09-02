@@ -45,8 +45,8 @@ func TestLiveCLIDiffOutputModes(t *testing.T) {
 		t.Fatalf("diff refs --stat failed: %v\noutput: %s", err, statOutput)
 	}
 	statPayload := decodeJSONMap(t, statOutput)
-	if _, ok := statPayload["stats"]; !ok {
-		t.Fatalf("expected stats field in --stat output, got: %s", statOutput)
+	if statPayload["output"] != "stat" {
+		t.Fatalf("expected the payload to report which form it produced, got: %s", statOutput)
 	}
 
 	patchOutput, err := executeLiveCLI(t, "diff", "refs", from, to, "--patch")
@@ -233,9 +233,12 @@ func TestLiveCLIBuildAndTagLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("build status stats failed: %v\noutput: %s", err, statsBuildOutput)
 	}
-	statsPayload := decodeJSONMap(t, statsBuildOutput)
+	statsPayload := firstOfJSONArray(t, statsBuildOutput)
 	if _, ok := statsPayload["successful"]; !ok {
 		t.Fatalf("expected successful field in build stats output, got: %s", statsBuildOutput)
+	}
+	if statsPayload["commit"] != commitID {
+		t.Fatalf("expected the row to name the commit it counts, got: %s", statsBuildOutput)
 	}
 
 	tagName := fmt.Sprintf("v-live-cli-%d", time.Now().UnixNano()%100000)
@@ -756,4 +759,49 @@ func asString(value any) string {
 		return ""
 	}
 	return fmt.Sprintf("%v", value)
+}
+
+// firstOfJSONArray decodes an envelope whose data is a list and returns its
+// first entry.
+//
+// A companion to decodeJSONMap, for the commands that answer with a list rather
+// than an object -- a listing, or a command whose result is one row per thing
+// the caller named.
+func firstOfJSONArray(t *testing.T, value string) map[string]any {
+	t.Helper()
+
+	var envelope struct {
+		Data []map[string]any `json:"data"`
+		Meta struct {
+			BBVersion string `json:"bbVersion"`
+		} `json:"meta"`
+	}
+
+	if err := json.Unmarshal([]byte(value), &envelope); err != nil {
+		t.Fatalf("expected json array output, got parse error %v for: %s", err, value)
+	}
+	if strings.TrimSpace(envelope.Meta.BBVersion) == "" {
+		t.Fatalf("expected a bb envelope carrying meta.bbVersion: %s", value)
+	}
+	if len(envelope.Data) == 0 {
+		t.Fatalf("expected at least one entry in the output: %s", value)
+	}
+
+	return envelope.Data[0]
+}
+
+// nestedJSONMap reads one object out of an envelope's data.
+//
+// The payloads that report a thing they created name it -- {"repository": ...,
+// "task": ...} -- rather than returning the object bare, so the caller can see
+// what it was created on without a second call.
+func nestedJSONMap(t *testing.T, output string, key string) map[string]any {
+	t.Helper()
+
+	nested, ok := decodeJSONMap(t, output)[key].(map[string]any)
+	if !ok {
+		t.Fatalf("expected a %q object in the output: %s", key, output)
+	}
+
+	return nested
 }

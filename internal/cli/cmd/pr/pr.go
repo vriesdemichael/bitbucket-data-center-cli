@@ -1804,6 +1804,10 @@ func New(deps Dependencies) *cobra.Command {
 
 			if commentFull {
 				if deps.JSONEnabled() {
+					// Present even when empty: its absence is what says --full
+					// was not passed, so an empty file must still carry the key.
+					ungrouped := commentsFrom(comments)
+
 					return deps.WriteJSON(cmd.OutOrStdout(), CommentThreads{
 						Repository:    repositoryOf(repo),
 						PullRequestID: target.PullRequestID,
@@ -1812,7 +1816,7 @@ func New(deps Dependencies) *cobra.Command {
 						State:         normalizedState,
 						Summary:       threadSummaryFrom(summary),
 						Threads:       threadsFrom(threads),
-						Comments:      commentsFrom(comments),
+						Comments:      &ungrouped,
 					})
 				}
 

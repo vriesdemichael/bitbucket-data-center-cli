@@ -30,8 +30,8 @@ func TestLiveGovernanceCLI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("project group permissions list failed: %v\noutput: %s", err, output)
 	}
-	if !strings.Contains(output, `"groups"`) {
-		t.Fatalf("expected groups in output: %s", output)
+	if !strings.Contains(output, `"subject": "group"`) {
+		t.Fatalf("expected a group listing in output: %s", output)
 	}
 
 	output, err = executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "groups", "list", "--repo", seeded.Key+"/"+repo.Slug)
