@@ -175,7 +175,9 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	updateCmd.Flags().StringVar(&updateName, "name", "", "New name")
 	updateCmd.Flags().StringVar(&updateURL, "url", "", "New URL")
 	updateCmd.Flags().StringSliceVar(&updateEvents, "event", nil, "New list of webhook events")
-	enumflag.Register(updateCmd.Flags(), &updateActiveVal, "active", "", []string{"true", "false"}, "Active status")
+	// Strict: an empty --active used to be an error here, and taking it as
+	// "leave it alone" would silently disable a webhook.
+	enumflag.RegisterStrict(updateCmd.Flags(), &updateActiveVal, "active", "", []string{"true", "false"}, "Active status")
 	webhookCmd.AddCommand(updateCmd)
 
 	deleteCmd := &cobra.Command{

@@ -2,6 +2,7 @@ package enumflag_test
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -122,4 +123,82 @@ func TestTheDefaultIsSetWithoutParsing(t *testing.T) {
 	if severity != "MEDIUM" {
 		t.Errorf("severity = %q before parsing, want the default", severity)
 	}
+}
+
+// TestAnEmptyValueMeansNotGiven is the regression that shipped in the first
+// version of this package: "" is in no set, so every flag refused it -- and
+// twenty-three of them are registered with "" as their own default, so they
+// refused their default. `bb pr list --state "$STATE"` with $STATE unset is an
+// ordinary thing for a script to write, and it started exiting 2.
+func TestAnEmptyValueMeansNotGiven(t *testing.T) {
+	t.Parallel()
+
+	// A default the set names: empty resets to it, so what leaves is always a
+	// value the set contains.
+	var state string
+	withDefault := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	withDefault.SetOutput(io.Discard)
+	enumflag.Register(withDefault, &state, "state", "open", []string{"open", "closed", "all"}, "State")
+	if err := withDefault.Parse([]string{"--state", ""}); err != nil {
+		t.Fatalf("empty value rejected: %v", err)
+	}
+	if state != "open" {
+		t.Errorf("state = %q, want the default", state)
+	}
+
+	// A default of "": empty stays empty, and the service layer normalises it
+	// the way it always did.
+	var lineType string
+	noDefault := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	noDefault.SetOutput(io.Discard)
+	enumflag.Register(noDefault, &lineType, "line-type", "", []string{"ADDED", "REMOVED"}, "Line type")
+	if err := noDefault.Parse([]string{"--line-type", "   "}); err != nil {
+		t.Fatalf("blank value rejected: %v", err)
+	}
+	if lineType != "" {
+		t.Errorf("lineType = %q, want empty", lineType)
+	}
+}
+
+// TestRegisterStrictRefusesAnEmptyValue covers the flags where "" was an error
+// before and has to stay one -- project webhook update --active, where taking
+// an empty value as "leave it alone" would silently disable a webhook.
+func TestRegisterStrictRefusesAnEmptyValue(t *testing.T) {
+	t.Parallel()
+
+	var active string
+	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	enumflag.RegisterStrict(flags, &active, "active", "", []string{"true", "false"}, "Active status")
+
+	err := flags.Parse([]string{"--active", ""})
+	if err == nil {
+		t.Fatal("an empty value was accepted by a strict flag")
+	}
+	for _, want := range []string{"true", "false"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error does not name %q: %v", want, err)
+		}
+	}
+}
+
+// TestADefaultOutsideTheSetIsRefusedAtRegistration stops a flag shipping that
+// cannot be reset to its own default. Registration runs while the command tree
+// is built, so this fails the first test that builds one.
+func TestADefaultOutsideTheSetIsRefusedAtRegistration(t *testing.T) {
+	t.Parallel()
+
+	defer func() {
+		recovered := recover()
+		if recovered == nil {
+			t.Fatal("a default outside the set was accepted")
+		}
+		if !strings.Contains(fmt.Sprint(recovered), "--severity") {
+			t.Errorf("panic does not name the flag: %v", recovered)
+		}
+	}()
+
+	var severity string
+	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	enumflag.Register(flags, &severity, "severity", "CRITICAL", severities, "Annotation severity")
 }
