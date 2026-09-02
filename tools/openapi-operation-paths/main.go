@@ -64,6 +64,26 @@ var callRE = regexp.MustCompile(`\.([A-Z][A-Za-z0-9]*)WithResponse\(`)
 // silently retarget.
 var rawCallRE = regexp.MustCompile(`\.([A-Z][A-Za-z0-9]*WithBody)\(`)
 
+// bareCallRE finds a raw client method called with no suffix at all, such as
+// `.client.GetComments(` or `.client.UpdateComment(`.
+//
+// Anchored on the receiver, not just the method name. Every generated call in
+// this project goes through a field named client, and the operation names are
+// ordinary words -- Create, Update, Merge, Read, Watch -- that this project's
+// own services also use. Matching on the name alone recorded twenty-two
+// operations nothing calls, which is worse than the gap it closed: a spec bump
+// would then diff an operation no call site has, and a reader who learns the
+// report cries wolf stops reading it.
+//
+// A match still only counts when the generated client declares the name, so a
+// field called client on some other type cannot smuggle one in.
+//
+// comment.Service is why this exists: its listings and single reads take the
+// raw method so an anchor path can be repaired before decoding (ADR-077). Six
+// operations dropped out of this report when they did, which is exactly the
+// silent retargeting the report exists to prevent.
+var bareCallRE = regexp.MustCompile(`\.client\.([A-Z][A-Za-z0-9]*)\(`)
+
 func main() {
 	generated := flag.String("generated", filepath.Join("internal", "openapi", "generated", "bitbucket_client.gen.go"), "Generated OpenAPI client")
 	sourceRoot := flag.String("source", ".", "Root to scan for call sites")
@@ -76,7 +96,7 @@ func main() {
 		fail(err)
 	}
 
-	called, err := collectCalledOperations(*sourceRoot, *generated)
+	called, err := collectCalledOperations(*sourceRoot, *generated, operations)
 	if err != nil {
 		fail(err)
 	}
@@ -287,7 +307,7 @@ func skipDirectory(path, name string) bool {
 
 // collectCalledOperations scans the project's own Go source for typed client
 // calls, ignoring the generated client itself.
-func collectCalledOperations(root, generatedPath string) (map[string]bool, error) {
+func collectCalledOperations(root, generatedPath string, declared map[string]operation) (map[string]bool, error) {
 	generatedAbs, err := filepath.Abs(generatedPath)
 	if err != nil {
 		return nil, err
@@ -323,6 +343,12 @@ func collectCalledOperations(root, generatedPath string) (map[string]bool, error
 		}
 		for _, match := range rawCallRE.FindAllSubmatch(content, -1) {
 			called[trimBodySuffix(string(match[1]))] = true
+		}
+		for _, match := range bareCallRE.FindAllSubmatch(content, -1) {
+			name := trimBodySuffix(string(match[1]))
+			if _, isOperation := declared[name]; isOperation {
+				called[name] = true
+			}
 		}
 		return nil
 	})
