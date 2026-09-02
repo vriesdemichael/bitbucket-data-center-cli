@@ -38,6 +38,9 @@ func TestLiveGovernanceCLI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo group permissions list failed: %v\noutput: %s", err, output)
 	}
+	if !strings.Contains(output, `"subject": "group"`) {
+		t.Fatalf("expected a group listing in output: %s", output)
+	}
 
 	// Try to grant to stash-users if it exists (usually does in local stack)
 	_, _ = executeLiveCLI(t, "project", "permissions", "groups", "grant", seeded.Key, "stash-users", "PROJECT_READ")
