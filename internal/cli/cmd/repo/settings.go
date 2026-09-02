@@ -323,44 +323,34 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// Both renderings read one value. The human path used to pick the
+			// same fields out of the raw map a second time, which is two
+			// descriptions of one payload and the thing this whole change
+			// exists to stop.
+			published := pullRequestSettingsFrom(settingsRepositoryOf(repo), settings)
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), pullRequestSettingsFrom(settingsRepositoryOf(repo), settings))
+				return deps.WriteJSON(cmd.OutOrStdout(), published)
 			}
 
-			requiredTasks := false
-			if value, ok := settings["requiredAllTasksComplete"].(bool); ok {
-				requiredTasks = value
-			}
 			requiredApprovals := "disabled"
-			if section, ok := settings["requiredApprovers"].(map[string]any); ok {
-				enabled, _ := section["enabled"].(bool)
-				if enabled {
-					switch count := section["count"].(type) {
-					case string:
-						requiredApprovals = count
-					case float64:
-						requiredApprovals = fmt.Sprintf("%.0f", count)
-					default:
-						requiredApprovals = "enabled"
-					}
-				}
+			if published.RequiredApproversEnabled {
+				requiredApprovals = strconv.Itoa(published.RequiredApprovers)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %t\n", style.Label.Render("Required tasks complete:"), requiredTasks)
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %t\n", style.Label.Render("Required tasks complete:"), published.RequiredAllTasksComplete)
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Required approvers:"), requiredApprovals)
 
-			if mergeConfig, ok := settings["mergeConfig"].(map[string]any); ok {
-				if strategies, ok := mergeConfig["strategies"].([]any); ok {
-					fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Available merge strategies:"), len(strategies))
-					for _, s := range strategies {
-						if sm, ok := s.(map[string]any); ok {
-							enabled := ""
-							if en, ok := sm["enabled"].(bool); ok && en {
-								enabled = "*"
-							}
-							fmt.Fprintf(cmd.OutOrStdout(), "- %s%s (%s)\n", sm["id"], enabled, sm["name"])
-						}
+			if len(published.MergeStrategies) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Available merge strategies:"), len(published.MergeStrategies))
+				for _, strategy := range published.MergeStrategies {
+					marker := ""
+					if strategy.Enabled {
+						marker = "*"
 					}
+					if strategy.ID == published.DefaultMergeStrategy {
+						marker += " (default)"
+					}
+					fmt.Fprintf(cmd.OutOrStdout(), "- %s%s (%s)\n", strategy.ID, marker, strategy.Name)
 				}
 			}
 			return nil
