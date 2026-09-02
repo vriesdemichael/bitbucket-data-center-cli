@@ -930,10 +930,6 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			if format == "" {
-				format = "zip"
-			}
-
 			var pathParam *string
 			if path != "" {
 				pathParam = &path
@@ -946,10 +942,9 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 			if prefix != "" {
 				prefixParam = &prefix
 			}
-			var formatParam *string
-			if format != "" {
-				formatParam = &format
-			}
+			// Always set: --format is an enum flag defaulting to zip, and an
+			// empty value resets it to that default, so it is never blank here.
+			formatParam := &format
 
 			params := &openapigenerated.GetArchiveParams{
 				Path:   pathParam,
