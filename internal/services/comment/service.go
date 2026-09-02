@@ -81,14 +81,11 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 		return nil, err
 	}
 	trimmedPath := strings.TrimSpace(path)
-	// Every listing but the blocker one needs a path.
+	// Every listing but the blocker one needs a path (ADR-077).
 	//
-	// The vendored spec types the commit endpoint's path as optional, and it is
+	// The vendored spec types the commit endpoint's path as optional and it is
 	// wrong: a real Bitbucket answers 400 "The path query parameter is required
-	// when retrieving comments." Believing the document over the server cost a
-	// live run, so the requirement stays and this note stays with it.
-	//
-	// What that means for a caller is that a comment must be anchored to a file
+	// when retrieving comments." A comment must therefore be anchored to a file
 	// to be listable, which is why `repo comment create` takes --path, --line
 	// and --line-type.
 	if !target.Blocker && trimmedPath == "" {
@@ -103,74 +100,48 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 	results := make([]openapigenerated.RestComment, 0)
 
 	for {
-		if strings.TrimSpace(target.CommitID) != "" {
-			response, err := service.client.GetCommentsWithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, &openapigenerated.GetCommentsParams{Path: &trimmedPath, Start: &start, Limit: &pageLimit})
-			if err != nil {
-				return nil, apperrors.New(apperrors.KindTransient, "failed to list commit comments", err)
-			}
-			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-				return nil, err
-			}
-			if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-				break
-			}
-
-			results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
-			if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-				break
-			}
-			if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-				break
-			}
-			start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-			continue
-		}
-
-		if target.Blocker {
-			response, err := service.client.GetComments1WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, &openapigenerated.GetComments1Params{Start: &start, Limit: &pageLimit})
-			if err != nil {
-				return nil, apperrors.New(apperrors.KindTransient, "failed to list pull request blocker comments", err)
-			}
-			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-				return nil, err
-			}
-			if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-				break
-			}
-
-			results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
-			if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-				break
-			}
-			if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-				break
-			}
-			start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-			continue
-		}
-
-		response, err := service.client.GetComments2WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, &openapigenerated.GetComments2Params{Path: trimmedPath, Start: &start, Limit: &pageLimit})
+		page, err := service.commentPage(ctx, target, trimmedPath, start, pageLimit)
 		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list pull request comments", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return nil, err
 		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
 
-		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
+		results = append(results, page.Values...)
+		if page.IsLastPage != nil && *page.IsLastPage {
 			break
 		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
+		if page.NextPageStart == nil {
 			break
 		}
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
+		start = *page.NextPageStart
 	}
 
 	return results, nil
+}
+
+// commentPage fetches one page from whichever endpoint the target names.
+//
+// Each branch issues the request and decodes it in one expression, rather than
+// assigning the response into a variable the switch shares: the raw request
+// methods hand back a body the caller must close, and passing it straight to
+// decodeCommentPage is what keeps that provable.
+//
+// The raw methods rather than their WithResponse wrappers, for the reason
+// decodeCommentPage gives: the wrappers decode into RestComment, whose
+// anchor.path is an object, and Bitbucket sends a plain string here.
+func (service *Service) commentPage(ctx context.Context, target Target, path string, start float32, limit float32) (commentPage, error) {
+	if strings.TrimSpace(target.CommitID) != "" {
+		response, err := service.client.GetComments(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, &openapigenerated.GetCommentsParams{Path: &path, Start: &start, Limit: &limit})
+		return decodeCommentPage(response, err, "failed to list commit comments")
+	}
+
+	if target.Blocker {
+		response, err := service.client.GetComments1(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, &openapigenerated.GetComments1Params{Start: &start, Limit: &limit})
+		return decodeCommentPage(response, err, "failed to list pull request blocker comments")
+	}
+
+	response, err := service.client.GetComments2(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, &openapigenerated.GetComments2Params{Path: path, Start: &start, Limit: &limit})
+
+	return decodeCommentPage(response, err, "failed to list pull request comments")
 }
 
 // TaskCounts is the per-state tally of a pull request's blocker comments, which
@@ -343,46 +314,24 @@ func (service *Service) Update(ctx context.Context, target Target, commentID str
 
 	body := openapigenerated.RestComment{Text: &trimmedText, Version: resolvedVersion}
 
+	// Raw requests here too, for the reason decodeCreatedComment gives: the
+	// generated wrappers decode into RestComment, and Bitbucket sends an
+	// anchored comment's path as a plain string. An update to a comment on a
+	// file therefore failed to decode -- reporting a write that had already
+	// happened as a transient failure, which invites a retry.
 	if strings.TrimSpace(target.CommitID) != "" {
-		response, err := service.client.UpdateCommentWithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, trimmedCommentID, body)
-		if err != nil {
-			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to update commit comment", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return openapigenerated.RestComment{}, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 != nil {
-			return *response.ApplicationjsonCharsetUTF8200, nil
-		}
-		return body, nil
+		response, err := service.client.UpdateComment(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, trimmedCommentID, body)
+		return decodeCreatedComment(response, err, "failed to update commit comment", body)
 	}
 
 	if target.Blocker {
-		response, err := service.client.UpdateComment1WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, body)
-		if err != nil {
-			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to update pull request blocker comment", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return openapigenerated.RestComment{}, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 != nil {
-			return *response.ApplicationjsonCharsetUTF8200, nil
-		}
-		return body, nil
+		response, err := service.client.UpdateComment1(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, body)
+		return decodeCreatedComment(response, err, "failed to update pull request blocker comment", body)
 	}
 
-	response, err := service.client.UpdateComment2WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, body)
-	if err != nil {
-		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to update pull request comment", err)
-	}
-	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-		return openapigenerated.RestComment{}, err
-	}
-	if response.ApplicationjsonCharsetUTF8200 != nil {
-		return *response.ApplicationjsonCharsetUTF8200, nil
-	}
+	response, err := service.client.UpdateComment2(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, body)
 
-	return body, nil
+	return decodeCreatedComment(response, err, "failed to update pull request comment", body)
 }
 
 func (service *Service) Delete(ctx context.Context, target Target, commentID string, version *int32) (*int32, error) {
@@ -453,46 +402,22 @@ func (service *Service) Get(ctx context.Context, target Target, commentID string
 		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindValidation, "comment id is required", nil)
 	}
 
+	// And here, the same repair. Get is also how Update and Delete resolve the
+	// version when the caller did not supply one, so an anchored comment could
+	// not be edited or removed either -- the read they depend on failed first.
 	if strings.TrimSpace(target.CommitID) != "" {
-		response, err := service.client.GetCommentWithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, trimmedCommentID)
-		if err != nil {
-			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to get commit comment", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return openapigenerated.RestComment{}, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 != nil {
-			return *response.ApplicationjsonCharsetUTF8200, nil
-		}
-		return openapigenerated.RestComment{}, nil
+		response, err := service.client.GetComment(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, trimmedCommentID)
+		return decodeCreatedComment(response, err, "failed to get commit comment", openapigenerated.RestComment{})
 	}
 
 	if target.Blocker {
-		response, err := service.client.GetComment1WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID)
-		if err != nil {
-			return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to get pull request blocker comment", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return openapigenerated.RestComment{}, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 != nil {
-			return *response.ApplicationjsonCharsetUTF8200, nil
-		}
-		return openapigenerated.RestComment{}, nil
+		response, err := service.client.GetComment1(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID)
+		return decodeCreatedComment(response, err, "failed to get pull request blocker comment", openapigenerated.RestComment{})
 	}
 
-	response, err := service.client.GetComment2WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID)
-	if err != nil {
-		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, "failed to get pull request comment", err)
-	}
-	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-		return openapigenerated.RestComment{}, err
-	}
-	if response.ApplicationjsonCharsetUTF8200 != nil {
-		return *response.ApplicationjsonCharsetUTF8200, nil
-	}
+	response, err := service.client.GetComment2(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID)
 
-	return openapigenerated.RestComment{}, nil
+	return decodeCreatedComment(response, err, "failed to get pull request comment", openapigenerated.RestComment{})
 }
 
 func (service *Service) React(ctx context.Context, repo RepositoryRef, prID string, commentID string, emoticon string) (openapigenerated.RestUserReaction, error) {
@@ -650,4 +575,57 @@ func (service *Service) SetState(ctx context.Context, target Target, commentID s
 	}
 
 	return body, nil
+}
+
+// commentPage is one page of a comment listing, decoded after the anchor paths
+// have been repaired.
+type commentPage struct {
+	Values        []openapigenerated.RestComment `json:"values"`
+	IsLastPage    *bool                          `json:"isLastPage,omitempty"`
+	NextPageStart *float32                       `json:"nextPageStart,omitempty"`
+}
+
+// decodeCommentPage reads a listing response the way decodeCreatedComment reads
+// a create response.
+//
+// The generated WithResponse wrappers decode straight into RestComment, whose
+// anchor.path is the {components, extension, name, parent} object Bitbucket
+// returns from some endpoints and a plain string from others. A listing that
+// contains one anchored comment therefore failed to decode entirely -- and
+// every comment written through the Bitbucket web interface on a diff is
+// anchored, so `bb repo comment list` broke on exactly the comments a reviewer
+// wants to read. It went unnoticed because bb could not create an anchored
+// comment until now, so nothing it made ever came back with one.
+func decodeCommentPage(response *http.Response, requestErr error, failureMessage string) (commentPage, error) {
+	if requestErr != nil {
+		return commentPage{}, apperrors.New(apperrors.KindTransient, failureMessage, requestErr)
+	}
+
+	raw, readErr := io.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if readErr != nil {
+		return commentPage{}, apperrors.New(apperrors.KindTransient, failureMessage, readErr)
+	}
+
+	if err := openapi.MapStatusError(response.StatusCode, raw); err != nil {
+		return commentPage{}, err
+	}
+
+	// A 200 with no body is how some versions say "no comments". Reporting that
+	// as a decode failure would turn an empty file into an error.
+	if len(bytes.TrimSpace(raw)) == 0 {
+		return commentPage{}, nil
+	}
+
+	normalized, err := commentanchor.NormalizeResponsePaths(raw)
+	if err != nil {
+		return commentPage{}, apperrors.New(apperrors.KindPermanent, failureMessage, err)
+	}
+
+	var page commentPage
+	if err := json.Unmarshal(normalized, &page); err != nil {
+		return commentPage{}, apperrors.New(apperrors.KindPermanent, failureMessage, err)
+	}
+
+	return page, nil
 }

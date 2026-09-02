@@ -210,10 +210,10 @@ func FlattenComments(upstream []openapigenerated.RestComment) []Comment {
 // Bitbucket expresses the relationship on this endpoint, and a nested reply
 // does not always repeat its parent as a field.
 //
-// seen is what makes this safe on the activity timeline. That endpoint emits an
-// activity per comment action, including commentAction REPLIED, so the same
-// comment reaches us twice: once nested under the root of its thread, and once
-// as the subject of its own activity. ExtractComments dedupes what it hands
+// seen is what makes this safe on the activity timeline. That endpoint is a feed
+// of actions rather than a list of comments (ADR-077): it carries a
+// commentAction per entry, so the same comment can reach us twice -- nested
+// under the root of its thread, and as the subject of its own activity. ExtractComments dedupes what it hands
 // over, but it cannot see inside the trees it is handing over, so without this
 // a reply would be published twice -- and the second copy would say it was a
 // thread root, because nothing nested it.
