@@ -139,3 +139,77 @@ func TestLintRetiredHostReadsLinesLongerThanTheDefaultBuffer(t *testing.T) {
 		t.Fatalf("expected 1 finding, got %d: %+v", len(findings), findings)
 	}
 }
+
+// TestLintRetiredHostReportsTheBareSlug covers the name on its own.
+//
+// The host rule caught the dead URL, and the URL kept coming back because the
+// bare name was still in front of everyone who read the code -- a heading, a
+// module path, a test fixture. Each of those is where a link to the dead host
+// gets written next.
+func TestLintRetiredHostReportsTheBareSlug(t *testing.T) {
+	root := t.TempDir()
+
+	writeFile(t, root, "AGENTS.md", "# Agent Instructions — "+retiredSlug+"\n")
+	writeFile(t, root, "go.mod", "module github.com/vriesdemichael/"+retiredSlug+"\n")
+	writeFile(t, root, "internal/thing/thing_test.go",
+		"package thing\n\nconst repo = \""+retiredSlug+"\"\n")
+
+	findings, err := lintRetiredHost(root)
+	if err != nil {
+		t.Fatalf("lintRetiredHost: %v", err)
+	}
+	if len(findings) != 3 {
+		t.Fatalf("expected the slug reported in all three files, got %d: %+v", len(findings), findings)
+	}
+	for _, item := range findings {
+		if item.Command != retiredSlug {
+			t.Errorf("%s reported %q, want the bare slug", item.File, item.Command)
+		}
+	}
+}
+
+// TestLintRetiredHostNamesOneMistakeOnce keeps the two rules from both firing
+// on the same line.
+//
+// Every line carrying the dead host also carries the slug it is built from, and
+// reporting both would tell a reader to fix two things where there is one. The
+// host wins, because it is the more specific finding and its remedy is exact.
+func TestLintRetiredHostNamesOneMistakeOnce(t *testing.T) {
+	root := t.TempDir()
+
+	writeFile(t, root, "docs/site/index.md", "[Docs]("+retiredPagesHost+"/latest/)\n")
+
+	findings, err := lintRetiredHost(root)
+	if err != nil {
+		t.Fatalf("lintRetiredHost: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected one finding for one line, got %d: %+v", len(findings), findings)
+	}
+	if findings[0].Command != retiredPagesHost {
+		t.Errorf("reported %q, want the host rather than the slug inside it", findings[0].Command)
+	}
+}
+
+// TestLintRetiredHostSkipsIgnoredBuildOutput keeps the rule from failing on a
+// developer's own leftovers.
+//
+// The rule walks the filesystem rather than the index, so it sees what git
+// ignores. A coverage profile records import paths, so one written before the
+// module was renamed still carries the old one, and a docs virtualenv embeds
+// the absolute path of whatever directory the checkout sits in. A lint that
+// fails on those is a lint that gets turned off.
+func TestLintRetiredHostSkipsIgnoredBuildOutput(t *testing.T) {
+	root := t.TempDir()
+
+	writeFile(t, root, ".tmp/coverage.out", "github.com/vriesdemichael/"+retiredSlug+"/internal/cli/root.go:1.1,2.2 1 1\n")
+	writeFile(t, root, "docs/.venv/Scripts/activate_this.py", "prompt = \""+retiredSlug+"-docs\"\n")
+
+	findings, err := lintRetiredHost(root)
+	if err != nil {
+		t.Fatalf("lintRetiredHost: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("ignored build output was reported: %+v", findings)
+	}
+}

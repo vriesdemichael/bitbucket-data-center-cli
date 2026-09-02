@@ -15,7 +15,7 @@ import (
 func TestClientLatest(t *testing.T) {
 	t.Setenv("BB_BLOCK_EXTERNAL_NETWORK", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/repos/vriesdemichael/bitbucket-server-cli/releases/latest" {
+		if request.URL.Path != "/repos/vriesdemichael/bitbucket-data-center-cli/releases/latest" {
 			t.Fatalf("unexpected path: %s", request.URL.Path)
 		}
 		writer.Header().Set("Content-Type", "application/json")
@@ -24,7 +24,7 @@ func TestClientLatest(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, server.Client(), "bb/test")
-	release, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-server-cli")
+	release, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-data-center-cli")
 	if err != nil {
 		t.Fatalf("Latest returned error: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestClientDownloadMapsNotFound(t *testing.T) {
 func TestClientLatestValidationAndErrorPaths(t *testing.T) {
 	t.Run("nil client", func(t *testing.T) {
 		var client *Client
-		_, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-server-cli")
+		_, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-data-center-cli")
 		if !apperrors.IsKind(err, apperrors.KindInternal) {
 			t.Fatalf("expected internal error, got %v", err)
 		}
@@ -72,7 +72,7 @@ func TestClientLatestValidationAndErrorPaths(t *testing.T) {
 
 	t.Run("invalid base url", func(t *testing.T) {
 		client := NewClient(":", &http.Client{}, "bb/test")
-		_, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-server-cli")
+		_, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-data-center-cli")
 		if !apperrors.IsKind(err, apperrors.KindInternal) {
 			t.Fatalf("expected internal error, got %v", err)
 		}
@@ -85,7 +85,7 @@ func TestClientLatestValidationAndErrorPaths(t *testing.T) {
 		defer server.Close()
 
 		client := NewClient(server.URL, server.Client(), "bb/test")
-		_, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-server-cli")
+		_, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-data-center-cli")
 		if !apperrors.IsKind(err, apperrors.KindTransient) {
 			t.Fatalf("expected transient error, got %v", err)
 		}
@@ -98,7 +98,7 @@ func TestClientLatestValidationAndErrorPaths(t *testing.T) {
 		defer server.Close()
 
 		client := NewClient(server.URL, server.Client(), "bb/test")
-		_, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-server-cli")
+		_, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-data-center-cli")
 		if !apperrors.IsKind(err, apperrors.KindPermanent) {
 			t.Fatalf("expected permanent error, got %v", err)
 		}
@@ -111,7 +111,7 @@ func TestClientLatestValidationAndErrorPaths(t *testing.T) {
 		defer server.Close()
 
 		client := NewClient(server.URL, server.Client(), "bb/test")
-		_, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-server-cli")
+		_, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-data-center-cli")
 		if !apperrors.IsKind(err, apperrors.KindPermanent) {
 			t.Fatalf("expected permanent decode error, got %v", err)
 		}

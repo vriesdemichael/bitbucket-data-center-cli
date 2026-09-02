@@ -378,8 +378,8 @@ jobs:
         with:
           token: ${{ env.CODECOV_TOKEN }}
           # Pin the destination to the current repository name.  Without it the
-          # upload was routed to the pre-rename slug (bitbucket-server-cli) and
-          # silently discarded during processing.
+          # upload was routed to the slug the project carried before it was
+          # renamed, and silently discarded during processing.
           slug: ${{ github.repository }}
           files: .tmp/coverage.combined.scoped.out
           flags: combined_scoped

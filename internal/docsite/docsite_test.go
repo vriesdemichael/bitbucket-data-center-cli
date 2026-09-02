@@ -10,7 +10,7 @@ import (
 // The project was renamed; GitHub redirects the repository but not the Pages
 // site, so the former host is a hard 404 wherever it survives.
 func TestBaseURLNamesTheCurrentPagesSite(t *testing.T) {
-	if strings.Contains(docsite.BaseURL, "bitbucket-server-cli") {
+	if strings.Contains(docsite.BaseURL, docsite.RetiredSlug) {
 		t.Fatalf("BaseURL still names the retired Pages host: %s", docsite.BaseURL)
 	}
 	if want := "https://vriesdemichael.github.io/bitbucket-data-center-cli"; docsite.BaseURL != want {
