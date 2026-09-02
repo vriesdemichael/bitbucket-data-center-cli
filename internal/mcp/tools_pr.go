@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	browseservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/browse"
 	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/commentanchor"
@@ -414,7 +415,7 @@ type EnableAutoMergeInput struct {
 	Project  string `json:"project" jsonschema:"Bitbucket project key"`
 	Repo     string `json:"repo" jsonschema:"Repository slug"`
 	PRID     string `json:"pr_id" jsonschema:"Pull request ID"`
-	Strategy string `json:"strategy,omitempty" jsonschema:"Merge strategy: no-ff (default), ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only"`
+	Strategy string `json:"strategy,omitempty" jsonschema:"Merge strategy: no-ff (default), ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only"`
 }
 
 // AutoMergeOutput names the auto-merge state it holds.
@@ -428,7 +429,7 @@ func specEnableAutoMerge() Spec {
 		Description: "Enable auto-merge on a pull request. The PR will be merged automatically once all required checks pass and reviewers have approved. Requires Bitbucket DC 8.0+.",
 		Annotations: mutating(),
 		InputSchema: enumInputSchema[EnableAutoMergeInput](map[string][]string{
-			"strategy": {"no-ff", "ff-only", "rebase-no-ff", "rebase-ff-only", "squash", "squash-ff-only"},
+			"strategy": openapi.MergeStrategies,
 		}),
 	}
 	return toolSpec(tool, false, func(c Clients) mcp.ToolHandlerFor[EnableAutoMergeInput, AutoMergeOutput] {
