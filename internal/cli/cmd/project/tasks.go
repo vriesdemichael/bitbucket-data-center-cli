@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	projectservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/project"
@@ -91,13 +92,8 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), args[0]); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
+					return err
 				}
 
 				preview := dryrunpreview.Preview{
@@ -161,13 +157,8 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), args[0]); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
+					return err
 				}
 
 				preview := dryrunpreview.Preview{
@@ -219,13 +210,8 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), args[0]); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
+					return err
 				}
 
 				preview := dryrunpreview.Preview{

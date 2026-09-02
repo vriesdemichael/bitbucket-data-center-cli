@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
@@ -156,13 +157,8 @@ func New(deps Dependencies) *cobra.Command {
 				}
 
 				if d.DryRunEnabled() {
-					if d.PermissionChecker != nil {
-						checker := d.PermissionChecker(client)
-						if checker != nil {
-							if err := checker.CheckRepoPermission(cmd.Context(), pk, slug, openapi.RepoAdmin); err != nil {
-								return err
-							}
-						}
+					if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, pk, slug, openapi.RepoAdmin); err != nil {
+						return err
 					}
 
 					groups, err := service.ListRepositoryReviewerGroups(cmd.Context(), pk, slug)
@@ -223,13 +219,8 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), projectKey); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), d.PermissionChecker, client, projectKey); err != nil {
+					return err
 				}
 
 				groups, err := service.ListProjectReviewerGroups(cmd.Context(), projectKey)
@@ -309,13 +300,8 @@ func New(deps Dependencies) *cobra.Command {
 				}
 
 				if d.DryRunEnabled() {
-					if d.PermissionChecker != nil {
-						checker := d.PermissionChecker(client)
-						if checker != nil {
-							if err := checker.CheckRepoPermission(cmd.Context(), pk, slug, openapi.RepoAdmin); err != nil {
-								return err
-							}
-						}
+					if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, pk, slug, openapi.RepoAdmin); err != nil {
+						return err
 					}
 
 					groups, err := service.ListRepositoryReviewerGroups(cmd.Context(), pk, slug)
@@ -384,13 +370,8 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), projectKey); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), d.PermissionChecker, client, projectKey); err != nil {
+					return err
 				}
 
 				groups, err := service.ListProjectReviewerGroups(cmd.Context(), projectKey)
@@ -479,13 +460,8 @@ func New(deps Dependencies) *cobra.Command {
 				}
 
 				if d.DryRunEnabled() {
-					if d.PermissionChecker != nil {
-						checker := d.PermissionChecker(client)
-						if checker != nil {
-							if err := checker.CheckRepoPermission(cmd.Context(), pk, slug, openapi.RepoAdmin); err != nil {
-								return err
-							}
-						}
+					if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, pk, slug, openapi.RepoAdmin); err != nil {
+						return err
 					}
 
 					groups, err := service.ListRepositoryReviewerGroups(cmd.Context(), pk, slug)
@@ -542,13 +518,8 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckProjectAdmin(cmd.Context(), projectKey); err != nil {
-							return err
-						}
-					}
+				if err := preflight.ProjectAdmin(cmd.Context(), d.PermissionChecker, client, projectKey); err != nil {
+					return err
 				}
 
 				groups, err := service.ListProjectReviewerGroups(cmd.Context(), projectKey)

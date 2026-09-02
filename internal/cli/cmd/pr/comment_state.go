@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prsel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
@@ -78,8 +79,7 @@ func newCommentStateCommand(
 			commentID := args[1]
 
 			if deps.DryRunEnabled() {
-				checker := deps.PermissionChecker(client)
-				if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
 

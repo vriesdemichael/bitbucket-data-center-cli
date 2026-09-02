@@ -10,6 +10,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -162,13 +163,8 @@ func New(deps Dependencies) *cobra.Command {
 
 			service := tagservice.NewService(client)
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
-							return err
-						}
-					}
+				if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+					return err
 				}
 
 				tags, err := service.List(cmd.Context(), repo, tagservice.ListOptions{MaxResults: 200, FilterText: args[0]})
@@ -288,13 +284,8 @@ func New(deps Dependencies) *cobra.Command {
 
 			service := tagservice.NewService(client)
 			if d.DryRunEnabled() {
-				if d.PermissionChecker != nil {
-					checker := d.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
-							return err
-						}
-					}
+				if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+					return err
 				}
 
 				_, err := service.Get(cmd.Context(), repo, args[0])

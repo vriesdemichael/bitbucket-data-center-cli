@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
@@ -153,13 +154,8 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 
 			service := commentservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), target.Repository.ProjectKey, target.Repository.Slug, openapi.RepoRead); err != nil {
-							return err
-						}
-					}
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, target.Repository.ProjectKey, target.Repository.Slug, openapi.RepoRead); err != nil {
+					return err
 				}
 
 				preview := dryrunpreview.Preview{
@@ -221,13 +217,8 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 
 			service := commentservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), target.Repository.ProjectKey, target.Repository.Slug, openapi.RepoRead); err != nil {
-							return err
-						}
-					}
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, target.Repository.ProjectKey, target.Repository.Slug, openapi.RepoRead); err != nil {
+					return err
 				}
 
 				current, err := service.Get(cmd.Context(), target, updateCommentID)
@@ -319,13 +310,8 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 
 			service := commentservice.NewService(client)
 			if deps.DryRunEnabled() {
-				if deps.PermissionChecker != nil {
-					checker := deps.PermissionChecker(client)
-					if checker != nil {
-						if err := checker.CheckRepoPermission(cmd.Context(), target.Repository.ProjectKey, target.Repository.Slug, openapi.RepoRead); err != nil {
-							return err
-						}
-					}
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, target.Repository.ProjectKey, target.Repository.Slug, openapi.RepoRead); err != nil {
+					return err
 				}
 
 				current, err := service.Get(cmd.Context(), target, deleteCommentID)
