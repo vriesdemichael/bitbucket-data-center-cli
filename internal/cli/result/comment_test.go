@@ -109,3 +109,54 @@ func idsOf(comments []Comment) []int64 {
 
 	return ids
 }
+
+// TestFlattenCommentsPublishesAReplyOnce is the defect the activity timeline
+// would have caused.
+//
+// That endpoint emits an activity per comment action, commentAction REPLIED
+// among them, so a reply arrives twice: nested under its thread root, and as
+// the subject of its own activity. Publishing both would have listed the same
+// comment twice, and the second copy would have claimed to be a thread root
+// because nothing nested it -- so a caller counting open threads would count
+// one that does not exist.
+func TestFlattenCommentsPublishesAReplyOnce(t *testing.T) {
+	t.Parallel()
+
+	var feed []openapigenerated.RestComment
+	if err := json.Unmarshal([]byte(`[
+		{"id": 10, "text": "the root", "comments": [{"id": 11, "text": "the reply"}]},
+		{"id": 11, "text": "the reply"}
+	]`), &feed); err != nil {
+		t.Fatalf("decode fixture: %v", err)
+	}
+
+	flattened := FlattenComments(feed)
+	if len(flattened) != 2 {
+		t.Fatalf("expected the root and one reply, got %d: %v", len(flattened), idsOf(flattened))
+	}
+
+	// The nested copy wins, because it is the one that knows what it answers.
+	reply := flattened[1]
+	if reply.ID != 11 || !reply.Reply || reply.ParentID != 10 {
+		t.Fatalf("the surviving copy did not say what it answers: %+v", reply)
+	}
+}
+
+// TestFlattenCommentsSurvivesACycle keeps a malformed tree from hanging bb.
+//
+// Nothing should send one, but the flattening is recursive and reads ids off
+// the wire, so a self-referential tree would otherwise recurse until the stack
+// gave out -- against a caller's terminal rather than a test.
+func TestFlattenCommentsSurvivesACycle(t *testing.T) {
+	t.Parallel()
+
+	root := openapigenerated.RestComment{}
+	id := int64(1)
+	root.Id = &id
+	root.Comments = &[]openapigenerated.RestComment{root}
+
+	flattened := FlattenComments([]openapigenerated.RestComment{root})
+	if len(flattened) != 1 {
+		t.Fatalf("a self-referential tree produced %d comments: %v", len(flattened), idsOf(flattened))
+	}
+}
