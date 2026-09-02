@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
@@ -180,7 +181,10 @@ func New(deps Dependencies) *cobra.Command {
 	// A string rather than a bool because update has three states to express:
 	// activate, deactivate, and leave the current setting alone. `create` takes
 	// a bool for the same flag, where there is nothing to leave alone.
-	updateCmd.Flags().StringVar(&activeVal, "active", "", "Active status (true or false); unchanged when omitted")
+	// Strict, and for the same reason as its project-scoped twin: an empty
+	// --active used to be an error, and reading it as "leave it alone" would
+	// silently disable a webhook.
+	enumflag.RegisterStrict(updateCmd.Flags(), &activeVal, "active", "", []string{"true", "false"}, "Active status, unchanged when omitted")
 
 	var webhookTestURL string
 	testCmd := &cobra.Command{
