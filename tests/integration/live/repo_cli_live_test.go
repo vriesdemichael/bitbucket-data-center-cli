@@ -114,6 +114,18 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 		t.Fatalf("expected version in commit update output: %s", updateCommitOutput)
 	}
 
+	// The reply goes first. Bitbucket refuses to delete a comment that has
+	// replies -- "This comment has replies which must be deleted first" -- so a
+	// thread is torn down leaf upwards, and asserting it here keeps the order
+	// from being rediscovered by whoever adds the next reply to this fixture.
+	replyCommentID, ok := commentIDFromCreateOutput(replyOnCommitOutput)
+	if !ok {
+		t.Fatalf("expected comment id in reply create output: %s", replyOnCommitOutput)
+	}
+	if deleteReplyOutput, err := executeLiveCLI(t, "repo", "comment", "delete", "--commit", commitID, "--id", replyCommentID); err != nil {
+		t.Fatalf("repo comment delete (reply) failed: %v\noutput: %s", err, deleteReplyOutput)
+	}
+
 	deleteCommitArgs := []string{"repo", "comment", "delete", "--commit", commitID, "--id", commitCommentID}
 	if updatedCommitVersion != "" {
 		deleteCommitArgs = append(deleteCommitArgs, "--version", updatedCommitVersion)

@@ -184,14 +184,18 @@ func ExplainRejection(err error, options Options) error {
 }
 
 // NormalizeResponsePaths rewrites string anchor paths in a comment payload into
-// the object form the generated model expects.
+// the object form the generated model expects (ADR-077).
 //
-// Bitbucket serialises an inline comment's anchor path as a plain string
-// ("src/main.go") on both the activity timeline and the create-comment
-// response, while the published spec uses an object with
+// Bitbucket serialises an inline comment.s anchor path as a plain string
+// ("src/main.go") on the activity timeline, the create-comment response and
+// the path-scoped listings, while the published spec uses an object with
 // name/parent/extension/components. Without this a single inline comment makes
 // the whole response fail to decode — which is how a comment that was created
-// successfully gets reported as a failure.
+// successfully gets reported as a failure, and how a listing containing one
+// comment written in the web interface returns nothing at all.
+//
+// Takes either a single comment or a page of them, because both shapes carry
+// the same mismatch and the caller should not have to know which it holds.
 func NormalizeResponsePaths(raw json.RawMessage) (json.RawMessage, error) {
 	var decoded any
 	if err := json.Unmarshal(raw, &decoded); err != nil {
@@ -202,7 +206,16 @@ func NormalizeResponsePaths(raw json.RawMessage) (json.RawMessage, error) {
 	if !ok {
 		return raw, nil
 	}
-	if !normalizeCommentTree(comment) {
+
+	changed := normalizeCommentTree(comment)
+	if values, isPage := comment["values"].([]any); isPage {
+		for _, value := range values {
+			if entry, isMap := value.(map[string]any); isMap {
+				changed = normalizeCommentTree(entry) || changed
+			}
+		}
+	}
+	if !changed {
 		return raw, nil
 	}
 
