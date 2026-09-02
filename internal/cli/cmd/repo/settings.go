@@ -597,11 +597,26 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
+			// A POST replaces mergeConfig wholesale, so sending a default on
+			// its own reads as "enable nothing", and Bitbucket refuses with
+			// "The default strategy X has not been enabled. No strategies were
+			// enabled." -- for every value, which is why this command could not
+			// set a strategy at all. The enabled set has to travel with it.
+			currentSettings, err := service.GetRepositoryPullRequestSettings(cmd.Context(), repo)
+			if err != nil {
+				return err
+			}
+
 			settings := map[string]any{
 				"mergeConfig": map[string]any{
 					"defaultStrategy": map[string]any{
 						"id": mergeStrategyID,
 					},
+					// Whatever was enabled stays enabled: choosing a default is
+					// not a request to turn the other strategies off. The
+					// requested one is added when it was disabled, because a
+					// default that is not enabled is the error above.
+					"strategies": enabledStrategiesWith(currentSettings, mergeStrategyID),
 				},
 			}
 
@@ -899,4 +914,41 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 	autoDeclineCmd.AddCommand(setCmd)
 	autoDeclineCmd.AddCommand(deleteCmd)
 	return autoDeclineCmd
+}
+
+// enabledStrategiesWith returns the merge strategies to send as enabled: the
+// ones already enabled, plus the requested default.
+//
+// Order is preserved from the server's own list so a round trip does not
+// reshuffle it. A repository with nothing enabled yields just the requested
+// strategy, which is what makes the command work on a fresh repository.
+func enabledStrategiesWith(settings map[string]any, strategyID string) []map[string]any {
+	enabled := []map[string]any{}
+	seen := map[string]bool{}
+
+	if mergeConfig, ok := settings["mergeConfig"].(map[string]any); ok {
+		if strategies, ok := mergeConfig["strategies"].([]any); ok {
+			for _, entry := range strategies {
+				strategy, ok := entry.(map[string]any)
+				if !ok {
+					continue
+				}
+				if active, ok := strategy["enabled"].(bool); !ok || !active {
+					continue
+				}
+				id, ok := strategy["id"].(string)
+				if !ok || id == "" || seen[id] {
+					continue
+				}
+				seen[id] = true
+				enabled = append(enabled, map[string]any{"id": id})
+			}
+		}
+	}
+
+	if !seen[strategyID] {
+		enabled = append(enabled, map[string]any{"id": strategyID})
+	}
+
+	return enabled
 }

@@ -222,6 +222,10 @@ func TestRevokeAndStrategyCLI(t *testing.T) {
 			writer.WriteHeader(http.StatusNoContent)
 		case request.Method == http.MethodDelete && request.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/permissions/groups":
 			writer.WriteHeader(http.StatusNoContent)
+		// set-strategy reads the current settings first, because the
+		// enabled strategies have to travel with the new default.
+		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/settings/pull-requests":
+			_, _ = writer.Write([]byte(`{"mergeConfig":{"defaultStrategy":{"id":"no-ff"},"strategies":[{"id":"no-ff","enabled":true}]}}`))
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/settings/pull-requests":
 			_, _ = writer.Write([]byte(`{"mergeConfig":{"defaultStrategy":{"id":"squash"}}}`))
 		default:
