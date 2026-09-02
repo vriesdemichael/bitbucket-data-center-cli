@@ -9,10 +9,14 @@ import (
 // Bitbucket returns both through the same object, and a condition carries them
 // in two separate lists, so the shape is shared rather than split.
 type Participant struct {
-	ID          int64  `json:"id,omitempty" jsonschema:"Identifier, unique among users or among groups."`
-	Name        string `json:"name,omitempty" jsonschema:"Username for a user, group name for a group."`
-	DisplayName string `json:"displayName,omitempty" jsonschema:"Human-readable name, when the instance has one."`
+	ID   int64  `json:"id,omitempty" jsonschema:"Identifier, unique among users or among groups."`
+	Name string `json:"name,omitempty" jsonschema:"Username for a user, group name for a group."`
 }
+
+// There is no display name here on purpose. The endpoint types both lists as
+// reviewer groups, which carry a name and no display name, so bb has nothing to
+// put in the field -- and a schema that advertises one a caller will never
+// receive is worse than not offering it.
 
 // Condition is one default-reviewer condition.
 //

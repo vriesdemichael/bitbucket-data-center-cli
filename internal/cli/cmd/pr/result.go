@@ -53,7 +53,7 @@ type Thread struct {
 	State         string        `json:"state,omitempty" jsonschema:"OPEN, RESOLVED or PENDING."`
 	Resolved      bool          `json:"resolved" jsonschema:"Whether the thread has been resolved."`
 	Author        string        `json:"author,omitempty" jsonschema:"Who opened the thread."`
-	Version       int           `json:"version,omitempty" jsonschema:"Optimistic-locking version of the root comment."`
+	Version       int           `json:"version" jsonschema:"Optimistic-locking version of the root comment. Always present: a never-edited comment is at version 0."`
 	CreatedDate   int64         `json:"createdDate,omitempty" jsonschema:"When the thread was opened, in milliseconds since the epoch."`
 	UpdatedDate   int64         `json:"updatedDate,omitempty" jsonschema:"When it last changed, in milliseconds since the epoch."`
 	Anchor        *ThreadAnchor `json:"anchor,omitempty" jsonschema:"Where in the diff it is anchored. Absent for a pull-request-level comment."`
@@ -103,13 +103,15 @@ type CommentAnchor struct {
 // Comment is one pull request comment.
 type Comment struct {
 	ID           int64          `json:"id,omitempty" jsonschema:"Comment identifier."`
-	Version      int32          `json:"version,omitempty" jsonschema:"Optimistic-locking version. Pass it back when updating, or the update is refused."`
+	Version      int32          `json:"version" jsonschema:"Optimistic-locking version. Pass it back when updating, or the update is refused. Always present: a never-edited comment is at version 0."`
 	Text         string         `json:"text,omitempty" jsonschema:"The comment text."`
 	State        string         `json:"state,omitempty" jsonschema:"OPEN, RESOLVED or PENDING."`
 	Severity     string         `json:"severity,omitempty" jsonschema:"NORMAL for an ordinary comment, BLOCKER for a task."`
 	Pending      bool           `json:"pending" jsonschema:"Whether this is an unpublished draft comment."`
 	Resolved     bool           `json:"resolved" jsonschema:"Whether the thread this comment belongs to is resolved."`
 	Anchored     bool           `json:"anchored" jsonschema:"Whether the comment is attached to a line rather than to the pull request."`
+	Reply        bool           `json:"reply" jsonschema:"Whether this comment is a reply to another rather than the root of a thread."`
+	ParentID     int64          `json:"parentId,omitempty" jsonschema:"Comment this one replies to. Absent on a thread root, which is what resolve, reopen and react address -- so a caller holding a reply id follows this to reach the comment those commands take."`
 	Anchor       *CommentAnchor `json:"anchor,omitempty" jsonschema:"Where in the diff it sits. Absent for a pull-request-level comment."`
 	Author       result.User    `json:"author,omitzero" jsonschema:"Who wrote it."`
 	ReplyCount   int            `json:"replyCount" jsonschema:"Direct replies to this comment."`

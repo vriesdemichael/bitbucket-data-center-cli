@@ -164,7 +164,7 @@ Each domain is analyzed using the **Threat (STRIDE) ↔ Architectural Mitigation
 ```bash
 bb auth status --json
 ```
-*Audit Assertion*: Verify that `.data.credential_storage` equals `keyring` (on workstations) or `environment` (in CI runners), and never `config-file-plaintext`.
+*Audit Assertion*: Verify that `.data.credentialStorage` equals `keyring` (on workstations) or `environment` (in CI runners), and never `config-file-plaintext`.
 
 #### 4. Residual Gap & Tracking
 - **Resolution**: Fully resolved via system-wide configuration (`/etc/bb/config.yaml`, `%ProgramData%\bb\config.yaml`) and Windows Registry policy (`HKLM\Software\Policies\bb`) with `require_keyring: true` ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md), [Issue #420](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420)). Plaintext fallback cannot occur when mandated by machine policy.

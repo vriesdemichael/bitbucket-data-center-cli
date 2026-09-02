@@ -4996,7 +4996,8 @@ type RestInsightAnnotationsResponse struct {
 
 // RestInsightReport defines model for RestInsightReport.
 type RestInsightReport struct {
-	CreatedDate *float32                 `json:"createdDate,omitempty"`
+	// CreatedDate Epoch milliseconds. Upstream spec declares a bare number, which does not survive a float32 round trip.
+	CreatedDate *int64                   `json:"createdDate,omitempty"`
 	Data        *[]RestInsightReportData `json:"data,omitempty"`
 	Details     *string                  `json:"details,omitempty"`
 	Key         *string                  `json:"key,omitempty"`

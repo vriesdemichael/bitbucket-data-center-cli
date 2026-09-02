@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -110,5 +112,136 @@ func TestUnmodelledCommandsSaySoRatherThanGuessing(t *testing.T) {
 	}
 	if !strings.Contains(described.Reason, "no shape bb can promise") {
 		t.Errorf("reason = %q, want it to say the payload has no shape bb can promise", described.Reason)
+	}
+}
+
+// TestDescribeAnswersForGroupsRatherThanPrintingHelp covers the answer a
+// non-runnable command gives.
+//
+// `bb pr --describe` used to print pr's help page on stdout and exit 0, which a
+// caller parsing the answer reads as a success it cannot decode. A group has no
+// output to describe, and saying so is the answer.
+func TestDescribeAnswersForGroupsRatherThanPrintingHelp(t *testing.T) {
+	t.Parallel()
+
+	output := &bytes.Buffer{}
+	root := NewRootCommand()
+	root.SetOut(output)
+	root.SetErr(output)
+	root.SetArgs([]string{"pr", "--describe"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("bb pr --describe: %v", err)
+	}
+
+	var described DescribeResult
+	if err := json.Unmarshal(output.Bytes(), &described); err != nil {
+		t.Fatalf("bb pr --describe did not emit a JSON document: %v\n%s", err, output)
+	}
+	if described.Command != "pr" || described.Described {
+		t.Fatalf("described = %+v", described)
+	}
+	if !strings.Contains(described.Reason, "command group") {
+		t.Errorf("reason = %q, want it to say pr is a group", described.Reason)
+	}
+}
+
+// TestDescribeAnswersForHelpAndCompletion covers Cobra's own commands.
+//
+// They are added at execute time, so they used to slip past the --describe
+// wrapper entirely and answer with the very text a caller was trying to avoid.
+func TestDescribeAnswersForHelpAndCompletion(t *testing.T) {
+	t.Parallel()
+
+	for _, path := range []string{"help", "completion bash"} {
+		described := describeCommand(path)
+		if described.Described {
+			t.Errorf("%q reported a schema for a document: %+v", path, described)
+		}
+		if !strings.Contains(described.Reason, "does not return a data payload") {
+			t.Errorf("%q reason = %q", path, described.Reason)
+		}
+	}
+}
+
+// TestDescribeAnswersAtTheDataLevel keeps the two sources of schema comparable.
+//
+// A derived schema describes the data payload; the hand-written bulk schemas
+// describe the whole envelope. Serving both under one field meant a consumer
+// validating envelope.data passed for a declared command and rejected every
+// document from a bulk one.
+func TestDescribeAnswersAtTheDataLevel(t *testing.T) {
+	t.Parallel()
+
+	described := describeCommand("bulk plan")
+	if !described.Described {
+		t.Fatalf("bulk plan is published but not described: %+v", described)
+	}
+	properties, ok := described.Schema["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("schema has no properties: %+v", described.Schema)
+	}
+	if _, envelope := properties["meta"]; envelope {
+		t.Error("--describe answered with the envelope rather than the payload")
+	}
+	if _, ok := properties["planHash"]; !ok {
+		t.Errorf("the payload's own fields are missing: %+v", properties)
+	}
+	if _, stale := described.Schema["$id"]; stale {
+		t.Error("the payload schema kept the envelope's $id, which points at a directory bb no longer publishes")
+	}
+}
+
+// TestExemptionsNameRealCommandsAndDoNotOverlapDeclarations keeps the two
+// exemption maps from going stale.
+//
+// Nothing checked either one. An entry naming a command that was since renamed
+// sat there exempting nothing, and an entry for a command that later grew a
+// declared result type silently won over it -- describeCommand consults the maps
+// first, so the command would have gone on reporting that it has no contract
+// while holding one.
+func TestExemptionsNameRealCommandsAndDoNotOverlapDeclarations(t *testing.T) {
+	t.Parallel()
+
+	runnable := map[string]bool{}
+	root := NewRootCommand()
+	var walk func(command *cobra.Command)
+	walk = func(command *cobra.Command) {
+		if command.Runnable() && command != root {
+			runnable[commandPathWithoutRoot(command)] = true
+		}
+		for _, child := range command.Commands() {
+			walk(child)
+		}
+	}
+	walk(root)
+
+	declared := map[string]bool{}
+	for _, path := range result.DeclaredPaths() {
+		declared[path] = true
+	}
+
+	exemptions := map[string]map[string]string{
+		"CommandsWithoutDataContract":    outputschemas.CommandsWithoutDataContract,
+		"CommandsWithoutDeclarableShape": outputschemas.CommandsWithoutDeclarableShape,
+	}
+	for name, exempt := range exemptions {
+		for path, reason := range exempt {
+			if !runnable[path] {
+				t.Errorf("%s exempts %q, which is not a runnable command", name, path)
+			}
+			if strings.TrimSpace(reason) == "" {
+				t.Errorf("%s exempts %q with no reason", name, path)
+			}
+			if declared[path] {
+				t.Errorf("%s exempts %q, but it declares a result type; the exemption would win and hide the contract", name, path)
+			}
+		}
+	}
+
+	for path := range outputschemas.CommandsWithoutDataContract {
+		if outputschemas.CommandsWithoutDeclarableShape[path] != "" {
+			t.Errorf("%q is in both exemption maps, which answer different questions", path)
+		}
 	}
 }

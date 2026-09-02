@@ -14,14 +14,40 @@ package outputschemas
 // owes the caller an envelope (ADR-014) and a published schema. A document does
 // not, because wrapping markdown or a diff in a JSON string helps nobody.
 //
-// help and completion are not listed: Cobra injects them at execute time, so
-// they are not in the command tree and are not part of the surface this project
-// documents or ships schemas for.
+// help and completion are listed. Cobra injects them at execute time, and bb
+// installs them before the --describe walk so they answer it like every other
+// command: a caller asking one of them for a schema used to get a page of help
+// text on stdout and exit 0, which is a success it cannot parse.
 var CommandsWithoutDataContract = map[string]string{
 	"ai skill show":       "prints a SKILL.md document; wrapping markdown in a data string helps nobody",
 	"api":                 "streams the upstream response body verbatim, which is the point of the escape hatch",
 	"ai mcp serve":        "runs an MCP server on stdio until it is stopped; the protocol is the output",
 	"auth git-credential": "speaks git's credential helper protocol on stdout, which git parses and nothing else reads",
+
+	// Cobra's own commands. They render text for a person or for a shell, and
+	// there is no --json that would make either return data.
+	"help":                  "prints a command's help text for a person to read",
+	"completion bash":       "prints a bash completion script for the shell to source",
+	"completion zsh":        "prints a zsh completion script for the shell to source",
+	"completion fish":       "prints a fish completion script for the shell to source",
+	"completion powershell": "prints a PowerShell completion script for the shell to source",
+}
+
+// CommandsCobraSupplies names which of those entries are Cobra's commands
+// rather than bb's.
+//
+// The exemption list has a ceiling, because every entry is a command bb has
+// excused from the envelope contract and a list that grew would quietly shrink
+// what the contract covers. That budget is about bb's own surface. Cobra's help
+// and completion are not commands this project wrote, designed or can change
+// the output of, so counting them against the budget would spend it on
+// something no review would ever act on.
+var CommandsCobraSupplies = map[string]bool{
+	"help":                  true,
+	"completion bash":       true,
+	"completion zsh":        true,
+	"completion fish":       true,
+	"completion powershell": true,
 }
 
 // CommandsWithoutDeclarableShape names the commands that do return a payload but

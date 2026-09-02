@@ -175,8 +175,23 @@ func TestTheExemptionListStaysSmallEnoughToReview(t *testing.T) {
 			t.Errorf("the exemption for %q is gone; the walk now holds it to a contract it does not keep", path)
 		}
 	}
-	if len(exempt) > 5 {
-		t.Errorf("%d commands are exempt; the list is meant to stay small enough to review", len(exempt))
+	// Cobra's help and completion are exempt too, and are not counted here:
+	// the budget is on commands bb wrote and could have given a contract to.
+	own := 0
+	for path := range exempt {
+		if outputschemas.CommandsCobraSupplies[path] {
+			continue
+		}
+		own++
+	}
+	if own > 5 {
+		t.Errorf("%d of bb's own commands are exempt; the list is meant to stay small enough to review", own)
+	}
+
+	for path := range outputschemas.CommandsCobraSupplies {
+		if !exempt[path] {
+			t.Errorf("%q is named as Cobra's but is not on the exemption list, so it excuses nothing", path)
+		}
 	}
 }
 

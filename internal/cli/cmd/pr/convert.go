@@ -345,6 +345,15 @@ func commentFrom(upstream openapigenerated.RestComment) Comment {
 	if upstream.Properties != nil {
 		converted.Properties = *upstream.Properties
 	}
+	if upstream.Reply != nil {
+		converted.Reply = *upstream.Reply
+	}
+	// Only the id. The upstream parent is a whole comment, and its anchor nests
+	// the pull request again -- the id is what a caller follows to reach the
+	// thread root that resolve, reopen and react take.
+	if upstream.Parent != nil && upstream.Parent.Id != nil {
+		converted.ParentID = *upstream.Parent.Id
+	}
 	if upstream.Author != nil {
 		converted.Author = result.User{
 			Name:         upstream.Author.Name,
@@ -457,4 +466,25 @@ func activitiesFrom(upstream []pullrequestactivityservice.Activity) []Activity {
 // checkoutFrom converts the internal checkout outcome.
 func checkoutFrom(outcome checkoutResult) Checkout {
 	return Checkout(outcome)
+}
+
+// commentsInThreads keeps the comments that survived the thread filters.
+//
+// Each comment in the flat list is the root of one thread -- buildThreads maps
+// them one for one -- so membership is decided by id. Replies are nested inside
+// their root rather than listed separately, so keeping the root keeps them.
+func commentsInThreads(comments []openapigenerated.RestComment, threads []pullrequestactivityservice.Thread) []openapigenerated.RestComment {
+	surviving := make(map[int64]bool, len(threads))
+	for _, thread := range threads {
+		surviving[thread.ID] = true
+	}
+
+	kept := make([]openapigenerated.RestComment, 0, len(threads))
+	for _, comment := range comments {
+		if comment.Id != nil && surviving[*comment.Id] {
+			kept = append(kept, comment)
+		}
+	}
+
+	return kept
 }

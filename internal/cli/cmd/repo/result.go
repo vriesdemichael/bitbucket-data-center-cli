@@ -37,11 +37,20 @@ type FileLine struct {
 // answer with lines. Before this the JSON path published whatever Bitbucket
 // sent and the human path decoded one particular shape out of it, so the two
 // renderings of the same response did not agree and neither had a contract.
+//
+// binary and complete are published because without them an empty lines array
+// is three different answers wearing one face: an empty file, a binary file
+// Bitbucket declined to render, and the first page of a file longer than the
+// endpoint returns at once. The raw passthrough this replaced carried the
+// upstream's binary and isLastPage markers, so dropping them lost information a
+// caller had.
 type FileContent struct {
 	Repository result.Repository `json:"repository"`
 	Path       string            `json:"path" jsonschema:"File that was read."`
 	At         string            `json:"at,omitempty" jsonschema:"Commit or ref it was read at, when --at was given."`
-	Lines      []FileLine        `json:"lines" jsonschema:"The file's lines, in order. Empty rather than absent for an empty file."`
+	Binary     bool              `json:"binary" jsonschema:"Whether Bitbucket refused to render the file as text. True means lines is empty because the file is binary, not because it is empty."`
+	Complete   bool              `json:"complete" jsonschema:"Whether lines is the whole file. False means Bitbucket returned one page of a longer file and the rest was not fetched."`
+	Lines      []FileLine        `json:"lines" jsonschema:"The file's lines, in order. Empty rather than absent for an empty file -- and also empty when binary is true, which is why that field exists."`
 }
 
 // RawFile is what `bb repo cat` and `bb repo browse raw` return under --json.
@@ -137,13 +146,15 @@ type CommentAnchor struct {
 // published.
 type Comment struct {
 	ID           int64          `json:"id,omitempty" jsonschema:"Comment identifier."`
-	Version      int32          `json:"version,omitempty" jsonschema:"Optimistic-locking version. Pass it back when updating or deleting, or the call is refused."`
+	Version      int32          `json:"version" jsonschema:"Optimistic-locking version. Pass it back when updating or deleting, or the call is refused. Always present: a never-edited comment is at version 0."`
 	Text         string         `json:"text,omitempty" jsonschema:"The comment text."`
 	State        string         `json:"state,omitempty" jsonschema:"OPEN, RESOLVED or PENDING."`
 	Severity     string         `json:"severity,omitempty" jsonschema:"NORMAL for an ordinary comment, BLOCKER for a task."`
 	Pending      bool           `json:"pending" jsonschema:"Whether this is an unpublished draft comment."`
 	Resolved     bool           `json:"resolved" jsonschema:"Whether the thread this comment belongs to is resolved."`
 	Anchored     bool           `json:"anchored" jsonschema:"Whether the comment is attached to a line rather than to the commit or pull request."`
+	Reply        bool           `json:"reply" jsonschema:"Whether this comment is a reply to another rather than the root of a thread."`
+	ParentID     int64          `json:"parentId,omitempty" jsonschema:"Comment this one replies to. Absent on a thread root, which is what resolve, reopen and react address -- so a caller holding a reply id follows this to reach the comment those commands take."`
 	Anchor       *CommentAnchor `json:"anchor,omitempty" jsonschema:"Where in the diff it sits. Absent for a top-level comment."`
 	Author       result.User    `json:"author,omitzero" jsonschema:"Who wrote it."`
 	ReplyCount   int            `json:"replyCount" jsonschema:"Direct replies to this comment."`

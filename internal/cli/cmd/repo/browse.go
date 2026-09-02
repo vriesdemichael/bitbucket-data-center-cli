@@ -142,18 +142,28 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			lines := fileLinesFrom(content)
+			lines, binary, complete := fileLinesFrom(content)
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), FileContent{
 					Repository: browseRepositoryOf(repo),
 					Path:       args[0],
 					At:         fileAt,
+					Binary:     binary,
+					Complete:   complete,
 					Lines:      lines,
 				})
 			}
 
+			if binary {
+				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("Binary file; use bb repo cat to read the bytes"))
+				return nil
+			}
+
 			for _, line := range lines {
 				fmt.Fprintln(cmd.OutOrStdout(), line.Text)
+			}
+			if !complete {
+				fmt.Fprintln(cmd.ErrOrStderr(), style.Empty.Render("Truncated: Bitbucket returned one page of a longer file"))
 			}
 
 			return nil
@@ -189,14 +199,21 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			lines := fileLinesFrom(content)
+			lines, binary, complete := fileLinesFrom(content)
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), FileContent{
 					Repository: browseRepositoryOf(repo),
 					Path:       args[0],
 					At:         blameAt,
+					Binary:     binary,
+					Complete:   complete,
 					Lines:      lines,
 				})
+			}
+
+			if binary {
+				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("Binary file; there is nothing to attribute"))
+				return nil
 			}
 
 			for _, line := range lines {
@@ -205,6 +222,9 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 					author = "unknown"
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", author, line.Text)
+			}
+			if !complete {
+				fmt.Fprintln(cmd.ErrOrStderr(), style.Empty.Render("Truncated: Bitbucket returned one page of a longer file"))
 			}
 
 			return nil

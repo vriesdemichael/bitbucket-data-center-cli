@@ -26,7 +26,7 @@ type Report struct {
 	Reporter    string        `json:"reporter,omitempty" jsonschema:"Which system produced the report."`
 	Link        string        `json:"link,omitempty" jsonschema:"Link back to the reporting system."`
 	LogoURL     string        `json:"logoUrl,omitempty" jsonschema:"Logo shown beside the report in the Bitbucket UI."`
-	CreatedDate float64       `json:"createdDate,omitempty" jsonschema:"When the report was created, in milliseconds since the epoch."`
+	CreatedDate int64         `json:"createdDate,omitempty" jsonschema:"When the report was created, in milliseconds since the epoch."`
 	Data        []ReportDatum `json:"data,omitempty" jsonschema:"Labelled figures attached to the report."`
 }
 
@@ -99,7 +99,7 @@ func reportFrom(upstream openapigenerated.RestInsightReport) Report {
 		converted.Result = string(*upstream.Result)
 	}
 	if upstream.CreatedDate != nil {
-		converted.CreatedDate = float64(*upstream.CreatedDate)
+		converted.CreatedDate = *upstream.CreatedDate
 	}
 	if upstream.Data != nil {
 		converted.Data = make([]ReportDatum, 0, len(*upstream.Data))

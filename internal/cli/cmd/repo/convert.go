@@ -199,6 +199,15 @@ func commentFrom(upstream openapigenerated.RestComment) Comment {
 	if upstream.Properties != nil {
 		converted.Properties = *upstream.Properties
 	}
+	if upstream.Reply != nil {
+		converted.Reply = *upstream.Reply
+	}
+	// Only the id. The upstream parent is a whole comment, and its anchor nests
+	// the pull request again -- the id is what a caller follows to reach the
+	// thread root that resolve, reopen and react take.
+	if upstream.Parent != nil && upstream.Parent.Id != nil {
+		converted.ParentID = *upstream.Parent.Id
+	}
 	if upstream.Author != nil {
 		converted.Author = result.User{
 			Name:         upstream.Author.Name,
@@ -440,16 +449,23 @@ func pullRequestSettingsFrom(repo result.Repository, settings map[string]any) Pu
 	if value, ok := settings["requiredAllTasksComplete"].(bool); ok {
 		converted.RequiredAllTasksComplete = value
 	}
-	if section, ok := settings["requiredApprovers"].(map[string]any); ok {
+
+	// Three shapes reach this, and only one of them comes from a JSON decode.
+	// The modern object is {enabled, count}; the legacy fallback sends a bare
+	// number; and when the PUT answers with an empty or non-JSON body the
+	// service hands back the request map it sent, where the count is a Go int
+	// rather than the float64 a decode produces. Reading only float64 and string
+	// reported zero approvers immediately after setting two.
+	switch section := settings["requiredApprovers"].(type) {
+	case map[string]any:
 		if enabled, ok := section["enabled"].(bool); ok {
 			converted.RequiredApproversEnabled = enabled
 		}
-		switch count := section["count"].(type) {
-		case float64:
-			converted.RequiredApprovers = int(count)
-		case string:
-			converted.RequiredApprovers = parseCount(count)
-		}
+		converted.RequiredApprovers = countOf(section["count"])
+	case nil:
+	default:
+		converted.RequiredApprovers = countOf(section)
+		converted.RequiredApproversEnabled = converted.RequiredApprovers > 0
 	}
 	if mergeConfig, ok := settings["mergeConfig"].(map[string]any); ok {
 		if defaultStrategy, ok := mergeConfig["defaultStrategy"].(map[string]any); ok {
@@ -472,10 +488,46 @@ func pullRequestSettingsFrom(repo result.Repository, settings map[string]any) Pu
 	return converted
 }
 
+// countOf reads an approver count however it arrived.
+//
+// float64 is what a JSON decode gives, int is what the request map the service
+// echoes back on an empty response body carries, and some instances send the
+// number as a string.
+func countOf(value any) int {
+	switch count := value.(type) {
+	case float64:
+		return int(count)
+	case float32:
+		return int(count)
+	case int:
+		return count
+	case int32:
+		return int(count)
+	case int64:
+		return int(count)
+	case json.Number:
+		parsed, err := count.Int64()
+		if err != nil {
+			return 0
+		}
+
+		return int(parsed)
+	case string:
+		return parseCount(count)
+	default:
+		return 0
+	}
+}
+
 // parseCount reads the approver count when the instance sends it as a string.
 func parseCount(value string) int {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return 0
+	}
+
 	count := 0
-	for _, digit := range strings.TrimSpace(value) {
+	for _, digit := range trimmed {
 		if digit < '0' || digit > '9' {
 			return 0
 		}
@@ -498,10 +550,10 @@ func parseCount(value string) int {
 // because blame is a list, so the human path fell through to printing the raw
 // JSON and the machine path published it. That is what made bb repo browse
 // blame return nothing once both paths were made to read one value.
-func fileLinesFrom(content []byte) []FileLine {
-	lines := []FileLine{}
+func fileLinesFrom(content []byte) (lines []FileLine, binary bool, complete bool) {
+	lines = []FileLine{}
 	if len(content) == 0 {
-		return lines
+		return lines, false, true
 	}
 
 	var structured struct {
@@ -515,10 +567,20 @@ func fileLinesFrom(content []byte) []FileLine {
 			LineNumber   int `json:"lineNumber"`
 			SpannedLines int `json:"spannedLines"`
 		} `json:"blame"`
+		// Bitbucket answers a binary file with {"binary": true} and no lines,
+		// and pages a long one with isLastPage. Both were visible while the
+		// response was passed through raw.
+		Binary     *bool `json:"binary"`
+		IsLastPage *bool `json:"isLastPage"`
 	}
 	if err := json.Unmarshal(content, &structured); err != nil {
-		return lines
+		return lines, false, true
 	}
+
+	binary = structured.Binary != nil && *structured.Binary
+	// Absent means the endpoint did not page this response, which is the usual
+	// case and means what was returned is the file.
+	complete = structured.IsLastPage == nil || *structured.IsLastPage
 
 	for _, line := range structured.Lines {
 		lines = append(lines, FileLine{Text: line.Text})
@@ -537,7 +599,7 @@ func fileLinesFrom(content []byte) []FileLine {
 		}
 	}
 
-	return lines
+	return lines, binary, complete
 }
 
 // changesFrom converts the compare result, never returning nil.

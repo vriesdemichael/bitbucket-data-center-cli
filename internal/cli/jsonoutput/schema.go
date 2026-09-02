@@ -68,7 +68,7 @@ func ErrorEnvelopeSchema(schemaFileName string) map[string]any {
 		"$schema":              jsonSchemaVersion,
 		"$id":                  SchemaID(docsite.LatestVersion, schemaFileName),
 		"title":                "bb command failure",
-		"description":          "Emitted on stdout by any bb command that fails while --json is set. The presence of error rather than data marks the run as failed; exit_code matches the process exit status.",
+		"description":          "Emitted on stdout by any bb command that fails while --json is set. The presence of error rather than data marks the run as failed; exitCode matches the process exit status.",
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{

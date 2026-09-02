@@ -34,7 +34,7 @@ func upstreamFromJSON[T any](t *testing.T, body string) T {
 func TestFileLinesFromReadsBlameAsAList(t *testing.T) {
 	t.Parallel()
 
-	lines := fileLinesFrom([]byte(`{
+	lines, _, _ := fileLinesFrom([]byte(`{
 		"lines": [{"text": "package main"}, {"text": ""}, {"text": "func main() {}"}],
 		"blame": [
 			{"author": {"name": "alice"}, "lineNumber": 1, "spannedLines": 2},
@@ -59,7 +59,7 @@ func TestFileLinesFromReadsBlameAsAList(t *testing.T) {
 func TestFileLinesFromWithoutBlameLeavesTheAuthorEmpty(t *testing.T) {
 	t.Parallel()
 
-	lines := fileLinesFrom([]byte(`{"lines": [{"text": "package main"}]}`))
+	lines, _, _ := fileLinesFrom([]byte(`{"lines": [{"text": "package main"}]}`))
 	if len(lines) != 1 || lines[0].Text != "package main" {
 		t.Fatalf("lines = %+v", lines)
 	}
@@ -69,7 +69,7 @@ func TestFileLinesFromWithoutBlameLeavesTheAuthorEmpty(t *testing.T) {
 
 	// A span reaching past the end is clamped rather than panicking: the file
 	// and its blame are two reads of the same commit, not the same request.
-	clamped := fileLinesFrom([]byte(`{
+	clamped, _, _ := fileLinesFrom([]byte(`{
 		"lines": [{"text": "only line"}],
 		"blame": [{"author": {"name": "alice"}, "lineNumber": 1, "spannedLines": 50}]
 	}`))
@@ -77,10 +77,10 @@ func TestFileLinesFromWithoutBlameLeavesTheAuthorEmpty(t *testing.T) {
 		t.Fatalf("clamped = %+v", clamped)
 	}
 
-	if empty := fileLinesFrom(nil); empty == nil || len(empty) != 0 {
+	if empty, _, _ := fileLinesFrom(nil); empty == nil || len(empty) != 0 {
 		t.Fatalf("fileLinesFrom(nil) = %v, want an empty slice rather than nil", empty)
 	}
-	if garbage := fileLinesFrom([]byte("not json")); len(garbage) != 0 {
+	if garbage, _, _ := fileLinesFrom([]byte("not json")); len(garbage) != 0 {
 		t.Fatalf("fileLinesFrom(garbage) = %v, want an empty slice", garbage)
 	}
 }
@@ -423,3 +423,76 @@ func TestFileEditFromCarriesTheCommitItProduced(t *testing.T) {
 }
 
 func ptr[T any](value T) *T { return &value }
+
+// TestFileLinesFromSaysWhenTheFileIsBinaryOrTruncated covers the two facts a
+// caller cannot recover from the lines themselves.
+//
+// A binary file comes back with no lines and a caller reading only lines sees
+// an empty file; a file longer than one page comes back with a prefix and looks
+// like the whole thing. Both used to be dropped, so the payload was wrong in a
+// way nothing in it admitted.
+func TestFileLinesFromSaysWhenTheFileIsBinaryOrTruncated(t *testing.T) {
+	t.Parallel()
+
+	_, binary, complete := fileLinesFrom([]byte(`{"binary": true, "isLastPage": true}`))
+	if !binary {
+		t.Error("a binary response did not report itself as binary")
+	}
+	if !complete {
+		t.Error("a binary response is the whole answer Bitbucket has; it is complete")
+	}
+
+	lines, binary, complete := fileLinesFrom([]byte(`{
+		"lines": [{"text": "one"}, {"text": "two"}],
+		"isLastPage": false
+	}`))
+	if binary {
+		t.Error("a text response reported itself as binary")
+	}
+	if complete {
+		t.Error("isLastPage false means more lines follow, so this is not the whole file")
+	}
+	if len(lines) != 2 {
+		t.Fatalf("lines = %+v", lines)
+	}
+}
+
+// TestPullRequestSettingsFromReadsRequiredApproversEitherWay is the second
+// shape Bitbucket answers with.
+//
+// Older instances return requiredApprovers as a bare count; newer ones return
+// an object with enabled and count. bb read only the object, so on an older
+// instance the count came back zero and enabled came back false -- a repository
+// that requires two approvers reported that it requires none.
+func TestPullRequestSettingsFromReadsRequiredApproversEitherWay(t *testing.T) {
+	t.Parallel()
+
+	object := pullRequestSettingsFrom(result.Repository{ProjectKey: "PRJ", Slug: "payments"}, map[string]any{
+		"requiredApprovers": map[string]any{"enabled": true, "count": float64(2)},
+	})
+	if object.RequiredApprovers != 2 || !object.RequiredApproversEnabled {
+		t.Fatalf("object form = %+v", object)
+	}
+
+	// The bare count carries no enabled flag, so a non-zero count is what says
+	// the rule is on.
+	bare := pullRequestSettingsFrom(result.Repository{ProjectKey: "PRJ", Slug: "payments"}, map[string]any{"requiredApprovers": float64(3)})
+	if bare.RequiredApprovers != 3 || !bare.RequiredApproversEnabled {
+		t.Fatalf("bare form = %+v", bare)
+	}
+
+	off := pullRequestSettingsFrom(result.Repository{ProjectKey: "PRJ", Slug: "payments"}, map[string]any{"requiredApprovers": float64(0)})
+	if off.RequiredApprovers != 0 || off.RequiredApproversEnabled {
+		t.Fatalf("a count of zero is the rule being off: %+v", off)
+	}
+
+	// An instance that quotes its numbers is still answering the question.
+	quoted := pullRequestSettingsFrom(result.Repository{ProjectKey: "PRJ", Slug: "payments"}, map[string]any{"requiredApprovers": "4"})
+	if quoted.RequiredApprovers != 4 {
+		t.Fatalf("quoted form = %+v", quoted)
+	}
+
+	if absent := pullRequestSettingsFrom(result.Repository{ProjectKey: "PRJ", Slug: "payments"}, map[string]any{}); absent.RequiredApprovers != 0 || absent.RequiredApproversEnabled {
+		t.Fatalf("absent = %+v", absent)
+	}
+}

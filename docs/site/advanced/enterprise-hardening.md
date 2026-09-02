@@ -484,7 +484,7 @@ bb auth status --json
 ```
 
 Confirm:
-- `.data.credential_storage`: Must report `keyring` (on workstations) or `environment` (in CI). If it reports `config-file-plaintext`, `BB_REQUIRE_KEYRING=1` is missing.
+- `.data.credentialStorage`: Must report `keyring` (on workstations) or `environment` (in CI). If it reports `config-file-plaintext`, `BB_REQUIRE_KEYRING=1` is missing.
 - Check active git helper for your Bitbucket host:
   ```bash
   git config --global --get "credential.https://bitbucket.example.com.helper"
