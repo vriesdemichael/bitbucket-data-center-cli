@@ -116,16 +116,17 @@ func installDescribe(root *cobra.Command, describe *bool) {
 func writeDescription(cmd *cobra.Command) error {
 	path := commandPathWithoutRoot(cmd)
 
-	described := describeCommand(path)
-	if !cmd.Runnable() {
-		// A group holds commands rather than returning anything, so it has no
-		// output to describe. Saying that is the answer; falling through to the
-		// lookup would report "no schema published yet", which reads as an
-		// omission rather than a category.
-		described = DescribeResult{
-			Command: path,
-			Reason:  "this is a command group, not a command; describe one of its subcommands",
-		}
+	// A group holds commands rather than returning anything, so it has no output
+	// to describe -- and neither does bb itself, which reaches here with an
+	// empty path. Saying that is the answer; falling through to the lookup would
+	// report "no schema published yet", which reads as an omission rather than a
+	// category.
+	described := DescribeResult{
+		Command: path,
+		Reason:  "this is a command group, not a command; describe one of its subcommands",
+	}
+	if cmd.Runnable() {
+		described = describeCommand(path)
 	}
 
 	jsonRequested, _ := cmd.Root().PersistentFlags().GetBool("json")
@@ -146,18 +147,16 @@ func writeDescription(cmd *cobra.Command) error {
 
 // describeCommand looks up the schema a command declares.
 //
-// Four answers, and which one a caller gets is itself information: a schema
+// Three answers, and which one a caller gets is itself information: a schema
 // derived from the result type the command fills in, a statement that the
 // command returns no data payload at all, or a statement that it returns one
 // whose shape bb cannot promise. An empty schema is not among them -- it would
 // look like a guarantee of nothing rather than an absence of one.
+//
+// A fourth answer, for a command group, is decided by writeDescription: a group
+// never reaches here, because it has no output to look up.
 func describeCommand(path string) DescribeResult {
 	described := DescribeResult{Command: path}
-
-	if path == "" {
-		described.Reason = "bb itself is not a command; describe one of its subcommands"
-		return described
-	}
 
 	if reason := outputschemas.CommandsWithoutDataContract[path]; reason != "" {
 		described.Reason = "this command does not return a data payload: " + reason

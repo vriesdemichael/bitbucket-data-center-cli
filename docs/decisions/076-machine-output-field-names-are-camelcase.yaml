@@ -16,6 +16,10 @@ decision: >
   It covers every document bb writes to stdout under --json, not only command payloads: the
   dry-run preview and the keys inside error.details are output too, and both were missed on the
   first pass because they are not what anyone pictures when they say "the output".
+  Where a human rendering prints key=value pairs, the key is the field name, so it changes with
+  the field. The dry-run preview printed predicted_action= beside a payload carrying
+  predictedAction, which leaves a reader comparing the two renderings unsure they are the same
+  thing.
   This is a naming rule for output. Input flags stay kebab-case, which is what a CLI reader
   expects and what every flag already uses. Structured log lines on stderr are a separate
   surface and are left alone.
