@@ -150,6 +150,12 @@ func TestLiveRepositoryAccessKeyLifecycle(t *testing.T) {
 	if !strings.Contains(listOutput, label) {
 		t.Fatalf("expected the added access key in the listing, got: %s", listOutput)
 	}
+	// A listing owes the caller meta.limitReached: without it, a truncated
+	// page and a complete one are the same document. This one lost the key when
+	// it moved to the typed payload, and only a live run reads what was written.
+	if !strings.Contains(listOutput, `"limitReached"`) {
+		t.Errorf("repo ssh-key list did not report whether the limit was reached: %s", listOutput)
+	}
 
 	if _, err := executeLiveCLI(t, "--json", "repo", "ssh-key", "remove", keyID, "--repo", repoRef); err != nil {
 		t.Fatalf("repo ssh-key remove failed: %v", err)
