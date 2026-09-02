@@ -164,8 +164,8 @@ func TestRepoBrowseBlame(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on browse blame JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), "blame") {
-		t.Fatalf("expected blame in json output, got: %s", buf.String())
+	if !strings.Contains(buf.String(), `"author": "alice"`) {
+		t.Fatalf("expected the blame author in json output, got: %s", buf.String())
 	}
 }
 

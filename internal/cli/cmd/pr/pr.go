@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/diffoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
@@ -2901,12 +2902,12 @@ func newPullRequestDiffAlias(deps Dependencies, repositorySelector *string) *cob
 			repo := diffservice.RepositoryRef{ProjectKey: target.ProjectKey, Slug: target.RepoSlug}
 
 			service := diffservice.NewService(client)
-			outputMode, err := resolveDiffOutputMode(patch, stat, nameOnly)
+			outputMode, err := diffoutput.ResolveOutputMode(patch, stat, nameOnly)
 			if err != nil {
 				return err
 			}
 
-			result, err := service.DiffPR(cmd.Context(), diffservice.DiffPRInput{
+			diffed, err := service.DiffPR(cmd.Context(), diffservice.DiffPRInput{
 				Repository:    repo,
 				PullRequestID: target.PullRequestID,
 				Output:        outputMode,
@@ -2915,7 +2916,7 @@ func newPullRequestDiffAlias(deps Dependencies, repositorySelector *string) *cob
 				return err
 			}
 
-			return writeDiffResult(cmd.OutOrStdout(), deps.JSONEnabled(), outputMode, result, deps.WriteJSON)
+			return diffoutput.Write(cmd.OutOrStdout(), deps.JSONEnabled(), result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, outputMode, diffed, deps.WriteJSON)
 		},
 	}
 
@@ -2924,63 +2925,6 @@ func newPullRequestDiffAlias(deps Dependencies, repositorySelector *string) *cob
 	command.Flags().BoolVar(&nameOnly, "name-only", false, "Output only changed file names")
 
 	return command
-}
-
-func resolveDiffOutputMode(patch, stat, nameOnly bool) (diffservice.OutputKind, error) {
-	selected := 0
-	if patch {
-		selected++
-	}
-	if stat {
-		selected++
-	}
-	if nameOnly {
-		selected++
-	}
-	if selected > 1 {
-		return "", apperrors.New(apperrors.KindValidation, "choose only one output mode: --patch, --stat, or --name-only", nil)
-	}
-
-	if patch {
-		return diffservice.OutputKindPatch, nil
-	}
-	if stat {
-		return diffservice.OutputKindStat, nil
-	}
-	if nameOnly {
-		return diffservice.OutputKindNameOnly, nil
-	}
-
-	return diffservice.OutputKindRaw, nil
-}
-
-func writeDiffResult(writer io.Writer, asJSON bool, mode diffservice.OutputKind, result diffservice.Result, writeJSON func(io.Writer, any) error) error {
-	if asJSON {
-		switch mode {
-		case diffservice.OutputKindNameOnly:
-			return writeJSON(writer, map[string]any{"names": result.Names})
-		case diffservice.OutputKindStat:
-			return writeJSON(writer, map[string]any{"stats": result.Stats})
-		default:
-			return writeJSON(writer, map[string]any{"patch": result.Patch})
-		}
-	}
-
-	switch mode {
-	case diffservice.OutputKindNameOnly:
-		for _, name := range result.Names {
-			fmt.Fprintln(writer, name)
-		}
-		return nil
-	case diffservice.OutputKindStat:
-		return writeJSON(writer, result.Stats)
-	default:
-		fmt.Fprint(writer, result.Patch)
-		if result.Patch != "" && !strings.HasSuffix(result.Patch, "\n") {
-			fmt.Fprintln(writer)
-		}
-		return nil
-	}
 }
 
 // Registering an alias as a second flag bound to the same slice does not work:

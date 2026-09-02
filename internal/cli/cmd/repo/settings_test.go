@@ -376,8 +376,8 @@ func TestRepoSettingsJSONAndDryRunModes(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on pull-requests get JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), "pull_request_settings") {
-		t.Fatalf("expected pull_request_settings in JSON output: %s", buf.String())
+	if !strings.Contains(buf.String(), "requiredApprovers") {
+		t.Fatalf("expected the pull request settings in JSON output: %s", buf.String())
 	}
 
 	// 2. Pull requests merge-checks list JSON
@@ -389,8 +389,8 @@ func TestRepoSettingsJSONAndDryRunModes(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on merge-checks list JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), "merge_checks") {
-		t.Fatalf("expected merge_checks in JSON output: %s", buf.String())
+	if !strings.Contains(buf.String(), `"checks"`) {
+		t.Fatalf("expected the merge checks in JSON output: %s", buf.String())
 	}
 
 	// 3. Pull requests update (dry-run noop, dry-run update, real execution, JSON)
@@ -440,7 +440,7 @@ func TestRepoSettingsJSONAndDryRunModes(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on update JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), "pull_request_settings") {
+	if !strings.Contains(buf.String(), "requiredApprovers") {
 		t.Fatalf("expected pull_request_settings in JSON: %s", buf.String())
 	}
 	jsonEnabled = false

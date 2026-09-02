@@ -1,8 +1,6 @@
 package buildcmd
 
 import (
-	"encoding/json"
-
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
@@ -48,16 +46,6 @@ type CommitBuildStats struct {
 	Cancelled  int32  `json:"cancelled" jsonschema:"Builds reporting CANCELLED."`
 }
 
-// RequiredBuildCheck is one required-builds merge check.
-type RequiredBuildCheck struct {
-	ID                     int64             `json:"id,omitempty" jsonschema:"Check identifier, for bb build required update and delete."`
-	BuildParentKeys        []string          `json:"buildParentKeys,omitempty" jsonschema:"Build keys that must be green before a pull request can merge."`
-	RefMatcher             result.RefMatcher `json:"refMatcher,omitzero" jsonschema:"Which target branches the check is enforced on."`
-	ExemptRefMatcher       result.RefMatcher `json:"exemptRefMatcher,omitzero" jsonschema:"Which source branches are exempt from the check."`
-	RequiredForPullRequest bool              `json:"requiredForPullRequest" jsonschema:"Whether the check is enforced on pull requests."`
-	RequiredForMergeQueue  bool              `json:"requiredForMergeQueue" jsonschema:"Whether the check is enforced on merge-queue merges."`
-}
-
 // StatusChange is what `bb build status set` reports.
 type StatusChange struct {
 	result.Status
@@ -94,9 +82,9 @@ func init() {
 	result.Declare("build status get", result.List[BuildStatus](statusEnums))
 	result.Declare("build status stats", result.List[CommitBuildStats](nil))
 
-	result.Declare("build required list", result.List[RequiredBuildCheck](checkEnums))
-	result.Declare("build required create", result.For[RequiredBuildCheck](checkEnums))
-	result.Declare("build required update", result.For[RequiredBuildCheck](checkEnums))
+	result.Declare("build required list", result.List[result.RequiredBuildCheck](checkEnums))
+	result.Declare("build required create", result.For[result.RequiredBuildCheck](checkEnums))
+	result.Declare("build required update", result.For[result.RequiredBuildCheck](checkEnums))
 	result.Declare("build required delete", result.For[RequiredCheckDeletion](nil))
 
 	result.Declare("build set", result.For[ScopedStatusChange](nil))
@@ -177,73 +165,4 @@ func statsListFrom(commits []string, tallies map[string]openapigenerated.RestBui
 	}
 
 	return converted
-}
-
-// requiredCheckFrom converts one upstream required build condition.
-func requiredCheckFrom(upstream openapigenerated.RestRequiredBuildCondition) RequiredBuildCheck {
-	converted := RequiredBuildCheck{
-		ID:              safeInt64(upstream.Id),
-		BuildParentKeys: safeStringSlice(upstream.BuildParentKeys),
-	}
-	if upstream.RefMatcher != nil {
-		converted.RefMatcher = result.RefMatcher{
-			ID:        safeString(upstream.RefMatcher.Id),
-			DisplayID: safeString(upstream.RefMatcher.DisplayId),
-		}
-		if upstream.RefMatcher.Type != nil {
-			converted.RefMatcher.Type = string(upstream.RefMatcher.Type.Id)
-		}
-	}
-	if upstream.ExemptRefMatcher != nil {
-		converted.ExemptRefMatcher = result.RefMatcher{
-			ID:        safeString(upstream.ExemptRefMatcher.Id),
-			DisplayID: safeString(upstream.ExemptRefMatcher.DisplayId),
-		}
-		if upstream.ExemptRefMatcher.Type != nil {
-			converted.ExemptRefMatcher.Type = string(upstream.ExemptRefMatcher.Type.Id)
-		}
-	}
-	if upstream.RequiredForPullRequest != nil {
-		converted.RequiredForPullRequest = *upstream.RequiredForPullRequest
-	}
-	if upstream.RequiredForMergeQueue != nil {
-		converted.RequiredForMergeQueue = *upstream.RequiredForMergeQueue
-	}
-
-	return converted
-}
-
-// requiredChecksFrom converts a list, preserving order and never returning nil.
-func requiredChecksFrom(upstream []openapigenerated.RestRequiredBuildCondition) []RequiredBuildCheck {
-	converted := make([]RequiredBuildCheck, 0, len(upstream))
-	for _, one := range upstream {
-		converted = append(converted, requiredCheckFrom(one))
-	}
-
-	return converted
-}
-
-// requiredCheckFromMap decodes the untyped object the create and update calls
-// return.
-//
-// Those two service methods hand back a map rather than a typed value, so a
-// round trip through JSON is the only way to reach the fields. The alternative
-// -- publishing the map as it arrived -- is what these commands did before, and
-// it meant create and list described the same object differently.
-func requiredCheckFromMap(payload map[string]any) RequiredBuildCheck {
-	if len(payload) == 0 {
-		return RequiredBuildCheck{}
-	}
-
-	raw, err := json.Marshal(payload)
-	if err != nil {
-		return RequiredBuildCheck{}
-	}
-
-	var upstream openapigenerated.RestRequiredBuildCondition
-	if err := json.Unmarshal(raw, &upstream); err != nil {
-		return RequiredBuildCheck{}
-	}
-
-	return requiredCheckFrom(upstream)
 }

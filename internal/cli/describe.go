@@ -106,18 +106,23 @@ func writeDescription(cmd *cobra.Command) error {
 	return err
 }
 
-// describeCommand looks up the published schema for a command path.
+// describeCommand looks up the schema a command declares.
 //
-// A command with no schema gets a truthful answer rather than an empty one: at
-// the time this was written most commands had none, and "not described yet" is
-// more useful to a caller than a schema that describes nothing -- and more
-// visible pressure on the gap, which closes when each schema is derived from a
-// typed result the command already builds rather than hand-maintained.
+// Three answers, and which one a caller gets is itself information: a schema
+// derived from the result type the command fills in, a statement that the
+// command returns no data payload at all, or a statement that it returns one
+// whose shape bb cannot promise. An empty schema is not among them -- it would
+// look like a guarantee of nothing rather than an absence of one.
 func describeCommand(path string) DescribeResult {
 	described := DescribeResult{Command: path}
 
 	if reason := outputschemas.CommandsWithoutDataContract[path]; reason != "" {
 		described.Reason = "this command does not return a data payload: " + reason
+		return described
+	}
+
+	if reason := outputschemas.CommandsWithoutDeclarableShape[path]; reason != "" {
+		described.Reason = "this command returns a payload with no shape bb can promise: " + reason
 		return described
 	}
 

@@ -78,10 +78,12 @@ func TestDescribeReturnsThePublishedSchemaForACommand(t *testing.T) {
 
 // TestDescribeSaysSoWhenACommandHasNoSchema keeps the answer truthful.
 //
-// Most commands have no schema, and a caller is better served by "not described
-// yet" than by an empty schema that appears to guarantee a shape.
+// A caller is better served by a stated reason than by an empty schema that
+// looks like a guarantee. `webhook test` is the case that stays: the service
+// hands back whatever Bitbucket sent as an untyped value and the command prints
+// it without reading a field, so there is no shape for bb to promise.
 func TestDescribeSaysSoWhenACommandHasNoSchema(t *testing.T) {
-	output := runDescribe(t, "repo", "create")
+	output := runDescribe(t, "webhook", "test")
 
 	var result DescribeResult
 	if err := json.Unmarshal([]byte(output), &result); err != nil {
@@ -89,7 +91,7 @@ func TestDescribeSaysSoWhenACommandHasNoSchema(t *testing.T) {
 	}
 
 	if result.Described {
-		t.Errorf("repo create has no published schema but reported one: %+v", result)
+		t.Errorf("webhook test has no declarable shape but reported a schema: %+v", result)
 	}
 	if result.Schema != nil {
 		t.Errorf("an undescribed command returned a schema: %v", result.Schema)
