@@ -337,7 +337,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "deployment.delete",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": getKey, "env_key": getEnvKey, "sequence": getSeqNum},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": getKey, "envKey": getEnvKey, "sequence": getSeqNum},
 						Action:          "delete",
 						PredictedAction: predicted,
 						Supported:       true,

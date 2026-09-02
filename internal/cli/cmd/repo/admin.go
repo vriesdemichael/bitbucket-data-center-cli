@@ -80,7 +80,7 @@ func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          intent,
-						Target:          map[string]any{"project": createProject, "name": createName, "default_branch": createDefaultBranch},
+						Target:          map[string]any{"project": createProject, "name": createName, "defaultBranch": createDefaultBranch},
 						Action:          "create",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -412,7 +412,7 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityPartial,
 					Items: []dryrunpreview.Item{{
 						Intent:          "repo.admin.update",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": updateName, "description": updateDesc, "default_branch": updateDefaultBranch},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": updateName, "description": updateDesc, "defaultBranch": updateDefaultBranch},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,

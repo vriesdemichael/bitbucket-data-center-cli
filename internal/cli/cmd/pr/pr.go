@@ -588,7 +588,7 @@ func New(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "from_ref": createFromRef, "to_ref": createToRef, "title": createTitle, "reviewers": resolvedReviewers, "draft": createDraft},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "fromRef": createFromRef, "toRef": createToRef, "title": createTitle, "reviewers": resolvedReviewers, "draft": createDraft},
 						Action:          "create",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -2109,7 +2109,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          intent,
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "pr_id": prID, "comment_id": commentID, "emoticon": emoticon},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "prId": prID, "commentId": commentID, "emoticon": emoticon},
 						Action:          action,
 						PredictedAction: predicted,
 						Supported:       true,
@@ -2213,7 +2213,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "pr.comment.apply-suggestion",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "pr_id": prID, "comment_id": commentID, "suggestion_index": commentSuggestionIdx},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "prId": prID, "commentId": commentID, "suggestionIndex": commentSuggestionIdx},
 						Action:          "update",
 						PredictedAction: "update",
 						Supported:       true,

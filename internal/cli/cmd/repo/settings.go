@@ -263,7 +263,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "repo.webhook.delete",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhook_id": args[0]},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhookId": args[0]},
 						Action:          "delete",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -457,7 +457,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "repo.pull-request-settings.update",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "required_all_tasks_complete": requiredAllTasksComplete},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "requiredAllTasksComplete": requiredAllTasksComplete},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,
@@ -643,7 +643,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityFull,
 					Items: []dryrunpreview.Item{{
 						Intent:          "repo.pull-request-settings.set-strategy",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "strategy_id": mergeStrategyID},
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "strategyId": mergeStrategyID},
 						Action:          "update",
 						PredictedAction: predicted,
 						Supported:       true,

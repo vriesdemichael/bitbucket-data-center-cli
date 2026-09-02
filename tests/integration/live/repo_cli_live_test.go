@@ -267,23 +267,26 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 	}
 	getPayload := decodeJSONMap(t, pullRequestsGetOutput)
 	if _, ok := getPayload["requiredApprovers"]; !ok {
-		t.Fatalf("expected pull_request_settings field in get output: %s", pullRequestsGetOutput)
+		t.Fatalf("expected the pull request settings in get output: %s", pullRequestsGetOutput)
 	}
 
 	pullRequestsUpdateOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=true")
 	if err != nil {
 		t.Fatalf("repo settings pull-requests update failed: %v\noutput: %s", err, pullRequestsUpdateOutput)
 	}
-	if asString(decodeJSONMap(t, pullRequestsUpdateOutput)["status"]) != "ok" {
-		t.Fatalf("expected pull-requests update status ok, got: %s", pullRequestsUpdateOutput)
+	// The settings themselves are the confirmation: an update returns the
+	// object it changed rather than a status beside it, like every other
+	// command that reports what it just wrote.
+	if decodeJSONMap(t, pullRequestsUpdateOutput)["requiredAllTasksComplete"] != true {
+		t.Fatalf("expected the update to be reflected in the settings, got: %s", pullRequestsUpdateOutput)
 	}
 
 	pullRequestsApproversOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "update-approvers", "--count", "2")
 	if err != nil {
 		t.Fatalf("repo settings pull-requests update-approvers failed: %v\noutput: %s", err, pullRequestsApproversOutput)
 	}
-	if asString(decodeJSONMap(t, pullRequestsApproversOutput)["status"]) != "ok" {
-		t.Fatalf("expected pull-requests update-approvers status ok, got: %s", pullRequestsApproversOutput)
+	if _, ok := decodeJSONMap(t, pullRequestsApproversOutput)["requiredApprovers"]; !ok {
+		t.Fatalf("expected the approver count in the update-approvers output, got: %s", pullRequestsApproversOutput)
 	}
 
 	humanPermissionListOutput, err := executeLiveCLI(t, "repo", "settings", "security", "permissions", "users", "list", "--limit", "10")
