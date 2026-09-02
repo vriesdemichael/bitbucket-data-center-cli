@@ -218,8 +218,11 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 		t.Fatalf("repo settings permissions users list failed: %v\noutput: %s", err, permissionListOutput)
 	}
 	permissionListPayload := decodeJSONMap(t, permissionListOutput)
-	if _, ok := permissionListPayload["users"]; !ok {
-		t.Fatalf("expected users field in permissions list output: %s", permissionListOutput)
+	if permissionListPayload["subject"] != "user" {
+		t.Fatalf("expected a user listing in permissions list output: %s", permissionListOutput)
+	}
+	if _, ok := permissionListPayload["entries"].([]any); !ok {
+		t.Fatalf("expected an entries list in permissions list output: %s", permissionListOutput)
 	}
 
 	username := harness.config.BitbucketUsername

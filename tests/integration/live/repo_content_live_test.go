@@ -114,7 +114,7 @@ func TestLiveRepoDefaultTaskLifecycle(t *testing.T) {
 		t.Fatalf("repo default-task add failed: %v\noutput: %s", err, addOutput)
 	}
 
-	taskID, ok := numericOrStringID(decodeJSONMap(t, addOutput)["id"])
+	taskID, ok := numericOrStringID(nestedJSONMap(t, addOutput, "task")["id"])
 	if !ok {
 		t.Fatalf("expected a task id in the add output: %s", addOutput)
 	}
@@ -122,7 +122,7 @@ func TestLiveRepoDefaultTaskLifecycle(t *testing.T) {
 	// The matcher the server actually stored, echoed back. Both matchers were
 	// sent with a type id that is not in the schema enum until recently, so the
 	// request never got as far as creating anything.
-	addData := decodeJSONMap(t, addOutput)
+	addData := nestedJSONMap(t, addOutput, "task")
 	assertMatcherID(t, addData, "sourceMatcher", "refs/heads/feature/*")
 	assertMatcherID(t, addData, "targetMatcher", "refs/heads/master")
 
@@ -133,7 +133,7 @@ func TestLiveRepoDefaultTaskLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo default-task add without matchers failed: %v\noutput: %s", err, anyRefOutput)
 	}
-	anyRefData := decodeJSONMap(t, anyRefOutput)
+	anyRefData := nestedJSONMap(t, anyRefOutput, "task")
 	assertMatcherID(t, anyRefData, "sourceMatcher", "ANY_REF_MATCHER_ID")
 	assertMatcherID(t, anyRefData, "targetMatcher", "ANY_REF_MATCHER_ID")
 	if anyRefID, ok := numericOrStringID(anyRefData["id"]); ok {

@@ -116,6 +116,12 @@ type Comment struct {
 	CreatedDate  int64          `json:"createdDate,omitempty" jsonschema:"When it was written, in milliseconds since the epoch."`
 	UpdatedDate  int64          `json:"updatedDate,omitempty" jsonschema:"When it last changed, in milliseconds since the epoch."`
 	ResolvedDate int64          `json:"resolvedDate,omitempty" jsonschema:"When it was resolved, in milliseconds since the epoch."`
+
+	// Properties is left open. Bitbucket stores per-comment extras here without
+	// documenting them, and reactions -- what bb pr comment react writes and a
+	// caller reads back -- are among them. Dropping it would lose the reaction;
+	// claiming a shape for it would describe whichever instance was looked at.
+	Properties map[string]any `json:"properties,omitempty" jsonschema:"Per-comment extras Bitbucket attaches, reactions among them. Left open because Bitbucket does not document what goes here."`
 }
 
 // Change is one file changed in a pull request.
@@ -278,7 +284,7 @@ type CommentThreads struct {
 	State         string            `json:"state,omitempty" jsonschema:"State filter that was applied: open, resolved, pending or all."`
 	Summary       ThreadSummary     `json:"summary"`
 	Threads       []Thread          `json:"threads" jsonschema:"Comment threads, unresolved first. Empty rather than absent when there are none."`
-	Comments      []Comment         `json:"comments,omitempty" jsonschema:"Every comment, ungrouped. Only present with --full."`
+	Comments      *[]Comment        `json:"comments,omitempty" jsonschema:"Every comment, ungrouped. Present only with --full, and then present even when there are none: its absence means the flag was not passed, not that the file has no comments."`
 }
 
 // SingleComment is what `bb pr comment get`, `resolve` and `reopen` return.

@@ -326,6 +326,9 @@ func commentFrom(upstream openapigenerated.RestComment) Comment {
 	if upstream.Comments != nil {
 		converted.ReplyCount = len(*upstream.Comments)
 	}
+	if upstream.Properties != nil {
+		converted.Properties = *upstream.Properties
+	}
 	if upstream.Author != nil {
 		converted.Author = result.User{
 			Name:         upstream.Author.Name,

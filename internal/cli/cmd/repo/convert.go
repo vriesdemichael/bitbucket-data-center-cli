@@ -196,6 +196,9 @@ func commentFrom(upstream openapigenerated.RestComment) Comment {
 	if upstream.Comments != nil {
 		converted.ReplyCount = len(*upstream.Comments)
 	}
+	if upstream.Properties != nil {
+		converted.Properties = *upstream.Properties
+	}
 	if upstream.Author != nil {
 		converted.Author = result.User{
 			Name:         upstream.Author.Name,
@@ -482,13 +485,19 @@ func parseCount(value string) int {
 	return count
 }
 
-// fileLinesFrom decodes a browse response into lines.
+// fileLinesFrom decodes a browse response into lines, with attribution when
+// blame was asked for.
 //
-// Bitbucket answers /browse two ways. Without blame it is an object with the
-// lines under lines. With blame it is an array of spans, each carrying an
-// author and the lines that author last touched. Both are handled here, so
-// bb repo browse file and bb repo browse blame answer with one shape -- which
-// is what the two commands mean, one of them with attribution.
+// Bitbucket answers /browse with the file's lines. With blame=true it adds a
+// blame array alongside them -- "the blame will be returned for the file as
+// well", in the spec's words -- where each entry names an author and the run of
+// lines that author last touched, by starting line number and length.
+//
+// The previous reader decoded blame as an object with one author and applied
+// that author to every line. Against a real server the decode failed outright,
+// because blame is a list, so the human path fell through to printing the raw
+// JSON and the machine path published it. That is what made bb repo browse
+// blame return nothing once both paths were made to read one value.
 func fileLinesFrom(content []byte) []FileLine {
 	lines := []FileLine{}
 	if len(content) == 0 {
@@ -499,32 +508,32 @@ func fileLinesFrom(content []byte) []FileLine {
 		Lines []struct {
 			Text string `json:"text"`
 		} `json:"lines"`
-		Blame struct {
-			Author map[string]string `json:"author"`
+		Blame []struct {
+			Author struct {
+				Name string `json:"name"`
+			} `json:"author"`
+			LineNumber   int `json:"lineNumber"`
+			SpannedLines int `json:"spannedLines"`
 		} `json:"blame"`
 	}
-	if err := json.Unmarshal(content, &structured); err == nil && structured.Lines != nil {
-		author := structured.Blame.Author["name"]
-		for _, line := range structured.Lines {
-			lines = append(lines, FileLine{Text: line.Text, Author: author})
-		}
-
+	if err := json.Unmarshal(content, &structured); err != nil {
 		return lines
 	}
 
-	var spans []struct {
-		Author struct {
-			Name string `json:"name"`
-		} `json:"author"`
-		Lines []struct {
-			Text string `json:"text"`
-		} `json:"lines"`
+	for _, line := range structured.Lines {
+		lines = append(lines, FileLine{Text: line.Text})
 	}
-	if err := json.Unmarshal(content, &spans); err == nil {
-		for _, span := range spans {
-			for _, line := range span.Lines {
-				lines = append(lines, FileLine{Text: line.Text, Author: span.Author.Name})
+
+	// lineNumber is 1-based and spannedLines counts the run starting there. A
+	// span reaching past the end is clamped rather than dropped: the file and
+	// its blame are two reads of the same commit, but not the same request.
+	for _, span := range structured.Blame {
+		for offset := range span.SpannedLines {
+			index := span.LineNumber - 1 + offset
+			if index < 0 || index >= len(lines) {
+				break
 			}
+			lines[index].Author = span.Author.Name
 		}
 	}
 

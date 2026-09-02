@@ -613,17 +613,14 @@ func TestLiveRepoPermissionsShowAsAdmin(t *testing.T) {
 	}
 
 	result := decodeJSONMap(t, output)
-	if asString(result["repository"]) != repoRef {
-		t.Errorf("expected repository=%q, got %q", repoRef, asString(result["repository"]))
+	repository, ok := result["repository"].(map[string]any)
+	if !ok || asString(repository["projectKey"]) != seeded.Key || asString(repository["slug"]) != repo.Slug {
+		t.Errorf("expected the repository named as an object, got %v", result["repository"])
 	}
-	perms, ok := result["permissions"].(map[string]any)
-	if !ok {
-		t.Fatalf("expected permissions map in output: %s", output)
-	}
-	for _, level := range []string{"REPO_READ", "REPO_WRITE", "REPO_ADMIN"} {
-		if perms[level] != true {
-			t.Errorf("expected %s=true for admin user, got %v", level, perms[level])
-		}
+	if !grantedPermissions(t, result, output)["REPO_READ"] ||
+		!grantedPermissions(t, result, output)["REPO_WRITE"] ||
+		!grantedPermissions(t, result, output)["REPO_ADMIN"] {
+		t.Errorf("expected every level granted for an admin user, got: %s", output)
 	}
 
 	// Human output
@@ -671,13 +668,10 @@ func TestLiveProjectPermissionsShowAsAdmin(t *testing.T) {
 	if asString(result["projectKey"]) != seeded.Key {
 		t.Errorf("expected projectKey=%q, got %q", seeded.Key, asString(result["projectKey"]))
 	}
-	perms, ok := result["permissions"].(map[string]any)
-	if !ok {
-		t.Fatalf("expected permissions map in output: %s", output)
-	}
+	granted := grantedPermissions(t, result, output)
 	for _, level := range []string{"PROJECT_READ", "PROJECT_WRITE", "PROJECT_ADMIN"} {
-		if perms[level] != true {
-			t.Errorf("expected %s=true for admin user, got %v", level, perms[level])
+		if !granted[level] {
+			t.Errorf("expected %s granted for an admin user, got: %s", level, output)
 		}
 	}
 
@@ -691,4 +685,29 @@ func TestLiveProjectPermissionsShowAsAdmin(t *testing.T) {
 			t.Errorf("expected human output to contain %s, got: %s", level, humanOutput)
 		}
 	}
+}
+
+// grantedPermissions reads the permission list `bb * permissions show` returns.
+//
+// A list rather than a map keyed by permission name: the keys would be
+// Bitbucket's SCREAMING_SNAKE constants in Go's randomised map order, and a
+// fixed list is what --describe can state.
+func grantedPermissions(t *testing.T, payload map[string]any, output string) map[string]bool {
+	t.Helper()
+
+	entries, ok := payload["permissions"].([]any)
+	if !ok {
+		t.Fatalf("expected a permissions list in output: %s", output)
+	}
+
+	granted := map[string]bool{}
+	for _, entry := range entries {
+		permission, ok := entry.(map[string]any)
+		if !ok {
+			t.Fatalf("expected each permission to be an object: %s", output)
+		}
+		granted[asString(permission["permission"])] = permission["granted"] == true
+	}
+
+	return granted
 }
