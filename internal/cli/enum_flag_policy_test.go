@@ -36,22 +36,46 @@ func advertisedValues(usage string) []string {
 	return values
 }
 
-// enumerationInProse matches a value set written out by hand: a colon or an
-// opening bracket, then either two alternatives joined by "or" or three or more
-// separated by commas, every one of them a single bare token.
+// enumerationInProse matches a value set written out by hand. Two shapes:
 //
-// Deliberately conservative. A governance test that cries wolf gets deleted, so
-// this would rather miss an unusually worded flag than fail on "Commit ID or
-// ref" or "Query filter (checks username, name, or email)" -- both of which
-// have a space inside an alternative and so do not match.
-var enumerationInProse = regexp.MustCompile(
-	`[:(]\s*(?:` +
-		`[A-Za-z0-9][A-Za-z0-9._-]*\s+or\s+[A-Za-z0-9][A-Za-z0-9._-]*` +
-		`|` +
-		`[A-Za-z0-9][A-Za-z0-9._-]*(?:,\s*(?:or\s+)?[A-Za-z0-9][A-Za-z0-9._-]*){2,}` +
-		`)\s*[).]?\s*$`)
+//	A: three or more bare tokens separated by commas, anywhere in the text
+//	B: two joined by "or", but only just after a ":" or "("
+//
+// The first version of this anchored both shapes to the end of the string and
+// required the marker for both. That let a real offender through --
+// `bb webhook update --active`, whose trailing "; unchanged when omitted" put
+// the list in the middle -- and would also have missed two of the flags that
+// were converted by hand ("Order by NEWEST, OLDEST, or STATUS" has no marker).
+//
+// B still needs the marker, because without it "Commit ID or ref" and "should
+// be modified or created" both match, and a governance test that cries wolf
+// gets deleted. A has one known false positive, exempted below with its reason.
+//
+// It still cannot see a list broken up by a parenthetical: "ADDED (default),
+// REMOVED, or CONTEXT" reads as an enumeration to a person and not to this.
+// The gap is narrow -- a flag has to both enumerate unusually and never be
+// registered -- but it is a gap, not a guarantee.
+const (
+	// A bare value token, and the ways an enumeration can end: at the close of
+	// a bracket, at the end of the text, or at a semicolon introducing a
+	// trailing clause. That last one is what `--active` needed.
+	enumToken = `[A-Za-z0-9][A-Za-z0-9._-]*`
+	enumEnd   = `\s*[).]?\s*(?:$|;)`
+)
 
-// visitFlags walks every non-hidden command's own and persistent flags once.
+var enumerationInProse = regexp.MustCompile(
+	// A: marker, then three or more comma-separated tokens.
+	`[:(]\s*` + enumToken + `(?:,\s*(?:or\s+)?` + enumToken + `){2,}` + enumEnd +
+		`|` +
+		// B: marker, then two tokens joined by "or".
+		`[:(]\s*` + enumToken + `\s+or\s+` + enumToken + enumEnd +
+		`|` +
+		// C: no marker needed, because SHOUTING_TOKENS in a list are values
+		// and not prose. This is what catches "Order by NEWEST, OLDEST, or
+		// STATUS", and a list interrupted by a parenthetical.
+		`\b[A-Z][A-Z0-9_]+(?:,\s*(?:or\s+)?[A-Z][A-Z0-9_]+)+`)
+
+// visitFlags walks every command's own and persistent flags once.
 func visitFlags(t *testing.T, visit func(cmd *cobra.Command, flag *pflag.Flag)) {
 	t.Helper()
 
@@ -59,7 +83,8 @@ func visitFlags(t *testing.T, visit func(cmd *cobra.Command, flag *pflag.Flag)) 
 
 	var walk func(*cobra.Command)
 	walk = func(cmd *cobra.Command) {
-		if cmd.Hidden || cmd.Name() == "help" || cmd.Name() == "completion" {
+		// Hidden commands are not skipped -- a hidden flag still takes input.
+		if cmd.Name() == "help" || cmd.Name() == "completion" {
 			return
 		}
 
@@ -139,6 +164,13 @@ func TestNoFlagEnumeratesValuesWithoutEnforcingThem(t *testing.T) {
 		// by config.Load, which names the values when it rejects one.
 		"bb --log-level":  "empty means unset; diagnostics.ParseLevel enforces the set",
 		"bb --log-format": "empty means unset; diagnostics.ParseFormat enforces the set",
+
+		// "(repeatable or comma-separated; ...)" describes how to write the
+		// flag, not what it accepts -- the values are group names, an open
+		// set. Shape B cannot tell that from "(true or false)", and the cost
+		// of teaching it is worse than two entries here.
+		"bb pr create --reviewer-group":              "describes repetition, not a value set; group names are open",
+		"bb pr review reviewer add --reviewer-group": "describes repetition, not a value set; group names are open",
 	}
 
 	visitFlags(t, func(cmd *cobra.Command, flag *pflag.Flag) {
