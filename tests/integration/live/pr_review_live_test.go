@@ -231,6 +231,71 @@ func TestLivePullRequestCommentReaction(t *testing.T) {
 	if !strings.Contains(humanList, replyText) {
 		t.Fatalf("the human listing dropped the reply the payload carries: %s", humanList)
 	}
+
+	// A second reply, because --with-replies is only distinguishable from the
+	// default once a thread has more than one: the default reports a count and
+	// the most recent, so with a single reply both forms carry the same text.
+	secondReplyText := "a second reply, which only --with-replies should show"
+	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID,
+		"--text", secondReplyText, "--parent-id", commentID); err != nil {
+		t.Fatalf("second pr comment add --parent-id failed: %v", err)
+	}
+
+	// Asserted on the key rather than on which reply texts appear. The
+	// activity timeline emits an activity per comment action, so whether a
+	// reply also reaches the thread view as a root of its own is the server's
+	// choice, not bb's -- an assertion about text presence would be encoding a
+	// guess about that. Whether replies is populated at all is bb's choice,
+	// and that is what the flag controls.
+	collapsed, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--state", "all")
+	if err != nil {
+		t.Fatalf("pr comment list failed: %v\noutput: %s", err, collapsed)
+	}
+	if strings.Contains(collapsed, `"replies"`) {
+		t.Fatalf("the default listing populated replies without --with-replies: %s", collapsed)
+	}
+	if !strings.Contains(collapsed, `"lastReply"`) {
+		t.Fatalf("a thread with replies reported no most-recent reply: %s", collapsed)
+	}
+
+	// One thread, not three. The pull request holds a single root with two
+	// replies, and a reply is not a thread -- if the timeline reports each
+	// reply as its own activity and bb maps every activity to a thread, then
+	// summary.unresolved counts work that does not exist, and an agent reading
+	// it sees two outstanding threads that were already answered. Only a real
+	// timeline can say whether that happens.
+	collapsedSummary, ok := decodeJSONMap(t, collapsed)["summary"].(map[string]any)
+	if !ok {
+		t.Fatalf("no summary in the thread listing: %s", collapsed)
+	}
+	if total, _ := collapsedSummary["totalThreads"].(float64); total != 1 {
+		t.Fatalf("totalThreads = %v, want 1: a reply was counted as a thread of its own\n%s", collapsedSummary["totalThreads"], collapsed)
+	}
+
+	withReplies, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--state", "all", "--with-replies")
+	if err != nil {
+		t.Fatalf("pr comment list --with-replies failed: %v\noutput: %s", err, withReplies)
+	}
+	if !strings.Contains(withReplies, `"replies"`) {
+		t.Fatalf("--with-replies did not populate replies: %s", withReplies)
+	}
+	if !strings.Contains(withReplies, replyText) || !strings.Contains(withReplies, secondReplyText) {
+		t.Fatalf("--with-replies did not carry every reply: %s", withReplies)
+	}
+
+	// --blocker reads a different endpoint from every other listing above:
+	// blocker-comments rather than the activity timeline, which is why the
+	// payload names its source. Nothing else exercised that path.
+	blockerList, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--blocker", "--state", "all")
+	if err != nil {
+		t.Fatalf("pr comment list --blocker failed: %v\noutput: %s", err, blockerList)
+	}
+	if !strings.Contains(blockerList, `"source": "blocker_comments"`) {
+		t.Fatalf("--blocker did not report which endpoint answered: %s", blockerList)
+	}
+	if !strings.Contains(blockerList, "comment that gets a reaction") {
+		t.Fatalf("the blocker listing dropped the task it was asked for: %s", blockerList)
+	}
 }
 
 // TestLivePullRequestApplySuggestion covers bb pr comment apply-suggestion.

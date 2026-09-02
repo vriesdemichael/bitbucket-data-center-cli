@@ -119,9 +119,8 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	listCmd.Flags().StringVar(&listPath, "path", "", "File path for comment listing scope")
+	listCmd.Flags().StringVar(&listPath, "path", "", "File path to scope the listing to. Required with --pr, which Bitbucket only answers per file; optional with --commit, where omitting it lists every comment on the commit.")
 	listPaging.Register(listCmd, 25)
-	_ = listCmd.MarkFlagRequired("path")
 	commentCmd.AddCommand(listCmd)
 
 	var createText string

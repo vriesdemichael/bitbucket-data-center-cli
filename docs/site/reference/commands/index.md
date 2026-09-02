@@ -7077,7 +7077,7 @@ Usage:
 Flags:
       --all           Return every result rather than the first --limit
       --limit int     Maximum number of results to return (default 25)
-      --path string   File path for comment listing scope
+      --path string   File path to scope the listing to. Required with --pr, which Bitbucket only answers per file; optional with --commit, where omitting it lists every comment on the commit.
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
