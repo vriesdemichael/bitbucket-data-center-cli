@@ -162,16 +162,6 @@ func commentContextFrom(context commentservice.Context) CommentContext {
 	}
 }
 
-// commentsFrom converts a list, preserving order and never returning nil.
-func commentsFrom(upstream []openapigenerated.RestComment) []result.Comment {
-	converted := make([]result.Comment, 0, len(upstream))
-	for _, one := range upstream {
-		converted = append(converted, result.CommentFrom(one))
-	}
-
-	return converted
-}
-
 // permissionEntriesFrom converts what the permission list commands resolved.
 func permissionEntriesFrom(entries []permissionEntry) []PermissionEntry {
 	converted := make([]PermissionEntry, 0, len(entries))
@@ -260,7 +250,7 @@ func syncStatusFrom(repo result.Repository, upstream *openapigenerated.RestRefSy
 		converted.Enabled = *upstream.Enabled
 	}
 	if upstream.LastSync != nil {
-		converted.LastSync = int64(*upstream.LastSync)
+		converted.LastSync = *upstream.LastSync
 	}
 	if upstream.AheadRefs != nil {
 		for _, ref := range *upstream.AheadRefs {
@@ -341,10 +331,10 @@ func autoDeclineSettingsFrom(repo result.Repository, upstream *openapigenerated.
 // as either a string or a number depending on version, which is why the two are
 // published as separate fields with one meaning each.
 func pullRequestSettingsFrom(repo result.Repository, settings map[string]any) PullRequestSettings {
-	converted := PullRequestSettings{Repository: repo, MergeStrategies: []MergeStrategy{}}
+	converted := PullRequestSettings{Repository: repo}
 
 	if value, ok := settings["requiredAllTasksComplete"].(bool); ok {
-		converted.RequiredAllTasksComplete = value
+		converted.RequiredAllTasksComplete = &value
 	}
 
 	// Three shapes reach this, and only one of them comes from a JSON decode.
@@ -356,19 +346,29 @@ func pullRequestSettingsFrom(repo result.Repository, settings map[string]any) Pu
 	switch section := settings["requiredApprovers"].(type) {
 	case map[string]any:
 		if enabled, ok := section["enabled"].(bool); ok {
-			converted.RequiredApproversEnabled = enabled
+			converted.RequiredApproversEnabled = &enabled
 		}
-		converted.RequiredApprovers = countOf(section["count"])
+		count := countOf(section["count"])
+		converted.RequiredApprovers = &count
 	case nil:
+		// Not reported. Absent, rather than a count of zero that reads as "no
+		// approvals required" on an instance that never answered the question.
 	default:
-		converted.RequiredApprovers = countOf(section)
-		converted.RequiredApproversEnabled = converted.RequiredApprovers > 0
+		count := countOf(section)
+		enabled := count > 0
+		converted.RequiredApprovers = &count
+		converted.RequiredApproversEnabled = &enabled
 	}
 	if mergeConfig, ok := settings["mergeConfig"].(map[string]any); ok {
 		if defaultStrategy, ok := mergeConfig["defaultStrategy"].(map[string]any); ok {
-			converted.DefaultMergeStrategy, _ = defaultStrategy["id"].(string)
+			if id, ok := defaultStrategy["id"].(string); ok {
+				converted.DefaultMergeStrategy = &id
+			}
 		}
 		if strategies, ok := mergeConfig["strategies"].([]any); ok {
+			// Empty rather than nil from here on: the configuration was
+			// reported, so an empty list is the answer rather than a silence.
+			listed := make([]MergeStrategy, 0, len(strategies))
 			for _, entry := range strategies {
 				strategy, ok := entry.(map[string]any)
 				if !ok {
@@ -377,8 +377,9 @@ func pullRequestSettingsFrom(repo result.Repository, settings map[string]any) Pu
 				id, _ := strategy["id"].(string)
 				name, _ := strategy["name"].(string)
 				enabled, _ := strategy["enabled"].(bool)
-				converted.MergeStrategies = append(converted.MergeStrategies, MergeStrategy{ID: id, Name: name, Enabled: enabled})
+				listed = append(listed, MergeStrategy{ID: id, Name: name, Enabled: enabled})
 			}
+			converted.MergeStrategies = &listed
 		}
 	}
 

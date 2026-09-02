@@ -61,23 +61,6 @@ func commentIDString(comment openapigenerated.RestComment) string {
 	return strconv.FormatInt(*comment.Id, 10)
 }
 
-func formatCommentSummary(comment openapigenerated.RestComment) string {
-	text := ""
-	if comment.Text != nil {
-		text = strings.TrimSpace(*comment.Text)
-	}
-	if text == "" {
-		text = "<empty>"
-	}
-
-	version := "?"
-	if comment.Version != nil {
-		version = strconv.Itoa(int(*comment.Version))
-	}
-
-	return fmt.Sprintf("[%s v%s] %s", commentIDString(comment), version, text)
-}
-
 func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 	var repositorySelector string
 	var commitID string
@@ -114,17 +97,23 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// Flattened, so replies are reachable. Bitbucket nests them under
+			// their root, and this command has no thread view to reach them
+			// through -- listing only the roots discarded every reply body on a
+			// commit comment, leaving a count as the only trace.
+			listed := result.FlattenComments(comments)
+
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), Comments{Context: commentContextFrom(target.Context()), Comments: commentsFrom(comments)})
+				return deps.WriteJSON(cmd.OutOrStdout(), Comments{Context: commentContextFrom(target.Context()), Comments: listed})
 			}
 
-			if len(comments) == 0 {
+			if len(listed) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No comments found"))
 				return nil
 			}
 
-			for _, comment := range comments {
-				fmt.Fprintln(cmd.OutOrStdout(), formatCommentSummary(comment))
+			for _, comment := range listed {
+				fmt.Fprintln(cmd.OutOrStdout(), result.FormatComment(comment))
 			}
 
 			return nil
@@ -136,9 +125,14 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 	commentCmd.AddCommand(listCmd)
 
 	var createText string
+	var createParentID int64
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a comment",
+		Long: "Create a comment on a commit or a pull request.\n\n" +
+			"Pass --parent to reply to an existing comment rather than start a new thread. " +
+			"The id to pass is the one `bb repo comment list` reports; a reply carries reply and " +
+			"parentId in that listing, so a thread can be walked back to its root.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -149,6 +143,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			target.ParentID = createParentID
 
 			service := commentservice.NewService(client)
 			if deps.DryRunEnabled() {
@@ -167,7 +162,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					Capability:   dryrunpreview.CapabilityPartial,
 					Items: []dryrunpreview.Item{{
 						Intent:          "repo.comment.create",
-						Target:          map[string]any{"context": target.Context(), "text": createText},
+						Target:          createTargetPreview(target, createText, createParentID),
 						Action:          "create",
 						PredictedAction: "create",
 						Supported:       true,
@@ -194,6 +189,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 		},
 	}
 	createCmd.Flags().StringVar(&createText, "text", "", "Comment text")
+	createCmd.Flags().Int64Var(&createParentID, "parent", 0, "Reply to this comment id instead of starting a new thread")
 	_ = createCmd.MarkFlagRequired("text")
 	commentCmd.AddCommand(createCmd)
 
@@ -405,4 +401,18 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 	commentCmd.AddCommand(deleteCmd)
 
 	return commentCmd
+}
+
+// createTargetPreview describes what a create would do, for --dry-run.
+//
+// The parent is named only when there is one, so the preview reads as "a new
+// comment" or "a reply to 42" rather than always carrying a zero that means
+// neither.
+func createTargetPreview(target commentservice.Target, text string, parentID int64) map[string]any {
+	preview := map[string]any{"context": target.Context(), "text": text}
+	if parentID != 0 {
+		preview["parentId"] = parentID
+	}
+
+	return preview
 }

@@ -1516,17 +1516,22 @@ func New(deps Dependencies) *cobra.Command {
 				comments = *response.ApplicationjsonCharsetUTF8200.Values
 			}
 
+			// Flattened like every other comment listing: a draft reply to a
+			// draft comment is one of the unpublished comments this command
+			// exists to show.
+			drafts := result.FlattenComments(comments)
+
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), DraftReview{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Comments: commentsFrom(comments)})
+				return deps.WriteJSON(cmd.OutOrStdout(), DraftReview{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Comments: drafts})
 			}
 
-			if len(comments) == 0 {
+			if len(drafts) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "No draft comments found in review")
 				return nil
 			}
 
-			for _, comment := range comments {
-				fmt.Fprintln(cmd.OutOrStdout(), formatCommentSummary(comment))
+			for _, comment := range drafts {
+				fmt.Fprintln(cmd.OutOrStdout(), result.FormatComment(comment))
 			}
 			return nil
 		},
@@ -1810,11 +1815,15 @@ func New(deps Dependencies) *cobra.Command {
 				// with nothing saying the filter had been dropped.
 				comments = commentsInThreads(comments, threads)
 
+				// Flattened for the same reason bb repo comment list is: a reply
+				// nests under its root, and an ungrouped list that carried only
+				// roots was not the ungrouped list -- it was the roots with the
+				// replies counted and thrown away.
+				ungrouped := result.FlattenComments(comments)
+
 				if deps.JSONEnabled() {
 					// Present even when empty: its absence is what says --full
 					// was not passed, so an empty file must still carry the key.
-					ungrouped := commentsFrom(comments)
-
 					return deps.WriteJSON(cmd.OutOrStdout(), CommentThreads{
 						Repository:    repositoryOf(repo),
 						PullRequestID: target.PullRequestID,
@@ -1827,12 +1836,12 @@ func New(deps Dependencies) *cobra.Command {
 					})
 				}
 
-				if len(comments) == 0 {
+				if len(ungrouped) == 0 {
 					fmt.Fprintln(cmd.OutOrStdout(), "No comments found")
 					return nil
 				}
-				for _, comment := range comments {
-					fmt.Fprintln(cmd.OutOrStdout(), formatCommentSummary(comment))
+				for _, comment := range ungrouped {
+					fmt.Fprintln(cmd.OutOrStdout(), result.FormatComment(comment))
 				}
 
 				return nil

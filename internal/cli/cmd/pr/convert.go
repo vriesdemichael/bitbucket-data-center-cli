@@ -301,16 +301,6 @@ func threadSummaryFrom(upstream pullrequestactivityservice.Summary) ThreadSummar
 	}
 }
 
-// commentsFrom converts a list, preserving order and never returning nil.
-func commentsFrom(upstream []openapigenerated.RestComment) []result.Comment {
-	converted := make([]result.Comment, 0, len(upstream))
-	for _, one := range upstream {
-		converted = append(converted, result.CommentFrom(one))
-	}
-
-	return converted
-}
-
 func stringValue(value *string) string {
 	if value == nil {
 		return ""
