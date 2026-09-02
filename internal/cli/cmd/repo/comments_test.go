@@ -10,6 +10,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
 )
 
 func TestCommentOwnedByUser(t *testing.T) {
@@ -267,5 +268,32 @@ func TestResolveCommentTargetRequiresExactlyOneContext(t *testing.T) {
 	}
 	if target.CommitID != "" || target.PullRequestID != "77" {
 		t.Fatalf("unexpected pull request target: %+v", target)
+	}
+}
+
+// TestCreateTargetPreviewNamesTheParentOnlyWhenThereIsOne covers the dry-run
+// description of a reply.
+//
+// A zero parent id in the preview would read as "replies to comment 0", which
+// is neither a reply nor a new thread.
+func TestCreateTargetPreviewNamesTheParentOnlyWhenThereIsOne(t *testing.T) {
+	t.Parallel()
+
+	target := commentservice.Target{
+		Repository: commentservice.RepositoryRef{ProjectKey: "PRJ", Slug: "payments"},
+		CommitID:   "abc123",
+	}
+
+	root := createTargetPreview(target, "the root", 0)
+	if _, named := root["parentId"]; named {
+		t.Errorf("a new thread named a parent: %+v", root)
+	}
+	if root["text"] != "the root" {
+		t.Errorf("preview = %+v", root)
+	}
+
+	reply := createTargetPreview(target, "a reply", 42)
+	if reply["parentId"] != int64(42) {
+		t.Errorf("a reply did not name what it answers: %+v", reply)
 	}
 }

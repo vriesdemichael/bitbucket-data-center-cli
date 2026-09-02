@@ -332,13 +332,22 @@ type MergeStrategy struct {
 // these are the fields bb reads and writes. Anything else the instance reports
 // is not published, because bb cannot say what it means or promise it will be
 // there.
+// Every setting is a pointer, and absent means Bitbucket did not report it.
+//
+// It reports what the server said and nothing else. Two paths reach here with
+// a partial answer: an older instance that does not send a key at all, and the
+// update endpoints, which on some versions answer with an empty body -- the
+// service then hands back the request map it sent (reposettings/service.go),
+// so every key the request did not carry is simply missing. Filling those with
+// a Go zero published "this repository does not require all tasks complete" as
+// a fact about a repository nothing had read.
 type PullRequestSettings struct {
 	Repository               result.Repository `json:"repository"`
-	RequiredApprovers        int               `json:"requiredApprovers" jsonschema:"How many approvals a merge needs. Zero when the check is off."`
-	RequiredApproversEnabled bool              `json:"requiredApproversEnabled" jsonschema:"Whether the approval check is on at all. Distinct from a count of zero, which the instance may report while the check is off."`
-	RequiredAllTasksComplete bool              `json:"requiredAllTasksComplete" jsonschema:"Whether every task must be resolved before a merge."`
-	DefaultMergeStrategy     string            `json:"defaultMergeStrategy,omitempty" jsonschema:"Strategy a merge uses when none is named. Reported at the top level rather than as a flag on one entry, because Bitbucket names it even when it does not send the list."`
-	MergeStrategies          []MergeStrategy   `json:"mergeStrategies" jsonschema:"Strategies the repository offers. Empty rather than absent when the instance reports none."`
+	RequiredApprovers        *int              `json:"requiredApprovers,omitempty" jsonschema:"How many approvals a merge needs. Zero when the check is off. Absent when Bitbucket did not report it."`
+	RequiredApproversEnabled *bool             `json:"requiredApproversEnabled,omitempty" jsonschema:"Whether the approval check is on at all. Distinct from a count of zero, which the instance may report while the check is off. Absent when Bitbucket did not report it."`
+	RequiredAllTasksComplete *bool             `json:"requiredAllTasksComplete,omitempty" jsonschema:"Whether every task must be resolved before a merge. Absent when Bitbucket did not report it."`
+	DefaultMergeStrategy     *string           `json:"defaultMergeStrategy,omitempty" jsonschema:"Strategy a merge uses when none is named. Reported at the top level rather than as a flag on one entry, because Bitbucket names it even when it does not send the list. Absent when Bitbucket did not report a merge configuration."`
+	MergeStrategies          *[]MergeStrategy  `json:"mergeStrategies,omitempty" jsonschema:"Strategies the repository offers. Empty when the instance reports a configuration with none; absent when it reported no configuration at all."`
 }
 
 // MergeChecks is what `bb repo settings pull-requests merge-checks list`

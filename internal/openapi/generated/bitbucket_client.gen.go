@@ -6250,8 +6250,10 @@ type RestRefSyncStatus struct {
 		Tag       *bool                               `json:"tag,omitempty"`
 		Type      RestRefSyncStatusDivergedRefsType   `json:"type"`
 	} `json:"divergedRefs,omitempty"`
-	Enabled      *bool    `json:"enabled,omitempty"`
-	LastSync     *float32 `json:"lastSync,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// LastSync Epoch milliseconds. Upstream spec declares a bare number, which does not survive a float32 round trip.
+	LastSync     *int64 `json:"lastSync,omitempty"`
 	OrphanedRefs *[]struct {
 		DisplayId string                              `json:"displayId"`
 		Id        string                              `json:"id"`

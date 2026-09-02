@@ -332,22 +332,35 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 				return deps.WriteJSON(cmd.OutOrStdout(), published)
 			}
 
-			requiredApprovals := "disabled"
-			if published.RequiredApproversEnabled {
-				requiredApprovals = strconv.Itoa(published.RequiredApprovers)
+			// "not reported" rather than a default, for the same reason the
+			// payload omits the key: an instance that did not answer the
+			// question is not an instance that answered no.
+			requiredApprovals := "not reported"
+			switch {
+			case published.RequiredApproversEnabled == nil:
+			case !*published.RequiredApproversEnabled:
+				requiredApprovals = "disabled"
+			case published.RequiredApprovers != nil:
+				requiredApprovals = strconv.Itoa(*published.RequiredApprovers)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %t\n", style.Label.Render("Required tasks complete:"), published.RequiredAllTasksComplete)
+			requiredTasks := "not reported"
+			if published.RequiredAllTasksComplete != nil {
+				requiredTasks = strconv.FormatBool(*published.RequiredAllTasksComplete)
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Required tasks complete:"), requiredTasks)
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Label.Render("Required approvers:"), requiredApprovals)
 
-			if len(published.MergeStrategies) > 0 {
-				fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Available merge strategies:"), len(published.MergeStrategies))
-				for _, strategy := range published.MergeStrategies {
+			if published.MergeStrategies != nil && len(*published.MergeStrategies) > 0 {
+				strategies := *published.MergeStrategies
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Available merge strategies:"), len(strategies))
+				for _, strategy := range strategies {
 					marker := ""
 					if strategy.Enabled {
 						marker = "*"
 					}
-					if strategy.ID == published.DefaultMergeStrategy {
+					if published.DefaultMergeStrategy != nil && strategy.ID == *published.DefaultMergeStrategy {
 						marker += " (default)"
 					}
 					fmt.Fprintf(cmd.OutOrStdout(), "- %s%s (%s)\n", strategy.ID, marker, strategy.Name)
@@ -580,10 +593,19 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// Both renderings read the same model. Printing the requested count
+			// here said the update had taken a value nothing had confirmed:
+			// an instance that clamps or ignores it answers differently, and
+			// only the JSON path would have shown that.
+			updatedApprovers := pullRequestSettingsFrom(settingsRepositoryOf(repo), settings)
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), pullRequestSettingsFrom(settingsRepositoryOf(repo), settings))
+				return deps.WriteJSON(cmd.OutOrStdout(), updatedApprovers)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Updated pull-request settings: requiredApprovers=%d\n", requiredApproversCount)
+			if updatedApprovers.RequiredApprovers == nil {
+				fmt.Fprintln(cmd.OutOrStdout(), "Updated pull-request settings: requiredApprovers not reported")
+				return nil
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Updated pull-request settings: requiredApprovers=%d\n", *updatedApprovers.RequiredApprovers)
 			return nil
 		},
 	}

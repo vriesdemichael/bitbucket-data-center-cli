@@ -2,6 +2,7 @@ package repocmd
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
@@ -161,8 +162,8 @@ func TestCommentFromTrimsTheAnchorAndKeepsTheExtras(t *testing.T) {
 		t.Fatalf("properties = %+v, want the extras kept", converted.Properties)
 	}
 
-	if list := commentsFrom(nil); list == nil || len(list) != 0 {
-		t.Fatalf("commentsFrom(nil) = %v, want an empty slice rather than nil", list)
+	if list := result.FlattenComments(nil); list == nil || len(list) != 0 {
+		t.Fatalf("FlattenComments(nil) = %v, want an empty slice rather than nil", list)
 	}
 }
 
@@ -329,20 +330,20 @@ func TestPullRequestSettingsFromReadsBothSpellingsOfTheCount(t *testing.T) {
 			},
 		},
 	})
-	if asNumber.RequiredApprovers != 2 || !asNumber.RequiredApproversEnabled || !asNumber.RequiredAllTasksComplete {
+	if valueOf(asNumber.RequiredApprovers) != 2 || !valueOf(asNumber.RequiredApproversEnabled) || !valueOf(asNumber.RequiredAllTasksComplete) {
 		t.Fatalf("numeric count = %+v", asNumber)
 	}
-	if asNumber.DefaultMergeStrategy != "squash" || len(asNumber.MergeStrategies) != 2 {
+	if valueOf(asNumber.DefaultMergeStrategy) != "squash" || asNumber.MergeStrategies == nil || len(*asNumber.MergeStrategies) != 2 {
 		t.Fatalf("merge config = %+v", asNumber)
 	}
-	if !asNumber.MergeStrategies[0].Enabled || asNumber.MergeStrategies[1].Enabled {
-		t.Fatalf("strategy flags = %+v", asNumber.MergeStrategies)
+	if strategies := *asNumber.MergeStrategies; !strategies[0].Enabled || strategies[1].Enabled {
+		t.Fatalf("strategy flags = %+v", strategies)
 	}
 
 	asString := pullRequestSettingsFrom(repository, map[string]any{
 		"requiredApprovers": map[string]any{"enabled": true, "count": "2"},
 	})
-	if asString.RequiredApprovers != 2 {
+	if valueOf(asString.RequiredApprovers) != 2 {
 		t.Fatalf("string count = %+v", asString)
 	}
 
@@ -351,17 +352,51 @@ func TestPullRequestSettingsFromReadsBothSpellingsOfTheCount(t *testing.T) {
 	defaultOnly := pullRequestSettingsFrom(repository, map[string]any{
 		"mergeConfig": map[string]any{"defaultStrategy": map[string]any{"id": "merge-base"}},
 	})
-	if defaultOnly.DefaultMergeStrategy != "merge-base" {
+	if valueOf(defaultOnly.DefaultMergeStrategy) != "merge-base" {
 		t.Fatalf("default-only response = %+v", defaultOnly)
 	}
-	if defaultOnly.MergeStrategies == nil {
-		t.Fatalf("strategies = nil, want an empty list")
+	// The configuration was reported and the strategies key was not, so the
+	// list is absent rather than empty. An empty list would say the repository
+	// offers no strategies, which this response does not claim.
+	if defaultOnly.MergeStrategies != nil {
+		t.Fatalf("strategies = %v, want absent when the response carried no list", *defaultOnly.MergeStrategies)
 	}
 
 	nonsense := pullRequestSettingsFrom(repository, map[string]any{"requiredApprovers": map[string]any{"enabled": true, "count": "two"}})
-	if nonsense.RequiredApprovers != 0 {
-		t.Fatalf("an unparseable count produced %d, want zero", nonsense.RequiredApprovers)
+	if valueOf(nonsense.RequiredApprovers) != 0 {
+		t.Fatalf("an unparseable count produced %v, want zero", nonsense.RequiredApprovers)
 	}
+
+	// The response said nothing, so neither does the payload. Publishing a Go
+	// zero here asserted "this repository does not require all tasks complete"
+	// about a repository nothing had read -- the update endpoints answer with
+	// an empty body on some versions, and the service then hands back the
+	// request map, where every unasked key is simply missing.
+	silent := pullRequestSettingsFrom(repository, map[string]any{})
+	if silent.RequiredApprovers != nil || silent.RequiredApproversEnabled != nil ||
+		silent.RequiredAllTasksComplete != nil || silent.DefaultMergeStrategy != nil || silent.MergeStrategies != nil {
+		t.Fatalf("an empty response reported settings: %+v", silent)
+	}
+	encoded, err := json.Marshal(silent)
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	for _, key := range []string{"requiredApprovers", "requiredApproversEnabled", "requiredAllTasksComplete", "mergeStrategies"} {
+		if strings.Contains(string(encoded), key) {
+			t.Errorf("%q reached the document for a response that did not report it: %s", key, encoded)
+		}
+	}
+}
+
+// valueOf reads a pointer field, treating absent as the zero value. Only for
+// assertions that are about the value; absence has its own checks above.
+func valueOf[T any](value *T) T {
+	if value == nil {
+		var zero T
+		return zero
+	}
+
+	return *value
 }
 
 func TestChangesFromJoinsThePaths(t *testing.T) {
@@ -470,29 +505,31 @@ func TestPullRequestSettingsFromReadsRequiredApproversEitherWay(t *testing.T) {
 	object := pullRequestSettingsFrom(result.Repository{ProjectKey: "PRJ", Slug: "payments"}, map[string]any{
 		"requiredApprovers": map[string]any{"enabled": true, "count": float64(2)},
 	})
-	if object.RequiredApprovers != 2 || !object.RequiredApproversEnabled {
+	if valueOf(object.RequiredApprovers) != 2 || !valueOf(object.RequiredApproversEnabled) {
 		t.Fatalf("object form = %+v", object)
 	}
 
 	// The bare count carries no enabled flag, so a non-zero count is what says
 	// the rule is on.
 	bare := pullRequestSettingsFrom(result.Repository{ProjectKey: "PRJ", Slug: "payments"}, map[string]any{"requiredApprovers": float64(3)})
-	if bare.RequiredApprovers != 3 || !bare.RequiredApproversEnabled {
+	if valueOf(bare.RequiredApprovers) != 3 || !valueOf(bare.RequiredApproversEnabled) {
 		t.Fatalf("bare form = %+v", bare)
 	}
 
 	off := pullRequestSettingsFrom(result.Repository{ProjectKey: "PRJ", Slug: "payments"}, map[string]any{"requiredApprovers": float64(0)})
-	if off.RequiredApprovers != 0 || off.RequiredApproversEnabled {
+	if valueOf(off.RequiredApprovers) != 0 || valueOf(off.RequiredApproversEnabled) {
 		t.Fatalf("a count of zero is the rule being off: %+v", off)
 	}
 
 	// An instance that quotes its numbers is still answering the question.
 	quoted := pullRequestSettingsFrom(result.Repository{ProjectKey: "PRJ", Slug: "payments"}, map[string]any{"requiredApprovers": "4"})
-	if quoted.RequiredApprovers != 4 {
+	if valueOf(quoted.RequiredApprovers) != 4 {
 		t.Fatalf("quoted form = %+v", quoted)
 	}
 
-	if absent := pullRequestSettingsFrom(result.Repository{ProjectKey: "PRJ", Slug: "payments"}, map[string]any{}); absent.RequiredApprovers != 0 || absent.RequiredApproversEnabled {
+	// Absent, not zero: an instance that did not answer is not an instance
+	// that answered no.
+	if absent := pullRequestSettingsFrom(result.Repository{ProjectKey: "PRJ", Slug: "payments"}, map[string]any{}); absent.RequiredApprovers != nil || absent.RequiredApproversEnabled != nil {
 		t.Fatalf("absent = %+v", absent)
 	}
 }
