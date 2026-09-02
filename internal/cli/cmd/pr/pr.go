@@ -2324,7 +2324,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			return nil
 		},
 	}
-	enumflag.Register(autoMergeEnableCmd.Flags(), &autoMergeStrategy, "strategy", "no-ff", []string{"no-ff", "ff-only", "rebase-no-ff", "rebase-ff-only", "squash", "squash-ff-only"}, "Merge strategy")
+	enumflag.Register(autoMergeEnableCmd.Flags(), &autoMergeStrategy, "strategy", "no-ff", openapi.MergeStrategies, "Merge strategy")
 	autoMergeCmd.AddCommand(autoMergeEnableCmd)
 
 	autoMergeDisableCmd := &cobra.Command{
