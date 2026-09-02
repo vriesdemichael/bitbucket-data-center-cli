@@ -86,11 +86,16 @@ func TestLiveGovernanceCLI(t *testing.T) {
 		t.Fatalf("expected pull_request_settings in output: %s", output)
 	}
 
-	// Test updating PR strategy (safe update)
+	// Asserted, not attempted. This tolerated failure with a t.Logf, and so
+	// hid that set-strategy could not set a strategy at all: it sent a default
+	// with no enabled strategies, which Bitbucket refuses for every value.
+	// A command that never worked looked covered.
 	output, err = executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "set-strategy", "squash", "--repo", seeded.Key+"/"+repo.Slug)
 	if err != nil {
-		// Some strategies might not be available depending on plugin config, but we try anyway
-		t.Logf("repo set-strategy attempt output: %s", output)
+		t.Fatalf("repo set-strategy failed: %v\noutput: %s", err, output)
+	}
+	if !strings.Contains(output, `"squash"`) {
+		t.Fatalf("expected squash as the default merge strategy: %s", output)
 	}
 
 	// Test listing merge checks

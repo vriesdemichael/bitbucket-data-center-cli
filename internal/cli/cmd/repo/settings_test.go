@@ -2,8 +2,10 @@ package repocmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
@@ -544,5 +546,72 @@ func TestRepoSettingsJSONAndDryRunModes(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), "Auto-decline enabled:") {
 		t.Fatalf("expected Auto-decline enabled: in output: %s", buf.String())
+	}
+}
+
+// TestSetStrategySendsTheEnabledStrategiesWithTheDefault pins the payload.
+//
+// The command used to send only defaultStrategy. A POST replaces mergeConfig
+// wholesale, so Bitbucket read that as "no strategies enabled" and refused
+// with "The default strategy X has not been enabled" -- for every value, valid
+// or not. The command could not set a strategy at all, and the live test that
+// covered it tolerated the failure with a t.Logf.
+func TestSetStrategySendsTheEnabledStrategiesWithTheDefault(t *testing.T) {
+	var posted map[string]any
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method == http.MethodGet {
+			writer.Header().Set("Content-Type", "application/json")
+			_, _ = writer.Write([]byte(`{"mergeConfig":{"defaultStrategy":{"id":"no-ff"},"strategies":[` +
+				`{"id":"no-ff","enabled":true},` +
+				`{"id":"ff","enabled":false},` +
+				`{"id":"rebase-no-ff","enabled":true}]}}`))
+
+			return
+		}
+
+		_ = json.NewDecoder(request.Body).Decode(&posted)
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"mergeConfig":{"defaultStrategy":{"id":"squash"}}}`))
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_TOKEN", "token")
+
+	if _, err := executeTestCLI(t, "repo", "settings", "pull-requests", "set-strategy", "squash", "--repo", "PRJ/demo"); err != nil {
+		t.Fatalf("set-strategy: %v", err)
+	}
+
+	mergeConfig, ok := posted["mergeConfig"].(map[string]any)
+	if !ok {
+		t.Fatalf("no mergeConfig in %v", posted)
+	}
+
+	defaultStrategy, ok := mergeConfig["defaultStrategy"].(map[string]any)
+	if !ok || defaultStrategy["id"] != "squash" {
+		t.Errorf("defaultStrategy = %v, want squash", mergeConfig["defaultStrategy"])
+	}
+
+	strategies, ok := mergeConfig["strategies"].([]any)
+	if !ok {
+		t.Fatalf("no strategies sent, which is the defect: %v", mergeConfig)
+	}
+
+	var sent []string
+	for _, entry := range strategies {
+		if strategy, ok := entry.(map[string]any); ok {
+			if id, ok := strategy["id"].(string); ok {
+				sent = append(sent, id)
+			}
+		}
+	}
+
+	// The two that were enabled keep their place, and the requested one is
+	// added because a default that is not enabled is refused. The disabled
+	// "ff" is not turned on as a side effect.
+	want := []string{"no-ff", "rebase-no-ff", "squash"}
+	if !slices.Equal(sent, want) {
+		t.Errorf("strategies = %v, want %v", sent, want)
 	}
 }
