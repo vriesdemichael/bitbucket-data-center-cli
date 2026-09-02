@@ -409,7 +409,12 @@ jobs:
           deadline=$(( SECONDS + 300 ))
 
           while (( SECONDS < deadline )); do
-            state=$(curl -fsS "$api" 2>/dev/null | jq -r '.state // empty')
+            # `|| state=""` because the runner already invokes this with
+            # `bash -e -o pipefail`, so a curl that returns 404 -- which is
+            # precisely what "Codecov has not processed the commit yet" looks
+            # like -- killed the step on the first poll with exit 22. The retry
+            # loop could only ever succeed when no retry was needed.
+            state=$(curl -fsS "$api" 2>/dev/null | jq -r '.state // empty') || state=""
             if [ "$state" = "complete" ]; then
               echo "Codecov processed ${COMMIT_SHA}."
               exit 0
