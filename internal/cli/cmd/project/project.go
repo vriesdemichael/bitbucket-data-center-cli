@@ -186,33 +186,22 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "project.create",
-						Target:          map[string]any{"project": args[0], "name": createName, "description": createDesc},
-						Action:          "create",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"project get"},
-						BlockingReasons: func() []string {
-							if predicted == "conflict" {
-								return []string{"project key exists"}
-							}
-							return nil
-						}(),
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				if predicted == "create" {
-					preview.Summary.CreateCount = 1
-				} else {
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "project.create",
+					Target:          map[string]any{"project": args[0], "name": createName, "description": createDesc},
+					Action:          "create",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"project get"},
+					BlockingReasons: func() []string {
+						if predicted == "conflict" {
+							return []string{"project key exists"}
+						}
+						return nil
+					}(),
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
@@ -271,27 +260,16 @@ func New(deps Dependencies) *cobra.Command {
 					reason = "project already matches requested values"
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "project.update",
-						Target:          map[string]any{"project": args[0], "name": updateName, "description": updateDesc},
-						Action:          "update",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"project get"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				if predicted == "update" {
-					preview.Summary.UpdateCount = 1
-				} else {
-					preview.Summary.NoopCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "project.update",
+					Target:          map[string]any{"project": args[0], "name": updateName, "description": updateDesc},
+					Action:          "update",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"project get"},
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
@@ -344,27 +322,16 @@ func New(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "project.delete",
-						Target:          map[string]any{"project": args[0]},
-						Action:          "delete",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"project get"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				if predicted == "delete" {
-					preview.Summary.DeleteCount = 1
-				} else {
-					preview.Summary.NoopCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "project.delete",
+					Target:          map[string]any{"project": args[0]},
+					Action:          "delete",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"project get"},
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}

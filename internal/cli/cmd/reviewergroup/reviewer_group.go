@@ -175,28 +175,17 @@ func New(deps Dependencies) *cobra.Command {
 						blocking = []string{"reviewer group already exists"}
 					}
 
-					preview := dryrunpreview.Preview{
-						DryRun:       true,
-						PlanningMode: dryrunpreview.PlanningModeStateful,
-						Capability:   dryrunpreview.CapabilityFull,
-						Items: []dryrunpreview.Item{{
-							Intent:          "reviewer-group.create",
-							Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "name": name},
-							Action:          "create",
-							PredictedAction: predicted,
-							Supported:       true,
-							Reason:          reason,
-							Confidence:      dryrunpreview.CapabilityFull,
-							RequiredState:   []string{"reviewer groups list"},
-							BlockingReasons: blocking,
-						}},
-						Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-					}
-					if predicted == "create" {
-						preview.Summary.CreateCount = 1
-					} else {
-						preview.Summary.UnknownCount = 1
-					}
+					preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+						Intent:          "reviewer-group.create",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "name": name},
+						Action:          "create",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      dryrunpreview.CapabilityFull,
+						RequiredState:   []string{"reviewer groups list"},
+						BlockingReasons: blocking,
+					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
 
@@ -237,28 +226,17 @@ func New(deps Dependencies) *cobra.Command {
 					blocking = []string{"reviewer group already exists"}
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "reviewer-group.create",
-						Target:          map[string]any{"project": projectKey, "name": name},
-						Action:          "create",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"reviewer groups list"},
-						BlockingReasons: blocking,
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				if predicted == "create" {
-					preview.Summary.CreateCount = 1
-				} else {
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "reviewer-group.create",
+					Target:          map[string]any{"project": projectKey, "name": name},
+					Action:          "create",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"reviewer groups list"},
+					BlockingReasons: blocking,
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
@@ -324,30 +302,17 @@ func New(deps Dependencies) *cobra.Command {
 						}
 					}
 
-					preview := dryrunpreview.Preview{
-						DryRun:       true,
-						PlanningMode: dryrunpreview.PlanningModeStateful,
-						Capability:   dryrunpreview.CapabilityFull,
-						Items: []dryrunpreview.Item{{
-							Intent:          "reviewer-group.update",
-							Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
-							Action:          "update",
-							PredictedAction: predicted,
-							Supported:       true,
-							Reason:          reason,
-							Confidence:      dryrunpreview.CapabilityFull,
-							RequiredState:   []string{"reviewer groups list"},
-							BlockingReasons: blocking,
-						}},
-						Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-					}
-					if predicted == "update" {
-						preview.Summary.UpdateCount = 1
-					} else if predicted == "no-op" {
-						preview.Summary.NoopCount = 1
-					} else {
-						preview.Summary.UnknownCount = 1
-					}
+					preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+						Intent:          "reviewer-group.update",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
+						Action:          "update",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      dryrunpreview.CapabilityFull,
+						RequiredState:   []string{"reviewer groups list"},
+						BlockingReasons: blocking,
+					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
 
@@ -394,30 +359,17 @@ func New(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "reviewer-group.update",
-						Target:          map[string]any{"project": projectKey, "id": id},
-						Action:          "update",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"reviewer groups list"},
-						BlockingReasons: blocking,
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				if predicted == "update" {
-					preview.Summary.UpdateCount = 1
-				} else if predicted == "no-op" {
-					preview.Summary.NoopCount = 1
-				} else {
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "reviewer-group.update",
+					Target:          map[string]any{"project": projectKey, "id": id},
+					Action:          "update",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"reviewer groups list"},
+					BlockingReasons: blocking,
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
@@ -476,27 +428,16 @@ func New(deps Dependencies) *cobra.Command {
 						reason = "reviewer group will be deleted"
 					}
 
-					preview := dryrunpreview.Preview{
-						DryRun:       true,
-						PlanningMode: dryrunpreview.PlanningModeStateful,
-						Capability:   dryrunpreview.CapabilityFull,
-						Items: []dryrunpreview.Item{{
-							Intent:          "reviewer-group.delete",
-							Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
-							Action:          "delete",
-							PredictedAction: predicted,
-							Supported:       true,
-							Reason:          reason,
-							Confidence:      dryrunpreview.CapabilityFull,
-							RequiredState:   []string{"reviewer groups list"},
-						}},
-						Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-					}
-					if predicted == "delete" {
-						preview.Summary.DeleteCount = 1
-					} else {
-						preview.Summary.NoopCount = 1
-					}
+					preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+						Intent:          "reviewer-group.delete",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
+						Action:          "delete",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      dryrunpreview.CapabilityFull,
+						RequiredState:   []string{"reviewer groups list"},
+					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
 
@@ -534,27 +475,16 @@ func New(deps Dependencies) *cobra.Command {
 					reason = "reviewer group will be deleted"
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "reviewer-group.delete",
-						Target:          map[string]any{"project": projectKey, "id": id},
-						Action:          "delete",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"reviewer groups list"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				if predicted == "delete" {
-					preview.Summary.DeleteCount = 1
-				} else {
-					preview.Summary.NoopCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "reviewer-group.delete",
+					Target:          map[string]any{"project": projectKey, "id": id},
+					Action:          "delete",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"reviewer groups list"},
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 

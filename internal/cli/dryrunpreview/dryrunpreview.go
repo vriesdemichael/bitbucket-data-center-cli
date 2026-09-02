@@ -85,3 +85,69 @@ func Write(writer io.Writer, asJSON bool, preview Preview) error {
 
 	return nil
 }
+
+// The actions a preview can predict.
+//
+// Named because they were magic strings at 176 sites, and the summary counter a
+// preview lands in is chosen by comparing against them. "noop" instead of
+// "no-op" reads the same to a person and silently counts as unknown, which is
+// the sort of thing that looks like a product bug in a report nobody reruns.
+const (
+	PredictedCreate = "create"
+	PredictedUpdate = "update"
+	PredictedDelete = "delete"
+	PredictedNoop   = "no-op"
+
+	// PredictedConflict and PredictedBlocked both mean the run would not do
+	// what was asked, for different reasons: something is already there, or
+	// something forbids it. Neither is a mutation, so both count as unknown.
+	PredictedConflict = "conflict"
+	PredictedBlocked  = "blocked"
+)
+
+// New builds a preview and derives its summary from the items.
+//
+// The summary used to be written by hand at every site, either as a literal
+// beside the item or by an if-ladder after it -- 139 assignments across 103
+// previews, all restating what the items already said. A hand-written tally can
+// disagree with the items it summarises, and nothing would notice: the report
+// is read by an agent deciding whether to proceed, so a preview claiming one
+// supported update while carrying a blocked item is worse than no preview.
+//
+// DryRun is always true. A preview only exists because --dry-run was passed.
+func New(planningMode string, capability string, items ...Item) Preview {
+	preview := Preview{
+		DryRun:       true,
+		PlanningMode: planningMode,
+		Capability:   capability,
+		Items:        items,
+		Summary:      Summary{Total: len(items)},
+	}
+
+	for _, item := range items {
+		if item.Supported {
+			preview.Summary.Supported++
+		} else {
+			preview.Summary.Unsupported++
+		}
+
+		switch item.PredictedAction {
+		case PredictedCreate:
+			preview.Summary.CreateCount++
+		case PredictedUpdate:
+			preview.Summary.UpdateCount++
+		case PredictedDelete:
+			preview.Summary.DeleteCount++
+		case PredictedNoop:
+			preview.Summary.NoopCount++
+		default:
+			// Conflict, blocked, and anything a future command predicts that
+			// this switch has not been taught. Counting it as unknown is the
+			// honest answer: the run would not perform a mutation, and saying
+			// which is not something this function can invent.
+			preview.Summary.UnknownCount++
+		}
+	}
+
+	return preview
+}
