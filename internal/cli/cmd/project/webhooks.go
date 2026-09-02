@@ -8,11 +8,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
-	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	projectservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/project"
 )
 
@@ -136,14 +136,9 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 
 			var active *bool
 			if cmd.Flags().Changed("active") {
-				val := strings.ToLower(strings.TrimSpace(updateActiveVal))
-				if val == "true" {
-					active = boolPtr(true)
-				} else if val == "false" {
-					active = boolPtr(false)
-				} else {
-					return apperrors.New(apperrors.KindValidation, "active must be true or false", nil)
-				}
+				// enumflag has already refused anything but true or false, at
+				// parse time, and normalised the case.
+				active = boolPtr(updateActiveVal == "true")
 			}
 
 			service := projectservice.NewService(client)
@@ -180,7 +175,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	updateCmd.Flags().StringVar(&updateName, "name", "", "New name")
 	updateCmd.Flags().StringVar(&updateURL, "url", "", "New URL")
 	updateCmd.Flags().StringSliceVar(&updateEvents, "event", nil, "New list of webhook events")
-	updateCmd.Flags().StringVar(&updateActiveVal, "active", "", "Active status (true or false)")
+	enumflag.Register(updateCmd.Flags(), &updateActiveVal, "active", "", []string{"true", "false"}, "Active status")
 	webhookCmd.AddCommand(updateCmd)
 
 	deleteCmd := &cobra.Command{

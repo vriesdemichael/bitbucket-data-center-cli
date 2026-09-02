@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
@@ -210,7 +211,7 @@ func newSearchCommitsCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().StringVar(&path, "path", "", "Filter by file path")
 	cmd.Flags().StringVar(&since, "since", "", "Commit ID or ref to search after (exclusive)")
 	cmd.Flags().StringVar(&until, "until", "", "Commit ID or ref to search before (inclusive)")
-	cmd.Flags().StringVar(&merges, "merges", "", "Filter merge commits (exclude, include, only)")
+	enumflag.Register(cmd.Flags(), &merges, "merges", "", mergeFilters, "Filter merge commits")
 
 	_ = cmd.MarkFlagRequired("repo")
 
@@ -297,8 +298,17 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Optional repository as PROJECT/slug to scope search")
 	listPaging.Register(cmd, 25)
 	cmd.Flags().IntVar(&start, "start", 0, "Pagination start index")
-	cmd.Flags().StringVar(&state, "state", "open", "Filter by state (open, closed, all)")
-	cmd.Flags().StringVar(&role, "role", "", "Filter by role (author, reviewer, participant) - only applies when --repo is not used")
+	enumflag.Register(cmd.Flags(), &state, "state", "open", openapi.PullRequestStateFilters, "Filter by state")
+	enumflag.Register(cmd.Flags(), &role, "role", "", participantRoles, "Filter by role, only applied when --repo is not used")
 
 	return cmd
 }
+
+// mergeFilters are how a commit search treats merge commits, and
+// participantRoles are the roles a pull request search can filter on. Both are
+// sent lower-case; the service upper-cases the role on its way out, so either
+// spelling works on the command line.
+var (
+	mergeFilters     = []string{"exclude", "include", "only"}
+	participantRoles = []string{"author", "reviewer", "participant"}
+)

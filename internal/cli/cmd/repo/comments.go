@@ -2,6 +2,7 @@ package repocmd
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"strconv"
 	"strings"
@@ -189,7 +190,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 	createCmd.Flags().Int64Var(&createParentID, "parent", 0, "Reply to this comment id instead of starting a new thread")
 	createCmd.Flags().StringVar(&createPath, "path", "", "Anchor the comment to this file, which is what makes it listable")
 	createCmd.Flags().IntVar(&createLine, "line", 0, "Line within --path to anchor the comment to")
-	createCmd.Flags().StringVar(&createLineType, "line-type", "", "Which side of the diff --line refers to: ADDED, REMOVED or CONTEXT")
+	enumflag.Register(createCmd.Flags(), &createLineType, "line-type", "", openapi.DiffLineTypes, "Which side of the diff --line refers to")
 	_ = createCmd.MarkFlagRequired("text")
 	commentCmd.AddCommand(createCmd)
 

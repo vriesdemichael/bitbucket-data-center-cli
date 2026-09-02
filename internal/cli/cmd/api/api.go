@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -210,7 +211,7 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 		},
 	}
 
-	cmd.Flags().StringVarP(&method, "method", "X", "", "HTTP method (GET, POST, PUT, DELETE, PATCH, HEAD)")
+	enumflag.RegisterP(cmd.Flags(), &method, "method", "X", "", httpMethods, "HTTP method")
 	cmd.Flags().StringVar(&host, "host", "", "Bitbucket host URL")
 	cmd.Flags().StringArrayVarP(&rawFields, "raw-field", "f", nil, "Add a string parameter (key=value)")
 	cmd.Flags().StringArrayVarP(&typedFields, "field", "F", nil, "Add a typed parameter (key=value, booleans, numbers, null, or @file)")
@@ -511,3 +512,8 @@ func writeResponse(w io.Writer, body []byte, deps Dependencies) error {
 	_, err := fmt.Fprintln(w, string(trimmed))
 	return err
 }
+
+// httpMethods are the verbs the Bitbucket REST API uses. bb api is the escape
+// hatch for endpoints without a command, not for arbitrary verbs -- the help
+// text has always named these six, and now it holds to that.
+var httpMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"}

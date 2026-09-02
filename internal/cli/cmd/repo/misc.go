@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
@@ -527,7 +528,7 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 		},
 	}
 	syncCmd.Flags().StringVar(&syncRefID, "ref", "", "Ref to synchronize (defaults to the repository default branch)")
-	syncCmd.Flags().StringVar(&syncAction, "action", "MERGE", "How to reconcile the ref: MERGE, DISCARD or REBASE")
+	enumflag.Register(syncCmd.Flags(), &syncAction, "action", "MERGE", []string{"MERGE", "DISCARD", "REBASE"}, "How to reconcile the ref")
 	syncCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	statusCmd := &cobra.Command{
@@ -1000,7 +1001,7 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug")
-	cmd.Flags().StringVar(&format, "format", "zip", "The format to stream the archive in: zip, tar, tar.gz, tgz")
+	enumflag.Register(cmd.Flags(), &format, "format", "zip", []string{"zip", "tar", "tar.gz", "tgz"}, "The format to stream the archive in")
 	cmd.Flags().StringVarP(&output, "output", "o", "", "Output filename (use '-' for stdout, defaults to <repo-slug>.<format>)")
 	cmd.Flags().StringVar(&at, "at", "", "The commit to stream an archive of")
 	cmd.Flags().StringVar(&prefix, "prefix", "", "A prefix to apply to all entries in the streamed archive")
@@ -1199,7 +1200,7 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 		},
 	}
 	addCmd.Flags().StringVar(&labelFlag, "label", "", "Label/comment for the SSH key")
-	addCmd.Flags().StringVar(&permissionFlag, "permission", "read-only", "Permission level (read-only or read-write)")
+	enumflag.Register(addCmd.Flags(), &permissionFlag, "permission", "read-only", []string{"read-only", "read-write"}, "Permission level")
 	addCmd.Flags().BoolVar(&readOnlyFlag, "read-only", false, "Add as read-only access key")
 	addCmd.Flags().BoolVar(&readWriteFlag, "read-write", false, "Add as read-write access key")
 	repoSshCmd.AddCommand(addCmd)
