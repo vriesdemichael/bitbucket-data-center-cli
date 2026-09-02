@@ -1,7 +1,7 @@
 package refcmd
 
 import (
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"

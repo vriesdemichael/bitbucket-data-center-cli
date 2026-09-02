@@ -3,7 +3,7 @@ package projectcmd
 import (
 	"context"
 	"fmt"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"io"
 	"strings"
 

@@ -2,7 +2,7 @@ package repocmd
 
 import (
 	"fmt"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"strings"
 
 	"github.com/spf13/cobra"
