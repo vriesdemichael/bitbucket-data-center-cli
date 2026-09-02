@@ -20,6 +20,7 @@ type User struct {
 	DisplayName  string `json:"displayName,omitempty" jsonschema:"Human-readable name."`
 	EmailAddress string `json:"emailAddress,omitempty" jsonschema:"Email address, when the instance exposes it."`
 	Slug         string `json:"slug,omitempty" jsonschema:"URL-safe form of the username."`
+	Type         string `json:"type,omitempty" jsonschema:"Account kind: NORMAL for a person, SERVICE for an integration account."`
 	Active       bool   `json:"active" jsonschema:"Whether the account is enabled. An inactive user still counts as configured but cannot act."`
 }
 
@@ -33,6 +34,9 @@ func UserFrom(upstream openapigenerated.ApplicationUser) User {
 	}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
+	}
+	if upstream.Type != nil {
+		converted.Type = string(*upstream.Type)
 	}
 	if upstream.Active != nil {
 		converted.Active = *upstream.Active
@@ -61,6 +65,9 @@ func RestUserFrom(upstream openapigenerated.RestApplicationUser) User {
 	}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
+	}
+	if upstream.Type != nil {
+		converted.Type = string(*upstream.Type)
 	}
 	if upstream.Active != nil {
 		converted.Active = *upstream.Active

@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prompt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -49,7 +50,7 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), keys)
+				return deps.WriteJSON(cmd.OutOrStdout(), gpgKeysFrom(keys))
 			}
 
 			if len(keys) == 0 {
@@ -111,7 +112,7 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"keys": keys})
+				return deps.WriteJSON(cmd.OutOrStdout(), gpgKeysFrom(keys))
 			}
 
 			// A block can carry several keys and the server reports each one, so
@@ -148,7 +149,7 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "removed": args[0]})
+				return deps.WriteJSON(cmd.OutOrStdout(), GpgKeyRemoval{Status: result.OK(), Removed: args[0]})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "GPG key %s removed successfully\n", style.Secondary.Render(args[0]))
@@ -189,7 +190,7 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok"})
+				return deps.WriteJSON(cmd.OutOrStdout(), result.OK())
 			}
 
 			fmt.Fprintln(cmd.OutOrStdout(), "All GPG keys cleared successfully")

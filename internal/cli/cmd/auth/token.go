@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -103,7 +104,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), tokens)
+				return deps.WriteJSON(cmd.OutOrStdout(), accessTokensFrom(tokens))
 			}
 
 			if len(tokens) == 0 {
@@ -159,7 +160,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), t)
+				return deps.WriteJSON(cmd.OutOrStdout(), accessTokenFrom(t))
 			}
 
 			id := ""
@@ -219,7 +220,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), t)
+				return deps.WriteJSON(cmd.OutOrStdout(), createdAccessTokenFrom(t))
 			}
 
 			secret := ""
@@ -270,7 +271,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), t)
+				return deps.WriteJSON(cmd.OutOrStdout(), accessTokenFrom(t))
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Token %s updated successfully\n", args[0])
@@ -306,7 +307,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok"})
+				return deps.WriteJSON(cmd.OutOrStdout(), result.OK())
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Token %s revoked successfully\n", args[0])

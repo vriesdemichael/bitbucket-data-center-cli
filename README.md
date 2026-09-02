@@ -130,13 +130,13 @@ bb --json auth status
 {
   "data": {
     "ok": true,
-    "bitbucket_url": "https://bitbucket.acme.corp",
-    "bitbucket_version_target": "",
-    "auth_mode": "token",
-    "auth_source": "stored/default",
-    "credential_storage": "keyring",
+    "bitbucketUrl": "https://bitbucket.acme.corp",
+    "bitbucketVersionTarget": "",
+    "authMode": "token",
+    "authSource": "stored/default",
+    "credentialStorage": "keyring",
     "checks": [
-      { "name": "authentication", "ok": true },
+      { "name": "authentication", "ok": true, "advisory": false },
       { "name": "git credential helper", "ok": true, "advisory": true }
     ]
   },
