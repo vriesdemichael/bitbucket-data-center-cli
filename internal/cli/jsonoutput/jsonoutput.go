@@ -9,7 +9,7 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 )
 
-// releaseVersion is the binary's own version, reported as meta.bb_version.
+// releaseVersion is the binary's own version, reported as meta.bbVersion.
 //
 // A package-level value because it is a property of the process rather than of
 // any payload, and Write is called from roughly 250 sites that have no reason
@@ -17,7 +17,7 @@ import (
 // without the ldflags stamp reports "dev", which is true.
 var releaseVersion = "dev"
 
-// SetReleaseVersion records the version this binary reports in meta.bb_version.
+// SetReleaseVersion records the version this binary reports in meta.bbVersion.
 //
 // Call it once, at startup, before any command executes. It is provenance for
 // an operator reading stored output, not a compatibility switch: nothing in bb
