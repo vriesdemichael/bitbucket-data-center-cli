@@ -61,7 +61,7 @@ func TestLiveGPGKeyLifecycle(t *testing.T) {
 		t.Fatalf("expected the added key in the listing, got: %s", listOutput)
 	}
 
-	keyID, ok := numericOrStringID(decodeJSONMap(t, addOutput)["id"])
+	keyID, ok := numericOrStringID(firstOfJSONArray(t, addOutput)["id"])
 	if !ok {
 		// Bitbucket identifies GPG keys by fingerprint rather than by a numeric
 		// id, which remove accepts as well.
