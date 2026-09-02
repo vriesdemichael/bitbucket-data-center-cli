@@ -23,7 +23,7 @@ type ReviewSummary struct {
 	Approvals         int      `json:"approvals" jsonschema:"How many reviewers have approved."`
 	Reviewers         int      `json:"reviewers" jsonschema:"How many reviewers are named."`
 	CommentCount      *int     `json:"commentCount,omitempty" jsonschema:"Bitbucket's raw comment counter. It counts replies too, so it is a weaker signal than unresolvedThreads and is reported separately rather than folded into it."`
-	CountsSource      string   `json:"countsSource" jsonschema:"Where the counts came from: activity for the timeline walk, tasks for the task tally, properties for the counters shipped with the pull request, or none."`
+	CountsSource      string   `json:"countsSource" jsonschema:"Where the counts came from: activities for the timeline walk, blocker_comments for the task tally, properties for the counters shipped with the pull request, or none when nothing could be measured."`
 }
 
 // ThreadAnchor locates an inline comment thread in the diff.

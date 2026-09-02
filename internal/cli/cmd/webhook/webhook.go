@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -65,14 +66,6 @@ func (d Dependencies) withDefaults() Dependencies {
 		}
 	}
 	return d
-}
-
-type WebhookModel struct {
-	Id     *int     `json:"id,omitempty"`
-	Name   *string  `json:"name,omitempty"`
-	Url    *string  `json:"url,omitempty"`
-	Active *bool    `json:"active,omitempty"`
-	Events []string `json:"events,omitempty"`
 }
 
 func New(deps Dependencies) *cobra.Command {
@@ -321,36 +314,13 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// Paged before either rendering, not only before the human one.
+			// --start and --limit used to narrow the table while --json returned
+			// every webhook, so the two answered differently to the same flags.
+			webhooks := result.PageOfWebhooks(result.WebhooksFrom(res.Payload), listStart, listPaging.ServiceLimit())
+
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), Webhooks{Webhooks: result.WebhooksFrom(res.Payload)})
-			}
-
-			var webhooks []WebhookModel
-			if res.Payload != nil {
-				raw, err := json.Marshal(res.Payload)
-				if err == nil {
-					_ = json.Unmarshal(raw, &webhooks)
-					if len(webhooks) == 0 {
-						var paginated struct {
-							Values []WebhookModel `json:"values"`
-						}
-						_ = json.Unmarshal(raw, &paginated)
-						webhooks = paginated.Values
-					}
-				}
-			}
-
-			if listStart < 0 {
-				listStart = 0
-			}
-			if listStart >= len(webhooks) {
-				webhooks = []WebhookModel{}
-			} else {
-				end := listStart + listPaging.ServiceLimit()
-				if end > len(webhooks) {
-					end = len(webhooks)
-				}
-				webhooks = webhooks[listStart:end]
+				return d.WriteJSON(cmd.OutOrStdout(), Webhooks{Webhooks: webhooks})
 			}
 
 			if len(webhooks) == 0 {
@@ -359,24 +329,13 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			rows := make([][]string, len(webhooks))
-			for i, h := range webhooks {
-				idStr := ""
-				if h.Id != nil {
-					idStr = fmt.Sprintf("%d", *h.Id)
-				}
-				nameStr := safeString(h.Name)
-				urlStr := safeString(h.Url)
-				activeStr := "false"
-				if h.Active != nil && *h.Active {
-					activeStr = "true"
-				}
-				eventsStr := strings.Join(h.Events, ", ")
+			for i, hook := range webhooks {
 				rows[i] = []string{
-					style.Secondary.Render(idStr),
-					nameStr,
-					urlStr,
-					activeStr,
-					eventsStr,
+					style.Secondary.Render(strconv.Itoa(hook.ID)),
+					hook.Name,
+					hook.URL,
+					strconv.FormatBool(hook.Active),
+					strings.Join(hook.Events, ", "),
 				}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
@@ -442,27 +401,20 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			hook := result.WebhookFrom(payload)
 			if d.JSONEnabled() {
 				return d.WriteJSON(cmd.OutOrStdout(), Change{
 					Status:     result.OK(),
 					Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
-					Webhook:    result.WebhookFrom(payload),
+					Webhook:    hook,
 				})
-			}
-
-			var hook WebhookModel
-			if payload != nil {
-				raw, err := json.Marshal(payload)
-				if err == nil {
-					_ = json.Unmarshal(raw, &hook)
-				}
 			}
 
 			// Report the name when the server did not send an id back, rather
 			// than printing the name where an id belongs: `bb webhook delete`
 			// takes the id, so a name shown in its place reads as one.
-			if hook.Id != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook:"), style.Secondary.Render(fmt.Sprintf("%d", *hook.Id)))
+			if hook.ID != 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook:"), style.Secondary.Render(strconv.Itoa(hook.ID)))
 				return nil
 			}
 

@@ -15,19 +15,19 @@ func TestPageOfNarrowsBothRenderingsTheSameWay(t *testing.T) {
 
 	all := []result.Webhook{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}}
 
-	if page := pageOf(all, 1, 2); len(page) != 2 || page[0].ID != 2 || page[1].ID != 3 {
+	if page := result.PageOfWebhooks(all, 1, 2); len(page) != 2 || page[0].ID != 2 || page[1].ID != 3 {
 		t.Fatalf("page = %+v, want the second and third", page)
 	}
-	if page := pageOf(all, -5, 2); len(page) != 2 || page[0].ID != 1 {
+	if page := result.PageOfWebhooks(all, -5, 2); len(page) != 2 || page[0].ID != 1 {
 		t.Fatalf("a negative start produced %+v, want the beginning", page)
 	}
-	if page := pageOf(all, 10, 2); len(page) != 0 {
+	if page := result.PageOfWebhooks(all, 10, 2); len(page) != 0 {
 		t.Fatalf("a start past the end produced %+v, want nothing", page)
 	}
-	if page := pageOf(all, 2, 100); len(page) != 2 {
+	if page := result.PageOfWebhooks(all, 2, 100); len(page) != 2 {
 		t.Fatalf("a limit past the end produced %+v, want the remainder", page)
 	}
-	if page := pageOf(all, 0, 0); len(page) != 4 {
+	if page := result.PageOfWebhooks(all, 0, 0); len(page) != 4 {
 		t.Fatalf("no limit produced %+v, want everything", page)
 	}
 }

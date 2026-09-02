@@ -29,7 +29,11 @@ type Diff struct {
 	Repository result.Repository `json:"repository"`
 	Output     string            `json:"output" jsonschema:"Which form was produced: patch, stat or name-only."`
 	Patch      string            `json:"patch,omitempty" jsonschema:"The unified diff, when output is patch."`
-	Names      []string          `json:"names,omitempty" jsonschema:"Paths that differ, when output is name-only."`
+	// Names is a pointer because omitempty drops an empty slice as readily as a
+	// nil one, and the two mean different things here: absent says this was not
+	// a name-only run, an empty array says it was and nothing differs. A caller
+	// branching on the key would otherwise read "no diff" as "wrong mode".
+	Names *[]string `json:"names,omitempty" jsonschema:"Paths that differ, when output is name-only. Present and possibly empty for a name-only run, absent for any other."`
 	// Stats is left open. Bitbucket declares the diff stats summary as an
 	// untyped value in its own specification -- the generated client renders it
 	// as interface{} -- so bb has nothing to promise about its fields.
@@ -109,10 +113,11 @@ func From(repository result.Repository, mode diffservice.OutputKind, diff diffse
 
 	switch mode {
 	case diffservice.OutputKindNameOnly:
-		converted.Names = diff.Names
-		if converted.Names == nil {
-			converted.Names = []string{}
+		names := diff.Names
+		if names == nil {
+			names = []string{}
 		}
+		converted.Names = &names
 	case diffservice.OutputKindStat:
 		converted.Stats = statsOf(diff)
 	default:

@@ -10,7 +10,19 @@ import (
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
 )
 
-var commentStates = []string{"OPEN", "RESOLVED", "PENDING"}
+var (
+	commentStates = []string{"OPEN", "RESOLVED", "PENDING"}
+
+	// countsSources is the closed set BuildReviewSummary picks from. Declared
+	// rather than described, because the description had drifted: it named two
+	// values the code has never emitted.
+	countsSources = []string{
+		pullrequestservice.CountsSourceActivities,
+		pullrequestservice.CountsSourceBlockerComments,
+		pullrequestservice.CountsSourceProperties,
+		pullrequestservice.CountsSourceNone,
+	}
+)
 
 func init() {
 	repositoryEnums := func(prefix string) map[string][]string {
@@ -22,8 +34,12 @@ func init() {
 		}
 	}
 
-	result.Declare("pr list", result.For[PullRequests](repositoryEnums("pullRequests.")))
-	result.Declare("pr get", result.For[SinglePullRequest](repositoryEnums("pullRequest.")))
+	listEnums := repositoryEnums("pullRequests.")
+	listEnums["reviewSummaries.countsSource"] = countsSources
+	result.Declare("pr list", result.For[PullRequests](listEnums))
+	getEnums := repositoryEnums("pullRequest.")
+	getEnums["reviewSummary.countsSource"] = countsSources
+	result.Declare("pr get", result.For[SinglePullRequest](getEnums))
 	result.Declare("pr status", result.For[Status](nil))
 	result.Declare("pr checkout", result.For[Checkout](nil))
 

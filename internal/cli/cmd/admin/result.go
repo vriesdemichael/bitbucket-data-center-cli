@@ -13,7 +13,7 @@ import (
 // be, which is the coupling this modelling exists to break.
 type Health struct {
 	Healthy       bool   `json:"healthy" jsonschema:"Whether the instance answered at all."`
-	StatusCode    int    `json:"status_code" jsonschema:"HTTP status the health probe received."`
+	StatusCode    int    `json:"statusCode" jsonschema:"HTTP status the health probe received."`
 	Authenticated bool   `json:"authenticated" jsonschema:"Whether the configured credential was accepted. False here with healthy true means the instance is reachable but the credential is not working."`
 	Message       string `json:"message,omitempty" jsonschema:"Detail from the instance, when it gave one."`
 }

@@ -302,7 +302,7 @@ to fail instead of falling back.`,
 			if isJSON() {
 				return deps.WriteJSON(cmd.OutOrStdout(), Login{
 					Host:                stored.Host,
-					Aliases:             stored.Aliases,
+					Aliases:             listOrEmpty(stored.Aliases),
 					AuthMode:            stored.AuthMode,
 					UsedInsecureStorage: stored.UsedInsecureStorage,
 				})
@@ -503,7 +503,7 @@ to fail instead of falling back.`,
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), Aliases{Host: host, Aliases: aliases})
+				return deps.WriteJSON(cmd.OutOrStdout(), Aliases{Host: host, Aliases: listOrEmpty(aliases)})
 			}
 
 			if len(aliases) == 0 {
@@ -531,7 +531,7 @@ to fail instead of falling back.`,
 				return err
 			}
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), Aliases{Host: host, Aliases: aliases})
+				return deps.WriteJSON(cmd.OutOrStdout(), Aliases{Host: host, Aliases: listOrEmpty(aliases)})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Aliases updated: %s\n", strings.Join(aliases, ", "))
 			return nil
@@ -551,7 +551,7 @@ to fail instead of falling back.`,
 				return err
 			}
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), Aliases{Host: host, Aliases: aliases})
+				return deps.WriteJSON(cmd.OutOrStdout(), Aliases{Host: host, Aliases: listOrEmpty(aliases)})
 			}
 			if len(aliases) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "Alias removed; no aliases remain")
@@ -609,9 +609,9 @@ to fail instead of falling back.`,
 			if isJSON() {
 				return deps.WriteJSON(cmd.OutOrStdout(), DiscoveredAliases{
 					Host:       cfg.BitbucketURL,
-					Aliases:    aliases,
-					Discovered: discovered,
-					Removed:    removed,
+					Aliases:    listOrEmpty(aliases),
+					Discovered: listOrEmpty(discovered),
+					Removed:    listOrEmpty(removed),
 				})
 			}
 			if len(discovered) == 0 {
