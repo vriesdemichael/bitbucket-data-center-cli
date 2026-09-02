@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -206,11 +207,8 @@ func TestCommentServiceAdditionalBranches(t *testing.T) {
 		})
 
 		target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}
-		// A commit listing without a path is every comment on the commit, which
-		// is the only way to see one bb created: repo comment create anchors a
-		// commit comment to nothing.
-		if _, err := service.List(context.Background(), target, "", 10); err != nil {
-			t.Fatalf("a pathless commit listing was refused: %v", err)
+		if _, err := service.List(context.Background(), target, "", 10); err == nil {
+			t.Fatal("expected path validation error")
 		}
 		if _, err := service.List(context.Background(), Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}, "", 10); err == nil {
 			t.Fatal("expected pull request path validation error")
@@ -1054,40 +1052,84 @@ func TestSetStateErrorPaths(t *testing.T) {
 	})
 }
 
-// TestListOmitsThePathParameterWhenThereIsNone is the half of the round trip
-// that was unreachable.
+// TestCreateAnchorsACommitCommentToAFile is what makes a commit comment
+// listable.
 //
-// `repo comment create --commit` posts a comment anchored to no file, and the
-// listing required a path -- so bb could not list a comment bb had just made,
-// and therefore could not read back a reply to it either. The commit endpoint
-// takes an optional path; sending an empty one would scope the listing to a
-// file named nothing rather than to the whole commit.
-func TestListOmitsThePathParameterWhenThereIsNone(t *testing.T) {
-	var queries []string
+// Bitbucket refuses to retrieve comments without a path -- 400 "The path query
+// parameter is required when retrieving comments" -- so a comment anchored to
+// nothing can be created and then never read back by any listing. The vendored
+// spec types that path as optional, which is wrong, and believing it cost a
+// live run.
+func TestCreateAnchorsACommitCommentToAFile(t *testing.T) {
+	var body []byte
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		queries = append(queries, r.URL.RawQuery)
+		body, _ = io.ReadAll(r.Body)
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":1,"text":"on the commit"}]}`))
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":7,"version":0,"text":"anchored"}`))
 	})
 
-	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}
-	listed, err := service.List(context.Background(), target, "", 10)
-	if err != nil {
-		t.Fatalf("pathless commit listing: %v", err)
+	target := Target{
+		Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"},
+		CommitID:   "abc",
+		Path:       "internal/cli/root.go",
+		Line:       12,
+		LineType:   "ADDED",
 	}
-	if len(listed) != 1 {
-		t.Fatalf("listed = %+v", listed)
-	}
-	if len(queries) != 1 || strings.Contains(queries[0], "path=") {
-		t.Fatalf("query = %q, want no path parameter at all", queries)
+	if _, err := service.Create(context.Background(), target, "anchored"); err != nil {
+		t.Fatalf("create anchored commit comment: %v", err)
 	}
 
-	// A path still scopes the listing when one is given.
-	queries = nil
-	if _, err := service.List(context.Background(), target, "internal/cli/root.go", 10); err != nil {
-		t.Fatalf("path-scoped commit listing: %v", err)
+	var sent map[string]any
+	if err := json.Unmarshal(body, &sent); err != nil {
+		t.Fatalf("decode request body: %v\n%s", err, body)
 	}
-	if len(queries) != 1 || !strings.Contains(queries[0], "path=internal%2Fcli%2Froot.go") {
-		t.Fatalf("query = %q, want the path carried through", queries)
+	anchor, ok := sent["anchor"].(map[string]any)
+	if !ok {
+		t.Fatalf("no anchor in the request: %s", body)
+	}
+	// A plain string, not the object Bitbucket returns: the create endpoint
+	// takes one shape and answers with another.
+	if anchor["path"] != "internal/cli/root.go" {
+		t.Errorf("anchor path = %v", anchor["path"])
+	}
+	if anchor["lineType"] != "ADDED" || anchor["fileType"] != "TO" {
+		t.Errorf("anchor = %+v, want an ADDED line on the updated side", anchor)
+	}
+}
+
+// TestCreateSendsTheParentOfAReply covers the other half: a reply carries the
+// id of what it answers and inherits that comment's anchor.
+func TestCreateSendsTheParentOfAReply(t *testing.T) {
+	var body []byte
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":8,"version":0,"text":"a reply"}`))
+	})
+
+	target := Target{
+		Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"},
+		CommitID:   "abc",
+		ParentID:   7,
+	}
+	if _, err := service.Create(context.Background(), target, "a reply"); err != nil {
+		t.Fatalf("create reply: %v", err)
+	}
+
+	var sent map[string]any
+	if err := json.Unmarshal(body, &sent); err != nil {
+		t.Fatalf("decode request body: %v\n%s", err, body)
+	}
+	parent, ok := sent["parent"].(map[string]any)
+	if !ok {
+		t.Fatalf("no parent in the request: %s", body)
+	}
+	if parent["id"] != float64(7) {
+		t.Errorf("parent = %+v, want the comment being replied to", parent)
+	}
+	if _, anchored := sent["anchor"]; anchored {
+		t.Errorf("a reply carried its own anchor: %s", body)
 	}
 }
