@@ -104,3 +104,127 @@ func TestRepoPermissionSkipsWhenUnwired(t *testing.T) {
 		}
 	})
 }
+
+// concreteChecker is instantiated as a pointer rather than an interface, which
+// is what the old `any(checker) == nil` guard could not see.
+type concreteChecker struct {
+	called bool
+}
+
+func (checker *concreteChecker) CheckRepoPermission(_ context.Context, _, _ string, _ openapigenerated.GetRepositories1ParamsPermission) error {
+	checker.called = true
+
+	return nil
+}
+
+func (checker *concreteChecker) CheckProjectAdmin(_ context.Context, _ string) error { return nil }
+func (checker *concreteChecker) CheckProjectWrite(_ context.Context, _ string) error { return nil }
+func (checker *concreteChecker) CheckProjectCreate(_ context.Context) error          { return nil }
+
+// TestANilCheckerIsSkippedHoweverItIsSpelled is the defect the first version of
+// this package shipped: the guard compared the checker as an interface, which
+// is correct only while every call site instantiates C with one. Nothing in the
+// constraint requires that, and rootOptions.permissionCheckerFor already
+// returns a concrete pointer that is nil when there is no client -- so this
+// would have been a panic where the documentation promises a skip.
+func TestANilCheckerIsSkippedHoweverItIsSpelled(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	// C is a concrete pointer type, and the factory returns a nil one.
+	err := preflight.RepoPermission(ctx, func(*openapigenerated.ClientWithResponses) *concreteChecker {
+		return nil
+	}, nil, "PRJ", "repo", openapi.RepoWrite)
+	if err != nil {
+		t.Fatalf("a nil concrete checker should be skipped, got %v", err)
+	}
+
+	// C is an interface holding a typed nil pointer, which is what the root
+	// command's own wiring produces.
+	err = preflight.RepoPermission(ctx, func(*openapigenerated.ClientWithResponses) preflight.RepoChecker {
+		var absent *concreteChecker
+
+		return absent
+	}, nil, "PRJ", "repo", openapi.RepoWrite)
+	if err != nil {
+		t.Fatalf("a typed nil in an interface should be skipped, got %v", err)
+	}
+
+	// And a real one is still asked.
+	checker := &concreteChecker{}
+	if err := preflight.RepoPermission(ctx, func(*openapigenerated.ClientWithResponses) *concreteChecker {
+		return checker
+	}, nil, "PRJ", "repo", openapi.RepoWrite); err != nil {
+		t.Fatalf("check: %v", err)
+	}
+	if !checker.called {
+		t.Error("a wired checker was not asked")
+	}
+}
+
+// TestTheProjectHelpersGuardAndDelegate covers the three that had no test of
+// their own -- 23 of the 101 converted call sites.
+func TestTheProjectHelpersGuardAndDelegate(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	sentinel := errors.New("refused")
+
+	for _, testCase := range []struct {
+		name string
+		call func(newChecker func(*openapigenerated.ClientWithResponses) *stubChecker) error
+	}{
+		{
+			name: "project admin",
+			call: func(newChecker func(*openapigenerated.ClientWithResponses) *stubChecker) error {
+				return preflight.ProjectAdmin(ctx, newChecker, nil, "PRJ")
+			},
+		},
+		{
+			name: "project write",
+			call: func(newChecker func(*openapigenerated.ClientWithResponses) *stubChecker) error {
+				return preflight.ProjectWrite(ctx, newChecker, nil, "PRJ")
+			},
+		},
+		{
+			name: "project create",
+			call: func(newChecker func(*openapigenerated.ClientWithResponses) *stubChecker) error {
+				return preflight.ProjectCreate(ctx, newChecker, nil)
+			},
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			if err := testCase.call(nil); err != nil {
+				t.Errorf("an unwired factory should be skipped, got %v", err)
+			}
+
+			if err := testCase.call(func(*openapigenerated.ClientWithResponses) *stubChecker {
+				return nil
+			}); err != nil {
+				t.Errorf("a nil checker should be skipped, got %v", err)
+			}
+
+			err := testCase.call(func(*openapigenerated.ClientWithResponses) *stubChecker {
+				return &stubChecker{err: sentinel}
+			})
+			if !errors.Is(err, sentinel) {
+				t.Errorf("refusal not returned unwrapped: %v", err)
+			}
+		})
+	}
+}
+
+// stubChecker refuses with whatever it was given, on every method.
+type stubChecker struct {
+	err error
+}
+
+func (checker *stubChecker) CheckRepoPermission(_ context.Context, _, _ string, _ openapigenerated.GetRepositories1ParamsPermission) error {
+	return checker.err
+}
+func (checker *stubChecker) CheckProjectAdmin(_ context.Context, _ string) error { return checker.err }
+func (checker *stubChecker) CheckProjectWrite(_ context.Context, _ string) error { return checker.err }
+func (checker *stubChecker) CheckProjectCreate(_ context.Context) error          { return checker.err }
