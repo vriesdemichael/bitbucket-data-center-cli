@@ -3,7 +3,7 @@ package projectcmd
 import (
 	"fmt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"math"
 	"slices"
 	"strings"
@@ -194,9 +194,9 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	createCmd.Flags().StringVar(&createType, "type", "", "Restriction type")
+	enumflag.Register(createCmd.Flags(), &createType, "type", "", result.RestrictionTypes, "Restriction type")
 	createCmd.Flags().StringVar(&createMatcherID, "matcher-id", "", "Matcher id value")
-	createCmd.Flags().StringVar(&createMatcherType, "matcher-type", "BRANCH", "Matcher type")
+	enumflag.Register(createCmd.Flags(), &createMatcherType, "matcher-type", "BRANCH", openapi.RestrictionMatcherTypes, "Matcher type")
 	createCmd.Flags().StringVar(&createMatcherDisplay, "matcher-display", "", "Matcher display value")
 	createCmd.Flags().StringSliceVar(&createUsers, "user", nil, "Allowed user slugs")
 	createCmd.Flags().StringSliceVar(&createGroups, "group", nil, "Allowed group names")
@@ -280,9 +280,9 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	updateCmd.Flags().StringVar(&updateType, "type", "", "Restriction type")
+	enumflag.Register(updateCmd.Flags(), &updateType, "type", "", result.RestrictionTypes, "Restriction type")
 	updateCmd.Flags().StringVar(&updateMatcherID, "matcher-id", "", "Matcher id value")
-	updateCmd.Flags().StringVar(&updateMatcherType, "matcher-type", "", "Matcher type")
+	enumflag.Register(updateCmd.Flags(), &updateMatcherType, "matcher-type", "", openapi.RestrictionMatcherTypes, "Matcher type")
 	updateCmd.Flags().StringVar(&updateMatcherDisplay, "matcher-display", "", "Matcher display value")
 	updateCmd.Flags().StringSliceVar(&updateUsers, "user", nil, "Allowed user slugs")
 	updateCmd.Flags().StringSliceVar(&updateGroups, "group", nil, "Allowed group names")
