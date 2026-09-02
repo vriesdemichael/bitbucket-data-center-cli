@@ -1195,7 +1195,7 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), SSHKeys{Keys: sshKeysFrom(keys)})
+				return deps.WriteJSONList(cmd.OutOrStdout(), SSHKeys{Keys: sshKeysFrom(keys)}, paging.LimitReached(listPaging, len(keys)))
 			}
 
 			if len(keys) == 0 {

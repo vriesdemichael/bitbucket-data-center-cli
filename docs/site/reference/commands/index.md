@@ -38,8 +38,10 @@ Available Commands:
   bulk           Plan and apply multi-repository policies
   clone          Clone a repository to the local filesystem
   commit         Commit inspection and compare commands
+  completion     Generate the autocompletion script for the specified shell
   deployment     Manage repository-scoped deployments for commits
   diff           Diff and patch commands
+  help           Help about any command
   insights       Code Insights report and annotation commands
   pr             Pull request commands
   project        Project administration commands
@@ -4339,7 +4341,7 @@ Get pull request details, including outstanding review feedback
 ```text
 Get pull request details. The output carries a review summary describing unresolved comment threads, open tasks and reviewers who requested changes, so outstanding feedback is visible without a separate lookup.
 
-The unresolved thread counts come from the activity timeline, which is paged through; pass --no-review-summary to skip it. When the timeline is unavailable the summary falls back to the blocker-comment tally, then to the counters Bitbucket ships with the pull request. review_summary.counts_source reports which was used.
+The unresolved thread counts come from the activity timeline, which is paged through; pass --no-review-summary to skip it. When the timeline is unavailable the summary falls back to the blocker-comment tally, then to the counters Bitbucket ships with the pull request. reviewSummary.countsSource reports which was used.
 
 Usage:
   bb pr get <id> [flags]

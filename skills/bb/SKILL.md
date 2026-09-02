@@ -498,15 +498,20 @@ bb pr get --describe --json   # the same, wrapped in the standard envelope
 It needs no arguments, no required flags, no configuration and no server: the schemas are
 compiled into the binary, so the answer always matches the `bb` you are holding.
 
-Check `described` before reading `schema`. Three answers are possible:
+Check `described` before reading `schema`. Four answers are possible:
 
 - `"described": true` — `schema` is the published contract for that command.
 - `"described": false` with a reason saying no schema is published **yet** — the payload shape
   is real but not guaranteed. Parse defensively.
 - `"described": false` with a reason saying the command returns no data payload — `bb api` and
   `bb ai skill show` produce a stream or a document. No schema is coming; do not wait for one.
+- `"described": false` with a reason saying the payload has **no shape bb can promise** — the
+  command forwards whatever Bitbucket sent without reading a field. You get an envelope, but
+  what is inside it is the server's to decide. Parse defensively.
 
-Most commands are currently in the second group.
+Almost every command is now in the first group: its schema is derived from the typed
+result it fills in, so it cannot describe something other than what it emits. The rest say
+which of the others they are, and why.
 
 Success and failure both produce the same envelope on stdout. Which key is
 present tells you which happened:

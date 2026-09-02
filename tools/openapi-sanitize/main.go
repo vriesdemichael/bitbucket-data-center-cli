@@ -182,13 +182,24 @@ func fixEpochMillisFields(node any) int {
 			property, isObject := value.(map[string]any)
 			if isObject {
 				if _, targeted := epochMillisFieldNames[key]; targeted {
-					// Only rewrite the shape this fix targets. If Atlassian
+					// Only rewrite the shapes this fix targets. If Atlassian
 					// corrects the spec upstream, leave their declaration alone
 					// rather than forcing it back to the workaround.
-					if property["type"] == "string" && property["format"] == "date-time" {
+					switch {
+					case property["type"] == "string" && property["format"] == "date-time":
 						property["type"] = "integer"
 						property["format"] = "int64"
 						property["description"] = "Epoch milliseconds. Upstream spec declares string/date-time; the server returns a number."
+						fixed++
+					case property["type"] == "number":
+						// A bare number becomes float32, whose 24-bit mantissa
+						// cannot hold an epoch millisecond: the value is
+						// rounded to the nearest ~4.4 minutes on decode, so
+						// RestInsightReport.createdDate came back off by
+						// minutes with nothing saying so.
+						property["type"] = "integer"
+						property["format"] = "int64"
+						property["description"] = "Epoch milliseconds. Upstream spec declares a bare number, which does not survive a float32 round trip."
 						fixed++
 					}
 				}

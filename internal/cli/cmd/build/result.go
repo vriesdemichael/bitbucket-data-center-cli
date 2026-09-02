@@ -1,6 +1,8 @@
 package buildcmd
 
 import (
+	"strings"
+
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
@@ -165,4 +167,20 @@ func statsListFrom(commits []string, tallies map[string]openapigenerated.RestBui
 	}
 
 	return converted
+}
+
+// trimmedCommitIDs normalises the commit ids the caller supplied.
+//
+// Blanks are dropped rather than kept as empty rows: the service refuses them
+// and would never return a tally for one, so a row of zeros against an empty
+// commit is an answer to a question nobody asked.
+func trimmedCommitIDs(commits []string) []string {
+	trimmed := make([]string, 0, len(commits))
+	for _, commit := range commits {
+		if cleaned := strings.TrimSpace(commit); cleaned != "" {
+			trimmed = append(trimmed, cleaned)
+		}
+	}
+
+	return trimmed
 }

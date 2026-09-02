@@ -403,7 +403,6 @@ On failure, stdout is the error envelope and exit is non-zero:
 
 ```json
 {
-  "version": "v2",
   "error": {
     "kind": "conflict",
     "message": "bulk apply op-… completed with failures",

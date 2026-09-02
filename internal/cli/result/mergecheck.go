@@ -96,27 +96,29 @@ func RequiredBuildCheckFromMap(payload map[string]any) RequiredBuildCheck {
 // or a paginated object with the checks under values. Both are handled, which
 // the human renderer already did by printing whichever it found -- and the JSON
 // path did not, because it published whatever arrived.
+// Each element is decoded on its own, so one entry Bitbucket sent in an
+// unexpected shape costs that entry rather than the whole list. Decoding the
+// array in one go made any single surprise indistinguishable from "there are
+// none", which is the answer the schema says an empty list means.
 func RequiredBuildChecksFromAny(payload any) []RequiredBuildCheck {
 	converted := []RequiredBuildCheck{}
-	if payload == nil {
-		return converted
+
+	var values []any
+	switch typed := payload.(type) {
+	case []any:
+		values = typed
+	case map[string]any:
+		if paginated, ok := typed["values"].([]any); ok {
+			values = paginated
+		}
 	}
 
-	raw, err := json.Marshal(payload)
-	if err != nil {
-		return converted
-	}
-
-	var upstream []openapigenerated.RestRequiredBuildCondition
-	if err := json.Unmarshal(raw, &upstream); err == nil && len(upstream) > 0 {
-		return RequiredBuildChecksFrom(upstream)
-	}
-
-	var paginated struct {
-		Values []openapigenerated.RestRequiredBuildCondition `json:"values"`
-	}
-	if err := json.Unmarshal(raw, &paginated); err == nil && paginated.Values != nil {
-		return RequiredBuildChecksFrom(paginated.Values)
+	for _, value := range values {
+		object, ok := value.(map[string]any)
+		if !ok {
+			continue
+		}
+		converted = append(converted, RequiredBuildCheckFromMap(object))
 	}
 
 	return converted

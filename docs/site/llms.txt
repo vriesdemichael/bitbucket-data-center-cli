@@ -153,23 +153,28 @@ Both at once is redundant, not additive. Pick the one that matches how you invok
 ## 6. The machine contract
 
 Pass `--json` whenever another system parses the output. Every command that supports it
-emits a single `bb.machine v2` envelope on stdout:
+emits a single bb.machine envelope on stdout:
 
 ```json
-{"version": "v2", "data": {}, "meta": {"contract": "bb.machine"}}
+{"data": {}, "meta": {"bbVersion": "4.0.0"}}
 ```
+
+There is no envelope version field. The release version is the compatibility
+signal, and `meta.bbVersion` reports the binary that produced the document.
 
 A failure replaces `data` with `error`, carrying a `kind` from a fixed taxonomy
 (`authentication`, `authorization`, `validation`, `not_found`, `conflict`, `transient`,
-`permanent`, `not_implemented`, `internal`), a `message`, and the `exit_code` that matches
+`permanent`, `not_implemented`, `internal`), a `message`, and the `exitCode` that matches
 the process exit status. Branch on `kind`, not on message text.
 
 Diagnostics go to stderr and never contaminate the document on stdout. `--log-format jsonl`
 makes them machine-readable too.
 
-Every data-returning `--json` command has a published JSON Schema for its full envelope.
-The copy served under `latest/` identifies itself by the release it belongs to, so pin to a
-version directory when you need a contract that cannot change under you.
+Ask a command what it returns rather than looking a schema up: `bb <command> --describe`
+prints the JSON Schema of that command's `data` payload, derived from the same model the
+command fills in, so it cannot disagree with what you get. A command that returns no data
+payload -- or one whose payload bb cannot promise a shape for -- answers with `described`
+false and a `reason` saying which.
 
 State-changing commands accept `--dry-run`, which previews the mutation without applying
 it. Use it before a write when you need to show the user what will happen.

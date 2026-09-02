@@ -222,7 +222,7 @@ func New(deps Dependencies) *cobra.Command {
 			"The unresolved thread counts come from the activity timeline, which is paged through; pass " +
 			"--no-review-summary to skip it. When the timeline is unavailable the summary falls back to the " +
 			"blocker-comment tally, then to the counters Bitbucket ships with the pull request. " +
-			"review_summary.counts_source reports which was used.",
+			"reviewSummary.countsSource reports which was used.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
@@ -1803,6 +1803,13 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if commentFull {
+				// --full asks for the same comments ungrouped, not for a
+				// different set of them. The payload carried state next to a
+				// list that ignored it, so a caller passing --state resolved
+				// and reading comments got every comment on the pull request
+				// with nothing saying the filter had been dropped.
+				comments = commentsInThreads(comments, threads)
+
 				if deps.JSONEnabled() {
 					// Present even when empty: its absence is what says --full
 					// was not passed, so an empty file must still carry the key.
