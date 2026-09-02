@@ -1,4 +1,4 @@
-# Agent Instructions — bitbucket-server-cli
+# Agent Instructions — bitbucket-data-center-cli
 
 ## Quality artifacts
 
