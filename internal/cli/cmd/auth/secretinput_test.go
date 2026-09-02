@@ -239,7 +239,7 @@ func TestLoginReadsTheTokenFromStdin(t *testing.T) {
 
 	var payload struct {
 		Host     string `json:"host"`
-		AuthMode string `json:"auth_mode"`
+		AuthMode string `json:"authMode"`
 	}
 	if err := json.Unmarshal(stdout.Bytes(), &struct {
 		Data any `json:"data"`
@@ -247,7 +247,7 @@ func TestLoginReadsTheTokenFromStdin(t *testing.T) {
 		t.Fatalf("expected a parseable envelope on stdout, got %q (%v)", stdout.String(), err)
 	}
 	if payload.AuthMode != "token" {
-		t.Fatalf("expected the piped token to be stored, got auth_mode %q", payload.AuthMode)
+		t.Fatalf("expected the piped token to be stored, got authMode %q", payload.AuthMode)
 	}
 
 	// The safe form has nothing to warn about.
@@ -299,7 +299,7 @@ func TestLoginReadsThePasswordFromStdin(t *testing.T) {
 	}
 
 	var payload struct {
-		AuthMode string `json:"auth_mode"`
+		AuthMode string `json:"authMode"`
 	}
 	if err := json.Unmarshal(stdout.Bytes(), &struct {
 		Data any `json:"data"`

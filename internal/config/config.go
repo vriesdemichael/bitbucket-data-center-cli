@@ -694,26 +694,26 @@ func SetHostAliases(host string, aliases []string) ([]string, error) {
 	return append([]string{}, normalizedAliases...), nil
 }
 
-func AddHostAliases(host string, aliases []string) ([]string, error) {
+func AddHostAliases(host string, aliases []string) ([]string, string, error) {
 	trimmedHost := strings.TrimSpace(host)
 	if trimmedHost == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "host is required", nil)
+		return nil, "", apperrors.New(apperrors.KindValidation, "host is required", nil)
 	}
 
 	normalizedAliases, err := normalizeAliases(aliases)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	stored, err := LoadStoredConfig()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	key := hostKey(trimmedHost)
 	profile, ok := stored.Hosts[key]
 	if !ok {
-		return nil, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("no stored server context for %s", normalizeURL(trimmedHost)), nil)
+		return nil, "", apperrors.New(apperrors.KindNotFound, fmt.Sprintf("no stored server context for %s", normalizeURL(trimmedHost)), nil)
 	}
 
 	merged := append([]string{}, normalizeStoredAliases(profile.Aliases)...)
@@ -730,38 +730,38 @@ func AddHostAliases(host string, aliases []string) ([]string, error) {
 	}
 
 	if err := ensureAliasOwnership(stored, key, merged); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	profile.Aliases = merged
 	stored.Hosts[key] = profile
 	if err := SaveStoredConfig(stored); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return append([]string{}, merged...), nil
+	return append([]string{}, merged...), normalizeURL(profile.URL), nil
 }
 
-func RemoveHostAlias(host string, alias string) ([]string, error) {
+func RemoveHostAlias(host string, alias string) ([]string, string, error) {
 	trimmedHost := strings.TrimSpace(host)
 	if trimmedHost == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "host is required", nil)
+		return nil, "", apperrors.New(apperrors.KindValidation, "host is required", nil)
 	}
 
 	normalizedAlias, err := normalizeAlias(alias)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	stored, err := LoadStoredConfig()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	key := hostKey(trimmedHost)
 	profile, ok := stored.Hosts[key]
 	if !ok {
-		return nil, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("no stored server context for %s", normalizeURL(trimmedHost)), nil)
+		return nil, "", apperrors.New(apperrors.KindNotFound, fmt.Sprintf("no stored server context for %s", normalizeURL(trimmedHost)), nil)
 	}
 
 	updated := make([]string, 0, len(profile.Aliases))
@@ -774,16 +774,16 @@ func RemoveHostAlias(host string, alias string) ([]string, error) {
 		updated = append(updated, existing)
 	}
 	if !removed {
-		return nil, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("alias %s is not configured for %s", normalizedAlias, normalizeURL(trimmedHost)), nil)
+		return nil, "", apperrors.New(apperrors.KindNotFound, fmt.Sprintf("alias %s is not configured for %s", normalizedAlias, normalizeURL(trimmedHost)), nil)
 	}
 
 	profile.Aliases = updated
 	stored.Hosts[key] = profile
 	if err := SaveStoredConfig(stored); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return append([]string{}, updated...), nil
+	return append([]string{}, updated...), normalizeURL(profile.URL), nil
 }
 
 func ListHostAliases(host string) ([]string, string, error) {

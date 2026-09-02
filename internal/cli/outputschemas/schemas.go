@@ -21,7 +21,6 @@
 package outputschemas
 
 import (
-	authschemas "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/auth"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
 	bulkworkflow "github.com/vriesdemichael/bitbucket-server-cli/internal/workflows/bulk"
@@ -38,23 +37,8 @@ func Schemas() map[string]map[string]any {
 func SchemasFor(siteVersion string) map[string]map[string]any {
 	all := make(map[string]map[string]any)
 
-	// Auth command group schemas
-	for k, v := range authschemas.Schemas() {
-		all[k] = v
-	}
-
 	// Repo command group schemas
 	for k, v := range repoSchemas() {
-		all[k] = v
-	}
-
-	// Commit command group schemas
-	for k, v := range commitSchemas() {
-		all[k] = v
-	}
-
-	// Branch command group schemas (subset of branch_build_commands.go)
-	for k, v := range branchSchemas() {
 		all[k] = v
 	}
 

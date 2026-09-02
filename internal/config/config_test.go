@@ -1054,7 +1054,7 @@ func TestHostAliasesCRUDAndLookup(t *testing.T) {
 		t.Fatalf("save login failed: %v", err)
 	}
 
-	aliases, err := AddHostAliases("https://bitbucket.example", []string{"git.example.org:7999", "ssh://git.example.org:7999"})
+	aliases, _, err := AddHostAliases("https://bitbucket.example", []string{"git.example.org:7999", "ssh://git.example.org:7999"})
 	if err != nil {
 		t.Fatalf("add aliases failed: %v", err)
 	}
@@ -1085,7 +1085,7 @@ func TestHostAliasesCRUDAndLookup(t *testing.T) {
 		t.Fatalf("expected alias-backed stored auth resolution, got ok=%v cfg=%+v", ok, resolved)
 	}
 
-	remaining, err := RemoveHostAlias("https://bitbucket.example", "git.example.org:7999")
+	remaining, _, err := RemoveHostAlias("https://bitbucket.example", "git.example.org:7999")
 	if err != nil {
 		t.Fatalf("remove alias failed: %v", err)
 	}
@@ -1105,10 +1105,10 @@ func TestAliasConflictValidation(t *testing.T) {
 	if _, err := SaveLogin(LoginInput{Host: "https://two.example", Token: "tok2", SetDefault: false}); err != nil {
 		t.Fatalf("save login two failed: %v", err)
 	}
-	if _, err := AddHostAliases("https://one.example", []string{"git.shared.example:22"}); err != nil {
+	if _, _, err := AddHostAliases("https://one.example", []string{"git.shared.example:22"}); err != nil {
 		t.Fatalf("add alias to first host failed: %v", err)
 	}
-	if _, err := AddHostAliases("https://two.example", []string{"git.shared.example:22"}); err == nil {
+	if _, _, err := AddHostAliases("https://two.example", []string{"git.shared.example:22"}); err == nil {
 		t.Fatal("expected alias conflict")
 	}
 	if _, err := SaveLogin(LoginInput{Host: "https://two.example", Token: "tok2", Aliases: []string{"git.shared.example:22"}, SetDefault: false}); err == nil {
@@ -1228,13 +1228,13 @@ func TestAliasOperationsValidationAndNotFound(t *testing.T) {
 	if _, err := SetHostAliases("", []string{"git.example.org:22"}); err == nil {
 		t.Fatal("expected validation error for empty host")
 	}
-	if _, err := AddHostAliases("https://missing.example", []string{"git.example.org:22"}); err == nil {
+	if _, _, err := AddHostAliases("https://missing.example", []string{"git.example.org:22"}); err == nil {
 		t.Fatal("expected not found for missing host on add")
 	}
 	if _, _, err := ListHostAliases("https://missing.example"); err == nil {
 		t.Fatal("expected not found for missing host on list")
 	}
-	if _, err := RemoveHostAlias("https://missing.example", "git.example.org:22"); err == nil {
+	if _, _, err := RemoveHostAlias("https://missing.example", "git.example.org:22"); err == nil {
 		t.Fatal("expected not found for missing host on remove")
 	}
 	if _, _, err := MatchStoredHost(" "); err != nil {
@@ -1264,7 +1264,7 @@ func TestAliasOperationsAdditionalBranches(t *testing.T) {
 	if _, err := SetHostAliases("https://bitbucket.example", []string{"git.example.org:22"}); err != nil {
 		t.Fatalf("set aliases failed: %v", err)
 	}
-	if _, err := RemoveHostAlias("https://bitbucket.example", "git.missing.org:22"); err == nil {
+	if _, _, err := RemoveHostAlias("https://bitbucket.example", "git.missing.org:22"); err == nil {
 		t.Fatal("expected not found when removing non-existent alias")
 	}
 
@@ -1298,21 +1298,21 @@ func TestAliasOperationsAdditionalBranches(t *testing.T) {
 	if _, err := SaveLogin(LoginInput{Host: "https://add-branches.example", Token: "tok", SetDefault: true}); err != nil {
 		t.Fatalf("save login failed: %v", err)
 	}
-	aliases, err := AddHostAliases("https://add-branches.example", []string{"git.add.example:22", "git.add.example:22"})
+	aliases, _, err := AddHostAliases("https://add-branches.example", []string{"git.add.example:22", "git.add.example:22"})
 	if err != nil {
 		t.Fatalf("add aliases failed: %v", err)
 	}
 	if len(aliases) != 1 {
 		t.Fatalf("expected duplicate aliases to collapse, got %+v", aliases)
 	}
-	if _, err := AddHostAliases("", []string{"git.example.org:22"}); err == nil {
+	if _, _, err := AddHostAliases("", []string{"git.example.org:22"}); err == nil {
 		t.Fatal("expected validation error for empty host on add")
 	}
 	t.Setenv("BB_CONFIG_PATH", t.TempDir())
-	if _, err := AddHostAliases("https://broken.example", []string{"git.example.org:22"}); err == nil {
+	if _, _, err := AddHostAliases("https://broken.example", []string{"git.example.org:22"}); err == nil {
 		t.Fatal("expected load error for add aliases when config path is directory")
 	}
-	if _, err := RemoveHostAlias("https://broken.example", "git.example.org:22"); err == nil {
+	if _, _, err := RemoveHostAlias("https://broken.example", "git.example.org:22"); err == nil {
 		t.Fatal("expected load error for remove alias when config path is directory")
 	}
 	if got := normalizeStoredAliases([]string{"://bad"}); got == nil || len(got) != 0 {
@@ -1340,7 +1340,7 @@ func TestSaveLoginPreservesExistingAliases(t *testing.T) {
 		t.Fatalf("first login failed: %v", err)
 	}
 
-	if _, err := AddHostAliases("localhost:7990", []string{"manual.example:7999"}); err != nil {
+	if _, _, err := AddHostAliases("localhost:7990", []string{"manual.example:7999"}); err != nil {
 		t.Fatalf("adding a manual alias failed: %v", err)
 	}
 

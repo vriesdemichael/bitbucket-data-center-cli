@@ -251,11 +251,11 @@ credentials to any other remote.`,
 			}
 
 			if isJSONEnabled(deps) {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"host":   scope,
-					"key":    key,
-					"helper": helper,
-					"scope":  gitScopeName(setupGlobal),
+				return deps.WriteJSON(cmd.OutOrStdout(), GitCredentialSetup{
+					Host:   scope,
+					Key:    key,
+					Helper: helper,
+					Scope:  gitScopeName(setupGlobal),
 				})
 			}
 

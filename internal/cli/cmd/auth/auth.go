@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
@@ -151,19 +152,18 @@ for.`,
 			}
 
 			if isJSON() {
-				payload := map[string]any{
-					"ok":                       allOK,
-					"bitbucket_url":            cfg.BitbucketURL,
-					"bitbucket_version_target": cfg.BitbucketVersionTarget,
-					"auth_mode":                cfg.AuthMode(),
-					"auth_source":              cfg.AuthSource,
+				return deps.WriteJSON(cmd.OutOrStdout(), Status{
+					OK:                     allOK,
+					BitbucketURL:           cfg.BitbucketURL,
+					BitbucketVersionTarget: cfg.BitbucketVersionTarget,
+					AuthMode:               cfg.AuthMode(),
+					AuthSource:             cfg.AuthSource,
 					// Reported here as well as at login, so an operator auditing
 					// an existing machine can see how its credentials are held
 					// without having to grep the config file.
-					"credential_storage": cfg.CredentialStorage(),
-					"checks":             checks,
-				}
-				return deps.WriteJSON(cmd.OutOrStdout(), payload)
+					CredentialStorage: cfg.CredentialStorage(),
+					Checks:            checksFrom(checks),
+				})
 			}
 
 			// The expected version is only reported when the operator pinned
@@ -277,7 +277,7 @@ to fail instead of falling back.`,
 				}
 			}
 
-			result, err := config.SaveLogin(config.LoginInput{
+			stored, err := config.SaveLogin(config.LoginInput{
 				Host:           resolvedHost,
 				Aliases:        aliases,
 				Username:       loginUsername,
@@ -295,23 +295,22 @@ to fail instead of falling back.`,
 			// The warning goes to stderr in both modes: under --json stdout is a
 			// machine contract, and prose there would make the envelope
 			// unparseable.
-			if result.UsedInsecureStorage {
-				reportInsecureStorage(cmd.ErrOrStderr(), result.Host)
+			if stored.UsedInsecureStorage {
+				reportInsecureStorage(cmd.ErrOrStderr(), stored.Host)
 			}
 
 			if isJSON() {
-				payload := map[string]any{
-					"host":                  result.Host,
-					"aliases":               result.Aliases,
-					"auth_mode":             result.AuthMode,
-					"used_insecure_storage": result.UsedInsecureStorage,
-				}
-				return deps.WriteJSON(cmd.OutOrStdout(), payload)
+				return deps.WriteJSON(cmd.OutOrStdout(), Login{
+					Host:                stored.Host,
+					Aliases:             stored.Aliases,
+					AuthMode:            stored.AuthMode,
+					UsedInsecureStorage: stored.UsedInsecureStorage,
+				})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Stored credentials for %s (mode=%s)\n", result.Host, result.AuthMode)
-			if len(result.Aliases) > 0 {
-				fmt.Fprintf(cmd.OutOrStdout(), "Discovered aliases: %s\n", strings.Join(result.Aliases, ", "))
+			fmt.Fprintf(cmd.OutOrStdout(), "Stored credentials for %s (mode=%s)\n", stored.Host, stored.AuthMode)
+			if len(stored.Aliases) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "Discovered aliases: %s\n", strings.Join(stored.Aliases, ", "))
 			}
 			return nil
 		},
@@ -345,10 +344,7 @@ to fail instead of falling back.`,
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"bitbucket_url": cfg.BitbucketURL,
-					"user":          identity,
-				})
+				return deps.WriteJSON(cmd.OutOrStdout(), Identity{BitbucketURL: cfg.BitbucketURL, User: identity})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Authenticated user: %s\n", identityHumanSummary(identity))
@@ -393,10 +389,7 @@ to fail instead of falling back.`,
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{
-					"bitbucket_url": resolvedHost,
-					"token_url":     patURL,
-				})
+				return deps.WriteJSON(cmd.OutOrStdout(), TokenURL{BitbucketURL: resolvedHost, TokenURL: patURL})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Create a personal access token at:\n%s\n", patURL)
@@ -416,7 +409,7 @@ to fail instead of falling back.`,
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok"})
+				return deps.WriteJSON(cmd.OutOrStdout(), result.OK())
 			}
 
 			fmt.Fprintln(cmd.OutOrStdout(), "Stored credentials removed")
@@ -441,10 +434,7 @@ to fail instead of falling back.`,
 			}
 
 			if isJSON() {
-				payload := map[string]any{
-					"servers": contexts,
-				}
-				return deps.WriteJSON(cmd.OutOrStdout(), payload)
+				return deps.WriteJSON(cmd.OutOrStdout(), ServerContexts{Servers: serverContextsFrom(contexts)})
 			}
 
 			if len(contexts) == 0 {
@@ -487,10 +477,7 @@ to fail instead of falling back.`,
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{
-					"status":       "ok",
-					"default_host": resolvedHost,
-				})
+				return deps.WriteJSON(cmd.OutOrStdout(), DefaultServer{Status: result.OK(), DefaultHost: resolvedHost})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Active server set to %s\n", resolvedHost)
@@ -516,7 +503,7 @@ to fail instead of falling back.`,
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"host": host, "aliases": aliases})
+				return deps.WriteJSON(cmd.OutOrStdout(), Aliases{Host: host, Aliases: aliases})
 			}
 
 			if len(aliases) == 0 {
@@ -539,12 +526,12 @@ to fail instead of falling back.`,
 		Short: "Add aliases to a stored server context",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			aliases, err := config.AddHostAliases(aliasAddHost, args)
+			aliases, host, err := config.AddHostAliases(aliasAddHost, args)
 			if err != nil {
 				return err
 			}
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "aliases": aliases})
+				return deps.WriteJSON(cmd.OutOrStdout(), Aliases{Host: host, Aliases: aliases})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Aliases updated: %s\n", strings.Join(aliases, ", "))
 			return nil
@@ -559,12 +546,12 @@ to fail instead of falling back.`,
 		Short: "Remove an alias from a stored server context",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			aliases, err := config.RemoveHostAlias(aliasRemoveHost, args[0])
+			aliases, host, err := config.RemoveHostAlias(aliasRemoveHost, args[0])
 			if err != nil {
 				return err
 			}
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "aliases": aliases})
+				return deps.WriteJSON(cmd.OutOrStdout(), Aliases{Host: host, Aliases: aliases})
 			}
 			if len(aliases) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "Alias removed; no aliases remain")
@@ -611,7 +598,7 @@ to fail instead of falling back.`,
 			if aliasDiscoverReplace {
 				aliases, err = config.SetHostAliases(cfg.BitbucketURL, discovered)
 			} else {
-				aliases, err = config.AddHostAliases(cfg.BitbucketURL, discovered)
+				aliases, _, err = config.AddHostAliases(cfg.BitbucketURL, discovered)
 			}
 			if err != nil {
 				return err
@@ -620,11 +607,11 @@ to fail instead of falling back.`,
 			removed := aliasesMissingFrom(existing, aliases)
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"host":       cfg.BitbucketURL,
-					"aliases":    aliases,
-					"discovered": discovered,
-					"removed":    removed,
+				return deps.WriteJSON(cmd.OutOrStdout(), DiscoveredAliases{
+					Host:       cfg.BitbucketURL,
+					Aliases:    aliases,
+					Discovered: discovered,
+					Removed:    removed,
 				})
 			}
 			if len(discovered) == 0 {
@@ -657,29 +644,19 @@ to fail instead of falling back.`,
 	return authCmd
 }
 
-type authIdentity struct {
-	Name        string `json:"name,omitempty"`
-	Slug        string `json:"slug,omitempty"`
-	DisplayName string `json:"display_name,omitempty"`
-	Email       string `json:"email,omitempty"`
-	ID          int64  `json:"id,omitempty"`
-	Type        string `json:"type,omitempty"`
-	Active      bool   `json:"active"`
-}
-
-func resolveIdentity(ctx context.Context, cfg config.AppConfig, newUsersClient func(config.AppConfig) (usersClient, error)) (authIdentity, error) {
+func resolveIdentity(ctx context.Context, cfg config.AppConfig, newUsersClient func(config.AppConfig) (usersClient, error)) (result.User, error) {
 	client, err := newUsersClient(cfg)
 	if err != nil {
-		return authIdentity{}, apperrors.New(apperrors.KindInternal, "failed to initialize API client", err)
+		return result.User{}, apperrors.New(apperrors.KindInternal, "failed to initialize API client", err)
 	}
 
 	response, err := client.GetUsers2WithResponse(ctx, nil)
 	if err != nil {
-		return authIdentity{}, apperrors.New(apperrors.KindTransient, "identity lookup failed", err)
+		return result.User{}, apperrors.New(apperrors.KindTransient, "identity lookup failed", err)
 	}
 
 	if response.StatusCode() < 200 || response.StatusCode() >= 300 {
-		return authIdentity{}, openapi.MapStatusError(response.StatusCode(), response.Body)
+		return result.User{}, openapi.MapStatusError(response.StatusCode(), response.Body)
 	}
 
 	// Try to get authenticated username from the X-AUSERNAME header
@@ -692,14 +669,14 @@ func resolveIdentity(ctx context.Context, cfg config.AppConfig, newUsersClient f
 		userResponse, err := client.GetUserWithResponse(ctx, username)
 		if err == nil && userResponse.StatusCode() == 200 && userResponse.ApplicationjsonCharsetUTF8200 != nil {
 			user := userResponse.ApplicationjsonCharsetUTF8200
-			return authIdentity{
-				Name:        strings.TrimSpace(safeString(user.Name)),
-				Slug:        strings.TrimSpace(safeString(user.Slug)),
-				DisplayName: strings.TrimSpace(safeString(user.DisplayName)),
-				Email:       strings.TrimSpace(safeString(user.EmailAddress)),
-				ID:          int64(safeInt32(user.Id)),
-				Type:        strings.TrimSpace(safeStringFromEnum(user.Type)),
-				Active:      safeBool(user.Active),
+			return result.User{
+				Name:         strings.TrimSpace(safeString(user.Name)),
+				Slug:         strings.TrimSpace(safeString(user.Slug)),
+				DisplayName:  strings.TrimSpace(safeString(user.DisplayName)),
+				EmailAddress: strings.TrimSpace(safeString(user.EmailAddress)),
+				ID:           safeInt32(user.Id),
+				Type:         strings.TrimSpace(safeStringFromEnum(user.Type)),
+				Active:       safeBool(user.Active),
 			}, nil
 		}
 	}
@@ -707,21 +684,21 @@ func resolveIdentity(ctx context.Context, cfg config.AppConfig, newUsersClient f
 	// Fallback to the old logic (parsing response directly as RestApplicationUser, which works for some mocks/servers)
 	if response.ApplicationjsonCharsetUTF8200 != nil {
 		user := response.ApplicationjsonCharsetUTF8200
-		return authIdentity{
-			Name:        strings.TrimSpace(safeString(user.Name)),
-			Slug:        strings.TrimSpace(safeString(user.Slug)),
-			DisplayName: strings.TrimSpace(safeString(user.DisplayName)),
-			Email:       strings.TrimSpace(safeString(user.EmailAddress)),
-			ID:          int64(safeInt32(user.Id)),
-			Type:        strings.TrimSpace(safeStringFromEnum(user.Type)),
-			Active:      safeBool(user.Active),
+		return result.User{
+			Name:         strings.TrimSpace(safeString(user.Name)),
+			Slug:         strings.TrimSpace(safeString(user.Slug)),
+			DisplayName:  strings.TrimSpace(safeString(user.DisplayName)),
+			EmailAddress: strings.TrimSpace(safeString(user.EmailAddress)),
+			ID:           safeInt32(user.Id),
+			Type:         strings.TrimSpace(safeStringFromEnum(user.Type)),
+			Active:       safeBool(user.Active),
 		}, nil
 	}
 
-	return authIdentity{}, apperrors.New(apperrors.KindAuthentication, "failed to resolve identity: authenticated username not found", nil)
+	return result.User{}, apperrors.New(apperrors.KindAuthentication, "failed to resolve identity: authenticated username not found", nil)
 }
 
-func identityHumanSummary(identity authIdentity) string {
+func identityHumanSummary(identity result.User) string {
 	parts := make([]string, 0, 6)
 	if identity.DisplayName != "" {
 		parts = append(parts, identity.DisplayName)
@@ -739,8 +716,8 @@ func identityHumanSummary(identity authIdentity) string {
 	if identity.Slug != "" {
 		parts = append(parts, "slug="+identity.Slug)
 	}
-	if identity.Email != "" {
-		parts = append(parts, "email="+identity.Email)
+	if identity.EmailAddress != "" {
+		parts = append(parts, "email="+identity.EmailAddress)
 	}
 	if identity.Type != "" {
 		parts = append(parts, "type="+identity.Type)
