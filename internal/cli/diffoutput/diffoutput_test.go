@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
@@ -36,13 +37,38 @@ func TestOneShapeForEveryOutputMode(t *testing.T) {
 	}
 
 	names := From(repository, diffservice.OutputKindNameOnly, diffservice.Result{Names: []string{"a.go", "b.go"}})
-	if names.Output != "name-only" || len(names.Names) != 2 || names.Patch != "" {
+	if names.Output != "name-only" || names.Names == nil || len(*names.Names) != 2 || names.Patch != "" {
 		t.Fatalf("names = %+v", names)
 	}
-	// Empty rather than absent: nothing changed is a different answer from not
-	// having asked.
-	if empty := From(repository, diffservice.OutputKindNameOnly, diffservice.Result{}); empty.Names == nil {
-		t.Fatalf("an empty name-only run left names absent: %+v", empty)
+
+	// Asserted on the encoded document, not the Go value. The earlier version of
+	// this check read empty.Names != nil and passed while the key was being
+	// dropped: omitempty discards an empty slice as readily as a nil one, so the
+	// struct said "present and empty" and the JSON said nothing at all.
+	encoded, err := json.Marshal(From(repository, diffservice.OutputKindNameOnly, diffservice.Result{}))
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	var document map[string]any
+	if err := json.Unmarshal(encoded, &document); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	list, present := document["names"]
+	if !present {
+		t.Fatalf("a name-only run with no differing files dropped the key: %s", encoded)
+	}
+	if entries, ok := list.([]any); !ok || len(entries) != 0 {
+		t.Fatalf("names = %v, want an empty array", list)
+	}
+
+	// The other modes must not carry it at all, or the key stops meaning
+	// "this was a name-only run".
+	patchEncoded, err := json.Marshal(patch)
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	if strings.Contains(string(patchEncoded), `"names"`) {
+		t.Fatalf("a patch run carried names: %s", patchEncoded)
 	}
 
 	summary := map[string]any{"linesAdded": float64(10), "linesRemoved": float64(2)}
