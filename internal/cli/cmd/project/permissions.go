@@ -463,7 +463,7 @@ func newProjectPermissionsCommand(deps Dependencies) *cobra.Command {
 
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), EffectivePermissions{
-					ProjectKey:  args[0],
+					Project:     args[0],
 					Permissions: effectivePermissionsFrom(perms),
 				})
 			}

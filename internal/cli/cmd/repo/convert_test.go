@@ -110,7 +110,7 @@ func TestRawFileFromSaysHowTheBytesAreEncoded(t *testing.T) {
 func TestCommentFromTrimsTheAnchorAndKeepsTheExtras(t *testing.T) {
 	t.Parallel()
 
-	converted := commentFrom(upstreamFromJSON[openapigenerated.RestComment](t, `{
+	converted := result.CommentFrom(upstreamFromJSON[openapigenerated.RestComment](t, `{
 		"id": 118,
 		"version": 2,
 		"text": "please rename this",

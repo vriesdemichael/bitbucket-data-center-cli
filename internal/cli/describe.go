@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -25,10 +24,15 @@ const describeFlag = "describe"
 // agent can log. A caller checks Described before reading Schema, the same way
 // it checks error before data on the envelope.
 type DescribeResult struct {
-	Command   string         `json:"command"`
-	Described bool           `json:"described"`
-	Schema    map[string]any `json:"schema,omitempty"`
-	Reason    string         `json:"reason,omitempty"`
+	// Schema is any rather than a map because the two sources produce
+	// different Go values -- a derived *jsonschema.Schema and a decoded
+	// map -- and both encode to the same JSON. Narrowing the field forced the
+	// derived one through a marshal and an unmarshal to become a map that was
+	// then marshalled again.
+	Command   string `json:"command"`
+	Described bool   `json:"described"`
+	Schema    any    `json:"schema,omitempty"`
+	Reason    string `json:"reason,omitempty"`
 }
 
 // installDescribe makes every runnable command answer --describe.
@@ -142,7 +146,7 @@ func writeDescription(cmd *cobra.Command) error {
 
 // describeCommand looks up the schema a command declares.
 //
-// Three answers, and which one a caller gets is itself information: a schema
+// Four answers, and which one a caller gets is itself information: a schema
 // derived from the result type the command fills in, a statement that the
 // command returns no data payload at all, or a statement that it returns one
 // whose shape bb cannot promise. An empty schema is not among them -- it would
@@ -170,16 +174,10 @@ func describeCommand(path string) DescribeResult {
 	// hand-written fallback is what is being retired (#521), and every command
 	// that moves across stops being able to disagree with itself.
 	if schema, ok := result.SchemaFor(path); ok {
-		encoded, err := json.Marshal(schema)
-		if err == nil {
-			var document map[string]any
-			if json.Unmarshal(encoded, &document) == nil {
-				described.Described = true
-				described.Schema = document
+		described.Described = true
+		described.Schema = schema
 
-				return described
-			}
-		}
+		return described
 	}
 
 	fileName := "output." + strings.ReplaceAll(path, " ", ".") + ".schema.json"

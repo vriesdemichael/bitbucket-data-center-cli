@@ -62,16 +62,49 @@ import (
 // knowledge the command has. Naming a property the type does not have is a
 // wiring mistake, so it panics rather than silently doing nothing -- the same
 // choice internal/mcp makes for tool input schemas.
-func For[T any](enums map[string][]string) *jsonschema.Schema {
-	schema, err := jsonschema.For[T](nil)
-	if err != nil {
-		panic(fmt.Sprintf("deriving output schema for %T: %v", *new(T), err))
+func For[T any](enums map[string][]string) *Declaration {
+	return &Declaration{derive: func() *jsonschema.Schema {
+		schema, err := jsonschema.For[T](nil)
+		if err != nil {
+			panic(fmt.Sprintf("deriving output schema for %T: %v", *new(T), err))
+		}
+
+		tightenOptionalNullables(schema)
+		applyEnums(schema, enums, fmt.Sprintf("%T", *new(T)))
+
+		return schema
+	}}
+}
+
+// Declaration is a schema that has not been derived yet.
+//
+// Every command declares its result from an init, so all 222 schemas were
+// derived on every bb invocation -- around six milliseconds and six megabytes
+// before main ran, to answer a question only --describe asks. Holding the
+// derivation rather than its result costs one closure per command and does the
+// reflection when something reads it.
+//
+// The trade is where a wiring mistake surfaces. Naming an enum property the
+// type does not have used to panic at startup, which is loud; it now panics on
+// first read. TestEveryDeclarationResolves reads every one, so the mistake
+// still cannot reach a release -- it reaches a test run rather than a user's
+// terminal.
+type Declaration struct {
+	once    sync.Once
+	derive  func() *jsonschema.Schema
+	derived *jsonschema.Schema
+}
+
+// Schema derives the schema on first read and returns that same value after.
+func (declaration *Declaration) Schema() *jsonschema.Schema {
+	if declaration == nil {
+		return nil
 	}
+	declaration.once.Do(func() {
+		declaration.derived = declaration.derive()
+	})
 
-	tightenOptionalNullables(schema)
-	applyEnums(schema, enums, fmt.Sprintf("%T", *new(T)))
-
-	return schema
+	return declaration.derived
 }
 
 // tightenOptionalNullables drops null from optional fields that can never be
@@ -141,11 +174,13 @@ func dropNull(schema *jsonschema.Schema) {
 // It is also the claim worth keeping true: a command that starts returning null
 // for an empty list breaks every caller iterating the result, and the schema is
 // what says that must not happen.
-func List[T any](enums map[string][]string) *jsonschema.Schema {
-	return &jsonschema.Schema{
-		Type:  "array",
-		Items: For[T](enums),
-	}
+func List[T any](enums map[string][]string) *Declaration {
+	return &Declaration{derive: func() *jsonschema.Schema {
+		return &jsonschema.Schema{
+			Type:  "array",
+			Items: For[T](enums).Schema(),
+		}
+	}}
 }
 
 // applyEnums sets the allowed values on properties named by a dotted path.
@@ -199,7 +234,7 @@ func resolveProperty(schema *jsonschema.Schema, path string) *jsonschema.Schema 
 
 var (
 	declaredMutex sync.RWMutex
-	declared      = map[string]*jsonschema.Schema{}
+	declared      = map[string]*Declaration{}
 )
 
 // Declare records the schema for a command's --json data payload, keyed by the
@@ -208,21 +243,27 @@ var (
 // Called from an init in the command's own package, so the declaration sits
 // beside the type it describes and happens once per process rather than once
 // per constructed command tree.
-func Declare(commandPath string, schema *jsonschema.Schema) {
+func Declare(commandPath string, schema *Declaration) {
 	declaredMutex.Lock()
 	defer declaredMutex.Unlock()
 
 	declared[commandPath] = schema
 }
 
-// SchemaFor returns the declared schema for a command path.
+// SchemaFor returns the declared schema for a command path, deriving it on
+// first read.
 func SchemaFor(commandPath string) (*jsonschema.Schema, bool) {
 	declaredMutex.RLock()
-	defer declaredMutex.RUnlock()
+	declaration, ok := declared[commandPath]
+	declaredMutex.RUnlock()
 
-	schema, ok := declared[commandPath]
+	if !ok {
+		return nil, false
+	}
 
-	return schema, ok
+	// Outside the lock: deriving a schema is the slow part, and it does not
+	// touch the registry.
+	return declaration.Schema(), true
 }
 
 // DeclaredPaths returns every command path with a declared result, sorted.

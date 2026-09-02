@@ -387,7 +387,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), ProjectDeletion{Status: result.OK(), ProjectKey: args[0]})
+				return d.WriteJSON(cmd.OutOrStdout(), ProjectDeletion{Status: result.OK(), Project: args[0]})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted project"), style.Resource.Render(args[0]))

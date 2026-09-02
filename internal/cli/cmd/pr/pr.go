@@ -1907,7 +1907,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Comment: commentFrom(comment)})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Comment: result.CommentFrom(comment)})
 			}
 
 			fmt.Fprintln(cmd.OutOrStdout(), formatCommentDetail(comment))
@@ -2037,7 +2037,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 				return deps.WriteJSON(cmd.OutOrStdout(), AddedComment{
 					Repository:    repositoryOf(repo),
 					PullRequestID: target.PullRequestID,
-					Comment:       commentFrom(created),
+					Comment:       result.CommentFrom(created),
 					Blocker:       commentAddBlocker,
 					Pending:       commentAddPending,
 					Path:          commentAddPath,
