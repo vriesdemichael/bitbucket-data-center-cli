@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
@@ -552,7 +553,10 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 			}
 
 			service := reposettings.NewService(client)
-			mergeStrategyID := args[0]
+			mergeStrategyID, err := enumflag.Value("strategy-id", args[0], openapi.MergeStrategies)
+			if err != nil {
+				return err
+			}
 			if deps.DryRunEnabled() {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
