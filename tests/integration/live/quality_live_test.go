@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	qualityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/quality"
 )
 
 func TestLiveBuildStatusSetAndGet(t *testing.T) {

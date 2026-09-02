@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
 
 const mcpReviewActivities = `{"isLastPage":true,"values":[

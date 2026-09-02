@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/giturl"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 )
 
 type repositorySelector = cloneRepoRef

@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/giturl"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 // Target represents a resolved pull request target including repository and numerical ID.

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
 
 // testClients builds Clients pointing at an httptest server that returns HTTP 500

@@ -8,9 +8,9 @@ import (
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/outputschemas"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outputschemas"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // TestErrorEnvelopeMatchesPublishedSchema validates a real emitted failure

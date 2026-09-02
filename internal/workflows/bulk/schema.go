@@ -3,8 +3,8 @@ package bulk
 import (
 	"fmt"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/docsite"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 const jsonSchemaVersion = "https://json-schema.org/draft/2020-12/schema"

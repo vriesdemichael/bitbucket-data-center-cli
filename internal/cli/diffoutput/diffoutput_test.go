@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
 )
 
 var repository = result.Repository{ProjectKey: "PRJ", Slug: "payments"}

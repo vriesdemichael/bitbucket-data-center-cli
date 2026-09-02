@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 func extractPRData(data map[string]any) map[string]any {

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // ParseBitbucketRemote extracts host, project key, and repository slug from HTTP/HTTPS or SSH remote URLs.

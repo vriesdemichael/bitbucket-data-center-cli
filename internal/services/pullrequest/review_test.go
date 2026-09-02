@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	pullrequestactivity "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	pullrequestactivity "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 // Bitbucket ships comment and task counters in an undocumented "properties"

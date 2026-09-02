@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 )
 
 // newPullRequestStatusServer serves the two endpoints bb pr status reads: the

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
 
 func executeTestCLI(t *testing.T, args ...string) (string, error) {

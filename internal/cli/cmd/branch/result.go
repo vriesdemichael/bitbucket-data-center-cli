@@ -1,9 +1,9 @@
 package branchcmd
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	branchservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/branch"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	branchservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/branch"
 )
 
 // Branch is one branch in a repository.

@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/gittest"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/gittest"
 )
 
 // TestMain fails the live suite when it reconfigures the repository it runs

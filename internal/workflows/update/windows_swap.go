@@ -10,7 +10,7 @@ import (
 	"time"
 	"unicode/utf16"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 const (

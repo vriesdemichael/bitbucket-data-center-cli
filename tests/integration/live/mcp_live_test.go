@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli"
-	bbmcp "github.com/vriesdemichael/bitbucket-server-cli/internal/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
+	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
 )
 
 // executeLiveMCPServer runs `bb ai mcp serve` and drives a real MCP client

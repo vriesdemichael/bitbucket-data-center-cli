@@ -1,13 +1,13 @@
 codecov:
   require_ci_to_pass: true
 
-# Go coverprofiles record import paths, and the module path is still
-# github.com/vriesdemichael/bitbucket-server-cli even though the repository was
-# renamed to bitbucket-data-center-cli.  Strip the prefix explicitly instead of
-# relying on Codecov's name-based path heuristics, which stopped matching at the
-# rename.
+# Go coverprofiles record import paths, so the module prefix has to come off
+# before Codecov can match a path to a file in the repository. Stripping it
+# explicitly rather than relying on name-based heuristics is what this is for:
+# those heuristics stopped matching when the repository was renamed, and the
+# reports were discarded silently for two months before anyone noticed.
 fixes:
-  - "github.com/vriesdemichael/bitbucket-server-cli/::"
+  - "github.com/vriesdemichael/bitbucket-data-center-cli/::"
 
 component_management:
   individual_components:

@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/outwriter"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/diagnostics"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outwriter"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // Version is set at build time via -ldflags "-X main.Version=<semver>".

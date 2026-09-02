@@ -5,8 +5,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 )
 
 const (

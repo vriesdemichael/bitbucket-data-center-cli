@@ -1,7 +1,7 @@
 package openapi
 
 import (
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 // RepositoryPermission is a repository permission level as the Bitbucket API

@@ -1,7 +1,7 @@
 package browsecmd
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 )
 
 // Target is what `bb browse` worked out the caller was asking for.

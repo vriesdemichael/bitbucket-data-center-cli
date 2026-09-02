@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/permissionchecker"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/permissionchecker"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 // PermissionChecker provides pre-flight permission checking during dry-run.

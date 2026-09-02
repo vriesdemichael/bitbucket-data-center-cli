@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // releaseVersion is the binary's own version, reported as meta.bbVersion.

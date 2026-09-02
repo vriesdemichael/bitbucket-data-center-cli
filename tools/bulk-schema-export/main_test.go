@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
-	bulkworkflow "github.com/vriesdemichael/bitbucket-server-cli/internal/workflows/bulk"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/docsite"
+	bulkworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/bulk"
 )
 
 func TestExportSchemasWritesAllExpectedFiles(t *testing.T) {

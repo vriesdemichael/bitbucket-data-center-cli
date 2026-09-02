@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/permissionchecker"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/permissionchecker"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 func executeTestCLI(t *testing.T, args ...string) (string, error) {

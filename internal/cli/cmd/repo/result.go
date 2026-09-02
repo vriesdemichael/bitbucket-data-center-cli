@@ -1,7 +1,7 @@
 package repocmd
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 )
 
 // SingleRepository is what `bb repo create`, `fork`, `admin create`,

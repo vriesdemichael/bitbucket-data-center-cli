@@ -10,14 +10,14 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	githubrelease "github.com/vriesdemichael/bitbucket-server-cli/internal/transport/githubrelease"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/network"
-	updatesigstore "github.com/vriesdemichael/bitbucket-server-cli/internal/transport/sigstore"
-	updateworkflow "github.com/vriesdemichael/bitbucket-server-cli/internal/workflows/update"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	githubrelease "github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/githubrelease"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
+	updatesigstore "github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/sigstore"
+	updateworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/update"
 )
 
 const (

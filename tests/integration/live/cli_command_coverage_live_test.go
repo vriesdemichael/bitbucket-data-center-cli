@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
 )
 
 func TestLiveCLIDiffOutputModes(t *testing.T) {

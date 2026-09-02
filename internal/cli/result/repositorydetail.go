@@ -1,7 +1,7 @@
 package result
 
 import (
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 // RepositoryDetail is a repository as the administrative commands report it.

@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	qualityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/quality"
 )
 
 // GetBuildStatusInput is the argument set for get_build_status.

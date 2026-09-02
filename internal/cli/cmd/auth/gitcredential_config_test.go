@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/execgit"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/execgit"
 )
 
 // gitCommand builds a git invocation with git's repository-scoping variables

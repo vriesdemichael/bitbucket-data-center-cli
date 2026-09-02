@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"strings"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/services/commentanchor"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/commentanchor"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 type RepositoryRef struct {

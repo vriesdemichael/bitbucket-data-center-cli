@@ -1,7 +1,7 @@
 package result
 
 import (
-	repositoryservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
+	repositoryservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/repository"
 )
 
 // Repository names a repository in a payload.

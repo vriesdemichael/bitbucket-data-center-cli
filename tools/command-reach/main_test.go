@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
 )
 
 func writeLiveTestFile(t *testing.T, source string) string {

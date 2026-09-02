@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
-	projectservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/project"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
+	projectservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/project"
 )
 
 const permissionLookupLimit = 100

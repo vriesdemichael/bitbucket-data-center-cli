@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/docsite"
 )
 
 // The project was renamed; GitHub redirects the repository but not the Pages

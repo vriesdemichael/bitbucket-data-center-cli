@@ -18,8 +18,8 @@ import (
 	"testing"
 	"time"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 // assertAuthorizationError asserts that err is non-nil and has KindAuthorization (exit code 3).
