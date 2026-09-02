@@ -196,20 +196,35 @@ func joinCommentPath(path *struct {
 // so a thread reads top to bottom.
 func FlattenComments(upstream []openapigenerated.RestComment) []Comment {
 	flattened := make([]Comment, 0, len(upstream))
+	seen := map[int64]bool{}
 	for _, one := range upstream {
-		flattened = appendCommentTree(flattened, one, 0)
+		flattened = appendCommentTree(flattened, one, 0, seen)
 	}
 
 	return flattened
 }
 
-// appendCommentTree appends one comment and everything below it.
+// appendCommentTree appends one comment and everything below it, once.
 //
 // parentID is threaded down rather than read off each reply: nesting is how
 // Bitbucket expresses the relationship on this endpoint, and a nested reply
 // does not always repeat its parent as a field.
-func appendCommentTree(into []Comment, upstream openapigenerated.RestComment, parentID int64) []Comment {
+//
+// seen is what makes this safe on the activity timeline. That endpoint emits an
+// activity per comment action, including commentAction REPLIED, so the same
+// comment reaches us twice: once nested under the root of its thread, and once
+// as the subject of its own activity. ExtractComments dedupes what it hands
+// over, but it cannot see inside the trees it is handing over, so without this
+// a reply would be published twice -- and the second copy would say it was a
+// thread root, because nothing nested it.
+func appendCommentTree(into []Comment, upstream openapigenerated.RestComment, parentID int64, seen map[int64]bool) []Comment {
 	converted := CommentFrom(upstream)
+	if converted.ID != 0 {
+		if seen[converted.ID] {
+			return into
+		}
+		seen[converted.ID] = true
+	}
 	if parentID != 0 {
 		converted.Reply = true
 		converted.ParentID = parentID
@@ -220,7 +235,7 @@ func appendCommentTree(into []Comment, upstream openapigenerated.RestComment, pa
 		return into
 	}
 	for _, reply := range *upstream.Comments {
-		into = appendCommentTree(into, reply, converted.ID)
+		into = appendCommentTree(into, reply, converted.ID, seen)
 	}
 
 	return into

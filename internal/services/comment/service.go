@@ -81,8 +81,22 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 		return nil, err
 	}
 	trimmedPath := strings.TrimSpace(path)
-	if !target.Blocker && trimmedPath == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "comment path is required for list operations", nil)
+	onCommit := strings.TrimSpace(target.CommitID) != ""
+	// The pull request endpoint requires a path -- the spec types it as a plain
+	// string, not a pointer -- and the blocker endpoint takes none. The commit
+	// endpoint takes an optional one, and without it returns every comment on
+	// the commit. Requiring it there made the comments bb creates unlistable by
+	// bb: `repo comment create --commit` posts a comment anchored to nothing,
+	// and a path-scoped listing can never return it.
+	if !target.Blocker && !onCommit && trimmedPath == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "comment path is required when listing pull request comments", nil)
+	}
+
+	// Nil rather than a pointer to "", which would send path= and scope the
+	// listing to a file named nothing.
+	var commitPath *string
+	if trimmedPath != "" {
+		commitPath = &trimmedPath
 	}
 	if limit <= 0 {
 		limit = 25
@@ -94,7 +108,7 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 
 	for {
 		if strings.TrimSpace(target.CommitID) != "" {
-			response, err := service.client.GetCommentsWithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, &openapigenerated.GetCommentsParams{Path: &trimmedPath, Start: &start, Limit: &pageLimit})
+			response, err := service.client.GetCommentsWithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, &openapigenerated.GetCommentsParams{Path: commitPath, Start: &start, Limit: &pageLimit})
 			if err != nil {
 				return nil, apperrors.New(apperrors.KindTransient, "failed to list commit comments", err)
 			}

@@ -206,8 +206,11 @@ func TestCommentServiceAdditionalBranches(t *testing.T) {
 		})
 
 		target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}
-		if _, err := service.List(context.Background(), target, "", 10); err == nil {
-			t.Fatal("expected path validation error")
+		// A commit listing without a path is every comment on the commit, which
+		// is the only way to see one bb created: repo comment create anchors a
+		// commit comment to nothing.
+		if _, err := service.List(context.Background(), target, "", 10); err != nil {
+			t.Fatalf("a pathless commit listing was refused: %v", err)
 		}
 		if _, err := service.List(context.Background(), Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}, "", 10); err == nil {
 			t.Fatal("expected pull request path validation error")
@@ -1049,4 +1052,42 @@ func TestSetStateErrorPaths(t *testing.T) {
 			t.Fatalf("state = %v, want the state that was sent", updated.State)
 		}
 	})
+}
+
+// TestListOmitsThePathParameterWhenThereIsNone is the half of the round trip
+// that was unreachable.
+//
+// `repo comment create --commit` posts a comment anchored to no file, and the
+// listing required a path -- so bb could not list a comment bb had just made,
+// and therefore could not read back a reply to it either. The commit endpoint
+// takes an optional path; sending an empty one would scope the listing to a
+// file named nothing rather than to the whole commit.
+func TestListOmitsThePathParameterWhenThereIsNone(t *testing.T) {
+	var queries []string
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		queries = append(queries, r.URL.RawQuery)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":1,"text":"on the commit"}]}`))
+	})
+
+	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}
+	listed, err := service.List(context.Background(), target, "", 10)
+	if err != nil {
+		t.Fatalf("pathless commit listing: %v", err)
+	}
+	if len(listed) != 1 {
+		t.Fatalf("listed = %+v", listed)
+	}
+	if len(queries) != 1 || strings.Contains(queries[0], "path=") {
+		t.Fatalf("query = %q, want no path parameter at all", queries)
+	}
+
+	// A path still scopes the listing when one is given.
+	queries = nil
+	if _, err := service.List(context.Background(), target, "internal/cli/root.go", 10); err != nil {
+		t.Fatalf("path-scoped commit listing: %v", err)
+	}
+	if len(queries) != 1 || !strings.Contains(queries[0], "path=internal%2Fcli%2Froot.go") {
+		t.Fatalf("query = %q, want the path carried through", queries)
+	}
 }

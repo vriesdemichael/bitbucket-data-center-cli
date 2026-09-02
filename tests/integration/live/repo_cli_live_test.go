@@ -53,6 +53,40 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	}
 	commitCommentVersion, _ := commentVersionFromCreateOutput(createCommitOutput)
 
+	// The round trip bb could not previously make. A commit comment it creates
+	// is anchored to no file, and the listing demanded a path, so bb could not
+	// show a comment bb had just posted -- and therefore could not show a reply
+	// to one either. Without a path the commit endpoint answers with every
+	// comment on the commit, which is what this asserts.
+	commitReplyText := "a reply on a commit, which has no thread view to reach it"
+	replyOnCommitOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "create",
+		"--commit", commitID, "--text", commitReplyText, "--parent", commitCommentID)
+	if err != nil {
+		t.Fatalf("repo comment create --parent failed: %v\noutput: %s", err, replyOnCommitOutput)
+	}
+
+	wholeCommitOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--commit", commitID, "--limit", "25")
+	if err != nil {
+		t.Fatalf("repo comment list (commit, no path) failed: %v\noutput: %s", err, wholeCommitOutput)
+	}
+	if !strings.Contains(wholeCommitOutput, "live cli commit comment") {
+		t.Fatalf("a pathless commit listing did not carry the comment bb created: %s", wholeCommitOutput)
+	}
+	if !strings.Contains(wholeCommitOutput, commitReplyText) {
+		t.Fatalf("the reply body did not reach the commit listing: %s", wholeCommitOutput)
+	}
+	if !strings.Contains(wholeCommitOutput, `"reply": true`) || !strings.Contains(wholeCommitOutput, `"parentId"`) {
+		t.Fatalf("the reply did not say what it answers: %s", wholeCommitOutput)
+	}
+
+	humanCommitOutput, err := executeLiveCLI(t, "repo", "comment", "list", "--commit", commitID, "--limit", "25")
+	if err != nil {
+		t.Fatalf("repo comment list (commit, human) failed: %v\noutput: %s", err, humanCommitOutput)
+	}
+	if !strings.Contains(humanCommitOutput, commitReplyText) {
+		t.Fatalf("the human commit listing dropped the reply the payload carries: %s", humanCommitOutput)
+	}
+
 	listCommitOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--commit", commitID, "--path", "seed.txt", "--limit", "25")
 	if err != nil {
 		t.Fatalf("repo comment list (commit) failed: %v\noutput: %s", err, listCommitOutput)
