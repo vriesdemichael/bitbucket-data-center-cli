@@ -42,11 +42,6 @@ func SchemasFor(siteVersion string) map[string]map[string]any {
 		all[k] = v
 	}
 
-	// Pull request command group schemas
-	for k, v := range pullRequestSchemas() {
-		all[k] = v
-	}
-
 	// Bulk command group — envelope-wrapped versions of the existing bulk schemas
 	for k, v := range bulkOutputSchemas(bulkworkflow.PlanJSONSchema(), bulkworkflow.ApplyStatusJSONSchema()) {
 		all[k] = v

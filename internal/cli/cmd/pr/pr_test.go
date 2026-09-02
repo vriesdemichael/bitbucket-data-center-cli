@@ -461,8 +461,8 @@ func TestPRCommentCommands(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on reply json: %v", err)
 	}
-	if !strings.Contains(out, "parent_id") {
-		t.Fatalf("expected parent_id in reply json: %s", out)
+	if !strings.Contains(out, "parentId") {
+		t.Fatalf("expected parentId in reply json: %s", out)
 	}
 
 	// Validation errors
@@ -807,8 +807,8 @@ func TestPRMergeBase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on merge-base json: %v", err)
 	}
-	if !strings.Contains(out, "merge_base") {
-		t.Fatalf("expected merge_base in json: %s", out)
+	if !strings.Contains(out, "mergeBase") {
+		t.Fatalf("expected mergeBase in json: %s", out)
 	}
 }
 
@@ -1015,7 +1015,7 @@ func TestPRListModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on list json: %v", err)
 	}
-	if !strings.Contains(out, "pull_requests") {
+	if !strings.Contains(out, "pullRequests") {
 		t.Fatalf("expected pull_requests in json: %s", out)
 	}
 }
@@ -1037,8 +1037,8 @@ func TestPRGetModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on get json: %v", err)
 	}
-	if !strings.Contains(out, "pull_request") {
-		t.Fatalf("expected pull_request in json: %s", out)
+	if !strings.Contains(out, "pullRequest") {
+		t.Fatalf("expected pullRequest in json: %s", out)
 	}
 }
 
@@ -1180,8 +1180,8 @@ func TestPRReviewAndReviewerModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on reviewer remove json: %v", err)
 	}
-	if !strings.Contains(out, "pull_request") {
-		t.Fatalf("expected pull_request in json: %s", out)
+	if !strings.Contains(out, "pullRequest") {
+		t.Fatalf("expected pullRequest in json: %s", out)
 	}
 }
 

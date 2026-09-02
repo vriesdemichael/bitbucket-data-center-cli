@@ -240,7 +240,7 @@ func TestPRAutoMergeEnable(t *testing.T) {
 		t.Fatalf("expected enable confirmation, output=%s", out)
 	}
 
-	// Execution (JSON): the auto_merge object is emitted as a machine envelope.
+	// Execution (JSON): the autoMerge object is emitted as a machine envelope.
 	out, err = executeTestCLI(t, "--json", "pr", "auto-merge", "enable", "30", "--strategy", "rebase-ff-only")
 	if err != nil {
 		t.Fatalf("unexpected error enabling auto-merge (json): %v output=%s", err, out)
@@ -384,8 +384,8 @@ func TestPRAutoMergeEnableReportsAnImmediateMerge(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error (json): %v output=%s", err, jsonOut)
 	}
-	if !strings.Contains(jsonOut, `"merged_immediately": true`) {
-		t.Fatalf("expected merged_immediately in the payload, got=%s", jsonOut)
+	if !strings.Contains(jsonOut, `"mergedImmediately": true`) {
+		t.Fatalf("expected mergedImmediately in the payload, got=%s", jsonOut)
 	}
 	if strings.Contains(jsonOut, `"enabled": true`) {
 		t.Fatalf("a merged pull request has no pending auto-merge, got=%s", jsonOut)

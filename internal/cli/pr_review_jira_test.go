@@ -161,7 +161,7 @@ func TestPRReviewCommands(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, `"status": "completed"`) {
+	if !strings.Contains(out, `"review": "completed"`) || !strings.Contains(out, `"status": "ok"`) {
 		t.Fatalf("unexpected JSON: %s", out)
 	}
 
@@ -188,7 +188,7 @@ func TestPRReviewCommands(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, `"status": "discarded"`) {
+	if !strings.Contains(out, `"review": "discarded"`) {
 		t.Fatalf("unexpected JSON: %s", out)
 	}
 

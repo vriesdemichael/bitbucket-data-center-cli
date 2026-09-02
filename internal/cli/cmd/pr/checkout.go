@@ -18,15 +18,17 @@ import (
 )
 
 type checkoutPlan struct {
-	repositoryRoot string
-	remoteName     string
-	remoteURL      string
-	remoteIsNew    bool
-	sourceBranch   string
-	localBranch    string
-	branchExists   bool
-	fork           bool
-	credentials    *git.Credentials
+	repositoryRoot   string
+	remoteName       string
+	remoteURL        string
+	remoteIsNew      bool
+	pullRequest      int64
+	sourceBranch     string
+	sourceRepository string
+	localBranch      string
+	branchExists     bool
+	fork             bool
+	credentials      *git.Credentials
 }
 
 func newPullRequestCheckoutCommand(deps Dependencies, repositorySelector *string) *cobra.Command {
@@ -79,16 +81,16 @@ func newPullRequestCheckoutCommand(deps Dependencies, repositorySelector *string
 				}
 			}
 
-			result, err := applyPullRequestCheckout(cmd.Context(), backend, plan, force, detach)
+			outcome, err := applyPullRequestCheckout(cmd.Context(), backend, plan, force, detach)
 			if err != nil {
 				return err
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), result)
+				return deps.WriteJSON(cmd.OutOrStdout(), checkoutFrom(outcome))
 			}
 
-			writeCheckoutResult(cmd, pullRequest, result)
+			writeCheckoutResult(cmd, pullRequest, outcome)
 
 			return nil
 		},
@@ -168,13 +170,15 @@ func planPullRequestCheckout(
 	}
 
 	plan := checkoutPlan{
-		repositoryRoot: repositoryRoot,
-		remoteName:     remoteName,
-		remoteURL:      remoteURL,
-		remoteIsNew:    remoteIsNew,
-		sourceBranch:   sourceBranch,
-		fork:           fork,
-		credentials:    checkoutCredentials(cfg, remoteURL),
+		repositoryRoot:   repositoryRoot,
+		remoteName:       remoteName,
+		remoteURL:        remoteURL,
+		remoteIsNew:      remoteIsNew,
+		pullRequest:      pullRequest.ID,
+		sourceBranch:     sourceBranch,
+		sourceRepository: sourceRepository.ProjectKey + "/" + sourceRepository.Slug,
+		fork:             fork,
+		credentials:      checkoutCredentials(cfg, remoteURL),
 	}
 
 	if detach {
@@ -306,13 +310,15 @@ func applyPullRequestCheckout(
 	detach bool,
 ) (checkoutResult, error) {
 	result := checkoutResult{
-		Branch:       plan.localBranch,
-		Detached:     detach,
-		Remote:       plan.remoteName,
-		RemoteURL:    plan.remoteURL,
-		RemoteAdded:  plan.remoteIsNew,
-		SourceBranch: plan.sourceBranch,
-		Fork:         plan.fork,
+		PullRequest:      plan.pullRequest,
+		Branch:           plan.localBranch,
+		Detached:         detach,
+		Remote:           plan.remoteName,
+		RemoteURL:        plan.remoteURL,
+		RemoteAdded:      plan.remoteIsNew,
+		SourceBranch:     plan.sourceBranch,
+		SourceRepository: plan.sourceRepository,
+		Fork:             plan.fork,
 	}
 
 	if plan.remoteIsNew {

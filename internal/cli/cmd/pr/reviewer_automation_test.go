@@ -438,7 +438,7 @@ func TestPRReviewerAddReportsTheRealPullRequestID(t *testing.T) {
 				PullRequest struct {
 					ID    int64  `json:"id"`
 					Title string `json:"title"`
-				} `json:"pull_request"`
+				} `json:"pullRequest"`
 				Added []string `json:"added"`
 			} `json:"data"`
 		}
@@ -446,10 +446,10 @@ func TestPRReviewerAddReportsTheRealPullRequestID(t *testing.T) {
 			t.Fatalf("output was not valid JSON (%v):\n%s", jsonErr, out)
 		}
 		if decoded.Data.PullRequest.ID != 42 {
-			t.Fatalf("pull_request.id = %d, want 42", decoded.Data.PullRequest.ID)
+			t.Fatalf("pullRequest.id = %d, want 42", decoded.Data.PullRequest.ID)
 		}
 		if decoded.Data.PullRequest.Title != "Test PR" {
-			t.Fatalf("pull_request.title = %q, want %q", decoded.Data.PullRequest.Title, "Test PR")
+			t.Fatalf("pullRequest.title = %q, want %q", decoded.Data.PullRequest.Title, "Test PR")
 		}
 		if len(decoded.Data.Added) != 1 || decoded.Data.Added[0] != "bob" {
 			t.Fatalf("added = %v, want [bob]", decoded.Data.Added)

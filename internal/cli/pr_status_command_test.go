@@ -119,7 +119,7 @@ func statusSection(t *testing.T, payload map[string]any, key string) map[string]
 func statusPullRequestIDs(t *testing.T, section map[string]any) []float64 {
 	t.Helper()
 
-	raw, ok := section["pull_requests"].([]any)
+	raw, ok := section["pullRequests"].([]any)
 	if !ok {
 		t.Fatalf("expected pull_requests in section, got: %v", section)
 	}
@@ -147,7 +147,7 @@ func TestPullRequestStatusReportsAllThreeSections(t *testing.T) {
 
 	payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
 
-	currentBranch := statusSection(t, payload, "current_branch")
+	currentBranch := statusSection(t, payload, "currentBranch")
 	if currentBranch["branch"] != "feature/x" {
 		t.Fatalf("expected the checked-out branch to be reported, got: %v", currentBranch)
 	}
@@ -158,7 +158,7 @@ func TestPullRequestStatusReportsAllThreeSections(t *testing.T) {
 		t.Fatalf("expected the branch pull request, got: %v", ids)
 	}
 
-	if ids := statusPullRequestIDs(t, statusSection(t, payload, "created_by_you")); len(ids) != 1 || ids[0] != 11 {
+	if ids := statusPullRequestIDs(t, statusSection(t, payload, "createdByYou")); len(ids) != 1 || ids[0] != 11 {
 		t.Fatalf("expected the authored pull request, got: %v", ids)
 	}
 }
@@ -177,7 +177,7 @@ func TestPullRequestStatusAsksOnlyForReviewsNotYetGiven(t *testing.T) {
 
 	payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
 
-	reviewing := statusSection(t, payload, "requesting_your_review")
+	reviewing := statusSection(t, payload, "requestingYourReview")
 	ids := statusPullRequestIDs(t, reviewing)
 	if len(ids) != 1 || ids[0] != 21 {
 		t.Fatalf("expected only the pull request still waiting on me, got: %v", ids)
@@ -246,7 +246,7 @@ func TestPullRequestStatusDegradesOutsideARepository(t *testing.T) {
 
 			payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
 
-			currentBranch := statusSection(t, payload, "current_branch")
+			currentBranch := statusSection(t, payload, "currentBranch")
 			note, _ := currentBranch["note"].(string)
 			if !strings.Contains(note, testCase.wantedInNote) {
 				t.Fatalf("expected a note containing %q, got: %q", testCase.wantedInNote, note)
@@ -256,7 +256,7 @@ func TestPullRequestStatusDegradesOutsideARepository(t *testing.T) {
 			}
 
 			// The sections that do not need a checkout must still answer.
-			if ids := statusPullRequestIDs(t, statusSection(t, payload, "created_by_you")); len(ids) != 1 {
+			if ids := statusPullRequestIDs(t, statusSection(t, payload, "createdByYou")); len(ids) != 1 {
 				t.Fatalf("expected the authored section to survive, got: %v", ids)
 			}
 		})
@@ -272,7 +272,7 @@ func TestPullRequestStatusReportsMissingRepositoryContext(t *testing.T) {
 
 	payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
 
-	note, _ := statusSection(t, payload, "current_branch")["note"].(string)
+	note, _ := statusSection(t, payload, "currentBranch")["note"].(string)
 	if !strings.Contains(note, "no repository context") {
 		t.Fatalf("expected a note about the missing repository context, got: %q", note)
 	}
@@ -387,7 +387,7 @@ func TestPullRequestStatusNotesABranchListingFailure(t *testing.T) {
 	withGitBackend(t, inferenceGitBackendStub{repoRoot: "/repo", branch: "feature/x"})
 
 	payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
-	note, _ := statusSection(t, payload, "current_branch")["note"].(string)
+	note, _ := statusSection(t, payload, "currentBranch")["note"].(string)
 	if !strings.Contains(note, "could not list pull requests for feature/x") {
 		t.Fatalf("expected the listing failure to be reported as a note, got: %q", note)
 	}
@@ -399,7 +399,7 @@ func TestPullRequestStatusWithoutAGitBackend(t *testing.T) {
 	withGitBackend(t, nil)
 
 	payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
-	note, _ := statusSection(t, payload, "current_branch")["note"].(string)
+	note, _ := statusSection(t, payload, "currentBranch")["note"].(string)
 	if !strings.Contains(note, "not on a branch") {
 		t.Fatalf("expected a note when there is no git backend at all, got: %q", note)
 	}
