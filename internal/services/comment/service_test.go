@@ -1133,3 +1133,124 @@ func TestCreateSendsTheParentOfAReply(t *testing.T) {
 		t.Errorf("a reply carried its own anchor: %s", body)
 	}
 }
+
+// TestListRepairsAnchorPathsAndPages covers the listing end to end: the shape
+// Bitbucket really sends, across more than one page.
+//
+// This is the regression the live run found. Every comment written through the
+// web interface on a diff is anchored, and an anchored path arrives as a string
+// while the generated model expects an object -- so one of them made the whole
+// listing fail. Paging is exercised in the same test because the repair has to
+// happen on every page, not only the first.
+func TestListRepairsAnchorPathsAndPages(t *testing.T) {
+	pages := []string{
+		`{"isLastPage":false,"nextPageStart":1,"values":[
+			{"id":1,"text":"first","anchor":{"line":3,"path":"internal/cli/root.go"},
+			 "comments":[{"id":2,"text":"a reply","anchor":{"line":3,"path":"internal/cli/root.go"}}]}
+		]}`,
+		`{"isLastPage":true,"values":[{"id":3,"text":"second","anchor":{"line":9,"path":"cmd/bb/main.go"}}]}`,
+	}
+	var starts []string
+	served := 0
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		starts = append(starts, r.URL.Query().Get("start"))
+		w.Header().Set("Content-Type", "application/json")
+		if served < len(pages) {
+			_, _ = w.Write([]byte(pages[served]))
+			served++
+			return
+		}
+		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
+	})
+
+	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}
+	listed, err := service.List(context.Background(), target, "internal/cli/root.go", 25)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(listed) != 2 {
+		t.Fatalf("expected both pages' roots, got %d", len(listed))
+	}
+	if len(starts) != 2 || starts[0] != "0" || starts[1] != "1" {
+		t.Errorf("start values = %v, want the second page requested from nextPageStart", starts)
+	}
+
+	// The repair reached the anchor, its nested reply, and the second page.
+	if listed[0].Anchor == nil || listed[0].Anchor.Path == nil || listed[0].Anchor.Path.Components == nil {
+		t.Fatalf("first comment's anchor path was not repaired: %+v", listed[0].Anchor)
+	}
+	if listed[0].Comments == nil || len(*listed[0].Comments) != 1 {
+		t.Fatalf("the nested reply was lost: %+v", listed[0].Comments)
+	}
+	if reply := (*listed[0].Comments)[0]; reply.Anchor == nil || reply.Anchor.Path == nil {
+		t.Errorf("the reply's anchor path was not repaired: %+v", reply.Anchor)
+	}
+	if listed[1].Anchor == nil || listed[1].Anchor.Path == nil {
+		t.Errorf("the second page was not repaired: %+v", listed[1].Anchor)
+	}
+}
+
+// TestListSurfacesAMalformedPage keeps a broken response from reading as an
+// empty one.
+//
+// An empty body means "no comments" and must not error; a body that is present
+// and unparseable means something is wrong, and reporting it as an empty
+// listing would tell a caller the file has no review feedback on it.
+func TestListSurfacesAMalformedPage(t *testing.T) {
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"values":[ this is not json`))
+	})
+
+	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}
+	if _, err := service.List(context.Background(), target, "seed.txt", 25); err == nil {
+		t.Fatal("a malformed page was reported as a successful listing")
+	}
+
+	empty := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	listed, err := empty.List(context.Background(), target, "seed.txt", 25)
+	if err != nil {
+		t.Fatalf("an empty body was reported as a failure: %v", err)
+	}
+	if len(listed) != 0 {
+		t.Errorf("listed = %+v, want an empty listing", listed)
+	}
+}
+
+// TestGetAndUpdateRepairAnchorPaths covers the two single reads that failed the
+// same way the listing did.
+//
+// Get matters twice over: Update and Delete call it to resolve a version when
+// the caller supplies none, so an anchored comment could not be edited or
+// removed either.
+func TestGetAndUpdateRepairAnchorPaths(t *testing.T) {
+	anchored := `{"id":11,"version":4,"text":"inline","anchor":{"line":7,"path":"internal/cli/root.go"}}`
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(anchored))
+	})
+
+	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}
+
+	got, err := service.Get(context.Background(), target, "11")
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	if got.Anchor == nil || got.Anchor.Path == nil || got.Anchor.Path.Components == nil {
+		t.Fatalf("get did not repair the anchor path: %+v", got.Anchor)
+	}
+	if got.Version == nil || *got.Version != 4 {
+		t.Fatalf("version = %+v, which is what update and delete depend on", got.Version)
+	}
+
+	// No version passed, so Update reads one through Get first.
+	updated, err := service.Update(context.Background(), target, "11", "edited", nil)
+	if err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	if updated.Anchor == nil || updated.Anchor.Path == nil {
+		t.Errorf("update did not repair the anchor path: %+v", updated.Anchor)
+	}
+}
