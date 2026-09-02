@@ -1,9 +1,5 @@
 package result
 
-import (
-	"encoding/json"
-)
-
 // Webhook is one webhook, on a repository or on a project.
 //
 // The services hand these back as an untyped any decoded from Bitbucket, so
@@ -18,59 +14,71 @@ type Webhook struct {
 	Events []string `json:"events,omitempty" jsonschema:"Event keys the webhook subscribes to, for example repo:refs_changed."`
 }
 
-// WebhookFrom decodes one webhook out of the untyped payload a service returns.
+// WebhookFrom reads one webhook out of the untyped payload a service returns.
 //
-// A round trip through JSON rather than a field-by-field copy, because the
-// input is already a decoded any: there are no fields to copy from, only a map.
+// Field by field off the decoded value rather than a round trip through a typed
+// struct. The round trip made one unexpected field type fatal for the whole
+// object -- an id Bitbucket sent as a string, say -- and the failure was
+// swallowed, so the webhook came back empty rather than partly read. Reading
+// each field on its own terms loses only the field that surprised us.
 func WebhookFrom(payload any) Webhook {
-	if payload == nil {
+	object, ok := payload.(map[string]any)
+	if !ok {
 		return Webhook{}
 	}
 
-	raw, err := json.Marshal(payload)
-	if err != nil {
-		return Webhook{}
+	converted := Webhook{
+		Name: stringOf(object["name"]),
+		URL:  stringOf(object["url"]),
 	}
-
-	var converted Webhook
-	if err := json.Unmarshal(raw, &converted); err != nil {
-		return Webhook{}
+	converted.ID = intOf(object["id"])
+	if active, ok := object["active"].(bool); ok {
+		converted.Active = active
+	}
+	if events, ok := object["events"].([]any); ok {
+		converted.Events = make([]string, 0, len(events))
+		for _, event := range events {
+			if name := stringOf(event); name != "" {
+				converted.Events = append(converted.Events, name)
+			}
+		}
 	}
 
 	return converted
 }
 
-// WebhooksFrom decodes a list, never returning nil.
+// WebhooksFrom reads a list, never returning nil.
 //
 // Bitbucket answers the listing endpoints two ways depending on version: a bare
 // array, or a paginated object with the webhooks under values. Both are handled
 // here, which the human renderers already did -- and the JSON paths did not,
-// because they published whatever arrived without looking. A caller therefore
-// got an array from one instance and a pagination envelope from another, for
-// the same command.
+// because they published whatever arrived without looking.
 func WebhooksFrom(payload any) []Webhook {
-	converted := []Webhook{}
-	if payload == nil {
-		return converted
-	}
-
-	raw, err := json.Marshal(payload)
-	if err != nil {
-		return converted
-	}
-
-	if err := json.Unmarshal(raw, &converted); err == nil && len(converted) > 0 {
-		return converted
-	}
-
-	var paginated struct {
-		Values []Webhook `json:"values"`
-	}
-	if err := json.Unmarshal(raw, &paginated); err == nil && paginated.Values != nil {
-		return paginated.Values
+	switch typed := payload.(type) {
+	case []any:
+		return webhooksFromValues(typed)
+	case map[string]any:
+		if values, ok := typed["values"].([]any); ok {
+			return webhooksFromValues(values)
+		}
+		// A single webhook where a list was expected is still one webhook, and
+		// an id or a url is what says this object is one rather than some other
+		// envelope that happens to have no values key.
+		if typed["id"] != nil || typed["url"] != nil {
+			return []Webhook{WebhookFrom(typed)}
+		}
 	}
 
 	return []Webhook{}
+}
+
+func webhooksFromValues(values []any) []Webhook {
+	converted := make([]Webhook, 0, len(values))
+	for _, value := range values {
+		converted = append(converted, WebhookFrom(value))
+	}
+
+	return converted
 }
 
 // PageOfWebhooks applies --start and --limit to a list the service returned
@@ -94,4 +102,44 @@ func PageOfWebhooks(webhooks []Webhook, start int, limit int) []Webhook {
 	}
 
 	return webhooks[start:end]
+}
+
+// stringOf reads a value Bitbucket may send as a string or as a number.
+func stringOf(value any) string {
+	switch typed := value.(type) {
+	case string:
+		return typed
+	default:
+		return ""
+	}
+}
+
+// intOf reads an identifier however it arrived.
+//
+// A decode gives float64; an instance that quotes its ids gives a string. The
+// typed round trip this replaced rejected the second outright and lost the
+// whole object with it.
+func intOf(value any) int {
+	switch typed := value.(type) {
+	case float64:
+		return int(typed)
+	case float32:
+		return int(typed)
+	case int:
+		return typed
+	case int64:
+		return int(typed)
+	case string:
+		parsed := 0
+		for _, digit := range typed {
+			if digit < '0' || digit > '9' {
+				return 0
+			}
+			parsed = parsed*10 + int(digit-'0')
+		}
+
+		return parsed
+	default:
+		return 0
+	}
 }

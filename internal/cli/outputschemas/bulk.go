@@ -55,7 +55,7 @@ func bulkApplyStatusDataSchema() map[string]any {
 			"kind":        map[string]any{"const": "BulkApplyStatus"},
 			"operationId": map[string]any{"type": "string"},
 			"planHash":    map[string]any{"type": "string"},
-			"status":      map[string]any{"type": "string", "enum": []any{"success", "failed", "partial_failure"}},
+			"status":      map[string]any{"type": "string", "enum": []any{"success", "failed", "partial_failure", "cancelled"}},
 			"summary":     map[string]any{"type": "object"},
 			"targets":     map[string]any{"type": "array"},
 		},

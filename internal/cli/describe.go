@@ -39,6 +39,29 @@ type DescribeResult struct {
 // caller is asking about rather than supplying. Argument validation is skipped
 // when --describe is set, for the same reason.
 func installDescribe(root *cobra.Command, describe *bool) {
+	// Cobra adds help and completion on first execution, which is after this
+	// walk. Adding them now is what puts them under the same rule as every
+	// other command instead of leaving two that answer --describe with help
+	// text.
+	root.InitDefaultHelpCmd()
+	root.InitDefaultCompletionCmd()
+
+	// A group is not runnable, so the walk below never reaches it and Cobra
+	// prints its help. --describe answering with a page of human text on
+	// stdout and exit 0 is the worst of both: a caller parsing the answer sees
+	// a success it cannot read. The help function is where Cobra sends a
+	// non-runnable command, so it is where the JSON answer goes.
+	help := root.HelpFunc()
+	root.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		if *describe && !cmd.Runnable() {
+			// Nothing to return but the reason, and an error here would only
+			// be printed after the document a caller came for.
+			_ = writeDescription(cmd)
+			return
+		}
+		help(cmd, args)
+	})
+
 	var walk func(command *cobra.Command)
 	walk = func(command *cobra.Command) {
 		for _, child := range command.Commands() {
@@ -88,7 +111,18 @@ func installDescribe(root *cobra.Command, describe *bool) {
 // writeDescription emits the output contract for one command.
 func writeDescription(cmd *cobra.Command) error {
 	path := commandPathWithoutRoot(cmd)
+
 	described := describeCommand(path)
+	if !cmd.Runnable() {
+		// A group holds commands rather than returning anything, so it has no
+		// output to describe. Saying that is the answer; falling through to the
+		// lookup would report "no schema published yet", which reads as an
+		// omission rather than a category.
+		described = DescribeResult{
+			Command: path,
+			Reason:  "this is a command group, not a command; describe one of its subcommands",
+		}
+	}
 
 	jsonRequested, _ := cmd.Root().PersistentFlags().GetBool("json")
 	if jsonRequested {
@@ -115,6 +149,11 @@ func writeDescription(cmd *cobra.Command) error {
 // look like a guarantee of nothing rather than an absence of one.
 func describeCommand(path string) DescribeResult {
 	described := DescribeResult{Command: path}
+
+	if path == "" {
+		described.Reason = "bb itself is not a command; describe one of its subcommands"
+		return described
+	}
 
 	if reason := outputschemas.CommandsWithoutDataContract[path]; reason != "" {
 		described.Reason = "this command does not return a data payload: " + reason
@@ -150,10 +189,34 @@ func describeCommand(path string) DescribeResult {
 		return described
 	}
 
+	// The hand-written schemas describe the whole bb.machine envelope, while a
+	// derived one describes the data payload. --describe answers one question,
+	// so it answers at one level: the payload. Serving both levels under one
+	// field meant a consumer validating envelope.data passed for a declared
+	// command and rejected every document from a fallback one, or the reverse.
 	described.Described = true
-	described.Schema = schema
+	described.Schema = dataSchemaOf(schema)
 
 	return described
+}
+
+// dataSchemaOf unwraps an envelope schema to the part that describes the
+// payload.
+//
+// The published files also carry an $id pointing into a schema directory this
+// project no longer publishes, so it is dropped with the rest of the envelope
+// rather than handed to a validator that would try to resolve it.
+func dataSchemaOf(schema map[string]any) map[string]any {
+	properties, ok := schema["properties"].(map[string]any)
+	if !ok {
+		return schema
+	}
+	data, ok := properties["data"].(map[string]any)
+	if !ok {
+		return schema
+	}
+
+	return data
 }
 
 // commandPathWithoutRoot renders the command path the way the rest of the

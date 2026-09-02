@@ -23,9 +23,13 @@ Check `described` first:
   guaranteed. Parse defensively.
 - `"described": false`, reason mentioning **no data payload** — `bb api` streams the upstream
   body, `bb ai skill show` prints a document. No schema is coming.
+- `"described": false`, reason mentioning **no shape bb can promise** — the command forwards
+  what Bitbucket sent without reading a field, so the envelope is guaranteed and its contents
+  are not.
 
-Most commands are currently in the second group. That closes when each schema is derived from a
-typed result the command already builds, rather than being maintained by hand.
+Almost every command is now in the first group. Each of those schemas is derived from the
+typed result the command already builds, so it cannot drift from the payload; the rest say
+which of the others they are, and why.
 
 Per-command schema *files* are no longer published. They were hand-maintained, drifted from the
 commands they described — two named a `branch get-default` subcommand that has never existed —

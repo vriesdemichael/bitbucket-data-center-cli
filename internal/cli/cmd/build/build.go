@@ -122,10 +122,29 @@ func safeStringFromBuildState(state *openapigenerated.RestBuildStatusState) stri
 // requiredCheckRow is the human rendering of one required build merge check,
 // shared by list, create and update so the three describe the same check the
 // same way.
+// The four fields after the keys are what the check actually does: which
+// branches it applies to, which are exempt, and whether it is enforced on pull
+// requests and on merge-queue merges. They were in the payload and not in the
+// table, so a person creating a check saw an id and a key list and no way to
+// tell an enforced check from a dormant one.
 func requiredCheckRow(check result.RequiredBuildCheck) []string {
+	matcher := func(ref result.RefMatcher) string {
+		if ref.DisplayID != "" {
+			return ref.DisplayID
+		}
+		if ref.ID != "" {
+			return ref.ID
+		}
+		return "-"
+	}
+
 	return []string{
 		style.Secondary.Render(fmt.Sprintf("id=%d", check.ID)),
 		fmt.Sprintf("buildParentKeys=%v", check.BuildParentKeys),
+		fmt.Sprintf("refMatcher=%s", matcher(check.RefMatcher)),
+		fmt.Sprintf("exemptRefMatcher=%s", matcher(check.ExemptRefMatcher)),
+		fmt.Sprintf("requiredForPullRequest=%t", check.RequiredForPullRequest),
+		fmt.Sprintf("requiredForMergeQueue=%t", check.RequiredForMergeQueue),
 	}
 }
 
@@ -292,6 +311,13 @@ func New(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// The service trims each commit id and keys its answer by the
+			// trimmed form, so a lookup by the raw argument misses and reports
+			// zeros for a commit that has builds. Trimming here rather than
+			// there keeps the rows, the table and the map agreeing on one
+			// spelling of each id.
+			args = trimmedCommitIDs(args)
 
 			service := qualityservice.NewService(client)
 			if len(args) == 1 {

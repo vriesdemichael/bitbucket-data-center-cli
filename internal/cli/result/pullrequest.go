@@ -44,7 +44,7 @@ type PullRequest struct {
 	Repository       Repository `json:"repository,omitzero" jsonschema:"Repository the pull request merges into."`
 	SourceRepository Repository `json:"sourceRepository,omitzero" jsonschema:"Repository the source branch lives in. Differs from repository exactly when the pull request comes from a fork, which is the only way to tell a fork pull request from a same-repository one."`
 
-	Version        int    `json:"version,omitempty" jsonschema:"Optimistic-locking version. Pass it back when updating, or the update is refused."`
+	Version        int    `json:"version" jsonschema:"Optimistic-locking version. Pass it back when updating, or the update is refused. Always present: a never-updated pull request is at version 0, and omitting it there would drop the value at exactly the moment a caller needs it."`
 	Author         string `json:"author,omitempty" jsonschema:"Display name of whoever opened it."`
 	AuthorUsername string `json:"authorUsername,omitempty" jsonschema:"Username of whoever opened it."`
 	SourceBranch   string `json:"sourceBranch,omitempty" jsonschema:"Branch being merged from."`

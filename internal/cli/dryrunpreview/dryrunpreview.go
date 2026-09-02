@@ -61,7 +61,7 @@ func Write(writer io.Writer, asJSON bool, preview Preview) error {
 	for _, item := range preview.Items {
 		line := fmt.Sprintf("- %s=%s %s=%s", style.Secondary.Render("intent"), item.Intent, style.Secondary.Render("action"), item.Action)
 		if item.PredictedAction != "" {
-			line += fmt.Sprintf(" %s=%s", style.Secondary.Render("predicted_action"), item.PredictedAction)
+			line += fmt.Sprintf(" %s=%s", style.Secondary.Render("predictedAction"), item.PredictedAction)
 		}
 		if _, err := fmt.Fprintln(writer, line); err != nil {
 			return err
