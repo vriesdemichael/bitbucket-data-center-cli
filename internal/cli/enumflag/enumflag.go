@@ -22,6 +22,18 @@
 // sets themselves are inconsistent -- LOW, MEDIUM, HIGH beside no-ff and
 // squash-ff-only -- so requiring the caller to match the case of each one is a
 // rule nobody could follow from the help text alone.
+//
+// # Empty
+//
+// An empty value means "not given" and resets the flag to its default. Every
+// one of these flags behaved that way before this package existed, because the
+// service layer normalised "" to the default -- "" to open, "" to ADDED, "" to
+// MERGE. Refusing it broke `bb pr list --state "$STATE"` with $STATE unset,
+// which is an ordinary thing for a script to write, and on the twenty-three
+// flags whose default is itself "" it meant the flag rejected its own default.
+//
+// Use RegisterStrict where an empty value has to be an error rather than an
+// omission.
 package enumflag
 
 import (
@@ -33,9 +45,10 @@ import (
 
 // value is a pflag.Value that accepts only what it was told to.
 type value struct {
-	target  *string
-	name    string
-	allowed []string
+	target       *string
+	allowed      []string
+	defaultValue string
+	allowEmpty   bool
 }
 
 func (enum *value) String() string {
@@ -51,9 +64,20 @@ func (enum *value) String() string {
 // before the request is sent, and long before the server sees it.
 func (enum *value) Set(raw string) error {
 	trimmed := strings.TrimSpace(raw)
+
+	if trimmed == "" && enum.allowEmpty {
+		// Not given. Resetting to the default rather than storing "" means the
+		// value leaving here is always one the set names, so nothing
+		// downstream has to handle the empty case a second time.
+		*enum.target = enum.defaultValue
+
+		return nil
+	}
+
 	for _, candidate := range enum.allowed {
 		if strings.EqualFold(trimmed, candidate) {
 			*enum.target = candidate
+
 			return nil
 		}
 	}
@@ -61,42 +85,67 @@ func (enum *value) Set(raw string) error {
 	// A plain error, not an apperrors one. pflag wraps whatever Set returns in
 	// `invalid argument "X" for "--flag" flag: ...`, so the flag name is already
 	// said and an apperrors prefix would put "validation:" in the middle of the
-	// sentence. The envelope still reports kind=validation, because that is how
-	// the CLI classifies a flag-parse failure.
+	// sentence. The envelope still reports kind=validation, because the root
+	// command's FlagErrorFunc classifies a flag-parse failure.
 	return fmt.Errorf("must be one of: %s", strings.Join(enum.allowed, ", "))
 }
 
 func (enum *value) Type() string { return "string" }
 
-// Register declares a flag whose value must come from allowed.
+// Register declares a flag whose value must come from allowed. An empty value
+// means "not given" and resets the flag to defaultValue.
 //
 // The usage text is built from the same slice the validator checks, so the two
 // cannot disagree -- which is the failure this package exists to prevent.
 func Register(flags *pflag.FlagSet, target *string, name string, defaultValue string, allowed []string, description string) {
-	*target = defaultValue
-
-	flags.Var(
-		&value{target: target, name: name, allowed: allowed},
-		name,
-		usageFor(description, allowed),
-	)
-}
-
-// usageFor writes the description and the set it will be checked against,
-// so the help text cannot name a value the validator does not accept.
-func usageFor(description string, allowed []string) string {
-	return fmt.Sprintf("%s (one of: %s)", strings.TrimRight(description, ". "), strings.Join(allowed, ", "))
+	register(flags, target, name, "", defaultValue, allowed, description, true)
 }
 
 // RegisterP is Register with a one-letter shorthand, matching pflag's own
 // StringVarP naming.
 func RegisterP(flags *pflag.FlagSet, target *string, name string, shorthand string, defaultValue string, allowed []string, description string) {
+	register(flags, target, name, shorthand, defaultValue, allowed, description, true)
+}
+
+// RegisterStrict is Register for a flag where an empty value must be an error
+// rather than an omission -- one that changes state in a way no default can
+// stand in for, so that taking "" as "leave it alone" would silently do the
+// wrong thing.
+func RegisterStrict(flags *pflag.FlagSet, target *string, name string, defaultValue string, allowed []string, description string) {
+	register(flags, target, name, "", defaultValue, allowed, description, false)
+}
+
+func register(flags *pflag.FlagSet, target *string, name string, shorthand string, defaultValue string, allowed []string, description string, allowEmpty bool) {
+	// A default outside the set ships a flag that refuses to be reset to its
+	// own default, and nothing downstream would report it. Registration runs
+	// while the command tree is built, so this fails the first test that
+	// builds one rather than reaching anybody.
+	if defaultValue != "" && !contains(allowed, defaultValue) {
+		panic(fmt.Sprintf("enumflag: --%s defaults to %q, which is not in %v", name, defaultValue, allowed))
+	}
+
 	*target = defaultValue
 
 	flags.VarP(
-		&value{target: target, name: name, allowed: allowed},
+		&value{target: target, allowed: allowed, defaultValue: defaultValue, allowEmpty: allowEmpty},
 		name,
 		shorthand,
 		usageFor(description, allowed),
 	)
+}
+
+func contains(allowed []string, want string) bool {
+	for _, candidate := range allowed {
+		if candidate == want {
+			return true
+		}
+	}
+
+	return false
+}
+
+// usageFor writes the description and the set it will be checked against,
+// so the help text cannot name a value the validator does not accept.
+func usageFor(description string, allowed []string) string {
+	return fmt.Sprintf("%s (one of: %s)", strings.TrimSuffix(strings.TrimSpace(description), "."), strings.Join(allowed, ", "))
 }
