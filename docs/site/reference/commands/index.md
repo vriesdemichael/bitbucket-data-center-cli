@@ -7001,8 +7001,11 @@ Usage:
   bb repo comment create [flags]
 
 Flags:
-      --parent int    Reply to this comment id instead of starting a new thread
-      --text string   Comment text
+      --line int           Line within --path to anchor the comment to
+      --line-type string   Which side of the diff --line refers to: ADDED, REMOVED or CONTEXT
+      --parent int         Reply to this comment id instead of starting a new thread
+      --path string        Anchor the comment to this file, which is what makes it listable
+      --text string        Comment text
 
 Global Flags:
       --all                      Return every result rather than the first --limit
@@ -7077,7 +7080,7 @@ Usage:
 Flags:
       --all           Return every result rather than the first --limit
       --limit int     Maximum number of results to return (default 25)
-      --path string   File path to scope the listing to. Required with --pr, which Bitbucket only answers per file; optional with --commit, where omitting it lists every comment on the commit.
+      --path string   File path to scope the listing to. Bitbucket requires it: a comment anchored to no file cannot be listed.
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust

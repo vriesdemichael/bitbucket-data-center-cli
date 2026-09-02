@@ -119,12 +119,16 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	listCmd.Flags().StringVar(&listPath, "path", "", "File path to scope the listing to. Required with --pr, which Bitbucket only answers per file; optional with --commit, where omitting it lists every comment on the commit.")
+	listCmd.Flags().StringVar(&listPath, "path", "", "File path to scope the listing to. Bitbucket requires it: a comment anchored to no file cannot be listed.")
 	listPaging.Register(listCmd, 25)
+	_ = listCmd.MarkFlagRequired("path")
 	commentCmd.AddCommand(listCmd)
 
 	var createText string
 	var createParentID int64
+	var createPath string
+	var createLine int
+	var createLineType string
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a comment",
@@ -143,6 +147,9 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 			target.ParentID = createParentID
+			target.Path = createPath
+			target.Line = createLine
+			target.LineType = createLineType
 
 			service := commentservice.NewService(client)
 			if deps.DryRunEnabled() {
@@ -189,6 +196,9 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 	}
 	createCmd.Flags().StringVar(&createText, "text", "", "Comment text")
 	createCmd.Flags().Int64Var(&createParentID, "parent", 0, "Reply to this comment id instead of starting a new thread")
+	createCmd.Flags().StringVar(&createPath, "path", "", "Anchor the comment to this file, which is what makes it listable")
+	createCmd.Flags().IntVar(&createLine, "line", 0, "Line within --path to anchor the comment to")
+	createCmd.Flags().StringVar(&createLineType, "line-type", "", "Which side of the diff --line refers to: ADDED, REMOVED or CONTEXT")
 	_ = createCmd.MarkFlagRequired("text")
 	commentCmd.AddCommand(createCmd)
 
