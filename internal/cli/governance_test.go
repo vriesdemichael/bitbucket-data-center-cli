@@ -223,7 +223,7 @@ func TestRevokeAndStrategyCLI(t *testing.T) {
 		case request.Method == http.MethodDelete && request.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/permissions/groups":
 			writer.WriteHeader(http.StatusNoContent)
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/settings/pull-requests":
-			_, _ = writer.Write([]byte(`{"mergeConfig":{"defaultStrategy":{"id":"merge-base"}}}`))
+			_, _ = writer.Write([]byte(`{"mergeConfig":{"defaultStrategy":{"id":"squash"}}}`))
 		default:
 			http.NotFound(writer, request)
 		}
@@ -251,11 +251,11 @@ func TestRevokeAndStrategyCLI(t *testing.T) {
 
 	// Repo PR set-strategy
 	buffer.Reset()
-	command.SetArgs([]string{"--json", "repo", "settings", "pull-requests", "set-strategy", "merge-base", "--repo", "PRJ/demo"})
+	command.SetArgs([]string{"--json", "repo", "settings", "pull-requests", "set-strategy", "squash", "--repo", "PRJ/demo"})
 	if err := command.Execute(); err != nil {
 		t.Fatalf("repo set-strategy failed: %v", err)
 	}
-	if !strings.Contains(buffer.String(), `"merge-base"`) {
+	if !strings.Contains(buffer.String(), `"squash"`) {
 		t.Fatalf("expected strategy in output, got: %s", buffer.String())
 	}
 }
@@ -394,7 +394,7 @@ func TestHumanOutputGovernanceCLI(t *testing.T) {
 		case request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks":
 			_, _ = writer.Write([]byte(`{"values":[{"enabled":true,"details":{"key":"h1","name":"Hook 1"}}]}`))
 		case request.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/settings/pull-requests":
-			_, _ = writer.Write([]byte(`{"requiredAllTasksComplete":true,"requiredApprovers":{"enabled":true,"count":2},"mergeConfig":{"strategies":[{"id":"merge-base","name":"Base","enabled":true}]}}`))
+			_, _ = writer.Write([]byte(`{"requiredAllTasksComplete":true,"requiredApprovers":{"enabled":true,"count":2},"mergeConfig":{"strategies":[{"id":"squash","name":"Squash","enabled":true}]}}`))
 		default:
 			_, _ = writer.Write([]byte(`[]`))
 		}

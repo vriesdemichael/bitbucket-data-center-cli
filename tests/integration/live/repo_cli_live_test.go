@@ -668,7 +668,7 @@ func TestLiveCLIRepoPullRequestSettingsSetStrategyDryRunNoSideEffect(t *testing.
 		t.Fatalf("pull-request settings get before failed: %v\noutput: %s", err, settingsBeforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "pull-requests", "set-strategy", "merge-base")
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "pull-requests", "set-strategy", "squash")
 	if err != nil {
 		t.Fatalf("pull-request settings set-strategy dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
