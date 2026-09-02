@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	projectservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/project"
 )
@@ -33,7 +34,7 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), tasks)
+				return deps.WriteJSON(cmd.OutOrStdout(), defaultTasksFrom(tasks))
 			}
 
 			if len(tasks) == 0 {
@@ -123,7 +124,7 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), task)
+				return deps.WriteJSON(cmd.OutOrStdout(), defaultTaskValue(task))
 			}
 
 			idStr := ""
@@ -193,7 +194,7 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), task)
+				return deps.WriteJSON(cmd.OutOrStdout(), defaultTaskValue(task))
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated default task:"), style.Secondary.Render(args[1]))
@@ -250,7 +251,7 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "id": args[1]})
+				return deps.WriteJSON(cmd.OutOrStdout(), DefaultTaskDeletion{Status: result.OK(), Project: args[0], ID: args[1]})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted default task:"), style.Secondary.Render(args[1]))

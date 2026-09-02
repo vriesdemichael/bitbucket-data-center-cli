@@ -720,7 +720,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), Restrictions{Repository: repositoryOf(repo), Restrictions: restrictionsFrom(restrictions)})
+				return d.WriteJSON(cmd.OutOrStdout(), Restrictions{Repository: repositoryOf(repo), Restrictions: result.RestrictionsFrom(restrictions)})
 			}
 
 			if len(restrictions) == 0 {
@@ -777,7 +777,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: restrictionFrom(restriction)})
+				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: result.RestrictionFrom(restriction)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", style.Secondary.Render(fmt.Sprintf("id=%d", safeInt32(restriction.Id))), safeString(restriction.Type))
@@ -883,7 +883,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: restrictionFrom(created)})
+				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: result.RestrictionFrom(created)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created restriction"), style.Secondary.Render(fmt.Sprintf("%d", safeInt32(created.Id))))
@@ -991,7 +991,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: restrictionFrom(updated)})
+				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: result.RestrictionFrom(updated)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated restriction"), style.Secondary.Render(fmt.Sprintf("%d", safeInt32(updated.Id))))

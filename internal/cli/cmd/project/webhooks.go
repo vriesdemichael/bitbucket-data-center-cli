@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	projectservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/project"
@@ -46,7 +47,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), payload)
+				return deps.WriteJSON(cmd.OutOrStdout(), Webhooks{Project: args[0], Webhooks: result.WebhooksFrom(payload)})
 			}
 
 			var webhooks []WebhookModel
@@ -158,7 +159,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "project": args[0], "webhook": created})
+				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Project: args[0], Webhook: result.WebhookFrom(created)})
 			}
 
 			var hook WebhookModel
@@ -243,7 +244,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", "project": args[0], "webhook": updated})
+				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Project: args[0], Webhook: result.WebhookFrom(updated)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated webhook:"), style.Secondary.Render(args[1]))
@@ -300,7 +301,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "project": args[0], "webhook_id": args[1]})
+				return deps.WriteJSON(cmd.OutOrStdout(), WebhookDeletion{Status: result.OK(), Project: args[0], WebhookID: args[1]})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted webhook:"), style.Secondary.Render(args[1]))
