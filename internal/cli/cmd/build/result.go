@@ -48,25 +48,14 @@ type CommitBuildStats struct {
 	Cancelled  int32  `json:"cancelled" jsonschema:"Builds reporting CANCELLED."`
 }
 
-// RefMatcher is which refs a required build check applies to.
-//
-// Flattened the same way as the reviewer conditions: the upstream nests the
-// matcher kind as an object holding an id and a name that always agree, so the
-// id a caller matches on is published with the display text as the label.
-type RefMatcher struct {
-	ID        string `json:"id,omitempty" jsonschema:"Matcher value: a branch name, a pattern, or a model branch id depending on type."`
-	DisplayID string `json:"displayId,omitempty" jsonschema:"Human-readable form of the same thing."`
-	Type      string `json:"type,omitempty" jsonschema:"ANY_REF, BRANCH, PATTERN or MODEL_BRANCH, which decides how id is read."`
-}
-
 // RequiredBuildCheck is one required-builds merge check.
 type RequiredBuildCheck struct {
-	ID                     int64      `json:"id,omitempty" jsonschema:"Check identifier, for bb build required update and delete."`
-	BuildParentKeys        []string   `json:"buildParentKeys,omitempty" jsonschema:"Build keys that must be green before a pull request can merge."`
-	RefMatcher             RefMatcher `json:"refMatcher,omitzero" jsonschema:"Which target branches the check is enforced on."`
-	ExemptRefMatcher       RefMatcher `json:"exemptRefMatcher,omitzero" jsonschema:"Which source branches are exempt from the check."`
-	RequiredForPullRequest bool       `json:"requiredForPullRequest" jsonschema:"Whether the check is enforced on pull requests."`
-	RequiredForMergeQueue  bool       `json:"requiredForMergeQueue" jsonschema:"Whether the check is enforced on merge-queue merges."`
+	ID                     int64             `json:"id,omitempty" jsonschema:"Check identifier, for bb build required update and delete."`
+	BuildParentKeys        []string          `json:"buildParentKeys,omitempty" jsonschema:"Build keys that must be green before a pull request can merge."`
+	RefMatcher             result.RefMatcher `json:"refMatcher,omitzero" jsonschema:"Which target branches the check is enforced on."`
+	ExemptRefMatcher       result.RefMatcher `json:"exemptRefMatcher,omitzero" jsonschema:"Which source branches are exempt from the check."`
+	RequiredForPullRequest bool              `json:"requiredForPullRequest" jsonschema:"Whether the check is enforced on pull requests."`
+	RequiredForMergeQueue  bool              `json:"requiredForMergeQueue" jsonschema:"Whether the check is enforced on merge-queue merges."`
 }
 
 // StatusChange is what `bb build status set` reports.
@@ -92,16 +81,13 @@ type RequiredCheckDeletion struct {
 	ID         int64             `json:"id" jsonschema:"Identifier of the merge check that was deleted."`
 }
 
-var (
-	buildStates     = []string{"SUCCESSFUL", "FAILED", "INPROGRESS", "CANCELLED", "UNKNOWN"}
-	refMatcherTypes = []string{"ANY_REF", "BRANCH", "PATTERN", "MODEL_BRANCH", "MODEL_CATEGORY"}
-)
+var buildStates = []string{"SUCCESSFUL", "FAILED", "INPROGRESS", "CANCELLED", "UNKNOWN"}
 
 func init() {
 	statusEnums := map[string][]string{"state": buildStates}
 	checkEnums := map[string][]string{
-		"refMatcher.type":       refMatcherTypes,
-		"exemptRefMatcher.type": refMatcherTypes,
+		"refMatcher.type":       result.RefMatcherTypes,
+		"exemptRefMatcher.type": result.RefMatcherTypes,
 	}
 
 	result.Declare("build status set", result.For[StatusChange](nil))
@@ -200,7 +186,7 @@ func requiredCheckFrom(upstream openapigenerated.RestRequiredBuildCondition) Req
 		BuildParentKeys: safeStringSlice(upstream.BuildParentKeys),
 	}
 	if upstream.RefMatcher != nil {
-		converted.RefMatcher = RefMatcher{
+		converted.RefMatcher = result.RefMatcher{
 			ID:        safeString(upstream.RefMatcher.Id),
 			DisplayID: safeString(upstream.RefMatcher.DisplayId),
 		}
@@ -209,7 +195,7 @@ func requiredCheckFrom(upstream openapigenerated.RestRequiredBuildCondition) Req
 		}
 	}
 	if upstream.ExemptRefMatcher != nil {
-		converted.ExemptRefMatcher = RefMatcher{
+		converted.ExemptRefMatcher = result.RefMatcher{
 			ID:        safeString(upstream.ExemptRefMatcher.Id),
 			DisplayID: safeString(upstream.ExemptRefMatcher.DisplayId),
 		}

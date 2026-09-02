@@ -2,8 +2,10 @@ package projectcmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"testing"
 
@@ -161,19 +163,67 @@ func TestProjectPermissionAliasJSONNamesTheSubject(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", server.URL)
 
 	userOutput := runRepoPermissionCommand(t, "--json", "project", "permissions", "grant", "PRJ", "alice", "project_write")
-	if !strings.Contains(userOutput, `"username": "alice"`) || !strings.Contains(userOutput, `"project": "PRJ"`) {
-		t.Fatalf("expected username and project keys for a user grant, got: %s", userOutput)
+	if !strings.Contains(userOutput, `"subject": "user"`) ||
+		!strings.Contains(userOutput, `"name": "alice"`) ||
+		!strings.Contains(userOutput, `"project": "PRJ"`) {
+		t.Fatalf("expected subject, name and project for a user grant, got: %s", userOutput)
 	}
 
 	groupOutput := runRepoPermissionCommand(t, "--json", "project", "permissions", "grant", "--group", "PRJ", "admins", "project_admin")
-	if !strings.Contains(groupOutput, `"group": "admins"`) {
-		t.Fatalf("expected group key for a group grant, got: %s", groupOutput)
+	if !strings.Contains(groupOutput, `"subject": "group"`) || !strings.Contains(groupOutput, `"name": "admins"`) {
+		t.Fatalf("expected subject and name for a group grant, got: %s", groupOutput)
+	}
+
+	// The point of naming the subject in a field rather than in the key: one
+	// command that can report either kind has to have one shape, or --describe
+	// cannot state it and a consumer needs two code paths for one command.
+	if userKeys, groupKeys := jsonFieldNames(userOutput), jsonFieldNames(groupOutput); userKeys != groupKeys {
+		t.Fatalf("user and group grants published different shapes\nuser:  %s\ngroup: %s", userKeys, groupKeys)
 	}
 
 	listOutput := runRepoPermissionCommand(t, "--json", "project", "permissions", "list", "PRJ")
-	if !strings.Contains(listOutput, `"users"`) || !strings.Contains(listOutput, `"display_name": "Alice A"`) {
-		t.Fatalf("expected users payload with display name, got: %s", listOutput)
+	if !strings.Contains(listOutput, `"subject": "user"`) || !strings.Contains(listOutput, `"displayName": "Alice A"`) {
+		t.Fatalf("expected a user listing with display name, got: %s", listOutput)
 	}
+
+	groupListOutput := runRepoPermissionCommand(t, "--json", "project", "permissions", "list", "--group", "PRJ")
+	if listKeys, groupListKeys := jsonFieldNames(listOutput), jsonFieldNames(groupListOutput); listKeys != groupListKeys {
+		t.Fatalf("user and group listings published different shapes\nusers:  %s\ngroups: %s", listKeys, groupListKeys)
+	}
+}
+
+// jsonFieldNames returns every field name in a document, sorted, so two
+// payloads can be compared on shape rather than on values.
+func jsonFieldNames(document string) string {
+	var decoded any
+	if err := json.Unmarshal([]byte(document), &decoded); err != nil {
+		return "unparseable: " + err.Error()
+	}
+
+	names := map[string]struct{}{}
+	var walk func(node any, prefix string)
+	walk = func(node any, prefix string) {
+		switch typed := node.(type) {
+		case map[string]any:
+			for key, value := range typed {
+				names[prefix+key] = struct{}{}
+				walk(value, prefix+key+".")
+			}
+		case []any:
+			for _, item := range typed {
+				walk(item, prefix)
+			}
+		}
+	}
+	walk(decoded, "")
+
+	collected := make([]string, 0, len(names))
+	for name := range names {
+		collected = append(collected, name)
+	}
+	sort.Strings(collected)
+
+	return strings.Join(collected, ",")
 }
 
 func TestProjectPermissionAliasHumanOutputLabelsGroups(t *testing.T) {
