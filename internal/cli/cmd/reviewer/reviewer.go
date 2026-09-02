@@ -173,27 +173,16 @@ func New(deps Dependencies) *cobra.Command {
 						predicted = "delete"
 						reason = "reviewer condition will be deleted"
 					}
-					preview := dryrunpreview.Preview{
-						DryRun:       true,
-						PlanningMode: dryrunpreview.PlanningModeStateful,
-						Capability:   dryrunpreview.CapabilityFull,
-						Items: []dryrunpreview.Item{{
-							Intent:          "reviewer.condition.delete",
-							Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
-							Action:          "delete",
-							PredictedAction: predicted,
-							Supported:       true,
-							Reason:          reason,
-							Confidence:      dryrunpreview.CapabilityFull,
-							RequiredState:   []string{"repository reviewer conditions"},
-						}},
-						Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-					}
-					if predicted == "delete" {
-						preview.Summary.DeleteCount = 1
-					} else {
-						preview.Summary.NoopCount = 1
-					}
+					preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+						Intent:          "reviewer.condition.delete",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
+						Action:          "delete",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      dryrunpreview.CapabilityFull,
+						RequiredState:   []string{"repository reviewer conditions"},
+					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
 				if err := service.DeleteRepositoryCondition(cmd.Context(), pk, slug, id); err != nil {
@@ -228,27 +217,16 @@ func New(deps Dependencies) *cobra.Command {
 					predicted = "delete"
 					reason = "reviewer condition will be deleted"
 				}
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "reviewer.condition.delete",
-						Target:          map[string]any{"project": projectKey, "id": id},
-						Action:          "delete",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"project reviewer conditions"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				if predicted == "delete" {
-					preview.Summary.DeleteCount = 1
-				} else {
-					preview.Summary.NoopCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "reviewer.condition.delete",
+					Target:          map[string]any{"project": projectKey, "id": id},
+					Action:          "delete",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"project reviewer conditions"},
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
@@ -331,28 +309,17 @@ func New(deps Dependencies) *cobra.Command {
 						reason = "equivalent reviewer condition already exists"
 						blocking = []string{"reviewer condition already exists"}
 					}
-					preview := dryrunpreview.Preview{
-						DryRun:       true,
-						PlanningMode: dryrunpreview.PlanningModeStateful,
-						Capability:   dryrunpreview.CapabilityFull,
-						Items: []dryrunpreview.Item{{
-							Intent:          "reviewer.condition.create",
-							Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug)},
-							Action:          "create",
-							PredictedAction: predicted,
-							Supported:       true,
-							Reason:          reason,
-							Confidence:      dryrunpreview.CapabilityFull,
-							RequiredState:   []string{"repository reviewer conditions"},
-							BlockingReasons: blocking,
-						}},
-						Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-					}
-					if predicted == "create" {
-						preview.Summary.CreateCount = 1
-					} else {
-						preview.Summary.UnknownCount = 1
-					}
+					preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+						Intent:          "reviewer.condition.create",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug)},
+						Action:          "create",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      dryrunpreview.CapabilityFull,
+						RequiredState:   []string{"repository reviewer conditions"},
+						BlockingReasons: blocking,
+					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
 				created, err := service.CreateRepositoryCondition(cmd.Context(), pk, slug, condition)
@@ -393,28 +360,17 @@ func New(deps Dependencies) *cobra.Command {
 					reason = "equivalent reviewer condition already exists"
 					blocking = []string{"reviewer condition already exists"}
 				}
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "reviewer.condition.create",
-						Target:          map[string]any{"project": projectKey},
-						Action:          "create",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"project reviewer conditions"},
-						BlockingReasons: blocking,
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				if predicted == "create" {
-					preview.Summary.CreateCount = 1
-				} else {
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "reviewer.condition.create",
+					Target:          map[string]any{"project": projectKey},
+					Action:          "create",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"project reviewer conditions"},
+					BlockingReasons: blocking,
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 			created, err := service.CreateProjectCondition(cmd.Context(), projectKey, condition)
@@ -502,30 +458,17 @@ func New(deps Dependencies) *cobra.Command {
 							reason = "reviewer condition already matches requested update"
 						}
 					}
-					preview := dryrunpreview.Preview{
-						DryRun:       true,
-						PlanningMode: dryrunpreview.PlanningModeStateful,
-						Capability:   dryrunpreview.CapabilityFull,
-						Items: []dryrunpreview.Item{{
-							Intent:          "reviewer.condition.update",
-							Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
-							Action:          "update",
-							PredictedAction: predicted,
-							Supported:       true,
-							Reason:          reason,
-							Confidence:      dryrunpreview.CapabilityFull,
-							RequiredState:   []string{"repository reviewer conditions"},
-							BlockingReasons: blocking,
-						}},
-						Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-					}
-					if predicted == "update" {
-						preview.Summary.UpdateCount = 1
-					} else if predicted == "no-op" {
-						preview.Summary.NoopCount = 1
-					} else {
-						preview.Summary.UnknownCount = 1
-					}
+					preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+						Intent:          "reviewer.condition.update",
+						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
+						Action:          "update",
+						PredictedAction: predicted,
+						Supported:       true,
+						Reason:          reason,
+						Confidence:      dryrunpreview.CapabilityFull,
+						RequiredState:   []string{"repository reviewer conditions"},
+						BlockingReasons: blocking,
+					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
 				updated, err := service.UpdateRepositoryCondition(cmd.Context(), pk, slug, id, condition)
@@ -570,30 +513,17 @@ func New(deps Dependencies) *cobra.Command {
 						reason = "reviewer condition already matches requested update"
 					}
 				}
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "reviewer.condition.update",
-						Target:          map[string]any{"project": projectKey, "id": id},
-						Action:          "update",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"project reviewer conditions"},
-						BlockingReasons: blocking,
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				if predicted == "update" {
-					preview.Summary.UpdateCount = 1
-				} else if predicted == "no-op" {
-					preview.Summary.NoopCount = 1
-				} else {
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "reviewer.condition.update",
+					Target:          map[string]any{"project": projectKey, "id": id},
+					Action:          "update",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"project reviewer conditions"},
+					BlockingReasons: blocking,
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 			updated, err := service.UpdateProjectCondition(cmd.Context(), projectKey, id, condition)

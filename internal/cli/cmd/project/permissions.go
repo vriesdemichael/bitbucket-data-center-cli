@@ -189,27 +189,21 @@ func newProjectPermissionGrantCommand(deps Dependencies, subjectFor projectPermi
 					break
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent: fmt.Sprintf("project.permission.%s.grant", subject.noun),
-						Target: map[string]any{
-							"project":    projectKey,
-							"subject":    subject.noun,
-							"name":       name,
-							"permission": permission,
-						},
-						Action:          "update",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{fmt.Sprintf("project permission %ss list", subject.noun)},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent: fmt.Sprintf("project.permission.%s.grant", subject.noun),
+					Target: map[string]any{
+						"project":    projectKey,
+						"subject":    subject.noun,
+						"name":       name,
+						"permission": permission,
+					},
+					Action:          "update",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{fmt.Sprintf("project permission %ss list", subject.noun)},
+				})
 				applyPermissionDryRunSummary(&preview, predicted)
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -277,26 +271,20 @@ func newProjectPermissionRevokeCommand(deps Dependencies, subjectFor projectPerm
 					}
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent: fmt.Sprintf("project.permission.%s.revoke", subject.noun),
-						Target: map[string]any{
-							"project": projectKey,
-							"subject": subject.noun,
-							"name":    name,
-						},
-						Action:          "delete",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{fmt.Sprintf("project permission %ss list", subject.noun)},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent: fmt.Sprintf("project.permission.%s.revoke", subject.noun),
+					Target: map[string]any{
+						"project": projectKey,
+						"subject": subject.noun,
+						"name":    name,
+					},
+					Action:          "delete",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{fmt.Sprintf("project permission %ss list", subject.noun)},
+				})
 				applyPermissionDryRunSummary(&preview, predicted)
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -409,18 +397,6 @@ func alsoAvailableAs(shallowPath string, noun string) string {
 }
 
 func applyPermissionDryRunSummary(preview *dryrunpreview.Preview, predicted string) {
-	switch predicted {
-	case "create":
-		preview.Summary.CreateCount = 1
-	case "update":
-		preview.Summary.UpdateCount = 1
-	case "delete":
-		preview.Summary.DeleteCount = 1
-	case "no-op":
-		preview.Summary.NoopCount = 1
-	default:
-		preview.Summary.UnknownCount = 1
-	}
 }
 
 func newProjectPermissionsCommand(deps Dependencies) *cobra.Command {

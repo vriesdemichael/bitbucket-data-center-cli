@@ -167,31 +167,17 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					blocking = []string{"webhook already exists"}
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.webhook.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "url": args[1], "events": webhookEvents, "active": webhookActive},
-						Action:          "create",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"repository webhooks list"},
-						BlockingReasons: blocking,
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				switch predicted {
-				case "create":
-					preview.Summary.CreateCount = 1
-				case "conflict":
-					preview.Summary.UnknownCount = 1
-				default:
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "repo.webhook.create",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "url": args[1], "events": webhookEvents, "active": webhookActive},
+					Action:          "create",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"repository webhooks list"},
+					BlockingReasons: blocking,
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -248,30 +234,16 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					reason = "webhook will be deleted"
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.webhook.delete",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhookId": args[0]},
-						Action:          "delete",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"repository webhooks list"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				switch predicted {
-				case "delete":
-					preview.Summary.DeleteCount = 1
-				case "no-op":
-					preview.Summary.NoopCount = 1
-				default:
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "repo.webhook.delete",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhookId": args[0]},
+					Action:          "delete",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"repository webhooks list"},
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -450,30 +422,16 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					reason = "required-all-tasks-complete setting already has requested value"
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.pull-request-settings.update",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "requiredAllTasksComplete": requiredAllTasksComplete},
-						Action:          "update",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"repository pull-request settings"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				switch predicted {
-				case "update":
-					preview.Summary.UpdateCount = 1
-				case "no-op":
-					preview.Summary.NoopCount = 1
-				default:
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "repo.pull-request-settings.update",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "requiredAllTasksComplete": requiredAllTasksComplete},
+					Action:          "update",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"repository pull-request settings"},
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -541,30 +499,16 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					reason = "required approvers setting already has requested value"
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.pull-request-settings.update-approvers",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "count": requiredApproversCount},
-						Action:          "update",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"repository pull-request settings"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				switch predicted {
-				case "update":
-					preview.Summary.UpdateCount = 1
-				case "no-op":
-					preview.Summary.NoopCount = 1
-				default:
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "repo.pull-request-settings.update-approvers",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "count": requiredApproversCount},
+					Action:          "update",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"repository pull-request settings"},
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -635,30 +579,16 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					reason = "default merge strategy already matches requested strategy"
 				}
 
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.pull-request-settings.set-strategy",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "strategyId": mergeStrategyID},
-						Action:          "update",
-						PredictedAction: predicted,
-						Supported:       true,
-						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
-						RequiredState:   []string{"repository pull-request settings"},
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1},
-				}
-				switch predicted {
-				case "update":
-					preview.Summary.UpdateCount = 1
-				case "no-op":
-					preview.Summary.NoopCount = 1
-				default:
-					preview.Summary.UnknownCount = 1
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "repo.pull-request-settings.set-strategy",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "strategyId": mergeStrategyID},
+					Action:          "update",
+					PredictedAction: predicted,
+					Supported:       true,
+					Reason:          reason,
+					Confidence:      dryrunpreview.CapabilityFull,
+					RequiredState:   []string{"repository pull-request settings"},
+				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -752,21 +682,15 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.settings.auto-merge.set",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "enabled": setEnabled},
-						Action:          "update",
-						PredictedAction: "update",
-						Supported:       true,
-						Reason:          "auto-merge settings will be updated",
-						Confidence:      dryrunpreview.CapabilityFull,
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1, UpdateCount: 1},
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "repo.settings.auto-merge.set",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "enabled": setEnabled},
+					Action:          "update",
+					PredictedAction: "update",
+					Supported:       true,
+					Reason:          "auto-merge settings will be updated",
+					Confidence:      dryrunpreview.CapabilityFull,
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 			res, err := service.UpdateRepositoryAutoMergeSettings(cmd.Context(), repo, setEnabled)
@@ -801,21 +725,15 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.settings.auto-merge.delete",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
-						Action:          "delete",
-						PredictedAction: "delete",
-						Supported:       true,
-						Reason:          "auto-merge settings will be deleted",
-						Confidence:      dryrunpreview.CapabilityFull,
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1, DeleteCount: 1},
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "repo.settings.auto-merge.delete",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
+					Action:          "delete",
+					PredictedAction: "delete",
+					Supported:       true,
+					Reason:          "auto-merge settings will be deleted",
+					Confidence:      dryrunpreview.CapabilityFull,
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 			err = service.DeleteRepositoryAutoMergeSettings(cmd.Context(), repo)
@@ -906,21 +824,15 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.settings.auto-decline.set",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "enabled": setEnabled, "inactivityWeeks": inactivityWeeks},
-						Action:          "update",
-						PredictedAction: "update",
-						Supported:       true,
-						Reason:          "auto-decline settings will be updated",
-						Confidence:      dryrunpreview.CapabilityFull,
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1, UpdateCount: 1},
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "repo.settings.auto-decline.set",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "enabled": setEnabled, "inactivityWeeks": inactivityWeeks},
+					Action:          "update",
+					PredictedAction: "update",
+					Supported:       true,
+					Reason:          "auto-decline settings will be updated",
+					Confidence:      dryrunpreview.CapabilityFull,
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 			res, err := service.UpdateRepositoryAutoDeclineSettings(cmd.Context(), repo, setEnabled, inactivityWeeks)
@@ -956,21 +868,15 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
-				preview := dryrunpreview.Preview{
-					DryRun:       true,
-					PlanningMode: dryrunpreview.PlanningModeStateful,
-					Capability:   dryrunpreview.CapabilityFull,
-					Items: []dryrunpreview.Item{{
-						Intent:          "repo.settings.auto-decline.delete",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
-						Action:          "delete",
-						PredictedAction: "delete",
-						Supported:       true,
-						Reason:          "auto-decline settings will be deleted",
-						Confidence:      dryrunpreview.CapabilityFull,
-					}},
-					Summary: dryrunpreview.Summary{Total: 1, Supported: 1, DeleteCount: 1},
-				}
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "repo.settings.auto-decline.delete",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
+					Action:          "delete",
+					PredictedAction: "delete",
+					Supported:       true,
+					Reason:          "auto-decline settings will be deleted",
+					Confidence:      dryrunpreview.CapabilityFull,
+				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 			err = service.DeleteRepositoryAutoDeclineSettings(cmd.Context(), repo)
