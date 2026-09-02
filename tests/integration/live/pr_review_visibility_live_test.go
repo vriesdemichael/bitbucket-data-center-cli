@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
-	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
-	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
-	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
+	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 // TestLivePullRequestReviewVisibility seeds a pull request with a normal comment

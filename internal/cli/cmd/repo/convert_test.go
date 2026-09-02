@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
-	reposettings "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reposettings"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
+	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
 )
 
 // upstreamFromJSON decodes a Bitbucket response into the generated type, which

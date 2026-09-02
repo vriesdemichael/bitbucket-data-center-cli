@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	repositoryservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
+	repositoryservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/repository"
 )
 
 // SearchRepositoriesInput is the argument set for search_repositories.

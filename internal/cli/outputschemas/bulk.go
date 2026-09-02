@@ -1,7 +1,7 @@
 package outputschemas
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 )
 
 // bulkOutputSchemas returns envelope-wrapped output schemas for the bb bulk

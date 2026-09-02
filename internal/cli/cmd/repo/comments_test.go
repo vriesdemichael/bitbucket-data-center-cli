@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
 )
 
 func TestCommentOwnedByUser(t *testing.T) {

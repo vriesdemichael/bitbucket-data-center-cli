@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	"io"
 	"strconv"
 	"strings"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 type RepositoryRef struct {

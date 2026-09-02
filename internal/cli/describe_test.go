@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"reflect"
 
-	resultpkg "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
+	resultpkg "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 )
 
 // runDescribe invokes a command with --describe and returns its stdout.

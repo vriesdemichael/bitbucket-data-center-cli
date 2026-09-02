@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/spf13/pflag"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 func TestReviewerFlagAliasNormalization(t *testing.T) {

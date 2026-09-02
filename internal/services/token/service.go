@@ -6,9 +6,9 @@ import (
 	"math"
 	"strings"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 type ScopeType string

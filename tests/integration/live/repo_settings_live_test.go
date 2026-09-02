@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	reposettings "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reposettings"
+	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
 )
 
 func TestLiveRepoSettingsSecurityPermissionsUsers(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 func TestProjectSafeHelpers(t *testing.T) {

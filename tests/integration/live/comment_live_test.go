@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
+	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
 )
 
 func TestLiveCommentFlowCommit(t *testing.T) {

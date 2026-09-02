@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"math"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
-	reposettings "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reposettings"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	qualityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/quality"
+	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
 )
 
 type ServiceRunner struct {

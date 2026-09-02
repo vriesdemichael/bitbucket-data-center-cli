@@ -1,11 +1,11 @@
 package prcmd
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	jiraservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/jira"
-	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
-	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	jiraservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/jira"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
+	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
 )
 
 var (

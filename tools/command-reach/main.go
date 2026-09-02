@@ -39,7 +39,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
 )
 
 // reportVersion is bumped when the on-disk shape changes.

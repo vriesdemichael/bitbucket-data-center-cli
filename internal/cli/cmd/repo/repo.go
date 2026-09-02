@@ -6,16 +6,16 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/repository"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 type PermissionChecker interface {

@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 )
 
 // checkoutBackendStub records what bb pr checkout asks git to do.

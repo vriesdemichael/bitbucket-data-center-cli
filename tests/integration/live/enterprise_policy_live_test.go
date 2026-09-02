@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // TestLiveEnterprisePolicyAllowedHosts verifies machine-level allowed_hosts policy

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // ErrRouteMissing marks a 404 that came from the server not exposing an

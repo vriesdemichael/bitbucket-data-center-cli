@@ -6,12 +6,12 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	browseservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/browse"
-	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
-	reposettings "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reposettings"
-	repositoryservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	browseservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/browse"
+	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
+	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
+	repositoryservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/repository"
 )
 
 var (

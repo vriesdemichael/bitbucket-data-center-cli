@@ -7,14 +7,14 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prsel"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
-	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/giturl"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prsel"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 type checkoutPlan struct {

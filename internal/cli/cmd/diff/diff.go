@@ -4,15 +4,15 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/diffoutput"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prsel"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/diffoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prsel"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
 )
 
 type Dependencies struct {

@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
-	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
-	reposettings "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reposettings"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	qualityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/quality"
+	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
 )
 
 func TestServiceRunnerOperations(t *testing.T) {

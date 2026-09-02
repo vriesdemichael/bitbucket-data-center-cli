@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/diagnostics"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/zalando/go-keyring"
 	"gopkg.in/yaml.v3"
 )

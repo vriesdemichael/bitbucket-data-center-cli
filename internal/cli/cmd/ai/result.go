@@ -1,7 +1,7 @@
 package ai
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 )
 
 // Tool is one MCP tool the server exposes.

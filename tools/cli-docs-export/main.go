@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
 )
 
 func main() {

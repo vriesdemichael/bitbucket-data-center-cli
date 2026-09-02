@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	branchservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/branch"
-	commitservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/commit"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	branchservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/branch"
+	commitservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/commit"
 )
 
 // ListBranchesInput is the argument set for list_branches.

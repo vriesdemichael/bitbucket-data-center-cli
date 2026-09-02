@@ -4,9 +4,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/giturl"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // Parse splits a "PROJECT/slug" selector or Bitbucket URL into its project and slug components.

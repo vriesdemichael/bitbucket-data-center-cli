@@ -21,9 +21,9 @@
 package outputschemas
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
-	bulkworkflow "github.com/vriesdemichael/bitbucket-server-cli/internal/workflows/bulk"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/docsite"
+	bulkworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/bulk"
 )
 
 // Schemas returns all per-command output JSON schemas keyed by their published

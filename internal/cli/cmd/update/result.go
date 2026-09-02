@@ -1,8 +1,8 @@
 package updatecmd
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	updateworkflow "github.com/vriesdemichael/bitbucket-server-cli/internal/workflows/update"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	updateworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/update"
 )
 
 // Update is what `bb update` reports.

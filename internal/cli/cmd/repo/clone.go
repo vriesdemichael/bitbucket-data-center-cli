@@ -10,14 +10,14 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/giturl"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/interactive"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/execgit"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/giturl"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/interactive"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/execgit"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 	"golang.org/x/term"
 )
 

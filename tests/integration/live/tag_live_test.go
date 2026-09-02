@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	tagservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/tag"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	tagservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/tag"
 )
 
 func TestLiveTagLifecycle(t *testing.T) {

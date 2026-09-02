@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	tagservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/tag"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	tagservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/tag"
 )
 
 // ListTagsInput is the argument set for list_tags.

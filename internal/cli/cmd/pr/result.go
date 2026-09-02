@@ -1,7 +1,7 @@
 package prcmd
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 )
 
 // ReviewSummary answers "is there anything for me to do on this pull request?"

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 func configureDryRunEnv(t *testing.T, serverURL, projectKey, repoSlug string) {

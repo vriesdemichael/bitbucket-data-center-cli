@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	bbmcp "github.com/vriesdemichael/bitbucket-server-cli/internal/mcp"
+	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
 )
 
 // mcpToCLI records, for every MCP tool, the CLI command performing the same

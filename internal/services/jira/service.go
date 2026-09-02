@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 type RepositoryRef struct {

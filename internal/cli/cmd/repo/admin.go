@@ -5,14 +5,14 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prompt"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
-	reposervice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prompt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	reposervice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/repository"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {

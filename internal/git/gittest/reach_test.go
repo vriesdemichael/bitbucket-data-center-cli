@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/execgit"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/gittest"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/execgit"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/gittest"
 )
 
 // TestTheAmbientRepositoryIsOutOfReach is the property Guard adds over a

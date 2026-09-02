@@ -1,9 +1,9 @@
 package projectcmd
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	projectservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/project"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	projectservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/project"
 )
 
 // Project is one Bitbucket project.

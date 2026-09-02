@@ -3,7 +3,7 @@ package execgit_test
 import (
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/gittest"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/gittest"
 )
 
 // TestMain fails this package when its tests reconfigure the repository they

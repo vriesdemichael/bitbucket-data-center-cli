@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // cobraUsageErrorMarkers are the message fragments Cobra uses for the usage

@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
 )
 
 // executeLiveCLIWithStdin runs the CLI with input attached, which the credential

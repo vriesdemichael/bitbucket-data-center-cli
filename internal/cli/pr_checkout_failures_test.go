@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 )
 
 // TestPullRequestCheckoutSurfacesBackendFailures walks every point at which git

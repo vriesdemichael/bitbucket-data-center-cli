@@ -8,9 +8,9 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	bbmcp "github.com/vriesdemichael/bitbucket-server-cli/internal/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
 )
 
 func newMCPCommand(deps Dependencies) *cobra.Command {

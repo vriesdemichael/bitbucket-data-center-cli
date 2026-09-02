@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/outputschemas"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outputschemas"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 )
 
 // TestEveryDeclaredResultNamesARealCommand keeps the declarations honest.

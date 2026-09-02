@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	reposettings "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reposettings"
-	bulkworkflow "github.com/vriesdemichael/bitbucket-server-cli/internal/workflows/bulk"
+	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
+	bulkworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/bulk"
 )
 
 func TestLiveBulkPolicyPlanApplyStatus(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/diagnostics"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
 )
 
 // Audit event and status vocabulary. These strings are the wire contract a SIEM

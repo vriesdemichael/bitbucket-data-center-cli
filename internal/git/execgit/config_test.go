@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 )
 
 // newTestRepo initialises a throwaway repository. Every git test must operate

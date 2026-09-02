@@ -1,7 +1,7 @@
 package searchcmd
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 )
 
 // Commits is what `bb search commits` returns.

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	repocmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/repo"
+	repocmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/repo"
 )
 
 func newMockBrowseServer(t *testing.T) *httptest.Server {

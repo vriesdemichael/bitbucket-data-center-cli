@@ -3,9 +3,9 @@ package cli
 import (
 	"testing"
 
-	branchcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/branch"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
+	branchcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/branch"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 )
 
 func TestBranchRestrictionDryRunHelpers(t *testing.T) {

@@ -9,9 +9,9 @@ import (
 	"testing/iotest"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/interactive"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/interactive"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // noEnvironment is a Lookup that reports nothing set, so a test is not

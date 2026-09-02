@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	commitservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/commit"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	commitservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/commit"
 )
 
 // ListCommitsInput is the argument set for list_commits.

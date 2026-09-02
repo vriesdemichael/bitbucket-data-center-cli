@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/network"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
 )
 
 const defaultBaseURL = "https://api.github.com"
