@@ -157,8 +157,8 @@ func TestDiffRefsModes(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on diff refs stat JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), "stats") {
-		t.Fatalf("expected stats in JSON output: %s", buf.String())
+	if !strings.Contains(buf.String(), `"output": "stat"`) {
+		t.Fatalf("expected output=stat in JSON output: %s", buf.String())
 	}
 
 	// 4. Default / raw mode with --path
@@ -248,8 +248,8 @@ func TestDiffPRModes(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on diff pr stat JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), "stats") {
-		t.Fatalf("expected stats in JSON output: %s", buf.String())
+	if !strings.Contains(buf.String(), `"linesAdded"`) {
+		t.Fatalf("expected the stats summary in JSON output: %s", buf.String())
 	}
 
 	// 4. Default / raw mode

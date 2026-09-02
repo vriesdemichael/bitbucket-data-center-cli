@@ -114,24 +114,6 @@ type RestrictionDeletion struct {
 	RestrictionID string `json:"restrictionId" jsonschema:"Identifier of the restriction that was deleted, as it was given on the command line."`
 }
 
-// DefaultTask is one default checklist task on a project.
-type DefaultTask struct {
-	ID            int64              `json:"id,omitempty" jsonschema:"Task identifier, for bb project default-task update and delete."`
-	Description   string             `json:"description,omitempty" jsonschema:"The task text, which appears on every pull request the matchers cover."`
-	SourceMatcher DefaultTaskMatcher `json:"sourceMatcher,omitzero" jsonschema:"Which source branches the task applies to. Absent when it applies to all."`
-	TargetMatcher DefaultTaskMatcher `json:"targetMatcher,omitzero" jsonschema:"Which target branches the task applies to. Absent when it applies to all."`
-}
-
-// DefaultTaskMatcher is which refs a default task applies to.
-//
-// Its own type rather than result.RefMatcher: the default-task endpoint reports
-// only an id and a display id, with no kind at all, so the shared matcher's
-// type field would be permanently empty here.
-type DefaultTaskMatcher struct {
-	ID        string `json:"id,omitempty" jsonschema:"Matcher value: a branch name or a pattern."`
-	DisplayID string `json:"displayId,omitempty" jsonschema:"Human-readable form of the same thing."`
-}
-
 // DefaultTaskDeletion is what `bb project default-task delete` reports.
 type DefaultTaskDeletion struct {
 	result.Status
@@ -208,9 +190,9 @@ func init() {
 	result.Declare("project branch-restriction update", result.For[SingleRestriction](singleRestrictionEnums))
 	result.Declare("project branch-restriction delete", result.For[RestrictionDeletion](nil))
 
-	result.Declare("project default-task list", result.List[DefaultTask](nil))
-	result.Declare("project default-task add", result.For[DefaultTask](nil))
-	result.Declare("project default-task update", result.For[DefaultTask](nil))
+	result.Declare("project default-task list", result.List[result.DefaultTask](nil))
+	result.Declare("project default-task add", result.For[result.DefaultTask](nil))
+	result.Declare("project default-task update", result.For[result.DefaultTask](nil))
 	result.Declare("project default-task delete", result.For[DefaultTaskDeletion](nil))
 
 	result.Declare("project webhook list", result.For[Webhooks](nil))
@@ -285,19 +267,19 @@ func effectivePermissionsFrom(probed map[string]bool) []EffectivePermission {
 }
 
 // defaultTaskFrom converts one upstream default task.
-func defaultTaskFrom(upstream projectservice.DefaultTask) DefaultTask {
-	converted := DefaultTask{Description: safeString(upstream.Description)}
+func defaultTaskFrom(upstream projectservice.DefaultTask) result.DefaultTask {
+	converted := result.DefaultTask{Description: safeString(upstream.Description)}
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
 	}
 	if upstream.SourceMatcher != nil {
-		converted.SourceMatcher = DefaultTaskMatcher{
+		converted.SourceMatcher = result.DefaultTaskMatcher{
 			ID:        safeString(upstream.SourceMatcher.Id),
 			DisplayID: safeString(upstream.SourceMatcher.DisplayId),
 		}
 	}
 	if upstream.TargetMatcher != nil {
-		converted.TargetMatcher = DefaultTaskMatcher{
+		converted.TargetMatcher = result.DefaultTaskMatcher{
 			ID:        safeString(upstream.TargetMatcher.Id),
 			DisplayID: safeString(upstream.TargetMatcher.DisplayId),
 		}
@@ -307,8 +289,8 @@ func defaultTaskFrom(upstream projectservice.DefaultTask) DefaultTask {
 }
 
 // defaultTasksFrom converts a list, preserving order and never returning nil.
-func defaultTasksFrom(upstream []projectservice.DefaultTask) []DefaultTask {
-	converted := make([]DefaultTask, 0, len(upstream))
+func defaultTasksFrom(upstream []projectservice.DefaultTask) []result.DefaultTask {
+	converted := make([]result.DefaultTask, 0, len(upstream))
 	for _, one := range upstream {
 		converted = append(converted, defaultTaskFrom(one))
 	}
@@ -317,9 +299,9 @@ func defaultTasksFrom(upstream []projectservice.DefaultTask) []DefaultTask {
 }
 
 // defaultTaskValue converts the pointer the add and update calls return.
-func defaultTaskValue(upstream *projectservice.DefaultTask) DefaultTask {
+func defaultTaskValue(upstream *projectservice.DefaultTask) result.DefaultTask {
 	if upstream == nil {
-		return DefaultTask{}
+		return result.DefaultTask{}
 	}
 
 	return defaultTaskFrom(*upstream)

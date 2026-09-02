@@ -201,7 +201,7 @@ func TestRepoCloneCommandHonorsDirectoryAndGitFlags(t *testing.T) {
 		t.Fatalf("unexpected extra args: %#v", call.options.ExtraArgs)
 	}
 
-	if !strings.Contains(output, `"clone_url": "git@bitbucket.example.com:scm/PRJ/demo.git"`) {
+	if !strings.Contains(output, `"cloneUrl": "git@bitbucket.example.com:scm/PRJ/demo.git"`) {
 		t.Fatalf("unexpected json output: %s", output)
 	}
 }

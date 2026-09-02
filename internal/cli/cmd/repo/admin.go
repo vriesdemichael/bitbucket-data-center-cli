@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prompt"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -115,7 +116,7 @@ func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": created})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleRepository{Repository: result.RepositoryDetailFrom(created)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created repository"), style.Resource.Render(createProject+"/"+safeString(created.Name)))
@@ -214,7 +215,7 @@ func newRepoForkCommand(deps Dependencies, repositorySelector *string, isAlias b
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": forked})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleRepository{Repository: result.RepositoryDetailFrom(forked)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Forked repository to"), style.Resource.Render(safeString(forked.Name)))
@@ -342,7 +343,7 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]string{"status": "ok", "repository": fullName})
+				return deps.WriteJSON(cmd.OutOrStdout(), RepositoryDeletion{Status: result.OK(), Repository: repositoryOf(repo)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted repository"), style.Resource.Render(repoRef.ProjectKey+"/"+repoRef.Slug))
@@ -439,7 +440,7 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": updated})
+				return deps.WriteJSON(cmd.OutOrStdout(), SingleRepository{Repository: result.RepositoryDetailFrom(updated)})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated repository"), style.Resource.Render(safeString(updated.Name)))

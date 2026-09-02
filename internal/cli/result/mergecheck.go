@@ -1,0 +1,123 @@
+package result
+
+import (
+	"encoding/json"
+
+	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+)
+
+// RequiredBuildCheck is one required-builds merge check.
+//
+// Shared by `bb build required` and `bb repo settings pull-requests
+// merge-checks list`: the same Bitbucket object through two endpoints, which
+// published two different descriptions of it.
+type RequiredBuildCheck struct {
+	ID                     int64      `json:"id,omitempty" jsonschema:"Check identifier, which update and delete address."`
+	BuildParentKeys        []string   `json:"buildParentKeys,omitempty" jsonschema:"Build keys that must be green before a pull request can merge."`
+	RefMatcher             RefMatcher `json:"refMatcher,omitzero" jsonschema:"Which target branches the check is enforced on."`
+	ExemptRefMatcher       RefMatcher `json:"exemptRefMatcher,omitzero" jsonschema:"Which source branches are exempt from the check."`
+	RequiredForPullRequest bool       `json:"requiredForPullRequest" jsonschema:"Whether the check is enforced on pull requests."`
+	RequiredForMergeQueue  bool       `json:"requiredForMergeQueue" jsonschema:"Whether the check is enforced on merge-queue merges."`
+}
+
+// RequiredBuildCheckFrom converts one upstream required build condition.
+func RequiredBuildCheckFrom(upstream openapigenerated.RestRequiredBuildCondition) RequiredBuildCheck {
+	converted := RequiredBuildCheck{}
+	if upstream.Id != nil {
+		converted.ID = *upstream.Id
+	}
+	if upstream.BuildParentKeys != nil {
+		converted.BuildParentKeys = *upstream.BuildParentKeys
+	}
+	if upstream.RefMatcher != nil {
+		converted.RefMatcher = RefMatcher{
+			ID:        stringValue(upstream.RefMatcher.Id),
+			DisplayID: stringValue(upstream.RefMatcher.DisplayId),
+		}
+		if upstream.RefMatcher.Type != nil {
+			converted.RefMatcher.Type = string(upstream.RefMatcher.Type.Id)
+		}
+	}
+	if upstream.ExemptRefMatcher != nil {
+		converted.ExemptRefMatcher = RefMatcher{
+			ID:        stringValue(upstream.ExemptRefMatcher.Id),
+			DisplayID: stringValue(upstream.ExemptRefMatcher.DisplayId),
+		}
+		if upstream.ExemptRefMatcher.Type != nil {
+			converted.ExemptRefMatcher.Type = string(upstream.ExemptRefMatcher.Type.Id)
+		}
+	}
+	if upstream.RequiredForPullRequest != nil {
+		converted.RequiredForPullRequest = *upstream.RequiredForPullRequest
+	}
+	if upstream.RequiredForMergeQueue != nil {
+		converted.RequiredForMergeQueue = *upstream.RequiredForMergeQueue
+	}
+
+	return converted
+}
+
+// RequiredBuildChecksFrom converts a list, preserving order and never returning
+// nil.
+func RequiredBuildChecksFrom(upstream []openapigenerated.RestRequiredBuildCondition) []RequiredBuildCheck {
+	converted := make([]RequiredBuildCheck, 0, len(upstream))
+	for _, one := range upstream {
+		converted = append(converted, RequiredBuildCheckFrom(one))
+	}
+
+	return converted
+}
+
+// RequiredBuildCheckFromMap decodes the untyped object some endpoints return.
+//
+// The create and update calls hand back a map rather than a typed value, so a
+// round trip through JSON is the only way to reach the fields.
+func RequiredBuildCheckFromMap(payload map[string]any) RequiredBuildCheck {
+	if len(payload) == 0 {
+		return RequiredBuildCheck{}
+	}
+
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return RequiredBuildCheck{}
+	}
+
+	var upstream openapigenerated.RestRequiredBuildCondition
+	if err := json.Unmarshal(raw, &upstream); err != nil {
+		return RequiredBuildCheck{}
+	}
+
+	return RequiredBuildCheckFrom(upstream)
+}
+
+// RequiredBuildChecksFromAny decodes a listing that arrives untyped.
+//
+// Bitbucket answers this endpoint two ways depending on version: a bare array,
+// or a paginated object with the checks under values. Both are handled, which
+// the human renderer already did by printing whichever it found -- and the JSON
+// path did not, because it published whatever arrived.
+func RequiredBuildChecksFromAny(payload any) []RequiredBuildCheck {
+	converted := []RequiredBuildCheck{}
+	if payload == nil {
+		return converted
+	}
+
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return converted
+	}
+
+	var upstream []openapigenerated.RestRequiredBuildCondition
+	if err := json.Unmarshal(raw, &upstream); err == nil && len(upstream) > 0 {
+		return RequiredBuildChecksFrom(upstream)
+	}
+
+	var paginated struct {
+		Values []openapigenerated.RestRequiredBuildCondition `json:"values"`
+	}
+	if err := json.Unmarshal(raw, &paginated); err == nil && paginated.Values != nil {
+		return RequiredBuildChecksFrom(paginated.Values)
+	}
+
+	return converted
+}

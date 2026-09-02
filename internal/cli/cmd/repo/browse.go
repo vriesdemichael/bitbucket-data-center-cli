@@ -1,12 +1,12 @@
 package repocmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	browseservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/browse"
 	commitservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/commit"
@@ -57,7 +57,7 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "path": path, "files": files})
+				return deps.WriteJSON(cmd.OutOrStdout(), Tree{Repository: browseRepositoryOf(repo), Path: path, Files: files})
 			}
 
 			if len(files) == 0 {
@@ -100,7 +100,19 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			// For raw, we always output raw bytes even if --json is set, since it's "raw"
+			// Raw means the bytes, unwrapped -- but only without --json. Under
+			// --json stdout is one bb.machine document (ADR-014), and this used
+			// to write the file there instead, which is not a document at all.
+			// bb repo cat reads the same endpoint and already answered this way.
+			if deps.JSONEnabled() {
+				return deps.WriteJSON(cmd.OutOrStdout(), RawFile{
+					Repository: browseRepositoryOf(repo),
+					Path:       args[0],
+					At:         rawAt,
+					Content:    string(content),
+				})
+			}
+
 			_, _ = cmd.OutOrStdout().Write(content)
 			return nil
 		},
@@ -135,26 +147,18 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			lines := fileLinesFrom(content)
 			if deps.JSONEnabled() {
-				var parsed any
-				if err := json.Unmarshal(content, &parsed); err == nil {
-					return deps.WriteJSON(cmd.OutOrStdout(), parsed)
-				}
-				_, _ = cmd.OutOrStdout().Write(content)
-				return nil
+				return deps.WriteJSON(cmd.OutOrStdout(), FileContent{
+					Repository: browseRepositoryOf(repo),
+					Path:       args[0],
+					At:         fileAt,
+					Lines:      lines,
+				})
 			}
 
-			var parsed struct {
-				Lines []struct {
-					Text string `json:"text"`
-				} `json:"lines"`
-			}
-			if err := json.Unmarshal(content, &parsed); err == nil {
-				for _, line := range parsed.Lines {
-					fmt.Fprintln(cmd.OutOrStdout(), line.Text)
-				}
-			} else {
-				_, _ = cmd.OutOrStdout().Write(content)
+			for _, line := range lines {
+				fmt.Fprintln(cmd.OutOrStdout(), line.Text)
 			}
 
 			return nil
@@ -190,35 +194,24 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			lines := fileLinesFrom(content)
 			if deps.JSONEnabled() {
-				var parsed any
-				if err := json.Unmarshal(content, &parsed); err == nil {
-					return deps.WriteJSON(cmd.OutOrStdout(), parsed)
-				}
-				_, _ = cmd.OutOrStdout().Write(content)
-				return nil
+				return deps.WriteJSON(cmd.OutOrStdout(), FileContent{
+					Repository: browseRepositoryOf(repo),
+					Path:       args[0],
+					At:         blameAt,
+					Lines:      lines,
+				})
 			}
 
-			var parsed struct {
-				Blame struct {
-					Author map[string]string `json:"author"`
-				} `json:"blame"`
-				Lines []struct {
-					Text string `json:"text"`
-				} `json:"lines"`
-			}
-			if err := json.Unmarshal(content, &parsed); err == nil {
-				author := "unknown"
-				if name, ok := parsed.Blame.Author["name"]; ok {
-					author = name
+			for _, line := range lines {
+				author := line.Author
+				if author == "" {
+					author = "unknown"
 				}
-				for _, line := range parsed.Lines {
-					fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", author, line.Text)
-				}
-				return nil
+				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", author, line.Text)
 			}
 
-			_, _ = cmd.OutOrStdout().Write(content)
 			return nil
 		},
 	}
@@ -250,7 +243,7 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"repository": repo, "path": args[0], "commits": commits})
+				return deps.WriteJSON(cmd.OutOrStdout(), FileHistory{Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, Path: args[0], Commits: result.CommitsFrom(commits)})
 			}
 
 			if len(commits) == 0 {

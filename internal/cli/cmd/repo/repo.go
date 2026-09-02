@@ -9,6 +9,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
@@ -135,7 +136,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSONList(cmd.OutOrStdout(), repos, paging.LimitReached(listPaging, len(repos)))
+				return d.WriteJSONList(cmd.OutOrStdout(), result.RepositorySummariesFrom(repos), paging.LimitReached(listPaging, len(repos)))
 			}
 
 			if len(repos) == 0 {

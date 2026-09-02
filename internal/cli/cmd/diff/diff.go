@@ -1,16 +1,15 @@
 package diffcmd
 
 import (
-	"fmt"
 	"io"
-	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/diffoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/prsel"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/reposel"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
@@ -60,56 +59,6 @@ func resolveDiffRepositoryReference(selector string, cfg config.AppConfig) (diff
 	return diffservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}, nil
 }
 
-func resolveDiffOutputMode(patch, stat, nameOnly bool) (diffservice.OutputKind, error) {
-	selected := 0
-	mode := diffservice.OutputKindRaw
-	if patch {
-		selected++
-		mode = diffservice.OutputKindPatch
-	}
-	if stat {
-		selected++
-		mode = diffservice.OutputKindStat
-	}
-	if nameOnly {
-		selected++
-		mode = diffservice.OutputKindNameOnly
-	}
-	if selected > 1 {
-		return "", apperrors.New(apperrors.KindValidation, "only one of --patch, --stat, or --name-only may be specified", nil)
-	}
-	return mode, nil
-}
-
-func writeDiffResult(writer io.Writer, asJSON bool, mode diffservice.OutputKind, result diffservice.Result, writeJSON func(io.Writer, any) error) error {
-	if asJSON {
-		switch mode {
-		case diffservice.OutputKindNameOnly:
-			return writeJSON(writer, map[string]any{"names": result.Names})
-		case diffservice.OutputKindStat:
-			return writeJSON(writer, map[string]any{"stats": result.Stats})
-		default:
-			return writeJSON(writer, map[string]any{"patch": result.Patch})
-		}
-	}
-
-	switch mode {
-	case diffservice.OutputKindNameOnly:
-		for _, name := range result.Names {
-			fmt.Fprintln(writer, name)
-		}
-		return nil
-	case diffservice.OutputKindStat:
-		return writeJSON(writer, result.Stats)
-	default:
-		fmt.Fprint(writer, result.Patch)
-		if result.Patch != "" && !strings.HasSuffix(result.Patch, "\n") {
-			fmt.Fprintln(writer)
-		}
-		return nil
-	}
-}
-
 func New(deps Dependencies) *cobra.Command {
 	d := deps.withDefaults()
 
@@ -143,7 +92,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			service := diffservice.NewService(client)
-			outputMode, err := resolveDiffOutputMode(refsPatch, refsStat, refsNameOnly)
+			outputMode, err := diffoutput.ResolveOutputMode(refsPatch, refsStat, refsNameOnly)
 			if err != nil {
 				return err
 			}
@@ -159,7 +108,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			return writeDiffResult(cmd.OutOrStdout(), d.JSONEnabled(), outputMode, result, d.WriteJSON)
+			return diffoutput.Write(cmd.OutOrStdout(), d.JSONEnabled(), repositoryOf(repo), outputMode, result, d.WriteJSON)
 		},
 	}
 	refsCmd.Flags().StringVar(&refsPath, "path", "", "Optional file path for file-scoped diff")
@@ -196,7 +145,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			return writeDiffResult(cmd.OutOrStdout(), d.JSONEnabled(), diffservice.OutputKindRaw, result, d.WriteJSON)
+			return diffoutput.Write(cmd.OutOrStdout(), d.JSONEnabled(), repositoryOf(repo), diffservice.OutputKindRaw, result, d.WriteJSON)
 		},
 	}
 	commitCmd.Flags().StringVar(&commitPath, "path", "", "Optional file path for file-scoped diff")
@@ -234,7 +183,7 @@ func NewDiffPullRequestCommand(deps Dependencies, repositorySelector *string) *c
 			repo := diffservice.RepositoryRef{ProjectKey: target.ProjectKey, Slug: target.RepoSlug}
 
 			service := diffservice.NewService(client)
-			outputMode, err := resolveDiffOutputMode(patch, stat, nameOnly)
+			outputMode, err := diffoutput.ResolveOutputMode(patch, stat, nameOnly)
 			if err != nil {
 				return err
 			}
@@ -248,7 +197,7 @@ func NewDiffPullRequestCommand(deps Dependencies, repositorySelector *string) *c
 				return err
 			}
 
-			return writeDiffResult(cmd.OutOrStdout(), d.JSONEnabled(), outputMode, result, d.WriteJSON)
+			return diffoutput.Write(cmd.OutOrStdout(), d.JSONEnabled(), repositoryOf(repo), outputMode, result, d.WriteJSON)
 		},
 	}
 
@@ -257,4 +206,9 @@ func NewDiffPullRequestCommand(deps Dependencies, repositorySelector *string) *c
 	command.Flags().BoolVar(&nameOnly, "name-only", false, "Output only changed file names")
 
 	return command
+}
+
+// repositoryOf converts the service reference into the published shape.
+func repositoryOf(repo diffservice.RepositoryRef) result.Repository {
+	return result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/paging"
+	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
@@ -117,7 +118,11 @@ func newRepoPermissionListCommand(deps Dependencies, repositorySelector *string,
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{subject.noun + "s": permissionEntriesPayload(subject, entries)})
+				return deps.WriteJSON(cmd.OutOrStdout(), GrantedPermissions{
+					Repository: settingsRepositoryOf(repo),
+					Subject:    subject.noun,
+					Entries:    permissionEntriesFrom(entries),
+				})
 			}
 			if len(entries) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render(fmt.Sprintf("No %ss with repository permissions found", subject.noun)))
@@ -136,27 +141,6 @@ func newRepoPermissionListCommand(deps Dependencies, repositorySelector *string,
 	listPaging.Register(command, permissionLookupLimit)
 
 	return command
-}
-
-func permissionEntriesPayload(subject permissionSubject, entries []permissionEntry) any {
-	if subject.noun == "group" {
-		groups := make([]reposettings.PermissionGroup, len(entries))
-		for index, entry := range entries {
-			groups[index] = reposettings.PermissionGroup{Name: entry.name, Permission: entry.permission}
-		}
-		return groups
-	}
-
-	users := make([]reposettings.PermissionUser, len(entries))
-	for index, entry := range entries {
-		display := entry.display
-		if display == entry.name {
-			display = ""
-		}
-		users[index] = reposettings.PermissionUser{Name: entry.name, Display: display, Permission: entry.permission}
-	}
-
-	return users
 }
 
 func newRepoPermissionGrantCommand(deps Dependencies, repositorySelector *string, subjectFor permissionSubjectResolver) *cobra.Command {
@@ -186,7 +170,7 @@ func newRepoPermissionGrantCommand(deps Dependencies, repositorySelector *string
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", subject.jsonSubjectKey(): args[0], "permission": permission})
+				return deps.WriteJSON(cmd.OutOrStdout(), PermissionGrant{Status: result.OK(), Repository: settingsRepositoryOf(repo), Subject: subject.noun, Name: args[0], Permission: permission})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s to %s%s\n", style.Success.Render("Granted"), permission, subject.tableLabel, style.Resource.Render(args[0]))
 			return nil
@@ -220,20 +204,12 @@ func newRepoPermissionRevokeCommand(deps Dependencies, repositorySelector *strin
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{"status": "ok", subject.jsonSubjectKey(): args[0]})
+				return deps.WriteJSON(cmd.OutOrStdout(), PermissionRevocation{Status: result.OK(), Repository: settingsRepositoryOf(repo), Subject: subject.noun, Name: args[0]})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s for %s%s\n", style.Deleted.Render("Revoked permissions"), subject.tableLabel, style.Resource.Render(args[0]))
 			return nil
 		},
 	}
-}
-
-func (subject permissionSubject) jsonSubjectKey() string {
-	if subject.noun == "user" {
-		return "username"
-	}
-
-	return subject.noun
 }
 
 func runPermissionGrantDryRun(
@@ -284,9 +260,10 @@ func runPermissionGrantDryRun(
 		Items: []dryrunpreview.Item{{
 			Intent: fmt.Sprintf("repo.permission.%s.grant", subject.noun),
 			Target: map[string]any{
-				"repository":             fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
-				subject.jsonSubjectKey(): name,
-				"permission":             permission,
+				"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
+				"subject":    subject.noun,
+				"name":       name,
+				"permission": permission,
 			},
 			Action:          "update",
 			PredictedAction: predicted,
@@ -342,8 +319,9 @@ func runPermissionRevokeDryRun(
 		Items: []dryrunpreview.Item{{
 			Intent: fmt.Sprintf("repo.permission.%s.revoke", subject.noun),
 			Target: map[string]any{
-				"repository":             fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
-				subject.jsonSubjectKey(): name,
+				"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
+				"subject":    subject.noun,
+				"name":       name,
 			},
 			Action:          "delete",
 			PredictedAction: predicted,
@@ -501,9 +479,9 @@ func newRepoPermissionsCommand(deps Dependencies) *cobra.Command {
 			repoID := fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), map[string]any{
-					"repository":  repoID,
-					"permissions": perms,
+				return deps.WriteJSON(cmd.OutOrStdout(), EffectivePermissions{
+					Repository:  settingsRepositoryOf(repo),
+					Permissions: effectivePermissionsFrom(perms),
 				})
 			}
 
