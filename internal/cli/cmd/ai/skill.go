@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	bbskill "github.com/vriesdemichael/bitbucket-server-cli/skills/bb"
-	bbbulkskill "github.com/vriesdemichael/bitbucket-server-cli/skills/bb-bulk"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	bbskill "github.com/vriesdemichael/bitbucket-data-center-cli/skills/bb"
+	bbbulkskill "github.com/vriesdemichael/bitbucket-data-center-cli/skills/bb-bulk"
 )
 
 type skillInfo struct {

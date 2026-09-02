@@ -9,16 +9,16 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/style"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
-	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
-	reposettings "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reposettings"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/transport/httpclient"
-	bulkworkflow "github.com/vriesdemichael/bitbucket-server-cli/internal/workflows/bulk"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	qualityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/quality"
+	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/repository"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
+	bulkworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/bulk"
 )
 
 type Dependencies struct {

@@ -12,17 +12,17 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/execgit"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	branchservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/branch"
-	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
-	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
-	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
-	reposettings "github.com/vriesdemichael/bitbucket-server-cli/internal/services/reposettings"
-	tagservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/tag"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/execgit"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	branchservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/branch"
+	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
+	qualityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/quality"
+	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
+	tagservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/tag"
 )
 
 var gitBackendFactory = func() git.Backend {

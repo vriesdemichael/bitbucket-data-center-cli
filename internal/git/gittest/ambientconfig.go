@@ -42,7 +42,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/execgit"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/execgit"
 )
 
 // ConfigSnapshot records the repository-scoped git configuration visible from

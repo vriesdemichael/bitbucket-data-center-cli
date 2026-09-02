@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git/execgit"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/execgit"
 )
 
 // git runs a git command in directory and fails the test if it does not succeed.

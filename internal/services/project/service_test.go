@@ -2,15 +2,15 @@ package project
 
 import (
 	"context"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync/atomic"
 	"testing"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 func newProjectTestService(t *testing.T, handler http.HandlerFunc) *Service {

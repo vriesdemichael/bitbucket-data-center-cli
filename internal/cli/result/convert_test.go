@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
-	repositoryservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/repository"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
+	repositoryservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/repository"
 )
 
 // The converters in this package are where a payload's shape is actually

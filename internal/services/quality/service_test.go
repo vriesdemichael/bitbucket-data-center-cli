@@ -2,7 +2,7 @@ package quality
 
 import (
 	"context"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 func newQualityTestService(t *testing.T, handler http.HandlerFunc) *Service {

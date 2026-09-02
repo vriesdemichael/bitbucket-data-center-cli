@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
 
 func TestExternalNetworkBlocking(t *testing.T) {

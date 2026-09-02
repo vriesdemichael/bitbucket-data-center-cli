@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	bbmcp "github.com/vriesdemichael/bitbucket-server-cli/internal/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
 )
 
 // testMCPDeps builds a minimal Dependencies for MCP tests.

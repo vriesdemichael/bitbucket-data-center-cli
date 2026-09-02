@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // postLiveJSON sends a raw authenticated POST, for fixtures bb has no command

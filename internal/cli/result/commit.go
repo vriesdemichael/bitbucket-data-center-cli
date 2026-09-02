@@ -3,7 +3,7 @@ package result
 import (
 	"strings"
 
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 // Person is whoever authored or committed a change.

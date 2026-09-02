@@ -6,12 +6,12 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	browseservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/browse"
-	commentservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/comment"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/services/commentanchor"
-	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
-	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
-	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
+	browseservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/browse"
+	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/commentanchor"
+	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
+	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
 )
 
 // GetPullRequestInput is the argument set for get_pull_request.

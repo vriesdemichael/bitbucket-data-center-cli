@@ -1,7 +1,7 @@
 package reviewercmd
 
 import (
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 )
 
 // Conditions is what `bb reviewer condition list` returns.

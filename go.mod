@@ -1,4 +1,4 @@
-module github.com/vriesdemichael/bitbucket-server-cli
+module github.com/vriesdemichael/bitbucket-data-center-cli
 
 go 1.26.0
 

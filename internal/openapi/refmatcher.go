@@ -3,7 +3,7 @@ package openapi
 import (
 	"strings"
 
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 // Ref matcher types accepted by the default-task API. Anything outside this set

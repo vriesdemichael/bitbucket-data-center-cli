@@ -11,7 +11,7 @@ import (
 
 	sigroot "github.com/sigstore/sigstore-go/pkg/root"
 	sigtuf "github.com/sigstore/sigstore-go/pkg/tuf"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // ErrTrustedRootUnavailable marks the failure to obtain Sigstore trust

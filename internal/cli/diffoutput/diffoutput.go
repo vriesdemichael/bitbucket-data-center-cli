@@ -13,9 +13,9 @@ import (
 	"io"
 	"strings"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
 )
 
 // Diff is what the diff commands return.

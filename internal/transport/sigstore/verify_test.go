@@ -17,7 +17,7 @@ import (
 	sigroot "github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/testing/ca"
 	sigverify "github.com/sigstore/sigstore-go/pkg/verify"
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 func TestVerifierVerifyEntity(t *testing.T) {

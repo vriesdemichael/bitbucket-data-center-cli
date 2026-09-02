@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 // Comment is one comment on a commit or a pull request.

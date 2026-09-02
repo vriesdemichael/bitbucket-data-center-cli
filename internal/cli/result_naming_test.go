@@ -7,7 +7,7 @@ import (
 	"testing"
 	"unicode"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 )
 
 // TestEveryPublishedFieldIsCamelCase enforces ADR-076 instead of trusting a

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // writePlaintextCredentialConfig produces a stored config holding a credential

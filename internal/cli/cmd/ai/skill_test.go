@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/jsonoutput"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	bbskill "github.com/vriesdemichael/bitbucket-server-cli/skills/bb"
-	bbbulkskill "github.com/vriesdemichael/bitbucket-server-cli/skills/bb-bulk"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	bbskill "github.com/vriesdemichael/bitbucket-data-center-cli/skills/bb"
+	bbbulkskill "github.com/vriesdemichael/bitbucket-data-center-cli/skills/bb-bulk"
 )
 
 // testDeps builds a minimal Dependencies for skill tests.

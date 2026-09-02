@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	bbmcp "github.com/vriesdemichael/bitbucket-server-cli/internal/mcp"
+	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
 )
 
 // writeSystemPolicy points the config loader at a system config file holding

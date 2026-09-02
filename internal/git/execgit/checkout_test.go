@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/git"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 )
 
 // newCommittedRepository builds a repository with one commit on master, which

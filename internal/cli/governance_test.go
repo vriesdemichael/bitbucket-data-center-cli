@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 func TestReviewerCLI(t *testing.T) {

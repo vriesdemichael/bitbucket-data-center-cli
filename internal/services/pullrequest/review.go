@@ -3,7 +3,7 @@ package pullrequest
 import (
 	"strings"
 
-	pullrequestactivity "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequestactivity"
+	pullrequestactivity "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
 )
 
 // Where a ReviewSummary's counts came from. This matters because the sources

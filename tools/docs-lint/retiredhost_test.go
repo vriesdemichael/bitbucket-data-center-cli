@@ -82,7 +82,7 @@ func TestLintRetiredHostPassesOnTheCurrentHost(t *testing.T) {
 func TestLintRetiredHostIgnoresTheRedirectedRepositoryHost(t *testing.T) {
 	root := t.TempDir()
 
-	writeFile(t, root, "go.mod", "module github.com/vriesdemichael/bitbucket-server-cli\n")
+	writeFile(t, root, "go.mod", "module github.com/vriesdemichael/bitbucket-data-center-cli\n")
 
 	findings, err := lintRetiredHost(root)
 	if err != nil {

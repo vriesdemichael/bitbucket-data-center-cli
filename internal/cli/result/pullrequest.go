@@ -1,7 +1,7 @@
 package result
 
 import (
-	pullrequestservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/pullrequest"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 )
 
 // Reviewer is one person asked to review, and where they got to.

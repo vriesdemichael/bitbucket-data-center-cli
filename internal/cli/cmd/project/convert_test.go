@@ -3,8 +3,8 @@ package projectcmd
 import (
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 // TestPageOfNarrowsBothRenderingsTheSameWay guards the flag defect: --start and

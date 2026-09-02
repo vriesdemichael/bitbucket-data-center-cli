@@ -3,9 +3,9 @@ package buildcmd
 import (
 	"strings"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
-	qualityservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/quality"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	qualityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/quality"
 )
 
 // TestResults is the test tally a build reporter may attach to a status.

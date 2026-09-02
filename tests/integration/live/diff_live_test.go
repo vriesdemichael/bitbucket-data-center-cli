@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	diffservice "github.com/vriesdemichael/bitbucket-server-cli/internal/services/diff"
+	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
 )
 
 func TestLiveDiffRefs(t *testing.T) {

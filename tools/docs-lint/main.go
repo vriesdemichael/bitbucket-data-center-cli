@@ -22,8 +22,8 @@ import (
 	"sync"
 
 	"github.com/spf13/cobra"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
 )
 
 // shellLanguages are the fenced-block languages whose contents are shell.

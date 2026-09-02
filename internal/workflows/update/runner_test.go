@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
-	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
-	githubrelease "github.com/vriesdemichael/bitbucket-server-cli/internal/transport/githubrelease"
-	updatesigstore "github.com/vriesdemichael/bitbucket-server-cli/internal/transport/sigstore"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	githubrelease "github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/githubrelease"
+	updatesigstore "github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/sigstore"
 )
 
 type stubReleaseClient struct {

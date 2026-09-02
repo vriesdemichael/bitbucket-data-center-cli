@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/outputschemas"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outputschemas"
 )
 
 func TestSchemasReturnNonEmpty(t *testing.T) {

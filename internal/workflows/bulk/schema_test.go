@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"encoding/json"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/docsite"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/docsite"
 	"testing"
 )
 

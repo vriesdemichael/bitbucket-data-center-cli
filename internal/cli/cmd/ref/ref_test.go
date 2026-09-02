@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	refcmd "github.com/vriesdemichael/bitbucket-server-cli/internal/cli/cmd/ref"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-server-cli/internal/openapi"
-	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
+	refcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/ref"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 func newMockRefServer(t *testing.T) *httptest.Server {
