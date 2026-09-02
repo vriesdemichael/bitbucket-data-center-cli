@@ -3,7 +3,7 @@ package buildcmd
 import (
 	"bytes"
 	"context"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"net/http"
 	"net/http/httptest"
 	"strings"

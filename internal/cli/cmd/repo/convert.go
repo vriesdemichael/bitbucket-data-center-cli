@@ -3,7 +3,7 @@ package repocmd
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"strings"
 	"unicode/utf8"
 

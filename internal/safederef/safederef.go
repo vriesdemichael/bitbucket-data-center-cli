@@ -15,7 +15,11 @@
 // These are for reading a decoded response. They are deliberately not generic
 // over any pointer type: a caller reaching for safederef.Value[T] is usually
 // about to publish a zero where absent was the answer, and the model layer has
-// pointers precisely so it can tell those apart (ADR-076).
+// pointers precisely so it can tell those apart.
+//
+// It lives outside internal/cli because internal/services reads these pointers
+// too, and a shared helper under the CLI layer had already pulled two service
+// files into depending on it.
 package safederef
 
 // String reads a string pointer, treating absent as empty.
@@ -50,9 +54,12 @@ func Int64(value *int64) int64 {
 // Empty, not nil, because that is what three of the five copies did and what
 // the payload layer wants: a required list marshals as [] rather than null, so
 // a caller iterating the result does not have to handle a null the command
-// never means to send. The two copies that returned nil had three callers
-// between them, every one of which ranged or counted -- where the two are the
-// same -- so nothing observes the change.
+// never means to send.
+//
+// The change is unobservable today: between them the two nil-returning copies
+// had a single production caller, which took its len. The marshalling argument
+// is why this is the right default, not a description of something that was
+// happening -- no current caller reaches a serialised field.
 func StringSlice(values *[]string) []string {
 	if values == nil {
 		return []string{}

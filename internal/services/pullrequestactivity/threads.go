@@ -3,7 +3,7 @@ package pullrequestactivity
 import (
 	"context"
 	"fmt"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"net/url"
 	"regexp"
 	"sort"

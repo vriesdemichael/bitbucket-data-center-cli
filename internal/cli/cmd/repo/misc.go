@@ -2,7 +2,7 @@ package repocmd
 
 import (
 	"fmt"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"io"
 	"os"
 	"path/filepath"

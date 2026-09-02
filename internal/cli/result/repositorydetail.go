@@ -1,8 +1,8 @@
 package result
 
 import (
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 )
 
 // RepositoryDetail is a repository as the administrative commands report it.
