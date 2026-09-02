@@ -79,7 +79,7 @@ func TestLiveGovernanceCLI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo PR settings get failed: %v\noutput: %s", err, output)
 	}
-	if !strings.Contains(output, `"pull_request_settings"`) {
+	if !strings.Contains(output, `"requiredApprovers"`) {
 		t.Fatalf("expected pull_request_settings in output: %s", output)
 	}
 
@@ -95,7 +95,7 @@ func TestLiveGovernanceCLI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo merge-checks list failed: %v\noutput: %s", err, output)
 	}
-	if !strings.Contains(output, `"merge_checks"`) {
+	if !strings.Contains(output, `"checks"`) {
 		t.Fatalf("expected merge_checks in output: %s", output)
 	}
 }
@@ -124,7 +124,7 @@ func TestLiveCLIProjectPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("project permissions users grant dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "project.permission.user.grant"`) {
@@ -272,7 +272,7 @@ func TestLiveCLIReviewerConditionCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reviewer condition create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "reviewer.condition.create"`) {
@@ -384,7 +384,7 @@ func TestLiveCLIProjectCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("project create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "project.create"`) {
@@ -419,7 +419,7 @@ func TestLiveReviewerGroupsAndDefaultReviewersCLI(t *testing.T) {
 	output, err := executeLiveCLI(t, "--json", "reviewer-group", "list", "--project", seeded.Key)
 	if err != nil {
 		t.Logf("project reviewer-group list skipped/failed: %v", err)
-	} else if !strings.Contains(output, `"reviewer_groups"`) {
+	} else if !strings.Contains(output, `"reviewerGroups"`) {
 		t.Fatalf("expected reviewer_groups in output: %s", output)
 	}
 
@@ -427,7 +427,7 @@ func TestLiveReviewerGroupsAndDefaultReviewersCLI(t *testing.T) {
 	output, err = executeLiveCLI(t, "--json", "reviewer-group", "list", "--repo", seeded.Key+"/"+repo.Slug)
 	if err != nil {
 		t.Logf("repo reviewer-group list skipped/failed: %v", err)
-	} else if !strings.Contains(output, `"reviewer_groups"`) {
+	} else if !strings.Contains(output, `"reviewerGroups"`) {
 		t.Fatalf("expected reviewer_groups in output: %s", output)
 	}
 
@@ -483,7 +483,7 @@ func TestLiveReviewerGroupsAndDefaultReviewersCLI(t *testing.T) {
 	defOut, err := executeLiveCLI(t, "--json", "pr", "default-reviewers", "--repo", seeded.Key+"/"+repo.Slug, "--source-ref", "refs/heads/master", "--target-ref", "refs/heads/master", "--source-repo-id", repoID, "--target-repo-id", repoID)
 	if err != nil {
 		t.Logf("pr default-reviewers failed: %v", err)
-	} else if !strings.Contains(defOut, `"default_reviewers"`) {
+	} else if !strings.Contains(defOut, `"defaultReviewers"`) {
 		t.Fatalf("expected default_reviewers in output: %s", defOut)
 	}
 }

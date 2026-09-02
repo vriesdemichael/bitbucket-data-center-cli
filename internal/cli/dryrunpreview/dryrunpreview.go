@@ -21,12 +21,12 @@ type Item struct {
 	Intent          string         `json:"intent"`
 	Target          map[string]any `json:"target"`
 	Action          string         `json:"action"`
-	PredictedAction string         `json:"predicted_action,omitempty"`
+	PredictedAction string         `json:"predictedAction,omitempty"`
 	Supported       bool           `json:"supported"`
 	Reason          string         `json:"reason,omitempty"`
 	Confidence      string         `json:"confidence,omitempty"`
-	RequiredState   []string       `json:"required_state,omitempty"`
-	BlockingReasons []string       `json:"blocking_reasons,omitempty"`
+	RequiredState   []string       `json:"requiredState,omitempty"`
+	BlockingReasons []string       `json:"blockingReasons,omitempty"`
 }
 
 type Summary struct {
@@ -34,7 +34,7 @@ type Summary struct {
 	Supported   int `json:"supported"`
 	Unsupported int `json:"unsupported"`
 
-	NoopCount    int `json:"no_op"`
+	NoopCount    int `json:"noOp"`
 	CreateCount  int `json:"create"`
 	UpdateCount  int `json:"update"`
 	DeleteCount  int `json:"delete"`
@@ -42,8 +42,8 @@ type Summary struct {
 }
 
 type Preview struct {
-	DryRun       bool    `json:"dry_run"`
-	PlanningMode string  `json:"planning_mode"`
+	DryRun       bool    `json:"dryRun"`
+	PlanningMode string  `json:"planningMode"`
 	Capability   string  `json:"capability"`
 	Items        []Item  `json:"items"`
 	Summary      Summary `json:"summary"`

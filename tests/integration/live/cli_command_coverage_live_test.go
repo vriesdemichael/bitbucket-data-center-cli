@@ -427,7 +427,7 @@ func TestLiveCLIAuthStoredConfigFlow(t *testing.T) {
 		t.Fatalf("auth status failed: %v\noutput: %s", err, statusOutput)
 	}
 	statusPayload := decodeJSONMap(t, statusOutput)
-	if asString(statusPayload["auth_source"]) != "stored" {
+	if asString(statusPayload["authSource"]) != "stored" {
 		t.Fatalf("expected auth_source=stored, got: %s", statusOutput)
 	}
 
@@ -477,7 +477,7 @@ func TestLiveCLIPRListAndIssueCommandUnavailable(t *testing.T) {
 	}
 
 	prPayload := decodeJSONMap(t, prOutput)
-	pullRequests, ok := prPayload["pull_requests"].([]any)
+	pullRequests, ok := prPayload["pullRequests"].([]any)
 	if !ok || len(pullRequests) == 0 {
 		t.Fatalf("expected non-empty pull_requests array, got: %s", prOutput)
 	}
@@ -546,7 +546,7 @@ func TestLiveCLITagCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tag create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "tag.create"`) {
@@ -592,7 +592,7 @@ func TestLiveCLITagDeleteDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tag delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "tag.delete"`) {

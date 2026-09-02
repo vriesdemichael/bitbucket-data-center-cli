@@ -263,7 +263,7 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 		t.Fatalf("repo settings pull-requests get failed: %v\noutput: %s", err, pullRequestsGetOutput)
 	}
 	getPayload := decodeJSONMap(t, pullRequestsGetOutput)
-	if _, ok := getPayload["pull_request_settings"]; !ok {
+	if _, ok := getPayload["requiredApprovers"]; !ok {
 		t.Fatalf("expected pull_request_settings field in get output: %s", pullRequestsGetOutput)
 	}
 
@@ -349,7 +349,7 @@ func TestLiveCLIRepoPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("permissions users grant dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "repo.permission.user.grant"`) {
@@ -502,7 +502,7 @@ func TestLiveCLIRepoWebhookCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("webhook create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "repo.webhook.create"`) {
@@ -542,7 +542,7 @@ func TestLiveCLIRepoPullRequestSettingsUpdateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pull-request settings update dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "repo.pull-request-settings.update"`) {
@@ -582,7 +582,7 @@ func TestLiveCLIRepoPullRequestSettingsUpdateApproversDryRunNoSideEffect(t *test
 	if err != nil {
 		t.Fatalf("pull-request settings update-approvers dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "repo.pull-request-settings.update-approvers"`) {
@@ -713,7 +713,7 @@ func TestLiveCLIPRCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "pr.create"`) {
@@ -768,7 +768,7 @@ func TestLiveCLIPRGetIncludesMergeability(t *testing.T) {
 	}
 
 	payload := decodeJSONMap(t, output)
-	pullRequest, ok := payload["pull_request"].(map[string]any)
+	pullRequest, ok := payload["pullRequest"].(map[string]any)
 	if !ok {
 		t.Fatalf("pull_request field missing from output: %s", output)
 	}
@@ -1048,11 +1048,11 @@ func TestLiveCommitPRsAndParticipants(t *testing.T) {
 	if !ok {
 		t.Fatalf("data field not found or not a map in envelope: %s", prGetJSON)
 	}
-	prData, ok := data["pull_request"].(map[string]any)
+	prData, ok := data["pullRequest"].(map[string]any)
 	if !ok {
 		t.Fatalf("pull_request field not found or not a map in data: %s", prGetJSON)
 	}
-	sourceCommit, ok := prData["source_commit"].(string)
+	sourceCommit, ok := prData["sourceCommit"].(string)
 	if !ok || sourceCommit == "" {
 		t.Fatalf("source_commit not found or empty in get output: %s", prGetJSON)
 	}
@@ -1269,7 +1269,7 @@ func prepareOpenPRDryRunFixture(t *testing.T) (*liveHarness, seededProject, seed
 func prFieldAsString(t *testing.T, output, field string) string {
 	t.Helper()
 	payload := decodeJSONMap(t, output)
-	pullRequest, ok := payload["pull_request"].(map[string]any)
+	pullRequest, ok := payload["pullRequest"].(map[string]any)
 	if !ok {
 		t.Fatalf("pull_request field missing from output: %s", output)
 	}
@@ -1279,7 +1279,7 @@ func prFieldAsString(t *testing.T, output, field string) string {
 func prReviewersSnapshot(t *testing.T, output string) string {
 	t.Helper()
 	payload := decodeJSONMap(t, output)
-	pullRequest, ok := payload["pull_request"].(map[string]any)
+	pullRequest, ok := payload["pullRequest"].(map[string]any)
 	if !ok {
 		t.Fatalf("pull_request field missing from output: %s", output)
 	}

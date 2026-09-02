@@ -64,7 +64,7 @@ func TestLiveSearchCommands(t *testing.T) {
 	if err != nil {
 		t.Fatalf("search prs failed: %v\noutput: %s", err, prsOutput)
 	}
-	if !strings.Contains(prsOutput, "pull_requests") {
+	if !strings.Contains(prsOutput, "pullRequests") {
 		t.Fatalf("expected a pull_requests payload, got: %s", prsOutput)
 	}
 }

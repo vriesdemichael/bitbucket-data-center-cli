@@ -179,15 +179,15 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr get failed: %v\noutput: %s", err, getOutput)
 	}
-	reviewSummary, ok := decodeJSONMap(t, getOutput)["review_summary"].(map[string]any)
+	reviewSummary, ok := decodeJSONMap(t, getOutput)["reviewSummary"].(map[string]any)
 	if !ok {
 		t.Fatalf("expected review_summary in pr get output: %s", getOutput)
 	}
-	if reviewSummary["action_required"] != true {
+	if reviewSummary["actionRequired"] != true {
 		t.Fatalf("expected action_required on a pull request with open feedback: %#v", reviewSummary)
 	}
-	if reviewSummary["counts_source"] != "activities" {
-		t.Fatalf("expected activity-derived counts, got %#v", reviewSummary["counts_source"])
+	if reviewSummary["countsSource"] != "activities" {
+		t.Fatalf("expected activity-derived counts, got %#v", reviewSummary["countsSource"])
 	}
 
 	listOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--unresolved")

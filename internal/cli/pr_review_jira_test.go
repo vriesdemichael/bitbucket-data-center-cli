@@ -92,7 +92,7 @@ func TestPRCommentPendingCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, "dry_run") || !strings.Contains(out, `"pending": true`) {
+	if !strings.Contains(out, "dryRun") || !strings.Contains(out, `"pending": true`) {
 		t.Fatalf("unexpected dry-run output: %s", out)
 	}
 }

@@ -81,7 +81,7 @@ func TestLiveCLIRepoAdminCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo admin create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "repo.admin.create"`) {

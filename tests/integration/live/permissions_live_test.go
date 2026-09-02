@@ -36,7 +36,7 @@ func assertAuthorizationError(t *testing.T, err error, output, context string) {
 
 // assertDryRunAuthorizationError asserts that a --dry-run invocation fails with an
 // authorization error rather than producing a plan.  It also makes sure the output
-// does NOT contain a successful planning_mode entry, because that would mean the
+// does NOT contain a successful planningMode entry, because that would mean the
 // plan was produced before the permission check fired.
 func assertDryRunAuthorizationError(t *testing.T, err error, output, context string) {
 	t.Helper()
@@ -48,7 +48,7 @@ func assertDryRunAuthorizationError(t *testing.T, err error, output, context str
 			context, apperrors.ExitCode(err), err, output)
 	}
 	// The plan must NOT have been committed to output — the permission check must fire first.
-	if strings.Contains(output, `"planning_mode"`) && !strings.Contains(output, `"error"`) {
+	if strings.Contains(output, `"planningMode"`) && !strings.Contains(output, `"error"`) {
 		t.Fatalf("%s: dry-run produced a plan despite lacking permission\noutput: %s", context, output)
 	}
 }
@@ -668,8 +668,8 @@ func TestLiveProjectPermissionsShowAsAdmin(t *testing.T) {
 	}
 
 	result := decodeJSONMap(t, output)
-	if asString(result["project_key"]) != seeded.Key {
-		t.Errorf("expected project_key=%q, got %q", seeded.Key, asString(result["project_key"]))
+	if asString(result["projectKey"]) != seeded.Key {
+		t.Errorf("expected projectKey=%q, got %q", seeded.Key, asString(result["projectKey"]))
 	}
 	perms, ok := result["permissions"].(map[string]any)
 	if !ok {

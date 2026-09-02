@@ -326,7 +326,7 @@ func TestWriteDryRunPreviewJSONOutput(t *testing.T) {
 	if err := writeDryRunPreview(buffer, true, preview); err != nil {
 		t.Fatalf("writeDryRunPreview JSON failed: %v", err)
 	}
-	if !strings.Contains(buffer.String(), `"planning_mode": "static"`) {
+	if !strings.Contains(buffer.String(), `"planningMode": "static"`) {
 		t.Fatalf("expected planning mode in JSON output, got: %s", buffer.String())
 	}
 }
@@ -698,8 +698,8 @@ func TestAuthGpgKeyClearDryRun(t *testing.T) {
 	if !strings.Contains(output, "auth.gpg-key.clear") {
 		t.Fatalf("expected intent auth.gpg-key.clear in dry-run output, got: %s", output)
 	}
-	if !strings.Contains(output, `"dry_run": true`) {
-		t.Fatalf("expected dry_run: true in json output, got: %s", output)
+	if !strings.Contains(output, `"dryRun": true`) {
+		t.Fatalf("expected dryRun: true in json output, got: %s", output)
 	}
 }
 

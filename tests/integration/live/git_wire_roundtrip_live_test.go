@@ -55,7 +55,7 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 		t.Fatalf("decode pr create output failed: %v", err)
 	}
 	prData := createEnvelope.Data
-	if inner, ok := createEnvelope.Data["pull_request"].(map[string]any); ok {
+	if inner, ok := createEnvelope.Data["pullRequest"].(map[string]any); ok {
 		prData = inner
 	}
 	prID := fmt.Sprintf("%v", prData["id"])

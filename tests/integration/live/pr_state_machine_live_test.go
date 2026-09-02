@@ -13,7 +13,7 @@ import (
 )
 
 func extractPRData(data map[string]any) map[string]any {
-	if inner, ok := data["pull_request"].(map[string]any); ok {
+	if inner, ok := data["pullRequest"].(map[string]any); ok {
 		return inner
 	}
 	return data
