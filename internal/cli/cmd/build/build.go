@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
@@ -211,7 +212,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	setCmd.Flags().StringVar(&setKey, "key", "", "Build status key")
-	setCmd.Flags().StringVar(&setState, "state", "", "Build state (SUCCESSFUL, FAILED, INPROGRESS, UNKNOWN)")
+	enumflag.Register(setCmd.Flags(), &setState, "state", "", buildStates, "Build state")
 	setCmd.Flags().StringVar(&setURL, "url", "", "Build URL")
 	setCmd.Flags().StringVar(&setName, "name", "", "Build display name")
 	setCmd.Flags().StringVar(&setDescription, "description", "", "Build description")
@@ -262,7 +263,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	})
 	getPaging.RegisterPersistent(statusCmd, 25)
-	statusCmd.PersistentFlags().StringVar(&getOrderBy, "order-by", "", "Order by NEWEST, OLDEST, or STATUS")
+	enumflag.Register(statusCmd.PersistentFlags(), &getOrderBy, "order-by", "", buildOrderings, "Build status ordering")
 
 	var includeUnique bool
 	statusCmd.AddCommand(&cobra.Command{
@@ -626,7 +627,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	scopedSetCmd.Flags().StringVar(&scopedSetKey, "key", "", "Build status key")
-	scopedSetCmd.Flags().StringVar(&scopedSetState, "state", "", "Build state (SUCCESSFUL, FAILED, INPROGRESS, UNKNOWN, CANCELLED)")
+	enumflag.Register(scopedSetCmd.Flags(), &scopedSetState, "state", "", buildStates, "Build state")
 	scopedSetCmd.Flags().StringVar(&scopedSetURL, "url", "", "Build URL")
 	scopedSetCmd.Flags().StringVar(&scopedSetName, "name", "", "Build display name")
 	scopedSetCmd.Flags().StringVar(&scopedSetDescription, "description", "", "Build description")

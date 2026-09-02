@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/diffoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/giturl"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
@@ -207,7 +208,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	listCmd.Flags().BoolVar(&listWithReviewStatus, "with-review-status", false, "Resolve unresolved comment threads per pull request (walks each activity timeline; slower)")
-	listCmd.Flags().StringVar(&state, "state", "open", "Pull request state filter: open, closed, all")
+	enumflag.Register(listCmd.Flags(), &state, "state", "open", openapi.PullRequestStateFilters, "Pull request state filter")
 	listPaging.Register(listCmd, 25)
 	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for Bitbucket pull request list operations")
 	listCmd.Flags().StringVar(&sourceBranch, "source-branch", "", "Optional source branch filter")
@@ -1485,7 +1486,7 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	reviewCompleteCmd.Flags().StringVar(&reviewCompleteStatus, "status", "", "Pull request status change (APPROVED, NEEDS_WORK, UNAPPROVED)")
+	enumflag.Register(reviewCompleteCmd.Flags(), &reviewCompleteStatus, "status", "", reviewStatuses, "Pull request status change")
 	reviewCompleteCmd.Flags().StringVar(&reviewCompleteComment, "comment", "", "Review completion comment text")
 	reviewCmd.AddCommand(reviewCompleteCmd)
 
@@ -1753,7 +1754,7 @@ func New(deps Dependencies) *cobra.Command {
 	commentListCmd.Flags().StringVar(&commentPath, "path", "", "Optional file path for path-scoped pull request comment listing")
 	commentPaging.Register(commentListCmd, 25)
 	commentListCmd.Flags().BoolVar(&commentBlocker, "blocker", false, "List pull request blocker comments")
-	commentListCmd.Flags().StringVar(&commentState, "state", "all", "Filter threads by resolution state: open, resolved, pending, all")
+	enumflag.Register(commentListCmd.Flags(), &commentState, "state", "all", threadStates, "Filter threads by resolution state")
 	commentListCmd.Flags().BoolVar(&commentUnresolved, "unresolved", false, "Show only unresolved threads (shorthand for --state open)")
 	commentListCmd.Flags().BoolVar(&commentTasksOnly, "tasks-only", false, "Show only threads Bitbucket tracks as tasks (blocker comments)")
 	commentListCmd.Flags().BoolVar(&commentWithReplies, "with-replies", false, "Include the full text of every reply instead of only the most recent one")
@@ -1941,7 +1942,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 	commentAddCmd.Flags().BoolVar(&commentAddPending, "pending", false, "Mark the comment as pending (draft)")
 	commentAddCmd.Flags().StringVar(&commentAddPath, "path", "", "File path for an inline comment")
 	commentAddCmd.Flags().IntVar(&commentAddLine, "line", 0, "Line number for an inline comment")
-	commentAddCmd.Flags().StringVar(&commentAddLineType, "line-type", "", "Line type for an inline comment: ADDED (default), REMOVED, or CONTEXT")
+	enumflag.Register(commentAddCmd.Flags(), &commentAddLineType, "line-type", "", openapi.DiffLineTypes, "Line type for an inline comment, ADDED when not given")
 	commentAddCmd.Flags().Int64Var(&commentAddParentID, "parent-id", 0, "Parent comment ID to reply to")
 	_ = commentAddCmd.MarkFlagRequired("text")
 	commentCmd.AddCommand(commentAddCmd)
@@ -2323,7 +2324,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			return nil
 		},
 	}
-	autoMergeEnableCmd.Flags().StringVar(&autoMergeStrategy, "strategy", "no-ff", "Merge strategy: no-ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only")
+	enumflag.Register(autoMergeEnableCmd.Flags(), &autoMergeStrategy, "strategy", "no-ff", []string{"no-ff", "ff-only", "rebase-no-ff", "rebase-ff-only", "squash", "squash-ff-only"}, "Merge strategy")
 	autoMergeCmd.AddCommand(autoMergeEnableCmd)
 
 	autoMergeDisableCmd := &cobra.Command{
@@ -3159,3 +3160,12 @@ func isAuthor(author, authorUsername, username string) bool {
 	return (author != "" && strings.EqualFold(u, strings.TrimSpace(author))) ||
 		(authorUsername != "" && strings.EqualFold(u, strings.TrimSpace(authorUsername)))
 }
+
+// reviewStatuses are the review outcomes a participant can record, and
+// threadStates are the comment thread filters. "unresolved" is a synonym for
+// "open" that NormalizeThreadState has always accepted; naming it here makes
+// the flag advertise what it already does rather than leaving it undocumented.
+var (
+	reviewStatuses = []string{"APPROVED", "NEEDS_WORK", "UNAPPROVED"}
+	threadStates   = []string{"open", "unresolved", "resolved", "pending", "all"}
+)

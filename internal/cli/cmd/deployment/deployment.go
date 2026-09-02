@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
@@ -179,11 +180,11 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd.Flags().StringVar(&description, "description", "", "Description of the deployment")
 	createCmd.Flags().StringVar(&displayName, "display-name", "", "Display name of the deployment")
 	createCmd.Flags().StringVar(&key, "key", "", "Deployment key")
-	createCmd.Flags().StringVar(&state, "state", "", "Deployment state (SUCCESSFUL, FAILED, IN_PROGRESS, PENDING, CANCELLED, ROLLED_BACK, UNKNOWN)")
+	enumflag.Register(createCmd.Flags(), &state, "state", "", deploymentStates, "Deployment state")
 	createCmd.Flags().StringVar(&url, "url", "", "Deployment URL")
 	createCmd.Flags().StringVar(&envKey, "env-key", "", "Environment key")
 	createCmd.Flags().StringVar(&envName, "env-name", "", "Environment display name")
-	createCmd.Flags().StringVar(&envType, "env-type", "", "Environment type (DEVELOPMENT, TESTING, STAGING, PRODUCTION)")
+	enumflag.Register(createCmd.Flags(), &envType, "env-type", "", environmentTypes, "Environment type")
 	createCmd.Flags().StringVar(&envUrl, "env-url", "", "Environment URL")
 
 	_ = createCmd.MarkFlagRequired("deployment-sequence-number")

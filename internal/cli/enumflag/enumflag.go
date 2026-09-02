@@ -1,0 +1,102 @@
+// Package enumflag registers a flag whose value must come from a fixed set.
+//
+// The set, the usage text and the validator are one thing here, because they
+// were three things before: the help string enumerated the values, a validator
+// enumerated them again where one existed at all, and eight of twelve flags
+// documented a set they did not enforce (#480). A flag that advertises
+// LOW, MEDIUM, HIGH and forwards "Medium" to the server is worse than one that
+// documents nothing -- it invites the caller to trust a contract it does not
+// keep.
+//
+// ADR-054 requires that invalid input fail immediately, naming the allowed
+// values. That is only possible if something owns them; Register is that
+// something.
+//
+// # Case
+//
+// Values are matched case-insensitively and normalised to their canonical
+// spelling before use. That is a decision this package makes once, because the
+// answer differed per flag by accident: commentanchor.NormalizeLineType
+// upper-cased before comparing, pr list --state took lower-case values as
+// written, and the eight unenforced flags took whatever they were given. The
+// sets themselves are inconsistent -- LOW, MEDIUM, HIGH beside no-ff and
+// squash-ff-only -- so requiring the caller to match the case of each one is a
+// rule nobody could follow from the help text alone.
+package enumflag
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/spf13/pflag"
+)
+
+// value is a pflag.Value that accepts only what it was told to.
+type value struct {
+	target  *string
+	name    string
+	allowed []string
+}
+
+func (enum *value) String() string {
+	if enum.target == nil {
+		return ""
+	}
+
+	return *enum.target
+}
+
+// Set validates and canonicalises, and is called by pflag during parsing --
+// which is what makes the rejection happen before the command runs rather than
+// before the request is sent, and long before the server sees it.
+func (enum *value) Set(raw string) error {
+	trimmed := strings.TrimSpace(raw)
+	for _, candidate := range enum.allowed {
+		if strings.EqualFold(trimmed, candidate) {
+			*enum.target = candidate
+			return nil
+		}
+	}
+
+	// A plain error, not an apperrors one. pflag wraps whatever Set returns in
+	// `invalid argument "X" for "--flag" flag: ...`, so the flag name is already
+	// said and an apperrors prefix would put "validation:" in the middle of the
+	// sentence. The envelope still reports kind=validation, because that is how
+	// the CLI classifies a flag-parse failure.
+	return fmt.Errorf("must be one of: %s", strings.Join(enum.allowed, ", "))
+}
+
+func (enum *value) Type() string { return "string" }
+
+// Register declares a flag whose value must come from allowed.
+//
+// The usage text is built from the same slice the validator checks, so the two
+// cannot disagree -- which is the failure this package exists to prevent.
+func Register(flags *pflag.FlagSet, target *string, name string, defaultValue string, allowed []string, description string) {
+	*target = defaultValue
+
+	flags.Var(
+		&value{target: target, name: name, allowed: allowed},
+		name,
+		usageFor(description, allowed),
+	)
+}
+
+// usageFor writes the description and the set it will be checked against,
+// so the help text cannot name a value the validator does not accept.
+func usageFor(description string, allowed []string) string {
+	return fmt.Sprintf("%s (one of: %s)", strings.TrimRight(description, ". "), strings.Join(allowed, ", "))
+}
+
+// RegisterP is Register with a one-letter shorthand, matching pflag's own
+// StringVarP naming.
+func RegisterP(flags *pflag.FlagSet, target *string, name string, shorthand string, defaultValue string, allowed []string, description string) {
+	*target = defaultValue
+
+	flags.VarP(
+		&value{target: target, name: name, allowed: allowed},
+		name,
+		shorthand,
+		usageFor(description, allowed),
+	)
+}

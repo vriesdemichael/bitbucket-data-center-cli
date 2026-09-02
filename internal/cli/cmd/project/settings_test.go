@@ -366,9 +366,10 @@ func TestProjectSettingsCLI(t *testing.T) {
 			t.Fatalf("unexpected webhook test dry-run: %s", out)
 		}
 
-		// Webhook validation error
+		// Webhook validation error. Refused by enumflag while parsing, so
+		// the message names the values and no request is built.
 		_, err = executeTestCLI(t, "project", "webhook", "update", "PRJ", "123", "--active", "invalid")
-		if err == nil || !strings.Contains(err.Error(), "active must be true or false") {
+		if err == nil || !strings.Contains(err.Error(), "must be one of: true, false") {
 			t.Fatalf("expected active validation error, got: %v", err)
 		}
 

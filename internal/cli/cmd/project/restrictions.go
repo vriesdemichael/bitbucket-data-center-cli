@@ -2,6 +2,7 @@ package projectcmd
 
 import (
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"math"
 	"slices"
@@ -13,6 +14,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	projectservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/project"
 )
@@ -77,8 +79,8 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	listCmd.Flags().StringVar(&listType, "type", "", "Filter by restriction type (read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)")
-	listCmd.Flags().StringVar(&listMatcherType, "matcher-type", "", "Filter by matcher type (BRANCH, PATTERN, MODEL_BRANCH, MODEL_CATEGORY)")
+	enumflag.Register(listCmd.Flags(), &listType, "type", "", result.RestrictionTypes, "Filter by restriction type")
+	enumflag.Register(listCmd.Flags(), &listMatcherType, "matcher-type", "", openapi.RestrictionMatcherTypes, "Filter by matcher type")
 	listCmd.Flags().StringVar(&listMatcherID, "matcher-id", "", "Filter by matcher ID value")
 	restrictionCmd.AddCommand(listCmd)
 

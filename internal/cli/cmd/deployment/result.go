@@ -47,7 +47,8 @@ type Deletion struct {
 	Key        string            `json:"key,omitempty" jsonschema:"Deployment key that was deleted, when one was given."`
 }
 
-// deploymentStates is the closed set Bitbucket uses.
+// deploymentStates is the closed set Bitbucket uses, serving both the enum on
+// the published output schema and the values --state will accept.
 var deploymentStates = []string{"PENDING", "IN_PROGRESS", "SUCCESSFUL", "FAILED", "CANCELLED", "ROLLED_BACK", "UNKNOWN"}
 
 func init() {
@@ -98,3 +99,9 @@ func deploymentFrom(upstream openapigenerated.RestDeployment) Deployment {
 
 	return converted
 }
+
+// environmentTypes are the deployment environments Bitbucket recognises.
+// UNKNOWN is in the set although the help text omitted it: the server's own
+// enum has it, and leaving it out would reject a value the server accepts --
+// the same oversight the build --state help had with CANCELLED.
+var environmentTypes = []string{"PRODUCTION", "STAGING", "TESTING", "DEVELOPMENT", "UNKNOWN"}

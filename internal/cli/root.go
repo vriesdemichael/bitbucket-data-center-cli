@@ -85,6 +85,15 @@ your behalf using the link above.`,
 		},
 	}
 
+	// Cobra consults the nearest ancestor's FlagErrorFunc, so this one covers
+	// every subcommand. It classifies a flag error where it is raised rather
+	// than at the top of main: enumflag's rejections are pflag errors, and
+	// anything driving the command tree without going through main -- the
+	// tests, for one -- was seeing them as kind=internal and exit 1.
+	rootCmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
+		return ClassifyUsageError(err)
+	})
+
 	rootCmd.PersistentFlags().BoolVar(&options.JSON, "json", false, "Output as JSON")
 	rootCmd.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "Preview server mutations without applying them")
 	rootCmd.PersistentFlags().BoolVar(&options.NoColor, "no-color", false, "Disable colored output")

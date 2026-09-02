@@ -3,6 +3,7 @@ package branchcmd
 import (
 	"context"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"io"
 	"slices"
@@ -264,7 +265,7 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	listCmd.Flags().StringVar(&orderBy, "order-by", "", "Branch ordering: ALPHABETICAL or MODIFICATION")
+	enumflag.Register(listCmd.Flags(), &orderBy, "order-by", "", openapi.RefOrderings, "Branch ordering")
 	listCmd.Flags().StringVar(&filterText, "filter", "", "Filter text for branch names")
 	listCmd.Flags().StringVar(&base, "base", "", "Base ref filter")
 	listCmd.Flags().BoolVar(&details, "details", false, "Include branch details from Bitbucket")
@@ -672,8 +673,8 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	restrictionListCmd.Flags().StringVar(&restrictionType, "type", "", "Restriction type (read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)")
-	restrictionListCmd.Flags().StringVar(&matcherType, "matcher-type", "", "Matcher type (BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN)")
+	enumflag.Register(restrictionListCmd.Flags(), &restrictionType, "type", "", result.RestrictionTypes, "Restriction type")
+	enumflag.Register(restrictionListCmd.Flags(), &matcherType, "matcher-type", "", openapi.RestrictionMatcherTypes, "Matcher type")
 	restrictionListCmd.Flags().StringVar(&matcherID, "matcher-id", "", "Matcher id value")
 	restrictionCmd.AddCommand(restrictionListCmd)
 
@@ -795,8 +796,8 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	restrictionCreateCmd.Flags().StringVar(&createRestrictionType, "type", "", "Restriction type")
-	restrictionCreateCmd.Flags().StringVar(&createMatcherType, "matcher-type", "BRANCH", "Matcher type")
+	enumflag.Register(restrictionCreateCmd.Flags(), &createRestrictionType, "type", "", result.RestrictionTypes, "Restriction type")
+	enumflag.Register(restrictionCreateCmd.Flags(), &createMatcherType, "matcher-type", "BRANCH", openapi.RestrictionMatcherTypes, "Matcher type")
 	restrictionCreateCmd.Flags().StringVar(&createMatcherID, "matcher-id", "", "Matcher id value")
 	restrictionCreateCmd.Flags().StringVar(&createMatcherDisplay, "matcher-display", "", "Matcher display value")
 	restrictionCreateCmd.Flags().StringSliceVar(&createUsers, "user", nil, "User slug allowed by restriction (repeatable)")
@@ -884,8 +885,8 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	restrictionUpdateCmd.Flags().StringVar(&updateRestrictionType, "type", "", "Restriction type")
-	restrictionUpdateCmd.Flags().StringVar(&updateMatcherType, "matcher-type", "BRANCH", "Matcher type")
+	enumflag.Register(restrictionUpdateCmd.Flags(), &updateRestrictionType, "type", "", result.RestrictionTypes, "Restriction type")
+	enumflag.Register(restrictionUpdateCmd.Flags(), &updateMatcherType, "matcher-type", "BRANCH", openapi.RestrictionMatcherTypes, "Matcher type")
 	restrictionUpdateCmd.Flags().StringVar(&updateMatcherID, "matcher-id", "", "Matcher id value")
 	restrictionUpdateCmd.Flags().StringVar(&updateMatcherDisplay, "matcher-display", "", "Matcher display value")
 	restrictionUpdateCmd.Flags().StringSliceVar(&updateUsers, "user", nil, "User slug allowed by restriction (repeatable)")
