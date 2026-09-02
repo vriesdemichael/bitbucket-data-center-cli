@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -102,6 +103,17 @@ func TestClassifyUsageErrorMatchesCobrasRealMessages(t *testing.T) {
 				root.MarkFlagsMutuallyExclusive("all", "limit")
 			},
 			args: []string{"--all", "--limit", "5"},
+		},
+		{
+			// enumflag returns a plain error so pflag's wrapper supplies the
+			// flag name; this is what makes that error reach the caller as
+			// validation and exit 2 rather than internal and exit 1.
+			name: "value outside an enum flag's set",
+			configure: func(root *cobra.Command) {
+				var severity string
+				enumflag.Register(root.Flags(), &severity, "severity", "", []string{"LOW", "MEDIUM", "HIGH"}, "Annotation severity")
+			},
+			args: []string{"--severity", "CRITICAL"},
 		},
 		{
 			name: "argument outside the valid set",

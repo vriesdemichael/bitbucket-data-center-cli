@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
@@ -446,11 +447,11 @@ func New(deps Dependencies) *cobra.Command {
 	}
 
 	setAnnotationCmd.Flags().StringVar(&setAnnMessage, "message", "", "Annotation message")
-	setAnnotationCmd.Flags().StringVar(&setAnnSeverity, "severity", "", "Annotation severity: LOW, MEDIUM, HIGH")
+	enumflag.Register(setAnnotationCmd.Flags(), &setAnnSeverity, "severity", "", []string{"LOW", "MEDIUM", "HIGH"}, "Annotation severity")
 	setAnnotationCmd.Flags().StringVar(&setAnnPath, "path", "", "File path containing the annotation")
 	setAnnotationCmd.Flags().Int32Var(&setAnnLine, "line", 0, "Line number containing the annotation")
 	setAnnotationCmd.Flags().StringVar(&setAnnLink, "link", "", "Link associated with the annotation")
-	setAnnotationCmd.Flags().StringVar(&setAnnType, "type", "", "Annotation type: BUG, CODE_SMELL, VULNERABILITY")
+	enumflag.Register(setAnnotationCmd.Flags(), &setAnnType, "type", "", []string{"BUG", "CODE_SMELL", "VULNERABILITY"}, "Annotation type")
 
 	_ = setAnnotationCmd.MarkFlagRequired("message")
 	_ = setAnnotationCmd.MarkFlagRequired("severity")

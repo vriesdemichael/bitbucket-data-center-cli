@@ -72,6 +72,12 @@ type RequiredCheckDeletion struct {
 	ID         int64             `json:"id" jsonschema:"Identifier of the merge check that was deleted."`
 }
 
+// buildStates is the closed set Bitbucket accepts, and it is used twice: as the
+// enum on the published output schema, and as the values --state will accept.
+// One declaration, so a flag cannot advertise a value the contract does not
+// name, or reject one it does. The two set commands share it -- their help
+// strings used to disagree about CANCELLED, and the narrower one was an
+// oversight rather than a narrower contract.
 var buildStates = []string{"SUCCESSFUL", "FAILED", "INPROGRESS", "CANCELLED", "UNKNOWN"}
 
 func init() {
@@ -185,3 +191,8 @@ func trimmedCommitIDs(commits []string) []string {
 
 	return trimmed
 }
+
+// buildOrderings are the sortings the build status listing accepts. The
+// endpoint's own parameter is untyped in the spec, so this set is the help
+// text's, which matches what the server documents.
+var buildOrderings = []string{"NEWEST", "OLDEST", "STATUS"}

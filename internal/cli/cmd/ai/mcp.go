@@ -8,6 +8,7 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
@@ -173,7 +174,7 @@ control that survives that is --token, which binds at the Bitbucket server.`,
 	cmd.Flags().StringVar(&projectScope, "project", "", "Confine the server to this project key; calls aimed elsewhere are refused")
 	cmd.Flags().StringVar(&repoScope, "repo", "", "Confine the server to one repository, as PROJECT/slug (or a slug alongside --project)")
 	cmd.Flags().StringVar(&auditFile, "audit-file", "", "Append a JSON Lines audit record per tool call to this path, or to 'stderr'")
-	cmd.Flags().StringVar(&auditFailure, "audit-failure", string(bbmcp.AuditFailureDeny), "What to do when an audit record cannot be written: deny or warn")
+	enumflag.Register(cmd.Flags(), &auditFailure, "audit-failure", string(bbmcp.AuditFailureDeny), auditFailureModes, "What to do when an audit record cannot be written")
 
 	return cmd
 }
@@ -322,4 +323,11 @@ func splitCSV(s string) []string {
 		}
 	}
 	return out
+}
+
+// auditFailureModes come from the modes themselves, so the flag cannot offer
+// one the middleware does not implement.
+var auditFailureModes = []string{
+	string(bbmcp.AuditFailureDeny),
+	string(bbmcp.AuditFailureWarn),
 }

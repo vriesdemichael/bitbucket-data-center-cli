@@ -3,6 +3,7 @@ package tagcmd
 import (
 	"context"
 	"fmt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/safederef"
 	"io"
 	"strings"
@@ -94,7 +95,7 @@ func New(deps Dependencies) *cobra.Command {
 	tagCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	listPaging.RegisterPersistent(tagCmd, 25)
 	tagCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
-	tagCmd.PersistentFlags().StringVar(&orderBy, "order-by", "", "Tag ordering: ALPHABETICAL or MODIFICATION")
+	enumflag.Register(tagCmd.PersistentFlags(), &orderBy, "order-by", "", openapi.RefOrderings, "Tag ordering")
 	tagCmd.PersistentFlags().StringVar(&filterText, "filter", "", "Filter text for tag names")
 
 	tagCmd.AddCommand(&cobra.Command{

@@ -251,7 +251,7 @@ Usage:
 
 Flags:
       --allow-writes           Alias for --yolo
-      --audit-failure string   What to do when an audit record cannot be written: deny or warn (default "deny")
+      --audit-failure string   What to do when an audit record cannot be written (one of: deny, warn) (default "deny")
       --audit-file string      Append a JSON Lines audit record per tool call to this path, or to 'stderr'
       --exclude string         Comma-separated denylist of tool names to suppress
       --host string            Target Bitbucket instance URL; required when multiple instances are configured
@@ -515,7 +515,7 @@ Flags:
   -H, --header stringArray      Add a custom HTTP request header (Name: Value)
       --host string             Bitbucket host URL
       --input string            File to use as request body (or '-' for stdin)
-  -X, --method string           HTTP method (GET, POST, PUT, DELETE, PATCH, HEAD)
+  -X, --method string           HTTP method (one of: GET, POST, PUT, DELETE, PATCH, HEAD)
       --paginate                Automatically fetch all pages for paginated endpoints
   -f, --raw-field stringArray   Add a string parameter (key=value)
 
@@ -1669,7 +1669,7 @@ Flags:
       --base string       Base ref filter
       --details           Include branch details from Bitbucket
       --filter string     Filter text for branch names
-      --order-by string   Branch ordering: ALPHABETICAL or MODIFICATION
+      --order-by string   Branch ordering (one of: ALPHABETICAL, MODIFICATION)
 
 Global Flags:
       --all                      Return every result rather than the first --limit
@@ -1846,8 +1846,8 @@ Flags:
       --group strings            Group name allowed by restriction (repeatable)
       --matcher-display string   Matcher display value
       --matcher-id string        Matcher id value
-      --matcher-type string      Matcher type (default "BRANCH")
-      --type string              Restriction type
+      --matcher-type string      Matcher type (one of: BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN) (default "BRANCH")
+      --type string              Restriction type (one of: read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)
       --user strings             User slug allowed by restriction (repeatable)
 
 Global Flags:
@@ -1945,8 +1945,8 @@ Usage:
 
 Flags:
       --matcher-id string     Matcher id value
-      --matcher-type string   Matcher type (BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN)
-      --type string           Restriction type (read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)
+      --matcher-type string   Matcher type (one of: BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN)
+      --type string           Restriction type (one of: read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)
 
 Global Flags:
       --all                      Return every result rather than the first --limit
@@ -1984,8 +1984,8 @@ Flags:
       --group strings            Group name allowed by restriction (repeatable)
       --matcher-display string   Matcher display value
       --matcher-id string        Matcher id value
-      --matcher-type string      Matcher type (default "BRANCH")
-      --type string              Restriction type
+      --matcher-type string      Matcher type (one of: BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN) (default "BRANCH")
+      --type string              Restriction type (one of: read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)
       --user strings             User slug allowed by restriction (repeatable)
 
 Global Flags:
@@ -2330,7 +2330,7 @@ Flags:
       --name string           Build display name
       --parent string         Build parent key
       --ref string            Build ref
-      --state string          Build state (SUCCESSFUL, FAILED, INPROGRESS, UNKNOWN, CANCELLED)
+      --state string          Build state (one of: SUCCESSFUL, FAILED, INPROGRESS, CANCELLED, UNKNOWN)
       --url string            Build URL
 
 Global Flags:
@@ -2370,7 +2370,7 @@ Flags:
       --all               Return every result rather than the first --limit
       --include-unique    Include unique result details when available
       --limit int         Maximum number of results to return (default 25)
-      --order-by string   Order by NEWEST, OLDEST, or STATUS
+      --order-by string   Build status ordering (one of: NEWEST, OLDEST, STATUS)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -2417,7 +2417,7 @@ Global Flags:
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Order by NEWEST, OLDEST, or STATUS
+      --order-by string          Build status ordering (one of: NEWEST, OLDEST, STATUS)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
@@ -2442,7 +2442,7 @@ Flags:
       --name string           Build display name
       --parent string         Build parent key
       --ref string            Build ref
-      --state string          Build state (SUCCESSFUL, FAILED, INPROGRESS, UNKNOWN)
+      --state string          Build state (one of: SUCCESSFUL, FAILED, INPROGRESS, CANCELLED, UNKNOWN)
       --url string            Build URL
 
 Global Flags:
@@ -2460,7 +2460,7 @@ Global Flags:
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Order by NEWEST, OLDEST, or STATUS
+      --order-by string          Build status ordering (one of: NEWEST, OLDEST, STATUS)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
@@ -2492,7 +2492,7 @@ Global Flags:
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Order by NEWEST, OLDEST, or STATUS
+      --order-by string          Build status ordering (one of: NEWEST, OLDEST, STATUS)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
@@ -2876,10 +2876,10 @@ Flags:
       --display-name string              Display name of the deployment
       --env-key string                   Environment key
       --env-name string                  Environment display name
-      --env-type string                  Environment type (DEVELOPMENT, TESTING, STAGING, PRODUCTION)
+      --env-type string                  Environment type (one of: PRODUCTION, STAGING, TESTING, DEVELOPMENT, UNKNOWN)
       --env-url string                   Environment URL
       --key string                       Deployment key
-      --state string                     Deployment state (SUCCESSFUL, FAILED, IN_PROGRESS, PENDING, CANCELLED, ROLLED_BACK, UNKNOWN)
+      --state string                     Deployment state (one of: PENDING, IN_PROGRESS, SUCCESSFUL, FAILED, CANCELLED, ROLLED_BACK, UNKNOWN)
       --url string                       Deployment URL
 
 Global Flags:
@@ -3280,8 +3280,8 @@ Flags:
       --link string       Link associated with the annotation
       --message string    Annotation message
       --path string       File path containing the annotation
-      --severity string   Annotation severity: LOW, MEDIUM, HIGH
-      --type string       Annotation type: BUG, CODE_SMELL, VULNERABILITY
+      --severity string   Annotation severity (one of: LOW, MEDIUM, HIGH)
+      --type string       Annotation type (one of: BUG, CODE_SMELL, VULNERABILITY)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -3668,7 +3668,7 @@ Examples:
   bb pr auto-merge enable 42 --repo PROJ/repo --strategy rebase-ff-only
 
 Flags:
-      --strategy string   Merge strategy: no-ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only (default "no-ff")
+      --strategy string   Merge strategy (one of: no-ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only) (default "no-ff")
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -3892,7 +3892,7 @@ Examples:
 Flags:
       --blocker            Mark the comment as a blocker
       --line int           Line number for an inline comment
-      --line-type string   Line type for an inline comment: ADDED (default), REMOVED, or CONTEXT
+      --line-type string   Line type for an inline comment, ADDED when not given (one of: ADDED, REMOVED, CONTEXT)
       --parent-id int      Parent comment ID to reply to
       --path string        File path for an inline comment
       --pending            Mark the comment as pending (draft)
@@ -3998,7 +3998,7 @@ Flags:
       --full           Add every comment ungrouped, alongside the thread view
       --limit int      Maximum number of results to return (default 25)
       --path string    Optional file path for path-scoped pull request comment listing
-      --state string   Filter threads by resolution state: open, resolved, pending, all (default "all")
+      --state string   Filter threads by resolution state (one of: open, unresolved, resolved, pending, all) (default "all")
       --tasks-only     Show only threads Bitbucket tracks as tasks (blocker comments)
       --unresolved     Show only unresolved threads (shorthand for --state open)
       --with-replies   Include the full text of every reply instead of only the most recent one
@@ -4410,7 +4410,7 @@ Flags:
       --limit int              Maximum number of results to return (default 25)
       --source-branch string   Optional source branch filter
       --start int              Start offset for Bitbucket pull request list operations
-      --state string           Pull request state filter: open, closed, all (default "open")
+      --state string           Pull request state filter (one of: open, closed, all) (default "open")
       --target-branch string   Optional target branch filter
       --with-review-status     Resolve unresolved comment threads per pull request (walks each activity timeline; slower)
 
@@ -4662,7 +4662,7 @@ Usage:
 
 Flags:
       --comment string   Review completion comment text
-      --status string    Pull request status change (APPROVED, NEEDS_WORK, UNAPPROVED)
+      --status string    Pull request status change (one of: APPROVED, NEEDS_WORK, UNAPPROVED)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -5212,8 +5212,8 @@ Usage:
 
 Flags:
       --matcher-id string     Filter by matcher ID value
-      --matcher-type string   Filter by matcher type (BRANCH, PATTERN, MODEL_BRANCH, MODEL_CATEGORY)
-      --type string           Filter by restriction type (read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)
+      --matcher-type string   Filter by matcher type (one of: BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN)
+      --type string           Filter by restriction type (one of: read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)
 
 Global Flags:
       --all                      Return every result rather than the first --limit
@@ -6260,7 +6260,7 @@ Usage:
   bb project webhook update <project-key> <webhook-id> [flags]
 
 Flags:
-      --active string   Active status (true or false)
+      --active string   Active status (one of: true, false)
       --event strings   New list of webhook events
       --name string     New name
       --url string      New URL
@@ -6638,7 +6638,7 @@ Usage:
 
 Flags:
       --at string       The commit to stream an archive of
-      --format string   The format to stream the archive in: zip, tar, tar.gz, tgz (default "zip")
+      --format string   The format to stream the archive in (one of: zip, tar, tar.gz, tgz) (default "zip")
   -o, --output string   Output filename (use '-' for stdout, defaults to <repo-slug>.<format>)
       --path string     Paths to include in the streamed archive
       --prefix string   A prefix to apply to all entries in the streamed archive
@@ -7002,7 +7002,7 @@ Usage:
 
 Flags:
       --line int           Line within --path to anchor the comment to
-      --line-type string   Which side of the diff --line refers to: ADDED, REMOVED or CONTEXT
+      --line-type string   Which side of the diff --line refers to (one of: ADDED, REMOVED, CONTEXT)
       --parent int         Reply to this comment id instead of starting a new thread
       --path string        Anchor the comment to this file, which is what makes it listable
       --text string        Comment text
@@ -8977,7 +8977,7 @@ Usage:
 
 Flags:
       --label string        Label/comment for the SSH key
-      --permission string   Permission level (read-only or read-write) (default "read-only")
+      --permission string   Permission level (one of: read-only, read-write) (default "read-only")
       --read-only           Add as read-only access key
       --read-write          Add as read-write access key
 
@@ -9086,7 +9086,7 @@ Available Commands:
   status      Query synchronization status, divergence, and settings
 
 Flags:
-      --action string   How to reconcile the ref: MERGE, DISCARD or REBASE (default "MERGE")
+      --action string   How to reconcile the ref (one of: MERGE, DISCARD, REBASE) (default "MERGE")
       --ref string      Ref to synchronize (defaults to the repository default branch)
       --repo string     Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
@@ -9707,7 +9707,7 @@ Usage:
 Flags:
       --all             Return every result rather than the first --limit
       --limit int       Maximum number of results to return (default 25)
-      --merges string   Filter merge commits (exclude, include, only)
+      --merges string   Filter merge commits (one of: exclude, include, only)
       --path string     Filter by file path
       --repo string     Repository as PROJECT/slug (required)
       --since string    Commit ID or ref to search after (exclusive)
@@ -9745,9 +9745,9 @@ Flags:
       --all            Return every result rather than the first --limit
       --limit int      Maximum number of results to return (default 25)
       --repo string    Optional repository as PROJECT/slug to scope search
-      --role string    Filter by role (author, reviewer, participant) - only applies when --repo is not used
+      --role string    Filter by role, only applied when --repo is not used (one of: author, reviewer, participant)
       --start int      Pagination start index
-      --state string   Filter by state (open, closed, all) (default "open")
+      --state string   Filter by state (one of: open, closed, all) (default "open")
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -9942,7 +9942,7 @@ Flags:
       --all               Return every result rather than the first --limit
       --filter string     Filter text for tag names
       --limit int         Maximum number of results to return (default 25)
-      --order-by string   Tag ordering: ALPHABETICAL or MODIFICATION
+      --order-by string   Tag ordering (one of: ALPHABETICAL, MODIFICATION)
       --repo string       Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --start int         Start offset for list operations
 
@@ -9994,7 +9994,7 @@ Global Flags:
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Tag ordering: ALPHABETICAL or MODIFICATION
+      --order-by string          Tag ordering (one of: ALPHABETICAL, MODIFICATION)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
@@ -10027,7 +10027,7 @@ Global Flags:
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Tag ordering: ALPHABETICAL or MODIFICATION
+      --order-by string          Tag ordering (one of: ALPHABETICAL, MODIFICATION)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
@@ -10060,7 +10060,7 @@ Global Flags:
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Tag ordering: ALPHABETICAL or MODIFICATION
+      --order-by string          Tag ordering (one of: ALPHABETICAL, MODIFICATION)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
@@ -10093,7 +10093,7 @@ Global Flags:
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Tag ordering: ALPHABETICAL or MODIFICATION
+      --order-by string          Tag ordering (one of: ALPHABETICAL, MODIFICATION)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
