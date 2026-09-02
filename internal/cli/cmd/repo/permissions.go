@@ -264,7 +264,6 @@ func runPermissionGrantDryRun(
 		Confidence:      dryrunpreview.CapabilityFull,
 		RequiredState:   []string{fmt.Sprintf("repository permission %ss list", subject.noun)},
 	})
-	applyPermissionDryRunSummary(&preview, predicted)
 
 	return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 }
@@ -311,12 +310,8 @@ func runPermissionRevokeDryRun(
 		Confidence:      dryrunpreview.CapabilityFull,
 		RequiredState:   []string{fmt.Sprintf("repository permission %ss list", subject.noun)},
 	})
-	applyPermissionDryRunSummary(&preview, predicted)
 
 	return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
-}
-
-func applyPermissionDryRunSummary(preview *dryrunpreview.Preview, predicted string) {
 }
 
 func newRepoPermissionSubjectCommand(deps Dependencies, repositorySelector *string, subject permissionSubject) *cobra.Command {

@@ -1198,8 +1198,6 @@ func New(deps Dependencies) *cobra.Command {
 				}
 
 				var items []dryrunpreview.Item
-				updateCount := 0
-				noopCount := 0
 
 				for _, u := range resolvedReviewers {
 					predicted := "update"
@@ -1207,13 +1205,9 @@ func New(deps Dependencies) *cobra.Command {
 					if isAuthor(current.Author, current.AuthorUsername, u) {
 						predicted = "no-op"
 						reason = "pull request author cannot be reviewer"
-						noopCount++
 					} else if hasReviewer(current.Reviewers, u) {
 						predicted = "no-op"
 						reason = "reviewer already present"
-						noopCount++
-					} else {
-						updateCount++
 					}
 
 					items = append(items, dryrunpreview.Item{
