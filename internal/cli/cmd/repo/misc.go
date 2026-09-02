@@ -797,12 +797,7 @@ func newRepoCatCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), RawFile{
-					Repository: browseRepositoryOf(repo),
-					Path:       args[0],
-					At:         at,
-					Content:    string(content),
-				})
+				return deps.WriteJSON(cmd.OutOrStdout(), rawFileFrom(browseRepositoryOf(repo), args[0], at, content))
 			}
 
 			_, _ = cmd.OutOrStdout().Write(content)

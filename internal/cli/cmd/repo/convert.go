@@ -1,8 +1,10 @@
 package repocmd
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/vriesdemichael/bitbucket-server-cli/internal/cli/result"
 	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
@@ -603,6 +605,26 @@ func fileEditFrom(repo result.Repository, path string, branch string, commit *op
 	if commit != nil {
 		converted.Commit = result.CommitFrom(*commit)
 	}
+
+	return converted
+}
+
+// rawFileFrom wraps a file's bytes for machine output.
+//
+// Text goes out as a string, which is what a caller wants and what jq can read.
+// Anything else goes out base64: a JSON string cannot carry arbitrary bytes, and
+// Go's encoder silently substitutes U+FFFD for invalid UTF-8, so the alternative
+// is returning a corrupted file with nothing saying so.
+func rawFileFrom(repo result.Repository, path string, at string, content []byte) RawFile {
+	converted := RawFile{Repository: repo, Path: path, At: at, Encoding: "utf-8"}
+	if utf8.Valid(content) {
+		converted.Content = string(content)
+
+		return converted
+	}
+
+	converted.Encoding = "base64"
+	converted.Content = base64.StdEncoding.EncodeToString(content)
 
 	return converted
 }
