@@ -450,6 +450,10 @@
       "method": "GET",
       "path": "/default-reviewers/latest/projects/%s/repos/%s/conditions"
     },
+    "GetPullRequestSettings1": {
+      "method": "GET",
+      "path": "/api/latest/projects/%s/repos/%s/settings/pull-requests"
+    },
     "GetPullRequests": {
       "method": "GET",
       "path": "/api/latest/projects/%s/repos/%s/commits/%s/pull-requests"

@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 // TestSkipDirectoryExcludesForeignCheckouts pins the rule that this tool only
 // reads the source of the checkout it is run in.
@@ -43,6 +47,55 @@ func TestSkipDirectoryExcludesForeignCheckouts(t *testing.T) {
 	for _, testCase := range cases {
 		if got := skipDirectory(testCase.path, testCase.name); got != testCase.want {
 			t.Errorf("skipDirectory(%q, %q) = %v, want %v", testCase.path, testCase.name, got, testCase.want)
+		}
+	}
+}
+
+// TestBareClientCallsAreRecordedWithoutFalsePositives covers the third call
+// shape and the reason it is anchored on the receiver.
+//
+// A raw client method with no suffix -- client.GetComments(...) -- has to be
+// recorded, or an operation drops out of the report and a spec bump can
+// retarget it silently. But the operation names are ordinary words, so
+// matching the name alone also records this project's own service methods,
+// putting operations in the report that nothing calls.
+func TestBareClientCallsAreRecordedWithoutFalsePositives(t *testing.T) {
+	root := t.TempDir()
+	source := `package example
+
+func (service *Service) List() {
+	service.client.GetComments(ctx, "P", "r", "abc", nil)
+	service.client.UpdateCommentWithResponse(ctx, "P", "r", "abc", "1", body)
+	service.repository.Update(ctx)
+	other.Create(ctx)
+}
+`
+	if err := os.WriteFile(filepath.Join(root, "example.go"), []byte(source), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+
+	declared := map[string]operation{
+		"GetComments":   {Method: "GET", Path: "/comments"},
+		"UpdateComment": {Method: "PUT", Path: "/comments/%s"},
+		"Update":        {Method: "PUT", Path: "/repos/%s"},
+		"Create":        {Method: "POST", Path: "/repos"},
+	}
+
+	called, err := collectCalledOperations(root, filepath.Join(root, "absent.go"), declared)
+	if err != nil {
+		t.Fatalf("collect: %v", err)
+	}
+
+	for _, name := range []string{"GetComments", "UpdateComment"} {
+		if !called[name] {
+			t.Errorf("%q is called through the client and was not recorded", name)
+		}
+	}
+	// Update and Create are generated operation names too, and this file calls
+	// neither of them on the client.
+	for _, name := range []string{"Update", "Create"} {
+		if called[name] {
+			t.Errorf("%q was recorded from a call on something other than the client", name)
 		}
 	}
 }
