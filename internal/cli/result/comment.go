@@ -146,16 +146,6 @@ func CommentFrom(upstream openapigenerated.RestComment) Comment {
 	return converted
 }
 
-// CommentsFrom converts a list, preserving order and never returning nil.
-func CommentsFrom(upstream []openapigenerated.RestComment) []Comment {
-	converted := make([]Comment, 0, len(upstream))
-	for _, one := range upstream {
-		converted = append(converted, CommentFrom(one))
-	}
-
-	return converted
-}
-
 // joinCommentPath renders the path an anchor carries.
 //
 // Bitbucket sends it as an object with the components split. The generated

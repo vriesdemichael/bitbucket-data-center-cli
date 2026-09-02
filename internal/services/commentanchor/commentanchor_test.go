@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-server-cli/internal/domain/errors"
+	openapigenerated "github.com/vriesdemichael/bitbucket-server-cli/internal/openapi/generated"
 )
 
 func TestValidateRules(t *testing.T) {
@@ -294,5 +295,103 @@ func TestPathObjectFromString(t *testing.T) {
 
 	if empty := PathObjectFromString("  /  "); len(empty) != 0 {
 		t.Fatalf("expected an empty object, got %#v", empty)
+	}
+}
+
+// TestNormalizeResponsePathsRepairsAPageOfComments covers the shape a listing
+// has, which is the one that made bb fail on every comment written in the web
+// interface.
+func TestNormalizeResponsePathsRepairsAPageOfComments(t *testing.T) {
+	t.Parallel()
+
+	page := []byte(`{"isLastPage":true,"values":[
+		{"id":1,"anchor":{"path":"internal/cli/root.go","srcPath":"internal/cli/old.go","line":4},
+		 "comments":[{"id":2,"anchor":{"path":"internal/cli/root.go"}}]},
+		{"id":3,"text":"no anchor at all"}
+	]}`)
+
+	normalized, err := NormalizeResponsePaths(page)
+	if err != nil {
+		t.Fatalf("normalize: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(normalized, &decoded); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	values, _ := decoded["values"].([]any)
+	if len(values) != 2 {
+		t.Fatalf("values = %v", values)
+	}
+
+	first, _ := values[0].(map[string]any)
+	anchor, ok := first["anchor"].(map[string]any)
+	if !ok {
+		t.Fatalf("first comment lost its anchor: %+v", first)
+	}
+	path, ok := anchor["path"].(map[string]any)
+	if !ok {
+		t.Fatalf("anchor path is still a string: %+v", anchor)
+	}
+	if path["name"] != "root.go" || path["parent"] != "internal/cli" {
+		t.Errorf("path = %+v", path)
+	}
+	// srcPath too: a renamed file carries both, and only repairing one leaves
+	// the decode failing on the other.
+	if _, ok := anchor["srcPath"].(map[string]any); !ok {
+		t.Errorf("srcPath was left as a string: %+v", anchor)
+	}
+
+	// A reply nested inside a page entry is reached as well; it is the same
+	// object shape one level further down.
+	replies, _ := first["comments"].([]any)
+	reply, _ := replies[0].(map[string]any)
+	replyAnchor, _ := reply["anchor"].(map[string]any)
+	if _, ok := replyAnchor["path"].(map[string]any); !ok {
+		t.Errorf("a nested reply's anchor was left as a string: %+v", replyAnchor)
+	}
+
+	// The page still decodes into the generated model, which is the point.
+	var typed struct {
+		Values []openapigenerated.RestComment `json:"values"`
+	}
+	if err := json.Unmarshal(normalized, &typed); err != nil {
+		t.Fatalf("the repaired page still does not decode: %v", err)
+	}
+	if len(typed.Values) != 2 {
+		t.Fatalf("typed values = %+v", typed.Values)
+	}
+}
+
+// TestNormalizeResponsePathsLeavesUntouchedPayloadsAlone keeps the repair from
+// rewriting what is already correct.
+func TestNormalizeResponsePathsLeavesUntouchedPayloadsAlone(t *testing.T) {
+	t.Parallel()
+
+	// Already an object: Bitbucket sends this shape from some endpoints, and
+	// re-encoding it would reorder keys for no reason.
+	already := []byte(`{"id":1,"anchor":{"path":{"name":"root.go","parent":"internal/cli"}}}`)
+	normalized, err := NormalizeResponsePaths(already)
+	if err != nil {
+		t.Fatalf("normalize: %v", err)
+	}
+	if string(normalized) != string(already) {
+		t.Errorf("an already-correct payload was rewritten:\n got %s\nwant %s", normalized, already)
+	}
+
+	// An empty page has nothing to repair.
+	empty := []byte(`{"isLastPage":true,"values":[]}`)
+	if normalized, err := NormalizeResponsePaths(empty); err != nil || string(normalized) != string(empty) {
+		t.Errorf("empty page = %s, %v", normalized, err)
+	}
+
+	// A JSON array is not a comment or a page, and is returned as it came.
+	array := []byte(`[1,2,3]`)
+	if normalized, err := NormalizeResponsePaths(array); err != nil || string(normalized) != string(array) {
+		t.Errorf("array = %s, %v", normalized, err)
+	}
+
+	if _, err := NormalizeResponsePaths([]byte(`not json`)); err == nil {
+		t.Error("invalid JSON was accepted")
 	}
 }
