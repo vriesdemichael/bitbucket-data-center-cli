@@ -253,7 +253,7 @@ func TestProjectPermissionAliasDryRunIntentFollowsTheSubject(t *testing.T) {
 	if !strings.Contains(userPreview, `"project.permission.user.grant"`) {
 		t.Fatalf("expected user grant intent, got: %s", userPreview)
 	}
-	if !strings.Contains(userPreview, `"predicted_action": "update"`) {
+	if !strings.Contains(userPreview, `"predictedAction": "update"`) {
 		t.Fatalf("expected update for a changed permission, got: %s", userPreview)
 	}
 
@@ -261,22 +261,22 @@ func TestProjectPermissionAliasDryRunIntentFollowsTheSubject(t *testing.T) {
 	if !strings.Contains(groupPreview, `"project.permission.group.grant"`) {
 		t.Fatalf("expected group grant intent, got: %s", groupPreview)
 	}
-	if !strings.Contains(groupPreview, `"predicted_action": "no-op"`) {
+	if !strings.Contains(groupPreview, `"predictedAction": "no-op"`) {
 		t.Fatalf("expected no-op for an unchanged permission, got: %s", groupPreview)
 	}
 
 	createPreview := runRepoPermissionCommand(t, "--json", "--dry-run", "project", "permissions", "grant", "PRJ", "bob", "project_read")
-	if !strings.Contains(createPreview, `"predicted_action": "create"`) {
+	if !strings.Contains(createPreview, `"predictedAction": "create"`) {
 		t.Fatalf("expected create for an unknown user, got: %s", createPreview)
 	}
 
 	deletePreview := runRepoPermissionCommand(t, "--json", "--dry-run", "project", "permissions", "revoke", "PRJ", "alice")
-	if !strings.Contains(deletePreview, `"predicted_action": "delete"`) {
+	if !strings.Contains(deletePreview, `"predictedAction": "delete"`) {
 		t.Fatalf("expected delete for an existing entry, got: %s", deletePreview)
 	}
 
 	missingPreview := runRepoPermissionCommand(t, "--json", "--dry-run", "project", "permissions", "revoke", "--group", "PRJ", "nobody")
-	if !strings.Contains(missingPreview, `"predicted_action": "no-op"`) {
+	if !strings.Contains(missingPreview, `"predictedAction": "no-op"`) {
 		t.Fatalf("expected no-op for a missing entry, got: %s", missingPreview)
 	}
 

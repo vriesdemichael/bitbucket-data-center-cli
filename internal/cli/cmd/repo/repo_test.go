@@ -113,8 +113,8 @@ func TestRepoAdminCreateDryRun(t *testing.T) {
 		t.Fatalf("invalid json: %v", err)
 	}
 	data, ok := envelope["data"].(map[string]any)
-	if !ok || data["dry_run"] != true {
-		t.Fatalf("expected dry_run=true, got %v", envelope)
+	if !ok || data["dryRun"] != true {
+		t.Fatalf("expected dryRun=true, got %v", envelope)
 	}
 }
 
@@ -138,8 +138,8 @@ func TestRepoAdminDeleteDryRun(t *testing.T) {
 		t.Fatalf("invalid json: %v", err)
 	}
 	data, ok := envelope["data"].(map[string]any)
-	if !ok || data["dry_run"] != true {
-		t.Fatalf("expected dry_run=true, got %v", envelope)
+	if !ok || data["dryRun"] != true {
+		t.Fatalf("expected dryRun=true, got %v", envelope)
 	}
 }
 

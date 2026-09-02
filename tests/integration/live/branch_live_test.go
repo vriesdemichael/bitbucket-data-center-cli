@@ -55,7 +55,7 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 		t.Fatalf("branch default get failed: %v\noutput: %s", err, defaultOutput)
 	}
 	defaultPayload := decodeJSONMap(t, defaultOutput)
-	defaultBranchObj, ok := defaultPayload["default_branch"].(map[string]any)
+	defaultBranchObj, ok := defaultPayload["defaultBranch"].(map[string]any)
 	if !ok {
 		defaultBranchObj = defaultPayload
 	}
@@ -188,7 +188,7 @@ func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("branch delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful dry-run output, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "branch.delete"`) {
@@ -235,7 +235,7 @@ func TestLiveCLIBranchCreateDryRunHasNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("branch create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful dry-run output, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "branch.create"`) {
@@ -274,7 +274,7 @@ func TestLiveCLIBranchDefaultSetDryRunHasNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("branch default set dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful dry-run output, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "branch.default.set"`) {
@@ -402,7 +402,7 @@ func TestLiveCLIBranchModelUpdateDryRunHasNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("branch model update dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planning_mode": "stateful"`) {
+	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
 		t.Fatalf("expected stateful dry-run output, got: %s", dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "branch.model.update"`) {

@@ -174,7 +174,7 @@ func TestPRCommentCommandsJSONAndErrors(t *testing.T) {
 
 	// 6. Test dry-run with json
 	out, err = executeTestCLI(t, "--dry-run", "pr", "comment", "add", "7", "--text", "hello", "--json")
-	if err != nil || !strings.Contains(out, `"dry_run": true`) {
+	if err != nil || !strings.Contains(out, `"dryRun": true`) {
 		t.Fatalf("JSON dry-run failed, out: %s, err: %v", out, err)
 	}
 

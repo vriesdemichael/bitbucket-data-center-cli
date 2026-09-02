@@ -109,7 +109,7 @@ func TestLivePullRequestCheckout(t *testing.T) {
 	if !ok {
 		secondData = secondResult
 	}
-	if secondData["fast_forwarded"] != true {
+	if secondData["fastForwarded"] != true {
 		t.Fatalf("expected the second run to fast-forward the existing branch, got: %s", secondOutput)
 	}
 
