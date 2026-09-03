@@ -71,9 +71,12 @@ func TestOneShapeForEveryOutputMode(t *testing.T) {
 		t.Fatalf("a patch run carried names: %s", patchEncoded)
 	}
 
-	summary := map[string]any{"linesAdded": float64(10), "linesRemoved": float64(2)}
+	// The three counts the endpoint actually returns. This used to invent
+	// linesAdded and linesRemoved, which Bitbucket does not send (#526).
+	insertions, deletions, files := int64(10), int64(2), int64(1)
+	summary := &diffservice.StatsSummary{FilesChanged: &files, TotalInsertions: &insertions, TotalDeletions: &deletions}
 	stats := From(repository, diffservice.OutputKindStat, diffservice.Result{Stats: summary})
-	if stats.Output != "stat" || stats.Stats["linesAdded"] != float64(10) {
+	if stats.Output != "stat" || stats.Stats["totalInsertions"] != float64(10) {
 		t.Fatalf("stats = %+v", stats)
 	}
 
@@ -86,16 +89,17 @@ func TestOneShapeForEveryOutputMode(t *testing.T) {
 }
 
 // TestStatsSurviveThePointerTheGeneratedClientHandsBack covers the shape the
-// service actually returns: Bitbucket declares the stats summary as an untyped
-// value, so the generated client holds a pointer to an interface and there is
-// no static type to assert on.
+// service actually returns. It used to be a pointer to an interface, because
+// the spec declares this summary as an untyped value; the service now decodes
+// the body into StatsSummary itself, since the generated wrapper decoded it
+// into a type sharing none of its fields (#526).
 func TestStatsSurviveThePointerTheGeneratedClientHandsBack(t *testing.T) {
 	t.Parallel()
 
-	var boxed any = map[string]any{"linesAdded": float64(10)}
-	converted := From(repository, diffservice.OutputKindStat, diffservice.Result{Stats: &boxed})
-	if converted.Stats["linesAdded"] != float64(10) {
-		t.Fatalf("stats = %+v, want the summary read through the pointer", converted.Stats)
+	insertions := int64(10)
+	converted := From(repository, diffservice.OutputKindStat, diffservice.Result{Stats: &diffservice.StatsSummary{TotalInsertions: &insertions}})
+	if converted.Stats["totalInsertions"] != float64(10) {
+		t.Fatalf("stats = %+v, want the summary", converted.Stats)
 	}
 
 	// A run the server answered with nothing omits the key rather than

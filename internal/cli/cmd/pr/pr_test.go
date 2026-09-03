@@ -161,7 +161,10 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte("From c123\nSubject: Patch\n---\ndiff --git a/main.go b/main.go\n--- a/main.go\n+++ b/main.go\n@@ -1 +1 @@\n"))
 
 		case r.Method == http.MethodGet && strings.Contains(path, "diff-stats-summary"):
-			_, _ = w.Write([]byte(`{"linesAdded":10,"linesRemoved":2,"filesChanged":1,"files":[{"path":"file1.go","linesAdded":10,"linesRemoved":2}]}`))
+			// What Bitbucket sends: three totals and no per-file rows. The old
+			// fixture invented a files array, so the assertion below tested
+			// output the endpoint cannot produce (#526).
+			_, _ = w.Write([]byte(`{"filesChanged":1,"totalInsertions":10,"totalDeletions":2}`))
 
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests/42/auto-merge":
 			_, _ = w.Write([]byte(`{"enabled":true,"strategyId":"no-ff"}`))
@@ -1312,8 +1315,8 @@ func TestPRDiffModes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on diff stat: %v", err)
 	}
-	if !strings.Contains(out, "file1.go") {
-		t.Fatalf("expected file1.go in diff stat output: %s", out)
+	if !strings.Contains(out, "totalInsertions") {
+		t.Fatalf("expected the stats summary in diff stat output: %s", out)
 	}
 
 	out, err = executePr(t, server.URL, "--json", "diff", "42", "--stat")
