@@ -1409,20 +1409,40 @@ func (service *Service) Rebase(ctx context.Context, repository RepositoryRef, pu
 		return nil, apperrors.New(apperrors.KindInternal, "openapi client is not configured on pullrequest service", nil)
 	}
 
-	var request openapigenerated.RestPullRequestRebaseRequest
-	if version != nil {
-		// The API field is 32-bit; a version outside its range wrapped rather
-		// than being rejected, which would rebase against the wrong version.
-		if *version < 0 || *version > math.MaxInt32 {
-			return nil, apperrors.New(
-				apperrors.KindValidation,
-				fmt.Sprintf("pull request version must be between 0 and %d", math.MaxInt32),
-				nil,
-			)
+	// Bitbucket requires the version outright here -- "The \"version\" property
+	// is required to rebase a pull request", 400 -- so leaving it out when the
+	// caller did could never succeed. Same shape as the transitions in #505,
+	// found the same way: the version is an optimistic lock the caller has no
+	// reason to know, so read it rather than demand it (#532).
+	//
+	// A caller who does pass --version still gets the lock, and pays no extra
+	// request for it.
+	if version == nil {
+		// Reading it needs the REST client, which this method did not
+		// previously touch. Say so rather than dereferencing a nil one.
+		if service.client == nil {
+			return nil, apperrors.New(apperrors.KindInternal, "http client is not configured on pullrequest service", nil)
 		}
-		v32 := int32(*version)
-		request.Version = &v32
+
+		current, err := service.Get(ctx, repository, resolvedID)
+		if err != nil {
+			return nil, err
+		}
+		version = &current.Version
 	}
+
+	var request openapigenerated.RestPullRequestRebaseRequest
+	// The API field is 32-bit; a version outside its range wrapped rather than
+	// being rejected, which would rebase against the wrong version.
+	if *version < 0 || *version > math.MaxInt32 {
+		return nil, apperrors.New(
+			apperrors.KindValidation,
+			fmt.Sprintf("pull request version must be between 0 and %d", math.MaxInt32),
+			nil,
+		)
+	}
+	v32 := int32(*version)
+	request.Version = &v32
 
 	var wrapper struct {
 		client *openapigenerated.ClientWithResponses
