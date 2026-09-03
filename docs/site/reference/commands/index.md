@@ -1984,7 +1984,7 @@ Flags:
       --group strings            Group name allowed by restriction (repeatable)
       --matcher-display string   Matcher display value
       --matcher-id string        Matcher id value
-      --matcher-type string      Matcher type (one of: BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN) (default "BRANCH")
+      --matcher-type string      Matcher type (one of: BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN)
       --type string              Restriction type (one of: read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)
       --user strings             User slug allowed by restriction (repeatable)
 

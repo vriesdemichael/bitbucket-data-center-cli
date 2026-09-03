@@ -282,7 +282,16 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	}
 	enumflag.Register(updateCmd.Flags(), &updateType, "type", "", result.RestrictionTypes, "Restriction type")
 	updateCmd.Flags().StringVar(&updateMatcherID, "matcher-id", "", "Matcher id value")
+	// Required for the same reason as its branch-scoped twin: an empty value
+	// reaches normalizeRestrictionRequestMatcherType, which reads it as BRANCH,
+	// so omitting the flag silently rewrote the matcher.
 	enumflag.Register(updateCmd.Flags(), &updateMatcherType, "matcher-type", "", openapi.RestrictionMatcherTypes, "Matcher type")
+	// The service already rejects an empty type or matcher id, so these were
+	// never silent -- but they failed after the request was built rather than
+	// at parse time, and the branch-scoped twin requires both (ADR-054).
+	_ = updateCmd.MarkFlagRequired("type")
+	_ = updateCmd.MarkFlagRequired("matcher-id")
+	_ = updateCmd.MarkFlagRequired("matcher-type")
 	updateCmd.Flags().StringVar(&updateMatcherDisplay, "matcher-display", "", "Matcher display value")
 	updateCmd.Flags().StringSliceVar(&updateUsers, "user", nil, "Allowed user slugs")
 	updateCmd.Flags().StringSliceVar(&updateGroups, "group", nil, "Allowed group names")
