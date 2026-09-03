@@ -108,9 +108,14 @@ func LimitReached(options Options, count int) bool {
 // entry in the project, in pages of five, and printed all of them. A smaller
 // --limit produced more requests and the same complete answer (#473).
 //
-// Safe at any call site. Truncating a result set a service already capped is a
-// no-op, so this does not require knowing which semantic applies -- which is
-// the knowledge that was missing when those call sites were written.
+// Truncating a result set a service already capped is a no-op, so this does not
+// require knowing which semantic the backing service uses -- which is the
+// knowledge that was missing when those call sites were written.
+//
+// It does require that the slice is what the command renders. `pr comment list`
+// groups its comments into threads and renders those, so capping the comments
+// would drop replies out of the middle of a thread rather than shortening the
+// list; a command like that has to cap the unit it displays, or not at all.
 //
 // A no-op under --all, which asked for everything.
 func Truncate[T any](options Options, results []T) []T {

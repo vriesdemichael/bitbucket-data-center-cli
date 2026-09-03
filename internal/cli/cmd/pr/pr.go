@@ -2134,6 +2134,10 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 				return err
 			}
 
+			// PageSize is named honestly here and reads to exhaustion, so the
+			// cap has to be applied on the way out (#473).
+			activities = paging.Truncate(activityPaging, activities)
+
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), Activities{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Activities: activitiesFrom(activities)})
 			}
@@ -2182,6 +2186,9 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			if err != nil {
 				return err
 			}
+
+			// Reads to exhaustion, so --limit only sized the pages (#473).
+			statuses = paging.Truncate(buildPaging, statuses)
 
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), BuildStatuses{
