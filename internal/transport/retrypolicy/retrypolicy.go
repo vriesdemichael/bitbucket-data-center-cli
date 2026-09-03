@@ -11,7 +11,10 @@
 // operations". No guard existed; this is it.
 package retrypolicy
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
 // Replayable reports whether a request may be sent again after a transport
 // error or a retriable status.
@@ -27,7 +30,10 @@ import "net/http"
 // retry with an honest message if we simply refuse. On a CLI the operator is
 // right there; that is the cheaper mistake.
 func Replayable(method string) bool {
-	switch method {
+	// Upper-cased first. Every caller passes a canonical method today, and a
+	// lower-case one would otherwise fall to the default and quietly lose its
+	// retries -- a resilience regression with no error to notice.
+	switch strings.ToUpper(strings.TrimSpace(method)) {
 	case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodPut, http.MethodDelete, http.MethodTrace:
 		return true
 	default:
