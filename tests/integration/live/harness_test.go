@@ -282,11 +282,23 @@ func (h *liveHarness) pushFileOnBranch(projectKey, repositorySlug, branch, fileN
 	}
 
 	filePath := filepath.Join(tempDir, fileName)
+
+	// fileName may name a path, not just a leaf: ".bitbucket/CODEOWNERS" is one
+	// the pull request commands read.
+	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+		return fmt.Errorf("create branch file directory: %w", err)
+	}
+
 	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
 	if err != nil {
 		return fmt.Errorf("open branch file: %w", err)
 	}
-	_, _ = file.WriteString(fmt.Sprintf("branch=%s\n", branch))
+	// The caller's content, not a value derived from the branch. Writing the
+	// latter regardless of the argument made every caller that asked for
+	// specific content get the same bytes on both sides -- which quietly
+	// disarmed the one test that pushes two conflicting versions of a file and
+	// then asserts the conflict.
+	_, _ = file.WriteString(content)
 	_ = file.Close()
 
 	if err := runGit(tempDir, "add", fileName); err != nil {
