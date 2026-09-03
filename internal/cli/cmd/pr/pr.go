@@ -657,6 +657,7 @@ func New(deps Dependencies) *cobra.Command {
 	var updateDescription string
 	var updateVersion int
 	var updateDraft bool
+	var updateReviewers []string
 	updateCmd := &cobra.Command{
 		Use:   "update <id>",
 		Short: "Update pull request metadata",
@@ -719,11 +720,35 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
+			// Left nil, the service echoes the pull request's current reviewers
+			// back, because Bitbucket reads an absent key as "no reviewers"
+			// (#511). --reviewers is the way to say something else on purpose,
+			// and --reviewers "" is how to clear the list.
+			var reviewers *[]string
+			if cmd.Flags().Changed("reviewers") {
+				resolved, err := resolveReviewersAndGroups(
+					cmd.Context(),
+					reviewerservice.NewService(apiClient),
+					repo.ProjectKey, repo.Slug,
+					updateReviewers,
+					nil,
+					"",
+				)
+				if err != nil {
+					return err
+				}
+				if resolved == nil {
+					resolved = []string{}
+				}
+				reviewers = &resolved
+			}
+
 			updated, err := service.Update(cmd.Context(), repo, target.PullRequestID, pullrequestservice.UpdateInput{
 				Title:       updateTitle,
 				Description: updateDescription,
 				Version:     updateVersion,
 				Draft:       draft,
+				Reviewers:   reviewers,
 			})
 			if err != nil {
 				return err
@@ -741,6 +766,7 @@ func New(deps Dependencies) *cobra.Command {
 	updateCmd.Flags().StringVar(&updateDescription, "description", "", "Updated pull request description")
 	updateCmd.Flags().IntVar(&updateVersion, "version", 0, "Expected pull request version")
 	updateCmd.Flags().BoolVar(&updateDraft, "draft", false, "Set draft state: --draft to mark as draft, --draft=false to mark as ready for review")
+	updateCmd.Flags().StringSliceVar(&updateReviewers, "reviewers", nil, "Replace the reviewers (repeatable or comma-separated, accepts @group syntax); omit to keep the current reviewers, pass \"\" to clear them")
 	_ = updateCmd.MarkFlagRequired("version")
 	prCmd.AddCommand(updateCmd)
 

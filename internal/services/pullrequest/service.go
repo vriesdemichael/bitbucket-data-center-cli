@@ -1077,9 +1077,22 @@ func buildCreatePayload(input CreateInput) (map[string]any, error) {
 // hasUpdatableField reports whether the caller asked for a change, ignoring
 // the keys that always travel: version, and the reviewer set that has to be
 // echoed back so a PUT does not clear it.
-func hasUpdatableField(payload map[string]any) bool {
+// hasUpdatableField reports whether the caller named anything to change.
+//
+// "version" never counts: it is the precondition, not a change. "reviewers"
+// counts only when the caller asked for it. The service also writes that key on
+// its own, echoing the current list back so an update does not clear it (#511),
+// and an echo is not a request to change anything -- treating it as one would
+// let `bb pr update --version 3` through as a no-op write.
+func hasUpdatableField(payload map[string]any, reviewersRequested bool) bool {
 	for key := range payload {
-		if key != "version" && key != "reviewers" {
+		switch key {
+		case "version":
+		case "reviewers":
+			if reviewersRequested {
+				return true
+			}
+		default:
 			return true
 		}
 	}
@@ -1123,8 +1136,8 @@ func buildUpdatePayload(input UpdateInput) (map[string]any, error) {
 		payload["reviewers"] = reviewers
 	}
 
-	if !hasUpdatableField(payload) {
-		return nil, apperrors.New(apperrors.KindValidation, "at least one of title, description, or draft is required", nil)
+	if !hasUpdatableField(payload, input.Reviewers != nil) {
+		return nil, apperrors.New(apperrors.KindValidation, "at least one of title, description, draft, or reviewers is required", nil)
 	}
 
 	return payload, nil

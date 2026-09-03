@@ -4939,6 +4939,7 @@ Examples:
 Flags:
       --description string   Updated pull request description
       --draft                Set draft state: --draft to mark as draft, --draft=false to mark as ready for review
+      --reviewers strings    Replace the reviewers (repeatable or comma-separated, accepts @group syntax); omit to keep the current reviewers, pass "" to clear them
       --title string         Updated pull request title
       --version int          Expected pull request version
 

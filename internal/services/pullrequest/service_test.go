@@ -2250,3 +2250,41 @@ func TestTransitionsResolveTheCurrentVersion(t *testing.T) {
 		})
 	}
 }
+
+// The reviewers key is written two ways and they must not be confused. The
+// service writes it itself, echoing the current list so an update does not
+// clear it (#511) -- that is not the caller naming a field. --reviewers is,
+// and without it there would be no way to change the list through update at
+// all.
+func TestUpdateRequiresAFieldTheCallerNamed(t *testing.T) {
+	t.Run("version alone is not a change", func(t *testing.T) {
+		_, err := buildUpdatePayload(UpdateInput{Version: 3})
+		if err == nil {
+			t.Fatal("expected a validation error when nothing was named")
+		}
+		if !apperrors.IsKind(err, apperrors.KindValidation) {
+			t.Errorf("kind = %v, want validation", err)
+		}
+	})
+
+	t.Run("reviewers alone is a change", func(t *testing.T) {
+		payload, err := buildUpdatePayload(UpdateInput{Version: 3, Reviewers: &[]string{"alice"}})
+		if err != nil {
+			t.Fatalf("--reviewers on its own must be accepted: %v", err)
+		}
+		if _, ok := payload["reviewers"]; !ok {
+			t.Error("the payload carries no reviewers key")
+		}
+	})
+
+	t.Run("an empty reviewers list is a change, and clears", func(t *testing.T) {
+		payload, err := buildUpdatePayload(UpdateInput{Version: 3, Reviewers: &[]string{}})
+		if err != nil {
+			t.Fatalf(`--reviewers "" must be accepted: %v`, err)
+		}
+		reviewers, ok := payload["reviewers"].([]map[string]any)
+		if !ok || len(reviewers) != 0 {
+			t.Errorf("reviewers = %#v, want an empty list", payload["reviewers"])
+		}
+	})
+}
