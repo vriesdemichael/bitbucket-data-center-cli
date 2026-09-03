@@ -2065,7 +2065,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			}
 
 			if deps.DryRunEnabled() {
-				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
 
