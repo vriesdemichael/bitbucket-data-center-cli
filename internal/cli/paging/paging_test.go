@@ -195,3 +195,73 @@ func TestLimitReached(t *testing.T) {
 		})
 	}
 }
+
+// TestTruncateCapsWhatAServiceDidNot is the fix for #473.
+//
+// ServiceLimit means a page size to several services, which then read to
+// exhaustion: `project permissions users list --limit 5` fetched every entry in
+// the project, in pages of five, and printed all of them.
+func TestTruncateCapsWhatAServiceDidNot(t *testing.T) {
+	t.Parallel()
+
+	twenty := make([]int, 20)
+	for index := range twenty {
+		twenty[index] = index
+	}
+
+	t.Run("caps an over-long result set", func(t *testing.T) {
+		t.Parallel()
+
+		options := Options{limit: 5}
+		if got := Truncate(options, twenty); len(got) != 5 {
+			t.Errorf("len = %d, want 5", len(got))
+		}
+	})
+
+	t.Run("leaves a short one alone", func(t *testing.T) {
+		t.Parallel()
+
+		options := Options{limit: 50}
+		if got := Truncate(options, twenty); len(got) != 20 {
+			t.Errorf("len = %d, want all 20", len(got))
+		}
+	})
+
+	t.Run("is a no-op under --all", func(t *testing.T) {
+		t.Parallel()
+
+		options := Options{all: true, limit: 5}
+		if got := Truncate(options, twenty); len(got) != 20 {
+			t.Errorf("len = %d, want all 20 under --all", len(got))
+		}
+	})
+
+	t.Run("uses the default when no limit was given", func(t *testing.T) {
+		t.Parallel()
+
+		hundred := make([]int, 100)
+		if got := Truncate(Options{}, hundred); len(got) != DefaultLimit {
+			t.Errorf("len = %d, want the default %d", len(got), DefaultLimit)
+		}
+	})
+
+	t.Run("truncating an already-capped set changes nothing", func(t *testing.T) {
+		t.Parallel()
+
+		// Why this is safe to apply without knowing which semantic the backing
+		// service uses -- the knowledge that was missing at the call sites.
+		options := Options{limit: 5}
+		capped := Truncate(options, twenty)
+		if again := Truncate(options, capped); len(again) != len(capped) {
+			t.Errorf("len = %d, want %d", len(again), len(capped))
+		}
+	})
+
+	t.Run("empty stays empty", func(t *testing.T) {
+		t.Parallel()
+
+		if got := Truncate(Options{limit: 5}, []int{}); len(got) != 0 {
+			t.Errorf("len = %d, want 0", len(got))
+		}
+	})
+}
