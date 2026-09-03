@@ -120,7 +120,7 @@ When `bb ai mcp serve` runs, it communicates strictly over standard input/output
 
 ### Hardening the By-Design Flow
 To govern this everyday flow:
-- **Dedicated Read-Only Token**: Bind `bb ai mcp serve` to a service token with read-only rights (`--token <ro-pat>`), ensuring the agent cannot execute mutations on the Bitbucket server even if prompted.
+- **Dedicated Read-Only Token**: Bind `bb ai mcp serve` to a service token with read-only rights (`BITBUCKET_TOKEN` in the client's `env` block), ensuring the agent cannot execute mutations on the Bitbucket server even if prompted.
 - **Explicit Tool Allowlists**: Constrain exposed tools using `--tools get_pull_request,list_pull_requests,get_pr_diff,list_pr_comments,add_pr_comment`.
 - **Egress Governance**: Outbound LLM network traffic is managed at the IDE layer (via corporate proxy, DLP filtering, or private Azure OpenAI / AWS Bedrock VPC endpoints).
 
@@ -148,7 +148,7 @@ Each domain is analyzed using the **Threat (STRIDE) ↔ Architectural Mitigation
 ### Domain 1: Secret Hygiene & Storage at Rest (TB-1 & TB-2)
 
 #### 1. Threat Analysis (STRIDE: Information Disclosure)
-- **Attacker Vector (ADV-1)**: Unprivileged local users, compromised background processes, or EDR agents scrape secrets passed via CLI flags (`--token <val>`) through `ps aux` or `/proc/<pid>/cmdline`.
+- **Attacker Vector (ADV-1)**: Unprivileged local users, compromised background processes, or EDR agents scrape secrets passed via CLI flags (retired in v4; `--token`/`--password` no longer exist) through `ps aux` or `/proc/<pid>/cmdline`.
 - **Plaintext Fallback Risk**: If an OS keyring is unavailable, CLI tools may silently fall back to unencrypted disk files:
   - Linux: `~/.config/bb/config.yaml`
   - macOS: `~/Library/Application Support/bb/config.yaml`
@@ -223,7 +223,7 @@ bb --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.
 
 #### 2. Architectural Mitigations
 - **Safe vs. Unsafe Tool Isolation**: High-impact mutating operations (`submit_pr_review`, `merge_pull_request`, `enable_auto_merge`, `set_build_status`) are withheld by default ([ADR-039](../adr/039-built-in-mcp-server-with-host-scoping-and-token-restriction.md)). Crucially, withholding `submit_pr_review` prevents an agent from self-approving its own pull requests.
-- **Dedicated Read-Only Token Scoping**: Running `bb ai mcp serve --token <ro-pat>` forces the MCP server to execute under a service token with read-only server rights.
+- **Dedicated Read-Only Token Scoping**: Running `bb ai mcp serve` with `BITBUCKET_TOKEN` set to a read-only PAT in the MCP client's `env` block forces the MCP server to execute under a service token with read-only server rights.
 - **Explicit Capability Allowlists**: Constraining exposed tools via `--tools` or `--exclude`.
 - **Workspace Scoping**: `--project` and `--repo` confine every tool call to one project or repository ([ADR-062](../adr/062-mcp-workspace-scoping-and-agent-audit-trail.md)). Enforcement is a single choke point over `tools/call`, not a per-tool check: arguments that are omitted are bound to the scope, arguments that name something else are refused, and tools that address a resource Bitbucket does not scope to a project — build statuses, which hang off a commit SHA — are withheld while a scope is set.
 - **Agent Audit Trail**: `--audit-file` records every tool invocation as JSON Lines for SIEM ingestion, with secrets redacted. Its distinct value over Bitbucket's own audit log is *attribution* (every MCP call reaches Bitbucket as the same user with the same PAT) and *denied attempts* (a refused call never reaches Bitbucket, so no server-side record of it can exist). The destination is mandatable machine-wide via `policy.mcp_audit_file`, which holds only where an administrator owns the policy file: `bb` never creates the system configuration directory, so on Windows `C:\ProgramData\bb` must be created by an administrator first ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md), point 5). It is also the one policy setting with no `HKLM\Software\Policies\bb` value, so GPO is not an alternative for it.

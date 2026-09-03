@@ -115,93 +115,6 @@ func TestReadSecretFromStdinReportsReadFailure(t *testing.T) {
 	}
 }
 
-func TestResolveLoginSecret(t *testing.T) {
-	t.Run("flag value is used as-is", func(t *testing.T) {
-		secret, err := resolveLoginSecret("  tok  ", false, nil, "--token", "--token-stdin")
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-		if secret != "tok" {
-			t.Fatalf("expected trimmed flag value, got %q", secret)
-		}
-	})
-
-	t.Run("stdin is read when requested", func(t *testing.T) {
-		secret, err := resolveLoginSecret("", true, strings.NewReader("piped\n"), "--token", "--token-stdin")
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-		if secret != "piped" {
-			t.Fatalf("expected piped value, got %q", secret)
-		}
-	})
-
-	t.Run("both forms are rejected", func(t *testing.T) {
-		// Passing both means the caller has not achieved the exposure they were
-		// reaching for, so this is an error rather than a silent precedence rule.
-		_, err := resolveLoginSecret("tok", true, strings.NewReader("piped\n"), "--token", "--token-stdin")
-		if err == nil {
-			t.Fatal("expected mutually exclusive flags to be rejected")
-		}
-		if !strings.Contains(err.Error(), "mutually exclusive") {
-			t.Fatalf("unexpected error %q", err.Error())
-		}
-	})
-
-	t.Run("absent secret stays empty", func(t *testing.T) {
-		secret, err := resolveLoginSecret("", false, nil, "--token", "--token-stdin")
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-		if secret != "" {
-			t.Fatalf("expected empty, got %q", secret)
-		}
-	})
-}
-
-func TestWarnAboutSecretsOnTheCommandLine(t *testing.T) {
-	newCommand := func() (*cobra.Command, *bytes.Buffer) {
-		stderr := &bytes.Buffer{}
-		cmd := &cobra.Command{Use: "login"}
-		cmd.Flags().String("token", "", "")
-		cmd.Flags().String("password", "", "")
-		cmd.SetOut(io.Discard)
-		cmd.SetErr(stderr)
-		return cmd, stderr
-	}
-
-	t.Run("warns for a flag-supplied token", func(t *testing.T) {
-		cmd, stderr := newCommand()
-		if err := cmd.Flags().Set("token", "tok"); err != nil {
-			t.Fatalf("set flag: %v", err)
-		}
-
-		warnAboutSecretsOnTheCommandLine(cmd)
-
-		output := stderr.String()
-		if !strings.Contains(output, "--token puts the credential in the process list") {
-			t.Fatalf("expected a process-list warning, got %q", output)
-		}
-		if !strings.Contains(output, "--token-stdin") {
-			t.Fatalf("expected the safe alternative to be named, got %q", output)
-		}
-	})
-
-	t.Run("silent when no secret flag was used", func(t *testing.T) {
-		cmd, stderr := newCommand()
-
-		warnAboutSecretsOnTheCommandLine(cmd)
-
-		if stderr.String() != "" {
-			t.Fatalf("expected no warning, got %q", stderr.String())
-		}
-	})
-
-	t.Run("survives a nil command", func(t *testing.T) {
-		warnAboutSecretsOnTheCommandLine(nil)
-	})
-}
-
 // newLoginCommand builds the auth command tree with an isolated config file and
 // separate output streams, so a test can tell stdout from stderr.
 func newLoginCommand(t *testing.T) (*cobra.Command, *bytes.Buffer, *bytes.Buffer) {
@@ -253,25 +166,6 @@ func TestLoginReadsTheTokenFromStdin(t *testing.T) {
 	// The safe form has nothing to warn about.
 	if strings.Contains(stderr.String(), "process list") {
 		t.Fatalf("did not expect a process-list warning, got %q", stderr.String())
-	}
-}
-
-func TestLoginKeepsTheCommandLineWarningOffStdout(t *testing.T) {
-	cmd, stdout, stderr := newLoginCommand(t)
-	cmd.SetArgs([]string{"login", "https://flag-login.example.invalid", "--token", "tok", "--discover-aliases=false"})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("login failed: %v (stderr: %s)", err, stderr.String())
-	}
-
-	// The warning must not reach stdout: under --json that is a machine
-	// contract, and prose there makes the envelope unparseable.
-	var envelope map[string]any
-	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
-		t.Fatalf("stdout is not a clean envelope: %q (%v)", stdout.String(), err)
-	}
-	if !strings.Contains(stderr.String(), "process list") {
-		t.Fatalf("expected the warning on stderr, got %q", stderr.String())
 	}
 }
 
@@ -427,5 +321,59 @@ func clearAuthEnvironment(t *testing.T) {
 		"ADMIN_USER", "ADMIN_PASSWORD", "BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG",
 	} {
 		t.Setenv(key, "")
+	}
+}
+
+func TestResolveLoginSecret(t *testing.T) {
+	t.Run("stdin is read when requested", func(t *testing.T) {
+		secret, err := resolveLoginSecret(true, strings.NewReader("piped\n"), "--token-stdin")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if secret != "piped" {
+			t.Fatalf("expected piped value, got %q", secret)
+		}
+	})
+
+	t.Run("absent secret stays empty", func(t *testing.T) {
+		// There is no value form to fall back to any more: --token and
+		// --password were retired in #464, so a login naming neither stdin
+		// flag simply has no secret to resolve.
+		secret, err := resolveLoginSecret(false, nil, "--token-stdin")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if secret != "" {
+			t.Fatalf("expected empty, got %q", secret)
+		}
+	})
+}
+
+// TestTheValueFormsAreGone is the regression guard for #464. A secret must not
+// be accepted anywhere the operating system would expose it: a flag value lands
+// in /proc/<pid>/cmdline, which is world-readable, and in shell history.
+func TestTheValueFormsAreGone(t *testing.T) {
+	command := New(Dependencies{})
+
+	var login *cobra.Command
+	for _, child := range command.Commands() {
+		if child.Name() == "login" {
+			login = child
+		}
+	}
+	if login == nil {
+		t.Fatal("auth login is missing")
+	}
+
+	for _, name := range []string{"token", "password"} {
+		if login.Flags().Lookup(name) != nil {
+			t.Errorf("--%s still exists on auth login", name)
+		}
+	}
+
+	for _, name := range []string{"token-stdin", "password-stdin"} {
+		if login.Flags().Lookup(name) == nil {
+			t.Errorf("--%s is missing; the safe form has to remain", name)
+		}
 	}
 }

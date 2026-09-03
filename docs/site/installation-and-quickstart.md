@@ -119,11 +119,11 @@ printf '%s' "$BB_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdi
 bb auth status
 ```
 
-!!! warning "Do not pass secrets as flag values"
-    `--token <value>` puts the token in the process argument list, where any local user can read it
-    via `ps` or `/proc/<pid>/cmdline`, where Windows shows it in Task Manager details, and where
-    process-auditing and EDR tooling records it. Your shell also keeps it in history. `--token-stdin`
-    and `--password-stdin` avoid all of that. The flag forms still work and warn on stderr.
+!!! note "Secrets cannot be passed as flag values"
+    `--token` and `--password` were removed in v4. A flag value lands in the process argument
+    list, where any local user can read it via `ps` or `/proc/<pid>/cmdline`, where Windows shows
+    it in Task Manager details, and where process-auditing and EDR tooling records it -- and your
+    shell keeps it in history. Use `--token-stdin` or `--password-stdin`, or set `BITBUCKET_TOKEN`.
 
 ### Where credentials are stored
 

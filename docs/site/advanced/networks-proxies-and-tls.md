@@ -112,7 +112,7 @@ export BB_CLIENT_KEY=/etc/ssl/private/client.key
 You can also persist client certificates per host in your stored profile:
 
 ```bash
-bb auth login https://bitbucket.example.com --token abc --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.key
+printf '%s' "$abc" | bb auth login https://bitbucket.example.com --token-stdin --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.key
 ```
 
 Both files must be PEM-encoded. If either `--client-cert` or `--client-key` is specified without
