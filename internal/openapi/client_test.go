@@ -458,3 +458,59 @@ func closeResponse(response *http.Response) {
 		_ = response.Body.Close()
 	}
 }
+
+// TestRetriesDoNotReplayMutations is #454, through the real transport.
+//
+// The counts are the point: a POST answered with 503 must be issued exactly
+// once, because a response lost after the write landed is indistinguishable
+// from one that never arrived.
+func TestRetriesDoNotReplayMutations(t *testing.T) {
+	for _, testCase := range []struct {
+		name       string
+		method     string
+		status     int
+		retryAfter string
+		want       int
+	}{
+		{name: "POST on 503 is issued once", method: http.MethodPost, status: http.StatusServiceUnavailable, want: 1},
+		{name: "PATCH on 503 is issued once", method: http.MethodPatch, status: http.StatusServiceUnavailable, want: 1},
+		{name: "POST on 429 is retried", method: http.MethodPost, status: http.StatusTooManyRequests, retryAfter: "0", want: 3},
+		{name: "GET on 503 is retried", method: http.MethodGet, status: http.StatusServiceUnavailable, want: 3},
+		{name: "DELETE on 503 is retried", method: http.MethodDelete, status: http.StatusServiceUnavailable, want: 3},
+		{name: "PUT on 503 is retried", method: http.MethodPut, status: http.StatusServiceUnavailable, want: 3},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			var attempts int
+			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+				attempts++
+				if testCase.retryAfter != "" {
+					writer.Header().Set("Retry-After", testCase.retryAfter)
+				}
+				writer.WriteHeader(testCase.status)
+			}))
+			defer server.Close()
+
+			transport := &retryTransport{
+				base:        http.DefaultTransport,
+				retries:     2,
+				baseBackoff: time.Millisecond,
+				logger:      diagnostics.NewLogger(diagnostics.Config{}, io.Discard),
+			}
+
+			request, err := http.NewRequestWithContext(context.Background(), testCase.method, server.URL, bytes.NewReader([]byte(`{}`)))
+			if err != nil {
+				t.Fatalf("request: %v", err)
+			}
+
+			response, err := transport.RoundTrip(request)
+			if err != nil {
+				t.Fatalf("round trip: %v", err)
+			}
+			_ = response.Body.Close()
+
+			if attempts != testCase.want {
+				t.Errorf("server saw %d requests, want %d", attempts, testCase.want)
+			}
+		})
+	}
+}

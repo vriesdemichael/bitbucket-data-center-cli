@@ -951,3 +951,51 @@ func TestDoRequestRetryExhaustion(t *testing.T) {
 		t.Fatal("expected error after exhausted retries")
 	}
 }
+
+// TestRetriesDoNotReplayMutations is #454 on the second transport.
+//
+// doJSON routes POST, PUT and DELETE through this loop, so the same guard has
+// to hold here or the fix only covers half the tool.
+func TestRetriesDoNotReplayMutations(t *testing.T) {
+	for _, testCase := range []struct {
+		name       string
+		method     string
+		status     int
+		retryAfter string
+		want       int
+	}{
+		{name: "POST on 503 is issued once", method: http.MethodPost, status: http.StatusServiceUnavailable, want: 1},
+		{name: "PATCH on 503 is issued once", method: http.MethodPatch, status: http.StatusServiceUnavailable, want: 1},
+		{name: "POST on 429 is retried", method: http.MethodPost, status: http.StatusTooManyRequests, retryAfter: "0", want: 3},
+		{name: "GET on 503 is retried", method: http.MethodGet, status: http.StatusServiceUnavailable, want: 3},
+		{name: "DELETE on 503 is retried", method: http.MethodDelete, status: http.StatusServiceUnavailable, want: 3},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			var attempts int
+			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+				attempts++
+				if testCase.retryAfter != "" {
+					writer.Header().Set("Retry-After", testCase.retryAfter)
+				}
+				writer.WriteHeader(testCase.status)
+			}))
+			defer server.Close()
+
+			client := NewFromConfig(config.AppConfig{
+				BitbucketURL: server.URL,
+				RetryCount:   2,
+				RetryBackoff: time.Millisecond,
+			})
+
+			_, _ = client.DoRequest(context.Background(), RequestOptions{
+				Method: testCase.method,
+				Path:   "/rest/api/latest/anything",
+				Body:   []byte(`{}`),
+			})
+
+			if attempts != testCase.want {
+				t.Errorf("server saw %d requests, want %d", attempts, testCase.want)
+			}
+		})
+	}
+}
