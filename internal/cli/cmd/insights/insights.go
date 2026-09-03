@@ -255,6 +255,10 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// The backing service reads to exhaustion, so --limit only sized the
+			// pages until now. A no-op under --all.
+			reports = paging.Truncate(reportPaging, reports)
+
 			if d.JSONEnabled() {
 				return d.WriteJSONList(cmd.OutOrStdout(), reportsFrom(reports), paging.LimitReached(reportPaging, len(reports)))
 			}

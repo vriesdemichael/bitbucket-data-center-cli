@@ -100,6 +100,10 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// The backing service reads to exhaustion, so --limit only sized the
+			// pages until now. A no-op under --all.
+			comments = paging.Truncate(listPaging, comments)
+
 			// Flattened, so replies are reachable. Bitbucket nests them under
 			// their root, and this command has no thread view to reach them
 			// through -- listing only the roots discarded every reply body on a
