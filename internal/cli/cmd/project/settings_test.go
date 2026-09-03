@@ -204,7 +204,7 @@ func TestProjectSettingsCLI(t *testing.T) {
 		}
 
 		// update
-		out, err = executeTestCLI(t, "project", "branch-restriction", "update", "PRJ", "456", "--type", "read-only", "--matcher-id", "refs/heads/master")
+		out, err = executeTestCLI(t, "project", "branch-restriction", "update", "PRJ", "456", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/master")
 		if err != nil {
 			t.Fatalf("restriction update failed: %v", err)
 		}
@@ -398,7 +398,7 @@ func TestProjectSettingsCLI(t *testing.T) {
 			t.Fatalf("unexpected restriction create --json output: %s", out)
 		}
 
-		out, err = executeTestCLI(t, "project", "branch-restriction", "update", "PRJ", "456", "--type", "read-only", "--matcher-id", "refs/heads/master", "--json")
+		out, err = executeTestCLI(t, "project", "branch-restriction", "update", "PRJ", "456", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/master", "--json")
 		if err != nil {
 			t.Fatalf("restriction update --json failed: %v", err)
 		}
@@ -416,7 +416,7 @@ func TestProjectSettingsCLI(t *testing.T) {
 
 		// Branch restriction dry-runs
 		// update (no-op: matches the mock config exactly)
-		out, err = executeTestCLI(t, "project", "branch-restriction", "update", "PRJ", "456", "--type", "read-only", "--matcher-id", "refs/heads/master", "--user", "user1", "--group", "group1", "--access-key-id", "777", "--dry-run")
+		out, err = executeTestCLI(t, "project", "branch-restriction", "update", "PRJ", "456", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/master", "--user", "user1", "--group", "group1", "--access-key-id", "777", "--dry-run")
 		if err != nil {
 			t.Fatalf("restriction update dry-run no-op failed: %v", err)
 		}
@@ -425,7 +425,7 @@ func TestProjectSettingsCLI(t *testing.T) {
 		}
 
 		// update (not no-op: different user)
-		out, err = executeTestCLI(t, "project", "branch-restriction", "update", "PRJ", "456", "--type", "read-only", "--matcher-id", "refs/heads/master", "--user", "user2", "--group", "group1", "--access-key-id", "777", "--dry-run")
+		out, err = executeTestCLI(t, "project", "branch-restriction", "update", "PRJ", "456", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/master", "--user", "user2", "--group", "group1", "--access-key-id", "777", "--dry-run")
 		if err != nil {
 			t.Fatalf("restriction update dry-run failed: %v", err)
 		}
@@ -517,7 +517,7 @@ func TestProjectSettingsCLI(t *testing.T) {
 			t.Fatalf("unexpected restriction create output: %s", out)
 		}
 
-		out, err = executeTestCLI(t, "project", "branch-restriction", "update", "PRJ", "456", "--type", "read-only", "--matcher-id", "refs/heads/master", "--user", "user1", "--group", "group1", "--access-key-id", "777")
+		out, err = executeTestCLI(t, "project", "branch-restriction", "update", "PRJ", "456", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/master", "--user", "user1", "--group", "group1", "--access-key-id", "777")
 		if err != nil {
 			t.Fatalf("restriction update with users/groups/keys failed: %v", err)
 		}
