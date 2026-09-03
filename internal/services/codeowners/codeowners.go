@@ -22,11 +22,16 @@ const (
 
 // OwnerRef represents an individual owner or group reference parsed from CODEOWNERS.
 type OwnerRef struct {
-	Raw      string            // original token, e.g. "@backend\\ engineers:random(2)"
-	Name     string            // unescaped username or group name without '@' or strategy, e.g. "backend engineers"
-	IsGroup  bool              // true if prefixed with '@'
-	Strategy SelectionStrategy // all, random, least_busy
-	Count    int               // N for random(N) or least_busy(N); always 0 for StrategyAll
+	Raw     string // original token, e.g. "@backend\\ engineers:random(2)"
+	Name    string // unescaped username or group name without '@' or strategy, e.g. "backend engineers"
+	IsGroup bool   // true if prefixed with '@'
+	// IsReviewerGroup is true for the "@reviewer-group/<name>" form, which the
+	// Code Owners plugin resolves through the reviewer-group API rather than as
+	// a Bitbucket group. The two prefixes look alike and resolve differently, so
+	// recognising only the bare "@group" form left this one broken (#503).
+	IsReviewerGroup bool
+	Strategy        SelectionStrategy // all, random, least_busy
+	Count           int               // N for random(N) or least_busy(N); always 0 for StrategyAll
 }
 
 // Rule represents a single pattern and its assigned owners.
@@ -245,6 +250,10 @@ func unescapeToken(token string) string {
 	return out
 }
 
+// reviewerGroupPrefix marks the Code Owners plugin's named-reviewer-group
+// form, as distinct from a plain Bitbucket group.
+const reviewerGroupPrefix = "reviewer-group/"
+
 func parseOwnerRef(token string) OwnerRef {
 	raw := strings.TrimSpace(token)
 	strategy := StrategyAll
@@ -284,12 +293,25 @@ func parseOwnerRef(token string) OwnerRef {
 	isGroup := strings.HasPrefix(base, "@")
 	name := unescapeToken(strings.TrimPrefix(base, "@"))
 
+	// "@reviewer-group/cog_product" names a reviewer group called cog_product,
+	// not a group called "reviewer-group/cog_product". Carrying the prefix into
+	// the lookup made it miss, and the fallback then sent the whole string as a
+	// username, which Bitbucket rejected with a 409 (#503).
+	isReviewerGroup := false
+	if isGroup {
+		if bare, found := strings.CutPrefix(name, reviewerGroupPrefix); found {
+			isReviewerGroup = true
+			name = bare
+		}
+	}
+
 	return OwnerRef{
-		Raw:      raw,
-		Name:     strings.TrimSpace(name),
-		IsGroup:  isGroup,
-		Strategy: strategy,
-		Count:    count,
+		Raw:             raw,
+		Name:            strings.TrimSpace(name),
+		IsGroup:         isGroup,
+		IsReviewerGroup: isReviewerGroup,
+		Strategy:        strategy,
+		Count:           count,
 	}
 }
 

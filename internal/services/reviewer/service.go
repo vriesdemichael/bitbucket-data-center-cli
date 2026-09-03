@@ -633,6 +633,15 @@ func userNames[T namedUser](users []T) []string {
 // all yields a descriptive error rather than an opaque 404.
 func (service *Service) ResolveReviewerGroupUsers(ctx context.Context, projectKey, repositorySlug, groupName string) ([]string, error) {
 	trimmedGroup := strings.TrimPrefix(strings.TrimSpace(groupName), "@")
+
+	// "reviewer-group/cog_product" names the group cog_product. Bitbucket's own
+	// Code Owners syntax spells a reviewer group that way, and callers pass the
+	// token through verbatim -- from CODEOWNERS, from --reviewers @<name> and
+	// from --reviewer-group. Carrying the prefix into the lookup made every one
+	// of them miss a group that exists (#503), so it is stripped here, at the
+	// single point all three funnel through.
+	trimmedGroup = strings.TrimPrefix(trimmedGroup, "reviewer-group/")
+
 	if trimmedGroup == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "reviewer group name is required", nil)
 	}

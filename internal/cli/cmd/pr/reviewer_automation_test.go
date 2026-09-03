@@ -850,3 +850,128 @@ func TestPRReviewerAddPartialFailureEmitsOneJSONDocument(t *testing.T) {
 		t.Fatalf("error should name both the added and the failed reviewer, got: %v", err)
 	}
 }
+
+// TestCodeOwnersExpandsReviewerGroupPrefix is #503.
+//
+// "@reviewer-group/cog_product" is how Bitbucket's own Code Owners plugin spells
+// a reviewer group. The whole token went into the lookup, which found nothing,
+// and the unknown-group fallback then offered "reviewer-group/cog_product" to
+// the reviewers API as a username -- answered with a 409 that named the server
+// rather than the file that caused it.
+func TestCodeOwnersExpandsReviewerGroupPrefix(t *testing.T) {
+	server := newCodeOwnersServer(t,
+		"*.go @reviewer-group/cog_product\n",
+		`{"values":[{"id":10,"name":"cog_product"}]}`,
+		map[string]string{"10": `[{"name":"alice"},{"name":"bob"}]`},
+		`{"isLastPage":true,"values":[]}`,
+	)
+
+	out, _, err := executePrSplit(t, server.URL, "--json", "create",
+		"--from-ref", "feature/y",
+		"--to-ref", "main",
+		"--title", "Created PR",
+		"--no-default-reviewers",
+		"--codeowners",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, member := range []string{"alice", "bob"} {
+		if !strings.Contains(out, member) {
+			t.Errorf("expected the reviewer group to expand to %s, got:\n%s", member, out)
+		}
+	}
+	if strings.Contains(out, "reviewer-group/cog_product") {
+		t.Errorf("the group token must never be sent as a username, got:\n%s", out)
+	}
+}
+
+// The other half of #503. An "@reviewer-group/<name>" entry has said what it
+// is, so when no such group exists the username fallback does not apply -- that
+// reading only makes sense for the ambiguous bare "@name". What happens instead
+// is the documented --codeowners contract, and it has two halves.
+func TestCodeOwnersUnknownReviewerGroupFollowsTheCodeOwnersContract(t *testing.T) {
+	newServer := func(t *testing.T) *httptest.Server {
+		return newCodeOwnersServer(t,
+			"*.go @reviewer-group/gone alice\n",
+			`{"values":[]}`,
+			map[string]string{},
+			`{"isLastPage":true,"values":[]}`,
+		)
+	}
+
+	baseArgs := []string{"--json", "create",
+		"--from-ref", "feature/y",
+		"--to-ref", "main",
+		"--title", "Created PR",
+		"--no-default-reviewers",
+	}
+
+	// Defaulted: code owners are a convenience, so one bad entry warns and the
+	// owners named beside it are still assigned.
+	t.Run("defaulted, so it warns and keeps the rest", func(t *testing.T) {
+		out, stderr, err := executePrSplit(t, newServer(t).URL, baseArgs...)
+		if err != nil {
+			t.Fatalf("an unresolvable entry must not fail a defaulted lookup: %v", err)
+		}
+		if strings.Contains(out, "reviewer-group/gone") || strings.Contains(out, `"gone"`) {
+			t.Errorf("the unresolved group must not be assigned as a username, got:\n%s", out)
+		}
+		if !strings.Contains(out, "alice") {
+			t.Errorf("the resolvable owner on the same line was dropped, got:\n%s", out)
+		}
+		if !strings.Contains(stderr, "CODEOWNERS") || !strings.Contains(stderr, "gone") {
+			t.Errorf("expected a warning naming the file and the group, got:\n%s", stderr)
+		}
+	})
+
+	// Explicit: the caller asked for these reviewers by name, so opening the
+	// pull request without one of them is not the answer.
+	t.Run("explicit, so it fails", func(t *testing.T) {
+		out, _, err := executePrSplit(t, newServer(t).URL, append(baseArgs, "--codeowners")...)
+		if err == nil {
+			t.Fatalf("--codeowners was passed explicitly, so the entry must be fatal; got:\n%s", out)
+		}
+		if !strings.Contains(err.Error(), "gone") {
+			t.Errorf("the error must name the entry that could not be resolved, got: %v", err)
+		}
+	})
+}
+
+// The same #503 prefix reaches the resolver from two flags as well as from
+// CODEOWNERS, and carried the same defect. Fixing it at the lookup covers all
+// three; this holds the two flag paths to it.
+func TestReviewerFlagsAcceptTheReviewerGroupPrefix(t *testing.T) {
+	for _, flags := range [][]string{
+		{"--reviewers", "@reviewer-group/cog_product"},
+		{"--reviewer-group", "reviewer-group/cog_product"},
+		{"--reviewer-group", "@reviewer-group/cog_product"},
+	} {
+		t.Run(strings.Join(flags, " "), func(t *testing.T) {
+			server := newCodeOwnersServer(t,
+				"",
+				`{"values":[{"id":10,"name":"cog_product"}]}`,
+				map[string]string{"10": `[{"name":"alice"}]`},
+				`{"isLastPage":true,"values":[]}`,
+			)
+
+			args := append([]string{"--json", "create",
+				"--from-ref", "feature/y",
+				"--to-ref", "main",
+				"--title", "Created PR",
+				"--no-default-reviewers",
+			}, flags...)
+
+			out, _, err := executePrSplit(t, server.URL, args...)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !strings.Contains(out, "alice") {
+				t.Errorf("expected the group to expand to alice, got:\n%s", out)
+			}
+			if strings.Contains(out, "reviewer-group/cog_product") {
+				t.Errorf("the group token must never be sent as a username, got:\n%s", out)
+			}
+		})
+	}
+}
