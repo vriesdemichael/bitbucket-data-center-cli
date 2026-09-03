@@ -429,3 +429,50 @@ func TestResolveDefaultReviewersLooksUpSameRepositoryOnce(t *testing.T) {
 		t.Fatalf("repository was looked up %d times, want 1", repositoryLookups)
 	}
 }
+
+// TestResolveReviewerGroupUsersStripsReviewerGroupPrefix is #503.
+//
+// Three callers pass a group token through verbatim -- a CODEOWNERS entry,
+// --reviewers @<name> and --reviewer-group. All three accept Bitbucket's own
+// "reviewer-group/<name>" spelling, and all three used to carry the prefix into
+// the lookup, which then found nothing.
+func TestResolveReviewerGroupUsersStripsReviewerGroupPrefix(t *testing.T) {
+	for _, token := range []string{
+		"@reviewer-group/cog_product",
+		"reviewer-group/cog_product",
+		"cog_product",
+	} {
+		t.Run(token, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				switch r.URL.Path {
+				case "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups":
+					_, _ = w.Write([]byte(`{"values":[{"id":10,"name":"cog_product"}]}`))
+				case "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups/10/users":
+					_, _ = w.Write([]byte(`[{"name":"alice"}]`))
+				default:
+					http.NotFound(w, r)
+				}
+			}))
+			defer server.Close()
+
+			client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+
+			users, err := NewService(client).ResolveReviewerGroupUsers(context.Background(), "PRJ", "demo", token)
+			if err != nil {
+				t.Fatalf("resolving %q: %v", token, err)
+			}
+			if len(users) != 1 || users[0] != "alice" {
+				t.Fatalf("resolving %q gave %v, want [alice]", token, users)
+			}
+		})
+	}
+
+	// The prefix on its own names no group, and must not resolve to every
+	// group or to the empty name silently.
+	t.Run("prefix alone is rejected", func(t *testing.T) {
+		if _, err := NewService(nil).ResolveReviewerGroupUsers(context.Background(), "PRJ", "demo", "@reviewer-group/"); err == nil {
+			t.Fatal("expected a validation error for a bare prefix")
+		}
+	})
+}

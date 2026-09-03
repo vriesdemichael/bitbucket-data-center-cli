@@ -532,6 +532,7 @@ func New(deps Dependencies) *cobra.Command {
 					createFromRef, createToRef,
 					"",
 					author,
+					cmd.Flags().Changed("codeowners"),
 				)
 				switch {
 				case err == nil:
@@ -639,11 +640,11 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd.Flags().StringVar(&createTitle, "title", "", "Pull request title")
 	createCmd.Flags().StringVar(&createDescription, "description", "", "Pull request description")
 	createCmd.Flags().StringSliceVar(&createReviewers, "reviewers", nil, "Reviewer usernames to add (repeatable or comma-separated, accepts @group syntax, e.g. --reviewers alice,@backend-team)")
-	createCmd.Flags().StringSliceVar(&createReviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups)")
+	createCmd.Flags().StringSliceVar(&createReviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated; a leading @ and a reviewer-group/ prefix are both accepted; alias --reviewer-groups)")
 	createCmd.Flags().SetNormalizeFunc(createReviewerFlagAliases)
 	createCmd.Flags().BoolVar(&createDefaultReviewers, "default-reviewers", true, "Include default reviewers configured on repository/project; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal")
 	createCmd.Flags().BoolVar(&createNoDefaultReviewers, "no-default-reviewers", false, "Do not include default reviewers")
-	createCmd.Flags().BoolVar(&createCodeOwners, "codeowners", true, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal")
+	createCmd.Flags().BoolVar(&createCodeOwners, "codeowners", true, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (@user, @group and @reviewer-group/name are all recognised); an entry that cannot be resolved warns, unless this flag is passed explicitly, which makes it fatal")
 	createCmd.Flags().BoolVar(&createNoCodeOwners, "no-codeowners", false, "Do not include code owners from .bitbucket/CODEOWNERS")
 	createCmd.Flags().BoolVar(&createDraft, "draft", false, "Create as a draft pull request (Bitbucket DC 8.0+)")
 	// Not MarkFlagRequired: Cobra rejects before RunE, which forecloses asking
@@ -1196,6 +1197,7 @@ func New(deps Dependencies) *cobra.Command {
 					current.SourceBranch, current.TargetBranch,
 					target.PullRequestID,
 					author,
+					true,
 				)
 				if err != nil {
 					return err
@@ -1326,10 +1328,10 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	reviewerAddCmd.Flags().StringSliceVar(&reviewerUsers, "user", nil, "Reviewer username(s) (repeatable or comma-separated, accepts @group syntax; aliases --users, --reviewers)")
-	reviewerAddCmd.Flags().StringSliceVar(&reviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups)")
+	reviewerAddCmd.Flags().StringSliceVar(&reviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated; a leading @ and a reviewer-group/ prefix are both accepted; alias --reviewer-groups)")
 	reviewerAddCmd.Flags().SetNormalizeFunc(reviewerAddFlagAliases)
 	reviewerAddCmd.Flags().BoolVar(&reviewerDefaultReviewers, "default-reviewers", false, "Assign default reviewers configured on repository/project for this pull request")
-	reviewerAddCmd.Flags().BoolVar(&reviewerCodeOwners, "codeowners", false, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS")
+	reviewerAddCmd.Flags().BoolVar(&reviewerCodeOwners, "codeowners", false, "Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (@user, @group and @reviewer-group/name are all recognised); an entry that cannot be resolved is fatal")
 	reviewerCmd.AddCommand(reviewerAddCmd)
 
 	var removeReviewerUsername string
@@ -3021,6 +3023,10 @@ func resolveCodeOwnersReviewers(
 	fromRef, toRef string,
 	prID string,
 	author string,
+	// requested is true when --codeowners was passed rather than defaulted.
+	// The documented contract makes an unresolvable entry fatal in that case
+	// and a warning otherwise.
+	requested bool,
 ) ([]string, error) {
 	content, err := fetchCodeOwnersContent(ctx, apiClient, cfg, projectKey, repoSlug, toRef)
 	if err != nil {
@@ -3075,6 +3081,32 @@ func resolveCodeOwnersReviewers(
 				// real failure behind an incomplete reviewer list.
 				return nil, err
 			}
+
+			// An "@reviewer-group/<name>" entry said what it is, so the
+			// username fallback below does not apply to it -- that reading is
+			// only for the ambiguous bare "@name". Taking it anyway sent a
+			// group name to the reviewers API, which answered 409 and named
+			// the server rather than the file that caused it (#503). What
+			// happens instead is the documented --codeowners contract.
+			if ref.IsReviewerGroup {
+				message := fmt.Sprintf(
+					".bitbucket/CODEOWNERS names reviewer group %q, which does not exist on %s/%s",
+					ref.Name, projectKey, repoSlug)
+
+				// A caller who typed --codeowners asked for these reviewers,
+				// so silently opening the pull request without one of them is
+				// not the answer. Without the flag, code owners are a default
+				// convenience and one bad entry must not cost the owners named
+				// beside it.
+				if requested {
+					return nil, apperrors.New(apperrors.KindValidation, message, err)
+				}
+
+				writeWarning(warn, message+"; it is skipped")
+
+				continue
+			}
+
 			// No such reviewer group: CODEOWNERS also permits "@name" to denote
 			// an individual user, so fall back to that reading.
 			addUser(ref.Name)

@@ -4138,7 +4138,7 @@ Examples:
   bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --no-default-reviewers --no-codeowners
 
 Flags:
-      --codeowners               Assign code owners matching pull request diff from .bitbucket/CODEOWNERS; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal (default true)
+      --codeowners               Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (@user, @group and @reviewer-group/name are all recognised); an entry that cannot be resolved warns, unless this flag is passed explicitly, which makes it fatal (default true)
       --default-reviewers        Include default reviewers configured on repository/project; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal (default true)
       --description string       Pull request description
       --draft                    Create as a draft pull request (Bitbucket DC 8.0+)
@@ -4146,7 +4146,7 @@ Flags:
       --from-repo string         Repository holding --from-ref as PROJECT/slug, for a fork to upstream pull request (defaults to --repo)
       --no-codeowners            Do not include code owners from .bitbucket/CODEOWNERS
       --no-default-reviewers     Do not include default reviewers
-      --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups)
+      --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; a leading @ and a reviewer-group/ prefix are both accepted; alias --reviewer-groups)
       --reviewers strings        Reviewer usernames to add (repeatable or comma-separated, accepts @group syntax, e.g. --reviewers alice,@backend-team)
       --title string             Pull request title
       --to-ref string            Target branch (name or refs/heads/name)
@@ -4772,9 +4772,9 @@ Examples:
   bb pr review reviewer add 42 --repo PROJ/repo --codeowners
 
 Flags:
-      --codeowners               Assign code owners matching pull request diff from .bitbucket/CODEOWNERS
+      --codeowners               Assign code owners matching pull request diff from .bitbucket/CODEOWNERS (@user, @group and @reviewer-group/name are all recognised); an entry that cannot be resolved is fatal
       --default-reviewers        Assign default reviewers configured on repository/project for this pull request
-      --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups)
+      --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; a leading @ and a reviewer-group/ prefix are both accepted; alias --reviewer-groups)
       --user strings             Reviewer username(s) (repeatable or comma-separated, accepts @group syntax; aliases --users, --reviewers)
 
 Global Flags:

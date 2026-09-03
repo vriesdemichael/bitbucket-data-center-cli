@@ -214,3 +214,46 @@ func TestUnionWidensSelectionRegardlessOfOrder(t *testing.T) {
 		})
 	}
 }
+
+// TestParseOwnerRefRecognisesReviewerGroupPrefix is #503.
+//
+// Bitbucket's Code Owners plugin spells a reviewer group "@reviewer-group/name".
+// parseOwnerRef treated the whole token as the group name, so the lookup missed
+// a group that exists and the caller then sent "reviewer-group/cog_product" to
+// the reviewers API as a username, which answered 409.
+func TestParseOwnerRefRecognisesReviewerGroupPrefix(t *testing.T) {
+	for _, testCase := range []struct {
+		raw             string
+		wantName        string
+		wantGroup       bool
+		wantReviewerGrp bool
+	}{
+		{raw: "@reviewer-group/cog_product", wantName: "cog_product", wantGroup: true, wantReviewerGrp: true},
+		// The bare form still means a Bitbucket group, and must not be
+		// mistaken for the reviewer-group form: the two resolve differently
+		// when they cannot be found, one warning and one falling back to a
+		// username.
+		{raw: "@backend-team", wantName: "backend-team", wantGroup: true, wantReviewerGrp: false},
+		{raw: "alice", wantName: "alice", wantGroup: false, wantReviewerGrp: false},
+		// A user really named after the prefix is not a group at all, so the
+		// prefix must only be stripped behind the "@".
+		{raw: "reviewer-group/cog_product", wantName: "reviewer-group/cog_product", wantGroup: false, wantReviewerGrp: false},
+	} {
+		t.Run(testCase.raw, func(t *testing.T) {
+			ref := parseOwnerRef(testCase.raw)
+
+			if ref.Name != testCase.wantName {
+				t.Errorf("Name = %q, want %q", ref.Name, testCase.wantName)
+			}
+			if ref.IsGroup != testCase.wantGroup {
+				t.Errorf("IsGroup = %v, want %v", ref.IsGroup, testCase.wantGroup)
+			}
+			if ref.IsReviewerGroup != testCase.wantReviewerGrp {
+				t.Errorf("IsReviewerGroup = %v, want %v", ref.IsReviewerGroup, testCase.wantReviewerGrp)
+			}
+			if ref.Raw != testCase.raw {
+				t.Errorf("Raw = %q, want the token unchanged %q", ref.Raw, testCase.raw)
+			}
+		})
+	}
+}
