@@ -73,3 +73,29 @@ func TestRetriableStatus(t *testing.T) {
 		}
 	})
 }
+
+// TestMethodMatchingIsCaseInsensitive keeps a non-canonical method from
+// silently losing its retries.
+//
+// Every caller passes an upper-case method today, so this guards a trap rather
+// than a bug: "get" would have fallen to the default and stopped being retried,
+// with nothing to notice it by.
+func TestMethodMatchingIsCaseInsensitive(t *testing.T) {
+	t.Parallel()
+
+	for _, method := range []string{"get", "Get", " GET ", "delete"} {
+		if !retrypolicy.Replayable(method) {
+			t.Errorf("Replayable(%q) = false; an idempotent method lost its retries", method)
+		}
+	}
+
+	// And the unsafe direction stays unsafe whatever the spelling.
+	for _, method := range []string{"post", "Post", "patch"} {
+		if retrypolicy.Replayable(method) {
+			t.Errorf("Replayable(%q) = true; a mutation became replayable", method)
+		}
+		if retrypolicy.RetriableStatus(method, 503) {
+			t.Errorf("RetriableStatus(%q, 503) = true", method)
+		}
+	}
+}

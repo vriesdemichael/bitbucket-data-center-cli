@@ -249,3 +249,34 @@ func TestConfidenceIsDerivedFromTheTier(t *testing.T) {
 		}
 	})
 }
+
+// TestNewDoesNotReachIntoTheCallersSlice pins that building a preview leaves
+// the caller's items alone.
+//
+// New derives each item's confidence from its tier. Doing that in place would
+// edit the caller's backing array when called as New(..., items...), and leave
+// preview.Items aliasing it -- so a later append would reach inside a preview
+// already built.
+func TestNewDoesNotReachIntoTheCallersSlice(t *testing.T) {
+	t.Parallel()
+
+	items := []Item{{Intent: "x", Action: "update", PredictedAction: PredictedUpdate, Supported: true}}
+
+	preview := New(PlanningModeStateful, CapabilityFull, items...)
+
+	if items[0].Tier != "" {
+		t.Errorf("the caller's item gained a tier: %q", items[0].Tier)
+	}
+	if items[0].Confidence != "" {
+		t.Errorf("the caller's item gained a confidence: %q", items[0].Confidence)
+	}
+	if preview.Items[0].Confidence != CapabilityPartial {
+		t.Errorf("the preview's own item was not completed: %+v", preview.Items[0])
+	}
+
+	// And the preview does not share storage with the caller.
+	items[0].Intent = "mutated after the preview was built"
+	if preview.Items[0].Intent != "x" {
+		t.Errorf("preview.Items aliases the caller's slice: %q", preview.Items[0].Intent)
+	}
+}

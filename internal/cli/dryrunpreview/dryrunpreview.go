@@ -162,16 +162,24 @@ const (
 //
 // DryRun is always true. A preview only exists because --dry-run was passed.
 func New(planningMode string, capability string, items ...Item) Preview {
+	// A copy, not the caller's slice. Called variadically with items... the
+	// argument is the caller's backing array, so deriving confidence in place
+	// would edit their data and leave preview.Items aliasing it -- an append
+	// after this returns would then reach inside a preview already built.
+	owned := make([]Item, len(items))
+	copy(owned, items)
+
 	// Confidence is computed from the tier rather than taken from the item, so
 	// a site cannot claim full for a prediction the tier does not support. An
 	// item that names no tier is Predicted, which is the honest default: if the
 	// code cannot say what it checked, it did not check enough to claim full.
-	for index := range items {
-		if items[index].Tier == "" {
-			items[index].Tier = TierPredicted
+	for index := range owned {
+		if owned[index].Tier == "" {
+			owned[index].Tier = TierPredicted
 		}
-		items[index].Confidence = items[index].Tier.Confidence()
+		owned[index].Confidence = owned[index].Tier.Confidence()
 	}
+	items = owned
 
 	preview := Preview{
 		DryRun:       true,
