@@ -2166,3 +2166,87 @@ func reviewerNamesFromPayload(t *testing.T, payload map[string]any) []string {
 
 	return names
 }
+
+// TestTransitionsResolveTheCurrentVersion is #505.
+//
+// Bitbucket does not read an absent version as "whatever is current". It
+// defaults expectedVersion to -1, compares it strictly, and answers 409, so
+// merge, decline and reopen all failed unless the caller looked the number up
+// by hand first. The mock this package already had accepted any version, which
+// is how three broken commands passed their tests.
+//
+// This server behaves like the real one: it rejects a transition whose version
+// is absent or stale, and reports the numbers the way Bitbucket does.
+func TestTransitionsResolveTheCurrentVersion(t *testing.T) {
+	const currentVersion = 7
+
+	for _, action := range []string{"merge", "decline", "reopen"} {
+		t.Run(action, func(t *testing.T) {
+			var gets int
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+				base := "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30"
+
+				switch {
+				case request.Method == http.MethodGet && request.URL.Path == base:
+					gets++
+					_, _ = fmt.Fprintf(w, `{"id":30,"version":%d,"state":"OPEN"}`, currentVersion)
+
+				case request.Method == http.MethodPost && request.URL.Path == base+"/"+action:
+					got := request.URL.Query().Get("version")
+					if got != strconv.Itoa(currentVersion) {
+						// What the real server does with -1 or an omitted value.
+						w.WriteHeader(http.StatusConflict)
+						_, _ = fmt.Fprintf(w, `{"errors":[{"message":"You are attempting to modify a pull request based on out-of-date information.","exceptionName":"com.atlassian.bitbucket.pull.PullRequestOutOfDateException","currentVersion":%d,"expectedVersion":-1}]}`, currentVersion)
+
+						return
+					}
+					_, _ = fmt.Fprintf(w, `{"id":30,"version":%d,"state":"OPEN"}`, currentVersion+1)
+
+				default:
+					http.NotFound(w, request)
+				}
+			}))
+			defer server.Close()
+
+			t.Setenv("BITBUCKET_URL", server.URL)
+			t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+			cfg, err := config.LoadFromEnv()
+			if err != nil {
+				t.Fatalf("failed to load config: %v", err)
+			}
+
+			service := NewService(httpclient.NewFromConfig(cfg))
+			repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+			transitions := map[string]func(*int) (PullRequest, error){
+				"merge":   func(v *int) (PullRequest, error) { return service.Merge(context.Background(), repo, "30", v) },
+				"decline": func(v *int) (PullRequest, error) { return service.Decline(context.Background(), repo, "30", v) },
+				"reopen":  func(v *int) (PullRequest, error) { return service.Reopen(context.Background(), repo, "30", v) },
+			}
+
+			// No version given: the service reads the current one.
+			result, err := transitions[action](nil)
+			if err != nil {
+				t.Fatalf("%s without a version must succeed: %v", action, err)
+			}
+			if result.Version != currentVersion+1 {
+				t.Errorf("version = %d, want %d", result.Version, currentVersion+1)
+			}
+			if gets != 1 {
+				t.Errorf("the version was read %d times, want exactly 1", gets)
+			}
+
+			// A version given: it is used as-is and costs no extra request, so
+			// a caller who wants the optimistic lock still gets the conflict.
+			gets = 0
+			if _, err := transitions[action](intPtr(currentVersion - 1)); err == nil {
+				t.Errorf("%s with a stale version must still conflict", action)
+			}
+			if gets != 0 {
+				t.Errorf("an explicit version must not be second-guessed, but %d get(s) were made", gets)
+			}
+		})
+	}
+}

@@ -839,7 +839,7 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	mergeCmd.Flags().IntVar(&transitionVersion, "version", 0, "Expected pull request version")
+	mergeCmd.Flags().IntVar(&transitionVersion, "version", 0, "Expected pull request version; omit to act on whatever version is current")
 	prCmd.AddCommand(mergeCmd)
 
 	declineCmd := &cobra.Command{
@@ -908,7 +908,7 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	declineCmd.Flags().IntVar(&transitionVersion, "version", 0, "Expected pull request version")
+	declineCmd.Flags().IntVar(&transitionVersion, "version", 0, "Expected pull request version; omit to act on whatever version is current")
 	prCmd.AddCommand(declineCmd)
 
 	reopenCmd := &cobra.Command{
@@ -977,7 +977,7 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	reopenCmd.Flags().IntVar(&transitionVersion, "version", 0, "Expected pull request version")
+	reopenCmd.Flags().IntVar(&transitionVersion, "version", 0, "Expected pull request version; omit to act on whatever version is current")
 	prCmd.AddCommand(reopenCmd)
 
 	reviewCmd := &cobra.Command{Use: "review", Short: "Pull request review commands"}

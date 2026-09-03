@@ -1149,10 +1149,25 @@ func (service *Service) transition(ctx context.Context, repository RepositoryRef
 		return PullRequest{}, err
 	}
 
-	query := map[string]string{}
-	if version != nil {
-		query["version"] = strconv.Itoa(*version)
+	// Bitbucket does not read an absent version as "whatever is current". It
+	// defaults expectedVersion to -1, compares it strictly, and answers 409 --
+	// so merge, decline and reopen could not succeed without the caller first
+	// looking the number up by hand (#505). Read it here instead.
+	//
+	// This narrows nothing: the version guards against acting on a pull request
+	// that moved since the caller last looked, and a caller who omitted the
+	// flag was never making that claim. One who wants the guard still passes
+	// --version and still gets the conflict.
+	resolvedVersion := version
+	if resolvedVersion == nil {
+		current, err := service.Get(ctx, repository, resolvedID)
+		if err != nil {
+			return PullRequest{}, err
+		}
+		resolvedVersion = &current.Version
 	}
+
+	query := map[string]string{"version": strconv.Itoa(*resolvedVersion)}
 
 	var response pullRequestValue
 	if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/%s", pullRequestPath(repository), resolvedID, action), query, map[string]any{}, &response); err != nil {
