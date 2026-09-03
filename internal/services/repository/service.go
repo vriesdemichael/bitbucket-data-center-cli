@@ -23,11 +23,17 @@ func NewService(client *httpclient.Client) *Service {
 	return &Service{client: client}
 }
 
+// AllResults asks for every repository rather than a page of them. Callers
+// that need a complete set -- bulk planning, an existence check -- must say so,
+// because the zero value is a default page rather than everything (#468).
+const AllResults = 1_000_000
+
 type ListOptions struct {
-	// Limit caps the total number of repositories returned across all pages.
-	// Unlike other service list options, this is not forwarded as a caller-controlled
-	// Bitbucket page size because `bb repo list --limit` is defined as a maximum
-	// result count at the CLI layer.
+	// MaxResults caps the total number of repositories returned across all
+	// pages. It is not forwarded as a caller-controlled Bitbucket page size,
+	// because `bb repo list --limit` is defined as a maximum result count at
+	// the CLI layer. Zero means the default page, not everything: pass
+	// AllResults for that.
 	MaxResults  int
 	Start       int
 	Name        string

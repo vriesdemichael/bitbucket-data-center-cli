@@ -1346,3 +1346,74 @@ func TestThePublishedErrorKindEnumCoversTheWholeTaxonomy(t *testing.T) {
 		t.Errorf("the enum lists %d kinds, the taxonomy has %d", len(published), len(apperrors.Kinds()))
 	}
 }
+
+// cappingCatalog honours MaxResults the way the real repository service does,
+// which the fake above deliberately does not -- and that is why the cap went
+// unnoticed.
+type cappingCatalog struct {
+	repos map[string][]repository.Repository
+}
+
+func (catalog cappingCatalog) ListByProject(_ context.Context, projectKey string, opts repository.ListOptions) ([]repository.Repository, error) {
+	all := catalog.repos[projectKey]
+
+	maxResults := opts.MaxResults
+	if maxResults <= 0 {
+		maxResults = 25
+	}
+	if len(all) > maxResults {
+		all = all[:maxResults]
+	}
+
+	return append([]repository.Repository(nil), all...), nil
+}
+
+// TestPlanCoversEveryRepositoryPastTheFirstHundred is #468.
+//
+// resolveTargets asked for MaxResults: 100, which caps the total rather than
+// sizing a page. A project selector over more than a hundred repositories
+// produced a plan for the first hundred that validated, hashed, and applied as
+// a complete success -- and a repository named explicitly past the cap was
+// reported not-found. Every artifact said it worked.
+func TestPlanCoversEveryRepositoryPastTheFirstHundred(t *testing.T) {
+	const total = 250
+
+	repos := make([]repository.Repository, 0, total)
+	for index := range total {
+		repos = append(repos, repository.Repository{
+			ProjectKey: "PRJ",
+			Slug:       fmt.Sprintf("repo-%03d", index),
+			Name:       fmt.Sprintf("Repo %d", index),
+		})
+	}
+
+	planner := NewPlanner(cappingCatalog{repos: map[string][]repository.Repository{"PRJ": repos}})
+
+	t.Run("a project selector covers all of them", func(t *testing.T) {
+		plan, err := planner.Plan(context.Background(), Policy{
+			APIVersion: APIVersion,
+			Selector:   Selector{ProjectKey: "PRJ"},
+			Operations: []OperationSpec{{Type: OperationRepoPermissionUserGrant, Username: "alice", Permission: "REPO_WRITE"}},
+		})
+		if err != nil {
+			t.Fatalf("plan: %v", err)
+		}
+		if len(plan.Targets) != total {
+			t.Errorf("plan covers %d of %d repositories; the rest would silently miss the policy", len(plan.Targets), total)
+		}
+	})
+
+	t.Run("a repository past the cap is found", func(t *testing.T) {
+		plan, err := planner.Plan(context.Background(), Policy{
+			APIVersion: APIVersion,
+			Selector:   Selector{ProjectKey: "PRJ", Repositories: []string{"repo-200"}},
+			Operations: []OperationSpec{{Type: OperationRepoPermissionUserGrant, Username: "alice", Permission: "REPO_WRITE"}},
+		})
+		if err != nil {
+			t.Fatalf("plan: %v", err)
+		}
+		if len(plan.Targets) != 1 || plan.Targets[0].Repository.Slug != "repo-200" {
+			t.Errorf("repo-200 resolved to %v, want exactly itself -- past the cap it reported not-found", plan.Targets)
+		}
+	})
+}
