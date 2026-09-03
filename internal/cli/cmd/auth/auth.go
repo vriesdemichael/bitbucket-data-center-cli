@@ -210,10 +210,8 @@ for.`,
 	statusCmd.Flags().BoolVar(&statusCheckExit, "check", false, "Exit non-zero when a check fails (for CI)")
 	authCmd.AddCommand(statusCmd)
 
-	var loginToken string
 	var loginTokenStdin bool
 	var loginUsername string
-	var loginPassword string
 	var loginPasswordStdin bool
 	var loginClientCert string
 	var loginClientKey string
@@ -243,16 +241,14 @@ to fail instead of falling back.`,
 				return apperrors.New(apperrors.KindValidation, "--token-stdin and --password-stdin cannot both be used: stdin carries one secret", nil)
 			}
 
-			token, err := resolveLoginSecret(loginToken, loginTokenStdin, cmd.InOrStdin(), "--token", "--token-stdin")
+			token, err := resolveLoginSecret(loginTokenStdin, cmd.InOrStdin(), "--token-stdin")
 			if err != nil {
 				return err
 			}
-			password, err := resolveLoginSecret(loginPassword, loginPasswordStdin, cmd.InOrStdin(), "--password", "--password-stdin")
+			password, err := resolveLoginSecret(loginPasswordStdin, cmd.InOrStdin(), "--password-stdin")
 			if err != nil {
 				return err
 			}
-
-			warnAboutSecretsOnTheCommandLine(cmd)
 
 			// The subcommand's own flag wins, then the global --client-cert,
 			// then the variable. The middle layer used to arrive as the
@@ -316,10 +312,13 @@ to fail instead of falling back.`,
 			return nil
 		},
 	}
-	loginCmd.Flags().StringVar(&loginToken, "token", "", "Access token (visible in the process list; prefer --token-stdin)")
+	// No --token value form. A secret passed as a flag lands in the process
+	// argument list, which is world-readable on Linux, and in shell history --
+	// on the shared build agents and jump boxes this tool targets that is a real
+	// exposure, not a theoretical one (#464). BITBUCKET_TOKEN remains for
+	// non-interactive use, and #396 shipped a prompt for the interactive case.
 	loginCmd.Flags().BoolVar(&loginTokenStdin, "token-stdin", false, "Read the access token from stdin")
 	loginCmd.Flags().StringVar(&loginUsername, "username", "", "Username for basic auth")
-	loginCmd.Flags().StringVar(&loginPassword, "password", "", "Password for basic auth (visible in the process list; prefer --password-stdin)")
 	loginCmd.Flags().BoolVar(&loginPasswordStdin, "password-stdin", false, "Read the basic-auth password from stdin")
 	loginCmd.Flags().StringVar(&loginClientCert, "client-cert", "", "Path to PEM client certificate for mTLS")
 	loginCmd.Flags().StringVar(&loginClientKey, "client-key", "", "Path to PEM client key for mTLS")

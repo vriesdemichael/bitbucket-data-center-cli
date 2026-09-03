@@ -146,13 +146,14 @@ func TestMCPServeRejectsLoadConfigError(t *testing.T) {
 	}
 }
 
-// TestMCPServeHostAndTokenOverride verifies that --host and --token reach the
-// config load, and that they do so without touching the environment.
+// TestMCPServeHostOverrideAndTokenFromEnvironment covers what --host still does
+// and where the credential now comes from.
 //
-// The environment assertion is the point: this process goes on to serve MCP for
-// as long as the client keeps it alive, so an exported BITBUCKET_TOKEN would sit
-// in the environment of every subprocess for the whole session.
-func TestMCPServeHostAndTokenOverride(t *testing.T) {
+// --token was retired in #464: a flag value sits in the process argument list,
+// which is world-readable on Linux, for as long as the server runs -- and this
+// server runs for the whole session. The MCP client supplies BITBUCKET_TOKEN
+// through its own env block instead, which /proc exposes only to the same user.
+func TestMCPServeHostOverrideAndTokenFromEnvironment(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "http://initial.example")
 	t.Setenv("BITBUCKET_TOKEN", "initial-token")
 
@@ -168,21 +169,24 @@ func TestMCPServeHostAndTokenOverride(t *testing.T) {
 	cmd := New(deps)
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
-	cmd.SetArgs([]string{"mcp", "serve", "--host", "http://override.example", "--token", "my-pat"})
+	cmd.SetArgs([]string{"mcp", "serve", "--host", "http://override.example"})
 	_ = cmd.Execute() // will error at LoadConfig — that's expected
 
 	if seen.Host != "http://override.example" {
 		t.Errorf("host override: got %q, want %q", seen.Host, "http://override.example")
 	}
-	if seen.Token != "my-pat" {
-		t.Errorf("token override: got %q, want %q", seen.Token, "my-pat")
+
+	// No token override is passed at all: config.Load reads BITBUCKET_TOKEN,
+	// which is what the client's env block sets for this process alone.
+	if seen.Token != "" {
+		t.Errorf("token override: got %q, want none -- the token comes from the environment", seen.Token)
 	}
 
 	if got := os.Getenv("BITBUCKET_URL"); got != "http://initial.example" {
 		t.Errorf("--host must not rewrite BITBUCKET_URL, got %q", got)
 	}
 	if got := os.Getenv("BITBUCKET_TOKEN"); got != "initial-token" {
-		t.Errorf("--token must not rewrite BITBUCKET_TOKEN, got %q", got)
+		t.Errorf("the token must not be written to the environment, got %q", got)
 	}
 }
 

@@ -418,8 +418,10 @@ bb ai mcp tools
 # Start the server (used by IDE MCP clients, not invoked manually)
 bb ai mcp serve
 
-# Restrict to a read-only PAT
-bb ai mcp serve --token <read-only-pat>
+# Restrict to a read-only PAT: set BITBUCKET_TOKEN in the MCP client's env
+# block rather than on the command line. "env": { "BITBUCKET_TOKEN":
+# "${BB_MCP_TOKEN}" } keeps the agent on its own PAT while your interactive
+# shell keeps a wider one, and puts neither in the config file.
 
 # Expose only specific tools
 bb ai mcp serve --tools get_pull_request,list_pr_comments,get_build_status

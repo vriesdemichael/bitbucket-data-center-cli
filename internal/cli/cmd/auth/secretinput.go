@@ -6,7 +6,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -58,48 +57,15 @@ func readSecretFromStdin(reader io.Reader, flagName string) (string, error) {
 // resolveLoginSecret picks between a flag-supplied secret and one piped on
 // stdin, rejecting the ambiguous case where both are given.
 //
-// A flag value puts the credential in the process argument list, where any
-// local user can read it via ps or /proc, and where the shell records it in
-// history. The stdin form exists to avoid that, so callers that pass both have
-// almost certainly not achieved what they intended.
-func resolveLoginSecret(flagValue string, fromStdin bool, reader io.Reader, flagName, stdinFlagName string) (string, error) {
-	trimmed := strings.TrimSpace(flagValue)
-
+// There is no value form to reconcile with any more. --token and --password
+// were retired in #464 because a flag value lands in the process argument list,
+// which is world-readable on Linux, and in shell history.
+func resolveLoginSecret(fromStdin bool, reader io.Reader, stdinFlagName string) (string, error) {
 	if !fromStdin {
-		return trimmed, nil
-	}
-
-	if trimmed != "" {
-		return "", apperrors.New(apperrors.KindValidation, fmt.Sprintf("%s and %s are mutually exclusive", flagName, stdinFlagName), nil)
+		return "", nil
 	}
 
 	return readSecretFromStdin(reader, stdinFlagName)
-}
-
-// commandLineSecretFlags are the flags whose value lands in the process
-// argument list.
-var commandLineSecretFlags = []string{"token", "password"}
-
-// warnAboutSecretsOnTheCommandLine tells the user when a secret was passed
-// somewhere the operating system will expose it.
-//
-// The flags are kept for compatibility, and for the interactive case where the
-// exposure may be acceptable, but the default should be the safe form and a
-// user who has not thought about it deserves to be told once.
-func warnAboutSecretsOnTheCommandLine(cmd *cobra.Command) {
-	if cmd == nil {
-		return
-	}
-
-	for _, name := range commandLineSecretFlags {
-		flag := cmd.Flags().Lookup(name)
-		if flag == nil || !flag.Changed {
-			continue
-		}
-
-		fmt.Fprintf(cmd.ErrOrStderr(), "Warning: --%s puts the credential in the process list, where any local user can read it, and in your shell history.\n", name)
-		fmt.Fprintf(cmd.ErrOrStderr(), "         Prefer: printf '%%s' \"$SECRET\" | bb auth login <host> --%s-stdin\n", name)
-	}
 }
 
 // storedConfigLocation renders the config file path for a warning message,

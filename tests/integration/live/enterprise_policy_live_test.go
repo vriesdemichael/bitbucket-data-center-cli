@@ -253,7 +253,7 @@ func TestLiveEnterprisePolicyAuthLoginAllowedHosts(t *testing.T) {
 	}
 
 	// Login to an unlisted external host must be blocked by policy
-	output, err := executeLiveCLI(t, "auth", "login", "https://unauthorized-bitbucket.corp.local", "--token", "fake-token", "--discover-aliases=false")
+	output, err := executeLiveCLIWithStdin(t, "fake-token", "auth", "login", "https://unauthorized-bitbucket.corp.local", "--token-stdin", "--discover-aliases=false")
 	if err == nil {
 		t.Fatalf("expected login to unlisted host to be blocked by policy, got output: %s", output)
 	}
@@ -265,7 +265,7 @@ func TestLiveEnterprisePolicyAuthLoginAllowedHosts(t *testing.T) {
 	}
 
 	// Login to the allowed live host must succeed
-	output, err = executeLiveCLI(t, "auth", "login", harness.config.BitbucketURL, "--username", harness.config.BitbucketUsername, "--password", harness.config.BitbucketPassword, "--discover-aliases=false")
+	output, err = executeLiveCLIWithStdin(t, harness.config.BitbucketPassword, "auth", "login", harness.config.BitbucketURL, "--username", harness.config.BitbucketUsername, "--password-stdin", "--discover-aliases=false")
 	if err != nil {
 		t.Fatalf("expected login to allowed live host to succeed: %v\noutput: %s", err, output)
 	}
@@ -343,7 +343,7 @@ func TestLiveEnterprisePolicyKeyringWarningOnLiveCommand(t *testing.T) {
 	config.SetPolicyWarningWriter(&warnBuf)
 	t.Cleanup(func() { config.SetPolicyWarningWriter(nil) })
 
-	_, _ = executeLiveCLI(t, "auth", "login", harness.config.BitbucketURL, "--username", harness.config.BitbucketUsername, "--password", harness.config.BitbucketPassword, "--discover-aliases=false")
+	_, _ = executeLiveCLIWithStdin(t, harness.config.BitbucketPassword, "auth", "login", harness.config.BitbucketURL, "--username", harness.config.BitbucketUsername, "--password-stdin", "--discover-aliases=false")
 
 	if !strings.Contains(warnBuf.String(), "warning: BB_REQUIRE_KEYRING=0 is ignored") {
 		t.Fatalf("expected warning when user attempts to disable require_keyring policy, got: %s", warnBuf.String())
