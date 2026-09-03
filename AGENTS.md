@@ -1,5 +1,43 @@
 # Agent Instructions — bitbucket-data-center-cli
 
+## Fixing a bug
+
+In this order, every time.
+
+1. **Reproduce it with a live test.** Against a real Bitbucket, not a mock. A
+   unit test is enough only when the bug is purely CLI parsing — a flag that
+   does not exist, an argument rejected before any request is built. If the
+   server is involved at all, the test goes in `tests/integration/live/`.
+2. **Look for the same bug next door, and reproduce that too.** Bugs here come
+   from an assumption, and an assumption is rarely applied once. Ask what other
+   code shares the funnel, the helper, or the belief about the API, and write
+   the failing case for those as well before fixing anything.
+3. **Fix it.**
+4. **Confirm the suite is green** — unit and live.
+
+Then break each new test by reverting its own fix and watch it fail. A test
+written after the fix, against a mock built from the same assumption, proves
+nothing: it agrees with the code because both agree with the same guess.
+
+### Why the live test is not optional
+
+Every defect this project has shipped has the same shape: Bitbucket disagreeing
+with an assumption in our code. A mock written from that assumption agrees with
+it, so the unit test passes and the bug ships. Four such defects landed together
+in #530, and in each case a unit test was already green.
+
+`bb pr decline` is the one to remember. The transition mock accepted any version
+and three broken commands passed. There *was* a live test covering decline,
+reopen and merge — it passed `--version` on every call, so it only ever
+exercised the path that already worked, while the default path that every real
+caller uses had never once been sent to a server. Real Bitbucket defaults
+`expectedVersion` to -1 and 409s.
+
+The corollary: coverage that exists is not coverage that bites. When a live test
+already touches the command you are fixing, read what it actually sends before
+trusting it, and be suspicious of a mutating command exercised only under
+`--dry-run` (#532).
+
 ## Quality artifacts
 
 Coverage **measurements** are never committed. Coverage profiles and the combined report are written
