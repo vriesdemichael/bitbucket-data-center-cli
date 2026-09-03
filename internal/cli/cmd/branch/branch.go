@@ -203,7 +203,6 @@ func New(deps Dependencies) *cobra.Command {
 	}
 
 	branchCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
-	listPaging.RegisterPersistent(branchCmd, 25)
 	branchCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var orderBy string
@@ -269,6 +268,7 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd.Flags().StringVar(&filterText, "filter", "", "Filter text for branch names")
 	listCmd.Flags().StringVar(&base, "base", "", "Base ref filter")
 	listCmd.Flags().BoolVar(&details, "details", false, "Include branch details from Bitbucket")
+	listPaging.Register(listCmd, 25)
 	branchCmd.AddCommand(listCmd)
 
 	var createStartPoint string
@@ -548,6 +548,7 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
+	listPaging.Register(modelInspectCmd, 25)
 	modelCmd.AddCommand(modelInspectCmd)
 
 	modelUpdateCmd := &cobra.Command{
@@ -679,6 +680,7 @@ func New(deps Dependencies) *cobra.Command {
 	enumflag.Register(restrictionListCmd.Flags(), &restrictionType, "type", "", result.RestrictionTypes, "Restriction type")
 	enumflag.Register(restrictionListCmd.Flags(), &matcherType, "matcher-type", "", openapi.RestrictionMatcherTypes, "Matcher type")
 	restrictionListCmd.Flags().StringVar(&matcherID, "matcher-id", "", "Matcher id value")
+	listPaging.Register(restrictionListCmd, 25)
 	restrictionCmd.AddCommand(restrictionListCmd)
 
 	restrictionGetCmd := &cobra.Command{

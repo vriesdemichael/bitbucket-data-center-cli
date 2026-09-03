@@ -91,12 +91,9 @@ func New(deps Dependencies) *cobra.Command {
 	}
 
 	tagCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
-	listPaging.RegisterPersistent(tagCmd, 25)
-	tagCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
-	enumflag.Register(tagCmd.PersistentFlags(), &orderBy, "order-by", "", openapi.RefOrderings, "Tag ordering")
 	tagCmd.PersistentFlags().StringVar(&filterText, "filter", "", "Filter text for tag names")
 
-	tagCmd.AddCommand(&cobra.Command{
+	listTagsCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository tags",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -135,7 +132,13 @@ func New(deps Dependencies) *cobra.Command {
 
 			return nil
 		},
-	})
+	}
+	// On the leaf, not on tagCmd, which also holds create, delete and view --
+	// none of which paged or ordered anything (#476).
+	listPaging.Register(listTagsCmd, 25)
+	listTagsCmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
+	enumflag.Register(listTagsCmd.Flags(), &orderBy, "order-by", "", openapi.RefOrderings, "Tag ordering")
+	tagCmd.AddCommand(listTagsCmd)
 
 	var startPoint string
 	var message string

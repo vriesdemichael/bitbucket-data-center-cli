@@ -101,8 +101,6 @@ func New(deps Dependencies) *cobra.Command {
 	var listPaging paging.Options
 	var start int
 	var projectKey string
-	listPaging.RegisterPersistent(repoCmd, 25)
-	repoCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -147,6 +145,10 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	listCmd.Flags().StringVar(&projectKey, "project", "", "Filter by project key")
+	// On the leaf, not the parent: every other repoCmd subcommand advertised
+	// these and ignored them (#476).
+	listPaging.Register(listCmd, 25)
+	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
 	repoCmd.AddCommand(listCmd)
 	repoCmd.AddCommand(newRepoCreateCommand(d, false))
 	repoCmd.AddCommand(newRepoForkCommand(d, nil, false))

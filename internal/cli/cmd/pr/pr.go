@@ -2178,7 +2178,6 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 		Use:   "build",
 		Short: "Pull request build status commands",
 	}
-	buildPaging.RegisterPersistent(buildCmd, 25)
 
 	buildStatusCmd := &cobra.Command{
 		Use:   "status <id>",
@@ -2225,6 +2224,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			return nil
 		},
 	}
+	buildPaging.Register(buildStatusCmd, 25)
 	buildCmd.AddCommand(buildStatusCmd)
 	prCmd.AddCommand(buildCmd)
 

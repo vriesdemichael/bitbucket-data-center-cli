@@ -86,9 +86,6 @@ func New(deps Dependencies) *cobra.Command {
 		Short: "Project administration commands",
 	}
 
-	listPaging.RegisterPersistent(projectCmd, 25)
-	projectCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
-
 	var listName string
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -128,6 +125,10 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	listCmd.Flags().StringVar(&listName, "name", "", "Filter projects by name")
+	// On the leaf, not the parent: every other projectCmd subcommand advertised
+	// these and ignored them (#476).
+	listPaging.Register(listCmd, 25)
+	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
 	projectCmd.AddCommand(listCmd)
 
 	getCmd := &cobra.Command{
