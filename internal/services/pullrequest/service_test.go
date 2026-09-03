@@ -2288,3 +2288,101 @@ func TestUpdateRequiresAFieldTheCallerNamed(t *testing.T) {
 		}
 	})
 }
+
+// TestRebaseResolvesTheCurrentVersion is the #532 neighbour of #505.
+//
+// Bitbucket requires the version outright on this endpoint -- 400, "The
+// \"version\" property is required to rebase a pull request" -- so omitting it
+// when the caller did could never succeed. The mock this package had accepted
+// a request with no version at all.
+func TestRebaseResolvesTheCurrentVersion(t *testing.T) {
+	const currentVersion = 6
+
+	newServer := func(gets *int) *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+			const pullRequest = "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30"
+			// Rebase is served by the git REST module, not the api one.
+			const rebase = "/rest/git/latest/projects/TEST/repos/demo/pull-requests/30/rebase"
+
+			switch {
+			case request.Method == http.MethodGet && request.URL.Path == pullRequest:
+				*gets++
+				_, _ = fmt.Fprintf(w, `{"id":30,"version":%d,"state":"OPEN"}`, currentVersion)
+
+			case request.Method == http.MethodPost && request.URL.Path == rebase:
+				var body struct {
+					Version *int32 `json:"version"`
+				}
+				_ = json.NewDecoder(request.Body).Decode(&body)
+
+				// What the real server does with an absent version.
+				if body.Version == nil {
+					w.WriteHeader(http.StatusBadRequest)
+					_, _ = fmt.Fprint(w, `{"errors":[{"message":"The \"version\" property is required to rebase a pull request.","exceptionName":"com.atlassian.bitbucket.validation.ArgumentValidationException"}]}`)
+
+					return
+				}
+				if *body.Version != currentVersion {
+					w.WriteHeader(http.StatusConflict)
+					_, _ = fmt.Fprint(w, `{"errors":[{"message":"out of date"}]}`)
+
+					return
+				}
+				// The generated client keys the success body on this exact content
+				// type; without it the response decodes as empty.
+				w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+				_, _ = fmt.Fprint(w, `{"refChange":{"ref":{"id":"refs/heads/feature"}}}`)
+
+			default:
+				http.NotFound(w, request)
+			}
+		}))
+	}
+
+	t.Run("no version given, so it is read", func(t *testing.T) {
+		gets := 0
+		server := newServer(&gets)
+		defer server.Close()
+
+		t.Setenv("BITBUCKET_URL", server.URL)
+		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+		cfg, err := config.LoadFromEnv()
+		if err != nil {
+			t.Fatalf("failed to load config: %v", err)
+		}
+		client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+		service := NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(client)
+
+		if _, err := service.Rebase(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "30", nil); err != nil {
+			t.Fatalf("rebase without a version must succeed: %v", err)
+		}
+		if gets != 1 {
+			t.Errorf("the version was read %d times, want exactly 1", gets)
+		}
+	})
+
+	t.Run("a stale version still conflicts and costs no lookup", func(t *testing.T) {
+		gets := 0
+		server := newServer(&gets)
+		defer server.Close()
+
+		t.Setenv("BITBUCKET_URL", server.URL)
+		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+		cfg, err := config.LoadFromEnv()
+		if err != nil {
+			t.Fatalf("failed to load config: %v", err)
+		}
+		client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+		service := NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(client)
+
+		stale := currentVersion - 1
+		if _, err := service.Rebase(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "30", &stale); err == nil {
+			t.Error("a stale version must still conflict")
+		}
+		if gets != 0 {
+			t.Errorf("an explicit version must not be second-guessed, but %d get(s) were made", gets)
+		}
+	})
+}
