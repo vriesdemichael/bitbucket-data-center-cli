@@ -812,3 +812,144 @@ func TestRetryAfterParsingHelpers(t *testing.T) {
 		}
 	})
 }
+
+// licensedGroup is the group Bitbucket ships carrying LICENSED_USER. A user
+// outside it cannot participate in a pull request at all -- the server refuses
+// them as a reviewer with "not a licensed user" -- which is a different thing
+// from having no permission on a repository.
+const licensedGroup = "stash-users"
+
+// licenseUser puts a user in the licensed group so they can be named as a
+// reviewer.
+//
+// This is deliberately not folded into createRestrictedUser: several tests
+// depend on that user being unlicensed and unprivileged, and licensing grants a
+// global permission that would quietly change what they assert.
+func (h *liveHarness) licenseUser(ctx context.Context, username string) error {
+	// /admin/groups/add-user reads context as the group and itemName as the
+	// user, which is the opposite way round from the sibling endpoint that adds
+	// a group to a user.
+	group := licensedGroup
+	body := openapigenerated.AddUserToGroupJSONRequestBody{Context: &group, ItemName: &username}
+
+	resp, err := h.client.AddUserToGroup(ctx, body)
+	if err != nil {
+		return fmt.Errorf("add user to licensed group call failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("add user to licensed group returned status %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+// createLicensedUser is createRestrictedUser plus a licence, for tests that
+// need a second person who can actually take part in a review.
+func (h *liveHarness) createLicensedUser(ctx context.Context) (restrictedUser, error) {
+	user, err := h.createRestrictedUser(ctx)
+	if err != nil {
+		return restrictedUser{}, err
+	}
+	if err := h.licenseUser(ctx, user.Username); err != nil {
+		return restrictedUser{}, err
+	}
+
+	return user, nil
+}
+
+// liveJSON sends an authenticated request to the Bitbucket REST API and decodes
+// the response, using whichever credential the harness was configured with.
+func (h *liveHarness) liveJSON(ctx context.Context, method, path string, payload any) (map[string]any, error) {
+	var reader io.Reader
+	if payload != nil {
+		encoded, err := json.Marshal(payload)
+		if err != nil {
+			return nil, fmt.Errorf("marshal %s %s payload: %w", method, path, err)
+		}
+		reader = bytes.NewReader(encoded)
+	}
+
+	endpoint := strings.TrimRight(h.config.BitbucketURL, "/") + path
+	request, err := http.NewRequestWithContext(ctx, method, endpoint, reader)
+	if err != nil {
+		return nil, fmt.Errorf("build %s %s request: %w", method, path, err)
+	}
+	request.Header.Set("Accept", "application/json")
+	if payload != nil {
+		request.Header.Set("Content-Type", "application/json")
+	}
+
+	if h.config.BitbucketToken != "" {
+		request.Header.Set("Authorization", "Bearer "+h.config.BitbucketToken)
+	} else if h.config.BitbucketUsername != "" && h.config.BitbucketPassword != "" {
+		request.SetBasicAuth(h.config.BitbucketUsername, h.config.BitbucketPassword)
+	}
+
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("%s %s failed: %w", method, path, err)
+	}
+	defer func() { _ = response.Body.Close() }()
+
+	body, _ := io.ReadAll(response.Body)
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return nil, fmt.Errorf("%s %s returned status %d: %s", method, path, response.StatusCode, body)
+	}
+
+	decoded := map[string]any{}
+	if len(bytes.TrimSpace(body)) > 0 {
+		if err := json.Unmarshal(body, &decoded); err != nil {
+			return nil, fmt.Errorf("decode %s %s response: %w (body %s)", method, path, err, body)
+		}
+	}
+
+	return decoded, nil
+}
+
+// createReviewerGroup creates a repository-scoped reviewer group holding one
+// user.
+//
+// This goes straight at the API because bb cannot do it: `reviewer-group
+// create` and `update` take only a name and a description, and there is no
+// command that adds a member, so a group made through the CLI is empty -- and
+// the server refuses an empty one outright.
+//
+// The payload is fussy in a way worth recording. The scope is required, and the
+// member is only recognised by numeric id: {"name": ...} and {"slug": ...} are
+// both accepted and both silently yield "Reviewer groups must contain 1 or more
+// reviewer(s)".
+func (h *liveHarness) createReviewerGroup(ctx context.Context, projectKey, repositorySlug, groupName, username string) error {
+	repository, err := h.liveJSON(ctx, http.MethodGet,
+		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s", projectKey, repositorySlug), nil)
+	if err != nil {
+		return fmt.Errorf("look up repository id: %w", err)
+	}
+	repositoryID, ok := repository["id"].(float64)
+	if !ok {
+		return fmt.Errorf("repository %s/%s has no numeric id", projectKey, repositorySlug)
+	}
+
+	user, err := h.liveJSON(ctx, http.MethodGet, "/rest/api/latest/users/"+username, nil)
+	if err != nil {
+		return fmt.Errorf("look up user id: %w", err)
+	}
+	userID, ok := user["id"].(float64)
+	if !ok {
+		return fmt.Errorf("user %s has no numeric id", username)
+	}
+
+	_, err = h.liveJSON(ctx, http.MethodPost,
+		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/settings/reviewer-groups", projectKey, repositorySlug),
+		map[string]any{
+			"name":  groupName,
+			"scope": map[string]any{"resourceId": int64(repositoryID), "type": "REPOSITORY"},
+			"users": []map[string]any{{"id": int64(userID)}},
+		})
+	if err != nil {
+		return fmt.Errorf("create reviewer group %s: %w", groupName, err)
+	}
+
+	return nil
+}
