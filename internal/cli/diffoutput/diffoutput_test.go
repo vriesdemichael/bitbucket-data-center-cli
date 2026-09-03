@@ -73,8 +73,7 @@ func TestOneShapeForEveryOutputMode(t *testing.T) {
 
 	// The three counts the endpoint actually returns. This used to invent
 	// linesAdded and linesRemoved, which Bitbucket does not send (#526).
-	insertions, deletions, files := int64(10), int64(2), int64(1)
-	summary := &diffservice.StatsSummary{FilesChanged: &files, TotalInsertions: &insertions, TotalDeletions: &deletions}
+	summary := diffservice.StatsSummary{"filesChanged": float64(1), "totalInsertions": float64(10), "totalDeletions": float64(2)}
 	stats := From(repository, diffservice.OutputKindStat, diffservice.Result{Stats: summary})
 	if stats.Output != "stat" || stats.Stats["totalInsertions"] != float64(10) {
 		t.Fatalf("stats = %+v", stats)
@@ -96,8 +95,7 @@ func TestOneShapeForEveryOutputMode(t *testing.T) {
 func TestStatsSurviveThePointerTheGeneratedClientHandsBack(t *testing.T) {
 	t.Parallel()
 
-	insertions := int64(10)
-	converted := From(repository, diffservice.OutputKindStat, diffservice.Result{Stats: &diffservice.StatsSummary{TotalInsertions: &insertions}})
+	converted := From(repository, diffservice.OutputKindStat, diffservice.Result{Stats: diffservice.StatsSummary{"totalInsertions": float64(10)}})
 	if converted.Stats["totalInsertions"] != float64(10) {
 		t.Fatalf("stats = %+v, want the summary", converted.Stats)
 	}
