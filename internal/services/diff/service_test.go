@@ -968,11 +968,11 @@ func TestDecodeStatsSummaryRefusesToCallAnUnreadableBodyEmpty(t *testing.T) {
 		if err != nil {
 			t.Fatalf("decode: %v", err)
 		}
-		if summary.FilesChanged == nil || *summary.FilesChanged != 1 {
-			t.Errorf("filesChanged = %v, want 1", summary.FilesChanged)
+		if summary["filesChanged"] != float64(1) {
+			t.Errorf("filesChanged = %v, want 1", summary["filesChanged"])
 		}
-		if summary.TotalInsertions == nil || *summary.TotalInsertions != 1 {
-			t.Errorf("totalInsertions = %v, want 1", summary.TotalInsertions)
+		if summary["totalInsertions"] != float64(1) {
+			t.Errorf("totalInsertions = %v, want 1", summary["totalInsertions"])
 		}
 	})
 
@@ -983,8 +983,23 @@ func TestDecodeStatsSummaryRefusesToCallAnUnreadableBodyEmpty(t *testing.T) {
 		if err != nil {
 			t.Fatalf("decode: %v", err)
 		}
-		if summary.FilesChanged == nil || *summary.FilesChanged != 0 {
+		if summary["filesChanged"] != float64(0) {
 			t.Errorf("a diff with nothing in it must still publish its zeros: %v", summary)
+		}
+	})
+
+	t.Run("a field the spec never named still reaches the caller", func(t *testing.T) {
+		t.Parallel()
+
+		// Two of the three operations were typed as a bare interface{}, so
+		// they published whatever came back. Decoding into a fixed struct
+		// would have fixed one endpoint by narrowing two others.
+		summary, err := decodeStatsSummary([]byte(`{"filesChanged":1,"somethingNew":"kept"}`))
+		if err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if summary["somethingNew"] != "kept" {
+			t.Errorf("an unrecognised field was dropped: %v", summary)
 		}
 	})
 
