@@ -124,7 +124,7 @@ func New(deps Dependencies) *cobra.Command {
 				projectKey = cfg.ProjectKey
 			}
 			if projectKey == "" {
-				return fmt.Errorf("project key is required (use --project or --repo)")
+				return apperrors.New(apperrors.KindValidation, "project key is required (use --project or --repo)", nil)
 			}
 
 			conditions, err := service.ListProjectConditions(cmd.Context(), projectKey)
@@ -199,7 +199,7 @@ func New(deps Dependencies) *cobra.Command {
 				projectKey = cfg.ProjectKey
 			}
 			if projectKey == "" {
-				return fmt.Errorf("project key is required (use --project or --repo)")
+				return apperrors.New(apperrors.KindValidation, "project key is required (use --project or --repo)", nil)
 			}
 
 			if d.DryRunEnabled() {
@@ -266,7 +266,7 @@ func New(deps Dependencies) *cobra.Command {
 			} else if configFile != "" {
 				configData, err = os.ReadFile(configFile)
 				if err != nil {
-					return fmt.Errorf("failed to read config file: %w", err)
+					return apperrors.New(apperrors.KindValidation, fmt.Sprintf("failed to read config file: %v", err), err)
 				}
 			} else {
 				// Only read stdin when the caller asked for it. An implicit
@@ -279,7 +279,7 @@ func New(deps Dependencies) *cobra.Command {
 				}
 				configData, err = io.ReadAll(cmd.InOrStdin())
 				if err != nil {
-					return fmt.Errorf("failed to read condition from stdin: %w", err)
+					return apperrors.New(apperrors.KindValidation, fmt.Sprintf("failed to read condition from stdin: %v", err), err)
 				}
 			}
 
@@ -337,7 +337,7 @@ func New(deps Dependencies) *cobra.Command {
 				projectKey = cfg.ProjectKey
 			}
 			if projectKey == "" {
-				return fmt.Errorf("project key is required (use --project or --repo)")
+				return apperrors.New(apperrors.KindValidation, "project key is required (use --project or --repo)", nil)
 			}
 			var condition openapigenerated.RestDefaultReviewersRequest
 			if err := json.Unmarshal(configData, &condition); err != nil {
@@ -411,7 +411,7 @@ func New(deps Dependencies) *cobra.Command {
 			} else if configFile != "" {
 				configData, err = os.ReadFile(configFile)
 				if err != nil {
-					return fmt.Errorf("failed to read config file: %w", err)
+					return apperrors.New(apperrors.KindValidation, fmt.Sprintf("failed to read config file: %v", err), err)
 				}
 			} else {
 				// Only read stdin when the caller asked for it. An implicit
@@ -424,7 +424,7 @@ func New(deps Dependencies) *cobra.Command {
 				}
 				configData, err = io.ReadAll(cmd.InOrStdin())
 				if err != nil {
-					return fmt.Errorf("failed to read condition from stdin: %w", err)
+					return apperrors.New(apperrors.KindValidation, fmt.Sprintf("failed to read condition from stdin: %v", err), err)
 				}
 			}
 
@@ -486,7 +486,7 @@ func New(deps Dependencies) *cobra.Command {
 				projectKey = cfg.ProjectKey
 			}
 			if projectKey == "" {
-				return fmt.Errorf("project key is required (use --project or --repo)")
+				return apperrors.New(apperrors.KindValidation, "project key is required (use --project or --repo)", nil)
 			}
 			var condition openapigenerated.UpdatePullRequestConditionJSONRequestBody
 			if err := json.Unmarshal(configData, &condition); err != nil {

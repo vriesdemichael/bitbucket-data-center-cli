@@ -41,7 +41,7 @@ func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {
 			}
 
 			if strings.TrimSpace(createProject) == "" {
-				return fmt.Errorf("project key is required")
+				return apperrors.New(apperrors.KindValidation, "project key is required", nil)
 			}
 
 			service := reposervice.NewAdminService(client)
