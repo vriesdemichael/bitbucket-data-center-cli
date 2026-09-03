@@ -1,10 +1,11 @@
 {
-  "version": 1,
+  "version": 2,
   "summary": {
     "runnable_commands": 233,
     "covered_commands": 233,
     "covered_percent": 100,
     "masked_commands": 0,
+    "dry_run_only_commands": 0,
     "uncovered_commands": 0
   },
   "covered": [
@@ -243,5 +244,6 @@
     "webhook update"
   ],
   "known_masked": [],
+  "known_dry_run_only": [],
   "known_uncovered": []
 }
