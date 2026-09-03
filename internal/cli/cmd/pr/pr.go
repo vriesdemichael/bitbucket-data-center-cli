@@ -427,6 +427,7 @@ func New(deps Dependencies) *cobra.Command {
 	prCmd.AddCommand(mergeBaseCmd)
 
 	var createFromRef string
+	var createFromRepo string
 	var createToRef string
 	var createTitle string
 	var createDescription string
@@ -476,7 +477,11 @@ func New(deps Dependencies) *cobra.Command {
 			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
 
 			if deps.DryRunEnabled() {
-				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
+				// Read, not write. Bitbucket requires REPO_READ on the repository a
+				// pull request targets, and fork contributors legitimately hold only
+				// that upstream -- checking for write refused the standard
+				// contribution flow outright (#506).
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
 			}
@@ -602,13 +607,19 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
+			fromRepo, err := resolveSourceRepository(createFromRepo, repo)
+			if err != nil {
+				return err
+			}
+
 			created, err := service.Create(cmd.Context(), repo, pullrequestservice.CreateInput{
-				FromRef:     createFromRef,
-				ToRef:       createToRef,
-				Title:       createTitle,
-				Description: createDescription,
-				Reviewers:   resolvedReviewers,
-				Draft:       createDraft,
+				FromRef:        createFromRef,
+				ToRef:          createToRef,
+				Title:          createTitle,
+				Description:    createDescription,
+				Reviewers:      resolvedReviewers,
+				Draft:          createDraft,
+				FromRepository: fromRepo,
 			})
 			if err != nil {
 				return err
@@ -623,6 +634,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	createCmd.Flags().StringVar(&createFromRef, "from-ref", "", "Source branch (name or refs/heads/name)")
+	createCmd.Flags().StringVar(&createFromRepo, "from-repo", "", "Repository holding --from-ref as PROJECT/slug, for a fork to upstream pull request (defaults to --repo)")
 	createCmd.Flags().StringVar(&createToRef, "to-ref", "", "Target branch (name or refs/heads/name)")
 	createCmd.Flags().StringVar(&createTitle, "title", "", "Pull request title")
 	createCmd.Flags().StringVar(&createDescription, "description", "", "Pull request description")
@@ -3218,4 +3230,31 @@ func mergeBlockingReasons(mergeability pullrequestservice.Mergeability) []string
 	}
 
 	return reasons
+}
+
+// resolveSourceRepository turns --from-repo into the repository the source
+// branch lives in.
+//
+// Nil when it was not given or names the target anyway, so the payload stays
+// the same-repository shape it has always had and only a genuine fork to
+// upstream pull request carries fromRef.repository (#506).
+func resolveSourceRepository(selector string, target pullrequestservice.RepositoryRef) (*pullrequestservice.RepositoryRef, error) {
+	trimmed := strings.TrimSpace(selector)
+	if trimmed == "" {
+		return nil, nil
+	}
+
+	projectKey, slug, found := strings.Cut(trimmed, "/")
+	projectKey = strings.TrimSpace(projectKey)
+	slug = strings.TrimSpace(slug)
+	if !found || projectKey == "" || slug == "" {
+		return nil, apperrors.New(apperrors.KindValidation,
+			"--from-repo must be in PROJECT/slug form", nil)
+	}
+
+	if strings.EqualFold(projectKey, target.ProjectKey) && strings.EqualFold(slug, target.Slug) {
+		return nil, nil
+	}
+
+	return &pullrequestservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}, nil
 }

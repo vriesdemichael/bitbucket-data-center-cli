@@ -90,7 +90,9 @@ func TestPRCommandsCheckRepositoryPermission(t *testing.T) {
 		args []string
 		want openapi.RepositoryPermission
 	}{
-		{name: "create", args: []string{"create", "--from-ref", "feature/y", "--to-ref", "main", "--title", "T", "--no-default-reviewers", "--no-codeowners"}, want: openapi.RepoWrite},
+		// Read, not write: Bitbucket requires REPO_READ on the repository a pull
+		// request targets, and a fork contributor holds only that upstream (#506).
+		{name: "create", args: []string{"create", "--from-ref", "feature/y", "--to-ref", "main", "--title", "T", "--no-default-reviewers", "--no-codeowners"}, want: openapi.RepoRead},
 		{name: "update", args: []string{"update", "42", "--title", "T", "--version", "1"}, want: openapi.RepoWrite},
 		{name: "merge", args: []string{"merge", "42"}, want: openapi.RepoWrite},
 		{name: "decline", args: []string{"decline", "42"}, want: openapi.RepoWrite},

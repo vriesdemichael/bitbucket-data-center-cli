@@ -4143,6 +4143,7 @@ Flags:
       --description string       Pull request description
       --draft                    Create as a draft pull request (Bitbucket DC 8.0+)
       --from-ref string          Source branch (name or refs/heads/name)
+      --from-repo string         Repository holding --from-ref as PROJECT/slug, for a fork to upstream pull request (defaults to --repo)
       --no-codeowners            Do not include code owners from .bitbucket/CODEOWNERS
       --no-default-reviewers     Do not include default reviewers
       --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; alias --reviewer-groups)
