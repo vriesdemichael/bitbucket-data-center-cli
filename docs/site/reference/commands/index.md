@@ -4180,7 +4180,7 @@ Usage:
   bb pr decline <id> [flags]
 
 Flags:
-      --version int   Expected pull request version
+      --version int   Expected pull request version; omit to act on whatever version is current
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -4414,7 +4414,7 @@ Usage:
   bb pr merge <id> [flags]
 
 Flags:
-      --version int   Expected pull request version
+      --version int   Expected pull request version; omit to act on whatever version is current
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -4535,7 +4535,7 @@ Usage:
   bb pr reopen <id> [flags]
 
 Flags:
-      --version int   Expected pull request version
+      --version int   Expected pull request version; omit to act on whatever version is current
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
