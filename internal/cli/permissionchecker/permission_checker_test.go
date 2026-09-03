@@ -2,10 +2,13 @@ package permissionchecker
 
 import (
 	"context"
+	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -295,5 +298,84 @@ func TestPermissionCheckerCheckProjectCreate(t *testing.T) {
 	checker = New(client)
 	if err := checker.CheckProjectCreate(ctx); err == nil {
 		t.Fatal("expected error on 500 for CheckProjectCreate")
+	}
+}
+
+// TestAnUnreachableServerIsTransientNotInternal pins the classification the
+// dry-run path depends on.
+//
+// The pre-flight is the only request a --dry-run makes, so an unclassified
+// transport error here made `--dry-run` report kind=internal where the real run
+// reported transient, for the same command against the same dead host. A
+// consumer branching on kind was told to report a bug in bb when the network
+// was down (#478).
+func TestAnUnreachableServerIsTransientNotInternal(t *testing.T) {
+	t.Parallel()
+
+	// Reserve a port and close it, so connecting is refused rather than hanging.
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	address := listener.Addr().String()
+	_ = listener.Close()
+
+	client, err := openapi.NewClientWithResponsesFromConfig(config.AppConfig{BitbucketURL: "http://" + address})
+	if err != nil {
+		t.Fatalf("client: %v", err)
+	}
+
+	checker := New(client)
+	ctx := context.Background()
+
+	for _, testCase := range []struct {
+		name string
+		call func() error
+	}{
+		{"repo permission", func() error {
+			return checker.CheckRepoPermission(ctx, "PRJ", "repo", openapigenerated.GetRepositories1ParamsPermissionREPOWRITE)
+		}},
+		{"project write", func() error { return checker.CheckProjectWrite(ctx, "PRJ") }},
+		{"project admin", func() error { return checker.CheckProjectAdmin(ctx, "PRJ") }},
+		{"project create", func() error { return checker.CheckProjectCreate(ctx) }},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := testCase.call()
+			if err == nil {
+				t.Fatal("expected the unreachable host to fail")
+			}
+			if kind := apperrors.KindOf(err); kind != apperrors.KindTransient {
+				t.Errorf("kind = %v, want transient so --dry-run agrees with the real run (error: %v)", kind, err)
+			}
+		})
+	}
+}
+
+// TestACancelledContextIsNotReportedAsTransient keeps the caller stopping
+// distinct from the network failing.
+func TestACancelledContextIsNotReportedAsTransient(t *testing.T) {
+	t.Parallel()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	address := listener.Addr().String()
+	_ = listener.Close()
+
+	client, err := openapi.NewClientWithResponsesFromConfig(config.AppConfig{BitbucketURL: "http://" + address})
+	if err != nil {
+		t.Fatalf("client: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err = New(client).CheckProjectCreate(ctx)
+	if err == nil {
+		t.Fatal("expected a cancelled context to fail")
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("cancellation was reclassified and no longer unwraps to context.Canceled: %v", err)
 	}
 }

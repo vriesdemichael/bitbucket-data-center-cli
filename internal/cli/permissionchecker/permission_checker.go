@@ -2,6 +2,7 @@ package permissionchecker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -48,6 +49,7 @@ func (p *PermissionChecker) CheckRepoPermission(ctx context.Context, projectKey,
 
 		resp, err := p.client.GetRepositories1WithResponse(ctx, params)
 		if err != nil {
+			err = transportFailure(err)
 			p.cache[cacheKey] = err
 			return err
 		}
@@ -94,6 +96,7 @@ func (p *PermissionChecker) CheckProjectWrite(ctx context.Context, projectKey st
 	// First resolve the project name
 	projResp, err := p.client.GetProjectWithResponse(ctx, projectKey)
 	if err != nil {
+		err = transportFailure(err)
 		p.cache[cacheKey] = err
 		return err
 	}
@@ -119,6 +122,7 @@ func (p *PermissionChecker) CheckProjectWrite(ctx context.Context, projectKey st
 
 	resp, err := p.client.GetProjectsWithResponse(ctx, params)
 	if err != nil {
+		err = transportFailure(err)
 		p.cache[cacheKey] = err
 		return err
 	}
@@ -167,6 +171,7 @@ func (p *PermissionChecker) CheckProjectAdmin(ctx context.Context, projectKey st
 
 	resp, err := p.client.GetUsersWithAnyPermission1WithResponse(ctx, projectKey, params)
 	if err != nil {
+		err = transportFailure(err)
 		p.cache[cacheKey] = err
 		return err
 	}
@@ -190,6 +195,7 @@ func (p *PermissionChecker) CheckProjectRead(ctx context.Context, projectKey str
 	// First resolve the project name
 	projResp, err := p.client.GetProjectWithResponse(ctx, projectKey)
 	if err != nil {
+		err = transportFailure(err)
 		p.cache[cacheKey] = err
 		return err
 	}
@@ -215,6 +221,7 @@ func (p *PermissionChecker) CheckProjectRead(ctx context.Context, projectKey str
 
 	resp, err := p.client.GetProjectsWithResponse(ctx, params)
 	if err != nil {
+		err = transportFailure(err)
 		p.cache[cacheKey] = err
 		return err
 	}
@@ -321,6 +328,7 @@ func (p *PermissionChecker) CheckProjectCreate(ctx context.Context) error {
 
 	resp, err := p.client.CreateProjectWithResponse(ctx, openapigenerated.RestProject{})
 	if err != nil {
+		err = transportFailure(err)
 		p.cache[cacheKey] = err
 		return err
 	}
@@ -338,4 +346,26 @@ func (p *PermissionChecker) CheckProjectCreate(ctx context.Context) error {
 		p.cache[cacheKey] = err
 		return err
 	}
+}
+
+// transportFailure classifies a request that never reached Bitbucket.
+//
+// Every service wraps these as transient; the permission checker returned them
+// raw, so the same unreachable host produced kind=transient on a real run and
+// kind=internal under --dry-run, because the pre-flight is the only request the
+// dry-run path makes. A consumer branching on kind was told to report a bug in
+// bb when the network was down (#478).
+func transportFailure(err error) error {
+	if err == nil {
+		return nil
+	}
+	// A cancelled context is the caller stopping, not the network failing.
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+	if apperrors.KindOf(err) != apperrors.KindInternal {
+		return err
+	}
+
+	return apperrors.New(apperrors.KindTransient, "permission pre-flight could not reach Bitbucket", err)
 }
