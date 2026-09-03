@@ -1,0 +1,58 @@
+number: 81
+title: An issue closes when its fix ships, not when it merges
+category: development
+status: proposed
+decision: >
+  An issue closes when the release carrying its fix is published, not when the fix merges.
+
+  On main this needs nothing: a Closes footer reaching main closes the issue and the release
+  follows in the same push. On next GitHub does not close from a non-default branch, and that
+  gap is the mechanism -- the issue stays open for the whole integration window and closes when
+  next reaches main. It is not closed by hand in the meantime.
+
+  A staged fix is marked rather than closed: the label staged-on-next, and one comment naming
+  the pull request and the milestone. One label across every major; the milestone names the
+  release.
+
+  The closing keyword goes in the commit body, not only in the pull request description. main
+  takes rebase merges, so the commit message is what arrives on the default branch.
+
+  Remaining work is the query is:open milestone:vN.0.0 -label:staged-on-next. The milestone
+  progress bar reads zero until the major lands, and the tracking issue holds the ordering.
+
+  The release workflow closes what the keywords missed: on publish it closes the milestone's
+  open issues with a link to the release, then closes the milestone.
+agent_instructions: >
+  Do not close an issue because its fix merged to next. Apply staged-on-next and leave it open;
+  the release closes it.
+
+  Put the Closes footer in the commit body of the change itself. A keyword that lives only in a
+  pull request description does not survive into main's history.
+
+  Do not add a label per release, and do not mirror a milestone as sub-issues of its tracking
+  issue. Both put the same work in two places, and the copy is the one that goes stale.
+rationale: >
+  Adopters install signed binaries through change approval. To them a closed issue reads as
+  fixed in the version they can install, which during a batched major is false for weeks. An
+  open issue also draws the next reporter onto the existing thread instead of a duplicate, and
+  gives them something to subscribe to.
+
+  The label carries done for the maintainer, so one issue answers both audiences without
+  misleading either.
+
+  This is already GitHub's behaviour on a non-default branch. The record exists because it looks
+  like an omission, and closing a board that never moves is the obvious thing to do to it.
+rejected_alternatives:
+  - alternative: Close on merge and let the milestone say when it ships
+    reason: >
+      The reporter reads the issue, not the milestone, so duplicates arrive as new issues rather
+      than as comments on the thread that is already open.
+  - alternative: Label each release separately, such as staged-for-v4
+    reason: >
+      Every major then leaves behind a label that means nothing afterwards, and the milestone
+      already names the release.
+  - alternative: Cut prereleases from next so merged and shipped converge
+    reason: >
+      ADR-066 rules that out: the Sigstore certificate identity is pinned to the release
+      workflow on main, so a build from anywhere else fails verification.
+provenance: guided-ai
