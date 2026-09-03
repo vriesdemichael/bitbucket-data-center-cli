@@ -290,7 +290,7 @@ func New(deps Dependencies) *cobra.Command {
 				}
 				var condition openapigenerated.RestDefaultReviewersRequest
 				if err := json.Unmarshal(configData, &condition); err != nil {
-					return fmt.Errorf("invalid condition JSON: %w", err)
+					return apperrors.New(apperrors.KindValidation, fmt.Sprintf("invalid condition JSON: %v", err), err)
 				}
 				if d.DryRunEnabled() {
 					if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, pk, slug, openapi.RepoAdmin); err != nil {
@@ -341,7 +341,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 			var condition openapigenerated.RestDefaultReviewersRequest
 			if err := json.Unmarshal(configData, &condition); err != nil {
-				return fmt.Errorf("invalid condition JSON: %w", err)
+				return apperrors.New(apperrors.KindValidation, fmt.Sprintf("invalid condition JSON: %v", err), err)
 			}
 			if d.DryRunEnabled() {
 				if err := preflight.ProjectAdmin(cmd.Context(), d.PermissionChecker, client, projectKey); err != nil {
@@ -435,7 +435,7 @@ func New(deps Dependencies) *cobra.Command {
 				}
 				var condition openapigenerated.UpdatePullRequestCondition1JSONRequestBody
 				if err := json.Unmarshal(configData, &condition); err != nil {
-					return fmt.Errorf("invalid condition JSON: %w", err)
+					return apperrors.New(apperrors.KindValidation, fmt.Sprintf("invalid condition JSON: %v", err), err)
 				}
 				if d.DryRunEnabled() {
 					if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, pk, slug, openapi.RepoAdmin); err != nil {
@@ -490,7 +490,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 			var condition openapigenerated.UpdatePullRequestConditionJSONRequestBody
 			if err := json.Unmarshal(configData, &condition); err != nil {
-				return fmt.Errorf("invalid condition JSON: %w", err)
+				return apperrors.New(apperrors.KindValidation, fmt.Sprintf("invalid condition JSON: %v", err), err)
 			}
 			if d.DryRunEnabled() {
 				if err := preflight.ProjectAdmin(cmd.Context(), d.PermissionChecker, client, projectKey); err != nil {

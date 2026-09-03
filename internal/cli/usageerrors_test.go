@@ -75,6 +75,17 @@ func TestClassifyUsageErrorMatchesCobrasRealMessages(t *testing.T) {
 			args: []string{"--limit", "not-a-number"},
 		},
 		{
+			// The most common usage error of all, and the one the marker list
+			// was missing: sixteen commands reported a forgotten flag as a
+			// defect in bb rather than a mistake in the invocation (#475).
+			name: "missing required flag",
+			configure: func(root *cobra.Command) {
+				root.Flags().String("title", "", "")
+				_ = root.MarkFlagRequired("title")
+			},
+			args: []string{},
+		},
+		{
 			name: "unknown command",
 			configure: func(root *cobra.Command) {
 				root.AddCommand(&cobra.Command{Use: "repo", RunE: func(*cobra.Command, []string) error { return nil }})
