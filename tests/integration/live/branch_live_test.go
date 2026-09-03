@@ -131,6 +131,7 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 	updateOutput, err := executeLiveCLI(
 		t, "--json", "branch", "restriction", "update", restrictionID,
 		"--type", "no-deletes",
+		"--matcher-type", "BRANCH",
 		"--matcher-id", "refs/heads/master",
 	)
 	if err != nil {
