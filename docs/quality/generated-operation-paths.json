@@ -42,6 +42,10 @@
       "method": "POST",
       "path": "/ssh/latest/keys"
     },
+    "AddUserToGroup": {
+      "method": "POST",
+      "path": "/api/latest/admin/groups/add-user"
+    },
     "ApplySuggestion": {
       "method": "POST",
       "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s/comments/%s/apply-suggestion"
