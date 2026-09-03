@@ -104,7 +104,10 @@ func TestPRCommandsCheckRepositoryPermission(t *testing.T) {
 		// Commenting needs only read: Bitbucket lets any reader comment.
 		{name: "comment add", args: []string{"comment", "add", "42", "--text", "hello"}, want: openapi.RepoRead},
 		{name: "comment react", args: []string{"comment", "react", "42", "101", "thumbsup"}, want: openapi.RepoRead},
-		{name: "comment apply-suggestion", args: []string{"comment", "apply-suggestion", "42", "101"}, want: openapi.RepoRead},
+		// Applying a suggestion writes a commit to the source branch, so this
+		// is RepoWrite. It asserted RepoRead until #481 -- the test pinned the
+		// defect rather than catching it.
+		{name: "comment apply-suggestion", args: []string{"comment", "apply-suggestion", "42", "101"}, want: openapi.RepoWrite},
 		{name: "comment resolve", args: []string{"comment", "resolve", "42", "101"}, want: openapi.RepoRead},
 		{name: "comment reopen", args: []string{"comment", "reopen", "42", "101"}, want: openapi.RepoRead},
 		{name: "auto-merge enable", args: []string{"auto-merge", "enable", "42"}, want: openapi.RepoWrite},
