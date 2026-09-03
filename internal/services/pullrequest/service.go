@@ -103,6 +103,11 @@ type CreateInput struct {
 	// whitespace-only entries are ignored; an empty result omits reviewers from
 	// the request payload.
 	Reviewers []string `json:"reviewers,omitempty"`
+	// FromRepository, when set, is the repository the source branch lives in.
+	// Empty means the branch is in the repository the pull request targets,
+	// which is the same-repository case. Naming it is what makes a fork to
+	// upstream pull request expressible at all (#506).
+	FromRepository *RepositoryRef `json:"from_repository,omitempty"`
 }
 
 type UpdateInput struct {
@@ -1023,9 +1028,23 @@ func buildCreatePayload(input CreateInput) (map[string]any, error) {
 		return nil, apperrors.New(apperrors.KindValidation, "title is required", nil)
 	}
 
+	from := map[string]any{"id": normalizeBranchRef(fromRef)}
+	if input.FromRepository != nil {
+		if err := validateRepositoryRef(*input.FromRepository); err != nil {
+			return nil, err
+		}
+		// Bitbucket takes the source repository on fromRef. Without it every
+		// pull request is same-repository, which is why a fork could not open
+		// one upstream however the permissions were set (#506).
+		from["repository"] = map[string]any{
+			"slug":    input.FromRepository.Slug,
+			"project": map[string]any{"key": input.FromRepository.ProjectKey},
+		}
+	}
+
 	payload := map[string]any{
 		"title":   title,
-		"fromRef": map[string]any{"id": normalizeBranchRef(fromRef)},
+		"fromRef": from,
 		"toRef":   map[string]any{"id": normalizeBranchRef(toRef)},
 	}
 

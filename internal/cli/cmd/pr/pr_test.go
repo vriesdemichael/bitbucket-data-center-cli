@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -1733,6 +1734,95 @@ func TestPRMergeDryRunReadsMergeability(t *testing.T) {
 		}
 		if !strings.Contains(out, `"confidence": "partial"`) {
 			t.Errorf("an unchecked prediction still claimed full confidence: %s", out)
+		}
+	})
+}
+
+// TestPRCreateFromAFork is #506.
+//
+// pr create pre-flighted REPO_WRITE on the repository the pull request targets,
+// which a fork contributor does not hold upstream, and had no way to say the
+// source branch lives somewhere else -- so the standard contribution flow was
+// refused twice over.
+func TestPRCreateFromAFork(t *testing.T) {
+	var posted map[string]any
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+
+		if request.Method == http.MethodPost && strings.HasSuffix(request.URL.Path, "/pull-requests") {
+			_ = json.NewDecoder(request.Body).Decode(&posted)
+			_, _ = writer.Write([]byte(`{"id":7,"version":0,"title":"probe","state":"OPEN"}`))
+
+			return
+		}
+		_, _ = writer.Write([]byte(`{"values":[],"isLastPage":true}`))
+	}))
+	defer server.Close()
+
+	t.Run("the source repository reaches fromRef", func(t *testing.T) {
+		posted = nil
+
+		out, err := executePr(t, server.URL, "create", "--from-ref", "cog-renovate", "--to-ref", "main",
+			"--title", "probe", "--from-repo", "~VRIEM15/uploader", "--repo", "GHBS/uploader",
+			"--no-default-reviewers", "--no-codeowners")
+		if err != nil {
+			t.Fatalf("create: %v\n%s", err, out)
+		}
+
+		fromRef, _ := posted["fromRef"].(map[string]any)
+		repository, ok := fromRef["repository"].(map[string]any)
+		if !ok {
+			t.Fatalf("fromRef carries no repository, so the pull request is same-repository: %v", fromRef)
+		}
+		if repository["slug"] != "uploader" {
+			t.Errorf("fromRef.repository.slug = %v", repository["slug"])
+		}
+		project, _ := repository["project"].(map[string]any)
+		if project["key"] != "~VRIEM15" {
+			t.Errorf("fromRef.repository.project.key = %v, want the fork", project["key"])
+		}
+	})
+
+	t.Run("without --from-repo the payload is unchanged", func(t *testing.T) {
+		posted = nil
+
+		if _, err := executePr(t, server.URL, "create", "--from-ref", "feature/x", "--to-ref", "main",
+			"--title", "probe", "--repo", "GHBS/uploader",
+			"--no-default-reviewers", "--no-codeowners"); err != nil {
+			t.Fatalf("create: %v", err)
+		}
+
+		fromRef, _ := posted["fromRef"].(map[string]any)
+		if _, present := fromRef["repository"]; present {
+			t.Errorf("a same-repository pull request gained a fromRef.repository: %v", fromRef)
+		}
+	})
+
+	t.Run("--from-repo naming the target is the same-repository case", func(t *testing.T) {
+		posted = nil
+
+		if _, err := executePr(t, server.URL, "create", "--from-ref", "feature/x", "--to-ref", "main",
+			"--title", "probe", "--from-repo", "GHBS/uploader", "--repo", "GHBS/uploader",
+			"--no-default-reviewers", "--no-codeowners"); err != nil {
+			t.Fatalf("create: %v", err)
+		}
+
+		fromRef, _ := posted["fromRef"].(map[string]any)
+		if _, present := fromRef["repository"]; present {
+			t.Errorf("naming the target as the source still sent a repository: %v", fromRef)
+		}
+	})
+
+	t.Run("a malformed --from-repo is refused before any request", func(t *testing.T) {
+		_, err := executePr(t, server.URL, "create", "--from-ref", "feature/x", "--to-ref", "main",
+			"--title", "probe", "--from-repo", "no-slash", "--repo", "GHBS/uploader",
+			"--no-default-reviewers", "--no-codeowners")
+		if err == nil {
+			t.Fatal("a --from-repo without a project was accepted")
+		}
+		if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
+			t.Errorf("kind = %v, want validation", kind)
 		}
 	})
 }
