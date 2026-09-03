@@ -182,7 +182,6 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: predicted,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"build statuses list"},
 				})
 
@@ -418,7 +417,6 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: "create",
 					Supported:       true,
 					Reason:          "required build check will be created",
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"required build checks endpoint availability"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -475,7 +473,6 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "required build check will be updated",
-					Confidence:      dryrunpreview.CapabilityPartial,
 					RequiredState:   []string{"required build checks endpoint availability"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -543,9 +540,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": id},
 					Action:          "delete",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityPartial,
 					RequiredState:   []string{"required build checks list"},
 				})
 
@@ -605,9 +602,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": scopedSetKey, "state": scopedSetState},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"scoped build status get"},
 				})
 
@@ -714,9 +711,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": scopedDeleteKey},
 					Action:          "delete",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"scoped build status get"},
 				})
 

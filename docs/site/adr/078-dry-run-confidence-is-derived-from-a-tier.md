@@ -1,0 +1,28 @@
+# ADR 078: Dry-run confidence is derived from a tier, not written by the author
+
+This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
+
+- Number: `078`
+- Title: `Dry-run confidence is derived from a tier, not written by the author`
+- Category: `development`
+- Status: `accepted`
+- Provenance: `guided-ai`
+- Source: `docs/decisions/078-dry-run-confidence-is-derived-from-a-tier.yaml`
+
+## Decision
+
+Every dry-run preview item states how its prediction was reached, and the published confidence is computed from that. Three tiers: server-validated, where Bitbucket answered the exact question through its own dry-run endpoint or an equivalent authoritative call; preconditions-checked, where permission and current state were both fetched and the preconditions that decide the operation were evaluated; and predicted, where the answer was derived from partial state. Only the first two report full confidence. An item that states no tier is predicted.
+
+## Agent Instructions
+
+When adding or changing a dry-run preview, set Tier on the item and never set Confidence -- it is computed in dryrunpreview.New and a hand-written value is overwritten. Claim preconditions-checked only when the code evaluated the preconditions that actually decide the operation, not merely that it fetched something: a delete that reads the object but never checks whether it is empty is predicted, and should say why in a comment beside the item. When a check cannot be made at runtime -- an older Bitbucket that does not report mergeability, for instance -- lower the tier for that answer rather than reporting the same label as a checked one.
+
+## Rationale
+
+ADR-035 required explicit capability signaling but left "explicit" meaning "someone typed it". Capability and Confidence were free-text strings written at each of a hundred and three construction sites, with nothing relating the label to what the code had done, so the only thing keeping them honest was each author remembering to be modest. #479 is what that permitted: pr merge predicted from the pull request state alone, and reported the strongest claim the contract offers on the one irreversible pull request operation, with an empty blocking-reasons list. Making the tier the input and the label the output moves that from test-detectable to unrepresentable, and demoted forty-three items that had claimed full without earning it. The tier is also useful output in its own right: a reader can now tell whether "will be merged" was confirmed by Bitbucket or inferred from a state field.
+
+## Rejected Alternatives
+
+- `Keep the free-text labels and document the rule in review guidance`: That is what ADR-035 already did. The label stayed a matter of authorial modesty, and the command where being wrong costs the most is the one that got it wrong.
+- `Infer the tier statically from what each call site does`: A mechanical rule -- a permission pre-flight plus a non-constant predicted action -- classifies most sites correctly and over-credits the rest, because fetching state is not the same as evaluating the preconditions. It is a good starting classification and a bad contract, so it seeded the initial values and the exceptions are corrected by hand.
+- `Drop confidence from the payload and publish only the tier`: Breaks consumers reading confidence today for no gain; the tier is additive and the label remains derivable from it.

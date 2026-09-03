@@ -208,9 +208,9 @@ func newProjectPermissionGrantCommand(deps Dependencies, subjectFor projectPermi
 					},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{fmt.Sprintf("project permission %ss list", subject.noun)},
 				})
 
@@ -288,9 +288,9 @@ func newProjectPermissionRevokeCommand(deps Dependencies, subjectFor projectPerm
 					},
 					Action:          "delete",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{fmt.Sprintf("project permission %ss list", subject.noun)},
 				})
 
