@@ -2179,7 +2179,9 @@ func TestResolveDiffOutputModeAndWriters(t *testing.T) {
 
 	result := diff.Result{
 		Names: []string{"a.txt", "b.go"},
-		Stats: []map[string]any{{"path": "a.txt", "lines_added": 1, "lines_removed": 2}},
+		// The endpoint returns one summary object, not a row per file. This
+		// fixture invented a shape Bitbucket never sends (#526).
+		Stats: &diff.StatsSummary{FilesChanged: int64Ptr(1), TotalInsertions: int64Ptr(1), TotalDeletions: int64Ptr(2)},
 		Patch: "diff --git a/a.txt b/a.txt",
 	}
 
@@ -2195,7 +2197,7 @@ func TestResolveDiffOutputModeAndWriters(t *testing.T) {
 	if err := writeDiffResult(statBuffer, true, diff.OutputKindStat, result); err != nil {
 		t.Fatalf("expected no error writing stats json, got: %v", err)
 	}
-	if !strings.Contains(statBuffer.String(), "lines_added") {
+	if !strings.Contains(statBuffer.String(), "totalInsertions") {
 		t.Fatalf("expected stats json output, got: %s", statBuffer.String())
 	}
 
@@ -2216,7 +2218,7 @@ func TestResolveDiffOutputModeAndWriters(t *testing.T) {
 	if err := writeDiffResult(statPlainBuffer, false, diff.OutputKindStat, result); err != nil {
 		t.Fatalf("expected no error writing stats plain mode, got: %v", err)
 	}
-	if !strings.Contains(statPlainBuffer.String(), "lines_removed") {
+	if !strings.Contains(statPlainBuffer.String(), "totalDeletions") {
 		t.Fatalf("expected stats plain output, got: %s", statPlainBuffer.String())
 	}
 
@@ -4407,3 +4409,5 @@ func TestAFlagLeftAloneDoesNotDisplaceTheEnvironment(t *testing.T) {
 		t.Errorf("an unpassed flag produced an override (%v)", options.runtime.CAFile)
 	}
 }
+
+func int64Ptr(value int64) *int64 { return &value }

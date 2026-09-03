@@ -307,7 +307,9 @@ func TestDiffPRPatchAndStatModes(t *testing.T) {
 	t.Run("stat", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			writer.Header().Set("Content-Type", "application/json")
-			_, _ = writer.Write([]byte(`{"size":1,"isLastPage":true,"values":[]}`))
+			// The three counts a diff-stats-summary endpoint returns; this used to
+			// serve a paged-list shape, which decoded to nothing (#526).
+			_, _ = writer.Write([]byte(`{"filesChanged":1,"totalInsertions":3,"totalDeletions":2}`))
 		}))
 		defer server.Close()
 
@@ -394,7 +396,9 @@ func TestDiffRefsStatAndCommitWithPath(t *testing.T) {
 	t.Run("refs stat", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			writer.Header().Set("Content-Type", "application/json")
-			_, _ = writer.Write([]byte(`{"size":1,"isLastPage":true,"values":[]}`))
+			// The three counts a diff-stats-summary endpoint returns; this used to
+			// serve a paged-list shape, which decoded to nothing (#526).
+			_, _ = writer.Write([]byte(`{"filesChanged":1,"totalInsertions":3,"totalDeletions":2}`))
 		}))
 		defer server.Close()
 
@@ -944,4 +948,63 @@ func TestFormatRestDiff(t *testing.T) {
 			t.Fatalf("expected context space rendering, got:\n%s", formatted)
 		}
 	})
+}
+
+// TestDecodeStatsSummaryRefusesToCallAnUnreadableBodyEmpty is #526.
+//
+// The spec types both diff-stats-summary endpoints as RestDiff, which shares no
+// field with what Bitbucket sends. Unmarshal ignores unknown fields, so the
+// generated wrapper produced an empty struct, the payload marshalled to {}, and
+// omitempty removed the key: `bb diff --stat` reported output=stat with no
+// stats and exit 0. A caller could not tell "nothing to summarise" from "the
+// summary did not decode".
+func TestDecodeStatsSummaryRefusesToCallAnUnreadableBodyEmpty(t *testing.T) {
+	t.Parallel()
+
+	t.Run("the body Bitbucket actually sends", func(t *testing.T) {
+		t.Parallel()
+
+		summary, err := decodeStatsSummary([]byte(`{"filesChanged":1,"totalDeletions":0,"totalInsertions":1}`))
+		if err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if summary.FilesChanged == nil || *summary.FilesChanged != 1 {
+			t.Errorf("filesChanged = %v, want 1", summary.FilesChanged)
+		}
+		if summary.TotalInsertions == nil || *summary.TotalInsertions != 1 {
+			t.Errorf("totalInsertions = %v, want 1", summary.TotalInsertions)
+		}
+	})
+
+	t.Run("an honest zero summary is a fact, not an absence", func(t *testing.T) {
+		t.Parallel()
+
+		summary, err := decodeStatsSummary([]byte(`{"filesChanged":0,"totalDeletions":0,"totalInsertions":0}`))
+		if err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if summary.FilesChanged == nil || *summary.FilesChanged != 0 {
+			t.Errorf("a diff with nothing in it must still publish its zeros: %v", summary)
+		}
+	})
+
+	for _, testCase := range []struct {
+		name string
+		body string
+	}{
+		{"empty body", ""},
+		{"whitespace only", "   \n"},
+		{"malformed json", `{"filesChanged":`},
+		{"a shape with none of the counts", `{"binary":false,"hunks":[]}`},
+		{"json null", "null"},
+		{"an empty object", "{}"},
+	} {
+		t.Run(testCase.name+" is an error", func(t *testing.T) {
+			t.Parallel()
+
+			if _, err := decodeStatsSummary([]byte(testCase.body)); err == nil {
+				t.Errorf("%q decoded to a summary; an unreadable body must not be reported as an empty one (ADR-077)", testCase.body)
+			}
+		})
+	}
 }

@@ -34,7 +34,7 @@ func newMockDiffServer(t *testing.T) *httptest.Server {
 
 		case r.Method == http.MethodGet && strings.Contains(path, "/pull-requests/1/diff-stats-summary"):
 			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-			_, _ = w.Write([]byte(`{"linesAdded":10,"linesRemoved":2,"filesChanged":1}`))
+			_, _ = w.Write([]byte(`{"filesChanged":1,"totalInsertions":10,"totalDeletions":2}`))
 
 		case r.Method == http.MethodGet && strings.Contains(path, "/pull-requests/1.diff"):
 			w.Header().Set("Content-Type", "text/plain")
@@ -43,6 +43,12 @@ func newMockDiffServer(t *testing.T) *httptest.Server {
 		case r.Method == http.MethodGet && strings.Contains(path, "/pull-requests/1/diff"):
 			w.Header().Set("Content-Type", "text/plain")
 			_, _ = w.Write([]byte("diff --git a/pr.txt b/pr.txt\n--- a/pr.txt\n+++ b/pr.txt\n@@ -1 +1 @@\n-old\n+new\n"))
+
+		// Before the compare/diff case below, which matches this path by prefix
+		// and used to answer it with a diff payload the summary cannot come from.
+		case r.Method == http.MethodGet && strings.Contains(path, "/rest/api/latest/projects/PRJ/repos/demo/compare/diff-stats-summary"):
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			_, _ = w.Write([]byte(`{"filesChanged":1,"totalInsertions":1,"totalDeletions":1}`))
 
 		case r.Method == http.MethodGet && strings.Contains(path, "/rest/api/latest/projects/PRJ/repos/demo/compare/diff"):
 			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -248,7 +254,7 @@ func TestDiffPRModes(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on diff pr stat JSON: %v", err)
 	}
-	if !strings.Contains(buf.String(), `"linesAdded"`) {
+	if !strings.Contains(buf.String(), `"totalInsertions"`) {
 		t.Fatalf("expected the stats summary in JSON output: %s", buf.String())
 	}
 
