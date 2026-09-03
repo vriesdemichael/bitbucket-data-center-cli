@@ -243,6 +243,9 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// Reads to exhaustion, so --limit only sized the pages (#473).
+			statuses = paging.Truncate(getPaging, statuses)
+
 			if d.JSONEnabled() {
 				return d.WriteJSONList(cmd.OutOrStdout(), buildStatusesFrom(statuses), paging.LimitReached(getPaging, len(statuses)))
 			}
