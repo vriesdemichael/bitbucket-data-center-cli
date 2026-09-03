@@ -119,6 +119,10 @@ func newRepoPermissionListCommand(deps Dependencies, repositorySelector *string,
 				return err
 			}
 
+			// The backing service reads to exhaustion, so --limit only sized the
+			// pages until now. A no-op under --all.
+			entries = paging.Truncate(listPaging, entries)
+
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), GrantedPermissions{
 					Repository: settingsRepositoryOf(repo),

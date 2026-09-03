@@ -2,6 +2,7 @@ package repocmd
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -295,5 +296,53 @@ func TestCreateTargetPreviewNamesTheParentOnlyWhenThereIsOne(t *testing.T) {
 	reply := createTargetPreview(target, "a reply", 42)
 	if reply["parentId"] != int64(42) {
 		t.Errorf("a reply did not name what it answers: %+v", reply)
+	}
+}
+
+// TestCommentListLimitActuallyLimits is #473 end to end.
+//
+// commentservice.List takes its limit as a page size and reads to exhaustion,
+// so --limit sized the requests and truncated nothing: a smaller --limit made
+// more round trips and printed the same complete answer.
+func TestCommentListLimitActuallyLimits(t *testing.T) {
+	pages := 0
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+
+		if !strings.Contains(request.URL.Path, "/comments") {
+			_, _ = writer.Write([]byte(`{"id":"abc","displayId":"abc"}`))
+
+			return
+		}
+
+		// Two pages of ten, so a service reading to exhaustion returns twenty.
+		pages++
+		start := request.URL.Query().Get("start")
+
+		var values []string
+		for index := range 10 {
+			values = append(values, fmt.Sprintf(`{"id":%d,"text":"comment %d","version":0}`, index+pages*100, index))
+		}
+		body := `{"values":[` + strings.Join(values, ",") + `],"size":10,"limit":10,`
+		if start == "" || start == "0" {
+			body += `"isLastPage":false,"nextPageStart":10}`
+		} else {
+			body += `"isLastPage":true}`
+		}
+		_, _ = writer.Write([]byte(body))
+	}))
+	defer server.Close()
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_TOKEN", "token")
+
+	out, err := executeTestCLI(t, "--json", "repo", "comment", "list", "--commit", "abc", "--path", "a.go", "--repo", "PRJ/demo", "--limit", "3")
+	if err != nil {
+		t.Fatalf("comment list: %v\n%s", err, out)
+	}
+
+	got := strings.Count(out, `"text"`)
+	if got > 3 {
+		t.Errorf("--limit 3 returned %d comments; the flag documents a maximum, not a page size", got)
 	}
 }

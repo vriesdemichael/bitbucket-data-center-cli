@@ -364,6 +364,10 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// The backing service reads to exhaustion, so --limit only sized the
+			// pages until now. A no-op under --all.
+			checks = paging.Truncate(requiredPaging, checks)
+
 			converted := result.RequiredBuildChecksFrom(checks)
 			if d.JSONEnabled() {
 				return d.WriteJSONList(cmd.OutOrStdout(), converted, paging.LimitReached(requiredPaging, len(checks)))
@@ -516,6 +520,10 @@ func New(deps Dependencies) *cobra.Command {
 				if err != nil {
 					return err
 				}
+
+				// The backing service reads to exhaustion, so --limit only sized the
+				// pages until now. A no-op under --all.
+				checks = paging.Truncate(requiredPaging, checks)
 
 				predicted := "no-op"
 				reason := "required build check was not found"
