@@ -8379,7 +8379,7 @@ Usage:
   bb repo settings pull-requests update-approvers [flags]
 
 Flags:
-      --count int   Required approvers count (0 disables check) (default 2)
+      --count int   Required approvers count (0 disables check)
 
 Global Flags:
       --all                      Return every result rather than the first --limit
