@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"io"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
@@ -162,19 +160,19 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				tags, err := service.List(cmd.Context(), repo, tagservice.ListOptions{MaxResults: 200, FilterText: args[0]})
-				if err != nil {
-					return err
-				}
-
+				// Ask whether this tag exists, rather than filtering a capped
+				// list for it. FilterText is a substring match, so `v1.0` also
+				// matched v1.0.1 ... v1.0.240; if the exact tag fell past the
+				// two-hundredth result the scan found nothing and the preview
+				// predicted create, at confidence full, for a tag that exists
+				// (#470). One request instead of up to eight, and no cap.
 				predicted := "create"
 				reason := "tag will be created"
-				for _, tag := range tags {
-					if strings.EqualFold(strings.TrimSpace(safederef.String(tag.DisplayId)), strings.TrimSpace(args[0])) || strings.EqualFold(strings.TrimSpace(safederef.String(tag.Id)), strings.TrimSpace(args[0])) {
-						predicted = "conflict"
-						reason = "tag already exists"
-						break
-					}
+				if _, err := service.Get(cmd.Context(), repo, args[0]); err == nil {
+					predicted = "conflict"
+					reason = "tag already exists"
+				} else if !apperrors.IsKind(err, apperrors.KindNotFound) {
+					return err
 				}
 
 				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{

@@ -293,7 +293,10 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				branches, err := service.List(cmd.Context(), repo, branchservice.ListOptions{MaxResults: 1000, FilterText: args[0]})
+				// Every match, not the first thousand. FilterText is a substring match,
+				// so the exact branch can sit past a cap and the preview then predicts
+				// create, at confidence full, for a branch that exists (#470).
+				branches, err := service.List(cmd.Context(), repo, branchservice.ListOptions{MaxResults: branchservice.AllResults, FilterText: args[0]})
 				if err != nil {
 					return err
 				}

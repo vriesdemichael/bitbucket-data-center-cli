@@ -286,6 +286,10 @@ func TestBranchProjectAdminTagDryRunPredictionBranches(t *testing.T) {
 			_, _ = writer.Write([]byte(`{"values":[{"slug":"repo","name":"repo","public":false,"project":{"key":"PRJ"}}],"isLastPage":true}`))
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/tags":
 			_, _ = writer.Write([]byte(`{"values":[{"id":"refs/tags/v1","displayId":"v1"}],"isLastPage":true}`))
+		// tag create --dry-run asks about the one tag rather than filtering
+		// a capped list (#470), so the fake has to answer that question.
+		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/tags/v1":
+			_, _ = writer.Write([]byte(`{"id":"refs/tags/v1","displayId":"v1"}`))
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/tags/missing":
 			writer.WriteHeader(http.StatusNotFound)
 			_, _ = writer.Write([]byte(`{"errors":[{"message":"not found"}]}`))

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -324,5 +325,56 @@ func TestTagPermissionErrors(t *testing.T) {
 	cmd.SetArgs([]string{"delete", "v1.0"})
 	if err := cmd.Execute(); err == nil {
 		t.Fatal("expected error on delete dry run with permission error")
+	}
+}
+
+// TestTagCreateDryRunSeesATagPastTheOldCap is #470.
+//
+// The prediction filtered a list capped at 200. FilterText is a substring
+// match, so `v1.0` also matched v1.0.1 ... v1.0.240, and if the exact tag fell
+// past the cap the scan found nothing and the preview reported create, at
+// confidence full, for a tag that already exists. It now asks the server about
+// that one tag.
+func TestTagCreateDryRunSeesATagPastTheOldCap(t *testing.T) {
+	var listCalls, getCalls int
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case strings.HasSuffix(request.URL.Path, "/tags/v1.0"):
+			getCalls++
+			_, _ = writer.Write([]byte(`{"id":"refs/tags/v1.0","displayId":"v1.0","type":"ANNOTATED","latestCommit":"1111111"}`))
+		case strings.HasSuffix(request.URL.Path, "/tags"):
+			// The old path: 250 near-misses and never the exact tag, which is
+			// what made the capped scan predict create.
+			listCalls++
+			values := make([]string, 0, 250)
+			for index := range 250 {
+				values = append(values, fmt.Sprintf(`{"id":"refs/tags/v1.0.%d","displayId":"v1.0.%d"}`, index, index))
+			}
+			_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[` + strings.Join(values, ",") + `]}`))
+		default:
+			_, _ = writer.Write([]byte(`{"id":"refs/heads/main","displayId":"main"}`))
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	deps := newTestDependencies(t, server.URL, true, true)
+	cmd := tagcmd.New(deps)
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "v1.0", "--start-point", "main"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("tag create dry-run: %v\n%s", err, buf.String())
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, `"predictedAction": "conflict"`) {
+		t.Errorf("predicted create for a tag that exists: %s", out)
+	}
+	if getCalls == 0 {
+		t.Errorf("the exact tag was never asked for; the prediction still scans a list (list calls: %d)", listCalls)
 	}
 }
