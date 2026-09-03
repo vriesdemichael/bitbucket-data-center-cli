@@ -119,8 +119,11 @@ func TestFlags(t *testing.T) {
 		t.Fatalf("discover: %v", err)
 	}
 
-	if _, ok := found.asserted["repo settings security permissions users list"]; !ok {
-		t.Fatalf("expected leading flags to be skipped, got %#v", found.asserted)
+	// That first invocation carries --dry-run, so it lands in the dry-run
+	// bucket rather than counting as coverage (#532). What is under test here
+	// is only that the leading flags were skipped to find the command.
+	if _, ok := found.dryRun["repo settings security permissions users list"]; !ok {
+		t.Fatalf("expected leading flags to be skipped, got %#v", found.dryRun)
 	}
 	// Collection stops at the first non-literal argument, so a trailing flag
 	// after a variable is not folded into the command path.
@@ -315,10 +318,14 @@ func TestValueFlags(t *testing.T) {
 		t.Fatalf("discover: %v", err)
 	}
 
-	for _, expected := range []string{"pr get", "tag list", "repo list", "branch create"} {
+	for _, expected := range []string{"pr get", "tag list", "repo list"} {
 		if _, ok := found.asserted[expected]; !ok {
 			t.Fatalf("expected %q to be discovered, got %#v", expected, found.asserted)
 		}
+	}
+	// The branch create call is a dry run, so it is discovered as one.
+	if _, ok := found.dryRun["branch create"]; !ok {
+		t.Fatalf("expected %q to be discovered as a dry run, got %#v", "branch create", found.dryRun)
 	}
 	// The flag values must never be mistaken for command words.
 	for _, unexpected := range []string{"ca.pem", "debug", "ca.pem pr get"} {
@@ -341,5 +348,215 @@ func TestGlobalValueFlagsExcludesBooleans(t *testing.T) {
 		if !flags[valued] {
 			t.Fatalf("%s takes a value and must consume the next argument", valued)
 		}
+	}
+}
+
+// TestDryRunInvocationsAreNotCoverage is #532.
+//
+// --dry-run is a root persistent bool, so the path scan drops it either side of
+// the command words and every dry run counted as reach. The report therefore
+// read 100% while 16 mutating commands had never once run against a server,
+// which is how #503, #505, #506 and #511 all shipped green.
+func TestDryRunInvocationsAreNotCoverage(t *testing.T) {
+	dir := writeLiveTestFile(t, `package live_test
+
+func TestDryRunBeforeTheCommand(t *testing.T) {
+	if _, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "review", "approve", prID); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+}
+
+func TestDryRunAfterTheCommand(t *testing.T) {
+	if _, err := executeLiveCLI(t, "--json", "branch", "default", "set", "main", "--dry-run"); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+}
+
+func TestDryRunAsAnAssignedValue(t *testing.T) {
+	if _, err := executeLiveCLI(t, "--json", "repo", "archive", "--dry-run=true"); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+}
+
+func TestRealInvocation(t *testing.T) {
+	if _, err := executeLiveCLI(t, "--json", "tag", "list"); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+}
+`)
+
+	found, err := discoverLiveInvocations(dir, map[string]bool{})
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
+
+	// An invocation keeps its trailing positionals -- "branch default set main"
+	// -- so the check goes through the same resolution the report uses.
+	runnable := []string{"pr review approve", "branch default set", "repo archive", "tag list"}
+	dryRunOnly := resolveInvocations(runnable, found.dryRun)
+	asserted := resolveInvocations(runnable, found.asserted)
+
+	// Every spelling of the flag has to be recognised. Missing one would put
+	// the command back in "covered" on the strength of a call that never
+	// mutates anything.
+	for _, command := range []string{
+		"pr review approve",  // --dry-run before the command words
+		"branch default set", // --dry-run after them
+		"repo archive",       // --dry-run=true
+	} {
+		if _, ok := dryRunOnly[command]; !ok {
+			t.Errorf("%q was not recognised as dry-run-only; found %v", command, keysOf(found.dryRun))
+		}
+		if _, ok := asserted[command]; ok {
+			t.Errorf("%q counted as asserted coverage on the strength of a --dry-run call", command)
+		}
+	}
+
+	if _, ok := asserted["tag list"]; !ok {
+		t.Errorf("a real invocation stopped counting; asserted=%v", keysOf(found.asserted))
+	}
+}
+
+// A command run both ways is covered: the dry run is extra, not a downgrade.
+func TestARealInvocationBeatsADryRun(t *testing.T) {
+	dir := writeLiveTestFile(t, `package live_test
+
+func TestPreviewFirst(t *testing.T) {
+	if _, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "review", "approve", prID); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+}
+
+func TestThenForReal(t *testing.T) {
+	if _, err := executeLiveCLI(t, "--json", "pr", "review", "approve", prID); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+}
+`)
+
+	found, err := discoverLiveInvocations(dir, map[string]bool{})
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
+
+	if _, ok := found.asserted["pr review approve"]; !ok {
+		t.Error("a real invocation must count even when a dry run of the same command exists")
+	}
+	if _, ok := found.dryRun["pr review approve"]; ok {
+		t.Error("a command invoked for real must not also be reported as dry-run-only")
+	}
+}
+
+// The words may live in a variable rather than at the call site. Reading only
+// the literal arguments reported `repo comment update` as never invoked for
+// real, and the mistake was invisible while a --dry-run call covered for it.
+func TestCommandWordsInASliceVariableAreFound(t *testing.T) {
+	dir := writeLiveTestFile(t, `package live_test
+
+func TestSpreadSlice(t *testing.T) {
+	updateArgs := []string{"--json", "repo", "comment", "update", "--pr", prID, "--text", "x"}
+	if _, err := executeLiveCLI(t, updateArgs...); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+}
+
+func TestSpreadAppend(t *testing.T) {
+	args := append([]string{"--json", "branch", "model", "update"}, extra...)
+	if _, err := executeLiveCLI(t, args...); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+}
+`)
+
+	found, err := discoverLiveInvocations(dir, map[string]bool{})
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
+
+	for _, command := range []string{"repo comment update", "branch model update"} {
+		if _, ok := found.asserted[command]; !ok {
+			t.Errorf("%q was not found in a spread slice; asserted=%v", command, keysOf(found.asserted))
+		}
+	}
+}
+
+func keysOf(set map[string]struct{}) []string {
+	names := make([]string, 0, len(set))
+	for name := range set {
+		names = append(names, name)
+	}
+
+	return names
+}
+
+// A test may run the CLI through a local helper rather than executeLiveCLI.
+// Recognising only the base helpers made those invocations invisible, so eight
+// commands stayed listed as dry-run-only while a test was mutating them for
+// real -- the same silent loss of coverage #532 exists to stop.
+func TestCommandsReachedThroughAWrapperCount(t *testing.T) {
+	dir := writeLiveTestFile(t, `package live_test
+
+func mustLiveCLI(t *testing.T, args ...string) string {
+	output, err := executeLiveCLI(t, append([]string{"--json"}, args...)...)
+	if err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+	return output
+}
+
+func alsoWrapped(t *testing.T, args ...string) string {
+	return mustLiveCLI(t, args...)
+}
+
+func TestGrant(t *testing.T) {
+	mustLiveCLI(t, "project", "permissions", "grant", key, name, "PROJECT_READ")
+	alsoWrapped(t, "repo", "permissions", "revoke", name)
+}
+`)
+
+	found, err := discoverLiveInvocations(dir, map[string]bool{})
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
+
+	// The second proves a wrapper of a wrapper is followed too.
+	for _, command := range []string{"project permissions grant", "repo permissions revoke"} {
+		resolved := resolveInvocations([]string{command}, found.asserted)
+		if _, ok := resolved[command]; !ok {
+			t.Errorf("%q invoked through a helper was not counted; asserted=%v", command, keysOf(found.asserted))
+		}
+	}
+}
+
+// The hole a wrapper opens: if the helper supplies --dry-run itself, its
+// callers look like real invocations while nothing is ever mutated. That is the
+// original defect wearing a different hat, so it is closed explicitly.
+func TestAWrapperThatSuppliesDryRunIsStillADryRun(t *testing.T) {
+	dir := writeLiveTestFile(t, `package live_test
+
+func previewOnly(t *testing.T, args ...string) string {
+	output, err := executeLiveCLI(t, append([]string{"--json", "--dry-run"}, args...)...)
+	if err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+	return output
+}
+
+func TestPreview(t *testing.T) {
+	previewOnly(t, "branch", "default", "set", "main")
+}
+`)
+
+	found, err := discoverLiveInvocations(dir, map[string]bool{})
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
+
+	runnable := []string{"branch default set"}
+	if _, ok := resolveInvocations(runnable, found.asserted)[runnable[0]]; ok {
+		t.Error("a helper that passes --dry-run must not give its callers real coverage")
+	}
+	if _, ok := resolveInvocations(runnable, found.dryRun)[runnable[0]]; !ok {
+		t.Errorf("expected the wrapped call to be recorded as a dry run; dryRun=%v", keysOf(found.dryRun))
 	}
 }

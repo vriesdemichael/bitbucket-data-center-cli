@@ -43,16 +43,17 @@ import (
 )
 
 // reportVersion is bumped when the on-disk shape changes.
-const reportVersion = 1
+const reportVersion = 2
 
 type report struct {
 	Version int `json:"version"`
 	Summary struct {
-		Runnable  int     `json:"runnable_commands"`
-		Covered   int     `json:"covered_commands"`
-		Percent   float64 `json:"covered_percent"`
-		Masked    int     `json:"masked_commands"`
-		Uncovered int     `json:"uncovered_commands"`
+		Runnable   int     `json:"runnable_commands"`
+		Covered    int     `json:"covered_commands"`
+		Percent    float64 `json:"covered_percent"`
+		Masked     int     `json:"masked_commands"`
+		DryRunOnly int     `json:"dry_run_only_commands"`
+		Uncovered  int     `json:"uncovered_commands"`
 	} `json:"summary"`
 	// Covered lists commands a live test invokes and asserts on. Regressions
 	// against this set fail verification.
@@ -62,6 +63,12 @@ type report struct {
 	// the command works. These are the most dangerous entries in the report: they
 	// look covered in CI output and are not.
 	KnownMasked []string `json:"known_masked"`
+	// KnownDryRunOnly lists commands whose only live coverage runs them with
+	// --dry-run. The planning path is exercised and the mutation never is, so
+	// the command has never been shown to work against a server -- which is
+	// how #511, #505, #506 and #503 all shipped green. Treat these as
+	// uncovered; they are listed apart only so the backlog says why.
+	KnownDryRunOnly []string `json:"known_dry_run_only"`
 	// KnownUncovered is the accepted backlog of commands no live test runs.
 	// A command may only appear here if it is already in the committed report;
 	// anything new must come with live coverage.
@@ -148,11 +155,19 @@ func commandPathWithoutRoot(command *cobra.Command) string {
 // invocations records, per command path, whether every live test that runs it
 // can skip itself when the call fails.
 type invocations struct {
-	// asserted holds commands invoked by at least one test that cannot skip on
-	// error, so a failure there really does fail CI.
+	// asserted holds commands invoked for real by at least one test that cannot
+	// skip on error, so a failure there really does fail CI.
 	asserted map[string]struct{}
-	// masked holds commands invoked only by tests that skip on error.
+	// masked holds commands invoked for real only by tests that skip on error.
 	masked map[string]struct{}
+	// dryRun holds commands only ever invoked with --dry-run.
+	//
+	// A --dry-run invocation exercises the planning path and deliberately does
+	// not send the mutation, so it says nothing about whether the command works.
+	// Counting it as reach is what let four defects ship in #530: `pr update`,
+	// `pr decline` and the rest were reported as covered while their mutating
+	// path had never once run against a server (#532).
+	dryRun map[string]struct{}
 }
 
 // discoverLiveInvocations parses the live tests and records the command paths
@@ -163,10 +178,19 @@ type invocations struct {
 // skip, every command it invokes is treated as masked, because any of those
 // calls failing can end the test as "skipped" rather than "failed".
 func discoverLiveInvocations(dir string, valueFlags map[string]bool) (invocations, error) {
-	found := invocations{asserted: map[string]struct{}{}, masked: map[string]struct{}{}}
+	found := invocations{
+		asserted: map[string]struct{}{},
+		masked:   map[string]struct{}{},
+		dryRun:   map[string]struct{}{},
+	}
 	fileSet := token.NewFileSet()
 
-	err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, walkErr error) error {
+	invokers, dryRunInvokers, err := resolveInvokers(dir, fileSet)
+	if err != nil {
+		return invocations{}, err
+	}
+
+	err = filepath.WalkDir(dir, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -185,16 +209,22 @@ func discoverLiveInvocations(dir string, valueFlags map[string]bool) (invocation
 				continue
 			}
 
-			commands := commandsInvokedBy(function, valueFlags)
-			if len(commands) == 0 {
+			real, dryRun := commandsInvokedBy(function, valueFlags, invokers, dryRunInvokers)
+			if len(real) == 0 && len(dryRun) == 0 {
 				continue
+			}
+
+			// A dry run proves nothing about the mutating path whether or not
+			// the test can skip, so it is recorded the same way either way.
+			for command := range dryRun {
+				found.dryRun[command] = struct{}{}
 			}
 
 			target := found.asserted
 			if skipsOnError(function) {
 				target = found.masked
 			}
-			for command := range commands {
+			for command := range real {
 				target[command] = struct{}{}
 			}
 		}
@@ -211,11 +241,190 @@ func discoverLiveInvocations(dir string, valueFlags map[string]bool) (invocation
 		delete(found.masked, command)
 	}
 
+	// "Dry-run only" means exactly that: any real invocation, asserted or
+	// masked, takes the command out of the bucket.
+	for command := range found.asserted {
+		delete(found.dryRun, command)
+	}
+	for command := range found.masked {
+		delete(found.dryRun, command)
+	}
+
 	return found, nil
 }
 
-func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool) map[string]struct{} {
-	commands := map[string]struct{}{}
+// baseInvokers are the helpers that actually run the CLI. The stdin and MCP
+// variants take an extra argument before the command words: the input, and the
+// callback that drives the protocol.
+var baseInvokers = map[string]int{
+	"executeLiveCLI":          1,
+	"executeLiveCLIWithStdin": 2,
+	"executeLiveMCPServer":    2,
+}
+
+// resolveInvokers returns every function that runs the CLI, keyed by name, with
+// the number of arguments that precede the command words.
+//
+// A test may call the CLI through a local helper -- `mustLiveCLI(t, "repo",
+// "permissions", "grant", ...)` -- rather than executeLiveCLI directly.
+// Recognising only the base helpers made those invocations invisible, so eight
+// commands stayed listed as dry-run-only while a test was mutating them for
+// real. That is the same silent loss of coverage #532 exists to stop, so a
+// wrapper is followed rather than requiring every test to inline the call.
+//
+// A wrapper qualifies when it takes a variadic ...string and its body calls a
+// known invoker. The pass repeats until it finds nothing new, so a wrapper of a
+// wrapper is found too.
+func resolveInvokers(dir string, fileSet *token.FileSet) (map[string]int, map[string]bool, error) {
+	invokers := map[string]int{}
+	// Wrappers that pass --dry-run themselves, so every call to them is a dry
+	// run however the call site is spelled.
+	alwaysDryRun := map[string]bool{}
+	for name, leading := range baseInvokers {
+		invokers[name] = leading
+	}
+
+	type candidate struct {
+		name    string
+		leading int
+		body    *ast.BlockStmt
+	}
+	candidates := []candidate{}
+
+	err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() || !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+
+		node, err := parser.ParseFile(fileSet, path, nil, 0)
+		if err != nil {
+			return fmt.Errorf("parse %s: %w", path, err)
+		}
+
+		for _, declaration := range node.Decls {
+			function, ok := declaration.(*ast.FuncDecl)
+			if !ok || function.Body == nil || function.Recv != nil {
+				continue
+			}
+			if _, known := invokers[function.Name.Name]; known {
+				continue
+			}
+			leading, variadic := variadicStringParameter(function.Type)
+			if !variadic {
+				continue
+			}
+			candidates = append(candidates, candidate{name: function.Name.Name, leading: leading, body: function.Body})
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for {
+		added := false
+		for _, entry := range candidates {
+			if _, known := invokers[entry.name]; known {
+				continue
+			}
+			if !callsAnyOf(entry.body, invokers) {
+				continue
+			}
+			invokers[entry.name] = entry.leading
+			if mentionsDryRun(entry.body) {
+				alwaysDryRun[entry.name] = true
+			}
+			added = true
+		}
+		if !added {
+			break
+		}
+	}
+
+	return invokers, alwaysDryRun, nil
+}
+
+// mentionsDryRun reports whether a function body passes --dry-run anywhere, so
+// a helper that supplies it is not mistaken for one that runs the mutation.
+func mentionsDryRun(body *ast.BlockStmt) bool {
+	found := false
+
+	ast.Inspect(body, func(n ast.Node) bool {
+		literal, ok := n.(*ast.BasicLit)
+		if !ok || literal.Kind != token.STRING {
+			return true
+		}
+		if name, _, _ := strings.Cut(strings.Trim(literal.Value, "\""), "="); name == "--dry-run" {
+			found = true
+		}
+
+		return !found
+	})
+
+	return found
+}
+
+// variadicStringParameter reports whether a function ends in a ...string, and
+// how many arguments precede it.
+func variadicStringParameter(signature *ast.FuncType) (leading int, ok bool) {
+	if signature.Params == nil || len(signature.Params.List) == 0 {
+		return 0, false
+	}
+
+	for index, field := range signature.Params.List {
+		// A field can name several parameters at once: `a, b string`.
+		names := len(field.Names)
+		if names == 0 {
+			names = 1
+		}
+
+		if index == len(signature.Params.List)-1 {
+			ellipsis, isVariadic := field.Type.(*ast.Ellipsis)
+			if !isVariadic {
+				return 0, false
+			}
+			identifier, isIdent := ellipsis.Elt.(*ast.Ident)
+			if !isIdent || identifier.Name != "string" {
+				return 0, false
+			}
+
+			return leading, true
+		}
+
+		leading += names
+	}
+
+	return 0, false
+}
+
+func callsAnyOf(body *ast.BlockStmt, invokers map[string]int) bool {
+	found := false
+
+	ast.Inspect(body, func(n ast.Node) bool {
+		call, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		if identifier, ok := call.Fun.(*ast.Ident); ok {
+			if _, known := invokers[identifier.Name]; known {
+				found = true
+			}
+		}
+
+		return !found
+	})
+
+	return found
+}
+
+func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool, invokers map[string]int, dryRunInvokers map[string]bool) (real, dryRun map[string]struct{}) {
+	real = map[string]struct{}{}
+	dryRun = map[string]struct{}{}
+	argumentSlices := stringSliceLiterals(function)
 
 	ast.Inspect(function.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
@@ -226,33 +435,98 @@ func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool) map[s
 		if !ok {
 			return true
 		}
-		// The stdin variant takes the input as an extra argument before the
-		// command words. Recognising only the plain helper reported commands
-		// that are driven through stdin -- the credential helper protocol, for
-		// one -- as never invoked, when they were covered all along.
-		leadingArgs := 1
-		switch identifier.Name {
-		case "executeLiveCLI":
-		case "executeLiveCLIWithStdin":
-			leadingArgs = 2
-		case "executeLiveMCPServer":
-			// The MCP server is a conversation, not an invoke-and-assert: it
-			// takes a callback that drives the protocol while the command runs.
-			// Like the stdin variant, the command words follow that argument.
-			leadingArgs = 2
-		default:
+		leadingArgs, ok := invokers[identifier.Name]
+		if !ok {
 			return true
 		}
 		if len(call.Args) < leadingArgs {
 			return true
 		}
-		if path := commandPathFromArgs(call.Args[leadingArgs-1:], valueFlags); path != "" {
-			commands[path] = struct{}{}
+		// `executeLiveCLI(t, args...)` carries the words in a variable, not in
+		// the call. Reading only the literal arguments reported those commands
+		// as never invoked -- and while every invocation counted the same that
+		// went unnoticed, because a --dry-run call elsewhere covered for them.
+		// The words themselves: the receiver, and the stdin or callback argument
+		// where there is one, are already behind leadingArgs.
+		args := call.Args[leadingArgs:]
+		if call.Ellipsis.IsValid() && len(args) == 1 {
+			identifier, ok := args[0].(*ast.Ident)
+			if !ok {
+				return true
+			}
+			elements, ok := argumentSlices[identifier.Name]
+			if !ok {
+				return true
+			}
+			args = elements
 		}
+
+		path, isDryRun := commandPathFromArgs(args, valueFlags)
+		// A helper that supplies --dry-run itself makes every one of its
+		// callers a dry run, however the call site reads.
+		isDryRun = isDryRun || dryRunInvokers[identifier.Name]
+		if path == "" {
+			return true
+		}
+		if isDryRun {
+			dryRun[path] = struct{}{}
+		} else {
+			real[path] = struct{}{}
+		}
+
 		return true
 	})
 
-	return commands
+	return real, dryRun
+}
+
+// stringSliceLiterals maps each local []string{...} in a function to its
+// elements, so a call that spreads one can be read as if the words were written
+// out at the call site.
+func stringSliceLiterals(function *ast.FuncDecl) map[string][]ast.Expr {
+	found := map[string][]ast.Expr{}
+
+	ast.Inspect(function.Body, func(n ast.Node) bool {
+		assign, ok := n.(*ast.AssignStmt)
+		if !ok || len(assign.Lhs) != 1 || len(assign.Rhs) != 1 {
+			return true
+		}
+		name, ok := assign.Lhs[0].(*ast.Ident)
+		if !ok {
+			return true
+		}
+
+		switch value := assign.Rhs[0].(type) {
+		case *ast.CompositeLit:
+			if isStringSliceType(value.Type) {
+				found[name.Name] = value.Elts
+			}
+		case *ast.CallExpr:
+			// `args := append([]string{"--json", "repo", ...}, extra...)`: the
+			// command words are in the first argument, and the rest are flags
+			// that follow them, which the path scan stops at anyway.
+			if identifier, ok := value.Fun.(*ast.Ident); !ok || identifier.Name != "append" || len(value.Args) == 0 {
+				return true
+			}
+			if literal, ok := value.Args[0].(*ast.CompositeLit); ok && isStringSliceType(literal.Type) {
+				found[name.Name] = literal.Elts
+			}
+		}
+
+		return true
+	})
+
+	return found
+}
+
+func isStringSliceType(expr ast.Expr) bool {
+	arrayType, ok := expr.(*ast.ArrayType)
+	if !ok || arrayType.Len != nil {
+		return false
+	}
+	identifier, ok := arrayType.Elt.(*ast.Ident)
+
+	return ok && identifier.Name == "string"
 }
 
 // skipsOnError reports whether a test can end itself as skipped because a call
@@ -322,16 +596,32 @@ func containsSkip(node ast.Node) bool {
 // valueFlags names the root persistent flags that consume the following
 // argument, so that `executeLiveCLI(t, "--ca-file", "ca.pem", "pr", "get", id)`
 // yields "pr get" rather than treating the certificate path as the command.
-func commandPathFromArgs(args []ast.Expr, valueFlags map[string]bool) string {
+// commandPathFromArgs returns the command an invocation runs, and whether it
+// runs it as a dry run.
+//
+// --dry-run is a root persistent bool, so it is dropped by the loop below
+// either side of the command words: before them it looks like any global flag,
+// after them it ends the path. Dropping it is right for identifying the
+// command and wrong for deciding what was tested, so it is picked out
+// separately here rather than silently vanishing (#532).
+func commandPathFromArgs(args []ast.Expr, valueFlags map[string]bool) (string, bool) {
 	parts := []string{}
 	skipNext := false
+	dryRun := false
 
-	for index, arg := range args {
-		if index == 0 {
-			// The testing.T receiver.
+	for _, arg := range args {
+		literal, ok := arg.(*ast.BasicLit)
+		if !ok || literal.Kind != token.STRING {
 			continue
 		}
+		if name, _, _ := strings.Cut(strings.Trim(literal.Value, "\""), "="); name == "--dry-run" {
+			dryRun = true
 
+			break
+		}
+	}
+
+	for _, arg := range args {
 		literal, ok := arg.(*ast.BasicLit)
 		if !ok || literal.Kind != token.STRING {
 			break
@@ -361,7 +651,7 @@ func commandPathFromArgs(args []ast.Expr, valueFlags map[string]bool) string {
 		parts = append(parts, value)
 	}
 
-	return strings.Join(parts, " ")
+	return strings.Join(parts, " "), dryRun
 }
 
 // globalValueFlags returns the root persistent flags that take a value, keyed by
@@ -388,20 +678,25 @@ func globalValueFlags(root *cobra.Command) map[string]bool {
 func buildReport(runnable []string, invoked invocations) report {
 	asserted := resolveInvocations(runnable, invoked.asserted)
 	masked := resolveInvocations(runnable, invoked.masked)
+	dryRun := resolveInvocations(runnable, invoked.dryRun)
 
 	coveredCommands := []string{}
 	maskedCommands := []string{}
+	dryRunOnly := []string{}
 	uncovered := []string{}
 
 	for _, command := range runnable {
 		_, isAsserted := asserted[command]
 		_, isMasked := masked[command]
+		_, isDryRunOnly := dryRun[command]
 
 		switch {
 		case isAsserted:
 			coveredCommands = append(coveredCommands, command)
 		case isMasked:
 			maskedCommands = append(maskedCommands, command)
+		case isDryRunOnly:
+			dryRunOnly = append(dryRunOnly, command)
 		default:
 			uncovered = append(uncovered, command)
 		}
@@ -409,17 +704,20 @@ func buildReport(runnable []string, invoked invocations) report {
 
 	sort.Strings(coveredCommands)
 	sort.Strings(maskedCommands)
+	sort.Strings(dryRunOnly)
 	sort.Strings(uncovered)
 
 	result := report{
-		Version:        reportVersion,
-		Covered:        coveredCommands,
-		KnownMasked:    maskedCommands,
-		KnownUncovered: uncovered,
+		Version:         reportVersion,
+		Covered:         coveredCommands,
+		KnownMasked:     maskedCommands,
+		KnownDryRunOnly: dryRunOnly,
+		KnownUncovered:  uncovered,
 	}
 	result.Summary.Runnable = len(runnable)
 	result.Summary.Covered = len(coveredCommands)
 	result.Summary.Masked = len(maskedCommands)
+	result.Summary.DryRunOnly = len(dryRunOnly)
 	result.Summary.Uncovered = len(uncovered)
 	if len(runnable) > 0 {
 		result.Summary.Percent = float64(len(coveredCommands)) / float64(len(runnable)) * 100
@@ -458,6 +756,7 @@ func compareReports(committed report, current report) []string {
 	currentCovered := toSet(current.Covered)
 	knownMasked := toSet(committed.KnownMasked)
 	knownUncovered := toSet(committed.KnownUncovered)
+	knownDryRunOnly := toSet(committed.KnownDryRunOnly)
 
 	// A command that was covered must stay covered.
 	for _, command := range committed.Covered {
@@ -474,6 +773,19 @@ func compareReports(committed report, current report) []string {
 		}
 		problems = append(problems, fmt.Sprintf(
 			"%q is only covered by a live test that skips itself on error, so the suite passes whether or not it works",
+			command,
+		))
+	}
+
+	// A command that slips back to dry-run-only has lost its mutating coverage
+	// while still looking exercised in the test output, which is the failure
+	// mode #532 exists to stop.
+	for _, command := range current.KnownDryRunOnly {
+		if _, ok := knownDryRunOnly[command]; ok {
+			continue
+		}
+		problems = append(problems, fmt.Sprintf(
+			"%q is only invoked live with --dry-run, so its mutating path never runs against a server",
 			command,
 		))
 	}
@@ -507,6 +819,9 @@ func printSummary(current report) {
 	)
 	if current.Summary.Masked > 0 {
 		fmt.Printf("  masked by a skip-on-error test: %d\n", current.Summary.Masked)
+	}
+	if current.Summary.DryRunOnly > 0 {
+		fmt.Printf("  only ever run with --dry-run:   %d\n", current.Summary.DryRunOnly)
 	}
 	if current.Summary.Uncovered > 0 {
 		fmt.Printf("  never invoked live:             %d\n", current.Summary.Uncovered)
