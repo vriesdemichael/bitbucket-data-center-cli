@@ -1479,8 +1479,6 @@ Available Commands:
   restriction Manage repository branch restrictions
 
 Flags:
-      --all           Return every result rather than the first --limit
-      --limit int     Maximum number of results to return (default 25)
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --start int     Start offset for list operations
 
@@ -1517,7 +1515,6 @@ Flags:
       --start-point string   Commit ID or ref to branch from
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1525,7 +1522,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1552,7 +1548,6 @@ Available Commands:
   set         Set repository default branch
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1560,7 +1555,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1585,7 +1579,6 @@ Usage:
   bb branch default get [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1593,7 +1586,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1616,7 +1608,6 @@ Usage:
   bb branch default set <name> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1624,7 +1615,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1650,7 +1640,6 @@ Flags:
       --end-point string   Expected commit at branch tip
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1658,7 +1647,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1681,13 +1669,14 @@ Usage:
   bb branch list [flags]
 
 Flags:
+      --all               Return every result rather than the first --limit
       --base string       Base ref filter
       --details           Include branch details from Bitbucket
       --filter string     Filter text for branch names
+      --limit int         Maximum number of results to return (default 25)
       --order-by string   Branch ordering (one of: ALPHABETICAL, MODIFICATION)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1695,7 +1684,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1722,7 +1710,6 @@ Available Commands:
   update      Update repository default branch used by branch model settings
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1730,7 +1717,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1754,8 +1740,11 @@ Inspect branch refs that contain a commit
 Usage:
   bb branch model inspect <commit> [flags]
 
+Flags:
+      --all         Return every result rather than the first --limit
+      --limit int   Maximum number of results to return (default 25)
+
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1763,7 +1752,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1786,7 +1774,6 @@ Usage:
   bb branch model update <default-branch> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1794,7 +1781,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1824,7 +1810,6 @@ Available Commands:
   update      Update branch restriction
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1832,7 +1817,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1866,7 +1850,6 @@ Flags:
       --user strings             User slug allowed by restriction (repeatable)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1874,7 +1857,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1897,7 +1879,6 @@ Usage:
   bb branch restriction delete <id> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1905,7 +1886,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1928,7 +1908,6 @@ Usage:
   bb branch restriction get <id> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1936,7 +1915,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -1959,12 +1937,13 @@ Usage:
   bb branch restriction list [flags]
 
 Flags:
+      --all                   Return every result rather than the first --limit
+      --limit int             Maximum number of results to return (default 25)
       --matcher-id string     Matcher id value
       --matcher-type string   Matcher type (one of: BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN)
       --type string           Restriction type (one of: read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -1972,7 +1951,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -2004,7 +1982,6 @@ Flags:
       --user strings             User slug allowed by restriction (repeatable)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -2012,7 +1989,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -2177,10 +2153,6 @@ Available Commands:
   list        List required build merge checks
   update      Update required build merge check
 
-Flags:
-      --all         Return every result rather than the first --limit
-      --limit int   Maximum number of results to return (default 25)
-
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
@@ -2215,7 +2187,6 @@ Flags:
       --body string   Raw JSON payload for required build merge check
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -2223,7 +2194,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -2244,8 +2214,11 @@ Delete required build merge check
 Usage:
   bb build required delete <id> [flags]
 
+Flags:
+      --all         Return every result rather than the first --limit
+      --limit int   Maximum number of results to return (default 25)
+
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -2253,7 +2226,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -2274,8 +2246,11 @@ List required build merge checks
 Usage:
   bb build required list [flags]
 
+Flags:
+      --all         Return every result rather than the first --limit
+      --limit int   Maximum number of results to return (default 25)
+
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -2283,7 +2258,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -2308,7 +2282,6 @@ Flags:
       --body string   Raw JSON payload for required build merge check
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -2316,7 +2289,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -2382,10 +2354,7 @@ Available Commands:
   stats       Get build status summary counts for one or more commits
 
 Flags:
-      --all               Return every result rather than the first --limit
-      --include-unique    Include unique result details when available
-      --limit int         Maximum number of results to return (default 25)
-      --order-by string   Build status ordering (one of: NEWEST, OLDEST, STATUS)
+      --include-unique   Include unique result details when available
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -2417,8 +2386,12 @@ Get build statuses for a commit
 Usage:
   bb build status get <commit> [flags]
 
+Flags:
+      --all               Return every result rather than the first --limit
+      --limit int         Maximum number of results to return (default 25)
+      --order-by string   Build status ordering (one of: NEWEST, OLDEST, STATUS)
+
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -2427,12 +2400,10 @@ Global Flags:
       --include-unique           Include unique result details when available
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Build status ordering (one of: NEWEST, OLDEST, STATUS)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
@@ -2461,7 +2432,6 @@ Flags:
       --url string            Build URL
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -2470,12 +2440,10 @@ Global Flags:
       --include-unique           Include unique result details when available
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Build status ordering (one of: NEWEST, OLDEST, STATUS)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
@@ -2493,7 +2461,6 @@ Usage:
   bb build status stats <commit>... [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -2502,12 +2469,10 @@ Global Flags:
       --include-unique           Include unique result details when available
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Build status ordering (one of: NEWEST, OLDEST, STATUS)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
@@ -2686,8 +2651,6 @@ Available Commands:
   prs         List pull requests containing a commit
 
 Flags:
-      --all           Return every result rather than the first --limit
-      --limit int     Maximum number of results to return (default 25)
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --start int     Start offset for list operations
 
@@ -2720,8 +2683,11 @@ Compare two commits or refs
 Usage:
   bb commit compare <from> <to> [flags]
 
+Flags:
+      --all         Return every result rather than the first --limit
+      --limit int   Maximum number of results to return (default 25)
+
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -2729,7 +2695,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -2752,7 +2717,6 @@ Usage:
   bb commit get <id> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -2760,7 +2724,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -2783,11 +2746,12 @@ Usage:
   bb commit list [flags]
 
 Flags:
+      --all           Return every result rather than the first --limit
       --jira string   List commits associated with a Jira issue key
+      --limit int     Maximum number of results to return (default 25)
       --path string   Filter commits by file path
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -2795,7 +2759,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -2818,7 +2781,6 @@ Usage:
   bb commit prs <commitId> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -2826,7 +2788,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -3262,6 +3223,10 @@ List annotations for a Code Insights report or commit
 Usage:
   bb insights annotation list <commit> [key] [flags]
 
+Flags:
+      --all         Return every result rather than the first --limit
+      --limit int   Maximum number of results to return (default 25)
+
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
@@ -3332,10 +3297,6 @@ Available Commands:
   list        List Code Insights reports for a commit
   set         Create or update a Code Insights report
 
-Flags:
-      --all         Return every result rather than the first --limit
-      --limit int   Maximum number of results to return (default 25)
-
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
@@ -3367,7 +3328,6 @@ Usage:
   bb insights report delete <commit> <key> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -3375,7 +3335,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -3397,7 +3356,6 @@ Usage:
   bb insights report get <commit> <key> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -3405,7 +3363,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -3426,8 +3383,11 @@ List Code Insights reports for a commit
 Usage:
   bb insights report list <commit> [flags]
 
+Flags:
+      --all         Return every result rather than the first --limit
+      --limit int   Maximum number of results to return (default 25)
+
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -3435,7 +3395,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -3460,7 +3419,6 @@ Flags:
       --body string   Raw JSON payload for Code Insights report
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -3468,7 +3426,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -3744,10 +3701,6 @@ Usage:
 Available Commands:
   status      Show build statuses for a pull request's source commit
 
-Flags:
-      --all         Return every result rather than the first --limit
-      --limit int   Maximum number of results to return (default 25)
-
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
@@ -3778,8 +3731,11 @@ Show build statuses for a pull request's source commit
 Usage:
   bb pr build status <id> [flags]
 
+Flags:
+      --all         Return every result rather than the first --limit
+      --limit int   Maximum number of results to return (default 25)
+
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -3787,7 +3743,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5053,11 +5008,6 @@ Available Commands:
   update             Update project details
   webhook            Manage project webhooks
 
-Flags:
-      --all         Return every result rather than the first --limit
-      --limit int   Maximum number of results to return (default 25)
-      --start int   Start offset for list operations
-
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
@@ -5095,7 +5045,6 @@ Available Commands:
   update      Update an existing restriction
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5103,7 +5052,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5111,7 +5059,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb project branch-restriction [command] --help" for more information about a command.
 ```
@@ -5136,7 +5083,6 @@ Flags:
       --user strings             Allowed user slugs
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5144,7 +5090,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5152,7 +5097,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project branch-restriction delete`
@@ -5166,7 +5110,6 @@ Usage:
   bb project branch-restriction delete <project-key> <restriction-id> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5174,7 +5117,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5182,7 +5124,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project branch-restriction get`
@@ -5196,7 +5137,6 @@ Usage:
   bb project branch-restriction get <project-key> <restriction-id> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5204,7 +5144,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5212,7 +5151,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project branch-restriction list`
@@ -5231,7 +5169,6 @@ Flags:
       --type string           Filter by restriction type (one of: read-only, no-deletes, fast-forward-only, pull-request-only, no-creates)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5239,7 +5176,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5247,7 +5183,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project branch-restriction update`
@@ -5270,7 +5205,6 @@ Flags:
       --user strings             Allowed user slugs
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5278,7 +5212,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5286,7 +5219,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project create`
@@ -5304,7 +5236,6 @@ Flags:
       --name string          Project name (required)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5312,7 +5243,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5320,7 +5250,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project default-task`
@@ -5340,7 +5269,6 @@ Available Commands:
   update      Update a default checklist task
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5348,7 +5276,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5356,7 +5283,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb project default-task [command] --help" for more information about a command.
 ```
@@ -5376,7 +5302,6 @@ Flags:
       --target-ref string   Target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5384,7 +5309,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5392,7 +5316,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project default-task delete`
@@ -5406,7 +5329,6 @@ Usage:
   bb project default-task delete <project-key> <task-id> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5414,7 +5336,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5422,7 +5343,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project default-task list`
@@ -5436,7 +5356,6 @@ Usage:
   bb project default-task list <project-key> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5444,7 +5363,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5452,7 +5370,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project default-task update`
@@ -5471,7 +5388,6 @@ Flags:
       --target-ref string    New target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5479,7 +5395,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5487,7 +5402,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project delete`
@@ -5501,7 +5415,6 @@ Usage:
   bb project delete <key> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5509,7 +5422,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5517,7 +5429,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project get`
@@ -5531,7 +5442,6 @@ Usage:
   bb project get <key> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5539,7 +5449,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5547,7 +5456,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project list`
@@ -5561,10 +5469,12 @@ Usage:
   bb project list [flags]
 
 Flags:
+      --all           Return every result rather than the first --limit
+      --limit int     Maximum number of results to return (default 25)
       --name string   Filter projects by name
+      --start int     Start offset for list operations
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5572,7 +5482,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5580,7 +5489,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project permissions`
@@ -5602,7 +5510,6 @@ Available Commands:
   users       User permissions
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5610,7 +5517,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5618,7 +5524,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb project permissions [command] --help" for more information about a command.
 ```
@@ -5639,7 +5544,6 @@ Flags:
       --group   Treat the argument as a group rather than a user
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5647,7 +5551,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5655,7 +5558,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project permissions groups`
@@ -5674,7 +5576,6 @@ Available Commands:
   revoke      Revoke a project permission from a group
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5682,7 +5583,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5690,7 +5590,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb project permissions groups [command] --help" for more information about a command.
 ```
@@ -5708,7 +5607,6 @@ Usage:
   bb project permissions groups grant <key> <group> <permission> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5716,7 +5614,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5724,7 +5621,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project permissions groups list`
@@ -5758,7 +5654,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project permissions groups revoke`
@@ -5774,7 +5669,6 @@ Usage:
   bb project permissions groups revoke <key> <group> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5782,7 +5676,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5790,7 +5683,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project permissions list`
@@ -5825,7 +5717,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project permissions revoke`
@@ -5844,7 +5735,6 @@ Flags:
       --group   Treat the argument as a group rather than a user
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5852,7 +5742,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5860,7 +5749,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project permissions show`
@@ -5874,7 +5762,6 @@ Usage:
   bb project permissions show <key> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5882,7 +5769,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5890,7 +5776,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project permissions users`
@@ -5909,7 +5794,6 @@ Available Commands:
   revoke      Revoke a project permission from a user
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5917,7 +5801,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5925,7 +5808,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb project permissions users [command] --help" for more information about a command.
 ```
@@ -5943,7 +5825,6 @@ Usage:
   bb project permissions users grant <key> <username> <permission> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -5951,7 +5832,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -5959,7 +5839,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project permissions users list`
@@ -5993,7 +5872,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project permissions users revoke`
@@ -6009,7 +5887,6 @@ Usage:
   bb project permissions users revoke <key> <username> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6017,7 +5894,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6025,7 +5901,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project update`
@@ -6043,7 +5918,6 @@ Flags:
       --name string          Project name
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6051,7 +5925,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6059,7 +5932,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project webhook`
@@ -6081,7 +5953,6 @@ Available Commands:
   update      Update a project webhook
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6089,7 +5960,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6097,7 +5967,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb project webhook [command] --help" for more information about a command.
 ```
@@ -6117,7 +5986,6 @@ Flags:
       --event strings   Webhook events to subscribe to (default [repo:refs_changed])
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6125,7 +5993,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6133,7 +6000,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project webhook delete`
@@ -6147,7 +6013,6 @@ Usage:
   bb project webhook delete <project-key> <webhook-id> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6155,7 +6020,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6163,7 +6027,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project webhook list`
@@ -6212,7 +6075,6 @@ Flags:
       --summary   Get statistics summary instead of detailed logs
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6220,7 +6082,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6228,7 +6089,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project webhook test`
@@ -6245,7 +6105,6 @@ Flags:
       --url string   Test this URL instead of the webhook's configured one
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6253,7 +6112,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6261,7 +6119,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb project webhook update`
@@ -6281,7 +6138,6 @@ Flags:
       --url string      New URL
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6289,7 +6145,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6297,7 +6152,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb ref`
@@ -6427,11 +6281,6 @@ Available Commands:
   unwatch      Unwatch repository
   watch        Watch repository
 
-Flags:
-      --all         Return every result rather than the first --limit
-      --limit int   Maximum number of results to return (default 25)
-      --start int   Start offset for list operations
-
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
@@ -6471,7 +6320,6 @@ Flags:
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6479,7 +6327,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6487,7 +6334,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo admin [command] --help" for more information about a command.
 ```
@@ -6512,7 +6358,6 @@ Flags:
       --project string          Project key
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6520,7 +6365,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6529,7 +6373,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo admin delete`
@@ -6548,7 +6391,6 @@ Flags:
       --yes   Skip the confirmation. Only applies when the repository is named explicitly.
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6556,7 +6398,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6565,7 +6406,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo admin fork`
@@ -6585,7 +6425,6 @@ Flags:
       --project string   Project key of the new fork
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6593,7 +6432,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6602,7 +6440,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo admin update`
@@ -6621,7 +6458,6 @@ Flags:
       --name string             Repository name
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6629,7 +6465,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6638,7 +6473,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo archive`
@@ -6660,7 +6494,6 @@ Flags:
       --repo string     Repository as PROJECT/slug
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6668,7 +6501,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6676,7 +6508,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo browse`
@@ -6700,7 +6531,6 @@ Flags:
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6708,7 +6538,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6716,7 +6545,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo browse [command] --help" for more information about a command.
 ```
@@ -6735,7 +6563,6 @@ Flags:
       --at string   Commit ID or ref
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6743,7 +6570,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6752,7 +6578,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo browse file`
@@ -6769,7 +6594,6 @@ Flags:
       --at string   Commit ID or ref
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6777,7 +6601,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6786,7 +6609,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo browse history`
@@ -6819,7 +6641,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo browse raw`
@@ -6836,7 +6657,6 @@ Flags:
       --at string   Commit ID or ref
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6844,7 +6664,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6853,7 +6672,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo browse tree`
@@ -6887,7 +6705,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo cat`
@@ -6905,7 +6722,6 @@ Flags:
       --repo string   Repository as PROJECT/slug
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6913,7 +6729,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6921,7 +6736,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo clone`
@@ -6941,7 +6755,6 @@ Flags:
   -u, --upstream-remote-name string   Upstream remote name when cloning a fork (default "upstream")
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6949,7 +6762,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6957,7 +6769,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo comment`
@@ -6982,7 +6793,6 @@ Flags:
       --repo string     Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -6990,7 +6800,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -6998,7 +6807,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo comment [command] --help" for more information about a command.
 ```
@@ -7023,7 +6831,6 @@ Flags:
       --text string        Comment text
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7032,7 +6839,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7042,7 +6848,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo comment delete`
@@ -7060,7 +6865,6 @@ Flags:
       --version int32   Expected comment version
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7069,7 +6873,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7079,7 +6882,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo comment list`
@@ -7115,7 +6917,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo comment update`
@@ -7134,7 +6935,6 @@ Flags:
       --version int32   Expected comment version
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7143,7 +6943,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7153,7 +6952,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo compare`
@@ -7171,7 +6969,6 @@ Flags:
       --repo string   Repository as PROJECT/slug
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7179,7 +6976,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7187,7 +6983,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo create`
@@ -7210,7 +7005,6 @@ Flags:
       --project string          Project key
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7218,7 +7012,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7226,7 +7019,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo default-task`
@@ -7249,7 +7041,6 @@ Flags:
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7257,7 +7048,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7265,7 +7055,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo default-task [command] --help" for more information about a command.
 ```
@@ -7285,7 +7074,6 @@ Flags:
       --target-ref string   Target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7293,7 +7081,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7302,7 +7089,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo default-task delete`
@@ -7316,7 +7102,6 @@ Usage:
   bb repo default-task delete <id> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7324,7 +7109,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7333,7 +7117,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo default-task list`
@@ -7347,7 +7130,6 @@ Usage:
   bb repo default-task list [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7355,7 +7137,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7364,7 +7145,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo default-task update`
@@ -7383,7 +7163,6 @@ Flags:
       --target-ref string    New target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7391,7 +7170,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7400,7 +7178,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo delete`
@@ -7425,7 +7202,6 @@ Flags:
       --yes           Skip the confirmation. Only applies when the repository is named explicitly.
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7433,7 +7209,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7441,7 +7216,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo edit`
@@ -7463,7 +7237,6 @@ Flags:
       --source-commit string   Commit ID before editing
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7471,7 +7244,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7479,7 +7251,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo fork`
@@ -7500,7 +7271,6 @@ Flags:
       --repo string      Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7508,7 +7278,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7516,7 +7285,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo label`
@@ -7538,7 +7306,6 @@ Flags:
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7546,7 +7313,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7554,7 +7320,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo label [command] --help" for more information about a command.
 ```
@@ -7570,7 +7335,6 @@ Usage:
   bb repo label add <label> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7578,7 +7342,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7587,7 +7350,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo label list`
@@ -7601,7 +7363,6 @@ Usage:
   bb repo label list [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7609,7 +7370,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7618,7 +7378,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo label remove`
@@ -7632,7 +7391,6 @@ Usage:
   bb repo label remove <label> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7640,7 +7398,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7649,7 +7406,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo list`
@@ -7663,10 +7419,12 @@ Usage:
   bb repo list [flags]
 
 Flags:
+      --all              Return every result rather than the first --limit
+      --limit int        Maximum number of results to return (default 25)
       --project string   Filter by project key
+      --start int        Start offset for list operations
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7674,7 +7432,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7682,7 +7439,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo permissions`
@@ -7705,7 +7461,6 @@ Flags:
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7713,7 +7468,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7721,7 +7475,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo permissions [command] --help" for more information about a command.
 ```
@@ -7742,7 +7495,6 @@ Flags:
       --group   Treat the argument as a group rather than a user
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7750,7 +7502,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7759,7 +7510,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo permissions list`
@@ -7795,7 +7545,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo permissions revoke`
@@ -7814,7 +7563,6 @@ Flags:
       --group   Treat the argument as a group rather than a user
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7822,7 +7570,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7831,7 +7578,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo permissions show`
@@ -7845,7 +7591,6 @@ Usage:
   bb repo permissions show [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7853,7 +7598,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7862,7 +7606,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings`
@@ -7886,7 +7629,6 @@ Flags:
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7894,7 +7636,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7902,7 +7643,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo settings [command] --help" for more information about a command.
 ```
@@ -7926,7 +7666,6 @@ Flags:
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7934,7 +7673,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7942,7 +7680,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo settings auto-decline [command] --help" for more information about a command.
 ```
@@ -7958,7 +7695,6 @@ Usage:
   bb repo settings auto-decline delete [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7966,7 +7702,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -7975,7 +7710,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings auto-decline get`
@@ -7989,7 +7723,6 @@ Usage:
   bb repo settings auto-decline get [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -7997,7 +7730,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8006,7 +7738,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings auto-decline set`
@@ -8024,7 +7755,6 @@ Flags:
       --inactivity-weeks int32   Number of inactivity weeks before auto-decline
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8032,7 +7762,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8041,7 +7770,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings auto-merge`
@@ -8063,7 +7791,6 @@ Flags:
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8071,7 +7798,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8079,7 +7805,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo settings auto-merge [command] --help" for more information about a command.
 ```
@@ -8095,7 +7820,6 @@ Usage:
   bb repo settings auto-merge delete [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8103,7 +7827,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8112,7 +7835,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings auto-merge get`
@@ -8126,7 +7848,6 @@ Usage:
   bb repo settings auto-merge get [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8134,7 +7855,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8143,7 +7863,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings auto-merge set`
@@ -8160,7 +7879,6 @@ Flags:
       --enabled   Enable or disable auto-merge
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8168,7 +7886,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8177,7 +7894,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings pull-requests`
@@ -8198,7 +7914,6 @@ Available Commands:
   update-approvers Update required approvers count
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8206,7 +7921,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8215,7 +7929,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo settings pull-requests [command] --help" for more information about a command.
 ```
@@ -8231,7 +7944,6 @@ Usage:
   bb repo settings pull-requests get [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8239,7 +7951,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8248,7 +7959,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings pull-requests merge-checks`
@@ -8265,7 +7975,6 @@ Available Commands:
   list        List configured merge checks
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8273,7 +7982,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8282,7 +7990,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo settings pull-requests merge-checks [command] --help" for more information about a command.
 ```
@@ -8298,7 +8005,6 @@ Usage:
   bb repo settings pull-requests merge-checks list [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8306,7 +8012,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8315,7 +8020,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings pull-requests set-strategy`
@@ -8329,7 +8033,6 @@ Usage:
   bb repo settings pull-requests set-strategy <strategy-id> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8337,7 +8040,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8346,7 +8048,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings pull-requests update`
@@ -8363,7 +8064,6 @@ Flags:
       --required-all-tasks-complete   Require all pull-request tasks to be completed before merge
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8371,7 +8071,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8380,7 +8079,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings pull-requests update-approvers`
@@ -8397,7 +8095,6 @@ Flags:
       --count int   Required approvers count (0 disables check)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8405,7 +8102,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8414,7 +8110,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings security`
@@ -8431,7 +8126,6 @@ Available Commands:
   permissions Repository permissions
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8439,7 +8133,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8448,7 +8141,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo settings security [command] --help" for more information about a command.
 ```
@@ -8468,7 +8160,6 @@ Available Commands:
   users       User permissions
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8476,7 +8167,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8485,7 +8175,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo settings security permissions [command] --help" for more information about a command.
 ```
@@ -8506,7 +8195,6 @@ Available Commands:
   revoke      Revoke a repository permission from a group
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8514,7 +8202,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8523,7 +8210,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo settings security permissions groups [command] --help" for more information about a command.
 ```
@@ -8541,7 +8227,6 @@ Usage:
   bb repo settings security permissions groups grant <group> <permission> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8549,7 +8234,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8558,7 +8242,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings security permissions groups list`
@@ -8593,7 +8276,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings security permissions groups revoke`
@@ -8609,7 +8291,6 @@ Usage:
   bb repo settings security permissions groups revoke <group> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8617,7 +8298,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8626,7 +8306,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings security permissions users`
@@ -8645,7 +8324,6 @@ Available Commands:
   revoke      Revoke a repository permission from a user
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8653,7 +8331,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8662,7 +8339,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo settings security permissions users [command] --help" for more information about a command.
 ```
@@ -8680,7 +8356,6 @@ Usage:
   bb repo settings security permissions users grant <username> <permission> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8688,7 +8363,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8697,7 +8371,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings security permissions users list`
@@ -8732,7 +8405,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings security permissions users revoke`
@@ -8748,7 +8420,6 @@ Usage:
   bb repo settings security permissions users revoke <username> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8756,7 +8427,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8765,7 +8435,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings workflow`
@@ -8782,7 +8451,6 @@ Available Commands:
   webhooks    Repository webhooks
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8790,7 +8458,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8799,7 +8466,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo settings workflow [command] --help" for more information about a command.
 ```
@@ -8820,7 +8486,6 @@ Available Commands:
   list        List repository webhooks
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8828,7 +8493,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8837,7 +8501,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo settings workflow webhooks [command] --help" for more information about a command.
 ```
@@ -8857,7 +8520,6 @@ Flags:
       --event strings   Webhook event(s) to subscribe to (default [repo:refs_changed])
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8865,7 +8527,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8874,7 +8535,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings workflow webhooks delete`
@@ -8888,7 +8548,6 @@ Usage:
   bb repo settings workflow webhooks delete <webhook-id> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8896,7 +8555,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8905,7 +8563,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo settings workflow webhooks list`
@@ -8919,7 +8576,6 @@ Usage:
   bb repo settings workflow webhooks list [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8927,7 +8583,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8936,7 +8591,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo ssh-key`
@@ -8959,7 +8613,6 @@ Flags:
       --repo string      Repository reference (projectKey/repositorySlug) for repository-level SSH keys
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -8967,7 +8620,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -8975,7 +8627,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo ssh-key [command] --help" for more information about a command.
 ```
@@ -8997,7 +8648,6 @@ Flags:
       --read-write          Add as read-write access key
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -9005,7 +8655,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -9015,7 +8664,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo ssh-key list`
@@ -9049,7 +8697,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo ssh-key remove`
@@ -9063,7 +8710,6 @@ Usage:
   bb repo ssh-key remove <key-id> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -9071,7 +8717,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -9081,7 +8726,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo sync`
@@ -9106,7 +8750,6 @@ Flags:
       --repo string     Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -9114,7 +8757,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -9122,7 +8764,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 
 Use "bb repo sync [command] --help" for more information about a command.
 ```
@@ -9138,7 +8779,6 @@ Usage:
   bb repo sync disable [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -9146,7 +8786,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -9155,7 +8794,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo sync enable`
@@ -9169,7 +8807,6 @@ Usage:
   bb repo sync enable [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -9177,7 +8814,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -9186,7 +8822,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo sync status`
@@ -9200,7 +8835,6 @@ Usage:
   bb repo sync status [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -9208,7 +8842,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -9217,7 +8850,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo unwatch`
@@ -9234,7 +8866,6 @@ Flags:
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -9242,7 +8873,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -9250,7 +8880,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb repo watch`
@@ -9267,7 +8896,6 @@ Flags:
       --repo string   Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -9275,7 +8903,6 @@ Global Flags:
       --dry-run                  Preview server mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -9283,7 +8910,6 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb reviewer`
@@ -9954,12 +9580,8 @@ Available Commands:
   view        View repository tag
 
 Flags:
-      --all               Return every result rather than the first --limit
-      --filter string     Filter text for tag names
-      --limit int         Maximum number of results to return (default 25)
-      --order-by string   Tag ordering (one of: ALPHABETICAL, MODIFICATION)
-      --repo string       Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
-      --start int         Start offset for list operations
+      --filter string   Filter text for tag names
+      --repo string     Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -9995,7 +9617,6 @@ Flags:
       --start-point string   Commit ID or ref to tag
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -10004,17 +9625,14 @@ Global Flags:
       --filter string            Filter text for tag names
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Tag ordering (one of: ALPHABETICAL, MODIFICATION)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb tag delete`
@@ -10028,7 +9646,6 @@ Usage:
   bb tag delete <name> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -10037,17 +9654,14 @@ Global Flags:
       --filter string            Filter text for tag names
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Tag ordering (one of: ALPHABETICAL, MODIFICATION)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb tag list`
@@ -10060,8 +9674,13 @@ List repository tags
 Usage:
   bb tag list [flags]
 
+Flags:
+      --all               Return every result rather than the first --limit
+      --limit int         Maximum number of results to return (default 25)
+      --order-by string   Tag ordering (one of: ALPHABETICAL, MODIFICATION)
+      --start int         Start offset for list operations
+
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -10070,17 +9689,14 @@ Global Flags:
       --filter string            Filter text for tag names
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Tag ordering (one of: ALPHABETICAL, MODIFICATION)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb tag view`
@@ -10094,7 +9710,6 @@ Usage:
   bb tag view <name> [flags]
 
 Global Flags:
-      --all                      Return every result rather than the first --limit
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
@@ -10103,17 +9718,14 @@ Global Flags:
       --filter string            Filter text for tag names
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
-      --limit int                Maximum number of results to return (default 25)
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
       --no-input                 Never prompt; fail instead when a value is missing
-      --order-by string          Tag ordering (one of: ALPHABETICAL, MODIFICATION)
       --repo string              Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
-      --start int                Start offset for list operations
 ```
 
 ## `bb update`

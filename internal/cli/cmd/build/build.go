@@ -226,7 +226,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	var getPaging paging.Options
 	var getOrderBy string
-	statusCmd.AddCommand(&cobra.Command{
+	getStatusCmd := &cobra.Command{
 		Use:   "get <commit>",
 		Short: "Get build statuses for a commit",
 		Args:  cobra.ExactArgs(1),
@@ -263,9 +263,12 @@ func New(deps Dependencies) *cobra.Command {
 
 			return nil
 		},
-	})
-	getPaging.RegisterPersistent(statusCmd, 25)
-	enumflag.Register(statusCmd.PersistentFlags(), &getOrderBy, "order-by", "", buildOrderings, "Build status ordering")
+	}
+	// On the leaf that reads them, not on the parent: statusCmd also holds
+	// set and stats, which page nothing and ordered nothing (#476).
+	getPaging.Register(getStatusCmd, 25)
+	enumflag.Register(getStatusCmd.Flags(), &getOrderBy, "order-by", "", buildOrderings, "Build status ordering")
+	statusCmd.AddCommand(getStatusCmd)
 
 	var includeUnique bool
 	statusCmd.AddCommand(&cobra.Command{
@@ -350,9 +353,8 @@ func New(deps Dependencies) *cobra.Command {
 	}
 
 	var requiredPaging paging.Options
-	requiredPaging.RegisterPersistent(requiredCmd, 25)
 
-	requiredCmd.AddCommand(&cobra.Command{
+	listRequiredCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List required build merge checks",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -388,7 +390,9 @@ func New(deps Dependencies) *cobra.Command {
 
 			return nil
 		},
-	})
+	}
+	requiredPaging.Register(listRequiredCmd, 25)
+	requiredCmd.AddCommand(listRequiredCmd)
 
 	var createBody string
 	createRequiredCmd := &cobra.Command{
@@ -496,7 +500,7 @@ func New(deps Dependencies) *cobra.Command {
 	_ = updateRequiredCmd.MarkFlagRequired("body")
 	requiredCmd.AddCommand(updateRequiredCmd)
 
-	requiredCmd.AddCommand(&cobra.Command{
+	deleteRequiredCmd := &cobra.Command{
 		Use:   "delete <id>",
 		Short: "Delete required build merge check",
 		Args:  cobra.ExactArgs(1),
@@ -560,7 +564,11 @@ func New(deps Dependencies) *cobra.Command {
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted required build merge check"), style.Secondary.Render(fmt.Sprintf("%d", id)))
 			return nil
 		},
-	})
+	}
+	// The delete preview scans the existing checks, so it reads the flags
+	// too -- but create and update do not (#476).
+	requiredPaging.Register(deleteRequiredCmd, 25)
+	requiredCmd.AddCommand(deleteRequiredCmd)
 
 	var scopedSetKey string
 	var scopedSetState string

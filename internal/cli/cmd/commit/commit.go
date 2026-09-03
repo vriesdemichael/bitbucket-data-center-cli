@@ -81,7 +81,6 @@ func New(deps Dependencies) *cobra.Command {
 	}
 
 	commitCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
-	listPaging.RegisterPersistent(commitCmd, 25)
 	commitCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var listPath string
@@ -140,6 +139,7 @@ func New(deps Dependencies) *cobra.Command {
 	}
 	listCmd.Flags().StringVar(&listPath, "path", "", "Filter commits by file path")
 	listCmd.Flags().StringVar(&listJira, "jira", "", "List commits associated with a Jira issue key")
+	listPaging.Register(listCmd, 25)
 	commitCmd.AddCommand(listCmd)
 
 	getCmd := &cobra.Command{
@@ -227,6 +227,7 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
+	listPaging.Register(compareCmd, 25)
 	commitCmd.AddCommand(compareCmd)
 
 	prsCmd := &cobra.Command{

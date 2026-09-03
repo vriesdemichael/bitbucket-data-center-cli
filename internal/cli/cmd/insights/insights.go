@@ -108,7 +108,6 @@ func New(deps Dependencies) *cobra.Command {
 		Use:   "report",
 		Short: "Code Insights report commands",
 	}
-	reportPaging.RegisterPersistent(reportCmd, 25)
 
 	var reportBody string
 	setReportCmd := &cobra.Command{
@@ -240,7 +239,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	})
 
-	reportCmd.AddCommand(&cobra.Command{
+	listReportsCmd := &cobra.Command{
 		Use:   "list <commit>",
 		Short: "List Code Insights reports for a commit",
 		Args:  cobra.ExactArgs(1),
@@ -274,7 +273,11 @@ func New(deps Dependencies) *cobra.Command {
 
 			return nil
 		},
-	})
+	}
+	// On the leaves that page, not on reportCmd, which also holds set,
+	// get and delete (#476).
+	reportPaging.Register(listReportsCmd, 25)
+	reportCmd.AddCommand(listReportsCmd)
 
 	annotationCmd := &cobra.Command{
 		Use:   "annotation",
@@ -330,7 +333,7 @@ func New(deps Dependencies) *cobra.Command {
 	_ = addAnnotationCmd.MarkFlagRequired("body")
 	annotationCmd.AddCommand(addAnnotationCmd)
 
-	annotationCmd.AddCommand(&cobra.Command{
+	listAnnotationsCmd := &cobra.Command{
 		Use:   "list <commit> [key]",
 		Short: "List annotations for a Code Insights report or commit",
 		Args:  cobra.RangeArgs(1, 2),
@@ -365,7 +368,9 @@ func New(deps Dependencies) *cobra.Command {
 
 			return nil
 		},
-	})
+	}
+	reportPaging.Register(listAnnotationsCmd, 25)
+	annotationCmd.AddCommand(listAnnotationsCmd)
 
 	var setAnnMessage string
 	var setAnnSeverity string
