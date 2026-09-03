@@ -132,9 +132,17 @@ func TestLiveWorkspaceConfigResolution(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "")
 	t.Setenv("BITBUCKET_PROJECT_KEY", "")
 
-	output, err := executeLiveCLI(t, "--json", "repo", "list", "--limit", "1")
+	// The command has to reach the live server named by the workspace config
+	// and find the seeded repository on it.
+	//
+	// This used to ask for the first result of an unscoped listing and expect
+	// the seeded repository to be it. `repo list` filters by project only when
+	// --project says so, so that held while the instance had almost nothing on
+	// it and stopped the moment it had a dozen repositories -- a test passing
+	// for a reason it never stated.
+	output, err := executeLiveCLI(t, "--json", "repo", "list", "--project", seeded.Key, "--all")
 	if err != nil {
-		t.Fatalf("expected workspace config to resolve host and project against live server: %v\noutput: %s", err, output)
+		t.Fatalf("expected workspace config to resolve the host against the live server: %v\noutput: %s", err, output)
 	}
 	if !strings.Contains(output, repo.Slug) {
 		t.Fatalf("expected repo slug in live output: %s", output)
