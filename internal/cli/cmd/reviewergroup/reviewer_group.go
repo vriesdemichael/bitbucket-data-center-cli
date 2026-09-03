@@ -14,6 +14,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	reviewerservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reviewer"
@@ -87,7 +88,7 @@ func New(deps Dependencies) *cobra.Command {
 		Short: "List reviewer groups",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectKey != "" && repositorySelector != "" {
-				return fmt.Errorf("cannot specify both --project and --repo")
+				return apperrors.New(apperrors.KindValidation, "cannot specify both --project and --repo", nil)
 			}
 
 			cfg, client, err := d.LoadConfigAndClient()
@@ -117,7 +118,7 @@ func New(deps Dependencies) *cobra.Command {
 				projectKey = cfg.ProjectKey
 			}
 			if projectKey == "" {
-				return fmt.Errorf("project key is required (use --project or --repo)")
+				return apperrors.New(apperrors.KindValidation, "project key is required (use --project or --repo)", nil)
 			}
 
 			groups, err := service.ListProjectReviewerGroups(cmd.Context(), projectKey)
@@ -139,7 +140,7 @@ func New(deps Dependencies) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectKey != "" && repositorySelector != "" {
-				return fmt.Errorf("cannot specify both --project and --repo")
+				return apperrors.New(apperrors.KindValidation, "cannot specify both --project and --repo", nil)
 			}
 
 			cfg, client, err := d.LoadConfigAndClient()
@@ -204,7 +205,7 @@ func New(deps Dependencies) *cobra.Command {
 				projectKey = cfg.ProjectKey
 			}
 			if projectKey == "" {
-				return fmt.Errorf("project key is required (use --project or --repo)")
+				return apperrors.New(apperrors.KindValidation, "project key is required (use --project or --repo)", nil)
 			}
 
 			if d.DryRunEnabled() {
@@ -260,7 +261,7 @@ func New(deps Dependencies) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectKey != "" && repositorySelector != "" {
-				return fmt.Errorf("cannot specify both --project and --repo")
+				return apperrors.New(apperrors.KindValidation, "cannot specify both --project and --repo", nil)
 			}
 
 			cfg, client, err := d.LoadConfigAndClient()
@@ -331,7 +332,7 @@ func New(deps Dependencies) *cobra.Command {
 				projectKey = cfg.ProjectKey
 			}
 			if projectKey == "" {
-				return fmt.Errorf("project key is required (use --project or --repo)")
+				return apperrors.New(apperrors.KindValidation, "project key is required (use --project or --repo)", nil)
 			}
 
 			if d.DryRunEnabled() {
@@ -394,7 +395,7 @@ func New(deps Dependencies) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectKey != "" && repositorySelector != "" {
-				return fmt.Errorf("cannot specify both --project and --repo")
+				return apperrors.New(apperrors.KindValidation, "cannot specify both --project and --repo", nil)
 			}
 
 			cfg, client, err := d.LoadConfigAndClient()
@@ -455,7 +456,7 @@ func New(deps Dependencies) *cobra.Command {
 				projectKey = cfg.ProjectKey
 			}
 			if projectKey == "" {
-				return fmt.Errorf("project key is required (use --project or --repo)")
+				return apperrors.New(apperrors.KindValidation, "project key is required (use --project or --repo)", nil)
 			}
 
 			if d.DryRunEnabled() {
@@ -506,7 +507,7 @@ func New(deps Dependencies) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectKey != "" {
-				return fmt.Errorf("users command is only supported at repository scope (use --repo instead of --project)")
+				return apperrors.New(apperrors.KindValidation, "users command is only supported at repository scope (use --repo instead of --project)", nil)
 			}
 
 			cfg, client, err := d.LoadConfigAndClient()

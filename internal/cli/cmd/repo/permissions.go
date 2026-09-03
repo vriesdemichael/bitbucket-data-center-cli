@@ -12,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
@@ -434,11 +435,11 @@ func newRepoPermissionsCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.PermissionChecker == nil {
-				return fmt.Errorf("permission checker is not configured")
+				return apperrors.New(apperrors.KindInternal, "permission checker is not configured", nil)
 			}
 			checker := deps.PermissionChecker(client)
 			if checker == nil {
-				return fmt.Errorf("permission checker is not configured")
+				return apperrors.New(apperrors.KindInternal, "permission checker is not configured", nil)
 			}
 
 			perms, err := checker.InspectRepoPermissions(cmd.Context(), repo.ProjectKey, repo.Slug)
