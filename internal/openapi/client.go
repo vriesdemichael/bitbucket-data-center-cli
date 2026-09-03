@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/retrypolicy"
 )
 
 func NewClientWithResponsesFromConfig(cfg config.AppConfig) (*openapigenerated.ClientWithResponses, error) {
@@ -56,6 +58,11 @@ func NewClientWithResponsesFromConfig(cfg config.AppConfig) (*openapigenerated.C
 	)
 }
 
+// errBodyNotReplayable is returned rather than a response whose body has
+// already been consumed, which is what breaking out of the retry loop used to
+// produce.
+var errBodyNotReplayable = errors.New("request body cannot be replayed for a retry")
+
 type retryTransport struct {
 	base        http.RoundTripper
 	retries     int
@@ -76,15 +83,22 @@ func (transport *retryTransport) RoundTrip(request *http.Request) (*http.Respons
 		started := time.Now()
 		activeRequest := request
 		if attempt > 0 {
+			// A body that cannot be rewound cannot be replayed. Breaking here
+			// used to fall through to the return below and hand back
+			// lastResponse, whose body the retriable-status branch had already
+			// drained and closed -- a caller would read zero bytes and see no
+			// error. Not reachable while every call site passes a
+			// bytes.Reader, which populates GetBody, but it is the trap the
+			// first streaming upload would fall into.
 			if request.GetBody == nil && request.Body != nil {
-				break
+				return nil, errBodyNotReplayable
 			}
 
 			clone := request.Clone(request.Context())
 			if request.GetBody != nil {
 				body, err := request.GetBody()
 				if err != nil {
-					break
+					return nil, err
 				}
 				clone.Body = body
 			}
@@ -102,7 +116,7 @@ func (transport *retryTransport) RoundTrip(request *http.Request) (*http.Respons
 				"duration_ms": time.Since(started).Milliseconds(),
 				"error":       err.Error(),
 			}
-			if attempt < transport.retries {
+			if attempt < transport.retries && retrypolicy.Replayable(request.Method) {
 				transport.logger.Warn("http request failed", fields)
 				if sleepErr := sleepWithContext(request.Context(), time.Duration(attempt+1)*transport.baseBackoff); sleepErr != nil {
 					return nil, sleepErr
@@ -122,7 +136,7 @@ func (transport *retryTransport) RoundTrip(request *http.Request) (*http.Respons
 			"duration_ms": time.Since(started).Milliseconds(),
 		})
 
-		if response.StatusCode == http.StatusTooManyRequests || response.StatusCode >= 500 {
+		if retrypolicy.RetriableStatus(request.Method, response.StatusCode) {
 			lastResponse = response
 			retryDelay := retryDelayFromResponse(response.Header, attempt, transport.baseBackoff)
 			fields := map[string]any{

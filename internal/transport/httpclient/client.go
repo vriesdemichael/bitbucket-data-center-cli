@@ -16,6 +16,7 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/retrypolicy"
 )
 
 type Client struct {
@@ -225,7 +226,7 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 				"error":       err.Error(),
 			}
 			lastErr = apperrors.New(apperrors.KindTransient, "request failed", err)
-			if attempt < client.retries {
+			if attempt < client.retries && retrypolicy.Replayable(method) {
 				client.logger.Warn("http request failed", fields)
 				if sleepErr := sleepWithContext(ctx, time.Duration(attempt+1)*client.backoff); sleepErr != nil {
 					return nil, apperrors.New(apperrors.KindTransient, "request canceled while waiting to retry", sleepErr)
@@ -268,7 +269,7 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 			"duration_ms": time.Since(started).Milliseconds(),
 			"error":       mappedErr.Error(),
 		}
-		if response.StatusCode == http.StatusTooManyRequests || response.StatusCode >= 500 {
+		if retrypolicy.RetriableStatus(method, response.StatusCode) {
 			lastErr = mappedErr
 			retryDelay := retryDelayFromResponse(response.Header, attempt, client.backoff)
 			fields["retry_delay"] = retryDelay.String()
