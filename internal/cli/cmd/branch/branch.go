@@ -318,9 +318,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "startPoint": createStartPoint},
 					Action:          "create",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"branch list (filtered by name)"},
 					BlockingReasons: func() []string {
 						if predicted == "conflict" {
@@ -388,9 +388,9 @@ func New(deps Dependencies) *cobra.Command {
 							},
 							Action:          "delete",
 							PredictedAction: dryrunpreview.PredictedDelete,
+							Tier:            dryrunpreview.TierServerValidated,
 							Supported:       true,
 							Reason:          reason,
-							Confidence:      dryrunpreview.CapabilityFull,
 							RequiredState:   []string{"branch delete preflight validation"},
 						}))
 				}
@@ -483,9 +483,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "defaultBranch": args[0]},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"default branch"},
 				})
 
@@ -591,9 +591,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "defaultBranch": args[0]},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"default branch"},
 				})
 
@@ -764,9 +764,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "type": createRestrictionType, "matcherType": createMatcherType, "matcherId": createMatcherID},
 					Action:          "create",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"branch restrictions list"},
 					BlockingReasons: func() []string {
 						if predicted == "conflict" {
@@ -859,9 +859,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"branch restriction"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -943,9 +943,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
 					Action:          "delete",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"branch restriction"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)

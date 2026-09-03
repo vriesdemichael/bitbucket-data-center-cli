@@ -159,9 +159,9 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"project": args[0], "type": createType, "matcherType": createMatcherType, "matcherId": createMatcherID},
 					Action:          "create",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"project branch restrictions list"},
 					BlockingReasons: func() []string {
 						if predicted == "conflict" {
@@ -251,9 +251,9 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"project": args[0], "restrictionId": args[1], "type": updateType, "matcherType": updateMatcherType, "matcherId": updateMatcherID},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"project branch restriction get"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -321,7 +321,6 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "delete",
 					Supported:       true,
 					Reason:          "branch restriction will be deleted",
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"project branch restriction get"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)

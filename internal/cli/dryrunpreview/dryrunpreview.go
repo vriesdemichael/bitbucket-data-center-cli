@@ -17,6 +17,51 @@ const (
 	CapabilityPartial = "partial"
 )
 
+// A Tier says how a prediction was arrived at, and the confidence label is
+// derived from it rather than written beside it.
+//
+// Capability and Confidence used to be strings typed out at each of a hundred
+// and three construction sites, with nothing relating the label to what the
+// code had actually done. The only thing keeping them honest was the author of
+// each site remembering to be modest, and #479 is what happened when one did
+// not: the strongest claim the contract can make, attached to a prediction made
+// from a single state field, on the one irreversible pull request operation.
+//
+// ADR-035 already asked for explicit capability signalling. This is what makes
+// "explicit" mean something other than "someone typed it".
+type Tier string
+
+const (
+	// TierServerValidated means Bitbucket answered the exact question, through
+	// its own dry-run endpoint or an equivalent authoritative call.
+	TierServerValidated Tier = "server-validated"
+
+	// TierPreconditionsChecked means the caller's permission and the current
+	// state were both fetched, and the preconditions for this operation were
+	// evaluated against them.
+	TierPreconditionsChecked Tier = "preconditions-checked"
+
+	// TierPredicted means the answer was derived from partial state. It cannot
+	// report full confidence, which is the point of naming it.
+	TierPredicted Tier = "predicted"
+)
+
+// Confidence is the published label for a tier.
+//
+// Only the two tiers that checked something earn "full". A prediction made from
+// partial state reports "partial" whatever its author believed, because the
+// tier is the input and the label is computed from it.
+func (tier Tier) Confidence() string {
+	switch tier {
+	case TierServerValidated, TierPreconditionsChecked:
+		return CapabilityFull
+	case TierPredicted:
+		return CapabilityPartial
+	default:
+		return CapabilityPartial
+	}
+}
+
 type Item struct {
 	Intent          string         `json:"intent"`
 	Target          map[string]any `json:"target"`
@@ -24,6 +69,7 @@ type Item struct {
 	PredictedAction string         `json:"predictedAction,omitempty"`
 	Supported       bool           `json:"supported"`
 	Reason          string         `json:"reason,omitempty"`
+	Tier            Tier           `json:"tier,omitempty"`
 	Confidence      string         `json:"confidence,omitempty"`
 	RequiredState   []string       `json:"requiredState,omitempty"`
 	BlockingReasons []string       `json:"blockingReasons,omitempty"`
@@ -116,6 +162,17 @@ const (
 //
 // DryRun is always true. A preview only exists because --dry-run was passed.
 func New(planningMode string, capability string, items ...Item) Preview {
+	// Confidence is computed from the tier rather than taken from the item, so
+	// a site cannot claim full for a prediction the tier does not support. An
+	// item that names no tier is Predicted, which is the honest default: if the
+	// code cannot say what it checked, it did not check enough to claim full.
+	for index := range items {
+		if items[index].Tier == "" {
+			items[index].Tier = TierPredicted
+		}
+		items[index].Confidence = items[index].Tier.Confidence()
+	}
+
 	preview := Preview{
 		DryRun:       true,
 		PlanningMode: planningMode,

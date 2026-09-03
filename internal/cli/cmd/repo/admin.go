@@ -79,9 +79,9 @@ func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {
 					Target:          map[string]any{"project": createProject, "name": createName, "defaultBranch": createDefaultBranch},
 					Action:          "create",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"project repositories list (name filtered)"},
 					BlockingReasons: func() []string {
 						if predicted == "conflict" {
@@ -179,9 +179,9 @@ func newRepoForkCommand(deps Dependencies, repositorySelector *string, isAlias b
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": forkName, "project": forkProject},
 					Action:          "create",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityPartial,
 					RequiredState:   []string{"source repository reference"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -292,7 +292,6 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 					PredictedAction: "delete",
 					Supported:       true,
 					Reason:          "repository delete will be attempted",
-					Confidence:      dryrunpreview.CapabilityPartial,
 					RequiredState:   []string{"repository reference"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -376,9 +375,9 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": updateName, "description": updateDesc, "defaultBranch": updateDefaultBranch},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityPartial,
 					RequiredState:   []string{"repository reference"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)

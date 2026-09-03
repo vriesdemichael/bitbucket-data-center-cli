@@ -150,7 +150,6 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "webhook will be updated",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
@@ -208,7 +207,6 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "webhook connection test will be triggered",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
@@ -352,7 +350,6 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: "create",
 					Supported:       true,
 					Reason:          "webhook will be created",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
@@ -419,7 +416,6 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: "delete",
 					Supported:       true,
 					Reason:          "webhook will be deleted",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
