@@ -191,9 +191,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"project": args[0], "name": createName, "description": createDesc},
 					Action:          "create",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"project get"},
 					BlockingReasons: func() []string {
 						if predicted == "conflict" {
@@ -265,9 +265,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"project": args[0], "name": updateName, "description": updateDesc},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"project get"},
 				})
 
@@ -327,10 +327,10 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"project": args[0]},
 					Action:          "delete",
 					PredictedAction: predicted,
-					Supported:       true,
-					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
-					RequiredState:   []string{"project get"},
+					// Predicted, not precondition-checked: project delete does not check whether the project still holds repositories.
+					Supported:     true,
+					Reason:        reason,
+					RequiredState: []string{"project get"},
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)

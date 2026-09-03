@@ -268,9 +268,9 @@ func runPermissionGrantDryRun(
 		},
 		Action:          "update",
 		PredictedAction: predicted,
+		Tier:            dryrunpreview.TierPreconditionsChecked,
 		Supported:       true,
 		Reason:          reason,
-		Confidence:      dryrunpreview.CapabilityFull,
 		RequiredState:   []string{fmt.Sprintf("repository permission %ss list", subject.noun)},
 	})
 
@@ -314,9 +314,9 @@ func runPermissionRevokeDryRun(
 		},
 		Action:          "delete",
 		PredictedAction: predicted,
+		Tier:            dryrunpreview.TierPreconditionsChecked,
 		Supported:       true,
 		Reason:          reason,
-		Confidence:      dryrunpreview.CapabilityFull,
 		RequiredState:   []string{fmt.Sprintf("repository permission %ss list", subject.noun)},
 	})
 

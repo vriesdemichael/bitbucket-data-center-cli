@@ -590,7 +590,6 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: predicted,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"open pull requests"},
 					BlockingReasons: func() []string {
 						if predicted == "conflict" {
@@ -698,9 +697,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "title": updateTitle, "description": updateDescription, "version": updateVersion, "draft": draft},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request"},
 				})
 
@@ -772,7 +771,7 @@ func New(deps Dependencies) *cobra.Command {
 				predicted := "update"
 				reason := "pull request will be merged"
 				blocking := []string{}
-				confidence := dryrunpreview.CapabilityFull
+				tier := dryrunpreview.TierPreconditionsChecked
 
 				switch {
 				case strings.EqualFold(strings.TrimSpace(current.State), "MERGED"):
@@ -785,9 +784,9 @@ func New(deps Dependencies) *cobra.Command {
 				case current.Mergeability == nil:
 					// Asked and not answered. Saying "will be merged" here would
 					// be a guess wearing the same label as a checked answer, so
-					// the tier says the check could not be made instead.
+					// the tier drops to the one that cannot report full.
 					reason = "pull request is open; bitbucket did not report whether it can be merged"
-					confidence = dryrunpreview.CapabilityPartial
+					tier = dryrunpreview.TierPredicted
 				case !current.Mergeability.Mergeable:
 					predicted = "blocked"
 					reason = "pull request cannot be merged"
@@ -799,9 +798,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            tier,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      confidence,
 					RequiredState:   []string{"pull request"},
 					BlockingReasons: blocking,
 				})
@@ -869,9 +868,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request"},
 				})
 
@@ -938,9 +937,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request"},
 				})
 
@@ -1009,9 +1008,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request"},
 				})
 
@@ -1071,9 +1070,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request"},
 				})
 
@@ -1213,7 +1212,6 @@ func New(deps Dependencies) *cobra.Command {
 						PredictedAction: "no-op",
 						Supported:       true,
 						Reason:          "no eligible reviewers to add",
-						Confidence:      dryrunpreview.CapabilityFull,
 						RequiredState:   []string{"pull request"},
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -1239,7 +1237,6 @@ func New(deps Dependencies) *cobra.Command {
 						PredictedAction: predicted,
 						Supported:       true,
 						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
 						RequiredState:   []string{"pull request"},
 					})
 				}
@@ -1362,9 +1359,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "user": removeReviewerUsername},
 					Action:          "delete",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request"},
 				})
 
@@ -1480,7 +1477,6 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "pull request review will be completed",
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -1534,7 +1530,6 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: "delete",
 					Supported:       true,
 					Reason:          "pull request review will be discarded",
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -1911,7 +1906,6 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 					PredictedAction: "create",
 					Supported:       true,
 					Reason:          "pull request comment will be created",
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request reference"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -2004,9 +1998,9 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "prId": prID, "commentId": commentID, "emoticon": emoticon},
 					Action:          action,
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request comment"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -2098,7 +2092,6 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "comment suggestion will be applied",
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request comment suggestion"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -2320,9 +2313,9 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "strategy": autoMergeStrategy},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request auto-merge"},
 				})
 
@@ -2389,9 +2382,9 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 					Action:          "delete",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request auto-merge"},
 				})
 
@@ -2445,7 +2438,6 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 					Action:          "update",
 					PredictedAction: "update",
 					Supported:       true,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -2498,7 +2490,6 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 					Action:          "delete",
 					PredictedAction: "delete",
 					Supported:       true,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -2578,9 +2569,9 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request"},
 					BlockingReasons: blocking,
 				})

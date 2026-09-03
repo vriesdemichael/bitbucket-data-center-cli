@@ -181,9 +181,9 @@ func New(deps Dependencies) *cobra.Command {
 						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "name": name},
 						Action:          "create",
 						PredictedAction: predicted,
+						Tier:            dryrunpreview.TierPreconditionsChecked,
 						Supported:       true,
 						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
 						RequiredState:   []string{"reviewer groups list"},
 						BlockingReasons: blocking,
 					})
@@ -232,9 +232,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"project": projectKey, "name": name},
 					Action:          "create",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"reviewer groups list"},
 					BlockingReasons: blocking,
 				})
@@ -308,9 +308,9 @@ func New(deps Dependencies) *cobra.Command {
 						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
 						Action:          "update",
 						PredictedAction: predicted,
+						Tier:            dryrunpreview.TierPreconditionsChecked,
 						Supported:       true,
 						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
 						RequiredState:   []string{"reviewer groups list"},
 						BlockingReasons: blocking,
 					})
@@ -365,9 +365,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"project": projectKey, "id": id},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"reviewer groups list"},
 					BlockingReasons: blocking,
 				})
@@ -434,9 +434,9 @@ func New(deps Dependencies) *cobra.Command {
 						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
 						Action:          "delete",
 						PredictedAction: predicted,
+						Tier:            dryrunpreview.TierPreconditionsChecked,
 						Supported:       true,
 						Reason:          reason,
-						Confidence:      dryrunpreview.CapabilityFull,
 						RequiredState:   []string{"reviewer groups list"},
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -481,9 +481,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"project": projectKey, "id": id},
 					Action:          "delete",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"reviewer groups list"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)

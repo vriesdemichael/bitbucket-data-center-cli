@@ -171,7 +171,6 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "create",
 					Supported:       true,
 					Reason:          "comment will be created",
-					Confidence:      dryrunpreview.CapabilityPartial,
 					RequiredState:   []string{"comment target context"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -244,9 +243,9 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"context": target.Context(), "id": updateCommentID, "text": updateText},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityPartial,
 					RequiredState:   []string{"comment get"},
 					BlockingReasons: blocking,
 				})
@@ -326,9 +325,9 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"context": target.Context(), "id": deleteCommentID},
 					Action:          "delete",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityPartial,
 					RequiredState:   []string{"comment get"},
 					BlockingReasons: blocking,
 				})

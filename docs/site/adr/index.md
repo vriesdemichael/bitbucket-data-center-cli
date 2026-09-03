@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `77`
-- Accepted ADRs: `69`
+- Total ADRs: `78`
+- Accepted ADRs: `70`
 
 ## ADR List
 
@@ -86,4 +86,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 075: A machine-mode command emits one document, and a failed run is named by its id](075-a-machine-run-emits-one-document.md) (`architecture`, `accepted`)
 - [ADR 076: Machine output field names are camelCase, matching the Bitbucket API](076-machine-output-field-names-are-camelcase.md) (`architecture`, `accepted`)
 - [ADR 077: Comment endpoints are views, not collections](077-comment-endpoints-are-views-not-collections.md) (`architecture`, `accepted`)
+- [ADR 078: Dry-run confidence is derived from a tier, not written by the author](078-dry-run-confidence-is-derived-from-a-tier.md) (`development`, `accepted`)
 

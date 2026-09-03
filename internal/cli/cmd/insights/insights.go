@@ -146,9 +146,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": args[1]},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"insights report get"},
 				})
 
@@ -218,9 +218,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": args[1]},
 					Action:          "delete",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"insights report get"},
 				})
 
@@ -309,7 +309,6 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: "create",
 					Supported:       true,
 					Reason:          "insights annotations will be added",
-					Confidence:      dryrunpreview.CapabilityPartial,
 					RequiredState:   []string{"insights report context"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -427,9 +426,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": args[1], "externalId": args[2]},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"insights annotations list"},
 				})
 
@@ -498,9 +497,9 @@ func New(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "commit": args[0], "key": args[1], "externalId": externalID},
 					Action:          "delete",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityPartial,
 					RequiredState:   []string{"insights annotations list"},
 				})
 

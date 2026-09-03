@@ -173,9 +173,9 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "url": args[1], "events": webhookEvents, "active": webhookActive},
 					Action:          "create",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"repository webhooks list"},
 					BlockingReasons: blocking,
 				})
@@ -240,9 +240,9 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhookId": args[0]},
 					Action:          "delete",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"repository webhooks list"},
 				})
 
@@ -428,9 +428,9 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "requiredAllTasksComplete": requiredAllTasksComplete},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"repository pull-request settings"},
 				})
 
@@ -505,9 +505,9 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "count": requiredApproversCount},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"repository pull-request settings"},
 				})
 
@@ -594,9 +594,9 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "strategyId": mergeStrategyID},
 					Action:          "update",
 					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"repository pull-request settings"},
 				})
 
@@ -714,7 +714,6 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "auto-merge settings will be updated",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -757,7 +756,6 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "delete",
 					Supported:       true,
 					Reason:          "auto-merge settings will be deleted",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -856,7 +854,6 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "auto-decline settings will be updated",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -900,7 +897,6 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "delete",
 					Supported:       true,
 					Reason:          "auto-decline settings will be deleted",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}

@@ -93,7 +93,6 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "create",
 					Supported:       true,
 					Reason:          "label will be added to the repository",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -134,7 +133,6 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "delete",
 					Supported:       true,
 					Reason:          "label will be removed from the repository",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -183,7 +181,6 @@ func newRepoWatchCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "user will watch repository",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -229,7 +226,6 @@ func newRepoUnwatchCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "delete",
 					Supported:       true,
 					Reason:          "user will unwatch repository",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -342,7 +338,6 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "create",
 					Supported:       true,
 					Reason:          "default task will be created",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -399,7 +394,6 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "default task will be updated",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -445,7 +439,6 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "delete",
 					Supported:       true,
 					Reason:          "default task will be deleted",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -498,7 +491,6 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "manual synchronization will be triggered",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -593,7 +585,6 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "automatic synchronization will be enabled",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -637,7 +628,6 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "automatic synchronization will be disabled",
-					Confidence:      dryrunpreview.CapabilityFull,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -749,7 +739,6 @@ func newRepoEditCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          "file will be edited",
-					Confidence:      dryrunpreview.CapabilityPartial,
 					RequiredState:   []string{"repository write access"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)

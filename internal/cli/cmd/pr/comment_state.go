@@ -90,7 +90,6 @@ func newCommentStateCommand(
 					PredictedAction: "update",
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
 					RequiredState:   []string{"pull request comment"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)

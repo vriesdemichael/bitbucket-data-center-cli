@@ -184,3 +184,68 @@ func TestNewOfNothingIsAnEmptyPreview(t *testing.T) {
 		t.Errorf("items = %+v", preview.Items)
 	}
 }
+
+// TestConfidenceIsDerivedFromTheTier is #483.
+//
+// Capability and Confidence were free-text labels written at each of a hundred
+// and three construction sites, so nothing related the claim to what the code
+// had done. #479 is what that permitted: the strongest claim the contract
+// offers, on a prediction made from one state field, on the irreversible
+// pull request operation.
+func TestConfidenceIsDerivedFromTheTier(t *testing.T) {
+	t.Parallel()
+
+	t.Run("only a checked tier earns full", func(t *testing.T) {
+		t.Parallel()
+
+		for tier, want := range map[Tier]string{
+			TierServerValidated:      CapabilityFull,
+			TierPreconditionsChecked: CapabilityFull,
+			TierPredicted:            CapabilityPartial,
+		} {
+			if got := tier.Confidence(); got != want {
+				t.Errorf("%s.Confidence() = %q, want %q", tier, got, want)
+			}
+		}
+	})
+
+	t.Run("an unstated tier is predicted, not full", func(t *testing.T) {
+		t.Parallel()
+
+		// The default has to be the modest one. A site that cannot say what it
+		// checked did not check enough to claim full.
+		preview := New(PlanningModeStateful, CapabilityFull, Item{Intent: "x", Action: "update", PredictedAction: PredictedUpdate, Supported: true})
+		if preview.Items[0].Tier != TierPredicted {
+			t.Errorf("tier = %q, want predicted", preview.Items[0].Tier)
+		}
+		if preview.Items[0].Confidence != CapabilityPartial {
+			t.Errorf("confidence = %q, want partial", preview.Items[0].Confidence)
+		}
+	})
+
+	t.Run("a hand-written confidence cannot outrank its tier", func(t *testing.T) {
+		t.Parallel()
+
+		// The defect this closes: claiming full for a prediction the tier does
+		// not support. The label is computed, so the claim cannot be typed.
+		preview := New(PlanningModeStateful, CapabilityFull, Item{
+			Intent:          "x",
+			Action:          "update",
+			PredictedAction: PredictedUpdate,
+			Supported:       true,
+			Tier:            TierPredicted,
+			Confidence:      CapabilityFull,
+		})
+		if preview.Items[0].Confidence != CapabilityPartial {
+			t.Errorf("confidence = %q; a predicted item claimed full", preview.Items[0].Confidence)
+		}
+	})
+
+	t.Run("an unrecognised tier is treated as predicted", func(t *testing.T) {
+		t.Parallel()
+
+		if got := Tier("invented-later").Confidence(); got != CapabilityPartial {
+			t.Errorf("confidence = %q, want partial for an unknown tier", got)
+		}
+	})
+}
