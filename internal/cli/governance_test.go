@@ -1789,6 +1789,10 @@ func TestPRCoreUpdateDeclineReopenCLI(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")
 		switch {
+		// The update reads the pull request first so it can echo the reviewers
+		// back rather than clearing them (#511).
+		case request.Method == http.MethodGet && strings.HasSuffix(request.URL.Path, "pull-requests/30"):
+			_, _ = writer.Write([]byte(`{"id":30,"version":1,"title":"PR","state":"OPEN","open":true,"reviewers":[],"fromRef":{"displayId":"feature/x"},"toRef":{"displayId":"master"}}`))
 		case request.Method == http.MethodPut && strings.Contains(request.URL.Path, "pull-requests/30"):
 			_, _ = writer.Write([]byte(`{"id":30}`))
 		case request.Method == http.MethodPost && strings.Contains(request.URL.Path, "pull-requests/30/decline"):
