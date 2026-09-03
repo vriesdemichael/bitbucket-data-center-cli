@@ -26,6 +26,10 @@ var cobraUsageErrorMarkers = []string{
 	"arg(s), received",
 	"arg(s), only received",
 	"invalid argument",
+	// Cobra ValidateRequiredFlags. The most common usage error of all, and
+	// the one this list was missing: sixteen commands reported a forgotten
+	// flag as a defect in bb (#475).
+	"required flag(s)",
 	// Flag-group violations from MarkFlagsMutuallyExclusive and friends, e.g.
 	// "if any flags in the group [all listPaging.ServiceLimit()] are set none of the others can be".
 	"flags in the group",
