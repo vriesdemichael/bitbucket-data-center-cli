@@ -2181,7 +2181,7 @@ func TestResolveDiffOutputModeAndWriters(t *testing.T) {
 		Names: []string{"a.txt", "b.go"},
 		// The endpoint returns one summary object, not a row per file. This
 		// fixture invented a shape Bitbucket never sends (#526).
-		Stats: &diff.StatsSummary{FilesChanged: int64Ptr(1), TotalInsertions: int64Ptr(1), TotalDeletions: int64Ptr(2)},
+		Stats: diff.StatsSummary{"filesChanged": float64(1), "totalInsertions": float64(1), "totalDeletions": float64(2)},
 		Patch: "diff --git a/a.txt b/a.txt",
 	}
 
@@ -4409,5 +4409,3 @@ func TestAFlagLeftAloneDoesNotDisplaceTheEnvironment(t *testing.T) {
 		t.Errorf("an unpassed flag produced an override (%v)", options.runtime.CAFile)
 	}
 }
-
-func int64Ptr(value int64) *int64 { return &value }

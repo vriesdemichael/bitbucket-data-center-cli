@@ -47,34 +47,36 @@ type DiffCommitInput struct {
 }
 
 type Result struct {
-	Patch string        `json:"patch,omitempty"`
-	Stats *StatsSummary `json:"stats,omitempty"`
-	Names []string      `json:"names,omitempty"`
+	Patch string       `json:"patch,omitempty"`
+	Stats StatsSummary `json:"stats,omitempty"`
+	Names []string     `json:"names,omitempty"`
 }
 
-// StatsSummary is what the diff-stats-summary endpoints actually return.
+// StatsSummary is the summary object a diff-stats-summary endpoint returns.
 //
-// The spec types both of them as RestDiff, which shares no field with the
-// object Bitbucket sends. json.Unmarshal accepts that happily -- unknown fields
-// are ignored -- so the generated wrapper produced an empty RestDiff, the
-// payload marshalled to {}, and omitempty dropped the key. `bb diff --stat`
-// reported output=stat with no stats and exit 0, and a caller could not tell a
-// diff with nothing to summarise from a summary that failed to decode (#526).
+// A map rather than a struct, deliberately. Of the three operations the spec
+// types one as RestDiff -- which shares no field with what Bitbucket sends, so
+// the generated wrapper produced an empty struct, the payload marshalled to {},
+// and omitempty removed the key (#526) -- and types the other two as a bare
+// interface{}, which passed the whole object through untyped. Decoding into a
+// fixed struct would have fixed the first and narrowed the other two to
+// whichever fields were named here.
 //
-// Read off a running Bitbucket rather than from the spec, which has now been
-// wrong about this API three times on this branch.
-type StatsSummary struct {
-	FilesChanged    *int64 `json:"filesChanged,omitempty"`
-	TotalInsertions *int64 `json:"totalInsertions,omitempty"`
-	TotalDeletions  *int64 `json:"totalDeletions,omitempty"`
-}
+// So: publish what the server sent, and refuse to call an unreadable body an
+// empty one.
+type StatsSummary = map[string]any
+
+// statsSummaryCounts are the fields observed on a running Bitbucket. At least
+// one has to be present for a body to count as a summary rather than as some
+// other shape that happened to parse.
+var statsSummaryCounts = []string{"filesChanged", "totalInsertions", "totalDeletions"}
 
 // decodeStatsSummary reads the body Bitbucket sent, not the one the spec
 // promised.
 //
 // An undecodable body is an error rather than an empty summary -- the rule
 // ADR-077 records after the same shape of defect hid in the comment endpoints.
-func decodeStatsSummary(body []byte) (*StatsSummary, error) {
+func decodeStatsSummary(body []byte) (StatsSummary, error) {
 	trimmed := bytes.TrimSpace(body)
 	if len(trimmed) == 0 {
 		return nil, apperrors.New(apperrors.KindInternal, "bitbucket returned an empty diff stats summary", nil)
@@ -84,15 +86,19 @@ func decodeStatsSummary(body []byte) (*StatsSummary, error) {
 	if err := json.Unmarshal(trimmed, &summary); err != nil {
 		return nil, apperrors.New(apperrors.KindInternal, "could not read the diff stats summary bitbucket returned", err)
 	}
-
-	// All three absent means the body decoded but held none of the summary --
-	// a shape change, not a diff with nothing in it. A real empty diff reports
-	// zeros.
-	if summary.FilesChanged == nil && summary.TotalInsertions == nil && summary.TotalDeletions == nil {
-		return nil, apperrors.New(apperrors.KindInternal, "bitbucket returned a diff stats summary with no counts", nil)
+	if summary == nil {
+		return nil, apperrors.New(apperrors.KindInternal, "bitbucket returned a null diff stats summary", nil)
 	}
 
-	return &summary, nil
+	// A body that decoded but holds none of the counts is a shape change, not a
+	// diff with nothing in it. A real empty diff reports zeros.
+	for _, field := range statsSummaryCounts {
+		if _, ok := summary[field]; ok {
+			return summary, nil
+		}
+	}
+
+	return nil, apperrors.New(apperrors.KindInternal, "bitbucket returned a diff stats summary with no counts", nil)
 }
 
 type Service struct {
