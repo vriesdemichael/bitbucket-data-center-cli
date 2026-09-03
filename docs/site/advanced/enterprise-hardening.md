@@ -127,7 +127,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
 ### Socialized Developer Practices
 
 1. **Pipe Tokens via Stdin (Never in CLI Flags)**:
-   Avoid `--token <val>` or `--password <val>` flags. Flags are visible to local processes in `ps aux`, `/proc/<pid>/cmdline`, Windows Task Manager, EDR sensors, and shell history files.
+   `--token` and `--password` no longer exist; the secret goes over stdin or `BITBUCKET_TOKEN`. Flag values are visible to local processes in `ps aux`, `/proc/<pid>/cmdline`, Windows Task Manager, EDR sensors, and shell history files.
    ```bash
    # Provide the token via pipe
    printf "%s" "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
@@ -336,7 +336,7 @@ export BB_CLIENT_KEY=/etc/ssl/private/client.key
 
 Or persist client certificate paths per host in stored profiles:
 ```bash
-bb auth login https://bitbucket.corp.example --token abc --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.key
+printf '%s' "$abc" | bb auth login https://bitbucket.corp.example --token-stdin --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.key
 ```
 
 Private keys are loaded directly in-memory via Go's standard `crypto/tls` package and are never logged, serialized into machine JSON envelopes, or written to configuration files.
@@ -372,7 +372,11 @@ bb ai mcp tools
 Never run IDE MCP servers under personal developer credentials. Generate a dedicated read-only PAT and bind the MCP server to it:
 
 ```bash
-bb ai mcp serve --host https://bitbucket.example.com --token <read-only-pat>
+# Give the agent its own PAT through the MCP client's env block:
+#   "env": { "BITBUCKET_TOKEN": "${BB_MCP_TOKEN}" }
+# The ${VAR} form keeps it out of the config file, and lets the agent run on a
+# read-only token while your own shell keeps a wider one.
+bb ai mcp serve --host https://bitbucket.example.com
 ```
 
 ### Principle 3: Workspace Scoping

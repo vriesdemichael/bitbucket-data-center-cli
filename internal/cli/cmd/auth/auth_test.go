@@ -182,7 +182,8 @@ func TestAuthCommandAdditionalBranches(t *testing.T) {
 		out := &bytes.Buffer{}
 		cmd.SetOut(out)
 		cmd.SetErr(out)
-		cmd.SetArgs([]string{"login", "http://resolved.local:7990", "--token", "abc", "--set-default=true"})
+		cmd.SetIn(strings.NewReader("abc"))
+		cmd.SetArgs([]string{"login", "http://resolved.local:7990", "--token-stdin", "--set-default=true"})
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("login failed: %v", err)
 		}
@@ -211,7 +212,8 @@ func TestAuthCommandAdditionalBranches(t *testing.T) {
 		out := &bytes.Buffer{}
 		cmd.SetOut(out)
 		cmd.SetErr(out)
-		cmd.SetArgs([]string{"login", "https://mtls.local:7990", "--token", "abc", "--client-cert", certPath, "--client-key", keyPath, "--set-default=true"})
+		cmd.SetIn(strings.NewReader("abc"))
+		cmd.SetArgs([]string{"login", "https://mtls.local:7990", "--token-stdin", "--client-cert", certPath, "--client-key", keyPath, "--set-default=true"})
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("login failed: %v", err)
 		}
@@ -907,7 +909,8 @@ func TestAuthNonJSONHumanOutputPaths(t *testing.T) {
 		out := &bytes.Buffer{}
 		cmd.SetOut(out)
 		cmd.SetErr(out)
-		cmd.SetArgs([]string{"login", "http://login-json.local:7990", "--token", "my-token"})
+		cmd.SetIn(strings.NewReader("my-token"))
+		cmd.SetArgs([]string{"login", "http://login-json.local:7990", "--token-stdin"})
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("auth login (JSON) failed: %v", err)
 		}
@@ -1003,7 +1006,8 @@ func TestAuthAliasCommandsAndDiscovery(t *testing.T) {
 	// --token now warns on stderr. Sharing one buffer would make the envelope
 	// unparseable here and hide that contamination elsewhere.
 	cmd.SetErr(&bytes.Buffer{})
-	cmd.SetArgs([]string{"login", "https://bitbucket.company.org", "--token", "tok"})
+	cmd.SetIn(strings.NewReader("tok"))
+	cmd.SetArgs([]string{"login", "https://bitbucket.company.org", "--token-stdin"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("login with discovery failed: %v", err)
 	}
@@ -1118,7 +1122,8 @@ func TestAuthJSONOutputsUseEmptyAliasArrays(t *testing.T) {
 	loginOut := &bytes.Buffer{}
 	cmd.SetOut(loginOut)
 	cmd.SetErr(&bytes.Buffer{})
-	cmd.SetArgs([]string{"login", "https://empty-array.company.org", "--token", "tok", "--discover-aliases=false"})
+	cmd.SetIn(strings.NewReader("tok"))
+	cmd.SetArgs([]string{"login", "https://empty-array.company.org", "--token-stdin", "--discover-aliases=false"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("login failed: %v", err)
 	}
@@ -1450,7 +1455,8 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 		out := &bytes.Buffer{}
 		cmd.SetOut(out)
 		cmd.SetErr(out)
-		cmd.SetArgs([]string{"login", "https://nodiscover.company.org", "--token", "tok", "--discover-aliases=false"})
+		cmd.SetIn(strings.NewReader("tok"))
+		cmd.SetArgs([]string{"login", "https://nodiscover.company.org", "--token-stdin", "--discover-aliases=false"})
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("login without discovery failed: %v", err)
 		}
@@ -1577,7 +1583,8 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 		loginOut := &bytes.Buffer{}
 		cmd.SetOut(loginOut)
 		cmd.SetErr(&bytes.Buffer{})
-		cmd.SetArgs([]string{"login", "https://human.company.org", "--token", "tok"})
+		cmd.SetIn(strings.NewReader("tok"))
+		cmd.SetArgs([]string{"login", "https://human.company.org", "--token-stdin"})
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("human login failed: %v", err)
 		}
@@ -1670,7 +1677,8 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 		out := &bytes.Buffer{}
 		cmd.SetOut(out)
 		cmd.SetErr(out)
-		cmd.SetArgs([]string{"login", "https://ignore-discovery.company.org", "--token", "tok"})
+		cmd.SetIn(strings.NewReader("tok"))
+		cmd.SetArgs([]string{"login", "https://ignore-discovery.company.org", "--token-stdin"})
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("login should succeed when discovery fails: %v", err)
 		}
@@ -1787,12 +1795,14 @@ func TestAliasDiscoverPreservesManualAliases(t *testing.T) {
 		})
 	}
 
-	run := func(t *testing.T, args ...string) string {
+	// stdin carries the secret, because --token was retired in #464.
+	run := func(t *testing.T, stdin string, args ...string) string {
 		t.Helper()
 		command := newAuthCommand()
 		out := &bytes.Buffer{}
 		command.SetOut(out)
 		command.SetErr(out)
+		command.SetIn(strings.NewReader(stdin))
 		command.SetArgs(args)
 		if err := command.Execute(); err != nil {
 			t.Fatalf("%v failed: %v\noutput: %s", args, err, out.String())
@@ -1800,15 +1810,15 @@ func TestAliasDiscoverPreservesManualAliases(t *testing.T) {
 		return out.String()
 	}
 
-	run(t, "login", "https://bitbucket.company.org", "--token", "t", "--discover-aliases=false")
-	run(t, "alias", "add", "--host", "https://bitbucket.company.org", "manual.example:7999")
+	run(t, "t", "login", "https://bitbucket.company.org", "--token-stdin", "--discover-aliases=false")
+	run(t, "", "alias", "add", "--host", "https://bitbucket.company.org", "manual.example:7999")
 
-	discoverOut := run(t, "alias", "discover", "--host", "https://bitbucket.company.org")
+	discoverOut := run(t, "", "alias", "discover", "--host", "https://bitbucket.company.org")
 	if !strings.Contains(discoverOut, "git.company.org:7999") {
 		t.Fatalf("expected the discovered alias in the output, got: %s", discoverOut)
 	}
 
-	listOut := run(t, "alias", "list", "--host", "https://bitbucket.company.org")
+	listOut := run(t, "", "alias", "list", "--host", "https://bitbucket.company.org")
 	if !strings.Contains(listOut, "manual.example:7999") {
 		t.Fatalf("expected the manual alias to survive discovery, got: %s", listOut)
 	}
@@ -1818,12 +1828,12 @@ func TestAliasDiscoverPreservesManualAliases(t *testing.T) {
 
 	// --replace is the explicit way to get the old behaviour, and it has to say
 	// what it took away.
-	replaceOut := run(t, "alias", "discover", "--host", "https://bitbucket.company.org", "--replace")
+	replaceOut := run(t, "", "alias", "discover", "--host", "https://bitbucket.company.org", "--replace")
 	if !strings.Contains(replaceOut, "manual.example:7999") {
 		t.Fatalf("expected --replace to report the alias it removed, got: %s", replaceOut)
 	}
 
-	afterReplace := run(t, "alias", "list", "--host", "https://bitbucket.company.org")
+	afterReplace := run(t, "", "alias", "list", "--host", "https://bitbucket.company.org")
 	if strings.Contains(afterReplace, "manual.example:7999") {
 		t.Fatalf("expected --replace to drop the manual alias, got: %s", afterReplace)
 	}

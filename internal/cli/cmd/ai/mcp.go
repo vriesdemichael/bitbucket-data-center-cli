@@ -28,7 +28,6 @@ func newMCPCommand(deps Dependencies) *cobra.Command {
 
 func newMCPServeCommand(deps Dependencies) *cobra.Command {
 	var host string
-	var token string
 	var toolsFlag string
 	var excludeFlag string
 	var yolo bool
@@ -53,6 +52,24 @@ VS Code (settings.json):
     }
   }
 
+Give the server its own credential through the client's env block, which every
+MCP client supports -- Claude Code and Claude Desktop (.mcp.json /
+claude_desktop_config.json), Codex ([mcp_servers.bb.env] in config.toml, or
+codex mcp add --env), and Antigravity (mcp_config.json):
+
+  "bb": {
+    "command": "bb",
+    "args": ["ai", "mcp", "serve"],
+    "env": { "BITBUCKET_TOKEN": "${BB_MCP_TOKEN}" }
+  }
+
+The ${VAR} form is worth using deliberately: it keeps the agent on a different
+PAT from your own, so the token you use interactively can carry write rights
+while the one the agent gets is read-only, and neither is written into the
+config file. Scoping the server this way replaces the old --token flag, which
+put the credential in the process argument list for as long as the server ran
+-- world-readable on Linux, unlike the process environment.
+
 By default the server runs in safe mode: only tools whose side-effects are
 low-blast-radius and easily reversed are exposed (e.g. create_pull_request,
 add_pr_comment). Tools that perform irreversible operations such as
@@ -62,7 +79,6 @@ Use --tools to expose a specific subset regardless of the safety classification.
 Use --exclude to suppress individual tools in any mode.
 
 When more than one Bitbucket instance is configured the --host flag is required.
-Use --token to restrict all API calls to the rights of a specific PAT.
 
 Use --project or --repo to confine the server to one project or repository. Any
 tool call aimed elsewhere is refused. Tools that address a resource Bitbucket
@@ -76,7 +92,8 @@ record cannot be written the call is refused; --audit-failure=warn relaxes that.
 
 The audit trail covers this server only. An agent that can run shell commands
 can invoke bb directly and bypass it, along with every other control here; the
-control that survives that is --token, which binds at the Bitbucket server.`,
+control that survives that is the token itself, which binds at the Bitbucket
+server -- give this server a narrower PAT than your own through env.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Multi-instance host enforcement.
 			if strings.TrimSpace(host) == "" {
@@ -90,13 +107,15 @@ control that survives that is --token, which binds at the Bitbucket server.`,
 				}
 			}
 
-			// Passed into the load rather than written to the environment. This
-			// process then serves MCP for as long as the client keeps it alive,
-			// so an exported BITBUCKET_TOKEN would sit in the environment of
-			// every subprocess for the whole session.
+			// The credential comes from the environment, which the MCP client
+			// sets for this process alone through its env block. The flag that
+			// used to carry it put the secret in the process argument list for
+			// the whole life of a long-running server -- world-readable on
+			// Linux, where /proc/<pid>/environ is not (#464). The earlier
+			// reasoning here worried about an exported token reaching child
+			// processes; this server starts none.
 			cfg, err := deps.LoadConfig(config.Overrides{
-				Host:  strings.TrimSpace(host),
-				Token: strings.TrimSpace(token),
+				Host: strings.TrimSpace(host),
 			})
 			if err != nil {
 				return err
@@ -166,7 +185,6 @@ control that survives that is --token, which binds at the Bitbucket server.`,
 	}
 
 	cmd.Flags().StringVar(&host, "host", "", "Target Bitbucket instance URL; required when multiple instances are configured")
-	cmd.Flags().StringVar(&token, "token", "", "PAT to use; restricts all API calls to this token's rights")
 	cmd.Flags().StringVar(&toolsFlag, "tools", "", "Comma-separated allowlist of tool names to expose (overrides safety filter)")
 	cmd.Flags().StringVar(&excludeFlag, "exclude", "", "Comma-separated denylist of tool names to suppress")
 	cmd.Flags().BoolVar(&yolo, "yolo", false, "Expose all tools including unsafe operations like merge_pull_request")

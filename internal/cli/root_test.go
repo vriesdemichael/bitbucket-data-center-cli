@@ -2944,7 +2944,8 @@ func TestAuthLoginAndLogoutJSON(t *testing.T) {
 	loginBuffer := &bytes.Buffer{}
 	loginCommand.SetOut(loginBuffer)
 	loginCommand.SetErr(loginBuffer)
-	loginCommand.SetArgs([]string{"--json", "auth", "login", "http://localhost:7990", "--token", "abc123", "--set-default"})
+	loginCommand.SetIn(strings.NewReader("abc123"))
+	loginCommand.SetArgs([]string{"--json", "auth", "login", "http://localhost:7990", "--token-stdin", "--set-default"})
 	if err := loginCommand.Execute(); err != nil {
 		t.Fatalf("auth login json failed: %v", err)
 	}
@@ -2978,7 +2979,8 @@ func TestAuthLoginWithPositionalHost(t *testing.T) {
 	loginBuffer := &bytes.Buffer{}
 	loginCommand.SetOut(loginBuffer)
 	loginCommand.SetErr(loginBuffer)
-	loginCommand.SetArgs([]string{"--json", "auth", "login", "http://positional.local:7990", "--token", "abc123", "--set-default"})
+	loginCommand.SetIn(strings.NewReader("abc123"))
+	loginCommand.SetArgs([]string{"--json", "auth", "login", "http://positional.local:7990", "--token-stdin", "--set-default"})
 	if err := loginCommand.Execute(); err != nil {
 		t.Fatalf("auth login json with positional host failed: %v", err)
 	}
@@ -3258,7 +3260,8 @@ func TestAuthStatusHostOverrideAndHumanLoginLogout(t *testing.T) {
 	loginBuffer := &bytes.Buffer{}
 	loginCommand.SetOut(loginBuffer)
 	loginCommand.SetErr(loginBuffer)
-	loginCommand.SetArgs([]string{"auth", "login", "http://example.local:7990", "--token", "abc123", "--set-default"})
+	loginCommand.SetIn(strings.NewReader("abc123"))
+	loginCommand.SetArgs([]string{"auth", "login", "http://example.local:7990", "--token-stdin", "--set-default"})
 	if err := loginCommand.Execute(); err != nil {
 		t.Fatalf("auth login human failed: %v", err)
 	}

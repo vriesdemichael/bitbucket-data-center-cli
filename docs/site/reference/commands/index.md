@@ -221,6 +221,24 @@ VS Code (settings.json):
     }
   }
 
+Give the server its own credential through the client's env block, which every
+MCP client supports -- Claude Code and Claude Desktop (.mcp.json /
+claude_desktop_config.json), Codex ([mcp_servers.bb.env] in config.toml, or
+codex mcp add --env), and Antigravity (mcp_config.json):
+
+  "bb": {
+    "command": "bb",
+    "args": ["ai", "mcp", "serve"],
+    "env": { "BITBUCKET_TOKEN": "${BB_MCP_TOKEN}" }
+  }
+
+The ${VAR} form is worth using deliberately: it keeps the agent on a different
+PAT from your own, so the token you use interactively can carry write rights
+while the one the agent gets is read-only, and neither is written into the
+config file. Scoping the server this way replaces the old --token flag, which
+put the credential in the process argument list for as long as the server ran
+-- world-readable on Linux, unlike the process environment.
+
 By default the server runs in safe mode: only tools whose side-effects are
 low-blast-radius and easily reversed are exposed (e.g. create_pull_request,
 add_pr_comment). Tools that perform irreversible operations such as
@@ -230,7 +248,6 @@ Use --tools to expose a specific subset regardless of the safety classification.
 Use --exclude to suppress individual tools in any mode.
 
 When more than one Bitbucket instance is configured the --host flag is required.
-Use --token to restrict all API calls to the rights of a specific PAT.
 
 Use --project or --repo to confine the server to one project or repository. Any
 tool call aimed elsewhere is refused. Tools that address a resource Bitbucket
@@ -244,7 +261,8 @@ record cannot be written the call is refused; --audit-failure=warn relaxes that.
 
 The audit trail covers this server only. An agent that can run shell commands
 can invoke bb directly and bypass it, along with every other control here; the
-control that survives that is --token, which binds at the Bitbucket server.
+control that survives that is the token itself, which binds at the Bitbucket
+server -- give this server a narrower PAT than your own through env.
 
 Usage:
   bb ai mcp serve [flags]
@@ -257,7 +275,6 @@ Flags:
       --host string            Target Bitbucket instance URL; required when multiple instances are configured
       --project string         Confine the server to this project key; calls aimed elsewhere are refused
       --repo string            Confine the server to one repository, as PROJECT/slug (or a slug alongside --project)
-      --token string           PAT to use; restricts all API calls to this token's rights
       --tools string           Comma-separated allowlist of tool names to expose (overrides safety filter)
       --yolo                   Expose all tools including unsafe operations like merge_pull_request
 
@@ -980,11 +997,9 @@ Flags:
       --client-cert string   Path to PEM client certificate for mTLS
       --client-key string    Path to PEM client key for mTLS
       --discover-aliases     Discover host aliases from the first accessible repository clone links (default true)
-      --password string      Password for basic auth (visible in the process list; prefer --password-stdin)
       --password-stdin       Read the basic-auth password from stdin
       --require-keyring      Fail if the OS keyring is unavailable instead of storing credentials in plaintext
       --set-default          Set host as default target (default true)
-      --token string         Access token (visible in the process list; prefer --token-stdin)
       --token-stdin          Read the access token from stdin
       --username string      Username for basic auth
 
