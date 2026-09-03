@@ -188,6 +188,10 @@ func TestPullRequestLifecycleAndReviewOperations(t *testing.T) {
 				return
 			}
 			_, _ = fmt.Fprint(w, `{"id":30,"title":"New PR","state":"OPEN","open":true,"closed":false,"fromRef":{"displayId":"feature/new"},"toRef":{"displayId":"master"}}`)
+		// pr update reads the pull request before writing it, so it can echo the
+		// reviewers back rather than clearing them (#511).
+		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30":
+			_, _ = fmt.Fprint(w, `{"id":30,"title":"New PR","state":"OPEN","open":true,"closed":false,"version":2,"reviewers":[{"user":{"name":"reviewer2"}}],"fromRef":{"displayId":"feature/new"},"toRef":{"displayId":"master"}}`)
 		case request.Method == http.MethodPut && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30":
 			_, _ = fmt.Fprint(w, `{"id":30,"title":"Updated PR","state":"OPEN","open":true,"closed":false,"version":3,"fromRef":{"displayId":"feature/new"},"toRef":{"displayId":"master"}}`)
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/merge":
@@ -909,6 +913,14 @@ func TestCreateDraftPullRequest(t *testing.T) {
 func TestUpdateDraftPullRequest(t *testing.T) {
 	var receivedBody string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The update reads before it writes, so it can echo the reviewers back
+		// rather than clearing them (#511).
+		if r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/50" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprint(w, `{"id":50,"version":1,"title":"Draft PR","state":"OPEN","open":true,"reviewers":[],"fromRef":{"displayId":"feature/x"},"toRef":{"displayId":"master"}}`)
+
+			return
+		}
 		if r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/50" {
 			receivedBody = readBody(t, r)
 			_, _ = fmt.Fprint(w, `{"id":50,"title":"Draft PR","state":"OPEN","open":true,"closed":false,"draft":false,"version":2,"fromRef":{"displayId":"feature/draft"},"toRef":{"displayId":"main"}}`)
@@ -2046,4 +2058,111 @@ func TestRebaseRejectsOutOfRangeVersion(t *testing.T) {
 			t.Fatalf("expected KindValidation for %d, got %v", version, err)
 		}
 	}
+}
+
+// TestUpdatePreservesReviewers is #511.
+//
+// A PUT replaces the pull request, and Bitbucket reads an absent reviewers key
+// as "no reviewers" rather than "unchanged". Confirmed against a running Data
+// Center: a body of version plus description emptied a reviewer set, and the
+// same body with the set echoed back left it intact. `bb pr update <id>
+// --description ...` therefore removed every reviewer, with nothing said.
+func TestUpdatePreservesReviewers(t *testing.T) {
+	var sent map[string]any
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+
+		if request.Method == http.MethodGet {
+			_, _ = writer.Write([]byte(`{"id":42,"version":1,"title":"T","state":"OPEN",
+				"reviewers":[{"user":{"name":"alice"}},{"user":{"name":"bob"}}],
+				"fromRef":{"displayId":"feat"},"toRef":{"displayId":"main"}}`))
+
+			return
+		}
+
+		_ = json.NewDecoder(request.Body).Decode(&sent)
+		_, _ = writer.Write([]byte(`{"id":42,"version":2,"title":"T","state":"OPEN"}`))
+	}))
+	defer server.Close()
+
+	service := NewService(httpclient.NewFromConfig(config.AppConfig{BitbucketURL: server.URL}))
+
+	t.Run("an update that says nothing about reviewers keeps them", func(t *testing.T) {
+		sent = nil
+
+		if _, err := service.Update(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, "42",
+			UpdateInput{Version: 1, Description: "new text"}); err != nil {
+			t.Fatalf("update: %v", err)
+		}
+
+		names := reviewerNamesFromPayload(t, sent)
+		if len(names) != 2 || names[0] != "alice" || names[1] != "bob" {
+			t.Errorf("reviewers sent = %v, want the existing set echoed back", names)
+		}
+	})
+
+	t.Run("a caller may still set the reviewers deliberately", func(t *testing.T) {
+		sent = nil
+		replacement := []string{"carol"}
+
+		if _, err := service.Update(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, "42",
+			UpdateInput{Version: 1, Description: "new text", Reviewers: &replacement}); err != nil {
+			t.Fatalf("update: %v", err)
+		}
+
+		names := reviewerNamesFromPayload(t, sent)
+		if len(names) != 1 || names[0] != "carol" {
+			t.Errorf("reviewers sent = %v, want the caller's set", names)
+		}
+	})
+
+	t.Run("clearing them deliberately is possible", func(t *testing.T) {
+		sent = nil
+		none := []string{}
+
+		if _, err := service.Update(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, "42",
+			UpdateInput{Version: 1, Description: "new text", Reviewers: &none}); err != nil {
+			t.Fatalf("update: %v", err)
+		}
+
+		if names := reviewerNamesFromPayload(t, sent); len(names) != 0 {
+			t.Errorf("reviewers sent = %v, want none", names)
+		}
+	})
+
+	t.Run("an update with nothing to change is still refused", func(t *testing.T) {
+		// The echoed reviewers must not count as a requested change, or the
+		// guard that requires a title, description or draft stops working.
+		_, err := service.Update(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, "42",
+			UpdateInput{Version: 1})
+		if err == nil {
+			t.Fatal("an update naming no field was accepted")
+		}
+	})
+}
+
+func reviewerNamesFromPayload(t *testing.T, payload map[string]any) []string {
+	t.Helper()
+
+	raw, ok := payload["reviewers"]
+	if !ok {
+		t.Fatalf("the payload carried no reviewers key at all: %v", payload)
+	}
+
+	entries, ok := raw.([]any)
+	if !ok {
+		t.Fatalf("reviewers is %T, want a list", raw)
+	}
+
+	var names []string
+	for _, entry := range entries {
+		reviewer, _ := entry.(map[string]any)
+		user, _ := reviewer["user"].(map[string]any)
+		if name, ok := user["name"].(string); ok {
+			names = append(names, name)
+		}
+	}
+
+	return names
 }

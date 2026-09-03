@@ -111,6 +111,10 @@ type UpdateInput struct {
 	Version     int    `json:"version"`
 	// Draft, when non-nil, sets or clears the draft flag on the pull request.
 	Draft *bool `json:"draft,omitempty"`
+	// Reviewers, when non-nil, replaces the reviewer set. Nil means "leave it
+	// alone", which the caller achieves by echoing the current set back --
+	// see Update, and #511 for what omitting it did instead.
+	Reviewers *[]string `json:"reviewers,omitempty"`
 }
 
 // AutoMerge represents the auto-merge configuration for a pull request.
@@ -369,9 +373,32 @@ func (service *Service) Update(ctx context.Context, repository RepositoryRef, pu
 		return PullRequest{}, err
 	}
 
+	// Validate before fetching. The reviewer echo below costs a request, and a
+	// caller who named no field or a negative version should hear that
+	// immediately rather than after a round trip -- ADR-054, and the reason
+	// this is not simply folded into the block that follows.
 	payload, err := buildUpdatePayload(input)
 	if err != nil {
 		return PullRequest{}, err
+	}
+
+	// Read the pull request when the caller did not name a reviewer set, so the
+	// existing one can be echoed back. Without it the PUT drops every reviewer,
+	// which is what #511 reported: an update to the description silently
+	// emptied a set of six.
+	if input.Reviewers == nil {
+		current, err := service.Get(ctx, repository, resolvedID)
+		if err != nil {
+			return PullRequest{}, err
+		}
+
+		existing := make([]map[string]any, 0, len(current.Reviewers))
+		for _, reviewer := range current.Reviewers {
+			if name := strings.TrimSpace(reviewer.Name); name != "" {
+				existing = append(existing, map[string]any{"user": map[string]any{"name": name}})
+			}
+		}
+		payload["reviewers"] = existing
 	}
 
 	var response pullRequestValue
@@ -1028,6 +1055,19 @@ func buildCreatePayload(input CreateInput) (map[string]any, error) {
 	return payload, nil
 }
 
+// hasUpdatableField reports whether the caller asked for a change, ignoring
+// the keys that always travel: version, and the reviewer set that has to be
+// echoed back so a PUT does not clear it.
+func hasUpdatableField(payload map[string]any) bool {
+	for key := range payload {
+		if key != "version" && key != "reviewers" {
+			return true
+		}
+	}
+
+	return false
+}
+
 func buildUpdatePayload(input UpdateInput) (map[string]any, error) {
 	payload := map[string]any{}
 
@@ -1046,7 +1086,25 @@ func buildUpdatePayload(input UpdateInput) (map[string]any, error) {
 		payload["draft"] = *input.Draft
 	}
 
-	if len(payload) == 1 {
+	// A PUT replaces the pull request, and Bitbucket reads an absent reviewers
+	// key as "no reviewers" rather than "unchanged" -- confirmed against a
+	// running Data Center, where a body of version plus description emptied a
+	// reviewer set (#511). So the key always travels, carrying the set the
+	// caller wants: the current one, echoed back by Update, unless they asked
+	// for a different one.
+	if input.Reviewers != nil {
+		reviewers := make([]map[string]any, 0, len(*input.Reviewers))
+		for _, name := range *input.Reviewers {
+			trimmed := strings.TrimSpace(name)
+			if trimmed == "" {
+				continue
+			}
+			reviewers = append(reviewers, map[string]any{"user": map[string]any{"name": trimmed}})
+		}
+		payload["reviewers"] = reviewers
+	}
+
+	if !hasUpdatableField(payload) {
 		return nil, apperrors.New(apperrors.KindValidation, "at least one of title, description, or draft is required", nil)
 	}
 
