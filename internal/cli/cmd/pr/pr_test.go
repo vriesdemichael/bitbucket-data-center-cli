@@ -1655,3 +1655,84 @@ func assertDryRunPreview(t *testing.T, out string) {
 		t.Fatalf("expected a dry-run preview, got: %q", out)
 	}
 }
+
+// TestPRMergeDryRunReadsMergeability is #479.
+//
+// The prediction was made from the pull request's state alone, so any open pull
+// request was reported as "will be merged" at confidence full with an empty
+// blockingReasons -- however many vetoes stood against it. Merging is the
+// irreversible operation, so this was the weakest prediction in the tool making
+// the strongest claim the contract offers.
+func TestPRMergeDryRunReadsMergeability(t *testing.T) {
+	newServer := func(t *testing.T, mergeBody string) *httptest.Server {
+		t.Helper()
+
+		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			writer.Header().Set("Content-Type", "application/json")
+
+			switch {
+			case request.Method == http.MethodGet && strings.HasSuffix(request.URL.Path, "/pull-requests/42/merge"):
+				if mergeBody == "" {
+					writer.WriteHeader(http.StatusNotFound)
+					_, _ = writer.Write([]byte(`{"errors":[{"message":"no mergeability"}]}`))
+
+					return
+				}
+				_, _ = writer.Write([]byte(mergeBody))
+			case request.Method == http.MethodGet && strings.HasSuffix(request.URL.Path, "/pull-requests/42"):
+				_, _ = writer.Write([]byte(`{"id":42,"version":1,"state":"OPEN","title":"T","open":true,
+					"fromRef":{"displayId":"feat","repository":{"slug":"demo","project":{"key":"PRJ"}}},
+					"toRef":{"displayId":"main","repository":{"slug":"demo","project":{"key":"PRJ"}}}}`))
+			default:
+				writer.WriteHeader(http.StatusOK)
+				_, _ = writer.Write([]byte(`{}`))
+			}
+		}))
+		t.Cleanup(server.Close)
+
+		return server
+	}
+
+	t.Run("a mergeable pull request still predicts a merge", func(t *testing.T) {
+		server := newServer(t, `{"canMerge":true,"conflicted":false,"vetoes":[]}`)
+
+		out, err := executePr(t, server.URL, "--json", "--dry-run", "merge", "42")
+		if err != nil {
+			t.Fatalf("merge dry-run: %v\n%s", err, out)
+		}
+		if !strings.Contains(out, `"predictedAction": "update"`) {
+			t.Errorf("a mergeable pull request was not predicted to merge: %s", out)
+		}
+	})
+
+	t.Run("vetoes block the prediction and are named", func(t *testing.T) {
+		server := newServer(t, `{"canMerge":false,"conflicted":true,"vetoes":[
+			{"summaryMessage":"Not enough approvals","detailedMessage":"2 of 3 required"},
+			{"summaryMessage":"Build failed"}]}`)
+
+		out, err := executePr(t, server.URL, "--json", "--dry-run", "merge", "42")
+		if err != nil {
+			t.Fatalf("merge dry-run: %v\n%s", err, out)
+		}
+		if !strings.Contains(out, `"predictedAction": "blocked"`) {
+			t.Errorf("a vetoed merge was predicted to succeed: %s", out)
+		}
+		for _, want := range []string{"merge conflicts", "Not enough approvals", "2 of 3 required", "Build failed"} {
+			if !strings.Contains(out, want) {
+				t.Errorf("blockingReasons does not name %q: %s", want, out)
+			}
+		}
+	})
+
+	t.Run("an unanswered mergeability check drops the tier", func(t *testing.T) {
+		server := newServer(t, "")
+
+		out, err := executePr(t, server.URL, "--json", "--dry-run", "merge", "42")
+		if err != nil {
+			t.Fatalf("merge dry-run: %v\n%s", err, out)
+		}
+		if !strings.Contains(out, `"confidence": "partial"`) {
+			t.Errorf("an unchecked prediction still claimed full confidence: %s", out)
+		}
+	})
+}

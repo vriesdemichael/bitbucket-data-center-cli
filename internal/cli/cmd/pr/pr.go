@@ -760,16 +760,38 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
+				// State alone was the whole prediction, so any open pull request
+				// was reported as "will be merged" at confidence full -- with an
+				// empty blockingReasons -- however many vetoes stood against it.
+				// Merging is the irreversible pull request operation, so this was
+				// the weakest prediction in the tool making the strongest claim
+				// the contract offers (#479).
+				//
+				// service.Get already fetches mergeability on this same call. It
+				// was fetched and then not read.
 				predicted := "update"
 				reason := "pull request will be merged"
 				blocking := []string{}
-				if strings.EqualFold(strings.TrimSpace(current.State), "MERGED") {
+				confidence := dryrunpreview.CapabilityFull
+
+				switch {
+				case strings.EqualFold(strings.TrimSpace(current.State), "MERGED"):
 					predicted = "no-op"
 					reason = "pull request is already merged"
-				} else if !strings.EqualFold(strings.TrimSpace(current.State), "OPEN") {
+				case !strings.EqualFold(strings.TrimSpace(current.State), "OPEN"):
 					predicted = "blocked"
 					reason = "pull request is not open"
 					blocking = []string{"pull request is not open"}
+				case current.Mergeability == nil:
+					// Asked and not answered. Saying "will be merged" here would
+					// be a guess wearing the same label as a checked answer, so
+					// the tier says the check could not be made instead.
+					reason = "pull request is open; bitbucket did not report whether it can be merged"
+					confidence = dryrunpreview.CapabilityPartial
+				case !current.Mergeability.Mergeable:
+					predicted = "blocked"
+					reason = "pull request cannot be merged"
+					blocking = mergeBlockingReasons(*current.Mergeability)
 				}
 
 				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
@@ -779,7 +801,7 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: predicted,
 					Supported:       true,
 					Reason:          reason,
-					Confidence:      dryrunpreview.CapabilityFull,
+					Confidence:      confidence,
 					RequiredState:   []string{"pull request"},
 					BlockingReasons: blocking,
 				})
@@ -3170,3 +3192,39 @@ var (
 	reviewStatuses = []string{"APPROVED", "NEEDS_WORK", "UNAPPROVED"}
 	threadStates   = []string{"open", "unresolved", "resolved", "pending", "all"}
 )
+
+// mergeBlockingReasons turns Bitbucket's veto list into the preview's
+// blockingReasons.
+//
+// Conflicts are named separately because Bitbucket reports a conflicted merge
+// through its own flag rather than as a veto, so a conflicted pull request with
+// no other veto would otherwise be blocked for no stated reason.
+func mergeBlockingReasons(mergeability pullrequestservice.Mergeability) []string {
+	reasons := []string{}
+
+	if mergeability.Conflicted {
+		reasons = append(reasons, "pull request has merge conflicts")
+	}
+
+	for _, blocker := range mergeability.Blockers {
+		summary := strings.TrimSpace(blocker.Summary)
+		detail := strings.TrimSpace(blocker.Detail)
+
+		switch {
+		case summary != "" && detail != "":
+			reasons = append(reasons, summary+": "+detail)
+		case summary != "":
+			reasons = append(reasons, summary)
+		case detail != "":
+			reasons = append(reasons, detail)
+		}
+	}
+
+	// Mergeable was false, so something refused it. Saying so without a reason
+	// beats an empty list, which reads as "nothing is blocking".
+	if len(reasons) == 0 {
+		reasons = append(reasons, "bitbucket reported the pull request as not mergeable without naming a reason")
+	}
+
+	return reasons
+}
