@@ -1,7 +1,9 @@
 package diff
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -45,9 +47,52 @@ type DiffCommitInput struct {
 }
 
 type Result struct {
-	Patch string   `json:"patch,omitempty"`
-	Stats any      `json:"stats,omitempty"`
-	Names []string `json:"names,omitempty"`
+	Patch string        `json:"patch,omitempty"`
+	Stats *StatsSummary `json:"stats,omitempty"`
+	Names []string      `json:"names,omitempty"`
+}
+
+// StatsSummary is what the diff-stats-summary endpoints actually return.
+//
+// The spec types both of them as RestDiff, which shares no field with the
+// object Bitbucket sends. json.Unmarshal accepts that happily -- unknown fields
+// are ignored -- so the generated wrapper produced an empty RestDiff, the
+// payload marshalled to {}, and omitempty dropped the key. `bb diff --stat`
+// reported output=stat with no stats and exit 0, and a caller could not tell a
+// diff with nothing to summarise from a summary that failed to decode (#526).
+//
+// Read off a running Bitbucket rather than from the spec, which has now been
+// wrong about this API three times on this branch.
+type StatsSummary struct {
+	FilesChanged    *int64 `json:"filesChanged,omitempty"`
+	TotalInsertions *int64 `json:"totalInsertions,omitempty"`
+	TotalDeletions  *int64 `json:"totalDeletions,omitempty"`
+}
+
+// decodeStatsSummary reads the body Bitbucket sent, not the one the spec
+// promised.
+//
+// An undecodable body is an error rather than an empty summary -- the rule
+// ADR-077 records after the same shape of defect hid in the comment endpoints.
+func decodeStatsSummary(body []byte) (*StatsSummary, error) {
+	trimmed := bytes.TrimSpace(body)
+	if len(trimmed) == 0 {
+		return nil, apperrors.New(apperrors.KindInternal, "bitbucket returned an empty diff stats summary", nil)
+	}
+
+	var summary StatsSummary
+	if err := json.Unmarshal(trimmed, &summary); err != nil {
+		return nil, apperrors.New(apperrors.KindInternal, "could not read the diff stats summary bitbucket returned", err)
+	}
+
+	// All three absent means the body decoded but held none of the summary --
+	// a shape change, not a diff with nothing in it. A real empty diff reports
+	// zeros.
+	if summary.FilesChanged == nil && summary.TotalInsertions == nil && summary.TotalDeletions == nil {
+		return nil, apperrors.New(apperrors.KindInternal, "bitbucket returned a diff stats summary with no counts", nil)
+	}
+
+	return &summary, nil
 }
 
 type Service struct {
@@ -102,7 +147,12 @@ func (service *Service) DiffRefs(ctx context.Context, input DiffRefsInput) (Resu
 		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return Result{}, err
 		}
-		return Result{Stats: response.ApplicationjsonCharsetUTF8200}, nil
+		summary, err := decodeStatsSummary(response.Body)
+		if err != nil {
+			return Result{}, err
+		}
+
+		return Result{Stats: summary}, nil
 	case OutputKindRaw, OutputKindNameOnly:
 		body, err := service.streamRefRawDiff(ctx, input.Repository, input.Path, from, to)
 		if err != nil {
@@ -148,7 +198,12 @@ func (service *Service) DiffPR(ctx context.Context, input DiffPRInput) (Result, 
 		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return Result{}, err
 		}
-		return Result{Stats: response.ApplicationjsonCharsetUTF8200}, nil
+		summary, err := decodeStatsSummary(response.Body)
+		if err != nil {
+			return Result{}, err
+		}
+
+		return Result{Stats: summary}, nil
 	case OutputKindRaw, OutputKindNameOnly:
 		response, err := service.client.StreamRawDiff2WithResponse(ctx, input.Repository.ProjectKey, input.Repository.Slug, prID, nil)
 		if err != nil {
