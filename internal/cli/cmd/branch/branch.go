@@ -744,7 +744,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				restrictions, err := service.ListRestrictions(cmd.Context(), repo, branchservice.RestrictionListOptions{MaxResults: 1000})
+				restrictions, err := service.ListRestrictions(cmd.Context(), repo, branchservice.RestrictionListOptions{MaxResults: branchservice.AllResults})
 				if err != nil {
 					return err
 				}

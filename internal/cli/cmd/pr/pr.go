@@ -564,7 +564,7 @@ func New(deps Dependencies) *cobra.Command {
 			if deps.DryRunEnabled() {
 				existing, err := service.List(cmd.Context(), repo, pullrequestservice.ListOptions{
 					State:        "open",
-					MaxResults:   200,
+					MaxResults:   pullrequestservice.AllResults,
 					SourceBranch: createFromRef,
 					TargetBranch: createToRef,
 				})

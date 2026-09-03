@@ -3,6 +3,9 @@ package projectcmd
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"net/http"
 	"net/http/httptest"
 	"sort"
@@ -10,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 )
 
 // newProjectPermissionTestServer serves the project permission endpoints and
@@ -372,5 +376,44 @@ func TestProjectPermissionHumanOutput(t *testing.T) {
 	out = runRepoPermissionCommand(t, "--dry-run", "project", "permissions", "grant", "PRJ", "bob", "project_read")
 	if !strings.Contains(out, "Dry-run") {
 		t.Fatalf("expected Dry-run in output, got:\n%s", out)
+	}
+}
+
+// TestProjectPermissionsShowRequiresAWiredChecker is the project-scoped twin of
+// the repository test: an unwired dependency is genuinely internal, and now
+// says so rather than arriving there by falling through (#475).
+func TestProjectPermissionsShowRequiresAWiredChecker(t *testing.T) {
+	t.Setenv("BITBUCKET_URL", "http://127.0.0.1:1")
+	t.Setenv("BITBUCKET_TOKEN", "token")
+
+	cfg := config.AppConfig{BitbucketURL: "http://127.0.0.1:1"}
+	root := &cobra.Command{Use: "bb"}
+	root.PersistentFlags().Bool("json", false, "")
+	root.PersistentFlags().Bool("dry-run", false, "")
+	root.PersistentFlags().Bool("no-input", false, "")
+	root.AddCommand(New(Dependencies{
+		JSONEnabled:   func() bool { return false },
+		DryRunEnabled: func() bool { return false },
+		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },
+		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+
+			return cfg, client, err
+		},
+		// Wired, but declines to build one -- the second of the two guards.
+		PermissionChecker: func(*openapigenerated.ClientWithResponses) PermissionChecker { return nil },
+	}))
+
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs([]string{"project", "permissions", "show", "PRJ"})
+
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected an unwired checker to fail")
+	}
+	if kind := apperrors.KindOf(err); kind != apperrors.KindInternal {
+		t.Errorf("kind = %v, want internal (error: %v)", kind, err)
 	}
 }
