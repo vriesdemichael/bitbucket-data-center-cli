@@ -353,7 +353,7 @@ func TestBranchRestrictions(t *testing.T) {
 	buf.Reset()
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"restriction", "update", "42", "--type", "read-only", "--matcher-id", "main"})
+	cmd.SetArgs([]string{"restriction", "update", "42", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "main"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on restriction update dry-run: %v", err)
 	}
@@ -362,7 +362,7 @@ func TestBranchRestrictions(t *testing.T) {
 	buf.Reset()
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"restriction", "update", "42", "--type", "read-only", "--matcher-id", "main"})
+	cmd.SetArgs([]string{"restriction", "update", "42", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "main"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on restriction update: %v", err)
 	}
@@ -566,7 +566,7 @@ func TestBranchJSONAndFlagModes(t *testing.T) {
 	buf.Reset()
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"restriction", "update", "42", "--type", "read-only", "--matcher-id", "main", "--user", "alice"})
+	cmd.SetArgs([]string{"restriction", "update", "42", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "main", "--user", "alice"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on restriction update JSON: %v", err)
 	}

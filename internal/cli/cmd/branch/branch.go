@@ -889,7 +889,12 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	enumflag.Register(restrictionUpdateCmd.Flags(), &updateRestrictionType, "type", "", result.RestrictionTypes, "Restriction type")
-	enumflag.Register(restrictionUpdateCmd.Flags(), &updateMatcherType, "matcher-type", "BRANCH", openapi.RestrictionMatcherTypes, "Matcher type")
+	// No default on an update, for the reason --count has none (#477): the
+	// matcher type is part of what the restriction matches, and it is sent
+	// unconditionally, so defaulting it rewrote a PATTERN restriction to BRANCH
+	// for anyone who omitted the flag. --type and --matcher-id beside it were
+	// already required.
+	enumflag.Register(restrictionUpdateCmd.Flags(), &updateMatcherType, "matcher-type", "", openapi.RestrictionMatcherTypes, "Matcher type")
 	restrictionUpdateCmd.Flags().StringVar(&updateMatcherID, "matcher-id", "", "Matcher id value")
 	restrictionUpdateCmd.Flags().StringVar(&updateMatcherDisplay, "matcher-display", "", "Matcher display value")
 	restrictionUpdateCmd.Flags().StringSliceVar(&updateUsers, "user", nil, "User slug allowed by restriction (repeatable)")
@@ -897,6 +902,7 @@ func New(deps Dependencies) *cobra.Command {
 	restrictionUpdateCmd.Flags().IntSliceVar(&updateAccessKeyIDs, "access-key-id", nil, "SSH access key id allowed by restriction (repeatable)")
 	_ = restrictionUpdateCmd.MarkFlagRequired("type")
 	_ = restrictionUpdateCmd.MarkFlagRequired("matcher-id")
+	_ = restrictionUpdateCmd.MarkFlagRequired("matcher-type")
 	restrictionCmd.AddCommand(restrictionUpdateCmd)
 
 	restrictionDeleteCmd := &cobra.Command{

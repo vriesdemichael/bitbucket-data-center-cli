@@ -178,8 +178,8 @@ func TestBranchValidationErrors(t *testing.T) {
 		{name: "branch restriction create missing matcher-id", args: []string{"branch", "restriction", "create", "--type", "read-only"}, expectAppErr: false},
 		{name: "branch restriction create access key overflow", args: []string{"branch", "restriction", "create", "--type", "read-only", "--matcher-id", "refs/heads/main", "--access-key-id", "2147483648"}, expectAppErr: true},
 		{name: "branch restriction list invalid matcher-type", args: []string{"branch", "restriction", "list", "--matcher-type", "invalid"}, expectAppErr: true},
-		{name: "branch restriction update access key overflow", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-id", "refs/heads/main", "--access-key-id", "2147483648"}, expectAppErr: true},
-		{name: "branch restriction update invalid id", args: []string{"branch", "restriction", "update", "bad", "--type", "read-only", "--matcher-id", "refs/heads/main"}, expectAppErr: true},
+		{name: "branch restriction update access key overflow", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main", "--access-key-id", "2147483648"}, expectAppErr: true},
+		{name: "branch restriction update invalid id", args: []string{"branch", "restriction", "update", "bad", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main"}, expectAppErr: true},
 		{name: "branch default set blank", args: []string{"branch", "default", "set", " "}, expectAppErr: true},
 		{name: "branch model update blank", args: []string{"branch", "model", "update", " "}, expectAppErr: true},
 	}
@@ -223,7 +223,7 @@ func TestBranchCommandsFailOnInvalidRepositorySelector(t *testing.T) {
 		{name: "restriction list invalid repo selector", args: []string{"branch", "restriction", "list", "--repo", "bad"}},
 		{name: "restriction get invalid repo selector", args: []string{"branch", "restriction", "get", "12", "--repo", "bad"}},
 		{name: "restriction create invalid repo selector", args: []string{"branch", "restriction", "create", "--type", "read-only", "--matcher-id", "refs/heads/main", "--repo", "bad"}},
-		{name: "restriction update invalid repo selector", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-id", "refs/heads/main", "--repo", "bad"}},
+		{name: "restriction update invalid repo selector", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main", "--repo", "bad"}},
 		{name: "restriction delete invalid repo selector", args: []string{"branch", "restriction", "delete", "12", "--repo", "bad"}},
 	}
 
@@ -265,7 +265,7 @@ func TestBranchCommandsFailOnInvalidConfig(t *testing.T) {
 		{name: "restriction list invalid config", args: []string{"branch", "restriction", "list"}},
 		{name: "restriction get invalid config", args: []string{"branch", "restriction", "get", "12"}},
 		{name: "restriction create invalid config", args: []string{"branch", "restriction", "create", "--type", "read-only", "--matcher-id", "refs/heads/main"}},
-		{name: "restriction update invalid config", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-id", "refs/heads/main"}},
+		{name: "restriction update invalid config", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main"}},
 		{name: "restriction delete invalid config", args: []string{"branch", "restriction", "delete", "12"}},
 	}
 
@@ -2481,7 +2481,7 @@ func TestBranchCommandPaths(t *testing.T) {
 		{name: "branch restriction list", args: []string{"branch", "restriction", "list"}, want: "read-only"},
 		{name: "branch restriction list filtered", args: []string{"branch", "restriction", "list", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main"}, want: "users=1"},
 		{name: "branch restriction get", args: []string{"branch", "restriction", "get", "12"}, want: "id=12"},
-		{name: "branch restriction update", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-id", "refs/heads/main"}, want: "Updated restriction 12"},
+		{name: "branch restriction update", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main"}, want: "Updated restriction 12"},
 		{name: "branch restriction delete", args: []string{"branch", "restriction", "delete", "12"}, want: "Deleted restriction 12"},
 	}
 
@@ -2582,7 +2582,7 @@ func TestBranchCommandPaths(t *testing.T) {
 	jsonRestrictionUpdateBuffer := &bytes.Buffer{}
 	jsonRestrictionUpdateCommand.SetOut(jsonRestrictionUpdateBuffer)
 	jsonRestrictionUpdateCommand.SetErr(jsonRestrictionUpdateBuffer)
-	jsonRestrictionUpdateCommand.SetArgs([]string{"--json", "branch", "restriction", "update", "12", "--type", "read-only", "--matcher-id", "refs/heads/main"})
+	jsonRestrictionUpdateCommand.SetArgs([]string{"--json", "branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main"})
 	if err := jsonRestrictionUpdateCommand.Execute(); err != nil {
 		t.Fatalf("branch restriction update json failed: %v", err)
 	}
@@ -2618,7 +2618,7 @@ func TestBranchCommandPaths(t *testing.T) {
 	jsonRestrictionUpdateWithAccessKeyBuffer := &bytes.Buffer{}
 	jsonRestrictionUpdateWithAccessKeyCommand.SetOut(jsonRestrictionUpdateWithAccessKeyBuffer)
 	jsonRestrictionUpdateWithAccessKeyCommand.SetErr(jsonRestrictionUpdateWithAccessKeyBuffer)
-	jsonRestrictionUpdateWithAccessKeyCommand.SetArgs([]string{"--json", "branch", "restriction", "update", "12", "--type", "read-only", "--matcher-id", "refs/heads/main", "--user", "alice", "--group", "devs", "--access-key-id", "7"})
+	jsonRestrictionUpdateWithAccessKeyCommand.SetArgs([]string{"--json", "branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main", "--user", "alice", "--group", "devs", "--access-key-id", "7"})
 	if err := jsonRestrictionUpdateWithAccessKeyCommand.Execute(); err != nil {
 		t.Fatalf("branch restriction update with access key json failed: %v", err)
 	}
@@ -3631,7 +3631,7 @@ func TestBranchCommandsPropagateServiceErrors(t *testing.T) {
 		{name: "branch restriction list", args: []string{"branch", "restriction", "list"}},
 		{name: "branch restriction get", args: []string{"branch", "restriction", "get", "12"}},
 		{name: "branch restriction create", args: []string{"branch", "restriction", "create", "--type", "read-only", "--matcher-id", "refs/heads/main"}},
-		{name: "branch restriction update", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-id", "refs/heads/main"}},
+		{name: "branch restriction update", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main"}},
 		{name: "branch restriction delete", args: []string{"branch", "restriction", "delete", "12"}},
 	}
 
