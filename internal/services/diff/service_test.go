@@ -1023,3 +1023,51 @@ func TestDecodeStatsSummaryRefusesToCallAnUnreadableBodyEmpty(t *testing.T) {
 		})
 	}
 }
+
+// TestStatRunsSurfaceAnUndecodableSummary covers the error return on both stat
+// paths: an unreadable body must not reach the caller as an empty summary
+// (#526, ADR-077).
+func TestStatRunsSurfaceAnUndecodableSummary(t *testing.T) {
+	t.Parallel()
+
+	for _, testCase := range []struct {
+		name string
+		body string
+	}{
+		{"a body holding none of the counts", `{"binary":false,"hunks":[]}`},
+		{"an empty body", ``},
+		{"malformed json", `{"filesChanged":`},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			service := newDiffServiceWithHandler(t, func(writer http.ResponseWriter, request *http.Request) {
+				writer.Header().Set("Content-Type", "application/json")
+				_, _ = writer.Write([]byte(testCase.body))
+			})
+
+			t.Run("refs", func(t *testing.T) {
+				_, err := service.DiffRefs(context.Background(), DiffRefsInput{
+					Repository: RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
+					From:       "main",
+					To:         "feat",
+					Output:     OutputKindStat,
+				})
+				if err == nil {
+					t.Fatal("an unreadable summary was reported as a successful stat run")
+				}
+			})
+
+			t.Run("pull request", func(t *testing.T) {
+				_, err := service.DiffPR(context.Background(), DiffPRInput{
+					Repository:    RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
+					PullRequestID: "1",
+					Output:        OutputKindStat,
+				})
+				if err == nil {
+					t.Fatal("an unreadable summary was reported as a successful stat run")
+				}
+			})
+		})
+	}
+}

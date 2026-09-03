@@ -378,3 +378,39 @@ func TestTagCreateDryRunSeesATagPastTheOldCap(t *testing.T) {
 		t.Errorf("the exact tag was never asked for; the prediction still scans a list (list calls: %d)", listCalls)
 	}
 }
+
+// TestTagCreateDryRunSurfacesANonNotFoundLookupFailure covers the branch that
+// separates "the tag is not there" from "the lookup failed".
+//
+// Only a not-found answer means the tag can be created. Anything else -- a 500,
+// a revoked token -- has to reach the caller, or the preview would predict
+// create because the question could not be asked.
+func TestTagCreateDryRunSurfacesANonNotFoundLookupFailure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+
+		if strings.Contains(request.URL.Path, "/tags/") {
+			writer.WriteHeader(http.StatusInternalServerError)
+			_, _ = writer.Write([]byte(`{"errors":[{"message":"boom"}]}`))
+
+			return
+		}
+		_, _ = writer.Write([]byte(`{"id":"refs/heads/main","displayId":"main"}`))
+	}))
+	t.Cleanup(server.Close)
+
+	deps := newTestDependencies(t, server.URL, true, true)
+	cmd := tagcmd.New(deps)
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs([]string{"create", "v9", "--start-point", "main"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatalf("a failed lookup was reported as a create prediction: %s", buf.String())
+	}
+	if strings.Contains(buf.String(), `"predictedAction"`) {
+		t.Errorf("a preview was published despite the lookup failing: %s", buf.String())
+	}
+}

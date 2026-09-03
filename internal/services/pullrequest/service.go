@@ -21,6 +21,11 @@ type RepositoryRef struct {
 	Slug       string `json:"slug"`
 }
 
+// AllResults asks for every matching pull request rather than a page of them.
+// A dry-run duplicate check needs the complete set, and the server-side branch
+// filter keeps that cheap (#470).
+const AllResults = 1_000_000
+
 type ListOptions struct {
 	State        string `json:"state"`
 	MaxResults   int    `json:"limit"`
