@@ -12,6 +12,10 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
+// AllResults asks for every restriction rather than a page of them. A dry-run
+// existence check needs the complete set (#470).
+const AllResults = 1_000_000
+
 type RestrictionListOptions struct {
 	MaxResults  int
 	Type        string

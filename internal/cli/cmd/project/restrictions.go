@@ -139,7 +139,7 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				restrictions, err := service.ListRestrictions(cmd.Context(), args[0], projectservice.RestrictionListOptions{MaxResults: 1000})
+				restrictions, err := service.ListRestrictions(cmd.Context(), args[0], projectservice.RestrictionListOptions{MaxResults: projectservice.AllResults})
 				if err != nil {
 					return err
 				}

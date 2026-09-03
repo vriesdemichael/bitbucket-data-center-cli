@@ -3,6 +3,9 @@ package reviewercmd
 import (
 	"bytes"
 	"context"
+	"errors"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -659,5 +662,155 @@ func TestReviewerPermissionErrors(t *testing.T) {
 	cmd.SetArgs([]string{"condition", "update", "101", `{"requiredApprovals":1}`, "--project", "PRJ"})
 	if err := cmd.Execute(); err == nil {
 		t.Fatal("expected permission error on project update dry-run")
+	}
+}
+
+// TestConditionJSONIsValidatedNotReportedAsADefect covers the three places a
+// condition body is parsed.
+//
+// These returned a bare fmt.Errorf, so KindOf fell through to internal and a
+// caller was told bb had a bug when their JSON was malformed (#475).
+func TestConditionJSONIsValidatedNotReportedAsADefect(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`[]`))
+	}))
+	defer server.Close()
+
+	cfg := config.AppConfig{BitbucketURL: server.URL, ProjectKey: "PRJ", RepoSlug: "repo1"}
+	deps := Dependencies{
+		JSONEnabled:   func() bool { return false },
+		DryRunEnabled: func() bool { return false },
+		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },
+		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+
+			return cfg, client, err
+		},
+	}
+
+	for _, testCase := range []struct {
+		name string
+		args []string
+	}{
+		{"create at repository scope", []string{"condition", "create", "{not json", "--repo", "PRJ/repo1"}},
+		{"create at project scope", []string{"condition", "create", "{not json", "--project", "PRJ"}},
+		{"update at repository scope", []string{"condition", "update", "101", "{not json", "--repo", "PRJ/repo1"}},
+		{"update at project scope", []string{"condition", "update", "102", "{not json", "--project", "PRJ"}},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			cmd := New(deps)
+			buf := new(bytes.Buffer)
+			cmd.SetOut(buf)
+			cmd.SetErr(buf)
+			cmd.SetArgs(testCase.args)
+
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatal("malformed condition JSON was accepted")
+			}
+			if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
+				t.Errorf("kind = %v, want validation -- bad JSON is the caller's mistake (error: %v)", kind, err)
+			}
+		})
+	}
+}
+
+// TestAMissingProjectKeyIsValidation covers the eight sites that reported a
+// missing --project or --repo as a defect in bb.
+func TestAMissingProjectKeyIsValidation(t *testing.T) {
+	cfg := config.AppConfig{BitbucketURL: "http://127.0.0.1:1"}
+	deps := Dependencies{
+		JSONEnabled:   func() bool { return false },
+		DryRunEnabled: func() bool { return false },
+		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },
+		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+
+			return cfg, client, err
+		},
+	}
+
+	for _, args := range [][]string{
+		{"condition", "list"},
+		{"condition", "create", `{"requiredApprovals":1}`},
+		{"condition", "update", "101", `{"requiredApprovals":1}`},
+		{"condition", "delete", "101"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			cmd := New(deps)
+			buf := new(bytes.Buffer)
+			cmd.SetOut(buf)
+			cmd.SetErr(buf)
+			cmd.SetArgs(args)
+
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatal("expected a missing project key to fail")
+			}
+			if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
+				t.Errorf("kind = %v, want validation (error: %v)", kind, err)
+			}
+		})
+	}
+}
+
+// failingReader stands in for a stdin that errors mid-read.
+type failingReader struct{}
+
+func (failingReader) Read([]byte) (int, error) { return 0, errors.New("pipe broke") }
+
+// TestUnreadableConditionInputIsValidation covers the two read paths on both
+// the create and update commands, which reported a caller-side problem as a
+// defect in bb before #475's sweep.
+func TestUnreadableConditionInputIsValidation(t *testing.T) {
+	cfg := config.AppConfig{BitbucketURL: "http://127.0.0.1:1", ProjectKey: "PRJ", RepoSlug: "repo1"}
+	deps := Dependencies{
+		JSONEnabled:   func() bool { return false },
+		DryRunEnabled: func() bool { return false },
+		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },
+		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+
+			return cfg, client, err
+		},
+	}
+
+	run := func(t *testing.T, stdin io.Reader, args ...string) error {
+		t.Helper()
+
+		cmd := New(deps)
+		buf := new(bytes.Buffer)
+		cmd.SetOut(buf)
+		cmd.SetErr(buf)
+		if stdin != nil {
+			cmd.SetIn(stdin)
+		}
+		cmd.SetArgs(args)
+
+		return cmd.Execute()
+	}
+
+	missing := filepath.Join(t.TempDir(), "does-not-exist.json")
+
+	for _, testCase := range []struct {
+		name  string
+		stdin io.Reader
+		args  []string
+	}{
+		{"create with an unreadable config file", nil, []string{"condition", "create", "--config-file", missing, "--repo", "PRJ/repo1"}},
+		{"update with an unreadable config file", nil, []string{"condition", "update", "101", "--config-file", missing, "--repo", "PRJ/repo1"}},
+		{"create with a failing stdin", failingReader{}, []string{"condition", "create", "-", "--repo", "PRJ/repo1"}},
+		{"update with a failing stdin", failingReader{}, []string{"condition", "update", "101", "-", "--repo", "PRJ/repo1"}},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := run(t, testCase.stdin, testCase.args...)
+			if err == nil {
+				t.Fatal("unreadable input was accepted")
+			}
+			if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
+				t.Errorf("kind = %v, want validation (error: %v)", kind, err)
+			}
+		})
 	}
 }
