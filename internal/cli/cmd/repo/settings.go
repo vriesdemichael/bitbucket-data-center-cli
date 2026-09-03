@@ -535,7 +535,13 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	pullRequestsUpdateApproversCmd.Flags().IntVar(&requiredApproversCount, "count", 2, "Required approvers count (0 disables check)")
+	// No default. This flag is the entire payload of a branch-protection
+	// mutation, so a default silently rewrites the setting it controls: a
+	// repository requiring four approvers was reduced to two by a command
+	// invoked without the argument. 0 is itself meaningful -- it disables the
+	// check -- which is the other reason it has to be said out loud.
+	pullRequestsUpdateApproversCmd.Flags().IntVar(&requiredApproversCount, "count", 0, "Required approvers count (0 disables check)")
+	_ = pullRequestsUpdateApproversCmd.MarkFlagRequired("count")
 
 	pullRequestsSetStrategyCmd := &cobra.Command{
 		Use:   "set-strategy <strategy-id>",
