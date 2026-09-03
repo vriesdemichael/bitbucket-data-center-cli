@@ -18,6 +18,11 @@ type RepositoryRef struct {
 	Slug       string
 }
 
+// AllResults asks for every matching branch rather than a page of them.
+// A dry-run existence check needs the complete set: MaxResults caps the total,
+// so a scan bounded by it can miss the very branch it is looking for (#470).
+const AllResults = 1_000_000
+
 type ListOptions struct {
 	MaxResults int
 	Start      int

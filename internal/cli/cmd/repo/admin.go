@@ -51,7 +51,10 @@ func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {
 				}
 
 				repoQueryService := reposervice.NewService(httpclient.NewFromConfig(cfg))
-				existing, err := repoQueryService.ListByProject(cmd.Context(), createProject, reposervice.ListOptions{MaxResults: 200, Name: createName})
+				// Every match, not the first two hundred: the name filter is a substring
+				// match, so a project with many similar names could hide the exact one
+				// and the preview would predict create for a repository that exists.
+				existing, err := repoQueryService.ListByProject(cmd.Context(), createProject, reposervice.ListOptions{MaxResults: reposervice.AllResults, Name: createName})
 				if err != nil {
 					return err
 				}
