@@ -79,6 +79,9 @@ func scan(root string) ([]entry, error) {
 			if handlerFailsTheTest(function.Body) {
 				signals = append(signals, "fails-if-the-server-is-reached")
 			}
+			if handlerVariesByAttempt(function.Body) {
+				signals = append(signals, "varies-by-attempt-count")
+			}
 			if handlerInspectsPath(function.Body) {
 				signals = append(signals, "inspects-the-request-path")
 			}
@@ -210,6 +213,48 @@ func handlerFailsTheTest(body *ast.BlockStmt) bool {
 		// still a claim about Bitbucket.
 		return failed && !responds
 	})
+}
+
+// handlerVariesByAttempt reports whether a handler answers differently
+// depending on how many times it has been called.
+//
+// That is fault injection, not a Bitbucket simulation: 503 then 429 then 200 is
+// how a retry loop is exercised, and no real server can be asked to do it. The
+// mock happens to serve a route and return statuses like any other, so without
+// this the retry tests read as behaviour and would be sent to a live suite that
+// cannot express them.
+func handlerVariesByAttempt(body *ast.BlockStmt) bool {
+	return anyHandler(body, func(handler *ast.FuncLit) bool {
+		counts := false
+		failsTransiently := false
+
+		ast.Inspect(handler.Body, func(node ast.Node) bool {
+			if _, ok := node.(*ast.IncDecStmt); ok {
+				counts = true
+			}
+			if selector, ok := node.(*ast.SelectorExpr); ok && retryTriggeringStatus[selector.Sel.Name] {
+				failsTransiently = true
+			}
+
+			return true
+		})
+
+		// Counting alone is not fault injection: a paging mock counts calls to
+		// serve successive pages, and Bitbucket's paging convention is a claim
+		// about Bitbucket. What makes it a transport test is answering with a
+		// status the client is supposed to retry.
+		return counts && failsTransiently
+	})
+}
+
+// retryTriggeringStatus are the statuses a retry loop exists to survive.
+var retryTriggeringStatus = map[string]bool{
+	"StatusInternalServerError": true,
+	"StatusServiceUnavailable":  true,
+	"StatusTooManyRequests":     true,
+	"StatusBadGateway":          true,
+	"StatusGatewayTimeout":      true,
+	"StatusRequestTimeout":      true,
 }
 
 // handlerInspectsPath reports whether a handler reads the request path. Routes
@@ -433,6 +478,17 @@ func classify(signals []string) Class {
 	case has("fails-if-the-server-is-reached"):
 		return ClassUnreachedGuard
 
+	// Injected below the API. A real server will not truncate a body, stall a
+	// connection, or fail twice and then succeed on request, and the subject is
+	// our client either way.
+	//
+	// Checked before the Bitbucket signals: a retry test serves a route and
+	// returns a status like any other mock, and reading it as behaviour would
+	// send a transport test to a live suite that cannot express it.
+	case has("returns-malformed-body"), has("simulates-a-stalled-connection"),
+		has("varies-by-attempt-count"):
+		return ClassTransportFault
+
 	// Checking something about the request is what makes a mock a stand-in for
 	// Bitbucket: the assertion rests on the route, the verb or the payload
 	// being what the real server wants, and a unit test cannot tell whether it
@@ -441,11 +497,6 @@ func classify(signals []string) Class {
 		has("asserts-query-parameters"), has("asserts-http-method"),
 		has("inspects-the-request-path"):
 		return ClassBehaviour
-
-	// Injected below the API. A real server will not truncate a body or stall a
-	// connection on request, and the subject is our client either way.
-	case has("returns-malformed-body"), has("simulates-a-stalled-connection"):
-		return ClassTransportFault
 
 	// A bare status with no Bitbucket payload. Not routing is expected here --
 	// the point is the code, not the route -- but "Bitbucket answers this code
