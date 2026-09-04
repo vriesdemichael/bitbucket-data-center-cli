@@ -229,11 +229,24 @@ func handlerVariesByAttempt(body *ast.BlockStmt) bool {
 		failsTransiently := false
 
 		ast.Inspect(handler.Body, func(node ast.Node) bool {
-			if _, ok := node.(*ast.IncDecStmt); ok {
+			switch typed := node.(type) {
+			case *ast.IncDecStmt:
 				counts = true
-			}
-			if selector, ok := node.(*ast.SelectorExpr); ok && retryTriggeringStatus[selector.Sel.Name] {
-				failsTransiently = true
+			case *ast.AssignStmt:
+				// attempts += 1, and the compound forms beside it.
+				if typed.Tok != token.DEFINE && typed.Tok != token.ASSIGN {
+					counts = true
+				}
+			case *ast.SelectorExpr:
+				switch {
+				case retryTriggeringStatus[typed.Sel.Name]:
+					failsTransiently = true
+				// An atomic counter counts without ++: attempts.Add(1) is the
+				// same intent, and missing it left twenty-one retry tests
+				// queued for a live suite that cannot express them.
+				case typed.Sel.Name == "Add", typed.Sel.Name == "Inc":
+					counts = true
+				}
 			}
 
 			return true

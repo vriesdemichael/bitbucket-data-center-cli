@@ -5,16 +5,16 @@
     "files": 95,
     "functions": 411,
     "by_class": {
-      "bitbucket-behaviour": 244,
+      "bitbucket-behaviour": 240,
       "canned-response": 71,
       "external-service": 14,
       "harness-constructor": 19,
       "status-taxonomy": 50,
-      "transport-fault": 27,
+      "transport-fault": 31,
       "unreached-guard": 11
     },
     "behaviour_by_package": {
-      "internal/cli": 67,
+      "internal/cli": 66,
       "internal/cli/cmd/admin": 1,
       "internal/cli/cmd/api": 15,
       "internal/cli/cmd/auth": 2,
@@ -54,7 +54,7 @@
       "internal/services/reviewer": 4,
       "internal/services/sshkey": 2,
       "internal/services/tag": 4,
-      "internal/transport/httpclient": 17
+      "internal/transport/httpclient": 14
     }
   },
   "entries": [
@@ -2291,17 +2291,18 @@
       "file": "internal/cli/permission_checker_test.go",
       "line": 509,
       "function": "TestInspectProjectPermissions",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "asserts-query-parameters",
         "handler-passed-to-a-helper",
         "inspects-the-request-path",
         "returns-a-status",
         "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
+        "serves-bitbucket-routes",
+        "varies-by-attempt-count"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/cli/permissionchecker/permission_checker_test.go",
@@ -5677,15 +5678,16 @@
       "file": "internal/transport/httpclient/client_test.go",
       "line": 135,
       "function": "TestGetJSONRetriesAndSucceeds",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status",
-        "serves-bitbucket-routes"
+        "serves-bitbucket-routes",
+        "varies-by-attempt-count"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
@@ -5772,15 +5774,16 @@
       "file": "internal/transport/httpclient/client_test.go",
       "line": 326,
       "function": "TestGetJSONTooManyRequestsRetryExhaustion",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status",
-        "serves-bitbucket-routes"
+        "serves-bitbucket-routes",
+        "varies-by-attempt-count"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
@@ -5792,7 +5795,8 @@
         "closes-on-cleanup",
         "returns-a-status",
         "serves-bitbucket-routes",
-        "simulates-a-stalled-connection"
+        "simulates-a-stalled-connection",
+        "varies-by-attempt-count"
       ],
       "action": "keep",
       "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
@@ -5821,7 +5825,8 @@
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status",
-        "simulates-a-stalled-connection"
+        "simulates-a-stalled-connection",
+        "varies-by-attempt-count"
       ],
       "action": "keep",
       "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
@@ -5835,7 +5840,8 @@
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status",
-        "simulates-a-stalled-connection"
+        "simulates-a-stalled-connection",
+        "varies-by-attempt-count"
       ],
       "action": "keep",
       "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
@@ -5849,7 +5855,8 @@
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status",
-        "simulates-a-stalled-connection"
+        "simulates-a-stalled-connection",
+        "varies-by-attempt-count"
       ],
       "action": "keep",
       "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
@@ -5863,7 +5870,8 @@
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status",
-        "simulates-a-stalled-connection"
+        "simulates-a-stalled-connection",
+        "varies-by-attempt-count"
       ],
       "action": "keep",
       "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
@@ -5877,7 +5885,8 @@
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status",
-        "simulates-a-stalled-connection"
+        "simulates-a-stalled-connection",
+        "varies-by-attempt-count"
       ],
       "action": "keep",
       "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
@@ -5916,15 +5925,16 @@
       "file": "internal/transport/httpclient/client_test.go",
       "line": 688,
       "function": "TestGetRawRetriesServerErrors",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status",
-        "serves-bitbucket-routes"
+        "serves-bitbucket-routes",
+        "varies-by-attempt-count"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
