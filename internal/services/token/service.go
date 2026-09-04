@@ -39,100 +39,85 @@ func (s *Service) List(ctx context.Context, scope ScopeType, target string, limi
 	if limit <= 0 {
 		limit = 25
 	}
-	start := float32(0)
-	pageLimit := float32(limit)
-	results := make([]openapigenerated.RestAccessToken, 0)
 
-	for {
-		var values *[]openapigenerated.RestAccessToken
-		var isLastPage *bool
-		var nextPageStart *int32
-
-		switch scope {
-		case ScopeUser:
-			trimmedUser := strings.TrimSpace(target)
-			if trimmedUser == "" {
-				return nil, apperrors.New(apperrors.KindValidation, "user slug is required for user scope", nil)
-			}
-			params := &openapigenerated.GetAllAccessTokens2Params{
-				Start: &start,
-				Limit: &pageLimit,
-			}
-			resp, err := s.client.GetAllAccessTokens2WithResponse(ctx, trimmedUser, params)
-			if err != nil {
-				return nil, apperrors.New(apperrors.KindTransient, "failed to list user tokens", err)
-			}
-			if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
-				return nil, err
-			}
-			if resp.ApplicationjsonCharsetUTF8200 != nil {
-				values = resp.ApplicationjsonCharsetUTF8200.Values
-				isLastPage = resp.ApplicationjsonCharsetUTF8200.IsLastPage
-				nextPageStart = resp.ApplicationjsonCharsetUTF8200.NextPageStart
-			}
-
-		case ScopeProject:
-			trimmedProj := strings.TrimSpace(target)
-			if trimmedProj == "" {
-				return nil, apperrors.New(apperrors.KindValidation, "project key is required for project scope", nil)
-			}
-			params := &openapigenerated.GetAllAccessTokensParams{
-				Start: &start,
-				Limit: &pageLimit,
-			}
-			resp, err := s.client.GetAllAccessTokensWithResponse(ctx, trimmedProj, params)
-			if err != nil {
-				return nil, apperrors.New(apperrors.KindTransient, "failed to list project tokens", err)
-			}
-			if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
-				return nil, err
-			}
-			if resp.ApplicationjsonCharsetUTF8200 != nil {
-				values = resp.ApplicationjsonCharsetUTF8200.Values
-				isLastPage = resp.ApplicationjsonCharsetUTF8200.IsLastPage
-				nextPageStart = resp.ApplicationjsonCharsetUTF8200.NextPageStart
-			}
-
-		case ScopeRepo:
-			proj, repo, err := parseRepoTarget(target)
-			if err != nil {
-				return nil, err
-			}
-			params := &openapigenerated.GetAllAccessTokens1Params{
-				Start: &start,
-				Limit: &pageLimit,
-			}
-			resp, err := s.client.GetAllAccessTokens1WithResponse(ctx, proj, repo, params)
-			if err != nil {
-				return nil, apperrors.New(apperrors.KindTransient, "failed to list repository tokens", err)
-			}
-			if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
-				return nil, err
-			}
-			if resp.ApplicationjsonCharsetUTF8200 != nil {
-				values = resp.ApplicationjsonCharsetUTF8200.Values
-				isLastPage = resp.ApplicationjsonCharsetUTF8200.IsLastPage
-				nextPageStart = resp.ApplicationjsonCharsetUTF8200.NextPageStart
-			}
-
-		default:
-			return nil, apperrors.New(apperrors.KindValidation, "invalid scope type", nil)
+	// Resolved once. The scope was re-validated on every page, so a listing
+	// that needed four requests re-derived the same slug four times.
+	var user, project, repository string
+	switch scope {
+	case ScopeUser:
+		user = strings.TrimSpace(target)
+		if user == "" {
+			return nil, apperrors.New(apperrors.KindValidation, "user slug is required for user scope", nil)
 		}
-
-		if values != nil {
-			results = append(results, *values...)
+	case ScopeProject:
+		project = strings.TrimSpace(target)
+		if project == "" {
+			return nil, apperrors.New(apperrors.KindValidation, "project key is required for project scope", nil)
 		}
-
-		if len(results) >= limit || isLastPage == nil || *isLastPage || nextPageStart == nil {
-			break
+	case ScopeRepo:
+		parsedProject, parsedRepo, err := parseRepoTarget(target)
+		if err != nil {
+			return nil, err
 		}
-		start = float32(*nextPageStart)
+		project, repository = parsedProject, parsedRepo
+	default:
+		return nil, apperrors.New(apperrors.KindValidation, "invalid scope type", nil)
 	}
 
-	if len(results) > limit {
-		results = results[:limit]
-	}
-	return results, nil
+	type tokenPage = openapi.Page[openapigenerated.RestAccessToken]
+
+	return openapi.PageThrough(ctx, 0, limit,
+		func(ctx context.Context, start, limit int) (tokenPage, error) {
+			startValue, limitValue := float32(start), float32(limit)
+
+			// The three endpoints answer with structurally identical but
+			// distinct anonymous types, so each case reads its own out rather
+			// than sharing a variable.
+			var page tokenPage
+			var statusCode int
+			var raw []byte
+
+			switch scope {
+			case ScopeUser:
+				resp, err := s.client.GetAllAccessTokens2WithResponse(ctx, user,
+					&openapigenerated.GetAllAccessTokens2Params{Start: &startValue, Limit: &limitValue})
+				if err != nil {
+					return tokenPage{}, apperrors.New(apperrors.KindTransient, "failed to list user tokens", err)
+				}
+				statusCode, raw = resp.StatusCode(), resp.Body
+				if body := resp.ApplicationjsonCharsetUTF8200; body != nil && body.Values != nil {
+					page = tokenPage{Values: *body.Values, IsLastPage: body.IsLastPage, NextPageStart: body.NextPageStart}
+				}
+
+			case ScopeProject:
+				resp, err := s.client.GetAllAccessTokensWithResponse(ctx, project,
+					&openapigenerated.GetAllAccessTokensParams{Start: &startValue, Limit: &limitValue})
+				if err != nil {
+					return tokenPage{}, apperrors.New(apperrors.KindTransient, "failed to list project tokens", err)
+				}
+				statusCode, raw = resp.StatusCode(), resp.Body
+				if body := resp.ApplicationjsonCharsetUTF8200; body != nil && body.Values != nil {
+					page = tokenPage{Values: *body.Values, IsLastPage: body.IsLastPage, NextPageStart: body.NextPageStart}
+				}
+
+			default:
+				resp, err := s.client.GetAllAccessTokens1WithResponse(ctx, project, repository,
+					&openapigenerated.GetAllAccessTokens1Params{Start: &startValue, Limit: &limitValue})
+				if err != nil {
+					return tokenPage{}, apperrors.New(apperrors.KindTransient, "failed to list repository tokens", err)
+				}
+				statusCode, raw = resp.StatusCode(), resp.Body
+				if body := resp.ApplicationjsonCharsetUTF8200; body != nil && body.Values != nil {
+					page = tokenPage{Values: *body.Values, IsLastPage: body.IsLastPage, NextPageStart: body.NextPageStart}
+				}
+			}
+
+			if err := openapi.MapStatusError(statusCode, raw); err != nil {
+				return tokenPage{}, err
+			}
+
+			return page, nil
+		})
 }
 
 func (s *Service) Get(ctx context.Context, scope ScopeType, target string, id string) (openapigenerated.RestAccessToken, error) {
