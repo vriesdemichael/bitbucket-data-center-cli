@@ -184,11 +184,7 @@ func (service *Service) ListDashboard(ctx context.Context, options DashboardList
 			"start": strconv.Itoa(start),
 		}
 		if normalizedState != "" {
-			if normalizedState == "open" {
-				query["state"] = "OPEN"
-			} else if normalizedState != "all" {
-				query["state"] = strings.ToUpper(normalizedState)
-			}
+			query["state"] = bitbucketState(normalizedState)
 		}
 
 		if options.Role != "" {
@@ -249,13 +245,7 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, opti
 			"limit": strconv.Itoa(options.MaxResults),
 			"start": strconv.Itoa(start),
 		}
-		if normalizedState == "open" {
-			query["state"] = "OPEN"
-		} else if normalizedState != "all" {
-			query["state"] = strings.ToUpper(normalizedState)
-		} else {
-			query["state"] = "ALL"
-		}
+		query["state"] = bitbucketState(normalizedState)
 		if options.Role != "" {
 			query["role"] = strings.ToUpper(options.Role)
 		}
@@ -811,6 +801,30 @@ func (service *Service) DisableAutoMerge(ctx context.Context, repository Reposit
 	}
 
 	return service.client.DeleteJSON(ctx, fmt.Sprintf("%s/%s/auto-merge", pullRequestPath(repository), resolvedID), nil, nil, nil)
+}
+
+// bitbucketState turns the state a caller asked for into one the server will
+// accept.
+//
+// Bitbucket takes OPEN, DECLINED, MERGED and ALL. It does not take CLOSED:
+//
+//	400 {"errors":[{"message":"Pull request state should be one of:
+//	     [DECLINED, MERGED, OPEN]", ...}]}
+//
+// "closed" is bb's own idea -- declined and merged together -- and there is no
+// single value for it, so the request asks for everything and matchesFilters
+// narrows the answer. It already did that; the state was being sent as well,
+// which made `bb pr list --state closed` fail outright on a value the CLI's own
+// help offers.
+func bitbucketState(normalized string) string {
+	switch normalized {
+	case "open":
+		return "OPEN"
+	case "closed":
+		return "ALL"
+	default:
+		return "ALL"
+	}
 }
 
 func normalizeState(state string) (string, error) {

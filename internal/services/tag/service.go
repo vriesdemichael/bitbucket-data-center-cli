@@ -33,64 +33,40 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-
 	if options.MaxResults <= 0 {
 		options.MaxResults = 25
 	}
 
-	if options.Start < 0 {
-		options.Start = 0
-	}
-	start := float32(options.Start)
-	results := make([]openapigenerated.RestTag, 0)
+	return openapi.PageThrough(ctx, options.Start, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestTag], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			params := &openapigenerated.GetTagsParams{Start: &startValue, Limit: &limitValue}
+			if orderBy := strings.TrimSpace(options.OrderBy); orderBy != "" {
+				params.OrderBy = &orderBy
+			}
+			if filterText := strings.TrimSpace(options.FilterText); filterText != "" {
+				params.FilterText = &filterText
+			}
 
-	for {
-		remaining := options.MaxResults - len(results)
-		if remaining <= 0 {
-			break
-		}
+			response, err := service.client.GetTagsWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
+			if err != nil {
+				return openapi.Page[openapigenerated.RestTag]{}, apperrors.New(apperrors.KindTransient, "failed to list repository tags", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[openapigenerated.RestTag]{}, err
+			}
 
-		pageLimit := float32(remaining)
-		params := &openapigenerated.GetTagsParams{Start: &start, Limit: &pageLimit}
-		if strings.TrimSpace(options.OrderBy) != "" {
-			orderBy := strings.TrimSpace(options.OrderBy)
-			params.OrderBy = &orderBy
-		}
-		if strings.TrimSpace(options.FilterText) != "" {
-			filterText := strings.TrimSpace(options.FilterText)
-			params.FilterText = &filterText
-		}
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestTag]{}, nil
+			}
 
-		response, err := service.client.GetTagsWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list repository tags", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return nil, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
-
-		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
-
-		if len(results) >= options.MaxResults {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	if len(results) > options.MaxResults {
-		results = results[:options.MaxResults]
-	}
-	return results, nil
+			return openapi.Page[openapigenerated.RestTag]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (service *Service) Create(ctx context.Context, repo RepositoryRef, name string, startPoint string, message string) (openapigenerated.RestTag, error) {
