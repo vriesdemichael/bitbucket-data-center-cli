@@ -497,7 +497,7 @@ func New(deps Dependencies) *cobra.Command {
 			rawClient := httpclient.NewFromConfig(cfg)
 			service := pullrequestservice.NewService(rawClient)
 
-			author := resolveAuthorUsername(cmd.Context(), rawClient, cfg)
+			author := resolveCurrentUsername(cmd.Context(), rawClient, cfg)
 
 			reviewerSvc := reviewerservice.NewService(apiClient)
 
@@ -1047,7 +1047,7 @@ status, so approving replaces a request for changes rather than joining it.`,
 				if err != nil {
 					return err
 				}
-				currentUser := strings.TrimSpace(cfg.BitbucketUsername)
+				currentUser := resolveCurrentUsername(cmd.Context(), httpclient.NewFromConfig(cfg), cfg)
 				predicted := "update"
 				reason := "pull request approval will be added"
 				if currentUser != "" && reviewerApprovedByUser(current.Reviewers, currentUser) {
@@ -1115,7 +1115,7 @@ NEEDS_WORK.`,
 				if err != nil {
 					return err
 				}
-				currentUser := strings.TrimSpace(cfg.BitbucketUsername)
+				currentUser := resolveCurrentUsername(cmd.Context(), httpclient.NewFromConfig(cfg), cfg)
 				predicted := "update"
 				reason := "pull request approval will be removed"
 				if currentUser != "" && !reviewerApprovedByUser(current.Reviewers, currentUser) {
@@ -1205,7 +1205,8 @@ changes as readily as an approval, which its name does not suggest.`,
 
 				predicted := "update"
 				reason := fmt.Sprintf("review status will be set to %s", status)
-				if held := reviewerStatusForUser(current.Reviewers, strings.TrimSpace(cfg.BitbucketUsername)); held == status {
+				currentUser := resolveCurrentUsername(cmd.Context(), httpclient.NewFromConfig(cfg), cfg)
+				if held := reviewerStatusForUser(current.Reviewers, currentUser); held == status {
 					predicted = "no-op"
 					reason = fmt.Sprintf("review status is already %s", status)
 				}
@@ -3337,14 +3338,22 @@ func partialReviewerAddError(added, failed []string, causes []error) error {
 	return apperrors.New(apperrors.KindOf(causes[0]), detail.String(), errors.Join(causes...))
 }
 
-// resolveAuthorUsername determines the username Bitbucket will record as the
-// pull request author, so it can be filtered out of the reviewer list.
+// resolveCurrentUsername determines the username Bitbucket will record for the
+// caller: the author it stamps on a pull request, and the participant whose
+// review status is the caller's own.
 //
 // The server's own slug is preferred over the configured username: the latter
 // is whatever the user typed when configuring the CLI and may be an email
-// address or differ in case, and a mismatch means the author survives the filter
-// and Bitbucket rejects the whole create with "author cannot be a reviewer".
-func resolveAuthorUsername(ctx context.Context, client *httpclient.Client, cfg config.AppConfig) string {
+// address or differ in case, and a mismatch means the author survives the
+// reviewer filter and Bitbucket rejects the whole create with "author cannot be
+// a reviewer".
+//
+// Under a token there may be no configured username at all, which is why the
+// review dry runs ask here rather than reading the config directly. Without it
+// they cannot find the caller among the reviewers, so they predict an update
+// where the status is already what was asked for. Safe, but wrong, and the
+// server will say so for free: X-AUSERNAME rides on any authenticated response.
+func resolveCurrentUsername(ctx context.Context, client *httpclient.Client, cfg config.AppConfig) string {
 	if slug, err := client.CurrentUserSlug(ctx); err == nil {
 		if trimmed := strings.TrimSpace(slug); trimmed != "" {
 			return trimmed
