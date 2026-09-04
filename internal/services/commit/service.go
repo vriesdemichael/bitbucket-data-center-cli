@@ -115,53 +115,47 @@ func (service *Service) Compare(ctx context.Context, repo RepositoryRef, options
 
 	from := strings.TrimSpace(options.From)
 	to := strings.TrimSpace(options.To)
-
 	if from == "" || to == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "compare from and to refs are required", nil)
 	}
-
 	if options.MaxResults <= 0 {
 		options.MaxResults = 25
 	}
 
-	start := float32(0)
-	pageLimit := float32(options.MaxResults)
-	results := make([]openapigenerated.RestCommit, 0)
+	// MaxResults caps, which is what ADR-074 says it means and what the flag
+	// behind it promises. It was the page size with nothing capping anything,
+	// so `bb commit compare --limit 5` walked to the last page and returned
+	// every commit between the two refs -- the same defect as the branch
+	// restriction listing, in the same shape.
+	return openapi.PageThrough(ctx, 0, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestCommit], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			params := &openapigenerated.StreamCommitsParams{
+				From:  &from,
+				To:    &to,
+				Start: &startValue,
+				Limit: &limitValue,
+			}
 
-	for {
-		params := &openapigenerated.StreamCommitsParams{
-			From:  &from,
-			To:    &to,
-			Start: &start,
-			Limit: &pageLimit,
-		}
+			response, err := service.client.StreamCommitsWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
+			if err != nil {
+				return openapi.Page[openapigenerated.RestCommit]{}, apperrors.New(apperrors.KindTransient, "failed to compare commits", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[openapigenerated.RestCommit]{}, err
+			}
 
-		response, err := service.client.StreamCommitsWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to compare commits", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return nil, err
-		}
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestCommit]{}, nil
+			}
 
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
-
-		pageCommits := *response.ApplicationjsonCharsetUTF8200.Values
-		results = append(results, pageCommits...)
-
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	return results, nil
+			return openapi.Page[openapigenerated.RestCommit]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (service *Service) ListTagsAndBranches(ctx context.Context, repo RepositoryRef, query string) ([]openapigenerated.RestMinimalRef, error) {

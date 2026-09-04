@@ -226,3 +226,49 @@ func TestLiveBranchRestrictionLimitCaps(t *testing.T) {
 		t.Fatalf("--limit 2 returned %d restrictions:\n%s", count, limited)
 	}
 }
+
+// TestLiveCommitCompareLimitCaps is the branch-restriction defect in a second
+// place, found by converting its loop rather than by a test.
+//
+// MaxResults reached the service and was used as the page size, and nothing
+// capped the results: `bb commit compare --limit 2` walked to the last page and
+// returned every commit between the two refs.
+func TestLiveCommitCompareLimitCaps(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	const commits = 6
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, commits)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// The repository's own history is the range: oldest to newest has every
+	// commit but the first in it.
+	if len(repo.CommitIDs) < 3 {
+		t.Fatalf("expected several seeded commits, got %d", len(repo.CommitIDs))
+	}
+	oldest := repo.CommitIDs[len(repo.CommitIDs)-1]
+	newest := repo.CommitIDs[0]
+
+	countCommits := func(t *testing.T, output string) int {
+		t.Helper()
+
+		listed, _ := decodeJSONMap(t, output)["commits"].([]any)
+
+		return len(listed)
+	}
+
+	all := mustLiveCLI(t, "commit", "compare", newest, oldest, "--all")
+	if total := countCommits(t, all); total < 2 {
+		t.Fatalf("the seeded range has %d commits, too few to cap:\n%s", total, all)
+	}
+
+	limited := mustLiveCLI(t, "commit", "compare", newest, oldest, "--limit", "1")
+	if count := countCommits(t, limited); count != 1 {
+		t.Fatalf("--limit 1 returned %d commits:\n%s", count, limited)
+	}
+}
