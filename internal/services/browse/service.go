@@ -217,10 +217,7 @@ func (service *Service) Edit(ctx context.Context, repo RepositoryRef, path strin
 }
 
 func validateRepositoryRef(repo RepositoryRef) error {
-	if strings.TrimSpace(repo.ProjectKey) == "" || strings.TrimSpace(repo.Slug) == "" {
-		return apperrors.New(apperrors.KindValidation, "repository must be specified as project/repo", nil)
-	}
-	return nil
+	return openapi.ValidateRepository(repo.ProjectKey, repo.Slug)
 }
 
 // repositoryAPIPath builds a REST path for a repository endpoint that takes a
