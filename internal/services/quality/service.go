@@ -104,42 +104,40 @@ func (service *Service) GetBuildStatuses(ctx context.Context, commitID string, p
 		pageSize = 25
 	}
 
-	start := float32(0)
-	pageLimit := float32(pageSize)
-	statuses := make([]openapigenerated.RestBuildStatus, 0)
+	// pageSize is the window, not a cap: this reads every build status on the
+	// commit, as ADR-074 names it.
+	return openapi.PageThrough(ctx, 0, everyResult,
+		func(ctx context.Context, start, _ int) (openapi.Page[openapigenerated.RestBuildStatus], error) {
+			startValue, limitValue := float32(start), float32(pageSize)
+			params := &openapigenerated.GetBuildStatusParams{Start: &startValue, Limit: &limitValue}
+			if resolvedOrderBy := strings.TrimSpace(orderBy); resolvedOrderBy != "" {
+				params.OrderBy = &resolvedOrderBy
+			}
 
-	for {
-		params := &openapigenerated.GetBuildStatusParams{Start: &start, Limit: &pageLimit}
-		if strings.TrimSpace(orderBy) != "" {
-			resolvedOrderBy := strings.TrimSpace(orderBy)
-			params.OrderBy = &resolvedOrderBy
-		}
+			response, err := service.client.GetBuildStatusWithResponse(ctx, trimmedCommitID, params)
+			if err != nil {
+				return openapi.Page[openapigenerated.RestBuildStatus]{}, apperrors.New(apperrors.KindTransient, "failed to get build statuses", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[openapigenerated.RestBuildStatus]{}, err
+			}
 
-		response, err := service.client.GetBuildStatusWithResponse(ctx, trimmedCommitID, params)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to get build statuses", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return nil, err
-		}
-		if response.JSON200 == nil || response.JSON200.Values == nil {
-			break
-		}
+			page := response.JSON200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestBuildStatus]{}, nil
+			}
 
-		statuses = append(statuses, (*response.JSON200.Values)...)
-
-		if response.JSON200.IsLastPage != nil && *response.JSON200.IsLastPage {
-			break
-		}
-		if response.JSON200.NextPageStart == nil {
-			break
-		}
-
-		start = float32(*response.JSON200.NextPageStart)
-	}
-
-	return statuses, nil
+			return openapi.Page[openapigenerated.RestBuildStatus]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
+
+// everyResult reads a listing to its end. These methods take a page size, not
+// a cap (ADR-074), so the walk is bounded by the server rather than by us.
+const everyResult = 1_000_000
 
 func (service *Service) GetBuildStatusStats(ctx context.Context, commitID string, includeUnique bool) (openapigenerated.RestBuildStats, error) {
 	trimmedCommitID := strings.TrimSpace(commitID)
@@ -171,40 +169,29 @@ func (service *Service) ListRequiredBuildChecks(ctx context.Context, repo Reposi
 		pageSize = 25
 	}
 
-	start := float32(0)
-	pageLimit := float32(pageSize)
-	checks := make([]openapigenerated.RestRequiredBuildCondition, 0)
+	return openapi.PageThrough(ctx, 0, everyResult,
+		func(ctx context.Context, start, _ int) (openapi.Page[openapigenerated.RestRequiredBuildCondition], error) {
+			startValue, limitValue := float32(start), float32(pageSize)
+			response, err := service.client.GetPageOfRequiredBuildsMergeChecksWithResponse(ctx, repo.ProjectKey, repo.Slug,
+				&openapigenerated.GetPageOfRequiredBuildsMergeChecksParams{Start: &startValue, Limit: &limitValue})
+			if err != nil {
+				return openapi.Page[openapigenerated.RestRequiredBuildCondition]{}, apperrors.New(apperrors.KindTransient, "failed to list required build merge checks", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[openapigenerated.RestRequiredBuildCondition]{}, err
+			}
 
-	for {
-		response, err := service.client.GetPageOfRequiredBuildsMergeChecksWithResponse(
-			ctx,
-			repo.ProjectKey,
-			repo.Slug,
-			&openapigenerated.GetPageOfRequiredBuildsMergeChecksParams{Start: &start, Limit: &pageLimit},
-		)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list required build merge checks", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return nil, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestRequiredBuildCondition]{}, nil
+			}
 
-		checks = append(checks, (*response.ApplicationjsonCharsetUTF8200.Values)...)
-
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	return checks, nil
+			return openapi.Page[openapigenerated.RestRequiredBuildCondition]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (service *Service) CreateRequiredBuildCheck(ctx context.Context, repo RepositoryRef, payload map[string]any) (map[string]any, error) {
@@ -321,41 +308,29 @@ func (service *Service) ListReports(ctx context.Context, repo RepositoryRef, com
 		pageSize = 25
 	}
 
-	start := float32(0)
-	pageLimit := float32(pageSize)
-	reports := make([]openapigenerated.RestInsightReport, 0)
+	return openapi.PageThrough(ctx, 0, everyResult,
+		func(ctx context.Context, start, _ int) (openapi.Page[openapigenerated.RestInsightReport], error) {
+			startValue, limitValue := float32(start), float32(pageSize)
+			response, err := service.client.GetReportsWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID,
+				&openapigenerated.GetReportsParams{Start: &startValue, Limit: &limitValue})
+			if err != nil {
+				return openapi.Page[openapigenerated.RestInsightReport]{}, apperrors.New(apperrors.KindTransient, "failed to list code insight reports", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[openapigenerated.RestInsightReport]{}, err
+			}
 
-	for {
-		response, err := service.client.GetReportsWithResponse(
-			ctx,
-			repo.ProjectKey,
-			repo.Slug,
-			trimmedCommitID,
-			&openapigenerated.GetReportsParams{Start: &start, Limit: &pageLimit},
-		)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list code insights reports", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return nil, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestInsightReport]{}, nil
+			}
 
-		reports = append(reports, (*response.ApplicationjsonCharsetUTF8200.Values)...)
-
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	return reports, nil
+			return openapi.Page[openapigenerated.RestInsightReport]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (service *Service) SetReport(ctx context.Context, repo RepositoryRef, commitID string, key string, request openapigenerated.SetACodeInsightsReportJSONRequestBody) (openapigenerated.RestInsightReport, error) {
