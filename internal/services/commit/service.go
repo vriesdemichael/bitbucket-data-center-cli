@@ -41,72 +41,46 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-
 	if options.MaxResults <= 0 {
 		options.MaxResults = 25
 	}
 
-	if options.Start < 0 {
-		options.Start = 0
-	}
-	start := float32(options.Start)
-	results := make([]openapigenerated.RestCommit, 0)
+	return openapi.PageThrough(ctx, options.Start, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestCommit], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			params := &openapigenerated.GetCommitsParams{Start: &startValue, Limit: &limitValue}
+			if path := strings.TrimSpace(options.Path); path != "" {
+				params.Path = &path
+			}
+			if since := strings.TrimSpace(options.Since); since != "" {
+				params.Since = &since
+			}
+			if until := strings.TrimSpace(options.Until); until != "" {
+				params.Until = &until
+			}
+			if merges := strings.TrimSpace(options.Merges); merges != "" {
+				params.Merges = &merges
+			}
 
-	for {
-		remaining := options.MaxResults - len(results)
-		if remaining <= 0 {
-			break
-		}
+			response, err := service.client.GetCommitsWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
+			if err != nil {
+				return openapi.Page[openapigenerated.RestCommit]{}, apperrors.New(apperrors.KindTransient, "failed to list repository commits", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[openapigenerated.RestCommit]{}, err
+			}
 
-		pageLimit := float32(remaining)
-		params := &openapigenerated.GetCommitsParams{Start: &start, Limit: &pageLimit}
-		if strings.TrimSpace(options.Path) != "" {
-			path := strings.TrimSpace(options.Path)
-			params.Path = &path
-		}
-		if strings.TrimSpace(options.Since) != "" {
-			since := strings.TrimSpace(options.Since)
-			params.Since = &since
-		}
-		if strings.TrimSpace(options.Until) != "" {
-			until := strings.TrimSpace(options.Until)
-			params.Until = &until
-		}
-		if strings.TrimSpace(options.Merges) != "" {
-			merges := strings.TrimSpace(options.Merges)
-			params.Merges = &merges
-		}
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestCommit]{}, nil
+			}
 
-		response, err := service.client.GetCommitsWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list repository commits", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return nil, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
-
-		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
-
-		if len(results) >= options.MaxResults {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	if len(results) > options.MaxResults {
-		results = results[:options.MaxResults]
-	}
-	return results, nil
+			return openapi.Page[openapigenerated.RestCommit]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (service *Service) Get(ctx context.Context, repo RepositoryRef, commitID string) (openapigenerated.RestCommit, error) {
