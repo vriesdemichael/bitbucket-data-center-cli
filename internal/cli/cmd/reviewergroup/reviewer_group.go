@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -424,7 +425,7 @@ func New(deps Dependencies) *cobra.Command {
 
 					predicted := "no-op"
 					reason := "reviewer group not found"
-					if reviewerGroupExistsByID(groups, id) {
+					if _, err := resolveReviewerGroupID(groups, id); err == nil {
 						predicted = "delete"
 						reason = "reviewer group will be deleted"
 					}
@@ -442,7 +443,16 @@ func New(deps Dependencies) *cobra.Command {
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
 
-				if err := service.DeleteRepositoryReviewerGroup(cmd.Context(), pk, slug, id); err != nil {
+				groups, err := service.ListRepositoryReviewerGroups(cmd.Context(), pk, slug)
+				if err != nil {
+					return err
+				}
+				resolvedID, err := resolveReviewerGroupID(groups, id)
+				if err != nil {
+					return err
+				}
+
+				if err := service.DeleteRepositoryReviewerGroup(cmd.Context(), pk, slug, resolvedID); err != nil {
 					return err
 				}
 				if d.JSONEnabled() {
@@ -489,7 +499,16 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
-			if err := service.DeleteProjectReviewerGroup(cmd.Context(), projectKey, id); err != nil {
+			projectGroups, err := service.ListProjectReviewerGroups(cmd.Context(), projectKey)
+			if err != nil {
+				return err
+			}
+			resolvedProjectID, err := resolveReviewerGroupID(projectGroups, id)
+			if err != nil {
+				return err
+			}
+
+			if err := service.DeleteProjectReviewerGroup(cmd.Context(), projectKey, resolvedProjectID); err != nil {
 				return err
 			}
 			if d.JSONEnabled() {
@@ -600,6 +619,37 @@ func reviewerGroupExistsByName(groups []openapigenerated.RestReviewerGroup, name
 		}
 	}
 	return false
+}
+
+// resolveReviewerGroupID turns the argument the caller typed into the numeric
+// id the delete endpoint takes.
+//
+// Every other reviewer-group flag accepts a name, and delete accepted one too
+// -- and then sent it where an id belongs. Bitbucket answered with a body the
+// generated client could not decode, which surfaced as
+// "transient: ... unexpected end of JSON input" and exit 10: a message telling
+// the caller to retry something that could never work, for a group they had
+// named perfectly well.
+func resolveReviewerGroupID(groups []openapigenerated.RestReviewerGroup, argument string) (string, error) {
+	trimmed := strings.TrimSpace(argument)
+	if trimmed == "" {
+		return "", apperrors.New(apperrors.KindValidation, "reviewer group id or name is required", nil)
+	}
+
+	// A numeric argument is an id and is passed through, so an id that is not
+	// in the listing still reaches the server and gets its own 404.
+	if _, err := strconv.Atoi(trimmed); err == nil {
+		return trimmed, nil
+	}
+
+	for _, group := range groups {
+		if group.Name != nil && strings.EqualFold(strings.TrimSpace(*group.Name), trimmed) && group.Id != nil {
+			return strconv.FormatInt(*group.Id, 10), nil
+		}
+	}
+
+	return "", apperrors.New(apperrors.KindNotFound,
+		"no reviewer group named "+trimmed, nil)
 }
 
 func reviewerGroupExistsByID(groups []openapigenerated.RestReviewerGroup, id string) bool {

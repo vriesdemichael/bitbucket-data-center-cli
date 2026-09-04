@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // Real mutating coverage for the commands #532 found were only ever run under
@@ -625,4 +627,108 @@ func taskPayload(t *testing.T, data map[string]any, wrapper string) map[string]a
 	}
 
 	return task
+}
+
+// TestLiveDefaultBranchMustExist is what comparing a dry run against reality
+// turned up: `branch default set` accepted a branch that is not there.
+//
+// Bitbucket answers 204 and leaves the repository pointing at nothing, and its
+// own UI only ever offers real branches, so a typo was silent and the default
+// branch stayed broken until somebody noticed.
+func TestLiveDefaultBranchMustExist(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	before := currentLiveDefaultBranch(t)
+
+	for _, command := range [][]string{
+		{"branch", "default", "set", "does-not-exist"},
+		{"branch", "model", "update", "does-not-exist"},
+	} {
+		t.Run(strings.Join(command, " "), func(t *testing.T) {
+			output, err := executeLiveCLI(t, append([]string{"--json"}, command...)...)
+			if err == nil {
+				t.Fatalf("a branch that does not exist must be refused, got:\n%s", output)
+			}
+			if after := currentLiveDefaultBranch(t); after != before {
+				t.Fatalf("the default branch moved to %q despite the failure", after)
+			}
+		})
+	}
+
+	// A real branch still works, or the guard has simply broken the command.
+	t.Run("a real branch is still accepted", func(t *testing.T) {
+		const branch = "feature/real-default"
+		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "real.txt"); err != nil {
+			t.Fatalf("push commit on branch failed: %v", err)
+		}
+		mustLiveCLI(t, "branch", "default", "set", branch)
+		if after := currentLiveDefaultBranch(t); after != branch {
+			t.Fatalf("default branch = %q, want %q", after, branch)
+		}
+		mustLiveCLI(t, "branch", "default", "set", before)
+	})
+}
+
+// TestLiveReviewerGroupDeleteAcceptsAName is the other half of the same sweep.
+//
+// Every other reviewer-group flag takes a name, and delete took one too -- then
+// sent it where the endpoint wants a numeric id. Bitbucket answered with a body
+// the client could not decode, which surfaced as a transient error and exit 10:
+// retry advice for something that could never work, on a group the caller had
+// named correctly.
+func TestLiveReviewerGroupDeleteAcceptsAName(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	member, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create member failed: %v", err)
+	}
+	const groupName = "deletable_by_name"
+	if err := harness.createReviewerGroup(ctx, seeded.Key, repo.Slug, groupName, member.Username); err != nil {
+		t.Fatalf("create reviewer group failed: %v", err)
+	}
+
+	t.Run("a name that exists is deleted", func(t *testing.T) {
+		mustLiveCLI(t, "reviewer-group", "delete", groupName, "--repo", repoRef)
+
+		listing := mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef)
+		if strings.Contains(listing, groupName) {
+			t.Fatalf("the group survived the delete:\n%s", listing)
+		}
+	})
+
+	t.Run("a name that does not exist is not found, not transient", func(t *testing.T) {
+		output, err := executeLiveCLI(t, "--json", "reviewer-group", "delete", "no_such_group", "--repo", repoRef)
+		if err == nil {
+			t.Fatalf("expected a failure, got:\n%s", output)
+		}
+		// Kind transient is exit 10: retry advice for something that can never
+		// succeed. The kind is on the error, not in the buffer, because the
+		// envelope for a failure is written above Execute.
+		if apperrors.IsKind(err, apperrors.KindTransient) {
+			t.Errorf("a missing group is not a transient failure: %v", err)
+		}
+		if !apperrors.IsKind(err, apperrors.KindNotFound) {
+			t.Errorf("expected kind not_found, got: %v\noutput: %s", err, output)
+		}
+	})
 }
