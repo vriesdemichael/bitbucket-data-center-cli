@@ -160,8 +160,11 @@ func TestAuthStatusSmoke(t *testing.T) {
 }
 func TestBranchValidationErrors(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	// Every case here is refused before a request is built, so the handler is
+	// an assertion rather than a stand-in: reaching it means validation let
+	// something through (ADR-079).
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.NotFound(w, r)
+		t.Errorf("validation let a request through: %s %s", r.Method, r.URL.Path)
 	}))
 	defer server.Close()
 
@@ -616,38 +619,6 @@ func TestRepoSettingsSecurityPermissionsUsersList(t *testing.T) {
 	}
 }
 
-func TestRepoSettingsWorkflowWebhooksList(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/webhooks" {
-			http.NotFound(writer, request)
-			return
-		}
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		_, _ = writer.Write([]byte(`{"values":[{"name":"ci"}],"size":1}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"repo", "settings", "workflow", "webhooks", "list"})
-
-	err := command.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	if !strings.Contains(buffer.String(), "Webhooks configured: 1") {
-		t.Fatalf("expected webhook count output, got: %s", buffer.String())
-	}
-}
-
 func TestRepoSettingsPullRequestsGet(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -717,44 +688,6 @@ func TestRepoSettingsSecurityPermissionsUsersGrant(t *testing.T) {
 	}
 }
 
-func TestRepoSettingsWorkflowWebhooksCreate(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodPost || request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/webhooks" {
-			http.NotFound(writer, request)
-			return
-		}
-		body, _ := io.ReadAll(request.Body)
-		if !strings.Contains(string(body), `"name":"ci-hook"`) || !strings.Contains(string(body), `"url":"http://example.local/hook"`) {
-			writer.WriteHeader(http.StatusBadRequest)
-			_, _ = writer.Write([]byte("invalid payload"))
-			return
-		}
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		_, _ = writer.Write([]byte(`{"name":"ci-hook"}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"repo", "settings", "workflow", "webhooks", "create", "ci-hook", "http://example.local/hook", "--event", "repo:refs_changed"})
-
-	err := command.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	if !strings.Contains(buffer.String(), "Webhook created: ci-hook") {
-		t.Fatalf("expected webhook create output, got: %s", buffer.String())
-	}
-}
-
 func TestRepoSettingsPullRequestsUpdate(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -790,75 +723,6 @@ func TestRepoSettingsPullRequestsUpdate(t *testing.T) {
 
 	if !strings.Contains(buffer.String(), "Updated pull-request settings: requiredAllTasksComplete=true") {
 		t.Fatalf("expected pull-request update output, got: %s", buffer.String())
-	}
-}
-
-func TestRepoSettingsWorkflowWebhooksDelete(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodDelete || request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/webhooks/42" {
-			http.NotFound(writer, request)
-			return
-		}
-		writer.WriteHeader(http.StatusNoContent)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"repo", "settings", "workflow", "webhooks", "delete", "42"})
-
-	err := command.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	if !strings.Contains(buffer.String(), "Webhook deleted: 42") {
-		t.Fatalf("expected webhook delete output, got: %s", buffer.String())
-	}
-}
-
-func TestRepoSettingsPullRequestsUpdateApprovers(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodPost || request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/settings/pull-requests" {
-			http.NotFound(writer, request)
-			return
-		}
-		body, _ := io.ReadAll(request.Body)
-		if !strings.Contains(string(body), `"requiredApprovers":2`) {
-			writer.WriteHeader(http.StatusBadRequest)
-			_, _ = writer.Write([]byte("invalid payload"))
-			return
-		}
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		_, _ = writer.Write([]byte(`{"requiredApprovers":2}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"repo", "settings", "pull-requests", "update-approvers", "--count", "2"})
-
-	err := command.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	if !strings.Contains(buffer.String(), "Updated pull-request settings: requiredApprovers=2") {
-		t.Fatalf("expected pull-request approvers update output, got: %s", buffer.String())
 	}
 }
 

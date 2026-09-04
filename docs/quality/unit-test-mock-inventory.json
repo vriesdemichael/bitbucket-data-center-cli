@@ -1,20 +1,20 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 578,
+    "mocked_servers": 574,
     "files": 96,
-    "functions": 546,
+    "functions": 542,
     "by_class": {
-      "bitbucket-behaviour": 375,
-      "canned-response": 81,
+      "bitbucket-behaviour": 371,
+      "canned-response": 80,
       "external-service": 14,
       "harness-constructor": 19,
       "status-taxonomy": 70,
       "transport-fault": 13,
-      "unreached-guard": 6
+      "unreached-guard": 7
     },
     "behaviour_by_package": {
-      "internal/cli": 137,
+      "internal/cli": 133,
       "internal/cli/cmd/admin": 1,
       "internal/cli/cmd/api": 21,
       "internal/cli/cmd/auth": 2,
@@ -3503,19 +3503,21 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 163,
+      "line": 166,
       "function": "TestBranchValidationErrors",
-      "class": "canned-response",
+      "class": "unreached-guard",
       "signals": [
-        "answers-any-request",
-        "closes-on-cleanup"
+        "asserts-http-method",
+        "closes-on-cleanup",
+        "fails-if-the-server-is-reached",
+        "inspects-the-request-path"
       ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 292,
+      "line": 295,
       "function": "TestTagCreateJSON",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3530,7 +3532,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 324,
+      "line": 327,
       "function": "TestBuildStatusSetJSON",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3545,7 +3547,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 353,
+      "line": 356,
       "function": "TestInsightsReportSetJSON",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3559,7 +3561,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 469,
+      "line": 472,
       "function": "TestAdminHealthSmoke",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3573,7 +3575,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 503,
+      "line": 506,
       "function": "TestAdminHealthJSON",
       "class": "status-taxonomy",
       "signals": [
@@ -3586,7 +3588,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 535,
+      "line": 538,
       "function": "TestDiffRefsNameOnly",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3599,7 +3601,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 589,
+      "line": 592,
       "function": "TestRepoSettingsSecurityPermissionsUsersList",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3613,21 +3615,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 621,
-      "function": "TestRepoSettingsWorkflowWebhooksList",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/root_test.go",
-      "line": 653,
+      "line": 624,
       "function": "TestRepoSettingsPullRequestsGet",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3640,7 +3628,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 686,
+      "line": 657,
       "function": "TestRepoSettingsSecurityPermissionsUsersGrant",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3656,23 +3644,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 722,
-      "function": "TestRepoSettingsWorkflowWebhooksCreate",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/root_test.go",
-      "line": 760,
+      "line": 693,
       "function": "TestRepoSettingsPullRequestsUpdate",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3688,38 +3660,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 798,
-      "function": "TestRepoSettingsWorkflowWebhooksDelete",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/root_test.go",
-      "line": 829,
-      "function": "TestRepoSettingsPullRequestsUpdateApprovers",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/root_test.go",
-      "line": 867,
+      "line": 731,
       "function": "TestRepoCommentListCommitJSON",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3736,7 +3677,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 915,
+      "line": 779,
       "function": "TestRepoCommentCreatePRJSON",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3752,7 +3693,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 959,
+      "line": 823,
       "function": "TestRepoCommentDeleteAutoResolvesVersion",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3768,7 +3709,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 1003,
+      "line": 867,
       "function": "TestRepoCommentDeleteWithoutResolvedVersionPrintsSimpleMessage",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3784,7 +3725,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 1042,
+      "line": 906,
       "function": "TestAdminHealthPropagatesHardFailure",
       "class": "status-taxonomy",
       "signals": [
@@ -3797,7 +3738,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 1071,
+      "line": 935,
       "function": "TestPRListAndIssueCommandUnavailable",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3814,7 +3755,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 1137,
+      "line": 1001,
       "function": "TestPRLifecycleAndReviewCommands",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3831,7 +3772,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 1226,
+      "line": 1090,
       "function": "TestPRCommentListNoCommentsAndMissingRepo",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3846,7 +3787,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 1256,
+      "line": 1120,
       "function": "TestPRCommentListNoCommentsAndMissingRepo",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3861,7 +3802,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 1302,
+      "line": 1166,
       "function": "TestPRExtendedLifecycleAndReviewerCommands",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3877,7 +3818,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 1593,
+      "line": 1457,
       "function": "TestPRCommandsUseInferredRepositoryContext",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3892,7 +3833,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 1666,
+      "line": 1530,
       "function": "TestPRGetHumanMergeabilityDetailOnlyBlocker",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3907,7 +3848,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 2103,
+      "line": 1967,
       "function": "TestLoadConfigAndClientAndClientFactoryBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -3920,7 +3861,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 2146,
+      "line": 2010,
       "function": "TestLoadQualityRepoAndServiceBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -3933,7 +3874,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 2353,
+      "line": 2217,
       "function": "TestTagViewDeleteAndListCommandPaths",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3949,7 +3890,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 2426,
+      "line": 2290,
       "function": "TestBranchCommandPaths",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3966,7 +3907,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 2658,
+      "line": 2522,
       "function": "TestBranchCommandEmptyResultsOutput",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3981,7 +3922,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 2707,
+      "line": 2571,
       "function": "TestBuildRequiredCommandPaths",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3996,7 +3937,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 2781,
+      "line": 2645,
       "function": "TestInsightsReportAndAnnotationCommandPaths",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4012,7 +3953,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 2892,
+      "line": 2756,
       "function": "TestRepoListCommandPaths",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4027,7 +3968,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3008,
+      "line": 2872,
       "function": "TestDiffPRNameOnlyAndCommitJSON",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4040,7 +3981,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3066,
+      "line": 2930,
       "function": "TestBuildStatusHumanCommandPaths",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4056,7 +3997,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3123,
+      "line": 2987,
       "function": "TestRepoCommentCommandPathsCommitAndPR",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4072,7 +4013,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3328,
+      "line": 3192,
       "function": "TestAuthIdentityCommand",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4086,7 +4027,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3428,
+      "line": 3292,
       "function": "TestAdminHealthHumanLimitedOutput",
       "class": "status-taxonomy",
       "signals": [
@@ -4099,7 +4040,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3457,
+      "line": 3321,
       "function": "TestTagBuildAndInsightsEmptyHumanOutputs",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4114,7 +4055,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3565,
+      "line": 3429,
       "function": "TestRepoSettingsJSONCommandPaths",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4130,7 +4071,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3627,
+      "line": 3491,
       "function": "TestBranchCommandsPropagateServiceErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -4143,7 +4084,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3675,
+      "line": 3539,
       "function": "TestTagBuildInsightsCommandsPropagateServiceErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -4156,7 +4097,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3728,
+      "line": 3592,
       "function": "TestRepoSettingsCommandsPropagateServiceErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -4169,7 +4110,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3772,
+      "line": 3636,
       "function": "TestRepoSettingsPullRequestsMergeChecksList",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4182,7 +4123,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3803,
+      "line": 3667,
       "function": "TestProjectPermissionsUsersList",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4196,7 +4137,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3832,
+      "line": 3696,
       "function": "TestRepoSettingsSecurityPermissionsUsersGrantDryRunStateful",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4211,7 +4152,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3871,
+      "line": 3735,
       "function": "TestProjectPermissionsUsersGrantDryRunStateful",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4226,7 +4167,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3908,
+      "line": 3772,
       "function": "TestRepoSettingsWorkflowWebhooksCreateDryRunStateful",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4241,7 +4182,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3945,
+      "line": 3809,
       "function": "TestRepoSettingsPullRequestsUpdateDryRunStateful",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4256,7 +4197,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 3982,
+      "line": 3846,
       "function": "TestBranchCreateDryRunStateful",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4271,7 +4212,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 4019,
+      "line": 3883,
       "function": "TestBranchDefaultSetDryRunStatefulNoop",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4286,7 +4227,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 4056,
+      "line": 3920,
       "function": "TestTagCreateDryRunStateful",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4301,7 +4242,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 4093,
+      "line": 3957,
       "function": "TestReviewerConditionCreateDryRunStateful",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4316,7 +4257,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 4128,
+      "line": 3992,
       "function": "TestProjectCreateDryRunStateful",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4332,7 +4273,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 4172,
+      "line": 4036,
       "function": "TestPRBuildStatusCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4347,7 +4288,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 4269,
+      "line": 4133,
       "function": "TestPRBuildStatusCLI",
       "class": "bitbucket-behaviour",
       "signals": [
