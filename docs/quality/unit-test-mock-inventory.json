@@ -1,22 +1,22 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 404,
+    "mocked_servers": 391,
     "files": 93,
-    "functions": 381,
+    "functions": 368,
     "by_class": {
-      "bitbucket-behaviour": 219,
-      "canned-response": 66,
+      "bitbucket-behaviour": 208,
+      "canned-response": 65,
       "external-service": 14,
       "harness-constructor": 19,
-      "status-taxonomy": 44,
+      "status-taxonomy": 43,
       "transport-fault": 31,
       "unreached-guard": 11
     },
     "behaviour_by_package": {
       "internal/cli": 45,
       "internal/cli/cmd/admin": 1,
-      "internal/cli/cmd/api": 15,
+      "internal/cli/cmd/api": 4,
       "internal/cli/cmd/auth": 2,
       "internal/cli/cmd/branch": 1,
       "internal/cli/cmd/build": 2,
@@ -100,124 +100,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 39,
-      "function": "TestApiGetSuccess",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 78,
-      "function": "TestApiGetJSONEnvelope",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 112,
-      "function": "TestApiPostWithTypedAndRawFields",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 181,
-      "function": "TestApiPostWithInputFileAndStdin",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "asserts-request-body",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 235,
-      "function": "TestApiFieldWithAtFile",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "asserts-request-body",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 270,
-      "function": "TestApiDryRun",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 311,
-      "function": "TestApiCustomHeaders",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 389,
-      "function": "TestApiNonJSONOutput",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 484,
+      "line": 138,
       "function": "TestApiPaginatedErrors",
       "class": "transport-fault",
       "signals": [
@@ -233,63 +116,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 508,
-      "function": "TestApiPaginatedInvalidJSON",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 531,
-      "function": "TestApiHTMLResponseReturnsAuthenticationError",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 558,
-      "function": "TestApiPaginatedHTMLResponse",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 583,
-      "function": "TestApiMangledPathSanitization",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 658,
+      "line": 178,
       "function": "TestApiHostFlagOverride",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -302,7 +129,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 693,
+      "line": 213,
       "function": "TestApiHostFlagDoesNotFallBackToDefaultHost",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -314,7 +141,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 700,
+      "line": 220,
       "function": "TestApiHostFlagDoesNotFallBackToDefaultHost",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -326,7 +153,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 742,
+      "line": 262,
       "function": "TestApiHostFlagLeavesEnvironmentAlone",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -336,18 +163,6 @@
       ],
       "action": "move-to-live",
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 799,
-      "function": "TestApiHTMLResponseAllowedOutsideRest",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
     },
     {
       "file": "internal/cli/cmd/auth/auth_test.go",
