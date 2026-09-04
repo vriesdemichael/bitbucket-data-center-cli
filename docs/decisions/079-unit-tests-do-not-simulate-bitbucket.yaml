@@ -1,0 +1,53 @@
+number: 79
+title: Unit tests do not simulate Bitbucket
+category: development
+status: accepted
+provenance: guided-ai
+decision: >
+  A unit test may not stand a fake Bitbucket in front of the code under test. Anything whose
+  outcome depends on how the server behaves -- which route it serves, what payload it accepts,
+  what it returns, which status it answers with, and what an omitted field means -- is proven
+  against a real instance in the live suite or it is not proven. The OpenAPI specification is not
+  evidence of behaviour and does not license a mock. Unit tests keep what needs no server:
+  parsing, selection, validation, formatting, exit-code mapping from an error value already in
+  hand, and assertions that the code refuses input before any request is made. Where logic can
+  only be reached through a round trip, it is exercised live rather than simulated, and a slower
+  suite is the accepted price.
+agent_instructions: >
+  Do not introduce httptest servers that answer Bitbucket routes, return Bitbucket-shaped
+  payloads, or assert on request bodies or query parameters. When a fix needs a test, write it
+  live first; reach for a unit test only when no request is involved. If an existing mock has to
+  be edited to let a correct change land, that mock was asserting a wrong belief -- delete it and
+  cover the behaviour live rather than adjusting it to agree. A handler that fails the test when
+  it is called is not a simulation and stays: it proves no request was made. Run
+  tools/mock-inventory to see what remains and what class it is in.
+rationale: >
+  A mock encodes the author's belief about the API, so when that belief is the defect the mock
+  agrees with the code and the test passes. Every defect found in the v4 sweep had that shape, and
+  each had a green unit test beside it. Three structures recur and each is worse than no test.
+  A mock that answers every request identically, never inspecting route, verb or body, reports
+  coverage for a path it cannot distinguish from a wrong one. A mock that asserts the request
+  matches what its author assumed the server wants proves only that the code and the mock share an
+  assumption. A mock returning a status for a condition nobody confirmed the server produces
+  invents an error taxonomy for situations that may never arise. All three age silently: the
+  server changes between versions and nothing re-checks the belief, so the tests keep passing and
+  say less every release. The failure is not carelessness and cannot be reviewed away, because a
+  wrong mock reads exactly like a right one -- only a real server can tell them apart.
+rejected_alternatives:
+  - alternative: Keep the mocks and hold them to a stricter standard
+    reason: >
+      This was tried as written guidance. It asks reviewers to spot an assumption that looks
+      correct by construction, which is the one thing reading cannot do. It also leaves the drift
+      problem untouched: a mock correct today and wrong after an upgrade fails no differently.
+  - alternative: Generate the mocks from the OpenAPI specification
+    reason: >
+      The specification describes shapes, not semantics, and the semantics is where the defects
+      are: an absent field meaning delete, a version defaulting to a value that is always
+      rejected, an identifier accepted in one spelling and echoed in another. A generated mock
+      would have reproduced every one of those bugs faithfully.
+  - alternative: Allow mocks for error and transport paths a live server will not produce
+    reason: >
+      Partly kept, and narrowed. Faults injected below the API -- a truncated body, a stalled
+      connection -- are about our client and stay. A status code is not: "the server answers this
+      here" is a claim about the server, so it is allowed only where a live test shows the server
+      really does answer that way.
