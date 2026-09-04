@@ -45,7 +45,14 @@ type TaskCounts struct {
 type ReviewSummary struct {
 	// ActionRequired is true when the pull request is waiting on its author:
 	// an unresolved thread, an open task, or a reviewer who requested changes.
-	ActionRequired bool `json:"action_required"`
+	//
+	// It is absent when the answer is not known, for the same reason the counts
+	// below are. A positive signal is certain whatever else went unmeasured, so
+	// true is always safe to report; false means every source that could have
+	// raised it was actually consulted. Reporting false from a partial
+	// measurement is the failure this whole type exists to prevent, and it is
+	// the worst place to do it -- a caller branches on this one field.
+	ActionRequired *bool `json:"action_required,omitempty"`
 
 	// UnresolvedThreads counts every thread still open, tasks included.
 	UnresolvedThreads *int `json:"unresolved_threads,omitempty"`
@@ -123,11 +130,32 @@ func BuildReviewSummary(pullRequest PullRequest, counts ReviewCounts) ReviewSumm
 		summary.ResolvedTasks = pullRequest.ResolvedTaskCount
 	}
 
-	summary.ActionRequired = positive(summary.UnresolvedThreads) ||
-		positive(summary.OpenTasks) ||
-		len(summary.NeedsWork) > 0
+	summary.ActionRequired = actionRequired(summary)
 
 	return summary
+}
+
+// actionRequired answers only when it can.
+//
+// Any positive signal settles it: an open task is an open task whether or not
+// the threads were counted. Nothing found settles it only if everything that
+// could have raised it was looked at -- reviewer status always is, since it
+// travels with the pull request, but the two counts depend on which source the
+// caller managed to reach.
+func actionRequired(summary ReviewSummary) *bool {
+	if positive(summary.UnresolvedThreads) || positive(summary.OpenTasks) || len(summary.NeedsWork) > 0 {
+		return boolPtr(true)
+	}
+
+	if summary.UnresolvedThreads == nil || summary.OpenTasks == nil {
+		return nil
+	}
+
+	return boolPtr(false)
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }
 
 // Measured reports whether any count was obtained. When false the summary can

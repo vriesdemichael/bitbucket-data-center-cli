@@ -117,9 +117,7 @@ func TestBuildReviewSummaryFromThreads(t *testing.T) {
 	if summary.CommentCount == nil || *summary.CommentCount != 9 {
 		t.Fatalf("expected the raw comment counter to be carried through, got %#v", summary.CommentCount)
 	}
-	if !summary.ActionRequired {
-		t.Fatalf("expected action to be required")
-	}
+	assertActionRequired(t, summary.ActionRequired, boolPtr(true))
 }
 
 // Bitbucket 10.x drops the task counters from the single pull request payload,
@@ -137,9 +135,7 @@ func TestBuildReviewSummaryFallsBackToTaskCounts(t *testing.T) {
 	if summary.UnresolvedThreads != nil {
 		t.Fatalf("expected thread counts to stay unmeasured, got %#v", summary.UnresolvedThreads)
 	}
-	if !summary.ActionRequired {
-		t.Fatalf("expected open tasks to require action")
-	}
+	assertActionRequired(t, summary.ActionRequired, boolPtr(true))
 }
 
 // The property counters still apply on listings, where Bitbucket does send them.
@@ -160,9 +156,7 @@ func TestBuildReviewSummaryFallsBackToProperties(t *testing.T) {
 	if summary.UnresolvedThreads != nil {
 		t.Fatalf("expected no thread count without the activity feed, got %#v", summary.UnresolvedThreads)
 	}
-	if !summary.ActionRequired {
-		t.Fatalf("expected open tasks to require action")
-	}
+	assertActionRequired(t, summary.ActionRequired, boolPtr(true))
 }
 
 // A server that reports neither properties nor an activity feed must not be
@@ -180,9 +174,9 @@ func TestBuildReviewSummaryWithoutAnyCounts(t *testing.T) {
 	if summary.OpenTasks != nil || summary.UnresolvedThreads != nil || summary.ResolvedTasks != nil {
 		t.Fatalf("expected unmeasured counts to be absent rather than zero, got %#v", summary)
 	}
-	if summary.ActionRequired {
-		t.Fatalf("expected no action required when nothing is known and no reviewer objected")
-	}
+	// Nothing was measured, so "no action required" is not something this
+	// summary is entitled to say. Absent, not false.
+	assertActionRequired(t, summary.ActionRequired, nil)
 }
 
 func assertCount(t *testing.T, name string, got *int, want int) {
@@ -215,9 +209,7 @@ func TestBuildReviewSummaryActionRequiredTriggers(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			threads := testCase.threads
 			summary := BuildReviewSummary(PullRequest{Reviewers: testCase.review}, ReviewCounts{Threads: &threads})
-			if summary.ActionRequired != testCase.want {
-				t.Fatalf("ActionRequired = %v, want %v (%#v)", summary.ActionRequired, testCase.want, summary)
-			}
+			assertActionRequired(t, summary.ActionRequired, boolPtr(testCase.want))
 		})
 	}
 }
@@ -229,5 +221,20 @@ func TestBuildReviewSummaryNeedsWorkFallsBackToDisplayName(t *testing.T) {
 
 	if len(summary.NeedsWork) != 1 || summary.NeedsWork[0] != "Bob B" {
 		t.Fatalf("expected the display name to be used, got %#v", summary.NeedsWork)
+	}
+}
+
+// assertActionRequired compares a tri-state answer: true, false, or "not
+// something this summary can say".
+func assertActionRequired(t *testing.T, got, want *bool) {
+	t.Helper()
+
+	switch {
+	case want == nil && got != nil:
+		t.Fatalf("ActionRequired = %v, want it absent: a partial measurement must not answer", *got)
+	case want != nil && got == nil:
+		t.Fatalf("ActionRequired is absent, want %v", *want)
+	case want != nil && *got != *want:
+		t.Fatalf("ActionRequired = %v, want %v", *got, *want)
 	}
 }

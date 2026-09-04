@@ -173,10 +173,32 @@ func formatReviewSummaryLines(summary pullrequestservice.ReviewSummary) []string
 		if count := summary.OpenTasks; count != nil && *count > 0 {
 			parts = append(parts, fmt.Sprintf("%d open %s", *count, plural(*count, "task", "tasks")))
 		}
-		if len(parts) == 0 {
+
+		// "none" is a claim about everything, so it is only available when
+		// everything was counted. Reached through the task tally alone -- which
+		// is what --no-review-summary does, and what a degraded timeline leaves
+		// -- the comments were never looked at, and saying none while an
+		// unresolved comment sits on the pull request is worse than saying less.
+		unmeasured := make([]string, 0, 2)
+		if summary.UnresolvedThreads == nil {
+			unmeasured = append(unmeasured, "comments")
+		}
+		if summary.OpenTasks == nil {
+			unmeasured = append(unmeasured, "tasks")
+		}
+
+		switch {
+		case len(parts) > 0:
+			line := "Open items: " + strings.Join(parts, ", ")
+			if len(unmeasured) > 0 {
+				line += fmt.Sprintf(" (%s not checked)", strings.Join(unmeasured, " and "))
+			}
+			lines = append(lines, line)
+		case len(unmeasured) > 0:
+			lines = append(lines, fmt.Sprintf("Open items: none found, but %s were not checked",
+				strings.Join(unmeasured, " and ")))
+		default:
 			lines = append(lines, "Open items: none")
-		} else {
-			lines = append(lines, "Open items: "+strings.Join(parts, ", "))
 		}
 	}
 

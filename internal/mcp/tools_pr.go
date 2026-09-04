@@ -35,7 +35,8 @@ func specGetPullRequest() Spec {
 		Name: "get_pull_request",
 		Description: "Get pull request details including title, state, reviewer approvals, and merge status. " +
 			"The review_summary field reports unresolved comment threads, open tasks and reviewers who requested changes; " +
-			"action_required is true when the pull request is waiting on the author.",
+			"action_required is true when the pull request is waiting on the author, and is absent when the counts it " +
+			"rests on were not all measured -- read counts_source to see which were.",
 		Annotations: readOnly(),
 	}
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[GetPullRequestInput, GetPullRequestOutput] {
