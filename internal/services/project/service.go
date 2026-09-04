@@ -50,55 +50,33 @@ func (service *Service) List(ctx context.Context, options ListOptions) ([]openap
 		options.MaxResults = 25
 	}
 
-	if options.Start < 0 {
-		options.Start = 0
-	}
-	start := float32(options.Start)
-	results := make([]openapigenerated.RestProject, 0)
+	return openapi.PageThrough(ctx, options.Start, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestProject], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			params := &openapigenerated.GetProjectsParams{Start: &startValue, Limit: &limitValue}
+			if name := strings.TrimSpace(options.Name); name != "" {
+				params.Name = &name
+			}
 
-	for {
-		remaining := options.MaxResults - len(results)
-		if remaining <= 0 {
-			break
-		}
+			response, err := service.client.GetProjectsWithResponse(ctx, params)
+			if err != nil {
+				return openapi.Page[openapigenerated.RestProject]{}, apperrors.New(apperrors.KindTransient, "failed to list projects", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[openapigenerated.RestProject]{}, err
+			}
 
-		pageLimit := float32(remaining)
-		params := &openapigenerated.GetProjectsParams{Start: &start, Limit: &pageLimit}
-		if strings.TrimSpace(options.Name) != "" {
-			name := strings.TrimSpace(options.Name)
-			params.Name = &name
-		}
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestProject]{}, nil
+			}
 
-		response, err := service.client.GetProjectsWithResponse(ctx, params)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list projects", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return nil, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
-
-		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
-
-		if len(results) >= options.MaxResults {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	if len(results) > options.MaxResults {
-		results = results[:options.MaxResults]
-	}
-	return results, nil
+			return openapi.Page[openapigenerated.RestProject]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (service *Service) Get(ctx context.Context, key string) (openapigenerated.RestProject, error) {
