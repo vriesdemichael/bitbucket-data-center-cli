@@ -476,6 +476,17 @@ func New(deps Dependencies) *cobra.Command {
 			}
 			repo := pullrequestservice.RepositoryRef{ProjectKey: repoProj, Slug: repoSlug}
 
+			// Resolved here rather than beside the create call, because the
+			// default reviewer lookup below needs it too: that query names the
+			// source repository, and giving it the target instead made
+			// Bitbucket look for the source branch upstream and answer 404.
+			// With --default-reviewers defaulting to on, that failed every fork
+			// pull request whose author did not think to switch it off.
+			fromRepo, err := resolveSourceRepository(createFromRepo, repo)
+			if err != nil {
+				return err
+			}
+
 			if deps.DryRunEnabled() {
 				// Read, not write. Bitbucket requires REPO_READ on the repository a
 				// pull request targets, and fork contributors legitimately hold only
@@ -503,10 +514,16 @@ func New(deps Dependencies) *cobra.Command {
 			if createDefaultReviewers && !createNoDefaultReviewers {
 				// `bb pr create` always opens the pull request within one
 				// repository, so the source repository needs no separate entry.
-				defaults, err := reviewerSvc.ResolveDefaultReviewers(cmd.Context(), repo.ProjectKey, repo.Slug, reviewerservice.DefaultReviewerQuery{
+				query := reviewerservice.DefaultReviewerQuery{
 					SourceRef: createFromRef,
 					TargetRef: createToRef,
-				})
+				}
+				if fromRepo != nil {
+					query.SourceProjectKey = fromRepo.ProjectKey
+					query.SourceSlug = fromRepo.Slug
+				}
+
+				defaults, err := reviewerSvc.ResolveDefaultReviewers(cmd.Context(), repo.ProjectKey, repo.Slug, query)
 				if err != nil {
 					// Default reviewers are frequently mandatory approvers, so a
 					// failed lookup must never pass unnoticed. When the user asked
@@ -606,11 +623,6 @@ func New(deps Dependencies) *cobra.Command {
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
-			}
-
-			fromRepo, err := resolveSourceRepository(createFromRepo, repo)
-			if err != nil {
-				return err
 			}
 
 			created, err := service.Create(cmd.Context(), repo, pullrequestservice.CreateInput{

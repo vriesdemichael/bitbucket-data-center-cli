@@ -2,9 +2,9 @@
   "version": 2,
   "summary": {
     "runnable_commands": 233,
-    "covered_commands": 233,
-    "covered_percent": 100,
-    "masked_commands": 0,
+    "covered_commands": 228,
+    "covered_percent": 97.85407725321889,
+    "masked_commands": 5,
     "dry_run_only_commands": 0,
     "uncovered_commands": 0
   },
@@ -135,7 +135,6 @@
     "project get",
     "project list",
     "project permissions grant",
-    "project permissions groups grant",
     "project permissions groups list",
     "project permissions groups revoke",
     "project permissions list",
@@ -197,7 +196,6 @@
     "repo settings pull-requests set-strategy",
     "repo settings pull-requests update",
     "repo settings pull-requests update-approvers",
-    "repo settings security permissions groups grant",
     "repo settings security permissions groups list",
     "repo settings security permissions groups revoke",
     "repo settings security permissions users grant",
@@ -216,13 +214,10 @@
     "repo unwatch",
     "repo watch",
     "reviewer condition create",
-    "reviewer condition delete",
     "reviewer condition list",
-    "reviewer condition update",
     "reviewer-group create",
     "reviewer-group delete",
     "reviewer-group list",
-    "reviewer-group update",
     "reviewer-group users",
     "search commits",
     "search prs",
@@ -243,7 +238,13 @@
     "webhook test",
     "webhook update"
   ],
-  "known_masked": [],
+  "known_masked": [
+    "project permissions groups grant",
+    "repo settings security permissions groups grant",
+    "reviewer condition delete",
+    "reviewer condition update",
+    "reviewer-group update"
+  ],
   "known_dry_run_only": [],
   "known_uncovered": []
 }

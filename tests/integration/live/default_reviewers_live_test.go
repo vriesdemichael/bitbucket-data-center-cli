@@ -1,0 +1,231 @@
+//go:build live
+
+package live_test
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"strings"
+	"testing"
+	"time"
+)
+
+// Default reviewer resolution, proven against the server rather than against a
+// mock of it.
+//
+// The unit tests these replace asserted the query bb sends -- that refs are
+// qualified to refs/heads/..., that a repository id is included on both sides.
+// Each of those is a belief about what Bitbucket wants, and a mock built from
+// the same belief agrees with it however wrong it is. What matters is whether
+// the server matches the condition, and only the server can answer that.
+//
+// The negative case is what gives the positive one meaning: a query carrying
+// the wrong refs would either match nothing or match everything, and one of the
+// two subtests catches each.
+func TestLiveDefaultReviewersResolveAgainstTheCondition(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+
+	reviewer, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create reviewer failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reviewer.Username, "REPO_READ"); err != nil {
+		t.Fatalf("grant reviewer read access failed: %v", err)
+	}
+
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// A second target branch, so the two cases differ only in where the pull
+	// request is aimed.
+	const otherTarget = "release/1.x"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, otherTarget, "release.txt"); err != nil {
+		t.Fatalf("push release branch failed: %v", err)
+	}
+
+	// The condition applies to master only.
+	// The endpoint wants the reviewer by numeric id: a name is read as id -1
+	// and refused.
+	reviewerID, err := harness.userID(ctx, reviewer.Username)
+	if err != nil {
+		t.Fatalf("look up the reviewer id: %v", err)
+	}
+
+	condition := fmt.Sprintf(`{
+		"sourceMatcher": {"id": "ANY_REF", "type": {"id": "ANY_REF"}},
+		"targetMatcher": {"id": "refs/heads/master", "type": {"id": "BRANCH"}},
+		"reviewers": [{"id": %d}],
+		"requiredApprovals": 1
+	}`, reviewerID)
+	mustLiveCLI(t, "reviewer", "condition", "create", condition, "--repo", repoRef)
+
+	t.Run("a pull request the condition matches gets the reviewer", func(t *testing.T) {
+		const branch = "feature/matches-the-condition"
+		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "matches.txt"); err != nil {
+			t.Fatalf("push commit on branch failed: %v", err)
+		}
+
+		output := mustLiveCLI(t, "pr", "create",
+			"--from-ref", branch, "--to-ref", "refs/heads/master",
+			"--title", "Matches the condition", "--default-reviewers", "--no-codeowners")
+
+		if names := decodeLivePRReviewers(t, decodeJSONMap(t, output)); !containsFold(names, reviewer.Username) {
+			t.Fatalf("expected the default reviewer %s to be assigned, got %v", reviewer.Username, names)
+		}
+	})
+
+	t.Run("a pull request it does not match gets nobody", func(t *testing.T) {
+		const branch = "feature/other-target"
+		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "other.txt"); err != nil {
+			t.Fatalf("push commit on branch failed: %v", err)
+		}
+
+		output := mustLiveCLI(t, "pr", "create",
+			"--from-ref", branch, "--to-ref", "refs/heads/"+otherTarget,
+			"--title", "Different target", "--default-reviewers", "--no-codeowners")
+
+		// A resolution sending unqualified refs, or omitting the repository
+		// ids, would fail here by matching everything.
+		if names := decodeLivePRReviewers(t, decodeJSONMap(t, output)); containsFold(names, reviewer.Username) {
+			t.Fatalf("the condition targets master only, but %s was assigned on a pull request into %s: %v",
+				reviewer.Username, otherTarget, names)
+		}
+	})
+}
+
+// TestLiveDefaultReviewersFromAFork covers the source side of the same query.
+//
+// A fork pull request is resolved with the fork as the source repository and
+// the upstream as the target. The unit test this replaces asserted that the two
+// ids differ in the request; what matters is that the server still matches the
+// condition, which it can only do if both are right.
+func TestLiveDefaultReviewersFromAFork(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	upstream := seeded.Repos[0]
+	upstreamRef := seeded.Key + "/" + upstream.Slug
+
+	reviewer, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create reviewer failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, upstream.Slug, reviewer.Username, "REPO_READ"); err != nil {
+		t.Fatalf("grant reviewer read access failed: %v", err)
+	}
+
+	configureLiveCLIEnv(t, harness, seeded.Key, upstream.Slug)
+
+	// The endpoint wants the reviewer by numeric id: a name is read as id -1
+	// and refused.
+	reviewerID, err := harness.userID(ctx, reviewer.Username)
+	if err != nil {
+		t.Fatalf("look up the reviewer id: %v", err)
+	}
+
+	condition := fmt.Sprintf(`{
+		"sourceMatcher": {"id": "ANY_REF", "type": {"id": "ANY_REF"}},
+		"targetMatcher": {"id": "refs/heads/master", "type": {"id": "BRANCH"}},
+		"reviewers": [{"id": %d}],
+		"requiredApprovals": 1
+	}`, reviewerID)
+	mustLiveCLI(t, "reviewer", "condition", "create", condition, "--repo", upstreamRef)
+
+	forkSlug := upstream.Slug + "-reviewer-fork"
+	postLiveJSON(t, fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s", seeded.Key, upstream.Slug), map[string]any{
+		"name":    forkSlug,
+		"slug":    forkSlug,
+		"project": map[string]any{"key": seeded.Key},
+	})
+
+	const branch = "feature/from-the-fork"
+	if err := harness.pushCommitOnBranch(seeded.Key, forkSlug, branch, "forked.txt"); err != nil {
+		t.Fatalf("push commit on the fork failed: %v", err)
+	}
+
+	output := mustLiveCLI(t, "pr", "create",
+		"--repo", upstreamRef,
+		"--from-repo", seeded.Key+"/"+forkSlug,
+		"--from-ref", branch,
+		"--to-ref", "refs/heads/master",
+		"--title", "From the fork with default reviewers",
+		"--default-reviewers", "--no-codeowners")
+
+	if names := decodeLivePRReviewers(t, decodeJSONMap(t, output)); !containsFold(names, reviewer.Username) {
+		t.Fatalf("expected %s to be assigned on the fork pull request, got %v", reviewer.Username, names)
+	}
+}
+
+// TestLiveReviewerGroupResolutionShapes covers what the reviewer-group lookup
+// meets on a real server.
+//
+// One of the unit tests it replaces asserted the behaviour for a group with no
+// members. Bitbucket refuses to create one, so that test described a state the
+// server cannot be in and agreeing with it proved nothing. The refusal is
+// recorded here instead.
+func TestLiveReviewerGroupResolutionShapes(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	member, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create member failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, member.Username, "REPO_READ"); err != nil {
+		t.Fatalf("grant member read access failed: %v", err)
+	}
+
+	const groupName = "resolution_shapes"
+	if err := harness.createReviewerGroup(ctx, seeded.Key, repo.Slug, groupName, member.Username); err != nil {
+		t.Fatalf("create reviewer group failed: %v", err)
+	}
+
+	t.Run("members come back for a group that exists", func(t *testing.T) {
+		output := mustLiveCLI(t, "reviewer-group", "users", groupName, "--repo", repoRef)
+		if !strings.Contains(output, member.Username) {
+			t.Fatalf("expected %s in the group members, got:\n%s", member.Username, output)
+		}
+	})
+
+	t.Run("a group that is not there is refused, not silently empty", func(t *testing.T) {
+		output, err := executeLiveCLI(t, "--json", "reviewer-group", "users", "no_such_group", "--repo", repoRef)
+		if err == nil {
+			t.Fatalf("expected a failure for a group that is not there, got:\n%s", output)
+		}
+	})
+
+	t.Run("the server refuses a group with no members", func(t *testing.T) {
+		_, err := harness.liveJSON(ctx, http.MethodPost,
+			fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/settings/reviewer-groups", seeded.Key, repo.Slug),
+			map[string]any{"name": "empty_group", "scope": map[string]any{"resourceId": 1, "type": "REPOSITORY"}})
+		if err == nil {
+			t.Fatal("expected the server to refuse an empty reviewer group")
+		}
+		if !strings.Contains(err.Error(), "1 or more reviewer") {
+			t.Errorf("expected the empty-group refusal, got: %v", err)
+		}
+	})
+}

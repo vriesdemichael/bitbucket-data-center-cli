@@ -119,16 +119,16 @@ func TestFlags(t *testing.T) {
 		t.Fatalf("discover: %v", err)
 	}
 
-	// That first invocation carries --dry-run, so it lands in the dry-run
-	// bucket rather than counting as coverage (#532). What is under test here
-	// is only that the leading flags were skipped to find the command.
+	// The first invocation carries --dry-run and both discard their results, so
+	// neither counts as coverage. What is under test here is only that the
+	// leading flags were skipped to find the command.
 	if _, ok := found.dryRun["repo settings security permissions users list"]; !ok {
 		t.Fatalf("expected leading flags to be skipped, got %#v", found.dryRun)
 	}
 	// Collection stops at the first non-literal argument, so a trailing flag
 	// after a variable is not folded into the command path.
-	if _, ok := found.asserted["branch create"]; !ok {
-		t.Fatalf("expected collection to stop at the variable argument, got %#v", found.asserted)
+	if _, ok := found.masked["branch create"]; !ok {
+		t.Fatalf("expected collection to stop at the variable argument, got %#v", found.masked)
 	}
 }
 
@@ -318,9 +318,11 @@ func TestValueFlags(t *testing.T) {
 		t.Fatalf("discover: %v", err)
 	}
 
+	// These fixtures discard their results, so they are discovered as masked:
+	// the command ran and nothing was checked.
 	for _, expected := range []string{"pr get", "tag list", "repo list"} {
-		if _, ok := found.asserted[expected]; !ok {
-			t.Fatalf("expected %q to be discovered, got %#v", expected, found.asserted)
+		if _, ok := found.masked[expected]; !ok {
+			t.Fatalf("expected %q to be discovered, got %#v", expected, found.masked)
 		}
 	}
 	// The branch create call is a dry run, so it is discovered as one.
@@ -329,7 +331,7 @@ func TestValueFlags(t *testing.T) {
 	}
 	// The flag values must never be mistaken for command words.
 	for _, unexpected := range []string{"ca.pem", "debug", "ca.pem pr get"} {
-		if _, ok := found.asserted[unexpected]; ok {
+		if _, ok := found.masked[unexpected]; ok {
 			t.Fatalf("flag value %q leaked into the command path", unexpected)
 		}
 	}
@@ -646,5 +648,51 @@ func TestTableOfSlices(t *testing.T) {
 		if _, ok := resolved[command]; !ok {
 			t.Errorf("%q was not found; asserted=%v", command, keysOf(found.asserted))
 		}
+	}
+}
+
+// A command whose result is thrown away is not covered by it.
+//
+// `_, _ = executeLiveCLI(...)` runs the command and checks nothing: it would
+// pass identically if the command returned the wrong answer or failed outright.
+// Four commands were counted as covered on exactly that basis, alongside a test
+// that logged its failure and returned.
+func TestAnInvocationThatChecksNothingIsMasked(t *testing.T) {
+	dir := writeLiveTestFile(t, `package live_test
+
+func TestDiscarded(t *testing.T) {
+	_, _ = executeLiveCLI(t, "--json", "reviewer", "condition", "delete", id)
+}
+
+func TestLoggedAndReturned(t *testing.T) {
+	output, err := executeLiveCLI(t, "--json", "reviewer", "condition", "create", body)
+	if err != nil {
+		t.Logf("attempt output: %s (err: %v)", output, err)
+		return
+	}
+}
+
+func TestActuallyChecked(t *testing.T) {
+	if _, err := executeLiveCLI(t, "--json", "tag", "list"); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+}
+`)
+
+	found, err := discoverLiveInvocations(dir, map[string]bool{})
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
+
+	for _, command := range []string{"reviewer condition delete", "reviewer condition create"} {
+		resolved := resolveInvocations([]string{command}, found.masked)
+		if _, ok := resolved[command]; !ok {
+			t.Errorf("%q checks nothing but was not masked; masked=%v asserted=%v",
+				command, keysOf(found.masked), keysOf(found.asserted))
+		}
+	}
+
+	if _, ok := found.asserted["tag list"]; !ok {
+		t.Error("a test that fails on error must still count as coverage")
 	}
 }

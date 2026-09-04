@@ -542,7 +542,20 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			users, err := service.ListRepositoryReviewerGroupUsers(cmd.Context(), pk, slug, id)
+			// The endpoint takes a numeric id, and every other reviewer-group
+			// flag takes a name. Passing the name through sent it where the id
+			// belongs, and the failure came back as a transient decode error --
+			// the same defect delete had.
+			groups, err := service.ListRepositoryReviewerGroups(cmd.Context(), pk, slug)
+			if err != nil {
+				return err
+			}
+			resolvedID, err := resolveReviewerGroupID(groups, id)
+			if err != nil {
+				return err
+			}
+
+			users, err := service.ListRepositoryReviewerGroupUsers(cmd.Context(), pk, slug, resolvedID)
 			if err != nil {
 				return err
 			}
