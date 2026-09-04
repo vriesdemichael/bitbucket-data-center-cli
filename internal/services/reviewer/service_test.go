@@ -9,28 +9,6 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
-func TestReviewerServiceAdditional(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.URL.Path == "/rest/default-reviewers/latest/projects/PRJ/conditions":
-			_, _ = w.Write([]byte(`[]`))
-		case r.URL.Path == "/rest/default-reviewers/latest/projects/PRJ/repos/demo/conditions":
-			_, _ = w.Write([]byte(`[]`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-	service := NewService(client)
-
-	// Hit empty branches
-	_, _ = service.ListProjectConditions(context.Background(), "PRJ")
-	_, _ = service.ListRepositoryConditions(context.Background(), "PRJ", "demo")
-}
-
 func TestReviewerServiceErrors(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -123,63 +101,6 @@ func TestReviewerServiceUpdateErrors(t *testing.T) {
 	if _, err := service.CreateProjectCondition(context.Background(), "P", openapigenerated.RestDefaultReviewersRequest{}); err == nil {
 		t.Fatal("expected error")
 	}
-}
-
-func TestReviewerServiceCreationBranches(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodPost {
-			// Return 200 instead of 201 to hit JSON200 branch
-			_, _ = w.Write([]byte(`{"id":9}`))
-			return
-		}
-		if r.Method == http.MethodPut {
-			// Return invalid JSON to hit unmarshal fail branch
-			_, _ = w.Write([]byte(`invalid`))
-			return
-		}
-		http.NotFound(w, r)
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL)
-	service := NewService(client)
-
-	_, _ = service.CreateProjectCondition(context.Background(), "P", openapigenerated.RestDefaultReviewersRequest{})
-	_, _ = service.UpdateProjectCondition(context.Background(), "P", "1", openapigenerated.UpdatePullRequestConditionJSONRequestBody{})
-}
-
-func TestReviewerServiceCreationUnmarshalFail(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`invalid`))
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL)
-	service := NewService(client)
-
-	_, _ = service.CreateProjectCondition(context.Background(), "P", openapigenerated.RestDefaultReviewersRequest{})
-}
-
-func TestReviewerServiceUpdateResponseBranches(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodPut {
-			// Return 200 to hit JSON200 branches instead of 201 or 300
-			_, _ = w.Write([]byte(`{"id":42}`))
-			return
-		}
-		http.NotFound(w, r)
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL)
-	service := NewService(client)
-
-	_, _ = service.UpdateProjectCondition(context.Background(), "P", "1", openapigenerated.UpdatePullRequestConditionJSONRequestBody{})
-	_, _ = service.UpdateRepositoryCondition(context.Background(), "P", "S", "1", openapigenerated.UpdatePullRequestCondition1JSONRequestBody{})
 }
 
 func TestReviewerGroupsAndDefaultReviewersServiceErrors(t *testing.T) {

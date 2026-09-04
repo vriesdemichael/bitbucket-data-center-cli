@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 348 | write the live test, then delete the mock |
+| `move-to-live` | 340 | write the live test, then delete the mock |
 | `remove` | 71 | delete; it asserts nothing a live test would not already give |
 | `keep` | 38 | legitimate unit test under ADR-079 |
 | `follows-callers` | 19 | goes when the tests supplying its handlers go |
@@ -18,22 +18,22 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 |---|---:|---:|---:|---:|---:|
 | `internal/cli/root_test.go` | 55 | 53 | 1 | 1 | 0 |
 | `internal/transport/httpclient/client_test.go` | 31 | 21 | 1 | 9 | 0 |
-| `internal/cli/governance_test.go` | 25 | 20 | 5 | 0 | 0 |
+| `internal/cli/governance_test.go` | 24 | 19 | 5 | 0 | 0 |
 | `internal/cli/cmd/api/api_test.go` | 18 | 16 | 1 | 1 | 0 |
 | `internal/services/comment/service_test.go` | 24 | 14 | 7 | 2 | 1 |
 | `internal/services/pullrequest/service_test.go` | 23 | 12 | 7 | 3 | 1 |
 | `internal/services/quality/service_test.go` | 12 | 9 | 0 | 2 | 1 |
-| `internal/services/reviewer/service_test.go` | 9 | 9 | 0 | 0 | 0 |
 | `internal/cli/pr_review_visibility_test.go` | 8 | 8 | 0 | 0 | 0 |
-| `internal/services/reposettings/service_test.go` | 9 | 7 | 0 | 1 | 1 |
 | `internal/cli/permission_checker_test.go` | 8 | 7 | 0 | 0 | 1 |
 | `internal/services/tag/service_test.go` | 7 | 6 | 0 | 0 | 1 |
 | `internal/cli/dryrun_stateful_commands_test.go` | 6 | 6 | 0 | 0 | 0 |
 | `internal/services/commit/service_test.go` | 7 | 5 | 0 | 1 | 1 |
+| `internal/services/reposettings/service_test.go` | 7 | 5 | 0 | 1 | 1 |
 | `internal/services/jira/service_test.go` | 6 | 5 | 0 | 0 | 1 |
 | `internal/cli/cmd/repo/cat_edit_test.go` | 5 | 5 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/sync_test.go` | 5 | 5 | 0 | 0 | 0 |
 | `internal/cli/pr_comments_extension_test.go` | 5 | 5 | 0 | 0 | 0 |
+| `internal/services/reviewer/service_test.go` | 5 | 5 | 0 | 0 | 0 |
 | `internal/services/diff/service_test.go` | 12 | 4 | 7 | 0 | 1 |
 | `internal/services/branch/service_test.go` | 9 | 4 | 0 | 4 | 1 |
 | `internal/cli/cmd/search/search_test.go` | 5 | 4 | 1 | 0 | 0 |
@@ -79,7 +79,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/pr/create_interactive_test.go` | 2 | 1 | 1 | 0 | 0 |
 | `internal/cli/cmd/reviewergroup/reviewer_group_test.go` | 2 | 1 | 1 | 0 | 0 |
 | `internal/cli/auth_token_test.go` | 1 | 1 | 0 | 0 | 0 |
-| `internal/cli/cmd/ai/mcp_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/auth/token_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/branch/branch_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/build/build_test.go` | 1 | 1 | 0 | 0 | 0 |
