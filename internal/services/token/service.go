@@ -35,9 +35,9 @@ func parseRepoTarget(target string) (string, string, error) {
 	return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), nil
 }
 
-func (s *Service) List(ctx context.Context, scope ScopeType, target string, limit int) ([]openapigenerated.RestAccessToken, error) {
-	if limit <= 0 {
-		limit = 25
+func (s *Service) List(ctx context.Context, scope ScopeType, target string, maxResults int) ([]openapigenerated.RestAccessToken, error) {
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 
 	// Resolved once. The scope was re-validated on every page, so a listing
@@ -66,9 +66,9 @@ func (s *Service) List(ctx context.Context, scope ScopeType, target string, limi
 
 	type tokenPage = openapi.Page[openapigenerated.RestAccessToken]
 
-	return openapi.PageThrough(ctx, 0, limit,
-		func(ctx context.Context, start, limit int) (tokenPage, error) {
-			startValue, limitValue := float32(start), float32(limit)
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, maxResults int) (tokenPage, error) {
+			startValue, limitValue := float32(start), float32(maxResults)
 
 			// The three endpoints answer with structurally identical but
 			// distinct anonymous types, so each case reads its own out rather

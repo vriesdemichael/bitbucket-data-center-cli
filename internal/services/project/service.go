@@ -198,16 +198,16 @@ func (service *Service) Delete(ctx context.Context, key string) error {
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
-func (service *Service) ListProjectPermissionUsers(ctx context.Context, projectKey string, limit int) ([]PermissionUser, error) {
+func (service *Service) ListProjectPermissionUsers(ctx context.Context, projectKey string, pageSize int) ([]PermissionUser, error) {
 	if strings.TrimSpace(projectKey) == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
-	if limit <= 0 {
-		limit = 100
+	if pageSize <= 0 {
+		pageSize = 100
 	}
 
 	start := float32(0)
-	pageLimit := float32(limit)
+	pageLimit := float32(pageSize)
 	results := make([]PermissionUser, 0)
 
 	for {
@@ -293,16 +293,16 @@ func (service *Service) RevokeProjectUserPermission(ctx context.Context, project
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
 
-func (service *Service) ListProjectPermissionGroups(ctx context.Context, projectKey string, limit int) ([]PermissionGroup, error) {
+func (service *Service) ListProjectPermissionGroups(ctx context.Context, projectKey string, pageSize int) ([]PermissionGroup, error) {
 	if strings.TrimSpace(projectKey) == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
-	if limit <= 0 {
-		limit = 100
+	if pageSize <= 0 {
+		pageSize = 100
 	}
 
 	start := float32(0)
-	pageLimit := float32(limit)
+	pageLimit := float32(pageSize)
 	results := make([]PermissionGroup, 0)
 
 	for {

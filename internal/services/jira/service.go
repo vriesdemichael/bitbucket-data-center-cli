@@ -52,9 +52,9 @@ type JiraCommit struct {
 
 // GetIssueCommits retrieves commits associated with a Jira issue key.
 // Endpoint: GET /rest/jira/latest/issues/{issueKey}/commits
-func (s *Service) GetIssueCommits(ctx context.Context, issueKey string, limit int) ([]openapigenerated.RestCommit, error) {
-	if limit <= 0 {
-		limit = 25
+func (s *Service) GetIssueCommits(ctx context.Context, issueKey string, maxResults int) ([]openapigenerated.RestCommit, error) {
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 	path := fmt.Sprintf("/rest/jira/latest/issues/%s/commits", issueKey)
 	start := 0
@@ -62,8 +62,8 @@ func (s *Service) GetIssueCommits(ctx context.Context, issueKey string, limit in
 
 	for {
 		query := map[string]string{
-			"start": strconv.Itoa(start),
-			"limit": strconv.Itoa(limit),
+			"start":      strconv.Itoa(start),
+			"limit": strconv.Itoa(maxResults),
 		}
 
 		var response jiraCommitsResponse
@@ -76,15 +76,15 @@ func (s *Service) GetIssueCommits(ctx context.Context, issueKey string, limit in
 			allCommits = append(allCommits, v.ToCommit)
 		}
 
-		if len(allCommits) >= limit || response.IsLastPage || len(response.Values) == 0 {
+		if len(allCommits) >= maxResults || response.IsLastPage || len(response.Values) == 0 {
 			break
 		}
 
 		start += len(response.Values)
 	}
 
-	if len(allCommits) > limit {
-		allCommits = allCommits[:limit]
+	if len(allCommits) > maxResults {
+		allCommits = allCommits[:maxResults]
 	}
 
 	return allCommits, nil
