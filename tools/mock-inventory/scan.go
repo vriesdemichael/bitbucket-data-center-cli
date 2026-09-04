@@ -101,12 +101,15 @@ func scan(root string) ([]entry, error) {
 			}
 
 			for _, site := range sites {
+				action, reason := disposition(class)
 				entries = append(entries, entry{
 					File:     filepath.ToSlash(path),
 					Line:     fileSet.Position(site).Line,
 					Function: function.Name.Name,
 					Class:    class,
 					Signals:  signals,
+					Action:   action,
+					Reason:   reason,
 				})
 			}
 		}
