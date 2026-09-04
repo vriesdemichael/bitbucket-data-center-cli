@@ -21,38 +21,32 @@ func (s *Service) ListGpgKeys(ctx context.Context, limit int) ([]openapigenerate
 	if limit <= 0 {
 		limit = 25
 	}
-	start := float32(0)
-	pageLimit := float32(limit)
-	results := make([]openapigenerated.RestGpgKey, 0)
 
-	for {
-		params := &openapigenerated.GetKeysForUserParams{
-			Start: &start,
-			Limit: &pageLimit,
-		}
-		resp, err := s.client.GetKeysForUserWithResponse(ctx, params)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list user GPG keys", err)
-		}
-		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
-			return nil, err
-		}
-		if resp.JSON200 == nil || resp.JSON200.Values == nil {
-			break
-		}
+	return openapi.PageThrough(ctx, 0, limit,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestGpgKey], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			resp, err := s.client.GetKeysForUserWithResponse(ctx, &openapigenerated.GetKeysForUserParams{
+				Start: &startValue,
+				Limit: &limitValue,
+			})
+			if err != nil {
+				return openapi.Page[openapigenerated.RestGpgKey]{}, apperrors.New(apperrors.KindTransient, "failed to list user GPG keys", err)
+			}
+			if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
+				return openapi.Page[openapigenerated.RestGpgKey]{}, err
+			}
 
-		results = append(results, *resp.JSON200.Values...)
+			page := resp.JSON200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestGpgKey]{}, nil
+			}
 
-		if len(results) >= limit || resp.JSON200.IsLastPage == nil || *resp.JSON200.IsLastPage || resp.JSON200.NextPageStart == nil {
-			break
-		}
-		start = float32(*resp.JSON200.NextPageStart)
-	}
-
-	if len(results) > limit {
-		results = results[:limit]
-	}
-	return results, nil
+			return openapi.Page[openapigenerated.RestGpgKey]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 // AddGpgKey submits an armored public key block and returns every key the server
