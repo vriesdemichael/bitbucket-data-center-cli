@@ -696,3 +696,39 @@ func TestActuallyChecked(t *testing.T) {
 		t.Error("a test that fails on error must still count as coverage")
 	}
 }
+
+// A wrapper forwarding its own variadic parameter is not an invocation, it is
+// the forwarding. Reporting it as unreadable demands a literal that cannot
+// exist -- the command words are at its callers, which are read separately.
+//
+// mustLiveCLI hid this because it wraps with append([]string{"--json"}, ...),
+// which resolves to a literal that yields no command path and is skipped
+// silently. A helper that forwards args bare made it visible.
+func TestAWrapperForwardingItsOwnArgsIsNotUnreadable(t *testing.T) {
+	dir := writeLiveTestFile(t, `package live_test
+
+func mustLiveHumanCLI(t *testing.T, args ...string) string {
+	output, err := executeLiveCLI(t, args...)
+	if err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+	return output
+}
+
+func TestUsesIt(t *testing.T) {
+	mustLiveHumanCLI(t, "pr", "list", "--state", "open")
+}
+`)
+
+	found, err := discoverLiveInvocations(dir, map[string]bool{})
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
+
+	if len(found.unreadable) > 0 {
+		t.Errorf("the wrapper's own forwarding call was reported: %v", found.unreadable)
+	}
+	if _, ok := resolveInvocations([]string{"pr list"}, found.asserted)["pr list"]; !ok {
+		t.Errorf("the caller's command was not found; asserted=%v", keysOf(found.asserted))
+	}
+}

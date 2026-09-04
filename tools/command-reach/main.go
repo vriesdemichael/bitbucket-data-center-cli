@@ -491,6 +491,14 @@ func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool, invok
 			// words in the literal or teaches the scanner the new shape.
 			resolved, reason := spreadElements(call.Args[leadingArgs], argumentSlices, tableRows)
 			if reason != "" {
+				// A wrapper forwarding its own variadic parameter is not an
+				// invocation, it is the forwarding. The command words live at
+				// its callers, which are read separately, so demanding a
+				// literal here would demand one that cannot exist.
+				if _, isWrapper := invokers[function.Name.Name]; isWrapper {
+					return true
+				}
+
 				unreadable = append(unreadable, describeCall(fileSet, path, call, reason))
 
 				return true
