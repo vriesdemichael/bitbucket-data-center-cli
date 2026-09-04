@@ -5,8 +5,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -134,22 +132,6 @@ func TestReviewerCLIErrors(t *testing.T) {
 	command.SetArgs([]string{"reviewer", "condition", "list", "--project", "PRJ"})
 	if err := command.Execute(); err == nil {
 		t.Fatal("expected error for forbidden list")
-	}
-}
-
-func TestHookCLIErrors(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-	command.SetArgs([]string{"hook", "enable", "h1", "--project", "PRJ"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error for server error")
 	}
 }
 
@@ -450,28 +432,6 @@ func TestProjectPermissionsRevokeErrorsCLI(t *testing.T) {
 	}
 }
 
-func TestHookEnableDisableErrorsCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-
-	command.SetArgs([]string{"hook", "enable", "h1", "--project", "PRJ"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error")
-	}
-
-	command.SetArgs([]string{"hook", "disable", "h1", "--project", "PRJ"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error")
-	}
-}
-
 func TestReviewerConditionDeleteErrorsCLI(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -526,32 +486,6 @@ func TestReviewerCLIAdditional(t *testing.T) {
 	// Test default project from env
 	command.SetArgs([]string{"reviewer", "condition", "list"})
 	_ = command.Execute()
-}
-
-func TestHookCLIAdditional(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		if request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks/h1/settings" {
-			_, _ = writer.Write([]byte(`{"a":1}`))
-		}
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-
-	command := NewRootCommand()
-
-	// Configure with current settings
-	command.SetArgs([]string{"hook", "configure", "h1"})
-	_ = command.Execute()
-
-	// Configure with invalid JSON
-	command.SetArgs([]string{"hook", "configure", "h1", "{invalid}"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error for invalid json")
-	}
 }
 
 func TestRepoScopedGovernanceCLIAdditional(t *testing.T) {
@@ -725,36 +659,6 @@ func TestRepoSettingsPullRequestsErrorsCLI(t *testing.T) {
 	}
 }
 
-func TestHookConfigureBranchesCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		if request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks/h1/settings" {
-			_, _ = writer.Write([]byte(`{"foo":"bar"}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-
-	command := NewRootCommand()
-
-	// No hook key
-	command.SetArgs([]string{"hook", "configure"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error for no hook key")
-	}
-
-	// Resolve reference failure
-	command.SetArgs([]string{"hook", "configure", "h1", "--repo", "invalid"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error for invalid repo")
-	}
-}
-
 func TestReviewerConditionRepoBranchesCLI(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -780,35 +684,6 @@ func TestReviewerConditionRepoBranchesCLI(t *testing.T) {
 	_ = command.Execute()
 }
 
-func TestHookConfigureFileErrorCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://localhost")
-	command := NewRootCommand()
-	command.SetArgs([]string{"hook", "configure", "h1", "--config-file", "nonexistent.json", "--project", "PRJ"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error for missing file")
-	}
-}
-
-func TestHookEnableDisableHumanCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		_, _ = writer.Write([]byte(`{"enabled":true}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-
-	command.SetArgs([]string{"hook", "enable", "h1", "--project", "PRJ"})
-	_ = command.Execute()
-
-	command.SetArgs([]string{"hook", "disable", "h1", "--project", "PRJ"})
-	_ = command.Execute()
-}
-
 func TestProjectPermissionsListPaginationCLI(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	var userCount atomic.Int32
@@ -826,25 +701,6 @@ func TestProjectPermissionsListPaginationCLI(t *testing.T) {
 
 	command := NewRootCommand()
 	command.SetArgs([]string{"project", "permissions", "users", "list", "PRJ", "--limit", "1"})
-	_ = command.Execute()
-}
-
-func TestHookConfigureNoSettingsCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		if request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks/h1/settings" {
-			_, _ = writer.Write([]byte(`{}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-	command.SetArgs([]string{"hook", "configure", "h1", "--project", "PRJ"})
 	_ = command.Execute()
 }
 
@@ -890,28 +746,6 @@ func TestReviewerConditionCreateProjectCLI(t *testing.T) {
 
 	command := NewRootCommand()
 	command.SetArgs([]string{"--json", "reviewer", "condition", "create", `{"requiredApprovals":1}`, "--project", "PRJ"})
-	_ = command.Execute()
-}
-
-func TestHookConfigureFileSuccessCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		if request.Method == http.MethodPut && request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks/h1/settings" {
-			_, _ = writer.Write([]byte(`{"status":"ok"}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-	tmpFile := filepath.Join(t.TempDir(), "ok.json")
-	_ = os.WriteFile(tmpFile, []byte(`{"a":1}`), 0644)
-
-	command.SetArgs([]string{"--json", "hook", "configure", "h1", "--config-file", tmpFile, "--project", "PRJ"})
 	_ = command.Execute()
 }
 
@@ -972,25 +806,6 @@ func TestProjectHumanCLI(t *testing.T) {
 	_ = command.Execute()
 }
 
-func TestHookConfigureRepoGetCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		if request.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/settings/hooks/h1/settings" {
-			_, _ = writer.Write([]byte(`{"c":3}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-	command.SetArgs([]string{"hook", "configure", "h1", "--repo", "PRJ/demo"})
-	_ = command.Execute()
-}
-
 func TestReviewerConditionCreateRepoSuccessCLI(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -1047,69 +862,6 @@ func TestReviewerConditionCreateInvalidJSONCLI(t *testing.T) {
 	}
 }
 
-func TestHookEnableDisableRepoErrorsCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusNotFound)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-
-	command.SetArgs([]string{"hook", "enable", "h1", "--repo", "PRJ/demo"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error")
-	}
-
-	command.SetArgs([]string{"hook", "disable", "h1", "--repo", "PRJ/demo"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error")
-	}
-}
-
-func TestHookConfigureRepoErrorsCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusUnauthorized)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-
-	command.SetArgs([]string{"hook", "configure", "h1", "--repo", "PRJ/demo"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error")
-	}
-
-	command.SetArgs([]string{"hook", "configure", "h1", `{"a":1}`, "--repo", "PRJ/demo"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error")
-	}
-}
-
-func TestHookConfigureFileInvalidJSONCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-	tmpFile := filepath.Join(t.TempDir(), "bad.json")
-	_ = os.WriteFile(tmpFile, []byte(`{invalid}`), 0644)
-
-	command.SetArgs([]string{"hook", "configure", "h1", "--config-file", tmpFile, "--project", "PRJ"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error")
-	}
-}
-
 func TestProjectListFilterCLI(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -1155,21 +907,6 @@ func TestReviewerConditionListEmptyCLI(t *testing.T) {
 	_ = command.Execute()
 }
 
-func TestHookListEmptyCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[]}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-	command.SetArgs([]string{"hook", "list", "--project", "PRJ"})
-	_ = command.Execute()
-}
-
 func TestRootHelpersCLI(t *testing.T) {
 	// Exercise all safe helpers in root.go
 	_ = safederef.String(nil)
@@ -1208,27 +945,6 @@ func TestReviewerConditionListHumanNotEmptyCLI(t *testing.T) {
 
 	command := NewRootCommand()
 	command.SetArgs([]string{"reviewer", "condition", "list", "--project", "PRJ"})
-	_ = command.Execute()
-}
-
-func TestHookConfigureStdinSuccessCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		if request.Method == http.MethodPut && request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks/h1/settings" {
-			_, _ = writer.Write([]byte(`{"status":"ok"}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-	stdinBuffer := bytes.NewBufferString(`{"foo":"bar"}`)
-	command.SetIn(stdinBuffer)
-	command.SetArgs([]string{"--json", "hook", "configure", "h1", "-", "--project", "PRJ"})
 	_ = command.Execute()
 }
 
@@ -1364,60 +1080,6 @@ func TestReviewerConditionUpdateProjectFallbackCLI(t *testing.T) {
 	_ = command.Execute()
 }
 
-func TestHookConfigureProjectGetCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		if request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks/h1/settings" {
-			_, _ = writer.Write([]byte(`{"d":4}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-
-	command := NewRootCommand()
-	command.SetArgs([]string{"hook", "configure", "h1"})
-	_ = command.Execute()
-}
-
-func TestHookConfigureRepoArgCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		if request.Method == http.MethodPut && strings.Contains(request.URL.Path, "settings") {
-			_, _ = writer.Write([]byte(`{"e":5}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-	command.SetArgs([]string{"--json", "hook", "configure", "h1", `{"e":5}`, "--repo", "PRJ/demo"})
-	_ = command.Execute()
-}
-
-func TestHookListDisabledHumanCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[{"enabled":false,"details":{"key":"h2","name":"Hook 2"}}]}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-	command.SetArgs([]string{"hook", "list", "--project", "PRJ"})
-	_ = command.Execute()
-}
-
 func TestPRMergeErrorCLI(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -1430,18 +1092,6 @@ func TestPRMergeErrorCLI(t *testing.T) {
 
 	command := NewRootCommand()
 	command.SetArgs([]string{"pr", "merge", "30", "--repo", "PRJ/demo"})
-	if err := command.Execute(); err == nil {
-		t.Fatal("expected error")
-	}
-}
-
-func TestHookConfigureEmptyFileCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://localhost")
-	command := NewRootCommand()
-	tmpFile := filepath.Join(t.TempDir(), "empty.json")
-	_ = os.WriteFile(tmpFile, []byte(""), 0644)
-	command.SetArgs([]string{"hook", "configure", "h1", "--config-file", tmpFile, "--project", "PRJ"})
 	if err := command.Execute(); err == nil {
 		t.Fatal("expected error")
 	}
@@ -1596,65 +1246,6 @@ func TestReviewerConditionUpdateInvalidJSONCLI(t *testing.T) {
 	if err := command.Execute(); err == nil {
 		t.Fatal("expected error")
 	}
-}
-
-func TestHookCLIBranchesAdditional(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-
-	// List repo error
-	command.SetArgs([]string{"hook", "list", "--repo", "PRJ/demo"})
-	_ = command.Execute()
-
-	// List project missing
-	t.Setenv("BITBUCKET_PROJECT_KEY", "")
-	command.SetArgs([]string{"hook", "list"})
-	_ = command.Execute()
-
-	// Enable repo error
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	command.SetArgs([]string{"hook", "enable", "h1", "--repo", "PRJ/demo"})
-	_ = command.Execute()
-
-	// Enable missing project
-	t.Setenv("BITBUCKET_PROJECT_KEY", "")
-	command.SetArgs([]string{"hook", "enable", "h1"})
-	_ = command.Execute()
-
-	// Disable repo error
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	command.SetArgs([]string{"hook", "disable", "h1", "--repo", "PRJ/demo"})
-	_ = command.Execute()
-
-	// Disable missing project
-	t.Setenv("BITBUCKET_PROJECT_KEY", "")
-	command.SetArgs([]string{"hook", "disable", "h1"})
-	_ = command.Execute()
-
-	// Configure get missing project
-	t.Setenv("BITBUCKET_PROJECT_KEY", "")
-	command.SetArgs([]string{"hook", "configure", "h1"})
-	_ = command.Execute()
-
-	// Configure set missing project
-	t.Setenv("BITBUCKET_PROJECT_KEY", "")
-	command.SetArgs([]string{"hook", "configure", "h1", "{}"})
-	_ = command.Execute()
-
-	// Configure no args error
-	command.SetArgs([]string{"hook", "configure"})
-	_ = command.Execute()
-
-	// Configure invalid repo format
-	command.SetArgs([]string{"hook", "configure", "h1", "--repo", "invalid"})
-	_ = command.Execute()
 }
 
 func TestReviewerCLIBranchesAdditional(t *testing.T) {

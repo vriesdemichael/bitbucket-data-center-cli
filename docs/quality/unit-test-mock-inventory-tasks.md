@@ -6,9 +6,9 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 411 | write the live test, then delete the mock |
-| `remove` | 80 | delete; it asserts nothing a live test would not already give |
-| `keep` | 37 | legitimate unit test under ADR-079 |
+| `move-to-live` | 399 | write the live test, then delete the mock |
+| `remove` | 77 | delete; it asserts nothing a live test would not already give |
+| `keep` | 35 | legitimate unit test under ADR-079 |
 | `follows-callers` | 19 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
@@ -17,7 +17,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | file | total | move-to-live | remove | keep | other |
 |---|---:|---:|---:|---:|---:|
 | `internal/cli/root_test.go` | 55 | 53 | 1 | 1 | 0 |
-| `internal/cli/governance_test.go` | 67 | 51 | 14 | 2 | 0 |
+| `internal/cli/governance_test.go` | 50 | 39 | 11 | 0 | 0 |
 | `internal/services/pullrequest/service_test.go` | 32 | 21 | 7 | 3 | 1 |
 | `internal/transport/httpclient/client_test.go` | 31 | 21 | 1 | 9 | 0 |
 | `internal/cli/cmd/api/api_test.go` | 23 | 21 | 1 | 1 | 0 |
