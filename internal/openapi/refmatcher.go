@@ -89,3 +89,18 @@ func NewDefaultTaskTargetMatcher(ref *string) *DefaultTaskTargetMatcher {
 		},
 	}
 }
+
+// echoedAnyRefMatcherID is what Bitbucket returns for the any-ref matcher, as
+// opposed to the ANY_REF it accepts when the matcher is written.
+const echoedAnyRefMatcherID = "ANY_REF_MATCHER_ID"
+
+// IsAnyRefMatcherID reports whether a matcher id read back from Bitbucket is
+// the any-ref matcher, in either spelling.
+//
+// This matters when a matcher is carried forward across an update. The id that
+// comes back is not the id that was sent, so comparing against the written form
+// alone treats "any ref" as a concrete ref and would create a branch matcher
+// literally named ANY_REF_MATCHER_ID.
+func IsAnyRefMatcherID(id string) bool {
+	return id == anyRefMatcherID || id == echoedAnyRefMatcherID
+}

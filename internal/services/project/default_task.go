@@ -3,6 +3,7 @@ package project
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -102,12 +103,32 @@ func (service *Service) UpdateDefaultTask(ctx context.Context, projectKey string
 		return nil, apperrors.New(apperrors.KindValidation, "description is required", nil)
 	}
 
+	// Both matchers are mandatory: the API rejects a default task that leaves
+	// either one out. On create an unset flag rightly becomes an any-ref
+	// matcher, and that reasoning was carried into update, where it is wrong:
+	// there an unset flag means "leave it alone", not "widen it to everything".
+	//
+	// The effect was silent. `default-task update --description` on a task
+	// scoped to release/* -> main reset both matchers to the any-ref matcher,
+	// so a checklist meant for one branch pair started applying to every pull
+	// request in the project.
+	if sourceRef == nil || targetRef == nil {
+		current, err := service.findDefaultTask(ctx, trimmedProject, trimmedTaskID)
+		if err != nil {
+			return nil, err
+		}
+		if sourceRef == nil {
+			sourceRef = matcherRef(current.SourceMatcher)
+		}
+		if targetRef == nil {
+			targetRef = matcherRef(current.TargetMatcher)
+		}
+	}
+
 	body := openapigenerated.UpdateDefaultTaskJSONRequestBody{
 		Description: trimmedDesc,
 	}
 
-	// Both matchers are mandatory: the API rejects a default task that leaves
-	// either one out, so an unset flag becomes an any-ref matcher.
 	body.SourceMatcher = openapi.NewDefaultTaskSourceMatcher(sourceRef)
 	body.TargetMatcher = openapi.NewDefaultTaskTargetMatcher(targetRef)
 
@@ -146,4 +167,34 @@ func (service *Service) DeleteDefaultTask(ctx context.Context, projectKey string
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+// findDefaultTask returns one project default task by id. There is no
+// single-task endpoint, so the listing is the only way to read what a task
+// currently says.
+func (service *Service) findDefaultTask(ctx context.Context, projectKey, taskID string) (DefaultTask, error) {
+	tasks, err := service.ListDefaultTasks(ctx, projectKey)
+	if err != nil {
+		return DefaultTask{}, err
+	}
+
+	for _, task := range tasks {
+		if task.Id != nil && strconv.FormatInt(*task.Id, 10) == taskID {
+			return task, nil
+		}
+	}
+
+	return DefaultTask{}, apperrors.New(apperrors.KindNotFound,
+		"default task "+taskID+" does not exist on project "+projectKey, nil)
+}
+
+// matcherRef turns a matcher read back from the server into the ref a caller
+// would have typed, so it can be sent again unchanged. Nil means any ref, which
+// is what the matcher constructors already take.
+func matcherRef(matcher *DefaultTaskMatcher) *string {
+	if matcher == nil || matcher.Id == nil || openapi.IsAnyRefMatcherID(*matcher.Id) {
+		return nil
+	}
+
+	return matcher.Id
 }

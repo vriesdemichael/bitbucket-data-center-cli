@@ -751,6 +751,15 @@ func TestProjectSettingsServiceEmptyAndInvalidJSON(t *testing.T) {
 
 	t.Run("UpdateDefaultTaskInvalidJSON", func(t *testing.T) {
 		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			// Update reads the task first, to carry forward a matcher the
+			// caller did not name. That read has to succeed, or the decode
+			// failure under test is the read's rather than the update's.
+			if r.Method == http.MethodGet {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"values":[{"id":123,"description":"desc"}]}`))
+
+				return
+			}
 			w.Header().Set("Content-Type", "text/plain")
 			_, _ = w.Write([]byte("{invalid-json"))
 		})
@@ -858,4 +867,75 @@ func TestProjectSettingsServiceTransientErrors(t *testing.T) {
 	if err := service.DeleteDefaultTask(ctx, "PRJ", "123"); err == nil {
 		t.Fatal("expected transient error")
 	}
+}
+
+// TestUpdateDefaultTaskCarriesForwardUnnamedMatchers is the #511 defect found
+// again in the default tasks.
+//
+// Both matchers are mandatory on the wire. On create an unset flag rightly
+// becomes an any-ref matcher; update reused that reasoning, so changing only
+// the description reset a task scoped to release/* -> main so it applied to
+// every pull request in the project.
+func TestUpdateDefaultTaskCarriesForwardUnnamedMatchers(t *testing.T) {
+	capture := func(t *testing.T, existing string) map[string]any {
+		t.Helper()
+
+		var sent map[string]any
+		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if r.Method == http.MethodGet {
+				_, _ = w.Write([]byte(existing))
+
+				return
+			}
+			_ = json.NewDecoder(r.Body).Decode(&sent)
+			_, _ = w.Write([]byte(`{"id":123,"description":"renamed"}`))
+		})
+
+		if _, err := service.UpdateDefaultTask(context.Background(), "PRJ", "123", "renamed", nil, nil); err != nil {
+			t.Fatalf("update failed: %v", err)
+		}
+
+		return sent
+	}
+
+	matcherID := func(t *testing.T, sent map[string]any, key string) string {
+		t.Helper()
+
+		matcher, ok := sent[key].(map[string]any)
+		if !ok {
+			t.Fatalf("no %s in the request body: %v", key, sent)
+		}
+		id, _ := matcher["id"].(string)
+
+		return id
+	}
+
+	t.Run("a scoped task keeps its matchers", func(t *testing.T) {
+		sent := capture(t, `{"values":[{"id":123,"description":"desc",
+			"sourceMatcher":{"id":"release/*","displayId":"release/*"},
+			"targetMatcher":{"id":"main","displayId":"main"}}]}`)
+
+		if got := matcherID(t, sent, "sourceMatcher"); got != "release/*" {
+			t.Errorf("sourceMatcher id = %q, want the existing release/*", got)
+		}
+		if got := matcherID(t, sent, "targetMatcher"); got != "main" {
+			t.Errorf("targetMatcher id = %q, want the existing main", got)
+		}
+	})
+
+	// Bitbucket echoes the any-ref matcher as ANY_REF_MATCHER_ID but only
+	// accepts ANY_REF when one is written. Carrying the echoed value straight
+	// back would create a branch matcher literally named ANY_REF_MATCHER_ID.
+	t.Run("an any-ref task stays any-ref, in the spelling the API accepts", func(t *testing.T) {
+		sent := capture(t, `{"values":[{"id":123,"description":"desc",
+			"sourceMatcher":{"id":"ANY_REF_MATCHER_ID","displayId":"ANY_REF_MATCHER_ID"},
+			"targetMatcher":{"id":"ANY_REF_MATCHER_ID","displayId":"ANY_REF_MATCHER_ID"}}]}`)
+
+		for _, key := range []string{"sourceMatcher", "targetMatcher"} {
+			if got := matcherID(t, sent, key); got != "ANY_REF" {
+				t.Errorf("%s id = %q, want ANY_REF", key, got)
+			}
+		}
+	})
 }
