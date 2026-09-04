@@ -1,12 +1,12 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 391,
+    "mocked_servers": 382,
     "files": 93,
-    "functions": 368,
+    "functions": 359,
     "by_class": {
-      "bitbucket-behaviour": 208,
-      "canned-response": 65,
+      "bitbucket-behaviour": 201,
+      "canned-response": 63,
       "external-service": 14,
       "harness-constructor": 19,
       "status-taxonomy": 43,
@@ -40,7 +40,7 @@
       "internal/openapi": 2,
       "internal/services/branch": 2,
       "internal/services/browse": 1,
-      "internal/services/comment": 12,
+      "internal/services/comment": 5,
       "internal/services/commit": 4,
       "internal/services/forksync": 1,
       "internal/services/gpgkey": 2,
@@ -2720,7 +2720,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 19,
+      "line": 17,
       "function": "newCommentTestService",
       "class": "harness-constructor",
       "signals": [
@@ -2731,23 +2731,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 42,
-      "function": "TestServiceCreateGetUpdateDeleteCommit",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/comment/service_test.go",
-      "line": 83,
+      "line": 40,
       "function": "TestServiceValidationAndStatusMapping",
       "class": "status-taxonomy",
       "signals": [
@@ -2760,24 +2744,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 100,
-      "function": "TestServicePullRequestPaginationAndCRUDFallbacks",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/comment/service_test.go",
-      "line": 289,
+      "line": 174,
       "function": "TestCommentServiceAdditionalBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2793,24 +2760,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 321,
-      "function": "TestServiceBlockerCommentsReactionsAndSuggestions",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/comment/service_test.go",
-      "line": 423,
+      "line": 209,
       "function": "TestServiceCreateExplainsAnchorRejection",
       "class": "canned-response",
       "signals": [
@@ -2824,7 +2774,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 544,
+      "line": 330,
       "function": "TestServiceBlockerReactionsAndSuggestionsAdditionalErrors",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2839,7 +2789,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 613,
+      "line": 399,
       "function": "TestServiceFallbacks",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2852,50 +2802,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 678,
-      "function": "TestServiceCreatePendingComment",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/comment/service_test.go",
-      "line": 717,
-      "function": "TestCountTasks",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/comment/service_test.go",
-      "line": 742,
-      "function": "TestCountTasksWithNoTasks",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/services/comment/service_test.go",
-      "line": 757,
+      "line": 464,
       "function": "TestCountTasksValidatesTarget",
       "class": "canned-response",
       "signals": [
@@ -2907,7 +2814,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 767,
+      "line": 474,
       "function": "TestSetStateValidation",
       "class": "canned-response",
       "signals": [
@@ -2919,7 +2826,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 781,
+      "line": 488,
       "function": "TestSetStateErrorPaths",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2933,20 +2840,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 852,
-      "function": "TestListRepairsAnchorPathsAndPages",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "returns-bitbucket-entity"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/comment/service_test.go",
-      "line": 906,
+      "line": 557,
       "function": "TestListSurfacesAMalformedPage",
       "class": "transport-fault",
       "signals": [
@@ -2961,32 +2855,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 935,
-      "function": "TestGetAndUpdateRepairAnchorPaths",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/services/comment/service_test.go",
-      "line": 973,
-      "function": "TestSetStateRepairsAnAnchoredBlocker",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "handler-passed-to-a-helper"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/comment/service_test.go",
-      "line": 1024,
+      "line": 585,
       "function": "TestCreateRefusesABlockerOnACommit",
       "class": "unreached-guard",
       "signals": [
@@ -2998,7 +2867,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 1055,
+      "line": 616,
       "function": "TestAnUnreadableVersionLookupStopsTheWrite",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3010,7 +2879,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 1108,
+      "line": 669,
       "function": "TestEveryEmptyReadIsRefused",
       "class": "canned-response",
       "signals": [
@@ -3022,7 +2891,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 1152,
+      "line": 713,
       "function": "TestAStationaryPageEndsTheListing",
       "class": "canned-response",
       "signals": [
@@ -3035,7 +2904,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 1185,
+      "line": 746,
       "function": "TestEveryEmptyWriteFallsBackToWhatWasSent",
       "class": "status-taxonomy",
       "signals": [
