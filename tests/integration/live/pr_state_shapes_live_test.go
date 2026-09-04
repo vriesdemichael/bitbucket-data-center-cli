@@ -148,3 +148,67 @@ func livePRIsDraft(t *testing.T, prID string) bool {
 
 	return draft
 }
+
+// TestLivePullRequestHumanOutput covers what the pull request commands print
+// for a person, which the mocks asserted against pull requests they invented.
+func TestLivePullRequestHumanOutput(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	const branch = "feature/human-output"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "human.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	prID := createLivePRForRegression(t, branch, "Human output", "--no-default-reviewers", "--no-codeowners")
+
+	t.Run("the listing names the pull request and both refs", func(t *testing.T) {
+		// Human output, so not through mustLiveCLI: that adds --json, and the
+		// arrow and the # are what a person reads rather than a machine.
+		output := mustLiveHumanCLI(t, "pr", "list", "--state", "open")
+
+		if !strings.Contains(output, "#"+prID) {
+			t.Errorf("expected the pull request id in the listing:\n%s", output)
+		}
+		// The arrow is how a reader sees direction at a glance, and getting the
+		// refs the wrong way round is the mistake it exists to prevent.
+		if !strings.Contains(output, branch+" -> master") {
+			t.Errorf("expected %q in the listing:\n%s", branch+" -> master", output)
+		}
+	})
+
+	t.Run("an empty comment listing says so", func(t *testing.T) {
+		output := mustLiveHumanCLI(t, "pr", "comment", "list", prID)
+		if strings.TrimSpace(output) == "" {
+			t.Fatal("an empty comment listing printed nothing at all")
+		}
+	})
+
+	t.Run("an empty activity listing says so", func(t *testing.T) {
+		output := mustLiveHumanCLI(t, "pr", "activity", prID)
+		if strings.TrimSpace(output) == "" {
+			t.Fatal("an empty activity listing printed nothing at all")
+		}
+	})
+}
+
+// mustLiveHumanCLI runs a command without --json, for the output a person
+// reads. mustLiveCLI adds --json, which is the wrong surface for asserting a
+// table or an empty-listing notice.
+func mustLiveHumanCLI(t *testing.T, args ...string) string {
+	t.Helper()
+
+	output, err := executeLiveCLI(t, args...)
+	if err != nil {
+		t.Fatalf("%s failed: %v\noutput: %s", strings.Join(args, " "), err, output)
+	}
+
+	return output
+}
