@@ -501,10 +501,96 @@ func TestLivePRRebase(t *testing.T) {
 		t.Fatalf("pr rebase without --version failed: %v\noutput: %s", err, output)
 	}
 
-	// A rebase rewrites the source branch, so the commit it points at must
-	// change. Without this the test would pass on a no-op.
-	if after := currentLivePRSourceCommit(t, prID); after == before {
-		t.Fatalf("the source commit is unchanged at %s, so nothing was rebased\noutput: %s", before, output)
+	// The ref change the server reports is the evidence, and it is in the same
+	// response: a rebase rewrites the source branch, so the hashes must differ.
+	//
+	// This used to re-read the pull request instead and compare the source
+	// commit. That is the same question asked of a second endpoint, and the
+	// pull request's own view of its source ref lags the ref itself -- locally
+	// by about the length of one round trip, on a loaded CI runner by enough to
+	// fail. Reading what the command was told is both stronger and immune to it.
+	result := decodeJSONMap(t, output)
+	fromHash, _ := result["fromHash"].(string)
+	toHash, _ := result["toHash"].(string)
+
+	if fromHash != before {
+		t.Errorf("the rebase started from %q, but the pull request was on %q", fromHash, before)
+	}
+	if toHash == "" || toHash == fromHash {
+		t.Fatalf("nothing was rebased: fromHash=%q toHash=%q\noutput: %s", fromHash, toHash, output)
+	}
+
+	// The pull request catches up, and how long that takes is Bitbucket's
+	// business rather than a reason to fail.
+	waitForLivePRSourceCommit(t, prID, toHash)
+}
+
+// waitForLivePRSourceCommit waits for the pull request to report a source
+// commit, because the ref moves before the pull request's view of it does.
+func waitForLivePRSourceCommit(t *testing.T, prID, want string) {
+	t.Helper()
+
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		got := currentLivePRSourceCommit(t, prID)
+		if got == want {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the pull request still reports source commit %s, want %s", got, want)
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+// TestLivePRRebaseWithNothingToDo covers the outcome that is not in the spec.
+//
+// A branch already on the tip of its target answers 204 with no body, which the
+// generated client has nowhere to put, so bb read the absent payload as a
+// broken response and reported "internal: unexpected empty rebase response
+// body" at exit 1 -- for a pull request already exactly where it was asked to
+// be (OPENAPI-028).
+func TestLivePRRebaseWithNothingToDo(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	branch := "feature/nothing-to-rebase"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "already-current.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+
+	// The target is left alone, so the branch is already on top of it.
+	prID := createLivePRForRegression(t, branch, "Nothing to rebase", "--no-default-reviewers", "--no-codeowners")
+	before := currentLivePRSourceCommit(t, prID)
+
+	output, err := executeLiveCLI(t, "--json", "pr", "rebase", prID)
+	if err != nil {
+		t.Fatalf("a rebase with nothing to do must succeed: %v\noutput: %s", err, output)
+	}
+
+	// Nothing moved, and the payload must not claim otherwise.
+	result := decodeJSONMap(t, output)
+	if toHash, _ := result["toHash"].(string); toHash != "" {
+		t.Errorf("expected no ref change in the payload, got toHash %q", toHash)
+	}
+	if after := currentLivePRSourceCommit(t, prID); after != before {
+		t.Errorf("the source commit moved from %s to %s with nothing to rebase", before, after)
+	}
+
+	human, err := executeLiveCLI(t, "pr", "rebase", prID)
+	if err != nil {
+		t.Fatalf("a rebase with nothing to do must succeed: %v\noutput: %s", err, human)
+	}
+	if !strings.Contains(human, "nothing to rebase") {
+		t.Errorf("expected the human output to say nothing happened, got:\n%s", human)
 	}
 }
 

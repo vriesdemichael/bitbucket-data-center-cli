@@ -194,9 +194,6 @@ func newMockPRServer(t *testing.T) *httptest.Server {
 		case r.Method == http.MethodGet && strings.Contains(path, "/projects/PRJ/repos/demo/pull-requests/42/rebase"):
 			_, _ = w.Write([]byte(`{"canRebase":true}`))
 
-		case r.Method == http.MethodPost && strings.Contains(path, "/projects/PRJ/repos/demo/pull-requests/42/rebase"):
-			_, _ = w.Write([]byte(`{"id":42,"title":"Test PR","state":"OPEN","open":true}`))
-
 		case r.Method == http.MethodGet && strings.Contains(path, "/build-status/"):
 			_, _ = w.Write([]byte(`{"values":[{"key":"ci/build","state":"SUCCESSFUL","url":"https://ci.example.com"}]}`))
 
@@ -727,26 +724,6 @@ func TestPRDefaultReviewers(t *testing.T) {
 	}
 	if !strings.Contains(out, "bob") {
 		t.Fatalf("expected bob in default-reviewers json output: %s", out)
-	}
-}
-
-func TestPRRebase(t *testing.T) {
-	server := newMockPRServer(t)
-
-	// Dry run
-	out, err := executePr(t, server.URL, "--dry-run", "rebase", "42")
-	if err != nil {
-		t.Fatalf("unexpected error on rebase dry run: %v", err)
-	}
-	assertDryRunPreview(t, out)
-
-	// Real execution
-	out, err = executePr(t, server.URL, "rebase", "42")
-	if err != nil {
-		t.Fatalf("unexpected error on rebase: %v", err)
-	}
-	if !strings.Contains(out, "Rebased pull request #42") {
-		t.Fatalf("expected Rebased confirmation, got: %s", out)
 	}
 }
 

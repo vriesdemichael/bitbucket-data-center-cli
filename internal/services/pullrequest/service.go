@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -1456,9 +1457,23 @@ func (service *Service) Rebase(ctx context.Context, repository RepositoryRef, pu
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
 	}
+
+	// A branch already sitting on the tip of its target answers 204 with no
+	// body: there was nothing to replay, which is success. The spec documents
+	// only the 200, so the generated client has nowhere to put that and leaves
+	// the payload nil, which read as the server having sent something broken
+	// (OPENAPI-028).
+	//
+	// Reporting it as an internal error told the caller bb had failed, at exit
+	// 1, for a pull request that was already exactly where it was asked to be.
+	if response.StatusCode() == http.StatusNoContent {
+		return nil, nil
+	}
+
 	if response.ApplicationjsonCharsetUTF8200 == nil {
 		return nil, apperrors.New(apperrors.KindInternal, "unexpected empty rebase response body", nil)
 	}
+
 	return response.ApplicationjsonCharsetUTF8200, nil
 }
 

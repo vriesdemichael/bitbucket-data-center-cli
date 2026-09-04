@@ -1020,7 +1020,11 @@ func New(deps Dependencies) *cobra.Command {
 	reviewApproveCmd := &cobra.Command{
 		Use:   "approve <id>",
 		Short: "Approve a pull request",
-		Args:  cobra.ExactArgs(1),
+		Long: `Approve a pull request.
+
+Shorthand for ` + "`bb pr review set <id> APPROVED`" + `. A participant holds one
+status, so approving replaces a request for changes rather than joining it.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -1081,8 +1085,14 @@ func New(deps Dependencies) *cobra.Command {
 
 	reviewUnapproveCmd := &cobra.Command{
 		Use:   "unapprove <id>",
-		Short: "Remove pull request approval",
-		Args:  cobra.ExactArgs(1),
+		Short: "Clear your review status on a pull request",
+		Long: `Clear your review status on a pull request.
+
+Shorthand for ` + "`bb pr review set <id> UNAPPROVED`" + `, and it does more than the
+name suggests: a participant holds one status, so this clears a request for
+changes as readily as an approval. There is no separate verb for withdrawing
+NEEDS_WORK.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -1140,6 +1150,103 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	reviewCmd.AddCommand(reviewUnapproveCmd)
+
+	reviewSetStatusCmd := &cobra.Command{
+		Use:   "set <id> <status>",
+		Short: "Set your review status on a pull request",
+		Long: `Set your review status on a pull request.
+
+A participant holds exactly one status. APPROVED and NEEDS_WORK are mutually
+exclusive, and UNAPPROVED is neither: requesting changes replaces an approval
+rather than joining it, and vice versa. Setting the status you already hold is
+a no-op.
+
+` + "`approve`" + ` and ` + "`unapprove`" + ` are shorthands for two of these three values.
+` + "`unapprove`" + ` clears whichever status you hold, so it withdraws a request for
+changes as readily as an approval, which its name does not suggest.`,
+		Example: `  # Request changes
+  bb pr review set 42 NEEDS_WORK
+
+  # Approve
+  bb pr review set 42 APPROVED
+
+  # Withdraw whichever status you hold
+  bb pr review set 42 UNAPPROVED`,
+		Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validated before anything is loaded or resolved, so a bad value
+			// costs no round trip and the message names what was allowed.
+			status, err := enumflag.Value("status", args[1], reviewStatuses)
+			if err != nil {
+				return err
+			}
+
+			cfg, apiClient, err := deps.LoadConfigAndClient()
+			if err != nil {
+				return err
+			}
+
+			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
+			if err != nil {
+				return err
+			}
+			repo := target.RepositoryRef()
+
+			if deps.DryRunEnabled() {
+				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
+					return err
+				}
+
+				current, err := service.Get(cmd.Context(), repo, target.PullRequestID)
+				if err != nil {
+					return err
+				}
+
+				predicted := "update"
+				reason := fmt.Sprintf("review status will be set to %s", status)
+				if held := reviewerStatusForUser(current.Reviewers, strings.TrimSpace(cfg.BitbucketUsername)); held == status {
+					predicted = "no-op"
+					reason = fmt.Sprintf("review status is already %s", status)
+				}
+
+				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					Intent:          "pr.review.set",
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "status": status},
+					Action:          "update",
+					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
+					Supported:       true,
+					Reason:          reason,
+					RequiredState:   []string{"pull request"},
+				})
+
+				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
+			}
+
+			var pullRequest pullrequestservice.PullRequest
+			switch status {
+			case "APPROVED":
+				pullRequest, err = service.Approve(cmd.Context(), repo, target.PullRequestID)
+			case "NEEDS_WORK":
+				pullRequest, err = service.NeedsWork(cmd.Context(), repo, target.PullRequestID)
+			default:
+				pullRequest, err = service.Unapprove(cmd.Context(), repo, target.PullRequestID)
+			}
+			if err != nil {
+				return err
+			}
+
+			if deps.JSONEnabled() {
+				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestChange{Repository: repositoryOf(repo), PullRequest: result.PullRequestFrom(pullRequest)})
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Review status on pull request #%d is now %s\n", pullRequest.ID, status)
+
+			return nil
+		},
+	}
+	reviewCmd.AddCommand(reviewSetStatusCmd)
 
 	reviewerCmd := &cobra.Command{Use: "reviewer", Short: "Manage pull request reviewers"}
 	var reviewerUsers []string
@@ -2642,7 +2749,16 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 				return deps.WriteJSON(cmd.OutOrStdout(), rebaseResultFrom(repositoryOf(repo), rebased))
 			}
 
+			// A branch already on its target's tip is rebased in the sense that
+			// matters, and saying so is different from claiming commits moved.
+			if rebased == nil || rebased.RefChange == nil {
+				fmt.Fprintf(cmd.OutOrStdout(), "Pull request #%s is already on top of its target; nothing to rebase\n", target.PullRequestID)
+
+				return nil
+			}
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Rebased pull request #%s\n", target.PullRequestID)
+
 			return nil
 		},
 	}

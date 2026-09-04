@@ -59,6 +59,11 @@ func TestCommandsRejectBadArgumentsWithoutCallingBitbucket(t *testing.T) {
 			wantMessage: "must be one of",
 		},
 		{
+			name:        "review status outside the allowed set",
+			args:        []string{"pr", "review", "set", "42", "LOOKS_FINE"},
+			wantMessage: "APPROVED, NEEDS_WORK, UNAPPROVED",
+		},
+		{
 			name: "reviewer condition payload that is not JSON",
 			args: []string{"reviewer", "condition", "create", "{invalid}", "--project", "PRJ"},
 		},

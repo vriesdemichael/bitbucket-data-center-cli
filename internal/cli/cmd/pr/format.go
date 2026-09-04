@@ -459,6 +459,37 @@ func reviewerApprovedByUser(reviewers []pullrequestservice.Reviewer, username st
 	return false
 }
 
+// reviewerStatusForUser returns the review status a user currently holds, which
+// is one value rather than a set: APPROVED, NEEDS_WORK or UNAPPROVED.
+//
+// Bitbucket also sends a derived `approved` boolean, and a participant who has
+// never acted may arrive with an empty status, so an empty answer is normalised
+// to UNAPPROVED -- the state it means.
+func reviewerStatusForUser(reviewers []pullrequestservice.Reviewer, username string) string {
+	trimmed := strings.TrimSpace(username)
+	if trimmed == "" {
+		return ""
+	}
+
+	for _, reviewer := range reviewers {
+		if !strings.EqualFold(strings.TrimSpace(reviewer.Name), trimmed) {
+			continue
+		}
+
+		status := strings.ToUpper(strings.TrimSpace(reviewer.Status))
+		switch {
+		case status != "":
+			return status
+		case reviewer.Approved:
+			return "APPROVED"
+		default:
+			return "UNAPPROVED"
+		}
+	}
+
+	return ""
+}
+
 func hasReviewer(reviewers []pullrequestservice.Reviewer, username string) bool {
 	trimmed := strings.TrimSpace(username)
 	for _, reviewer := range reviewers {
