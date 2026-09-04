@@ -61,6 +61,11 @@ func NewService(client *openapigenerated.ClientWithResponses) *Service {
 	return &Service{client: client}
 }
 
+// everyPermissionEntry reads a permission listing to its end. The limit these
+// methods take is the page size, not a cap: the caller fixes it at
+// permissionLookupLimit and expects the whole set back.
+const everyPermissionEntry = 1_000_000
+
 func (service *Service) ListRepositoryPermissionUsers(ctx context.Context, repo RepositoryRef, limit int) ([]PermissionUser, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
@@ -69,49 +74,43 @@ func (service *Service) ListRepositoryPermissionUsers(ctx context.Context, repo 
 		limit = 100
 	}
 
-	start := float32(0)
-	pageLimit := float32(limit)
-	results := make([]PermissionUser, 0)
+	return openapi.PageThrough(ctx, 0, everyPermissionEntry,
+		func(ctx context.Context, start, _ int) (openapi.Page[PermissionUser], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			response, err := service.client.GetUsersWithAnyPermission2WithResponse(ctx, repo.ProjectKey, repo.Slug,
+				&openapigenerated.GetUsersWithAnyPermission2Params{Start: &startValue, Limit: &limitValue})
+			if err != nil {
+				return openapi.Page[PermissionUser]{}, apperrors.New(apperrors.KindTransient, "failed to list repository permissions", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[PermissionUser]{}, err
+			}
 
-	for {
-		response, err := service.client.GetUsersWithAnyPermission2WithResponse(ctx, repo.ProjectKey, repo.Slug, &openapigenerated.GetUsersWithAnyPermission2Params{
-			Start: &start,
-			Limit: &pageLimit,
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[PermissionUser]{}, nil
+			}
+
+			entries := make([]PermissionUser, 0, len(*page.Values))
+			for _, value := range *page.Values {
+				entry := PermissionUser{}
+				if value.User != nil {
+					entry.Name = value.User.Name
+					entry.Display = value.User.DisplayName
+				}
+				if value.Permission != nil {
+					entry.Permission = string(*value.Permission)
+				}
+				entries = append(entries, entry)
+			}
+
+			return openapi.Page[PermissionUser]{
+				Values:        entries,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
 		})
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list repository permissions", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return nil, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
-
-		for _, value := range *response.ApplicationjsonCharsetUTF8200.Values {
-			entry := PermissionUser{}
-			if value.User != nil {
-				entry.Name = value.User.Name
-				entry.Display = value.User.DisplayName
-			}
-			if value.Permission != nil {
-				entry.Permission = string(*value.Permission)
-			}
-			results = append(results, entry)
-		}
-
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	return results, nil
 }
-
 func (service *Service) ListRepositoryPermissionGroups(ctx context.Context, repo RepositoryRef, limit int) ([]PermissionGroup, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
@@ -120,48 +119,41 @@ func (service *Service) ListRepositoryPermissionGroups(ctx context.Context, repo
 		limit = 100
 	}
 
-	start := float32(0)
-	pageLimit := float32(limit)
-	results := make([]PermissionGroup, 0)
+	return openapi.PageThrough(ctx, 0, everyPermissionEntry,
+		func(ctx context.Context, start, _ int) (openapi.Page[PermissionGroup], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			response, err := service.client.GetGroupsWithAnyPermission2WithResponse(ctx, repo.ProjectKey, repo.Slug,
+				&openapigenerated.GetGroupsWithAnyPermission2Params{Start: &startValue, Limit: &limitValue})
+			if err != nil {
+				return openapi.Page[PermissionGroup]{}, apperrors.New(apperrors.KindTransient, "failed to list repository group permissions", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[PermissionGroup]{}, err
+			}
 
-	for {
-		response, err := service.client.GetGroupsWithAnyPermission2WithResponse(ctx, repo.ProjectKey, repo.Slug, &openapigenerated.GetGroupsWithAnyPermission2Params{
-			Start: &start,
-			Limit: &pageLimit,
-		})
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list repository group permissions", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return nil, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[PermissionGroup]{}, nil
+			}
 
-		for _, value := range *response.ApplicationjsonCharsetUTF8200.Values {
-			entry := PermissionGroup{}
-			if value.Group != nil {
-				if value.Group.Name != nil {
+			entries := make([]PermissionGroup, 0, len(*page.Values))
+			for _, value := range *page.Values {
+				entry := PermissionGroup{}
+				if value.Group != nil && value.Group.Name != nil {
 					entry.Name = *value.Group.Name
 				}
+				if value.Permission != nil {
+					entry.Permission = *value.Permission
+				}
+				entries = append(entries, entry)
 			}
-			if value.Permission != nil {
-				entry.Permission = *value.Permission
-			}
-			results = append(results, entry)
-		}
 
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	return results, nil
+			return openapi.Page[PermissionGroup]{
+				Values:        entries,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (service *Service) GrantRepositoryUserPermission(ctx context.Context, repo RepositoryRef, username string, permission string) error {

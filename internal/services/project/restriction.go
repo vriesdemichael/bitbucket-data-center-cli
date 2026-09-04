@@ -43,63 +43,65 @@ func (service *Service) ListRestrictions(ctx context.Context, projectKey string,
 		options.MaxResults = 1000
 	}
 
-	start := float32(0)
-	pageLimit := float32(25)
-	results := make([]openapigenerated.RestRefRestriction, 0)
-
-	for {
-		params := &openapigenerated.GetRestrictionsParams{Start: &start, Limit: &pageLimit}
-
-		if options.Type != "" {
-			t, err := normalizeProjectRestrictionType(options.Type)
-			if err != nil {
-				return nil, err
-			}
-			params.Type = &t
-		}
-
-		if options.MatcherType != "" {
-			m, err := normalizeProjectRestrictionMatcherType(options.MatcherType)
-			if err != nil {
-				return nil, err
-			}
-			params.MatcherType = &m
-		}
-
-		if options.MatcherID != "" {
-			params.MatcherId = &options.MatcherID
-		}
-
-		response, err := service.client.GetRestrictionsWithResponse(ctx, trimmedProject, params)
+	// Normalised once. These ran inside the loop, so a listing that needed four
+	// requests re-validated the same two flags four times -- and could return a
+	// validation error from the middle of a walk it had already half finished.
+	params := &openapigenerated.GetRestrictionsParams{}
+	if options.Type != "" {
+		restrictionType, err := normalizeProjectRestrictionType(options.Type)
 		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list project branch restrictions", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return nil, err
 		}
-
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
+		params.Type = &restrictionType
+	}
+	if options.MatcherType != "" {
+		matcherType, err := normalizeProjectRestrictionMatcherType(options.MatcherType)
+		if err != nil {
+			return nil, err
 		}
-
-		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
-
-		if len(results) >= options.MaxResults {
-			results = results[:options.MaxResults]
-			break
-		}
-
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
+		params.MatcherType = &matcherType
+	}
+	if options.MatcherID != "" {
+		params.MatcherId = &options.MatcherID
 	}
 
-	return results, nil
+	return openapi.PageThrough(ctx, 0, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestRefRestriction], error) {
+			// The page size stays what it was. The cap here defaults to a
+			// thousand, and asking for a thousand at once is a different request
+			// than this endpoint has ever been sent.
+			if limit > restrictionPageSize {
+				limit = restrictionPageSize
+			}
+
+			startValue, limitValue := float32(start), float32(limit)
+			pageParams := *params
+			pageParams.Start = &startValue
+			pageParams.Limit = &limitValue
+
+			response, err := service.client.GetRestrictionsWithResponse(ctx, trimmedProject, &pageParams)
+			if err != nil {
+				return openapi.Page[openapigenerated.RestRefRestriction]{}, apperrors.New(apperrors.KindTransient, "failed to list project branch restrictions", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[openapigenerated.RestRefRestriction]{}, err
+			}
+
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestRefRestriction]{}, nil
+			}
+
+			return openapi.Page[openapigenerated.RestRefRestriction]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
+
+// restrictionPageSize is the window this endpoint has always been asked for.
+const restrictionPageSize = 25
 
 func (service *Service) GetRestriction(ctx context.Context, projectKey string, id string) (openapigenerated.RestRefRestriction, error) {
 	trimmedProject := strings.TrimSpace(projectKey)
