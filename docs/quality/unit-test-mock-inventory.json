@@ -1,20 +1,20 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 517,
+    "mocked_servers": 490,
     "files": 96,
-    "functions": 490,
+    "functions": 463,
     "by_class": {
-      "bitbucket-behaviour": 307,
-      "canned-response": 77,
+      "bitbucket-behaviour": 289,
+      "canned-response": 71,
       "external-service": 14,
       "harness-constructor": 19,
-      "status-taxonomy": 62,
+      "status-taxonomy": 59,
       "transport-fault": 27,
       "unreached-guard": 11
     },
     "behaviour_by_package": {
-      "internal/cli": 125,
+      "internal/cli": 109,
       "internal/cli/cmd/admin": 1,
       "internal/cli/cmd/api": 15,
       "internal/cli/cmd/auth": 2,
@@ -49,7 +49,7 @@
       "internal/services/pullrequest": 16,
       "internal/services/pullrequestactivity": 2,
       "internal/services/quality": 7,
-      "internal/services/reposettings": 5,
+      "internal/services/reposettings": 3,
       "internal/services/repository": 5,
       "internal/services/reviewer": 7,
       "internal/services/sshkey": 2,
@@ -1787,7 +1787,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 17,
+      "line": 16,
       "function": "TestReviewerCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1802,7 +1802,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 58,
+      "line": 57,
       "function": "TestProjectPermissionsCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1818,7 +1818,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 123,
+      "line": 122,
       "function": "TestReviewerCLIErrors",
       "class": "canned-response",
       "signals": [
@@ -1832,7 +1832,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 140,
+      "line": 139,
       "function": "TestProjectPermissionsCLIErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -1845,7 +1845,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 156,
+      "line": 155,
       "function": "TestRepoScopedGovernanceCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1859,7 +1859,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 200,
+      "line": 199,
       "function": "TestRevokeAndStrategyCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1874,7 +1874,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 251,
+      "line": 250,
       "function": "TestReviewerConditionCreateCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1889,7 +1889,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 279,
+      "line": 278,
       "function": "TestProjectPermissionsRevokeCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1904,7 +1904,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 311,
+      "line": 310,
       "function": "TestRepoSettingsPermissionsCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1920,7 +1920,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 346,
+      "line": 345,
       "function": "TestRepoSettingsPullRequestsAdditionalCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1934,21 +1934,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 375,
-      "function": "TestHumanOutputGovernanceCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 413,
+      "line": 374,
       "function": "TestProjectPermissionsRevokeErrorsCLI",
       "class": "status-taxonomy",
       "signals": [
@@ -1961,7 +1947,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 437,
+      "line": 398,
       "function": "TestReviewerConditionDeleteErrorsCLI",
       "class": "status-taxonomy",
       "signals": [
@@ -1974,62 +1960,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 454,
-      "function": "TestRepoSettingsPullRequestsHumanCLI",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 473,
-      "function": "TestReviewerCLIAdditional",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 493,
-      "function": "TestRepoScopedGovernanceCLIAdditional",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 541,
-      "function": "TestProjectCoreCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 577,
+      "line": 415,
       "function": "TestReviewerConditionCreateUpdateRepoCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2044,23 +1975,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 606,
-      "function": "TestRepoSettingsWorkflowWebhooksCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 642,
+      "line": 444,
       "function": "TestRepoSettingsPullRequestsErrorsCLI",
       "class": "status-taxonomy",
       "signals": [
@@ -2073,94 +1988,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 664,
-      "function": "TestReviewerConditionRepoBranchesCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 690,
-      "function": "TestProjectPermissionsListPaginationCLI",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 709,
-      "function": "TestPRReviewerCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 734,
-      "function": "TestReviewerConditionCreateProjectCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 781,
-      "function": "TestProjectHumanCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 811,
-      "function": "TestReviewerConditionCreateRepoSuccessCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 831,
+      "line": 493,
       "function": "TestProjectCoreCLIErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -2173,111 +2001,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 867,
-      "function": "TestProjectListFilterCLI",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 882,
-      "function": "TestProjectListEmptyCLI",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 897,
-      "function": "TestReviewerConditionListEmptyCLI",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 938,
-      "function": "TestReviewerConditionListHumanNotEmptyCLI",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 953,
-      "function": "TestReviewerConditionUpdateCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 978,
-      "function": "TestPRCoreCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 1041,
-      "function": "TestPRApproveCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 1065,
-      "function": "TestReviewerConditionUpdateProjectFallbackCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 1085,
+      "line": 555,
       "function": "TestPRMergeErrorCLI",
       "class": "canned-response",
       "signals": [
@@ -2291,61 +2015,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 1114,
-      "function": "TestReviewerConditionDeleteFallbackCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 1148,
-      "function": "TestMoreCLIErrorPaths",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 1225,
-      "function": "TestReviewerConditionUpdateFallbackCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 1253,
-      "function": "TestReviewerCLIBranchesAdditional",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 1380,
+      "line": 671,
       "function": "TestPRCoreUpdateDeclineReopenCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2359,20 +2029,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 1476,
-      "function": "TestPRCoreErrorsCLI",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 1530,
+      "line": 767,
       "function": "TestPRSubCommandsCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2387,7 +2044,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 1578,
+      "line": 815,
       "function": "TestRepoSettingsPermissionsErrorsCLI",
       "class": "status-taxonomy",
       "signals": [
@@ -2400,7 +2057,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 1642,
+      "line": 879,
       "function": "TestPRWatchUnwatchRebaseCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2417,7 +2074,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 1757,
+      "line": 994,
       "function": "TestCommitPRsAndParticipantsCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2434,7 +2091,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 1853,
+      "line": 1090,
       "function": "TestReviewerGroupAndDefaultReviewersCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2451,7 +2108,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 2013,
+      "line": 1250,
       "function": "TestDefaultReviewersCLIErrorsAndFallbacks",
       "class": "canned-response",
       "signals": [
@@ -2465,7 +2122,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 2027,
+      "line": 1264,
       "function": "TestDefaultReviewersCLIErrorsAndFallbacks",
       "class": "canned-response",
       "signals": [
@@ -2479,7 +2136,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 2047,
+      "line": 1284,
       "function": "TestDefaultReviewersCLIErrorsAndFallbacks",
       "class": "canned-response",
       "signals": [
@@ -6009,23 +5666,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 327,
-      "function": "TestRepositoryServicePermissionsAndChecks",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reposettings/service_test.go",
-      "line": 519,
+      "line": 469,
       "function": "TestRepositoryServiceAdditionalCoverage",
       "class": "status-taxonomy",
       "signals": [
@@ -6038,7 +5679,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 535,
+      "line": 485,
       "function": "TestRepositoryServiceUpdateNilBody",
       "class": "status-taxonomy",
       "signals": [
@@ -6051,7 +5692,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 550,
+      "line": 500,
       "function": "TestRepositoryServiceErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -6064,7 +5705,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 677,
+      "line": 627,
       "function": "TestNewRepositorySettingsMethods",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -6072,20 +5713,6 @@
         "closes-on-cleanup",
         "returns-a-status",
         "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reposettings/service_test.go",
-      "line": 867,
-      "function": "TestUpdateWebhookPreservesUnchangedFields",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
