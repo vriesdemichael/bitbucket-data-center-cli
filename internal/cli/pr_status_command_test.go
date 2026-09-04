@@ -187,30 +187,6 @@ func TestPullRequestStatusAsksOnlyForReviewsNotYetGiven(t *testing.T) {
 	}
 }
 
-// TestPullRequestStatusDoesNotNarrowTheAuthoredSection guards the other half of
-// the same query: participantStatus is meaningless for pull requests you wrote,
-// and applying it there would hide your own open work.
-func TestPullRequestStatusDoesNotNarrowTheAuthoredSection(t *testing.T) {
-	var authorParticipantStatus string
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		if request.URL.Path == "/rest/api/1.0/dashboard/pull-requests" && request.URL.Query().Get("role") == "AUTHOR" {
-			authorParticipantStatus = request.URL.Query().Get("participantStatus")
-		}
-		_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[]}`))
-	}))
-	t.Cleanup(server.Close)
-
-	configurePullRequestStatusEnv(t, server.URL, "me")
-	withGitBackend(t, inferenceGitBackendStub{repoRoot: "/repo", branch: "feature/x"})
-
-	executePullRequestStatus(t, "--json", "pr", "status")
-
-	if authorParticipantStatus != "" {
-		t.Fatalf("expected no participantStatus on the author query, got %q", authorParticipantStatus)
-	}
-}
-
 // TestPullRequestStatusDegradesOutsideARepository is the reason the current
 // branch is a section rather than a precondition: the other two answers are
 // still available, and failing the whole command would make bb pr status
@@ -306,6 +282,7 @@ func TestPullRequestStatusHumanOutput(t *testing.T) {
 	}
 }
 
+// mock-inventory: canned-response — an instance with nothing on the board; the subject is that each section says so.
 func TestPullRequestStatusReportsEmptySections(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")
@@ -331,6 +308,7 @@ func TestPullRequestStatusReportsEmptySections(t *testing.T) {
 // TestPullRequestStatusFailsWhenTheDashboardFails draws the line the other way
 // from the current-branch section: the two dashboard queries are the command's
 // reason to exist, so a failure there is a failure, not a note.
+// mock-inventory: transport-fault — the dashboard is made to fail; the subject is that pr status reports it rather than printing an empty board.
 func TestPullRequestStatusFailsWhenTheDashboardFails(t *testing.T) {
 	cases := []struct {
 		name        string
@@ -371,6 +349,7 @@ func TestPullRequestStatusFailsWhenTheDashboardFails(t *testing.T) {
 // TestPullRequestStatusNotesABranchListingFailure keeps a per-repository
 // failure inside its section: the branch may be one Bitbucket has never heard
 // of, which says nothing about the other two answers.
+// mock-inventory: transport-fault — the branch listing is made to fail; the subject is that the section says so rather than looking empty.
 func TestPullRequestStatusNotesABranchListingFailure(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")

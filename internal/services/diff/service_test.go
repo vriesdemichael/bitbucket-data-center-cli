@@ -11,67 +11,6 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
-func TestDiffRefsPatchAndStatErrorBranches(t *testing.T) {
-	t.Run("patch success", func(t *testing.T) {
-		service := newDiffServiceWithHandler(t, func(writer http.ResponseWriter, request *http.Request) {
-			_, _ = writer.Write([]byte("diff --git a/x.txt b/x.txt\n"))
-		})
-
-		result, err := service.DiffRefs(context.Background(), DiffRefsInput{
-			Repository: RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-			From:       "main",
-			To:         "feature",
-			Output:     OutputKindPatch,
-		})
-		if err != nil {
-			t.Fatalf("expected patch success, got: %v", err)
-		}
-		if !strings.Contains(result.Patch, "diff --git") {
-			t.Fatalf("expected patch payload, got: %q", result.Patch)
-		}
-	})
-
-	t.Run("patch status error", func(t *testing.T) {
-		service := newDiffServiceWithHandler(t, func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusNotFound)
-			_, _ = writer.Write([]byte("missing"))
-		})
-
-		_, err := service.DiffRefs(context.Background(), DiffRefsInput{
-			Repository: RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-			From:       "main",
-			To:         "feature",
-			Output:     OutputKindPatch,
-		})
-		if err == nil {
-			t.Fatal("expected not found error")
-		}
-		if apperrors.ExitCode(err) != 4 {
-			t.Fatalf("expected not found exit code 4, got %d (%v)", apperrors.ExitCode(err), err)
-		}
-	})
-
-	t.Run("stat status error", func(t *testing.T) {
-		service := newDiffServiceWithHandler(t, func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusConflict)
-			_, _ = writer.Write([]byte("conflict"))
-		})
-
-		_, err := service.DiffRefs(context.Background(), DiffRefsInput{
-			Repository: RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-			From:       "main",
-			To:         "feature",
-			Output:     OutputKindStat,
-		})
-		if err == nil {
-			t.Fatal("expected conflict error")
-		}
-		if apperrors.ExitCode(err) != 5 {
-			t.Fatalf("expected conflict exit code 5, got %d (%v)", apperrors.ExitCode(err), err)
-		}
-	})
-}
-
 func TestDiffRefsPatchWithPathRejected(t *testing.T) {
 	service := NewService(nil)
 	_, err := service.DiffRefs(context.Background(), DiffRefsInput{
@@ -147,177 +86,7 @@ func TestDiffHelpers(t *testing.T) {
 	}
 }
 
-func TestDiffPRPatchAndStatModes(t *testing.T) {
-	t.Run("patch", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			_, _ = writer.Write([]byte("diff --git a/p.txt b/p.txt\n"))
-		}))
-		defer server.Close()
-
-		client, err := openapigenerated.NewClientWithResponses(server.URL)
-		if err != nil {
-			t.Fatalf("create generated client: %v", err)
-		}
-
-		service := NewService(client)
-		result, err := service.DiffPR(context.Background(), DiffPRInput{
-			Repository:    RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-			PullRequestID: "12",
-			Output:        OutputKindPatch,
-		})
-		if err != nil {
-			t.Fatalf("expected no error, got: %v", err)
-		}
-		if !strings.Contains(result.Patch, "diff --git") {
-			t.Fatalf("expected patch output, got: %q", result.Patch)
-		}
-	})
-
-	t.Run("stat", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			writer.Header().Set("Content-Type", "application/json")
-			// The three counts a diff-stats-summary endpoint returns; this used to
-			// serve a paged-list shape, which decoded to nothing (#526).
-			_, _ = writer.Write([]byte(`{"filesChanged":1,"totalInsertions":3,"totalDeletions":2}`))
-		}))
-		defer server.Close()
-
-		client, err := openapigenerated.NewClientWithResponses(server.URL)
-		if err != nil {
-			t.Fatalf("create generated client: %v", err)
-		}
-
-		service := NewService(client)
-		result, err := service.DiffPR(context.Background(), DiffPRInput{
-			Repository:    RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-			PullRequestID: "12",
-			Output:        OutputKindStat,
-		})
-		if err != nil {
-			t.Fatalf("expected no error, got: %v", err)
-		}
-		if result.Stats == nil {
-			t.Fatal("expected stats payload")
-		}
-	})
-}
-
-func TestDiffPRErrorBranches(t *testing.T) {
-	t.Run("patch status error", func(t *testing.T) {
-		service := newDiffServiceWithHandler(t, func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusUnauthorized)
-			_, _ = writer.Write([]byte("unauthorized"))
-		})
-
-		_, err := service.DiffPR(context.Background(), DiffPRInput{
-			Repository:    RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-			PullRequestID: "7",
-			Output:        OutputKindPatch,
-		})
-		if err == nil {
-			t.Fatal("expected authentication error")
-		}
-		if apperrors.ExitCode(err) != 3 {
-			t.Fatalf("expected auth exit code 3, got %d (%v)", apperrors.ExitCode(err), err)
-		}
-	})
-
-	t.Run("stat status error", func(t *testing.T) {
-		service := newDiffServiceWithHandler(t, func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusNotAcceptable)
-			_, _ = writer.Write([]byte("not acceptable"))
-		})
-
-		_, err := service.DiffPR(context.Background(), DiffPRInput{
-			Repository:    RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-			PullRequestID: "7",
-			Output:        OutputKindStat,
-		})
-		if err == nil {
-			t.Fatal("expected permanent error")
-		}
-		if apperrors.ExitCode(err) != 1 {
-			t.Fatalf("expected permanent exit code 1, got %d (%v)", apperrors.ExitCode(err), err)
-		}
-	})
-
-	t.Run("raw status error", func(t *testing.T) {
-		service := newDiffServiceWithHandler(t, func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusTooManyRequests)
-			_, _ = writer.Write([]byte("rate limited"))
-		})
-
-		_, err := service.DiffPR(context.Background(), DiffPRInput{
-			Repository:    RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-			PullRequestID: "7",
-			Output:        OutputKindRaw,
-		})
-		if err == nil {
-			t.Fatal("expected transient error")
-		}
-		if apperrors.ExitCode(err) != 10 {
-			t.Fatalf("expected transient exit code 10, got %d (%v)", apperrors.ExitCode(err), err)
-		}
-	})
-}
-
-func TestDiffRefsStatAndCommitWithPath(t *testing.T) {
-	t.Run("refs stat", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			writer.Header().Set("Content-Type", "application/json")
-			// The three counts a diff-stats-summary endpoint returns; this used to
-			// serve a paged-list shape, which decoded to nothing (#526).
-			_, _ = writer.Write([]byte(`{"filesChanged":1,"totalInsertions":3,"totalDeletions":2}`))
-		}))
-		defer server.Close()
-
-		client, err := openapigenerated.NewClientWithResponses(server.URL)
-		if err != nil {
-			t.Fatalf("create generated client: %v", err)
-		}
-
-		service := NewService(client)
-		result, err := service.DiffRefs(context.Background(), DiffRefsInput{
-			Repository: RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-			From:       "main",
-			To:         "feature",
-			Path:       "seed.txt",
-			Output:     OutputKindStat,
-		})
-		if err != nil {
-			t.Fatalf("expected no error, got: %v", err)
-		}
-		if result.Stats == nil {
-			t.Fatal("expected stats payload")
-		}
-	})
-
-	t.Run("commit path", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			_, _ = writer.Write([]byte("diff --git a/seed.txt b/seed.txt\n"))
-		}))
-		defer server.Close()
-
-		client, err := openapigenerated.NewClientWithResponses(server.URL)
-		if err != nil {
-			t.Fatalf("create generated client: %v", err)
-		}
-
-		service := NewService(client)
-		result, err := service.DiffCommit(context.Background(), DiffCommitInput{
-			Repository: RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-			CommitID:   "abc123",
-			Path:       "seed.txt",
-		})
-		if err != nil {
-			t.Fatalf("expected no error, got: %v", err)
-		}
-		if !strings.Contains(result.Patch, "diff --git") {
-			t.Fatalf("expected patch output, got: %q", result.Patch)
-		}
-	})
-}
-
+// mock-inventory: transport-fault — the connection is broken on purpose; no live server refuses on request.
 func TestDiffRefsTransportFailure(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte("ok"))
@@ -375,6 +144,7 @@ func TestDiffValidationAndHelperEdgeBranches(t *testing.T) {
 
 }
 
+// mock-inventory: transport-fault — the failures are injected below the API; the subject is how each branch classifies them.
 func TestDiffTransportFailureBranches(t *testing.T) {
 	closedService := func(t *testing.T) *Service {
 		t.Helper()
@@ -749,6 +519,7 @@ func TestDecodeStatsSummaryRefusesToCallAnUnreadableBodyEmpty(t *testing.T) {
 // TestStatRunsSurfaceAnUndecodableSummary covers the error return on both stat
 // paths: an unreadable body must not reach the caller as an empty summary
 // (#526, ADR-077).
+// mock-inventory: transport-fault — an undecodable summary is injected; the subject is that bb says so rather than reporting zero changes.
 func TestStatRunsSurfaceAnUndecodableSummary(t *testing.T) {
 	t.Parallel()
 

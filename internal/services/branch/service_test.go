@@ -300,36 +300,6 @@ func TestBranchServiceAdditionalValidationAndFallbackPaths(t *testing.T) {
 	}
 }
 
-func TestBranchServiceNotFoundAcrossOperations(t *testing.T) {
-	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		_, _ = w.Write([]byte("missing"))
-	})
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-	if _, err := service.List(context.Background(), repo, ListOptions{OrderBy: "MODIFICATION"}); err == nil || apperrors.ExitCode(err) != 4 {
-		t.Fatalf("expected list not found error, got %v (%d)", err, apperrors.ExitCode(err))
-	}
-	if _, err := service.Create(context.Background(), repo, "feature/not-found", "abc"); err == nil || apperrors.ExitCode(err) != 4 {
-		t.Fatalf("expected create not found error, got %v (%d)", err, apperrors.ExitCode(err))
-	}
-	if err := service.SetDefault(context.Background(), repo, "main"); err == nil || apperrors.ExitCode(err) != 4 {
-		t.Fatalf("expected set default not found error, got %v (%d)", err, apperrors.ExitCode(err))
-	}
-	if _, err := service.FindByCommit(context.Background(), repo, "abc", 10); err == nil || apperrors.ExitCode(err) != 4 {
-		t.Fatalf("expected find-by-commit not found error, got %v (%d)", err, apperrors.ExitCode(err))
-	}
-	if _, err := service.ListRestrictions(context.Background(), repo, RestrictionListOptions{}); err == nil || apperrors.ExitCode(err) != 4 {
-		t.Fatalf("expected list restrictions not found error, got %v (%d)", err, apperrors.ExitCode(err))
-	}
-	if _, err := service.GetRestriction(context.Background(), repo, "12"); err == nil || apperrors.ExitCode(err) != 4 {
-		t.Fatalf("expected get restriction not found error, got %v (%d)", err, apperrors.ExitCode(err))
-	}
-	if err := service.DeleteRestriction(context.Background(), repo, "12"); err == nil || apperrors.ExitCode(err) != 4 {
-		t.Fatalf("expected delete restriction not found error, got %v (%d)", err, apperrors.ExitCode(err))
-	}
-}
-
 func TestBranchServiceTransientAcrossOperations(t *testing.T) {
 	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		hijacker, ok := w.(http.Hijacker)

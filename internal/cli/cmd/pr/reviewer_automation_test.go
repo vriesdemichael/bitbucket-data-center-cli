@@ -355,6 +355,7 @@ func TestPRCreateSkipsAbsentCodeOwnersQuietly(t *testing.T) {
 // Adding reviewers is one request per reviewer, so a failure partway through
 // leaves earlier reviewers attached. Aborting on the first error reported total
 // failure and hid what had already been applied.
+// mock-inventory: transport-fault — some reviewers are made to fail and others not, which no live server does on request; the subject is that bb reports both halves instead of one.
 func TestPRReviewerAddReportsPartialSuccess(t *testing.T) {
 	var added []string
 
@@ -800,6 +801,7 @@ func TestCodeOwnersReadsLocalFileFromRepositoryRoot(t *testing.T) {
 // Under --json stdout is a machine contract carrying exactly one document. A
 // partial failure must not emit a success envelope on top of the failure
 // envelope the entry point writes.
+// mock-inventory: transport-fault — same injected partial failure; the subject is that the envelope stays a single document.
 func TestPRReviewerAddPartialFailureEmitsOneJSONDocument(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

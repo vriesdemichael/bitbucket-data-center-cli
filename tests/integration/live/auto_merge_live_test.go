@@ -88,3 +88,59 @@ func TestLivePullRequestAutoMergeEnable(t *testing.T) {
 		t.Fatalf("pr auto-merge disable failed: %v\noutput: %s", err, disableOutput)
 	}
 }
+
+// TestLivePullRequestAutoMergeMergesImmediately covers the other outcome.
+//
+// The test above deliberately blocks the merge so the pending state is
+// exercised. With nothing blocking, arming auto-merge merges the pull request
+// on the spot, and Bitbucket says so in the same response -- there is no
+// pending auto-merge afterwards, because there is nothing left to wait for.
+//
+// The unit test that covered this built the answer from a fixture, so it could
+// only confirm that bb reads the field it was handed. Whether the server
+// reports an immediate merge this way, and whether the pull request really is
+// merged, are the parts that matter.
+func TestLivePullRequestAutoMergeMergesImmediately(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	const branch = "feature/auto-merge-immediate"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "auto-merge-now.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	prID := createLivePRForRegression(t, branch, "Merges immediately", "--no-default-reviewers", "--no-codeowners")
+
+	if output, err := executeLiveCLI(t, "repo", "settings", "auto-merge", "set", "--enabled", "--repo", repoRef); err != nil {
+		t.Fatalf("enable repository auto-merge failed: %v\noutput: %s", err, output)
+	}
+
+	// Nothing blocks this one, so arming it should merge it.
+	output := mustLiveCLI(t, "pr", "auto-merge", "enable", prID, "--repo", repoRef)
+
+	autoMerge, ok := decodeJSONMap(t, output)["autoMerge"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected autoMerge in the payload, got:\n%s", output)
+	}
+	if autoMerge["mergedImmediately"] != true {
+		t.Fatalf("expected mergedImmediately, got: %#v", autoMerge)
+	}
+	// Reporting an armed auto-merge here would describe a state that will never
+	// fire: there is nothing left to merge.
+	if autoMerge["enabled"] == true {
+		t.Errorf("an immediate merge left auto-merge armed: %#v", autoMerge)
+	}
+
+	state, _ := extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "get", prID)))["state"].(string)
+	if state != "MERGED" {
+		t.Fatalf("state = %q, want MERGED", state)
+	}
+}

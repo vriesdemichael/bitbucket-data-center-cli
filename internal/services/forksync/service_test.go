@@ -47,6 +47,7 @@ func TestForkSyncServiceValidation(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the failures are injected below the API: a broken client, not a server's answer.
 func TestForkSyncServiceErrors(t *testing.T) {
 	// 1. Client transport errors
 	badClient, _ := openapigenerated.NewClientWithResponses("http://127.0.0.1:0/rest")

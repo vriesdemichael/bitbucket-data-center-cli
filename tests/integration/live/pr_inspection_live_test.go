@@ -83,3 +83,51 @@ func TestLivePullRequestInspection(t *testing.T) {
 // Bitbucket folded tasks into comments carrying a blocker severity, so the
 // coverage lives in TestLivePullRequestCommentResolveReopen instead: add a
 // blocker, resolve it, reopen it.
+
+// TestLivePullRequestFilesReportsARename covers the change type a mock cannot
+// produce honestly.
+//
+// `pr files` renders MODIFY, ADD, DELETE and MOVE, and a rename is the one that
+// carries a second path -- where the file came from. The unit test wrote a MOVE
+// entry with a srcPath by hand and checked bb rendered both sides, which proves
+// the renderer agrees with the fixture. Whether Bitbucket reports a rename that
+// way, and whether git even detects one here, is what decides if the branch is
+// ever taken.
+func TestLivePullRequestFilesReportsARename(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	const original = "docs/original-name.md"
+	const renamed = "docs/new-name.md"
+
+	// The file has to exist on the target before it can be moved away from it.
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", original,
+		"content that survives the move\n"); err != nil {
+		t.Fatalf("seed the original path failed: %v", err)
+	}
+
+	const branch = "feature/renamed"
+	if err := harness.renameFileOnBranch(seeded.Key, repo.Slug, branch, original, renamed); err != nil {
+		t.Fatalf("rename on a branch failed: %v", err)
+	}
+
+	prID := createLivePRForRegression(t, branch, "A rename", "--no-default-reviewers", "--no-codeowners")
+
+	output := mustLiveCLI(t, "pr", "files", prID)
+	if !strings.Contains(output, renamed) {
+		t.Fatalf("the destination path is missing from pr files:\n%s", output)
+	}
+	// Both halves matter: a rename rendered without where it came from reads as
+	// a new file, and the reviewer loses the history.
+	if !strings.Contains(output, original) {
+		t.Fatalf("the source path is missing, so the rename reads as an add:\n%s", output)
+	}
+}

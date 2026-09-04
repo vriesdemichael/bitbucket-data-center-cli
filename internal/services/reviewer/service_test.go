@@ -99,6 +99,7 @@ func TestReviewerGroupsAndDefaultReviewersServiceValidation(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — a cancelled context is the caller's doing; no server produces it.
 func TestReviewerGroupsAndDefaultReviewersServiceContextCanceled(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

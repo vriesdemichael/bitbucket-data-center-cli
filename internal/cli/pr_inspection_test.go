@@ -118,32 +118,7 @@ func TestPRCommitsAndMergeBaseJSON(t *testing.T) {
 	}
 }
 
-// TestPRFilesRendersChangeTypesAndRenames covers the default-type fallback and
-// the rename source-path branch of the files command's text output.
-func TestPRFilesRendersChangeTypesAndRenames(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/7/changes" {
-			_, _ = w.Write([]byte(`{"values":[{"path":{"toString":"renamed.go"},"srcPath":{"toString":"old.go"}},{"path":{"toString":"kept.go"},"type":"ADD"}],"isLastPage":true,"nextPageStart":0}`))
-			return
-		}
-		http.NotFound(w, r)
-	}))
-	defer server.Close()
-	configureDryRunEnv(t, server.URL, "TEST", "demo")
-
-	output, err := executeTestCLI(t, "pr", "files", "7")
-	if err != nil {
-		t.Fatalf("unexpected error: %v (output: %s)", err, output)
-	}
-	if !strings.Contains(output, "MODIFY\trenamed.go (from old.go)") {
-		t.Fatalf("expected rename rendering with default type, got: %s", output)
-	}
-	if !strings.Contains(output, "ADD\tkept.go") {
-		t.Fatalf("expected explicit change type, got: %s", output)
-	}
-}
-
+// mock-inventory: canned-response — an instance with nothing to show; the subject is that each listing says so rather than printing nothing.
 func TestPRInspectionEmptyResults(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -169,6 +144,7 @@ func TestPRInspectionEmptyResults(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the failures are injected; the subject is that each command reports rather than rendering an empty result.
 func TestPRInspectionServiceErrors(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"errors":[{"message":"boom"}]}`, http.StatusInternalServerError)
