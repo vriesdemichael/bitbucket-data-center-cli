@@ -1196,3 +1196,40 @@ fixes:
     verification:
       commands:
         - go test -tags=live ./tests/integration/live -run TestLiveMCPSubmitReviewMutatesForReal
+
+  - id: OPENAPI-028
+    area: pull-request-rebase-no-op
+    source: undocumented-response
+    status: active
+    status_evidence: >
+      Observed on 10.4.2 by calling the rebase endpoint directly against a branch already on
+      the tip of its target.
+    description: >
+      Rebasing a branch that is already on top of its target answers 204 with no body. The
+      spec documents only the 200, so the generated client has nowhere to put it.
+    reference:
+      type: endpoint
+      value: /git/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/rebase
+      upstream_issue: >
+        Three outcomes, one of which is not in the spec:
+
+          - nothing to replay -> 204, empty body
+          - the target moved  -> 200, {"refChange": {...}} with fromHash and toHash
+          - called again straight after a successful rebase -> 409
+            GitRebaseException, "New changes were pushed to '<branch>' ... while the rebase
+            was being performed", because the rebase's own ref update counts as the push
+
+        Only the 200 is declared, so RebaseWithResponse leaves the payload nil on a 204 and
+        the absence is indistinguishable from a malformed response.
+    change:
+      files:
+        - internal/services/pullrequest/service.go
+        - internal/cli/cmd/pr/pr.go
+      detail: >
+        204 is now read as the no-op it is and returns a nil result with no error. It was
+        reported as "internal: unexpected empty rebase response body" at exit 1 -- telling the
+        caller bb had broken, for a pull request already exactly where it was asked to be.
+        `bb pr rebase` says so instead of claiming commits moved.
+    verification:
+      commands:
+        - go test -tags=live ./tests/integration/live -run TestLivePRRebase

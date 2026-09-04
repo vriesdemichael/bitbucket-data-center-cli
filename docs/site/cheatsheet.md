@@ -74,6 +74,8 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 |---|---|---|
 | Open PR in browser for review | `bb browse 42` | Fastest way to write inline review comments in Web UI |
 | Quick terminal approval | `bb pr review approve 42 --repo PROJ/my-repo` | Submits approval once verified locally |
+| Request changes | `bb pr review set 42 NEEDS_WORK --repo PROJ/my-repo` | Replaces any approval you hold; you hold one status, not several |
+| Withdraw your review status | `bb pr review set 42 UNAPPROVED --repo PROJ/my-repo` | Clears an approval or a request for changes alike |
 | List open comments & tasks | `bb pr comment list 42 --repo PROJ/my-repo --unresolved` | Shows what feedback is still pending |
 | List only blocking tasks | `bb pr comment list 42 --repo PROJ/my-repo --tasks-only --unresolved` | Merge-blocking tasks |
 | Add a quick PR comment | `bb pr comment add 42 --repo PROJ/my-repo --text "LGTM, verified locally"` | Posts top-level note |

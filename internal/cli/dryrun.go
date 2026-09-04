@@ -119,6 +119,7 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"pr reopen":                   {Intent: "pr.reopen", Action: "update", Stateful: true},
 	"pr review approve":           {Intent: "pr.review.approve", Action: "update", Stateful: true},
 	"pr review unapprove":         {Intent: "pr.review.unapprove", Action: "update", Stateful: true},
+	"pr review set":               {Intent: "pr.review.set", Action: "update", Stateful: true},
 	"pr review reviewer add":      {Intent: "pr.review.reviewer.add", Action: "update", Stateful: true},
 	"pr review reviewer remove":   {Intent: "pr.review.reviewer.remove", Action: "delete", Stateful: true},
 	"pr review complete":          {Intent: "pr.review.complete", Action: "update", Stateful: true},

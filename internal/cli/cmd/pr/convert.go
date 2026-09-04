@@ -45,7 +45,7 @@ func init() {
 	changeEnums := repositoryEnums("pullRequest.")
 	for _, path := range []string{
 		"pr create", "pr update", "pr merge", "pr decline", "pr reopen",
-		"pr review approve", "pr review unapprove", "pr review reviewer remove",
+		"pr review approve", "pr review unapprove", "pr review set", "pr review reviewer remove",
 	} {
 		result.Declare(path, result.For[PullRequestChange](changeEnums))
 	}

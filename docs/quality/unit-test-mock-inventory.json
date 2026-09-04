@@ -510,7 +510,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/pr_test.go",
-      "line": 1671,
+      "line": 1648,
       "function": "TestPRMergeDryRunReadsMergeability",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -525,7 +525,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/pr_test.go",
-      "line": 1750,
+      "line": 1727,
       "function": "TestPRCreateFromAFork",
       "class": "bitbucket-behaviour",
       "signals": [
