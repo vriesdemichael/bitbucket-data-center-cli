@@ -22,46 +22,32 @@ func (s *Service) ListUserKeys(ctx context.Context, limit int, start int) ([]ope
 	if limit <= 0 {
 		limit = 25
 	}
-	if start < 0 {
-		start = 0
-	}
-	startVal := float32(start)
-	results := make([]openapigenerated.RestSshKey, 0)
 
-	for {
-		remaining := limit - len(results)
-		if remaining <= 0 {
-			break
-		}
+	return openapi.PageThrough(ctx, start, limit,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestSshKey], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			resp, err := s.client.GetSshKeysWithResponse(ctx, &openapigenerated.GetSshKeysParams{
+				Start: &startValue,
+				Limit: &limitValue,
+			})
+			if err != nil {
+				return openapi.Page[openapigenerated.RestSshKey]{}, apperrors.New(apperrors.KindTransient, "failed to list user SSH keys", err)
+			}
+			if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
+				return openapi.Page[openapigenerated.RestSshKey]{}, err
+			}
 
-		pageLimit := float32(remaining)
-		params := &openapigenerated.GetSshKeysParams{
-			Start: &startVal,
-			Limit: &pageLimit,
-		}
-		resp, err := s.client.GetSshKeysWithResponse(ctx, params)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list user SSH keys", err)
-		}
-		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
-			return nil, err
-		}
-		if resp.ApplicationjsonCharsetUTF8200 == nil || resp.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
+			page := resp.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestSshKey]{}, nil
+			}
 
-		results = append(results, *resp.ApplicationjsonCharsetUTF8200.Values...)
-
-		if len(results) >= limit || resp.ApplicationjsonCharsetUTF8200.IsLastPage == nil || *resp.ApplicationjsonCharsetUTF8200.IsLastPage || resp.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-		startVal = float32(*resp.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	if len(results) > limit {
-		results = results[:limit]
-	}
-	return results, nil
+			return openapi.Page[openapigenerated.RestSshKey]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (s *Service) AddUserKey(ctx context.Context, label string, publicKeyText string) (openapigenerated.RestSshKey, error) {
