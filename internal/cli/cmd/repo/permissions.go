@@ -268,10 +268,17 @@ func runPermissionGrantDryRun(
 		},
 		Action:          "update",
 		PredictedAction: predicted,
-		Tier:            dryrunpreview.TierPreconditionsChecked,
-		Supported:       true,
-		Reason:          reason,
-		RequiredState:   []string{fmt.Sprintf("repository permission %ss list", subject.noun)},
+		// The permission listing was read, but nothing checked that the
+		// subject exists -- and that is the precondition that decides the
+		// outcome. A grant or revoke naming a user who is not there predicted
+		// success at full confidence and then failed with exit 4. The listing
+		// cannot answer it either: a subject with no permission is absent from
+		// it whether or not it exists. So this is a prediction from partial
+		// state, and says so (ADR-078).
+		Tier:          dryrunpreview.TierPredicted,
+		Supported:     true,
+		Reason:        reason,
+		RequiredState: []string{fmt.Sprintf("repository permission %ss list", subject.noun)},
 	})
 
 	return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -314,10 +321,17 @@ func runPermissionRevokeDryRun(
 		},
 		Action:          "delete",
 		PredictedAction: predicted,
-		Tier:            dryrunpreview.TierPreconditionsChecked,
-		Supported:       true,
-		Reason:          reason,
-		RequiredState:   []string{fmt.Sprintf("repository permission %ss list", subject.noun)},
+		// The permission listing was read, but nothing checked that the
+		// subject exists -- and that is the precondition that decides the
+		// outcome. A grant or revoke naming a user who is not there predicted
+		// success at full confidence and then failed with exit 4. The listing
+		// cannot answer it either: a subject with no permission is absent from
+		// it whether or not it exists. So this is a prediction from partial
+		// state, and says so (ADR-078).
+		Tier:          dryrunpreview.TierPredicted,
+		Supported:     true,
+		Reason:        reason,
+		RequiredState: []string{fmt.Sprintf("repository permission %ss list", subject.noun)},
 	})
 
 	return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
