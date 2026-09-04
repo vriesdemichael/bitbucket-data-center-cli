@@ -165,8 +165,5 @@ func (service *AdminService) Update(ctx context.Context, repo RepositoryRef, inp
 }
 
 func validateRepositoryRef(repo RepositoryRef) error {
-	if strings.TrimSpace(repo.ProjectKey) == "" || strings.TrimSpace(repo.Slug) == "" {
-		return apperrors.New(apperrors.KindValidation, "repository must be specified as project/repo", nil)
-	}
-	return nil
+	return openapi.ValidateRepository(repo.ProjectKey, repo.Slug)
 }

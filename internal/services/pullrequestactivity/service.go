@@ -222,11 +222,7 @@ func pathObjectFromString(path string) map[string]any {
 }
 
 func validateRepositoryRef(repository RepositoryRef) error {
-	if strings.TrimSpace(repository.ProjectKey) == "" || strings.TrimSpace(repository.Slug) == "" {
-		return apperrors.New(apperrors.KindValidation, "repository must be specified as project/repo", nil)
-	}
-
-	return nil
+	return openapi.ValidateRepository(repository.ProjectKey, repository.Slug)
 }
 
 func normalizePullRequestID(pullRequestID string) (string, error) {
