@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -220,21 +221,22 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	}
 }
 
-// resolveBlockerComment marks a task (blocker comment) resolved. The comment
-// service only updates text, and the legacy pull-request task endpoint is gone
-// on Bitbucket 10.x, so the state transition goes straight to the REST API.
+// resolveBlockerComment marks a task (blocker comment) resolved.
+//
+// This went straight at the REST API on the belief that the comment service
+// could only update text. It resolves comments perfectly well -- see
+// TestLiveCommentStateAndPending -- and going through it means the setup for
+// this test exercises the code rather than stepping around it.
 func resolveBlockerComment(ctx context.Context, harness *liveHarness, projectKey, slug, pullRequestID string, commentID int64) error {
-	client := httpclient.NewFromConfig(harness.config)
-	path := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/blocker-comments/%d", projectKey, slug, pullRequestID, commentID)
-
-	var current struct {
-		Version int `json:"version"`
-	}
-	if err := client.GetJSON(ctx, path, nil, &current); err != nil {
-		return err
+	target := commentservice.Target{
+		Repository:    commentservice.RepositoryRef{ProjectKey: projectKey, Slug: slug},
+		PullRequestID: pullRequestID,
 	}
 
-	return client.PutJSON(ctx, path, nil, map[string]any{"state": "RESOLVED", "version": current.Version}, nil)
+	_, err := commentservice.NewService(harness.client).SetState(
+		ctx, target, strconv.FormatInt(commentID, 10), commentservice.CommentStateResolved, nil)
+
+	return err
 }
 
 // TestLiveRouteMissingClassification pins the discriminator that tells a removed
