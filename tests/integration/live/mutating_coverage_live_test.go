@@ -800,3 +800,37 @@ func TestLiveDefaultBranchFoundPastTheFirstPage(t *testing.T) {
 	mustLiveCLI(t, "branch", "default", "set", before)
 
 }
+
+// TestLiveAdminHealthReportsLimitedAuth covers what `admin health` says when
+// the server is reachable but the caller is not authenticated.
+//
+// The mock it replaces fabricated a health payload with authentication off and
+// asserted bb printed "auth=limited". That is two guesses at once: what the
+// server answers an unauthenticated health check, and what bb makes of it.
+// Wrong credentials against a real server produce the state, so only the second
+// is under test -- and the distinction matters, because reporting a reachable
+// server as unhealthy would send someone looking at the wrong thing.
+func TestLiveAdminHealthReportsLimitedAuth(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	t.Setenv("BITBUCKET_URL", harness.config.BitbucketURL)
+	t.Setenv("BITBUCKET_USERNAME", "nobody")
+	t.Setenv("BITBUCKET_PASSWORD", "certainly-not-the-password")
+	t.Setenv("BITBUCKET_TOKEN", "")
+
+	output, err := executeLiveCLI(t, "admin", "health")
+	if err != nil {
+		t.Fatalf("a reachable server must still report health: %v\noutput: %s", err, output)
+	}
+
+	if !strings.Contains(output, "auth=limited") {
+		t.Fatalf("expected the health output to report limited auth, got:\n%s", output)
+	}
+	// Reachable is the other half: the server answered, so this is not an
+	// outage and must not read like one.
+	if !strings.Contains(output, "OK") {
+		t.Fatalf("expected the server to be reported reachable, got:\n%s", output)
+	}
+
+}
