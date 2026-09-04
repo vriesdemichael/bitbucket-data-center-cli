@@ -649,16 +649,25 @@ func resolveReviewerGroupID(groups []openapigenerated.RestReviewerGroup, argumen
 		return "", apperrors.New(apperrors.KindValidation, "reviewer group id or name is required", nil)
 	}
 
-	// A numeric argument is an id and is passed through, so an id that is not
-	// in the listing still reaches the server and gets its own 404.
-	if _, err := strconv.Atoi(trimmed); err == nil {
-		return trimmed, nil
-	}
-
+	// The name is tried first, and a numeric argument is only read as an id
+	// when no group answers to it.
+	//
+	// The other order looks natural and is wrong: nothing stops a team calling
+	// a group "42", and treating every run of digits as an id would send them
+	// to whichever group happens to hold that id, or to a not-found for a group
+	// sitting right there in the listing. An exact name match is evidence; a
+	// string of digits is a guess.
 	for _, group := range groups {
 		if group.Name != nil && strings.EqualFold(strings.TrimSpace(*group.Name), trimmed) && group.Id != nil {
 			return strconv.FormatInt(*group.Id, 10), nil
 		}
+	}
+
+	// No group by that name. A number is then an id, and is passed through so
+	// that one which is not in the listing still reaches the server and gets
+	// its own 404 rather than a message invented here.
+	if _, err := strconv.Atoi(trimmed); err == nil {
+		return trimmed, nil
 	}
 
 	return "", apperrors.New(apperrors.KindNotFound,

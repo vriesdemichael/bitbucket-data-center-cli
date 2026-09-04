@@ -635,3 +635,48 @@ func TestReviewerGroupPermissionRejections(t *testing.T) {
 		t.Fatal("expected permission error on project delete dry-run")
 	}
 }
+
+// A reviewer group may be named with digits, and nothing stops a team calling
+// one "42". Reading every run of digits as an id sent them to whichever group
+// happened to hold that id, or to a not-found for a group sitting right there
+// in the listing.
+//
+// The name is evidence; a string of digits is a guess, so the name wins and the
+// numeric reading is the fallback.
+func TestResolveReviewerGroupIDPrefersANameOverANumericGuess(t *testing.T) {
+	name42 := "42"
+	other := "qa-leads"
+	var idNine int64 = 9
+	var idFortyTwo int64 = 42
+
+	groups := []openapigenerated.RestReviewerGroup{
+		{Name: &name42, Id: &idNine},
+		{Name: &other, Id: &idFortyTwo},
+	}
+
+	t.Run("a numeric name resolves to its own group", func(t *testing.T) {
+		got, err := resolveReviewerGroupID(groups, "42")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got != "9" {
+			t.Errorf("id = %q, want 9 -- the group named 42, not the group with id 42", got)
+		}
+	})
+
+	t.Run("a number matching no name is still read as an id", func(t *testing.T) {
+		got, err := resolveReviewerGroupID(groups, "1234")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got != "1234" {
+			t.Errorf("id = %q, want it passed through so the server answers", got)
+		}
+	})
+
+	t.Run("a name that is not there is not found", func(t *testing.T) {
+		if _, err := resolveReviewerGroupID(groups, "nope"); err == nil {
+			t.Fatal("expected a not-found for a name no group answers to")
+		}
+	})
+}

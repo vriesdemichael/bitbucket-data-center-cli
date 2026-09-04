@@ -253,7 +253,19 @@ func (service *Service) SetDefault(ctx context.Context, repo RepositoryRef, bran
 func (service *Service) assertBranchExists(ctx context.Context, repo RepositoryRef, ref, requested string) error {
 	display := strings.TrimPrefix(ref, "refs/heads/")
 
-	matches, err := service.List(ctx, repo, ListOptions{FilterText: display, MaxResults: branchExistenceScanLimit})
+	// AllResults, not a page.
+	//
+	// filterText is a substring match, so a repository with hundreds of
+	// branches sharing a prefix -- release/2026-* and the like -- can push the
+	// exact one past any fixed cap. A capped scan would then report a branch
+	// that exists as missing and refuse the operation, which is the worse of
+	// the two failures: it blocks work that should succeed, where the typo this
+	// guard catches only lets through work that should not.
+	//
+	// This is the same trap AllResults was added for in #470, and the same
+	// answer. List pages internally and stops at the last page, so the cost is
+	// bounded by how many branches actually share the name.
+	matches, err := service.List(ctx, repo, ListOptions{FilterText: display, MaxResults: AllResults})
 	if err != nil {
 		return err
 	}
@@ -267,8 +279,9 @@ func (service *Service) assertBranchExists(ctx context.Context, repo RepositoryR
 		}
 	}
 
-	// The filter found nothing, which is either "no such branch" or "no
-	// branches at all". Only the first is an error.
+	// Nothing matched, which is either "no such branch" or "no branches at
+	// all". Only the first is an error: an empty repository legitimately takes
+	// a default branch that does not exist yet.
 	any, err := service.List(ctx, repo, ListOptions{MaxResults: 1})
 	if err != nil {
 		return err
@@ -281,11 +294,6 @@ func (service *Service) assertBranchExists(ctx context.Context, repo RepositoryR
 		fmt.Sprintf("branch %q does not exist in %s/%s; Bitbucket would accept it and leave the repository pointing at nothing",
 			requested, repo.ProjectKey, repo.Slug), nil)
 }
-
-// branchExistenceScanLimit bounds the filtered lookup. The filter is a prefix
-// match, so a name that is a prefix of many others could return a long page;
-// the exact match is what counts and it is on the first page.
-const branchExistenceScanLimit = 100
 
 func (service *Service) FindByCommit(ctx context.Context, repo RepositoryRef, commitID string, limit int) ([]openapigenerated.RestMinimalRef, error) {
 	if err := validateRepositoryRef(repo); err != nil {
