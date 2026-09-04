@@ -1061,3 +1061,103 @@ fixes:
         - task openapi:verify
         - task models:verify
         - task client:verify
+
+  - id: OPENAPI-024
+    area: default-reviewers-response-shape
+    source: server-contradicts-published-spec
+    status: active
+    status_evidence: >
+      Observed on 10.4.2 by raw HTTP with no bb code in the path. The spec declares the 200 body as
+      an array of RestPullRequestCondition; the server answers with a flat array of users.
+    description: >
+      GET .../default-reviewers/latest/projects/{key}/repos/{slug}/reviewers returns the resolved
+      reviewers, not the conditions that produced them.
+    reference:
+      type: endpoint
+      value: /default-reviewers/latest/projects/{projectKey}/repos/{repositorySlug}/reviewers
+      upstream_issue: >
+        Declared 200 schema is array of RestPullRequestCondition. The server sends
+        [{"name":"user","id":3,...}] -- ApplicationUser objects with no enclosing condition.
+    change:
+      files:
+        - internal/services/reviewer/service.go
+      detail: >
+        GetDefaultReviewers decodes the body itself rather than trusting the generated JSON200,
+        which is typed from the same spec and therefore wrong at the source. Users are read first,
+        falling back to the declared shape so a server that really does answer with conditions keeps
+        working.
+
+        The workaround sits in the service rather than the sanitizer because the generated response
+        type is reachable from other operations, and narrowing it there is a larger change than the
+        defect warrants. If this is repaired upstream, the fallback becomes the only path and this
+        entry can go.
+
+        Cost of the divergence: every caller read a nested reviewers field off objects that never
+        had one, so `--default-reviewers` resolved to nobody on every repository. The unit test
+        covering it returned the shape the spec describes, so it agreed with the code and the
+        feature was never exercised against a server until the mock was migrated (ADR-079).
+    verification:
+      commands:
+        - go test -tags=live ./tests/integration/live -run TestLiveDefaultReviewers
+
+  - id: OPENAPI-025
+    area: default-reviewers-parameter-requiredness
+    source: server-contradicts-published-spec
+    status: active
+    status_evidence: >
+      Observed on 10.4.2 by raw HTTP. sourceRepoId and targetRepoId carry no required flag in the
+      spec; omitting them answers 400, "The source repository with id '0' does not exist".
+    description: >
+      The repository ids on the default-reviewers lookup are mandatory in practice, though the spec
+      marks them optional.
+    reference:
+      type: endpoint
+      value: /default-reviewers/latest/projects/{projectKey}/repos/{repositorySlug}/reviewers
+      upstream_issue: >
+        sourceRepoId and targetRepoId have no `required: true`, and the server defaults a missing
+        value to 0 and then rejects it.
+    change:
+      files:
+        - internal/services/reviewer/service.go
+        - internal/cli/cmd/pr/pr.go
+      detail: >
+        ResolveDefaultReviewers always sends both ids, resolving the source repository separately
+        when a pull request comes from a fork. The refs, by contrast, are accepted qualified or
+        bare -- the server matches refs/heads/main and main alike -- so the qualification the code
+        performs is harmless rather than required.
+    verification:
+      commands:
+        - go test -tags=live ./tests/integration/live -run TestLiveDefaultReviewersFromAFork
+
+  - id: OPENAPI-026
+    area: reviewer-membership-identifier
+    source: server-contradicts-published-spec
+    status: active
+    status_evidence: >
+      Observed on 10.4.2 by raw HTTP against both endpoints.
+    description: >
+      A reviewer or reviewer-group member is only recognised by numeric id, though the schemas
+      describe objects whose name and slug are equally present.
+    reference:
+      type: schema
+      value: RestPullRequestCondition.reviewers, RestReviewerGroup.users
+      upstream_issue: >
+        A reviewer given as {"name": "..."} on a default-reviewer condition is read as id -1 and
+        refused with "User with ID -1 does not exist". A reviewer-group member given as {"name": ...}
+        or {"slug": ...} is accepted by the request and then reported as
+        "Reviewer groups must contain 1 or more reviewer(s)", which reads as though none was named.
+
+        RestPullRequestCondition.reviewers is separately typed as an array of RestReviewerGroup
+        rather than of users, so the declared schema does not describe what the endpoint accepts
+        or returns either.
+    change:
+      files:
+        - tests/integration/live/harness_test.go
+      detail: >
+        The live harness resolves a username to its numeric id before building either payload. No
+        production code sends these shapes today -- `reviewer condition create` takes the caller's
+        JSON verbatim -- so this entry records the requirement rather than a workaround. It is the
+        reason `bb reviewer-group create` cannot populate a group, tracked separately.
+    verification:
+      commands:
+        - go test -tags=live ./tests/integration/live -run TestLiveReviewerGroupResolutionShapes
