@@ -233,3 +233,25 @@ func TestFaultInjectionIsToldApartFromPaging(t *testing.T) {
 		t.Errorf("a paging sequence classified %q, want %q", got, ClassBehaviour)
 	}
 }
+
+// A retry mock does not have to count with ++. atomic.Int32.Add is the same
+// intent, and missing it left the transport package's retry tests queued for a
+// live suite that cannot express them: no real server can be asked to fail
+// twice and then succeed.
+func TestAnAtomicCounterCountsAttemptsToo(t *testing.T) {
+	source := preamble + `func TestRetries(t *testing.T) {
+	var attempts atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if attempts.Add(1) < 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		_, _ = w.Write([]byte("{}"))
+	}))
+	defer server.Close()
+}`
+
+	if got := classOf(t, source); got != ClassTransportFault {
+		t.Errorf("class = %q, want %q", got, ClassTransportFault)
+	}
+}
