@@ -70,69 +70,6 @@ func TestBranchServiceValidationAndHelpers(t *testing.T) {
 	}
 }
 
-func TestBranchServicePaginationAndFilters(t *testing.T) {
-	branchCalls := 0
-	modelCalls := 0
-	restrictionCalls := 0
-
-	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/branches":
-			branchCalls++
-			if branchCalls == 1 {
-				_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":2,"values":[{"displayId":"main","id":"refs/heads/main"}]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"displayId":"develop","id":"refs/heads/develop"}]}`))
-		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/rest/branch-utils/latest/projects/TEST/repos/demo/branches/info/"):
-			modelCalls++
-			if modelCalls == 1 {
-				_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"displayId":"main","id":"refs/heads/main"}]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"displayId":"release","id":"refs/heads/release"}]}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/branch-permissions/latest/projects/TEST/repos/demo/restrictions":
-			restrictionCalls++
-			if restrictionCalls == 1 {
-				_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":3,"values":[{"id":1,"type":"read-only"}]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":2,"type":"no-deletes"}]}`))
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-	branches, err := service.List(context.Background(), repo, ListOptions{
-		MaxResults: 0,
-		OrderBy:    "alphabetical",
-		FilterText: "main",
-		Base:       "refs/heads/main",
-		Details:    nil,
-	})
-	if err != nil || len(branches) != 2 {
-		t.Fatalf("expected paginated branch list, len=%d err=%v", len(branches), err)
-	}
-
-	refs, err := service.FindByCommit(context.Background(), repo, "abc", 0)
-	if err != nil || len(refs) != 2 {
-		t.Fatalf("expected paginated branch model inspect, len=%d err=%v", len(refs), err)
-	}
-
-	restrictions, err := service.ListRestrictions(context.Background(), repo, RestrictionListOptions{
-		MaxResults:  0,
-		Type:        "read-only",
-		MatcherType: "branch",
-		MatcherID:   "refs/heads/main",
-	})
-	if err != nil || len(restrictions) != 2 {
-		t.Fatalf("expected paginated restrictions list, len=%d err=%v", len(restrictions), err)
-	}
-}
-
 func TestBranchServiceCreateFallbackBodyDecode(t *testing.T) {
 	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost && r.URL.Path == "/rest/branch-utils/latest/projects/TEST/repos/demo/branches" {
@@ -462,37 +399,6 @@ func TestBranchServiceTransientAcrossOperations(t *testing.T) {
 	}
 	if err := service.DeleteRestriction(context.Background(), repo, "12"); err == nil || apperrors.ExitCode(err) != 10 {
 		t.Fatalf("expected delete restriction transient error, got %v (%d)", err, apperrors.ExitCode(err))
-	}
-}
-
-func TestBranchServicePaginationLimit(t *testing.T) {
-	calls := 0
-	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		calls++
-		if calls == 1 {
-			if r.URL.Query().Get("start") != "1" || r.URL.Query().Get("limit") != "3" {
-				t.Errorf("expected start=1 limit=3 on call 1, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":3,"values":[{"displayId":"b1"},{"displayId":"b2"}]}`))
-			return
-		}
-		if r.URL.Query().Get("start") != "3" || r.URL.Query().Get("limit") != "1" {
-			t.Errorf("expected start=3 limit=1 on call 2, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
-		}
-		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"displayId":"b3"}]}`))
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-	branches, err := service.List(context.Background(), repo, ListOptions{MaxResults: 3, Start: 1})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(branches) != 3 {
-		t.Errorf("expected 3 branches, got %d", len(branches))
-	}
-	if calls != 2 {
-		t.Errorf("expected 2 page requests, got %d", calls)
 	}
 }
 

@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 375 | write the live test, then delete the mock |
+| `move-to-live` | 369 | write the live test, then delete the mock |
 | `remove` | 77 | delete; it asserts nothing a live test would not already give |
 | `keep` | 38 | legitimate unit test under ADR-079 |
 | `follows-callers` | 19 | goes when the tests supplying its handlers go |
@@ -27,23 +27,22 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/reviewer/service_test.go` | 9 | 9 | 0 | 0 | 0 |
 | `internal/cli/pr_review_visibility_test.go` | 8 | 8 | 0 | 0 | 0 |
 | `internal/cli/permission_checker_test.go` | 8 | 7 | 0 | 0 | 1 |
-| `internal/services/branch/service_test.go` | 11 | 6 | 0 | 4 | 1 |
 | `internal/services/tag/service_test.go` | 7 | 6 | 0 | 0 | 1 |
 | `internal/cli/dryrun_stateful_commands_test.go` | 6 | 6 | 0 | 0 | 0 |
-| `internal/services/browse/service_test.go` | 13 | 5 | 2 | 5 | 1 |
 | `internal/services/commit/service_test.go` | 7 | 5 | 0 | 1 | 1 |
 | `internal/services/jira/service_test.go` | 6 | 5 | 0 | 0 | 1 |
 | `internal/cli/cmd/repo/cat_edit_test.go` | 5 | 5 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/sync_test.go` | 5 | 5 | 0 | 0 | 0 |
 | `internal/cli/pr_comments_extension_test.go` | 5 | 5 | 0 | 0 | 0 |
 | `internal/services/diff/service_test.go` | 12 | 4 | 7 | 0 | 1 |
-| `internal/services/project/service_test.go` | 8 | 4 | 1 | 2 | 1 |
+| `internal/services/branch/service_test.go` | 9 | 4 | 0 | 4 | 1 |
 | `internal/cli/cmd/search/search_test.go` | 5 | 4 | 1 | 0 | 0 |
 | `internal/cli/pr_status_command_test.go` | 5 | 4 | 1 | 0 | 0 |
 | `internal/services/repository/service_test.go` | 5 | 4 | 1 | 0 | 0 |
 | `internal/cli/cmd/pr/reviewer_automation_test.go` | 4 | 4 | 0 | 0 | 0 |
 | `internal/cli/new_commands_test.go` | 4 | 4 | 0 | 0 | 0 |
 | `internal/cli/pr_review_jira_test.go` | 4 | 4 | 0 | 0 | 0 |
+| `internal/services/project/service_test.go` | 7 | 3 | 1 | 2 | 1 |
 | `internal/cli/permissionchecker/permission_checker_test.go` | 5 | 3 | 1 | 1 | 0 |
 | `internal/services/pullrequest/inspection_test.go` | 5 | 3 | 1 | 0 | 1 |
 | `internal/services/reviewer/regressions_test.go` | 5 | 3 | 2 | 0 | 0 |
@@ -57,6 +56,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/tag/tag_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/pr_draft_automerge_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/workflows/bulk/runner_test.go` | 3 | 3 | 0 | 0 | 0 |
+| `internal/services/browse/service_test.go` | 10 | 2 | 2 | 5 | 1 |
 | `internal/services/forksync/service_test.go` | 5 | 2 | 2 | 0 | 1 |
 | `internal/services/gpgkey/service_test.go` | 5 | 2 | 2 | 0 | 1 |
 | `internal/services/sshkey/service_test.go` | 5 | 2 | 2 | 0 | 1 |
