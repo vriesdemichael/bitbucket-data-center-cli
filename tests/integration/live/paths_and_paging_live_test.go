@@ -5,6 +5,7 @@ package live_test
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -169,4 +170,59 @@ func TestLiveBranchCommandSurfaces(t *testing.T) {
 			t.Fatalf("the dry run created the branch:\n%s", listing)
 		}
 	})
+}
+
+// TestLiveBranchRestrictionLimitCaps covers a flag that did nothing.
+//
+// `--limit` reached the service as MaxResults, which was used as the page size
+// and capped nothing: the walk ran to the last page and the CLI does not
+// truncate afterwards, so every restriction came back however small the number
+// asked for. The name said cap, the code said page, and no test asked.
+func TestLiveBranchRestrictionLimitCaps(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	const restrictions = 4
+	for index := range restrictions {
+		if _, err := harness.liveJSON(ctx, http.MethodPost,
+			fmt.Sprintf("/rest/branch-permissions/latest/projects/%s/repos/%s/restrictions", seeded.Key, repo.Slug),
+			map[string]any{
+				"type":    "read-only",
+				"matcher": map[string]any{"id": fmt.Sprintf("refs/heads/capped-%d", index), "type": map[string]any{"id": "BRANCH"}},
+				"users":   []string{},
+				"groups":  []string{},
+			}); err != nil {
+			t.Fatalf("create restriction %d failed: %v", index, err)
+		}
+	}
+
+	// Counted from the decoded list rather than by matching "id": in the text.
+	// Each restriction carries a nested matcher with an id of its own, so the
+	// text count is double and reads as a failure that is not there.
+	countRestrictions := func(t *testing.T, output string) int {
+		t.Helper()
+
+		listed, _ := decodeJSONMap(t, output)["restrictions"].([]any)
+
+		return len(listed)
+	}
+
+	all := mustLiveCLI(t, "branch", "restriction", "list", "--repo", repoRef, "--all")
+	if count := countRestrictions(t, all); count < restrictions {
+		t.Fatalf("--all returned %d restrictions, want at least %d:\n%s", count, restrictions, all)
+	}
+
+	limited := mustLiveCLI(t, "branch", "restriction", "list", "--repo", repoRef, "--limit", "2")
+	if count := countRestrictions(t, limited); count != 2 {
+		t.Fatalf("--limit 2 returned %d restrictions:\n%s", count, limited)
+	}
 }

@@ -99,38 +99,30 @@ func (s *Service) ListProjectKeys(ctx context.Context, projectKey string, limit 
 	if limit <= 0 {
 		limit = 25
 	}
-	start := float32(0)
-	pageLimit := float32(limit)
-	results := make([]openapigenerated.RestSshAccessKey, 0)
 
-	for {
-		params := &openapigenerated.GetSshKeysForProjectParams{
-			Start: &start,
-			Limit: &pageLimit,
-		}
-		resp, err := s.client.GetSshKeysForProjectWithResponse(ctx, trimmedProj, params)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list project SSH keys", err)
-		}
-		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
-			return nil, err
-		}
-		if resp.ApplicationjsonCharsetUTF8200 == nil || resp.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
+	return openapi.PageThrough(ctx, 0, limit,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestSshAccessKey], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			resp, err := s.client.GetSshKeysForProjectWithResponse(ctx, trimmedProj,
+				&openapigenerated.GetSshKeysForProjectParams{Start: &startValue, Limit: &limitValue})
+			if err != nil {
+				return openapi.Page[openapigenerated.RestSshAccessKey]{}, apperrors.New(apperrors.KindTransient, "failed to list project SSH keys", err)
+			}
+			if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
+				return openapi.Page[openapigenerated.RestSshAccessKey]{}, err
+			}
 
-		results = append(results, *resp.ApplicationjsonCharsetUTF8200.Values...)
+			page := resp.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestSshAccessKey]{}, nil
+			}
 
-		if len(results) >= limit || resp.ApplicationjsonCharsetUTF8200.IsLastPage == nil || *resp.ApplicationjsonCharsetUTF8200.IsLastPage || resp.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-		start = float32(*resp.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	if len(results) > limit {
-		results = results[:limit]
-	}
-	return results, nil
+			return openapi.Page[openapigenerated.RestSshAccessKey]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (s *Service) AddProjectKey(ctx context.Context, projectKey string, label string, publicKeyText string, permission string) (openapigenerated.RestSshAccessKey, error) {
@@ -206,48 +198,37 @@ func (s *Service) RemoveProjectKey(ctx context.Context, projectKey string, keyId
 
 func (s *Service) ListRepoKeys(ctx context.Context, projectKey string, repoSlug string, limit int) ([]openapigenerated.RestSshAccessKey, error) {
 	trimmedProj := strings.TrimSpace(projectKey)
-	if trimmedProj == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
-	}
 	trimmedRepo := strings.TrimSpace(repoSlug)
-	if trimmedRepo == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "repository slug is required", nil)
+	if trimmedProj == "" || trimmedRepo == "" {
+		return nil, apperrors.New(apperrors.KindValidation, "repository must be specified as project/repo", nil)
 	}
 	if limit <= 0 {
 		limit = 25
 	}
-	start := float32(0)
-	pageLimit := float32(limit)
-	results := make([]openapigenerated.RestSshAccessKey, 0)
 
-	for {
-		params := &openapigenerated.GetForRepository1Params{
-			Start: &start,
-			Limit: &pageLimit,
-		}
-		resp, err := s.client.GetForRepository1WithResponse(ctx, trimmedProj, trimmedRepo, params)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list repository SSH keys", err)
-		}
-		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
-			return nil, err
-		}
-		if resp.ApplicationjsonCharsetUTF8200 == nil || resp.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
+	return openapi.PageThrough(ctx, 0, limit,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestSshAccessKey], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			resp, err := s.client.GetForRepository1WithResponse(ctx, trimmedProj, trimmedRepo,
+				&openapigenerated.GetForRepository1Params{Start: &startValue, Limit: &limitValue})
+			if err != nil {
+				return openapi.Page[openapigenerated.RestSshAccessKey]{}, apperrors.New(apperrors.KindTransient, "failed to list repository SSH keys", err)
+			}
+			if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
+				return openapi.Page[openapigenerated.RestSshAccessKey]{}, err
+			}
 
-		results = append(results, *resp.ApplicationjsonCharsetUTF8200.Values...)
+			page := resp.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestSshAccessKey]{}, nil
+			}
 
-		if len(results) >= limit || resp.ApplicationjsonCharsetUTF8200.IsLastPage == nil || *resp.ApplicationjsonCharsetUTF8200.IsLastPage || resp.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-		start = float32(*resp.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	if len(results) > limit {
-		results = results[:limit]
-	}
-	return results, nil
+			return openapi.Page[openapigenerated.RestSshAccessKey]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (s *Service) AddRepoKey(ctx context.Context, projectKey string, repoSlug string, label string, publicKeyText string, permission string) (openapigenerated.RestSshAccessKey, error) {

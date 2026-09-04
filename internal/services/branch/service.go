@@ -61,75 +61,58 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-
 	if options.MaxResults <= 0 {
 		options.MaxResults = 25
 	}
 
-	if options.Start < 0 {
-		options.Start = 0
-	}
-	start := float32(options.Start)
-	results := make([]openapigenerated.RestBranch, 0)
-
-	for {
-		remaining := options.MaxResults - len(results)
-		if remaining <= 0 {
-			break
-		}
-
-		pageLimit := float32(remaining)
-		params := &openapigenerated.GetBranchesParams{Start: &start, Limit: &pageLimit}
-		if strings.TrimSpace(options.OrderBy) != "" {
-			orderBy, err := normalizeBranchOrderBy(options.OrderBy)
-			if err != nil {
-				return nil, err
-			}
-			params.OrderBy = &orderBy
-		}
-		if strings.TrimSpace(options.FilterText) != "" {
-			filterText := strings.TrimSpace(options.FilterText)
-			params.FilterText = &filterText
-		}
-		if strings.TrimSpace(options.Base) != "" {
-			base := strings.TrimSpace(options.Base)
-			params.Base = &base
-		}
-		if options.Details != nil {
-			details := *options.Details
-			params.Details = &details
-		}
-
-		response, err := service.client.GetBranchesWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
+	// Built once. normalizeBranchOrderBy ran on every page, so a walk that
+	// needed four requests validated the same flag four times and could fail
+	// halfway through one it had already started.
+	params := &openapigenerated.GetBranchesParams{}
+	if strings.TrimSpace(options.OrderBy) != "" {
+		orderBy, err := normalizeBranchOrderBy(options.OrderBy)
 		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list repository branches", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return nil, err
 		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
-
-		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
-
-		if len(results) >= options.MaxResults {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
+		params.OrderBy = &orderBy
+	}
+	if filterText := strings.TrimSpace(options.FilterText); filterText != "" {
+		params.FilterText = &filterText
+	}
+	if base := strings.TrimSpace(options.Base); base != "" {
+		params.Base = &base
+	}
+	if options.Details != nil {
+		details := *options.Details
+		params.Details = &details
 	}
 
-	if len(results) > options.MaxResults {
-		results = results[:options.MaxResults]
-	}
-	return results, nil
+	return openapi.PageThrough(ctx, options.Start, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestBranch], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			pageParams := *params
+			pageParams.Start = &startValue
+			pageParams.Limit = &limitValue
+
+			response, err := service.client.GetBranchesWithResponse(ctx, repo.ProjectKey, repo.Slug, &pageParams)
+			if err != nil {
+				return openapi.Page[openapigenerated.RestBranch]{}, apperrors.New(apperrors.KindTransient, "failed to list repository branches", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[openapigenerated.RestBranch]{}, err
+			}
+
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestBranch]{}, nil
+			}
+
+			return openapi.Page[openapigenerated.RestBranch]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (service *Service) Create(ctx context.Context, repo RepositoryRef, name string, startPoint string) (openapigenerated.RestBranch, error) {
@@ -304,100 +287,96 @@ func (service *Service) FindByCommit(ctx context.Context, repo RepositoryRef, co
 	if trimmedCommitID == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "commit id is required", nil)
 	}
-
 	if limit <= 0 {
 		limit = 25
 	}
 
-	start := float32(0)
-	pageLimit := float32(limit)
-	results := make([]openapigenerated.RestMinimalRef, 0)
+	// The limit here is the page size, not a cap: this reads every ref that
+	// points at the commit, and always has.
+	return openapi.PageThrough(ctx, 0, AllResults,
+		func(ctx context.Context, start, _ int) (openapi.Page[openapigenerated.RestMinimalRef], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			response, err := service.client.FindByCommitWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID,
+				&openapigenerated.FindByCommitParams{Start: &startValue, Limit: &limitValue})
+			if err != nil {
+				return openapi.Page[openapigenerated.RestMinimalRef]{}, apperrors.New(apperrors.KindTransient, "failed to inspect branch model details", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[openapigenerated.RestMinimalRef]{}, err
+			}
 
-	for {
-		response, err := service.client.FindByCommitWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, &openapigenerated.FindByCommitParams{Start: &start, Limit: &pageLimit})
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to inspect branch model details", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return nil, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestMinimalRef]{}, nil
+			}
 
-		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
-
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	return results, nil
+			return openapi.Page[openapigenerated.RestMinimalRef]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (service *Service) ListRestrictions(ctx context.Context, repo RepositoryRef, options RestrictionListOptions) ([]openapigenerated.RestRefRestriction, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-
 	if options.MaxResults <= 0 {
 		options.MaxResults = 25
 	}
 
-	start := float32(0)
-	pageLimit := float32(options.MaxResults)
-	results := make([]openapigenerated.RestRefRestriction, 0)
-
-	for {
-		params := &openapigenerated.GetRestrictions1Params{Start: &start, Limit: &pageLimit}
-		if strings.TrimSpace(options.Type) != "" {
-			restrictionType, err := normalizeRestrictionType(options.Type)
-			if err != nil {
-				return nil, err
-			}
-			params.Type = &restrictionType
-		}
-		if strings.TrimSpace(options.MatcherType) != "" {
-			matcherType, err := normalizeRestrictionMatcherType(options.MatcherType)
-			if err != nil {
-				return nil, err
-			}
-			params.MatcherType = &matcherType
-		}
-		if strings.TrimSpace(options.MatcherID) != "" {
-			matcherID := strings.TrimSpace(options.MatcherID)
-			params.MatcherId = &matcherID
-		}
-
-		response, err := service.client.GetRestrictions1WithResponse(ctx, repo.ProjectKey, repo.Slug, params)
+	// Normalised once rather than on every page.
+	params := &openapigenerated.GetRestrictions1Params{}
+	if strings.TrimSpace(options.Type) != "" {
+		restrictionType, err := normalizeRestrictionType(options.Type)
 		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list branch restrictions", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return nil, err
 		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
+		params.Type = &restrictionType
+	}
+	if strings.TrimSpace(options.MatcherType) != "" {
+		matcherType, err := normalizeRestrictionMatcherType(options.MatcherType)
+		if err != nil {
+			return nil, err
 		}
-
-		results = append(results, (*response.ApplicationjsonCharsetUTF8200.Values)...)
-
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
+		params.MatcherType = &matcherType
+	}
+	if matcherID := strings.TrimSpace(options.MatcherID); matcherID != "" {
+		params.MatcherId = &matcherID
 	}
 
-	return results, nil
+	// MaxResults now caps the results, which is what it is named for and what
+	// every other listing does with it. It was the page size, and nothing
+	// capped anything: `bb branch restriction list --limit 5` walked to the
+	// last page and returned all of them. The CLI does not truncate afterwards,
+	// so the flag did nothing at all.
+	return openapi.PageThrough(ctx, 0, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestRefRestriction], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			pageParams := *params
+			pageParams.Start = &startValue
+			pageParams.Limit = &limitValue
+
+			response, err := service.client.GetRestrictions1WithResponse(ctx, repo.ProjectKey, repo.Slug, &pageParams)
+			if err != nil {
+				return openapi.Page[openapigenerated.RestRefRestriction]{}, apperrors.New(apperrors.KindTransient, "failed to list branch restrictions", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[openapigenerated.RestRefRestriction]{}, err
+			}
+
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestRefRestriction]{}, nil
+			}
+
+			return openapi.Page[openapigenerated.RestRefRestriction]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (service *Service) GetRestriction(ctx context.Context, repo RepositoryRef, id string) (openapigenerated.RestRefRestriction, error) {
