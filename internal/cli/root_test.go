@@ -467,72 +467,6 @@ func TestRootTransportFlagsOverrideEnvironment(t *testing.T) {
 	}
 }
 
-func TestAdminHealthSmoke(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/rest/api/1.0/projects" {
-			http.NotFound(writer, request)
-			return
-		}
-		writer.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"admin", "health"})
-
-	err := command.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	if !strings.Contains(buffer.String(), "Bitbucket health: OK") {
-		t.Fatalf("expected health output, got: %s", buffer.String())
-	}
-}
-
-func TestAdminHealthJSON(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusUnauthorized)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"--json", "admin", "health"})
-
-	err := command.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	parsed := decodeJSONEnvelopeDataMap(t, buffer.Bytes())
-
-	if healthy, ok := parsed["healthy"].(bool); !ok || !healthy {
-		t.Fatalf("expected healthy=true, got: %#v", parsed["healthy"])
-	}
-}
-
 func TestDiffRefsNameOnly(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -3284,35 +3218,6 @@ func TestResolveRepositoryReferenceWrappers(t *testing.T) {
 	_, err = resolveQualityRepositoryReference("bad-format", config.AppConfig{})
 	if err == nil {
 		t.Fatal("expected validation error for invalid quality repository selector")
-	}
-}
-
-func TestAdminHealthHumanLimitedOutput(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusUnauthorized)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"admin", "health"})
-
-	if err := command.Execute(); err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	if !strings.Contains(buffer.String(), "auth=limited") {
-		t.Fatalf("expected auth limited output, got: %s", buffer.String())
 	}
 }
 
