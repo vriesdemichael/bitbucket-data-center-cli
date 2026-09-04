@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 425 | write the live test, then delete the mock |
+| `move-to-live` | 418 | write the live test, then delete the mock |
 | `remove` | 80 | delete; it asserts nothing a live test would not already give |
 | `keep` | 36 | legitimate unit test under ADR-079 |
 | `follows-callers` | 19 | goes when the tests supplying its handlers go |
@@ -19,10 +19,10 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/root_test.go` | 55 | 53 | 1 | 1 | 0 |
 | `internal/cli/governance_test.go` | 67 | 51 | 14 | 2 | 0 |
 | `internal/services/pullrequest/service_test.go` | 32 | 21 | 7 | 3 | 1 |
-| `internal/services/comment/service_test.go` | 31 | 21 | 7 | 2 | 1 |
 | `internal/transport/httpclient/client_test.go` | 31 | 21 | 1 | 9 | 0 |
 | `internal/cli/cmd/api/api_test.go` | 23 | 21 | 1 | 1 | 0 |
 | `internal/services/reviewer/service_test.go` | 17 | 17 | 0 | 0 | 0 |
+| `internal/services/comment/service_test.go` | 24 | 14 | 7 | 2 | 1 |
 | `internal/services/diff/service_test.go` | 18 | 10 | 7 | 0 | 1 |
 | `internal/services/quality/service_test.go` | 12 | 10 | 0 | 1 | 1 |
 | `internal/services/reposettings/service_test.go` | 11 | 9 | 0 | 1 | 1 |

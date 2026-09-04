@@ -3,7 +3,6 @@ package comment
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	"io"
 	"net/http"
@@ -418,117 +417,6 @@ func TestServiceBlockerCommentsReactionsAndSuggestions(t *testing.T) {
 	}
 }
 
-func TestServiceCreateInlineAndThreadedComments(t *testing.T) {
-	var receivedBody map[string]any
-	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/comments" {
-			_ = json.NewDecoder(r.Body).Decode(&receivedBody)
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"id":200,"text":"created","version":1}`))
-			return
-		}
-		http.NotFound(w, r)
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-	// 1. Validation tests
-	// path without line
-	_, err := service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Path: "foo.go"}, "msg")
-	if err == nil || !strings.Contains(err.Error(), "path requires a positive line") {
-		t.Fatalf("expected error for path without line, got %v", err)
-	}
-
-	// line without path
-	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Line: 10}, "msg")
-	if err == nil || !strings.Contains(err.Error(), "line requires path") {
-		t.Fatalf("expected error for line without path, got %v", err)
-	}
-
-	// parent_id combined with path/line
-	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Path: "foo.go", Line: 10, ParentID: 99}, "msg")
-	if err == nil || !strings.Contains(err.Error(), "parent_id cannot be combined with path/line") {
-		t.Fatalf("expected error for parent_id with path/line, got %v", err)
-	}
-
-	// parent_id combined with blocker
-	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", ParentID: 99, Blocker: true}, "msg")
-	if err == nil || !strings.Contains(err.Error(), "parent_id cannot be combined with blocker") {
-		t.Fatalf("expected error for parent_id with blocker, got %v", err)
-	}
-
-	// line_type on non-inline comment
-	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", LineType: "ADDED"}, "msg")
-	if err == nil || !strings.Contains(err.Error(), "line_type only applies to inline comments") {
-		t.Fatalf("expected error for line_type without inline, got %v", err)
-	}
-
-	// invalid line_type
-	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Path: "foo.go", Line: 10, LineType: "INVALID"}, "msg")
-	if err == nil || !strings.Contains(err.Error(), "line_type must be ADDED, REMOVED, or CONTEXT") {
-		t.Fatalf("expected error for invalid line_type, got %v", err)
-	}
-
-	// 2. Threaded reply comment
-	receivedBody = nil
-	cmt, err := service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", ParentID: 55}, "reply text")
-	if err != nil || cmt.Id == nil || *cmt.Id != 200 {
-		t.Fatalf("expected successful reply creation, got %v err=%v", cmt, err)
-	}
-	parentMap, ok := receivedBody["parent"].(map[string]any)
-	if !ok || parentMap["id"] != float64(55) {
-		t.Fatalf("expected parent id 55 in payload, got %#v", receivedBody)
-	}
-
-	// 3. Inline comment with ADDED
-	receivedBody = nil
-	cmt, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Path: "pkg/foo/bar.go", Line: 42, LineType: "ADDED"}, "inline comment")
-	if err != nil || cmt.Id == nil || *cmt.Id != 200 {
-		t.Fatalf("expected successful inline comment creation, got %v err=%v", cmt, err)
-	}
-	anchorMap, ok := receivedBody["anchor"].(map[string]any)
-	if !ok {
-		t.Fatalf("expected anchor in payload, got %#v", receivedBody)
-	}
-	if anchorMap["line"] != float64(42) || anchorMap["lineType"] != "ADDED" || anchorMap["fileType"] != "TO" || anchorMap["diffType"] != "EFFECTIVE" {
-		t.Fatalf("unexpected anchor values: %#v", anchorMap)
-	}
-	// The create endpoint takes anchor.path as a plain string. The generated
-	// model describes the object Bitbucket sends back, and building the request
-	// from that shape leaves the comment unanchored.
-	if anchorMap["path"] != "pkg/foo/bar.go" {
-		t.Fatalf("expected a plain string anchor path, got %#v", anchorMap["path"])
-	}
-
-	// 4. Inline comment with REMOVED
-	receivedBody = nil
-	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Path: "root.go", Line: 5, LineType: "REMOVED"}, "removed line comment")
-	if err != nil {
-		t.Fatalf("unexpected error for REMOVED comment: %v", err)
-	}
-	anchorMap = receivedBody["anchor"].(map[string]any)
-	if anchorMap["fileType"] != "FROM" || anchorMap["lineType"] != "REMOVED" {
-		t.Fatalf("unexpected anchor for REMOVED: %#v", anchorMap)
-	}
-	if anchorMap["path"] != "root.go" {
-		t.Fatalf("expected a plain string anchor path for a root file, got %#v", anchorMap["path"])
-	}
-
-	// 5. A pending inline comment still asks for the PENDING state.
-	receivedBody = nil
-	_, err = service.Create(context.Background(), Target{Repository: repo, PullRequestID: "12", Path: "root.go", Line: 5, Pending: true}, "draft inline")
-	if err != nil {
-		t.Fatalf("unexpected error for pending inline comment: %v", err)
-	}
-	if receivedBody["state"] != "PENDING" {
-		t.Fatalf("expected PENDING state alongside the anchor, got %#v", receivedBody)
-	}
-	if _, ok := receivedBody["anchor"].(map[string]any); !ok {
-		t.Fatalf("expected the anchor to survive alongside the pending state, got %#v", receivedBody)
-	}
-}
-
 // TestServiceCreateExplainsAnchorRejection covers the 400 Bitbucket returns
 // when the anchored line is not in the diff. The raw response says nothing
 // about the line, the path, or the rule.
@@ -572,31 +460,6 @@ func TestServiceCreateExplainsAnchorRejection(t *testing.T) {
 	}
 	if strings.Contains(err.Error(), "pull request diff") {
 		t.Fatalf("anchor advice must not appear on a non-inline comment: %s", err.Error())
-	}
-}
-
-// TestServiceCreateDecodesStringAnchorPathResponse covers the other half of the
-// path-shape mismatch: Bitbucket echoes the created comment back with a string
-// anchor path, which the generated model cannot decode. The comment exists by
-// then, so a decode failure must not be reported as a failed create.
-func TestServiceCreateDecodesStringAnchorPathResponse(t *testing.T) {
-	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"id":321,"version":0,"text":"inline","anchor":{"line":42,"lineType":"ADDED","fileType":"TO","diffType":"EFFECTIVE","path":"pkg/foo/bar.go","srcPath":"pkg/foo/bar.go"}}`))
-	})
-
-	created, err := service.Create(context.Background(),
-		Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12", Path: "pkg/foo/bar.go", Line: 42},
-		"inline")
-	if err != nil {
-		t.Fatalf("a string anchor path in the response must not fail the create: %v", err)
-	}
-	if created.Id == nil || *created.Id != 321 {
-		t.Fatalf("expected the server-assigned id 321, got %#v", created.Id)
-	}
-	if created.Anchor == nil || created.Anchor.Path == nil || created.Anchor.Path.Name == nil || *created.Anchor.Path.Name != "bar.go" {
-		t.Fatalf("expected the anchor path to be decoded into the object form, got %#v", created.Anchor)
 	}
 }
 
@@ -901,57 +764,6 @@ func TestCountTasksValidatesTarget(t *testing.T) {
 	}
 }
 
-// TestSetStateResolvesAndReopens covers the state transitions that replaced
-// marking a pull request task done.
-func TestSetStateResolvesAndReopens(t *testing.T) {
-	var sentBody map[string]any
-	currentVersion := int32(4)
-
-	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.Method {
-		case http.MethodGet:
-			// The version the update needs; the caller did not supply one.
-			_, _ = w.Write([]byte(`{"id":7,"version":4,"state":"OPEN","severity":"BLOCKER"}`))
-		case http.MethodPut:
-			_ = json.NewDecoder(r.Body).Decode(&sentBody)
-			_, _ = w.Write([]byte(`{"id":7,"version":5,"state":"RESOLVED","severity":"BLOCKER"}`))
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
-
-	updated, err := service.SetState(context.Background(), target, "7", CommentStateResolved, nil)
-	if err != nil {
-		t.Fatalf("resolve failed: %v", err)
-	}
-	if updated.State == nil || *updated.State != "RESOLVED" {
-		t.Fatalf("state = %v, want RESOLVED", updated.State)
-	}
-	if sentBody["state"] != "RESOLVED" {
-		t.Fatalf("sent state = %v, want RESOLVED", sentBody["state"])
-	}
-	// The endpoint rejects a request without the version -- 409, reporting
-	// expectedVersion -1 -- so reading it first is not an optimisation.
-	if sentBody["version"] != float64(currentVersion) {
-		t.Fatalf("sent version = %v, want the version read from the server", sentBody["version"])
-	}
-	// Only the state moves. Sending the text back would overwrite an edit made
-	// between the read and the write.
-	if _, present := sentBody["text"]; present {
-		t.Fatalf("text should not be sent when only changing state, got: %v", sentBody)
-	}
-
-	if _, err := service.SetState(context.Background(), target, "7", CommentStateOpen, nil); err != nil {
-		t.Fatalf("reopen failed: %v", err)
-	}
-	if sentBody["state"] != "OPEN" {
-		t.Fatalf("sent state = %v, want OPEN", sentBody["state"])
-	}
-}
-
 func TestSetStateValidation(t *testing.T) {
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {})
 	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
@@ -961,36 +773,6 @@ func TestSetStateValidation(t *testing.T) {
 	}
 	if _, err := service.SetState(context.Background(), target, "7", CommentState("DONE"), nil); err == nil {
 		t.Fatal("expected a validation error for an unknown state")
-	}
-}
-
-// A supplied version is used as given, so a caller holding one does not pay for
-// an extra read.
-func TestSetStateUsesSuppliedVersion(t *testing.T) {
-	var sentBody map[string]any
-	reads := 0
-
-	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet {
-			reads++
-			_, _ = w.Write([]byte(`{"id":7,"version":99}`))
-			return
-		}
-		_ = json.NewDecoder(r.Body).Decode(&sentBody)
-		_, _ = w.Write([]byte(`{"id":7,"version":3,"state":"RESOLVED"}`))
-	})
-
-	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
-	supplied := int32(2)
-	if _, err := service.SetState(context.Background(), target, "7", CommentStateResolved, &supplied); err != nil {
-		t.Fatalf("resolve with a supplied version failed: %v", err)
-	}
-	if reads != 0 {
-		t.Fatalf("expected no read when a version is supplied, got %d", reads)
-	}
-	if sentBody["version"] != float64(2) {
-		t.Fatalf("sent version = %v, want the supplied 2", sentBody["version"])
 	}
 }
 
@@ -1057,88 +839,6 @@ func TestSetStateErrorPaths(t *testing.T) {
 			t.Fatalf("state = %v, want the state that was sent", updated.State)
 		}
 	})
-}
-
-// TestCreateAnchorsACommitCommentToAFile is what makes a commit comment
-// listable.
-//
-// Bitbucket refuses to retrieve comments without a path -- 400 "The path query
-// parameter is required when retrieving comments" -- so a comment anchored to
-// nothing can be created and then never read back by any listing. The vendored
-// spec types that path as optional, which is wrong, and believing it cost a
-// live run.
-func TestCreateAnchorsACommitCommentToAFile(t *testing.T) {
-	var body []byte
-	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		body, _ = io.ReadAll(r.Body)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"id":7,"version":0,"text":"anchored"}`))
-	})
-
-	target := Target{
-		Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"},
-		CommitID:   "abc",
-		Path:       "internal/cli/root.go",
-		Line:       12,
-		LineType:   "ADDED",
-	}
-	if _, err := service.Create(context.Background(), target, "anchored"); err != nil {
-		t.Fatalf("create anchored commit comment: %v", err)
-	}
-
-	var sent map[string]any
-	if err := json.Unmarshal(body, &sent); err != nil {
-		t.Fatalf("decode request body: %v\n%s", err, body)
-	}
-	anchor, ok := sent["anchor"].(map[string]any)
-	if !ok {
-		t.Fatalf("no anchor in the request: %s", body)
-	}
-	// A plain string, not the object Bitbucket returns: the create endpoint
-	// takes one shape and answers with another.
-	if anchor["path"] != "internal/cli/root.go" {
-		t.Errorf("anchor path = %v", anchor["path"])
-	}
-	if anchor["lineType"] != "ADDED" || anchor["fileType"] != "TO" {
-		t.Errorf("anchor = %+v, want an ADDED line on the updated side", anchor)
-	}
-}
-
-// TestCreateSendsTheParentOfAReply covers the other half: a reply carries the
-// id of what it answers and inherits that comment's anchor.
-func TestCreateSendsTheParentOfAReply(t *testing.T) {
-	var body []byte
-	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		body, _ = io.ReadAll(r.Body)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"id":8,"version":0,"text":"a reply"}`))
-	})
-
-	target := Target{
-		Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"},
-		CommitID:   "abc",
-		ParentID:   7,
-	}
-	if _, err := service.Create(context.Background(), target, "a reply"); err != nil {
-		t.Fatalf("create reply: %v", err)
-	}
-
-	var sent map[string]any
-	if err := json.Unmarshal(body, &sent); err != nil {
-		t.Fatalf("decode request body: %v\n%s", err, body)
-	}
-	parent, ok := sent["parent"].(map[string]any)
-	if !ok {
-		t.Fatalf("no parent in the request: %s", body)
-	}
-	if parent["id"] != float64(7) {
-		t.Errorf("parent = %+v, want the comment being replied to", parent)
-	}
-	if _, anchored := sent["anchor"]; anchored {
-		t.Errorf("a reply carried its own anchor: %s", body)
-	}
 }
 
 // TestListRepairsAnchorPathsAndPages covers the listing end to end: the shape
@@ -1394,67 +1094,6 @@ func TestAnUnreadableVersionLookupStopsTheWrite(t *testing.T) {
 	}
 	if writes != 0 {
 		t.Errorf("%d write requests were sent after the lookup failed; want none", writes)
-	}
-}
-
-// TestAnExplicitVersionSkipsTheLookup pins the other half of resolveVersion.
-//
-// The lookup exists only for callers that did not supply a version. A refactor
-// that made it run anyway would add a request per write and, worse, would
-// overwrite the caller's version with the server's current one -- turning an
-// optimistic-locking check the caller asked for into a blind write that always
-// wins.
-func TestAnExplicitVersionSkipsTheLookup(t *testing.T) {
-	for _, operation := range []struct {
-		what string
-		run  func(service *Service, target Target, version int32) error
-	}{
-		{"update", func(service *Service, target Target, version int32) error {
-			_, err := service.Update(context.Background(), target, "1", "edited", &version)
-			return err
-		}},
-		{"resolve", func(service *Service, target Target, version int32) error {
-			_, err := service.SetState(context.Background(), target, "1", CommentStateResolved, &version)
-			return err
-		}},
-		{"delete", func(service *Service, target Target, version int32) error {
-			_, err := service.Delete(context.Background(), target, "1", &version)
-			return err
-		}},
-	} {
-		t.Run(operation.what, func(t *testing.T) {
-			reads := 0
-			var sentVersions []string
-			service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-				switch r.Method {
-				case http.MethodGet:
-					reads++
-				case http.MethodDelete:
-					sentVersions = append(sentVersions, r.URL.Query().Get("version"))
-					w.WriteHeader(http.StatusNoContent)
-					return
-				default:
-					body, _ := io.ReadAll(r.Body)
-					var sent map[string]any
-					_ = json.Unmarshal(body, &sent)
-					sentVersions = append(sentVersions, fmt.Sprintf("%v", sent["version"]))
-				}
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(`{"id":1,"version":4}`))
-			})
-
-			target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "7"}
-			if err := operation.run(service, target, 3); err != nil {
-				t.Fatalf("%s with an explicit version: %v", operation.what, err)
-			}
-			if reads != 0 {
-				t.Errorf("%s issued %d read(s) despite being given a version", operation.what, reads)
-			}
-			// The caller's version, not the server's current one.
-			if len(sentVersions) != 1 || sentVersions[0] != "3" {
-				t.Errorf("%s sent versions %v, want the caller's 3", operation.what, sentVersions)
-			}
-		})
 	}
 }
 

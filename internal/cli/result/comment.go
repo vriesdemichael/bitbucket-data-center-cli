@@ -2,8 +2,9 @@ package result
 
 import (
 	"fmt"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"strings"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
@@ -77,6 +78,11 @@ func CommentFrom(upstream openapigenerated.RestComment) Comment {
 	if upstream.Pending != nil {
 		converted.Pending = *upstream.Pending
 	}
+	// Reported as the server sends it, and it is not the same question as
+	// State. Bitbucket answers threadResolved false beside state RESOLVED on a
+	// comment that has just been resolved: the comment is resolved, the thread
+	// it belongs to is not. A caller asking whether this comment is resolved
+	// wants State.
 	if upstream.ThreadResolved != nil {
 		converted.Resolved = *upstream.ThreadResolved
 	}
