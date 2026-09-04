@@ -762,54 +762,6 @@ func TestPRCoreConfigErrorsCLI(t *testing.T) {
 	}
 }
 
-func TestPRSubCommandsCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		switch {
-		case request.Method == http.MethodGet && strings.Contains(request.URL.Path, "tasks"):
-			_, _ = writer.Write([]byte(`{"values":[{"id":1,"state":"OPEN","text":"todo"}]}`))
-		case request.Method == http.MethodPost && strings.Contains(request.URL.Path, "tasks"):
-			writer.WriteHeader(http.StatusCreated)
-			_, _ = writer.Write([]byte(`{"id":2}`))
-		case request.Method == http.MethodPut && strings.Contains(request.URL.Path, "tasks/1"):
-			_, _ = writer.Write([]byte(`{"id":1}`))
-		case request.Method == http.MethodDelete && strings.Contains(request.URL.Path, "tasks/1"):
-			writer.WriteHeader(http.StatusNoContent)
-		case request.Method == http.MethodPost && strings.Contains(request.URL.Path, "participants/u2"):
-			_, _ = writer.Write([]byte(`{"user":{"name":"u2"}}`))
-		case request.Method == http.MethodDelete && strings.Contains(request.URL.Path, "participants/u2"):
-			writer.WriteHeader(http.StatusNoContent)
-		default:
-			http.NotFound(writer, request)
-		}
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	commands := [][]string{
-		{"pr", "review", "reviewer", "add", "30", "--user", "u2", "--repo", "PRJ/demo"},
-		{"--json", "pr", "review", "reviewer", "add", "30", "--user", "u2", "--repo", "PRJ/demo"},
-		{"pr", "review", "reviewer", "remove", "30", "--user", "u2", "--repo", "PRJ/demo"},
-		{"--json", "pr", "review", "reviewer", "remove", "30", "--user", "u2", "--repo", "PRJ/demo"},
-
-		{"--json", "pr", "task", "list", "30", "--repo", "PRJ/demo"},
-
-		{"--json", "pr", "task", "create", "30", "--text", "todo", "--repo", "PRJ/demo"},
-
-		{"--json", "pr", "task", "update", "1", "--repo", "PRJ/demo"},
-
-		{"--json", "pr", "task", "delete", "1", "--repo", "PRJ/demo"},
-	}
-
-	for _, args := range commands {
-		cmd := NewRootCommand()
-		cmd.SetArgs(args)
-		_ = cmd.Execute()
-	}
-}
-
 func TestRepoSettingsPermissionsErrorsCLI(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

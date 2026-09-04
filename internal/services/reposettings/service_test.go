@@ -465,37 +465,6 @@ func TestNewRepositoryServiceValidationErrors(t *testing.T) {
 	}
 }
 
-func TestRepositoryServiceAdditionalCoverage(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		// Return 200 with empty body to hit !json.Valid branches
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL)
-	service := NewService(client)
-	repo := RepositoryRef{ProjectKey: "P", Slug: "S"}
-
-	_, _ = service.ListRepositoryWebhooks(context.Background(), repo)
-	_, _ = service.CreateRepositoryWebhook(context.Background(), repo, WebhookCreateInput{Name: "n", URL: "u"})
-}
-
-func TestRepositoryServiceUpdateNilBody(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		// No body
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL)
-	service := NewService(client)
-	repo := RepositoryRef{ProjectKey: "P", Slug: "S"}
-
-	_, _ = service.UpdateRepositoryPullRequestSettings(context.Background(), repo, map[string]any{"a": 1})
-}
-
 func TestRepositoryServiceErrors(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

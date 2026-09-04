@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -212,35 +210,6 @@ func TestMCPServeClientFromConfigFails(t *testing.T) {
 		// That's also acceptable behaviour; the test's purpose is covering that code path.
 		t.Log("ClientsFromConfig tolerated bad URL — no error, that is OK")
 	}
-}
-
-// TestMCPServePassesThroughTestServer exercises the full serve path up to ServeStdio.
-// ServeStdio will immediately return an error because there is no valid stdin.
-func TestMCPServePassesThroughTestServer(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{}`))
-	}))
-	defer srv.Close()
-
-	deps := Dependencies{
-		Version: func() string { return "test" },
-		LoadConfig: func(config.Overrides) (config.AppConfig, error) {
-			return config.AppConfig{
-				BitbucketURL:   srv.URL,
-				RequestTimeout: time.Second,
-				RetryCount:     0,
-				RetryBackoff:   time.Millisecond,
-			}, nil
-		},
-		WriteJSON: func(w io.Writer, v any) error { return nil },
-	}
-	cmd := New(deps)
-	cmd.SetArgs([]string{"mcp", "serve", "--host", srv.URL})
-	// ServeStdio reads from os.Stdin; with no piped input it will fail or succeed
-	// immediately — either is fine. We just want this path to be covered.
-	_ = cmd.Execute()
 }
 
 // TestMCPToolsCountMatchesAllSpecs ensures the tools listing covers all specs.

@@ -1,20 +1,20 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 490,
-    "files": 96,
-    "functions": 463,
+    "mocked_servers": 482,
+    "files": 95,
+    "functions": 455,
     "by_class": {
-      "bitbucket-behaviour": 289,
+      "bitbucket-behaviour": 285,
       "canned-response": 71,
       "external-service": 14,
       "harness-constructor": 19,
-      "status-taxonomy": 59,
+      "status-taxonomy": 55,
       "transport-fault": 27,
       "unreached-guard": 11
     },
     "behaviour_by_package": {
-      "internal/cli": 109,
+      "internal/cli": 108,
       "internal/cli/cmd/admin": 1,
       "internal/cli/cmd/api": 15,
       "internal/cli/cmd/auth": 2,
@@ -51,7 +51,7 @@
       "internal/services/quality": 7,
       "internal/services/reposettings": 3,
       "internal/services/repository": 5,
-      "internal/services/reviewer": 7,
+      "internal/services/reviewer": 4,
       "internal/services/sshkey": 2,
       "internal/services/tag": 4,
       "internal/transport/httpclient": 17
@@ -97,18 +97,6 @@
       ],
       "action": "remove",
       "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/cmd/ai/mcp_test.go",
-      "line": 220,
-      "function": "TestMCPServePassesThroughTestServer",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
@@ -2030,21 +2018,6 @@
     {
       "file": "internal/cli/governance_test.go",
       "line": 767,
-      "function": "TestPRSubCommandsCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_test.go",
-      "line": 815,
       "function": "TestRepoSettingsPermissionsErrorsCLI",
       "class": "status-taxonomy",
       "signals": [
@@ -2057,7 +2030,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 879,
+      "line": 831,
       "function": "TestPRWatchUnwatchRebaseCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2074,7 +2047,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 994,
+      "line": 946,
       "function": "TestCommitPRsAndParticipantsCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2091,7 +2064,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 1090,
+      "line": 1042,
       "function": "TestReviewerGroupAndDefaultReviewersCLI",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2108,7 +2081,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 1250,
+      "line": 1202,
       "function": "TestDefaultReviewersCLIErrorsAndFallbacks",
       "class": "canned-response",
       "signals": [
@@ -2122,7 +2095,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 1264,
+      "line": 1216,
       "function": "TestDefaultReviewersCLIErrorsAndFallbacks",
       "class": "canned-response",
       "signals": [
@@ -2136,7 +2109,7 @@
     },
     {
       "file": "internal/cli/governance_test.go",
-      "line": 1284,
+      "line": 1236,
       "function": "TestDefaultReviewersCLIErrorsAndFallbacks",
       "class": "canned-response",
       "signals": [
@@ -5667,32 +5640,6 @@
     {
       "file": "internal/services/reposettings/service_test.go",
       "line": 469,
-      "function": "TestRepositoryServiceAdditionalCoverage",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/reposettings/service_test.go",
-      "line": 485,
-      "function": "TestRepositoryServiceUpdateNilBody",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/reposettings/service_test.go",
-      "line": 500,
       "function": "TestRepositoryServiceErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -5705,7 +5652,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 627,
+      "line": 596,
       "function": "TestNewRepositorySettingsMethods",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5943,19 +5890,6 @@
     {
       "file": "internal/services/reviewer/service_test.go",
       "line": 13,
-      "function": "TestReviewerServiceAdditional",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 35,
       "function": "TestReviewerServiceErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -5968,7 +5902,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 106,
+      "line": 84,
       "function": "TestReviewerServiceUpdateErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -5981,44 +5915,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 129,
-      "function": "TestReviewerServiceCreationBranches",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 153,
-      "function": "TestReviewerServiceCreationUnmarshalFail",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 167,
-      "function": "TestReviewerServiceUpdateResponseBranches",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 186,
+      "line": 107,
       "function": "TestReviewerGroupsAndDefaultReviewersServiceErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -6031,7 +5928,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 279,
+      "line": 200,
       "function": "TestReviewerGroupsAndDefaultReviewersServiceContextCanceled",
       "class": "status-taxonomy",
       "signals": [
@@ -6044,7 +5941,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 329,
+      "line": 250,
       "function": "TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks",
       "class": "bitbucket-behaviour",
       "signals": [
