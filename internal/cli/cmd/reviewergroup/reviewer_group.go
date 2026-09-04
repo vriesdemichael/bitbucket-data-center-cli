@@ -318,7 +318,20 @@ func New(deps Dependencies) *cobra.Command {
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
 
-				group, err := service.UpdateRepositoryReviewerGroup(cmd.Context(), pk, slug, id, nameFlag, descriptionFlag)
+				// Same id-or-name resolution as delete and users: the endpoint
+				// takes a numeric id, every flag around it takes a name, and
+				// passing the name through came back as a transient decode
+				// error for a group named perfectly well.
+				groups, err := service.ListRepositoryReviewerGroups(cmd.Context(), pk, slug)
+				if err != nil {
+					return err
+				}
+				resolvedID, err := resolveReviewerGroupID(groups, id)
+				if err != nil {
+					return err
+				}
+
+				group, err := service.UpdateRepositoryReviewerGroup(cmd.Context(), pk, slug, resolvedID, nameFlag, descriptionFlag)
 				if err != nil {
 					return err
 				}
@@ -375,7 +388,16 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
-			group, err := service.UpdateProjectReviewerGroup(cmd.Context(), projectKey, id, nameFlag, descriptionFlag)
+			projectGroups, err := service.ListProjectReviewerGroups(cmd.Context(), projectKey)
+			if err != nil {
+				return err
+			}
+			resolvedProjectID, err := resolveReviewerGroupID(projectGroups, id)
+			if err != nil {
+				return err
+			}
+
+			group, err := service.UpdateProjectReviewerGroup(cmd.Context(), projectKey, resolvedProjectID, nameFlag, descriptionFlag)
 			if err != nil {
 				return err
 			}
