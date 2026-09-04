@@ -778,21 +778,35 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 		})
 
 		t.Run("needs_work", func(t *testing.T) {
-			// The action with no CLI equivalent, and the reason this test
-			// exists.
+			// The action with no direct CLI equivalent, and the reason this
+			// test exists.
+			//
+			// It runs after approve on purpose. A participant holds one status
+			// -- UNAPPROVED, APPROVED or NEEDS_WORK -- and `approved` is
+			// derived from it, so requesting changes does not sit alongside an
+			// approval, it replaces it. Reading approved as false here is what
+			// proves that rather than assuming it, and an agent that treats the
+			// three as independent flags would be wrong about the one state
+			// that blocks a merge.
 			submit(t, "needs_work")
 
 			status, approved := statusOf(t)
 			if approved || !strings.EqualFold(status, "NEEDS_WORK") {
-				t.Fatalf("after needs_work: status=%q approved=%v", status, approved)
+				t.Fatalf("after needs_work: status=%q approved=%v, want the approval replaced", status, approved)
 			}
 		})
 
 		t.Run("unapprove", func(t *testing.T) {
+			// Running after needs_work rather than after approve is the point:
+			// despite the name, this clears whichever status is held. There is
+			// no separate verb for withdrawing a request for changes, so a
+			// reviewer stepping back from one reaches for the command named
+			// after undoing an approval.
 			submit(t, "unapprove")
 
 			if status, approved := statusOf(t); approved || strings.EqualFold(status, "NEEDS_WORK") {
-				t.Fatalf("after unapprove: status=%q approved=%v", status, approved)
+				t.Fatalf("after unapprove: status=%q approved=%v, want the request for changes cleared too",
+					status, approved)
 			}
 		})
 	}, "ai", "mcp", "serve", "--yolo")
