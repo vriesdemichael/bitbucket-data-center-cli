@@ -69,41 +69,44 @@ func (service *Service) Tree(ctx context.Context, repo RepositoryRef, path strin
 		apiPath = repositoryAPIPath(repo, "files", encodedPath)
 	}
 
-	results := make([]string, 0)
-	start := 0
-
-	for {
-		query := map[string]string{
-			"start": strconv.Itoa(start),
-			"limit": strconv.Itoa(options.PageSize),
-		}
-		if strings.TrimSpace(options.At) != "" {
-			query["at"] = strings.TrimSpace(options.At)
-		}
-
-		var response fileListResponse
-		if err := service.http.GetJSON(ctx, apiPath, query, &response); err != nil {
-			return nil, err
-		}
-
-		for _, value := range response.Values {
-			if name, ok := value.(string); ok {
-				results = append(results, name)
+	return openapi.PageThrough(ctx, 0, everyFile,
+		func(ctx context.Context, start, _ int) (openapi.Page[string], error) {
+			query := map[string]string{
+				"start": strconv.Itoa(start),
+				"limit": strconv.Itoa(options.PageSize),
 			}
-		}
+			if at := strings.TrimSpace(options.At); at != "" {
+				query["at"] = at
+			}
 
-		if response.IsLastPage || response.NextPageStart == nil {
-			break
-		}
-		if *response.NextPageStart == start {
-			break
-		}
+			var response fileListResponse
+			if err := service.http.GetJSON(ctx, apiPath, query, &response); err != nil {
+				return openapi.Page[string]{}, err
+			}
 
-		start = *response.NextPageStart
-	}
+			names := make([]string, 0, len(response.Values))
+			for _, value := range response.Values {
+				if name, ok := value.(string); ok {
+					names = append(names, name)
+				}
+			}
 
-	return results, nil
+			// The hand-decoded page carries isLastPage as a plain bool and the
+			// next start as *int, so both are adapted rather than passed on.
+			isLastPage := response.IsLastPage
+			page := openapi.Page[string]{Values: names, IsLastPage: &isLastPage}
+			if response.NextPageStart != nil {
+				next := int32(*response.NextPageStart)
+				page.NextPageStart = &next
+			}
+
+			return page, nil
+		})
 }
+
+// everyFile reads a directory listing to its end. PageSize is the window, not
+// a cap (ADR-074).
+const everyFile = 1_000_000
 
 type fileListResponse struct {
 	Values        []any `json:"values"`

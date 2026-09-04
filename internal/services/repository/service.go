@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
@@ -59,63 +61,55 @@ func (service *Service) listPaged(ctx context.Context, path string, opts ListOpt
 		opts.MaxResults = defaultPageSize
 	}
 
-	results := []Repository{}
-	start := opts.Start
-
-	for {
-		remaining := opts.MaxResults - len(results)
-		if remaining <= 0 {
-			break
-		}
-
-		pageSize := defaultPageSize
-		if remaining < pageSize {
-			pageSize = remaining
-		}
-
-		var response pagedRepoResponse
-
-		queryParams := map[string]string{
-			"limit": strconv.Itoa(pageSize),
-			"start": strconv.Itoa(start),
-		}
-		if opts.Name != "" {
-			queryParams["name"] = opts.Name
-		}
-		if opts.ProjectName != "" {
-			queryParams["projectname"] = opts.ProjectName
-		}
-
-		err := service.client.GetJSON(
-			ctx,
-			path,
-			queryParams,
-			&response,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, value := range response.Values {
-			results = append(results, Repository{
-				ProjectKey: value.Project.Key,
-				Slug:       value.Slug,
-				Name:       value.Name,
-				Public:     value.Public,
-			})
-			if len(results) >= opts.MaxResults {
-				return results, nil
+	return openapi.PageThrough(ctx, opts.Start, opts.MaxResults,
+		func(ctx context.Context, start, remaining int) (openapi.Page[Repository], error) {
+			// The window stays at defaultPageSize unless less than that is
+			// still wanted, which is what this loop did before the cap moved
+			// into the shared one.
+			pageSize := defaultPageSize
+			if remaining < pageSize {
+				pageSize = remaining
 			}
-		}
 
-		if response.IsLastPage {
-			break
-		}
+			queryParams := map[string]string{
+				"limit": strconv.Itoa(pageSize),
+				"start": strconv.Itoa(start),
+			}
+			if opts.Name != "" {
+				queryParams["name"] = opts.Name
+			}
+			if opts.ProjectName != "" {
+				queryParams["projectname"] = opts.ProjectName
+			}
 
-		start = response.NextPageStart
-	}
+			var response pagedRepoResponse
+			if err := service.client.GetJSON(ctx, path, queryParams, &response); err != nil {
+				return openapi.Page[Repository]{}, err
+			}
 
-	return results, nil
+			repositories := make([]Repository, 0, len(response.Values))
+			for _, value := range response.Values {
+				repositories = append(repositories, Repository{
+					ProjectKey: value.Project.Key,
+					Slug:       value.Slug,
+					Name:       value.Name,
+					Public:     value.Public,
+				})
+			}
+
+			// isLastPage is a plain bool here and the next start is a plain int,
+			// so both are adapted. A zero next start with more to come would be
+			// refused by the loop as a non-advancing offset, which is the right
+			// answer: it is the shape of a server repeating itself.
+			isLastPage := response.IsLastPage
+			page := openapi.Page[Repository]{Values: repositories, IsLastPage: &isLastPage}
+			if !isLastPage {
+				next := int32(response.NextPageStart)
+				page.NextPageStart = &next
+			}
+
+			return page, nil
+		})
 }
 
 type pagedRepoResponse struct {
