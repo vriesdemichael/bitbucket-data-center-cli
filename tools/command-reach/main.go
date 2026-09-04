@@ -223,9 +223,9 @@ func discoverLiveInvocations(dir string, valueFlags map[string]bool) (invocation
 				continue
 			}
 
-			real, dryRun, unreadable := commandsInvokedBy(function, valueFlags, invokers, dryRunInvokers, fileSet, path)
+			real, dryRun, discarded, unreadable := commandsInvokedBy(function, valueFlags, invokers, dryRunInvokers, fileSet, path)
 			found.unreadable = append(found.unreadable, unreadable...)
-			if len(real) == 0 && len(dryRun) == 0 {
+			if len(real) == 0 && len(dryRun) == 0 && len(discarded) == 0 {
 				continue
 			}
 
@@ -233,6 +233,12 @@ func discoverLiveInvocations(dir string, valueFlags map[string]bool) (invocation
 			// the test can skip, so it is recorded the same way either way.
 			for command := range dryRun {
 				found.dryRun[command] = struct{}{}
+			}
+
+			// A command whose result is thrown away is masked for the same
+			// reason a skipped one is: the suite passes whether or not it works.
+			for command := range discarded {
+				found.masked[command] = struct{}{}
 			}
 
 			target := found.asserted
@@ -436,11 +442,13 @@ func callsAnyOf(body *ast.BlockStmt, invokers map[string]int) bool {
 	return found
 }
 
-func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool, invokers map[string]int, dryRunInvokers map[string]bool, fileSet *token.FileSet, path string) (real, dryRun map[string]struct{}, unreadable []string) {
+func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool, invokers map[string]int, dryRunInvokers map[string]bool, fileSet *token.FileSet, path string) (real, dryRun, discardedPaths map[string]struct{}, unreadable []string) {
 	real = map[string]struct{}{}
 	dryRun = map[string]struct{}{}
+	discardedPaths = map[string]struct{}{}
 	argumentSlices := stringSliceLiterals(function)
 	tableRows := rangedTableRows(function)
+	discardedCalls := discardedCallSites(function.Body)
 
 	ast.Inspect(function.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
@@ -457,6 +465,13 @@ func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool, invok
 		}
 		if len(call.Args) < leadingArgs {
 			return true
+		}
+		// The command ran and nothing was learned. Treated as masked rather
+		// than dropped, so the report names it instead of quietly lowering the
+		// number.
+		discarded := false
+		if _, ok := discardedCalls[call.Pos()]; ok {
+			discarded = true
 		}
 		// `executeLiveCLI(t, args...)` carries the words in a variable, not in
 		// the call. Reading only the literal arguments reported those commands
@@ -496,13 +511,18 @@ func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool, invok
 
 				continue
 			}
+			if discarded {
+				discardedPaths[commandPath] = struct{}{}
+
+				continue
+			}
 			real[commandPath] = struct{}{}
 		}
 
 		return true
 	})
 
-	return real, dryRun, unreadable
+	return real, dryRun, discardedPaths, unreadable
 }
 
 // rangedTableRows maps each range variable over a table literal to the word
@@ -719,7 +739,7 @@ func skipsOnError(function *ast.FuncDecl) bool {
 		if !ok || ifStatement.Cond == nil {
 			return true
 		}
-		if !mentionsError(ifStatement.Cond) || !containsSkip(ifStatement.Body) {
+		if !mentionsError(ifStatement.Cond) || !(containsSkip(ifStatement.Body) || givesUp(ifStatement.Body)) {
 			return true
 		}
 
@@ -761,6 +781,103 @@ func containsSkip(node ast.Node) bool {
 			found = true
 			return false
 		}
+		return true
+	})
+
+	return found
+}
+
+// discardedCallSites returns the position of every call whose results are all
+// assigned to the blank identifier.
+func discardedCallSites(body *ast.BlockStmt) map[token.Pos]struct{} {
+	found := map[token.Pos]struct{}{}
+
+	ast.Inspect(body, func(node ast.Node) bool {
+		assign, ok := node.(*ast.AssignStmt)
+		if !ok || !discardsResult(assign) {
+			return true
+		}
+		for _, value := range assign.Rhs {
+			if call, ok := value.(*ast.CallExpr); ok {
+				found[call.Pos()] = struct{}{}
+			}
+		}
+
+		return true
+	})
+
+	return found
+}
+
+// discardsResult reports whether an invocation's outcome is thrown away, as in
+// `_, _ = executeLiveCLI(...)`.
+//
+// Such a call runs the command and checks nothing: it would pass identically if
+// the command returned the wrong answer, or failed outright. Counting it as
+// reach is the same error as counting a dry run -- the command was executed,
+// and nothing was learned.
+func discardsResult(assign *ast.AssignStmt) bool {
+	if len(assign.Lhs) == 0 {
+		return false
+	}
+
+	for _, target := range assign.Lhs {
+		identifier, ok := target.(*ast.Ident)
+		if !ok || identifier.Name != "_" {
+			return false
+		}
+	}
+
+	return true
+}
+
+// givesUp reports whether an error branch logs the failure and returns without
+// failing the test.
+//
+// t.Skip is not the only way to make a test pass whether or not the command
+// works. `if err != nil { t.Logf(...); return }` reads as tolerance and has the
+// same effect, and it is worse in one way: a skipped test says so in the output
+// while this one reports success.
+//
+// The reviewer-condition lifecycle test did exactly that. Its create call had
+// been failing for as long as the test existed -- the endpoint wants reviewers
+// by numeric id and the test passed a name -- and command reach counted the
+// four commands beneath it as covered.
+func givesUp(body ast.Node) bool {
+	block, ok := body.(*ast.BlockStmt)
+	if !ok {
+		return false
+	}
+
+	// A branch that fails the test is not giving up, whatever else it does.
+	if containsFailure(block) {
+		return false
+	}
+
+	for _, statement := range block.List {
+		if returnStatement, ok := statement.(*ast.ReturnStmt); ok && len(returnStatement.Results) == 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
+// containsFailure reports whether a block calls t.Error or t.Fatal, which is
+// what tells a tolerated failure from a reported one.
+func containsFailure(node ast.Node) bool {
+	found := false
+
+	ast.Inspect(node, func(n ast.Node) bool {
+		selector, ok := n.(*ast.SelectorExpr)
+		if !ok || selector.Sel == nil {
+			return true
+		}
+		if strings.HasPrefix(selector.Sel.Name, "Error") || strings.HasPrefix(selector.Sel.Name, "Fatal") {
+			found = true
+			return false
+		}
+
 		return true
 	})
 

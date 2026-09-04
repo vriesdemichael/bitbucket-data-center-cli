@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 
@@ -30,120 +29,6 @@ func TestNormalizeRefID(t *testing.T) {
 		if got := NormalizeRefID(testCase.in); got != testCase.want {
 			t.Fatalf("NormalizeRefID(%q) = %q, want %q", testCase.in, got, testCase.want)
 		}
-	}
-}
-
-// Bitbucket matches default reviewer condition ref patterns against fully
-// qualified ref IDs. Passing the bare branch name that `--from-ref` and a pull
-// request's displayId both carry made every branch-scoped condition miss, so the
-// feature silently resolved no reviewers at all.
-func TestResolveDefaultReviewersSendsQualifiedRefsAndRepositoryID(t *testing.T) {
-	var conditionQuery url.Values
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/rest/api/latest/projects/PRJ/repos/demo":
-			_, _ = w.Write([]byte(`{"id":77,"slug":"demo","name":"demo"}`))
-		case "/rest/default-reviewers/latest/projects/PRJ/repos/demo/reviewers":
-			conditionQuery = r.URL.Query()
-			_, _ = w.Write([]byte(`[{"reviewers":[{"name":"alice"}]}]`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-	if err != nil {
-		t.Fatalf("failed to build client: %v", err)
-	}
-
-	resolved, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", DefaultReviewerQuery{SourceRef: "feature/x", TargetRef: "main"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(resolved) != 1 || resolved[0] != "alice" {
-		t.Fatalf("resolved = %v, want [alice]", resolved)
-	}
-
-	if got := conditionQuery.Get("sourceRefId"); got != "refs/heads/feature/x" {
-		t.Fatalf("sourceRefId = %q, want %q", got, "refs/heads/feature/x")
-	}
-	if got := conditionQuery.Get("targetRefId"); got != "refs/heads/main" {
-		t.Fatalf("targetRefId = %q, want %q", got, "refs/heads/main")
-	}
-	if got := conditionQuery.Get("sourceRepoId"); got != "77" {
-		t.Fatalf("sourceRepoId = %q, want %q", got, "77")
-	}
-	if got := conditionQuery.Get("targetRepoId"); got != "77" {
-		t.Fatalf("targetRepoId = %q, want %q", got, "77")
-	}
-}
-
-// An already qualified ref must be passed through untouched.
-func TestResolveDefaultReviewersPassesQualifiedRefsThrough(t *testing.T) {
-	var conditionQuery url.Values
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/rest/api/latest/projects/PRJ/repos/demo":
-			_, _ = w.Write([]byte(`{"id":77}`))
-		case "/rest/default-reviewers/latest/projects/PRJ/repos/demo/reviewers":
-			conditionQuery = r.URL.Query()
-			_, _ = w.Write([]byte(`[]`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-	if _, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", DefaultReviewerQuery{SourceRef: "refs/heads/feature/x", TargetRef: "refs/heads/main"}); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if got := conditionQuery.Get("sourceRefId"); got != "refs/heads/feature/x" {
-		t.Fatalf("sourceRefId = %q, want it unchanged", got)
-	}
-	if got := conditionQuery.Get("targetRefId"); got != "refs/heads/main" {
-		t.Fatalf("targetRefId = %q, want it unchanged", got)
-	}
-}
-
-// The repository ID is a nicety, not a precondition: if it cannot be read the
-// condition query still has to run rather than failing the whole command.
-func TestResolveDefaultReviewersToleratesMissingRepositoryID(t *testing.T) {
-	var conditionQuery url.Values
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/rest/default-reviewers/latest/projects/PRJ/repos/demo/reviewers":
-			conditionQuery = r.URL.Query()
-			_, _ = w.Write([]byte(`[{"reviewers":[{"name":"alice"}]}]`))
-		default:
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte(`{"errors":[{"message":"boom"}]}`))
-		}
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-
-	resolved, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", DefaultReviewerQuery{SourceRef: "feature/x", TargetRef: "main"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(resolved) != 1 || resolved[0] != "alice" {
-		t.Fatalf("resolved = %v, want [alice]", resolved)
-	}
-	if conditionQuery.Has("sourceRepoId") {
-		t.Fatalf("sourceRepoId should be omitted when it cannot be resolved, got %q", conditionQuery.Get("sourceRepoId"))
-	}
-	if got := conditionQuery.Get("sourceRefId"); got != "refs/heads/feature/x" {
-		t.Fatalf("sourceRefId = %q, want %q", got, "refs/heads/feature/x")
 	}
 }
 
@@ -201,57 +86,6 @@ func TestResolveReviewerGroupUsersSurfacesMembershipFailure(t *testing.T) {
 			t.Fatalf("error should name the group, got %v", err)
 		}
 	})
-}
-
-// Servers that do not expose the dedicated members endpoint still embed the
-// members in the group payload, and that fallback must keep working.
-func TestResolveReviewerGroupUsersFallsBackToEmbeddedMembers(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups":
-			_, _ = w.Write([]byte(`{"values":[{"id":10,"name":"core-team","users":[{"name":"bob"}]}]}`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-
-	users, err := NewService(client).ResolveReviewerGroupUsers(context.Background(), "PRJ", "demo", "core-team")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(users) != 1 || users[0] != "bob" {
-		t.Fatalf("users = %v, want [bob]", users)
-	}
-}
-
-// A group that really has no members is distinct from one that could not be read.
-func TestResolveReviewerGroupUsersReturnsEmptyForEmptyGroup(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.URL.Path == "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups":
-			_, _ = w.Write([]byte(`{"values":[{"id":10,"name":"core-team"}]}`))
-		case strings.HasSuffix(r.URL.Path, "/reviewer-groups/10/users"):
-			_, _ = w.Write([]byte(`[]`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-
-	users, err := NewService(client).ResolveReviewerGroupUsers(context.Background(), "PRJ", "demo", "core-team")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(users) != 0 {
-		t.Fatalf("users = %v, want empty", users)
-	}
 }
 
 func TestRepositoryIDValidation(t *testing.T) {
@@ -351,83 +185,6 @@ func TestSelectMembers(t *testing.T) {
 			}
 		}
 	})
-}
-
-// A fork pull request has its source branch in a different repository. Sending
-// the target repository as both source and target would describe a pull request
-// that does not exist, so the source repository is resolved separately.
-func TestResolveDefaultReviewersUsesForkSourceRepository(t *testing.T) {
-	var conditionQuery url.Values
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/rest/api/latest/projects/PRJ/repos/demo":
-			_, _ = w.Write([]byte(`{"id":77,"slug":"demo"}`))
-		case "/rest/api/latest/projects/~alice/repos/demo":
-			_, _ = w.Write([]byte(`{"id":91,"slug":"demo"}`))
-		case "/rest/default-reviewers/latest/projects/PRJ/repos/demo/reviewers":
-			conditionQuery = r.URL.Query()
-			_, _ = w.Write([]byte(`[]`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-
-	_, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", DefaultReviewerQuery{
-		SourceRef:        "feature/x",
-		TargetRef:        "main",
-		SourceProjectKey: "~alice",
-		SourceSlug:       "demo",
-	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if got := conditionQuery.Get("sourceRepoId"); got != "91" {
-		t.Fatalf("sourceRepoId = %q, want the fork's ID %q", got, "91")
-	}
-	if got := conditionQuery.Get("targetRepoId"); got != "77" {
-		t.Fatalf("targetRepoId = %q, want %q", got, "77")
-	}
-}
-
-// A same-repository pull request must not pay for a second repository lookup.
-func TestResolveDefaultReviewersLooksUpSameRepositoryOnce(t *testing.T) {
-	repositoryLookups := 0
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/rest/api/latest/projects/PRJ/repos/demo":
-			repositoryLookups++
-			_, _ = w.Write([]byte(`{"id":77,"slug":"demo"}`))
-		case "/rest/default-reviewers/latest/projects/PRJ/repos/demo/reviewers":
-			_, _ = w.Write([]byte(`[]`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-
-	// Naming the source repository explicitly, but as the target repository.
-	if _, err := NewService(client).ResolveDefaultReviewers(context.Background(), "PRJ", "demo", DefaultReviewerQuery{
-		SourceRef:        "feature/x",
-		TargetRef:        "main",
-		SourceProjectKey: "prj",
-		SourceSlug:       "DEMO",
-	}); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if repositoryLookups != 1 {
-		t.Fatalf("repository was looked up %d times, want 1", repositoryLookups)
-	}
 }
 
 // TestResolveReviewerGroupUsersStripsReviewerGroupPrefix is #503.

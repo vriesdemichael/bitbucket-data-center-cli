@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 598,
+    "mocked_servers": 591,
     "files": 96,
-    "functions": 566,
+    "functions": 559,
     "by_class": {
-      "bitbucket-behaviour": 394,
+      "bitbucket-behaviour": 387,
       "canned-response": 81,
       "external-service": 14,
       "harness-constructor": 19,
@@ -52,7 +52,7 @@
       "internal/services/quality": 7,
       "internal/services/reposettings": 6,
       "internal/services/repository": 6,
-      "internal/services/reviewer": 22,
+      "internal/services/reviewer": 15,
       "internal/services/sshkey": 2,
       "internal/services/tag": 4,
       "internal/transport/httpclient": 21
@@ -7148,52 +7148,7 @@
     },
     {
       "file": "internal/services/reviewer/regressions_test.go",
-      "line": 43,
-      "function": "TestResolveDefaultReviewersSendsQualifiedRefsAndRepositoryID",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-query-parameters",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/regressions_test.go",
-      "line": 88,
-      "function": "TestResolveDefaultReviewersPassesQualifiedRefsThrough",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-query-parameters",
-        "closes-on-cleanup",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/regressions_test.go",
-      "line": 120,
-      "function": "TestResolveDefaultReviewersToleratesMissingRepositoryID",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-query-parameters",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/regressions_test.go",
-      "line": 154,
+      "line": 39,
       "function": "TestResolveReviewerGroupUsersSurfacesMembershipFailure",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -7208,7 +7163,7 @@
     },
     {
       "file": "internal/services/reviewer/regressions_test.go",
-      "line": 180,
+      "line": 65,
       "function": "TestResolveReviewerGroupUsersSurfacesMembershipFailure",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -7223,35 +7178,7 @@
     },
     {
       "file": "internal/services/reviewer/regressions_test.go",
-      "line": 209,
-      "function": "TestResolveReviewerGroupUsersFallsBackToEmbeddedMembers",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/regressions_test.go",
-      "line": 233,
-      "function": "TestResolveReviewerGroupUsersReturnsEmptyForEmptyGroup",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/regressions_test.go",
-      "line": 271,
+      "line": 105,
       "function": "TestRepositoryID",
       "class": "canned-response",
       "signals": [
@@ -7264,7 +7191,7 @@
     },
     {
       "file": "internal/services/reviewer/regressions_test.go",
-      "line": 289,
+      "line": 123,
       "function": "TestRepositoryID",
       "class": "canned-response",
       "signals": [
@@ -7277,36 +7204,7 @@
     },
     {
       "file": "internal/services/reviewer/regressions_test.go",
-      "line": 362,
-      "function": "TestResolveDefaultReviewersUsesForkSourceRepository",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-query-parameters",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/regressions_test.go",
-      "line": 402,
-      "function": "TestResolveDefaultReviewersLooksUpSameRepositoryOnce",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/regressions_test.go",
-      "line": 446,
+      "line": 203,
       "function": "TestResolveReviewerGroupUsersStripsReviewerGroupPrefix",
       "class": "bitbucket-behaviour",
       "signals": [

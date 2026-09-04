@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 465 | write the live test, then delete the mock |
+| `move-to-live` | 458 | write the live test, then delete the mock |
 | `remove` | 81 | delete; it asserts nothing a live test would not already give |
 | `keep` | 19 | legitimate unit test under ADR-079 |
 | `follows-callers` | 19 | goes when the tests supplying its handlers go |
@@ -25,7 +25,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/reviewer/service_test.go` | 17 | 17 | 0 | 0 | 0 |
 | `internal/services/diff/service_test.go` | 18 | 10 | 7 | 0 | 1 |
 | `internal/services/quality/service_test.go` | 12 | 10 | 0 | 1 | 1 |
-| `internal/services/reviewer/regressions_test.go` | 12 | 10 | 2 | 0 | 0 |
 | `internal/services/reposettings/service_test.go` | 11 | 10 | 0 | 0 | 1 |
 | `internal/services/branch/service_test.go` | 10 | 8 | 0 | 1 | 1 |
 | `internal/cli/pr_review_visibility_test.go` | 8 | 8 | 0 | 0 | 0 |
@@ -47,6 +46,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/new_commands_test.go` | 4 | 4 | 0 | 0 | 0 |
 | `internal/cli/pr_review_jira_test.go` | 4 | 4 | 0 | 0 | 0 |
 | `internal/services/pullrequest/inspection_test.go` | 5 | 3 | 1 | 0 | 1 |
+| `internal/services/reviewer/regressions_test.go` | 5 | 3 | 2 | 0 | 0 |
 | `internal/cli/commit_test.go` | 4 | 3 | 1 | 0 | 0 |
 | `internal/openapi/client_test.go` | 4 | 3 | 0 | 1 | 0 |
 | `internal/services/pullrequestactivity/service_test.go` | 4 | 3 | 0 | 0 | 1 |

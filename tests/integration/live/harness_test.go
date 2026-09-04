@@ -953,3 +953,24 @@ func (h *liveHarness) createReviewerGroup(ctx context.Context, projectKey, repos
 
 	return nil
 }
+
+// userID resolves a username to the numeric id Bitbucket wants in several
+// payloads.
+//
+// The reviewer-condition endpoint is one: a reviewer given as {"name": ...} is
+// read as id -1 and refused with "User with ID -1 does not exist", the same
+// shape as the reviewer-group members quirk. The name is what a person knows,
+// so the lookup lives here rather than in each test.
+func (h *liveHarness) userID(ctx context.Context, username string) (int64, error) {
+	user, err := h.liveJSON(ctx, http.MethodGet, "/rest/api/latest/users/"+username, nil)
+	if err != nil {
+		return 0, fmt.Errorf("look up user %s: %w", username, err)
+	}
+
+	id, ok := user["id"].(float64)
+	if !ok {
+		return 0, fmt.Errorf("user %s has no numeric id", username)
+	}
+
+	return int64(id), nil
+}

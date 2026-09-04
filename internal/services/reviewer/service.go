@@ -458,6 +458,34 @@ func (service *Service) GetDefaultReviewers(ctx context.Context, projectKey, rep
 		return nil, err
 	}
 
+	// The specification says this endpoint answers with conditions. It answers
+	// with the resolved reviewers -- a flat array of users -- so decoding it as
+	// conditions produced entries whose Reviewers field is nil, and every
+	// caller reading that field found nobody. `--default-reviewers` had never
+	// assigned anyone.
+	//
+	// The generated client is built from that same specification, so JSON200 is
+	// typed wrong at the source and cannot be trusted. The body is decoded here
+	// instead: users first, falling back to the documented shape so a server
+	// that really does answer with conditions still works.
+	var users []struct {
+		Name *string `json:"name"`
+	}
+	if err := json.Unmarshal(response.Body, &users); err == nil && len(users) > 0 && users[0].Name != nil {
+		// Only the name is read downstream, and the generated Reviewers field
+		// is itself typed as a group rather than a user -- the specification is
+		// wrong about this endpoint in more than one way -- so the body is
+		// mapped onto the shape callers already read.
+		named := make([]openapigenerated.RestReviewerGroup, 0, len(users))
+		for _, user := range users {
+			if user.Name != nil {
+				named = append(named, openapigenerated.RestReviewerGroup{Name: user.Name})
+			}
+		}
+
+		return []openapigenerated.RestPullRequestCondition{{Reviewers: &named}}, nil
+	}
+
 	if response.JSON200 == nil {
 		return []openapigenerated.RestPullRequestCondition{}, nil
 	}
