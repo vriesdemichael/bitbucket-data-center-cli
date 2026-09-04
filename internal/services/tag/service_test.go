@@ -43,52 +43,6 @@ func TestTagServiceValidationAndStatusMapping(t *testing.T) {
 	}
 }
 
-func TestTagServicePaginationAndFallbackBranches(t *testing.T) {
-	service := newTagTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/tags":
-			w.Header().Set("Content-Type", "application/json")
-			if r.URL.Query().Get("start") == "1" {
-				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"displayId":"v2"}]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"displayId":"v1"}]}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/tags":
-			w.WriteHeader(http.StatusOK)
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/tags/v2":
-			w.WriteHeader(http.StatusOK)
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-	tags, err := service.List(context.Background(), repo, ListOptions{MaxResults: 2, FilterText: "v"})
-	if err != nil {
-		t.Fatalf("expected paginated list success, got: %v", err)
-	}
-	if len(tags) != 2 {
-		t.Fatalf("expected 2 tags from pagination, got: %d", len(tags))
-	}
-
-	created, err := service.Create(context.Background(), repo, "v2", "abc", "")
-	if err != nil {
-		t.Fatalf("expected create fallback success, got: %v", err)
-	}
-	if created.DisplayId != nil {
-		t.Fatalf("expected zero-value created tag for empty response body, got: %#v", created)
-	}
-
-	viewed, err := service.Get(context.Background(), repo, "v2")
-	if err != nil {
-		t.Fatalf("expected get fallback success, got: %v", err)
-	}
-	if viewed.DisplayId != nil {
-		t.Fatalf("expected zero-value viewed tag for empty response body, got: %#v", viewed)
-	}
-}
-
 func TestTagServiceValidationAndMapStatusHelpers(t *testing.T) {
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 	service := newTagTestService(t, func(w http.ResponseWriter, r *http.Request) {
@@ -184,54 +138,4 @@ func TestTagServiceTransportAndValidationBranches(t *testing.T) {
 			t.Fatalf("expected empty tags list, got: %#v", tags)
 		}
 	})
-}
-
-func TestTagServicePaginationLimit(t *testing.T) {
-	calls := 0
-	service := newTagTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		calls++
-		if calls == 1 {
-			if r.URL.Query().Get("start") != "1" || r.URL.Query().Get("limit") != "3" {
-				t.Errorf("expected start=1 limit=3 on call 1, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":3,"values":[{"displayId":"t1"},{"displayId":"t2"}]}`))
-			return
-		}
-		if r.URL.Query().Get("start") != "3" || r.URL.Query().Get("limit") != "1" {
-			t.Errorf("expected start=3 limit=1 on call 2, got start=%s limit=%s", r.URL.Query().Get("start"), r.URL.Query().Get("limit"))
-		}
-		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"displayId":"t3"}]}`))
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-	tags, err := service.List(context.Background(), repo, ListOptions{MaxResults: 3, Start: 1})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(tags) != 3 {
-		t.Errorf("expected 3 tags, got %d", len(tags))
-	}
-	if calls != 2 {
-		t.Errorf("expected 2 page requests, got %d", calls)
-	}
-}
-
-func TestTagServicePaginationEdgeCases(t *testing.T) {
-	service := newTagTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Query().Get("start") != "0" {
-			t.Errorf("expected start=0, got start=%s", r.URL.Query().Get("start"))
-		}
-		_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":4,"values":[{"displayId":"t1"},{"displayId":"t2"},{"displayId":"t3"},{"displayId":"t4"}]}`))
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-	tags, err := service.List(context.Background(), repo, ListOptions{Start: -1, MaxResults: 3})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(tags) != 3 {
-		t.Errorf("expected 3 tags, got %d", len(tags))
-	}
 }

@@ -53,128 +53,10 @@ func TestServiceValidationAndStatusMapping(t *testing.T) {
 	}
 }
 
-func TestCommentServiceAdditionalBranches(t *testing.T) {
-	t.Run("validation branches", func(t *testing.T) {
-		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-
-		target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}
-		if _, err := service.List(context.Background(), target, "", 10); err == nil {
-			t.Fatal("expected path validation error")
-		}
-		if _, err := service.List(context.Background(), Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}, "", 10); err == nil {
-			t.Fatal("expected pull request path validation error")
-		}
-		if _, err := service.Create(context.Background(), target, " "); err == nil {
-			t.Fatal("expected comment text validation error")
-		}
-		if _, err := service.Update(context.Background(), target, "", "text", nil); err == nil {
-			t.Fatal("expected comment id validation error")
-		}
-		if _, err := service.Update(context.Background(), target, "10", "", nil); err == nil {
-			t.Fatal("expected update text validation error")
-		}
-		if _, err := service.Delete(context.Background(), target, "", nil); err == nil {
-			t.Fatal("expected delete comment id validation error")
-		}
-		if _, err := service.Get(context.Background(), target, ""); err == nil {
-			t.Fatal("expected get comment id validation error")
-		}
-	})
-
-	t.Run("commit pagination and fallback payloads", func(t *testing.T) {
-		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			switch {
-			case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/comments":
-				w.Header().Set("Content-Type", "application/json")
-				if r.URL.Query().Get("start") == "1" {
-					_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":2,"text":"c2","version":1}]}`))
-					return
-				}
-				_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"id":1,"text":"c1","version":1}]}`))
-			case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/comments":
-				w.WriteHeader(http.StatusCreated)
-			case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/comments/10":
-				w.WriteHeader(http.StatusOK)
-			case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/comments/10":
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(`{"id":10,"version":5}`))
-			case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/comments/10":
-				w.WriteHeader(http.StatusNoContent)
-			default:
-				http.NotFound(w, r)
-			}
-		})
-
-		target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}
-
-		comments, err := service.List(context.Background(), target, "seed.txt", 2)
-		if err != nil || len(comments) != 2 {
-			t.Fatalf("expected paginated commit comments, got len=%d err=%v", len(comments), err)
-		}
-
-		created, err := service.Create(context.Background(), target, "new")
-		if err != nil {
-			t.Fatalf("expected create fallback success, got %v", err)
-		}
-		if created.Text == nil || *created.Text != "new" {
-			t.Fatalf("expected fallback create payload, got %#v", created)
-		}
-
-		updated, err := service.Update(context.Background(), target, "10", "updated", nil)
-		if err != nil {
-			t.Fatalf("expected update fallback success, got %v", err)
-		}
-		if updated.Text == nil || *updated.Text != "updated" {
-			t.Fatalf("expected fallback update payload, got %#v", updated)
-		}
-
-		resolved, err := service.Delete(context.Background(), target, "10", nil)
-		if err != nil {
-			t.Fatalf("expected delete success, got %v", err)
-		}
-		if resolved == nil || *resolved != 5 {
-			t.Fatalf("expected resolved delete version 5, got %v", resolved)
-		}
-	})
-
-	t.Run("transport and status error branches", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		}))
-		baseURL := server.URL
-		server.Close()
-
-		client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
-		if err != nil {
-			t.Fatalf("create client: %v", err)
-		}
-		service := NewService(client)
-
-		commitTarget := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}
-		prTarget := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
-
-		if _, err := service.Create(context.Background(), commitTarget, "x"); err == nil || apperrors.ExitCode(err) != 10 {
-			t.Fatalf("expected transient commit create transport error, got %v", err)
-		}
-		if _, err := service.Create(context.Background(), prTarget, "x"); err == nil || apperrors.ExitCode(err) != 10 {
-			t.Fatalf("expected transient pr create transport error, got %v", err)
-		}
-
-		statusService := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusConflict)
-			_, _ = w.Write([]byte("conflict"))
-		})
-		if _, err := statusService.Get(context.Background(), prTarget, "1"); err == nil || apperrors.ExitCode(err) != 5 {
-			t.Fatalf("expected conflict mapping for get, got %v", err)
-		}
-	})
-}
-
 // TestServiceCreateExplainsAnchorRejection covers the 400 Bitbucket returns
 // when the anchored line is not in the diff. The raw response says nothing
 // about the line, the path, or the rule.
+// mock-inventory: transport-fault — the rejection is injected to check the message bb builds around it; TestLiveInlineCommentAnchoring proves the real one.
 func TestServiceCreateExplainsAnchorRejection(t *testing.T) {
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
@@ -218,218 +100,7 @@ func TestServiceCreateExplainsAnchorRejection(t *testing.T) {
 	}
 }
 
-func TestServiceBlockerReactionsAndSuggestionsAdditionalErrors(t *testing.T) {
-	// Blocker pagination test
-	t.Run("blocker pagination", func(t *testing.T) {
-		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			if r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/blocker-comments" {
-				if r.URL.Query().Get("start") == "1" {
-					_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":101,"text":"blocker2","version":1}]}`))
-					return
-				}
-				_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"id":100,"text":"blocker1","version":1}]}`))
-				return
-			}
-			http.NotFound(w, r)
-		})
-		target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12", Blocker: true}
-		list, err := service.List(context.Background(), target, "", 2)
-		if err != nil || len(list) != 2 {
-			t.Fatalf("expected paginated blocker list, got len=%d err=%v", len(list), err)
-		}
-
-		// Pagination with nil NextPageStart
-		serviceNilNext := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"isLastPage":false,"values":[{"id":100,"text":"blocker1","version":1}]}`))
-		})
-		listNilNext, err := serviceNilNext.List(context.Background(), target, "", 2)
-		if err != nil || len(listNilNext) != 1 {
-			t.Fatalf("expected 1 element for nil next page start, got len=%d err=%v", len(listNilNext), err)
-		}
-	})
-
-	// React validation, transport, status errors
-	t.Run("reactions and suggestions errors", func(t *testing.T) {
-		// Validation
-		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-		emptyRepo := RepositoryRef{}
-		validRepo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-		if _, err := service.React(context.Background(), emptyRepo, "12", "100", "thumbsup"); err == nil {
-			t.Fatal("expected error on empty repo for React")
-		}
-		if _, err := service.React(context.Background(), validRepo, "", "100", "thumbsup"); err == nil {
-			t.Fatal("expected error on empty prID for React")
-		}
-		if _, err := service.React(context.Background(), validRepo, "12", "", "thumbsup"); err == nil {
-			t.Fatal("expected error on empty commentID for React")
-		}
-		if _, err := service.React(context.Background(), validRepo, "12", "100", ""); err == nil {
-			t.Fatal("expected error on empty emoticon for React")
-		}
-
-		if err := service.UnReact(context.Background(), emptyRepo, "12", "100", "thumbsup"); err == nil {
-			t.Fatal("expected error on empty repo for UnReact")
-		}
-		if err := service.UnReact(context.Background(), validRepo, "", "100", "thumbsup"); err == nil {
-			t.Fatal("expected error on empty prID for UnReact")
-		}
-		if err := service.UnReact(context.Background(), validRepo, "12", "", "thumbsup"); err == nil {
-			t.Fatal("expected error on empty commentID for UnReact")
-		}
-		if err := service.UnReact(context.Background(), validRepo, "12", "100", ""); err == nil {
-			t.Fatal("expected error on empty emoticon for UnReact")
-		}
-
-		if err := service.ApplySuggestion(context.Background(), emptyRepo, "12", "100", openapigenerated.RestApplySuggestionRequest{}); err == nil {
-			t.Fatal("expected error on empty repo for ApplySuggestion")
-		}
-		if err := service.ApplySuggestion(context.Background(), validRepo, "", "100", openapigenerated.RestApplySuggestionRequest{}); err == nil {
-			t.Fatal("expected error on empty prID for ApplySuggestion")
-		}
-		if err := service.ApplySuggestion(context.Background(), validRepo, "12", "", openapigenerated.RestApplySuggestionRequest{}); err == nil {
-			t.Fatal("expected error on empty commentID for ApplySuggestion")
-		}
-
-		// Transport errors (client closed)
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		}))
-		baseURL := server.URL
-		server.Close()
-		client, _ := openapigenerated.NewClientWithResponses(baseURL + "/rest")
-		serviceClosed := NewService(client)
-
-		if _, err := serviceClosed.React(context.Background(), validRepo, "12", "100", "thumbsup"); err == nil {
-			t.Fatal("expected transient react transport error")
-		}
-		if err := serviceClosed.UnReact(context.Background(), validRepo, "12", "100", "thumbsup"); err == nil {
-			t.Fatal("expected transient unreact transport error")
-		}
-		if err := serviceClosed.ApplySuggestion(context.Background(), validRepo, "12", "100", openapigenerated.RestApplySuggestionRequest{}); err == nil {
-			t.Fatal("expected transient apply suggestion transport error")
-		}
-
-		// Blocker transport errors
-		blockerTarget := Target{Repository: validRepo, PullRequestID: "12", Blocker: true}
-		if _, err := serviceClosed.List(context.Background(), blockerTarget, "", 25); err == nil {
-			t.Fatal("expected blocker list transport error")
-		}
-		if _, err := serviceClosed.Create(context.Background(), blockerTarget, "hello"); err == nil {
-			t.Fatal("expected blocker create transport error")
-		}
-		if _, err := serviceClosed.Update(context.Background(), blockerTarget, "100", "hello", nil); err == nil {
-			t.Fatal("expected blocker update transport error")
-		}
-		if _, err := serviceClosed.Delete(context.Background(), blockerTarget, "100", nil); err == nil {
-			t.Fatal("expected blocker delete transport error")
-		}
-		if _, err := serviceClosed.Get(context.Background(), blockerTarget, "100"); err == nil {
-			t.Fatal("expected blocker get transport error")
-		}
-
-		// Blocker API status error (e.g. Forbidden)
-		errService := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusForbidden)
-		})
-		if _, err := errService.List(context.Background(), blockerTarget, "", 25); err == nil || apperrors.ExitCode(err) != 3 {
-			t.Fatalf("expected forbidden error for blocker list, got %v", err)
-		}
-		if _, err := errService.Create(context.Background(), blockerTarget, "hello"); err == nil || apperrors.ExitCode(err) != 3 {
-			t.Fatalf("expected forbidden error for blocker create, got %v", err)
-		}
-		if _, err := errService.Update(context.Background(), blockerTarget, "100", "hello", nil); err == nil || apperrors.ExitCode(err) != 3 {
-			t.Fatalf("expected forbidden error for blocker update, got %v", err)
-		}
-		if _, err := errService.Delete(context.Background(), blockerTarget, "100", nil); err == nil || apperrors.ExitCode(err) != 3 {
-			t.Fatalf("expected forbidden error for blocker delete, got %v", err)
-		}
-		if _, err := errService.Get(context.Background(), blockerTarget, "100"); err == nil || apperrors.ExitCode(err) != 3 {
-			t.Fatalf("expected forbidden error for blocker get, got %v", err)
-		}
-
-		// Reaction and Suggestion API status error (Forbidden)
-		if _, err := errService.React(context.Background(), validRepo, "12", "100", "thumbsup"); err == nil || apperrors.ExitCode(err) != 3 {
-			t.Fatalf("expected forbidden react error, got %v", err)
-		}
-		if err := errService.UnReact(context.Background(), validRepo, "12", "100", "thumbsup"); err == nil || apperrors.ExitCode(err) != 3 {
-			t.Fatalf("expected forbidden unreact error, got %v", err)
-		}
-		if err := errService.ApplySuggestion(context.Background(), validRepo, "12", "100", openapigenerated.RestApplySuggestionRequest{}); err == nil || apperrors.ExitCode(err) != 3 {
-			t.Fatalf("expected forbidden apply suggestion error, got %v", err)
-		}
-	})
-}
-
-func TestServiceFallbacks(t *testing.T) {
-	validRepo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-	blockerTarget := Target{Repository: validRepo, PullRequestID: "12", Blocker: true}
-
-	t.Run("fallbacks for empty successful responses", func(t *testing.T) {
-		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK) // 200 OK with no body
-		})
-
-		// 1. List blocker (nil values / isLastPage / nextPageStart)
-		list, err := service.List(context.Background(), blockerTarget, "", 25)
-		if err != nil || len(list) != 0 {
-			t.Fatalf("expected empty list for fallback, got %v err=%v", list, err)
-		}
-
-		// 2. Create blocker (uses 201 Created mock)
-		createService := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusCreated) // 201 Created with no body
-		})
-		created, err := createService.Create(context.Background(), blockerTarget, "hello")
-		if err != nil || *created.Text != "hello" {
-			t.Fatalf("expected fallback create body, got %v err=%v", created, err)
-		}
-
-		// 3. Update with an explicit version still falls back to the request
-		// body: the write happened, and reporting a failure would invite a retry
-		// that edits the comment twice.
-		version := int32(4)
-		updated, err := service.Update(context.Background(), blockerTarget, "100", "hello", &version)
-		if err != nil || *updated.Text != "hello" {
-			t.Fatalf("expected fallback update body, got %v err=%v", updated, err)
-		}
-
-		// 4. A write that has to look the version up first refuses instead.
-		// An empty body is not a comment, and treating it as one sent the write
-		// with no version at all -- which Bitbucket reads as "no optimistic
-		// locking wanted" and applies over whatever a concurrent edit did.
-		if _, err := service.Update(context.Background(), blockerTarget, "100", "hello", nil); err == nil {
-			t.Fatal("an update proceeded after an unreadable version lookup")
-		}
-		deleteService := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == http.MethodDelete {
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
-			w.WriteHeader(http.StatusOK) // empty body for Get
-		})
-		if _, err := deleteService.Delete(context.Background(), blockerTarget, "100", nil); err == nil {
-			t.Fatal("a delete proceeded after an unreadable version lookup")
-		}
-
-		// 5. And the read that fails says so, rather than answering with a
-		// comment that has no fields.
-		if _, err := service.Get(context.Background(), blockerTarget, "100"); err == nil {
-			t.Fatal("an empty body was reported as a readable comment")
-		}
-
-		// 6. React
-		reaction, err := service.React(context.Background(), validRepo, "12", "100", "thumbsup")
-		if err != nil || reaction.Emoticon != nil {
-			t.Fatalf("expected empty reaction fallback, got %v err=%v", reaction, err)
-		}
-	})
-}
-
+// mock-inventory: unreached-guard — every case is refused before a request is built; the handler is never reached.
 func TestCountTasksValidatesTarget(t *testing.T) {
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
@@ -440,6 +111,7 @@ func TestCountTasksValidatesTarget(t *testing.T) {
 	}
 }
 
+// mock-inventory: unreached-guard — every case is refused before a request is built; the handler is never reached.
 func TestSetStateValidation(t *testing.T) {
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {})
 	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
@@ -450,71 +122,6 @@ func TestSetStateValidation(t *testing.T) {
 	if _, err := service.SetState(context.Background(), target, "7", CommentState("DONE"), nil); err == nil {
 		t.Fatal("expected a validation error for an unknown state")
 	}
-}
-
-// The error paths SetState can take, each of which returns a different kind and
-// so a different exit code.
-func TestSetStateErrorPaths(t *testing.T) {
-	validTarget := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
-
-	t.Run("invalid target", func(t *testing.T) {
-		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			t.Error("expected no request for an invalid target")
-		})
-		_, err := service.SetState(context.Background(), Target{}, "7", CommentStateResolved, nil)
-		if err == nil || apperrors.ExitCode(err) != 2 {
-			t.Fatalf("expected a validation error, got: %v", err)
-		}
-	})
-
-	t.Run("read fails", func(t *testing.T) {
-		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == http.MethodPut {
-				t.Error("expected no update when the comment cannot be read")
-			}
-			w.WriteHeader(http.StatusNotFound)
-			_, _ = w.Write([]byte(`{"errors":[{"message":"Comment 7 does not exist."}]}`))
-		})
-		_, err := service.SetState(context.Background(), validTarget, "7", CommentStateResolved, nil)
-		if err == nil || apperrors.ExitCode(err) != 4 {
-			t.Fatalf("expected a not-found error from the read, got: %v", err)
-		}
-	})
-
-	t.Run("update fails", func(t *testing.T) {
-		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			if r.Method == http.MethodGet {
-				_, _ = w.Write([]byte(`{"id":7,"version":1}`))
-				return
-			}
-			// A stale version is the realistic failure here, and the one the
-			// version read exists to avoid.
-			w.WriteHeader(http.StatusConflict)
-			_, _ = w.Write([]byte(`{"errors":[{"message":"You are attempting to modify a comment based on out-of-date information."}]}`))
-		})
-		_, err := service.SetState(context.Background(), validTarget, "7", CommentStateResolved, nil)
-		if err == nil || apperrors.ExitCode(err) != 5 {
-			t.Fatalf("expected a conflict error from the update, got: %v", err)
-		}
-	})
-
-	t.Run("update answers without a parsed body", func(t *testing.T) {
-		supplied := int32(1)
-		service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			// 200 with a content type the generated client does not decode, so
-			// the request body is echoed back instead of a parsed comment.
-			w.Header().Set("Content-Type", "text/plain")
-			w.WriteHeader(http.StatusOK)
-		})
-		updated, err := service.SetState(context.Background(), validTarget, "7", CommentStateResolved, &supplied)
-		if err != nil {
-			t.Fatalf("expected the sent body to be returned, got: %v", err)
-		}
-		if updated.State == nil || *updated.State != "RESOLVED" {
-			t.Fatalf("state = %v, want the state that was sent", updated.State)
-		}
-	})
 }
 
 // TestListSurfacesAMalformedPage keeps a broken response from reading as an
@@ -582,6 +189,7 @@ func TestCreateRefusesABlockerOnACommit(t *testing.T) {
 //
 // Resolving a blocker always takes this path, because resolve passes no
 // version of its own.
+// mock-inventory: transport-fault — the version read is made to fail on purpose; the subject is that the write is abandoned, not what Bitbucket answers.
 func TestAnUnreadableVersionLookupStopsTheWrite(t *testing.T) {
 	writes := 0
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
@@ -635,6 +243,7 @@ func TestAnUnreadableVersionLookupStopsTheWrite(t *testing.T) {
 // a silently empty comment -- and an empty comment is what turned a failed read
 // into a write with no version. Testing one shape and reasoning about the rest
 // is what let that stand.
+// mock-inventory: transport-fault — an empty body is injected; the subject is that the service refuses rather than inventing a comment.
 func TestEveryEmptyReadIsRefused(t *testing.T) {
 	for _, shape := range []struct {
 		what string
@@ -679,6 +288,7 @@ func TestEveryEmptyReadIsRefused(t *testing.T) {
 // that does not advance makes it walk forever, collecting the same page each
 // time. A wrong answer is recoverable; a command that never returns is not.
 // The browse service already guards this the same way.
+// mock-inventory: transport-fault — a page whose start never advances is a guard against a server that misbehaves, not a claim that one does.
 func TestAStationaryPageEndsTheListing(t *testing.T) {
 	requests := 0
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {

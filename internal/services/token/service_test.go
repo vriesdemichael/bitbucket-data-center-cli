@@ -112,6 +112,7 @@ func TestTokenServiceValidation(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the subject is this loop's arithmetic -- that start advances and the limit narrows to what is left. Bitbucket's side of the convention is pinned live by branches and tags; seeding thirty keys to re-prove it here would buy nothing.
 func TestTokenServicePagination(t *testing.T) {
 	calls := 0
 	service := newTokenTestService(t, func(w http.ResponseWriter, r *http.Request) {
@@ -130,6 +131,7 @@ func TestTokenServicePagination(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the failure is injected below the API; no live server refuses on request.
 func TestTokenServiceTransientErrors(t *testing.T) {
 	service := newTokenTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
@@ -190,6 +192,7 @@ func TestTokenServiceTransientErrors(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the failure is injected below the API; no live server refuses on request.
 func TestTokenServiceNetworkErrors(t *testing.T) {
 	// A closed loopback port rather than an unresolvable hostname. This test
 	// makes fifteen calls, and each one against a bogus host waits out a DNS

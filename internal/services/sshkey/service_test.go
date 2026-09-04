@@ -85,6 +85,7 @@ func TestSshKeyServiceValidation(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the subject is this loop's arithmetic -- that start advances and the limit narrows to what is left. Bitbucket's side of the convention is pinned live by branches and tags; seeding thirty keys to re-prove it here would buy nothing.
 func TestSshKeyServicePagination(t *testing.T) {
 	calls := 0
 	service := newSshKeyTestService(t, func(w http.ResponseWriter, r *http.Request) {
@@ -112,6 +113,7 @@ func TestSshKeyServicePagination(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the subject is this loop's arithmetic -- that start advances and the limit narrows to what is left. Bitbucket's side of the convention is pinned live by branches and tags; seeding thirty keys to re-prove it here would buy nothing.
 func TestSshKeyServicePaginationEdgeCases(t *testing.T) {
 	service := newSshKeyTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -127,6 +129,7 @@ func TestSshKeyServicePaginationEdgeCases(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the failure is injected below the API; no live server refuses on request.
 func TestSshKeyServiceTransientErrors(t *testing.T) {
 	service := newSshKeyTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -166,6 +169,7 @@ func TestSshKeyServiceTransientErrors(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the failure is injected below the API; no live server refuses on request.
 func TestSshKeyServiceNetworkErrors(t *testing.T) {
 	// Closed loopback port, not an unresolvable hostname: see the note on
 	// TestTokenServiceNetworkErrors. A DNS lookup per call made this 25

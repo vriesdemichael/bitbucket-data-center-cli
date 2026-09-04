@@ -989,3 +989,53 @@ func (h *liveHarness) userID(ctx context.Context, username string) (int64, error
 
 	return int64(id), nil
 }
+
+// renameFileOnBranch moves a file that already exists on master and pushes the
+// result as a branch.
+//
+// A rename is one commit that removes one path and adds another with the same
+// content, which git reports as a rename and Bitbucket reports as a MOVE with
+// the source path alongside. It cannot be expressed by writing a file, so it
+// needs its own helper rather than a flag on pushFileOnBranch.
+func (h *liveHarness) renameFileOnBranch(projectKey, repositorySlug, branch, from, to string) error {
+	tempDir := h.t.TempDir()
+
+	for _, args := range [][]string{
+		{"init"},
+		{"config", "user.name", "bb-live-test"},
+		{"config", "user.email", "bb-live-test@example.local"},
+	} {
+		if err := runGit(tempDir, args...); err != nil {
+			return fmt.Errorf("git %s failed: %w", args[0], err)
+		}
+	}
+
+	pushURL, err := repositoryPushURL(h.config, projectKey, repositorySlug)
+	if err != nil {
+		return err
+	}
+	if err := runGit(tempDir, "remote", "add", "origin", pushURL); err != nil {
+		return fmt.Errorf("git remote add failed: %w", err)
+	}
+	if err := runGit(tempDir, "fetch", "origin", "master"); err != nil {
+		return fmt.Errorf("git fetch origin master failed: %w", err)
+	}
+	if err := runGit(tempDir, "checkout", "-b", branch, "FETCH_HEAD"); err != nil {
+		return fmt.Errorf("git checkout branch failed: %w", err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(filepath.Join(tempDir, to)), 0o755); err != nil {
+		return fmt.Errorf("create destination directory: %w", err)
+	}
+	if err := runGit(tempDir, "mv", from, to); err != nil {
+		return fmt.Errorf("git mv failed: %w", err)
+	}
+	if err := runGit(tempDir, "commit", "-m", "rename "+from+" to "+to); err != nil {
+		return fmt.Errorf("git commit failed: %w", err)
+	}
+	if err := runGit(tempDir, "push", "-u", "origin", branch); err != nil {
+		return fmt.Errorf("git push branch failed: %w", err)
+	}
+
+	return nil
+}

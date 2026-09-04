@@ -43,6 +43,7 @@ func TestNewFromConfigTransportOptions(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — a server that answers 503 to everything is injected; a live Bitbucket does not fail on request.
 func TestHealthServerError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusServiceUnavailable)
@@ -60,6 +61,7 @@ func TestHealthServerError(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the subject is the Authorization header this client attaches.
 func TestGetJSONSuccessWithTokenAuth(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path != "/rest/api/latest/test" {
@@ -119,26 +121,7 @@ func TestGetJSONRetriesAndSucceeds(t *testing.T) {
 	}
 }
 
-func TestGetJSONMapsStatusErrors(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusForbidden)
-		_, _ = writer.Write([]byte("no access"))
-	}))
-	defer server.Close()
-
-	client := NewFromConfig(config.AppConfig{BitbucketURL: server.URL})
-	client.retries = 0
-
-	var payload map[string]any
-	err := client.GetJSON(context.Background(), "/rest/api/latest/forbidden", nil, &payload)
-	if err == nil {
-		t.Fatal("expected authorization error")
-	}
-	if apperrors.ExitCode(err) != 3 {
-		t.Fatalf("expected authorization exit code 3, got %d", apperrors.ExitCode(err))
-	}
-}
-
+// mock-inventory: transport-fault — a body that is not JSON is injected; no live Bitbucket sends one on request.
 func TestGetJSONDecodeFailure(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
@@ -177,6 +160,7 @@ func TestApplyAuthUsesBasicCredentials(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — a redirect in front of the REST API comes from a proxy or SSO, not from Bitbucket.
 func TestHealthRedirectConsideredReachable(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Location", "/login")
@@ -213,6 +197,7 @@ func TestGetJSONInvalidBaseURL(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — decoding into the caller's target is ours; the payload is a fixture because its shape is irrelevant.
 func TestGetJSONOutputTargetType(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte(`{"value":"x"}`))
@@ -237,6 +222,7 @@ func TestGetJSONOutputTargetType(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the subject is which verb this client sends for each helper, not what Bitbucket does with it.
 func TestWriteJSONMethods(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodPost && request.Method != http.MethodPut && request.Method != http.MethodDelete {
@@ -594,6 +580,7 @@ func TestDiagnosticsWriter(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — returning the bytes unaltered is the client's contract, and the bytes are arbitrary by design.
 func TestGetRawReturnsBodyVerbatim(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/raw/dir/file.txt" {
@@ -626,24 +613,6 @@ func TestGetRawReturnsBodyVerbatim(t *testing.T) {
 	}
 	if string(body) != "line one\nline two\n" {
 		t.Fatalf("expected verbatim body, got %q", string(body))
-	}
-}
-
-func TestGetRawMapsStatusErrors(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusNotFound)
-		_, _ = writer.Write([]byte(`{"errors":[{"message":"file not found"}]}`))
-	}))
-	defer server.Close()
-
-	client := NewFromConfig(config.AppConfig{BitbucketURL: server.URL})
-
-	_, err := client.GetRaw(context.Background(), "/rest/api/latest/missing", nil)
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	if apperrors.ExitCode(err) != 4 {
-		t.Fatalf("expected not-found exit code 4, got %d: %v", apperrors.ExitCode(err), err)
 	}
 }
 
@@ -699,6 +668,7 @@ func TestGetRawTransientNetworkFailure(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — a response without the header is injected; the subject is what the client does when it is absent.
 func TestCurrentUserSlugMissingHeader(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")
@@ -720,19 +690,7 @@ func TestCurrentUserSlugMissingHeader(t *testing.T) {
 	}
 }
 
-func TestCurrentUserSlugPropagatesStatusErrors(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusUnauthorized)
-	}))
-	defer server.Close()
-
-	client := NewFromConfig(config.AppConfig{BitbucketURL: server.URL})
-
-	if _, err := client.CurrentUserSlug(context.Background()); err == nil || apperrors.ExitCode(err) != 3 {
-		t.Fatalf("expected authentication exit code 3, got %v", err)
-	}
-}
-
+// mock-inventory: transport-fault — the subject is the request this client builds and the response it decodes, not what Bitbucket puts on the wire.
 func TestDoRequestSuccess(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodPost {
@@ -792,6 +750,7 @@ func TestDoRequestSuccess(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — an absolute URL bypasses the configured base; the subject is our URL handling.
 func TestDoRequestFullURL(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)

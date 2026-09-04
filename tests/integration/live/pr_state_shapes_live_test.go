@@ -4,6 +4,7 @@ package live_test
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -211,4 +212,107 @@ func mustLiveHumanCLI(t *testing.T, args ...string) string {
 	}
 
 	return output
+}
+
+// TestLivePullRequestListingFilters covers what `pr list` asks the server for.
+//
+// The mocks these replace read the query string off a request they had just
+// received and asserted the parameters were the ones the author expected --
+// state, role, at, limit, start. That proves bb sent them. Whether Bitbucket
+// applies them is the question, and the only evidence is which pull requests
+// come back.
+//
+// Three are seeded so a limit below the total has something to cut, and the
+// filters are checked by the pull requests they include and exclude rather
+// than by the parameters that carried them.
+func TestLivePullRequestListingFilters(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	branches := []string{"feature/filter-a", "feature/filter-b", "feature/filter-c"}
+	ids := make([]string, 0, len(branches))
+	for index, branch := range branches {
+		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, fmt.Sprintf("filter-%d.txt", index)); err != nil {
+			t.Fatalf("push %s failed: %v", branch, err)
+		}
+		ids = append(ids, createLivePRForRegression(t, branch, "Filter "+branch,
+			"--no-default-reviewers", "--no-codeowners"))
+	}
+
+	// One of them is declined, so the state filter has something to exclude.
+	declined := ids[2]
+	mustLiveCLI(t, "pr", "decline", declined)
+
+	// Takes the output rather than the command words: a helper that spreads a
+	// variadic into mustLiveCLI hides them from tools/command-reach, which
+	// fails rather than quietly dropping the command from the report.
+	listedIDs := func(t *testing.T, output string) []string {
+		t.Helper()
+
+		data := decodeJSONMap(t, output)
+		entries, _ := data["pullRequests"].([]any)
+		found := make([]string, 0, len(entries))
+		for _, entry := range entries {
+			pullRequest, _ := entry.(map[string]any)
+			found = append(found, trimNumeric(pullRequest["id"]))
+		}
+
+		return found
+	}
+
+	contains := func(haystack []string, needle string) bool {
+		for _, candidate := range haystack {
+			if candidate == needle {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	t.Run("the state filter excludes what it says", func(t *testing.T) {
+		open := listedIDs(t, mustLiveCLI(t, "pr", "list", "--state", "open"))
+		if contains(open, declined) {
+			t.Errorf("the declined pull request %s survived --state open: %v", declined, open)
+		}
+		if !contains(open, ids[0]) {
+			t.Errorf("an open pull request is missing from --state open: %v", open)
+		}
+
+		if closed := listedIDs(t, mustLiveCLI(t, "pr", "list", "--state", "closed")); !contains(closed, declined) {
+			t.Errorf("--state closed did not return the declined pull request: %v", closed)
+		}
+	})
+
+	t.Run("a limit below the total cuts the answer", func(t *testing.T) {
+		if limited := listedIDs(t, mustLiveCLI(t, "pr", "list", "--state", "all", "--limit", "1")); len(limited) != 1 {
+			t.Fatalf("--limit 1 returned %d pull requests: %v", len(limited), limited)
+		}
+	})
+
+	t.Run("the source branch filter narrows to one", func(t *testing.T) {
+		// A filter the server applies: only the pull request from that branch
+		// can come back, and getting it wrong returns the others.
+		narrowed := listedIDs(t, mustLiveCLI(t, "pr", "list", "--state", "all", "--source-branch", branches[0]))
+		if len(narrowed) != 1 || narrowed[0] != ids[0] {
+			t.Fatalf("--source-branch %s returned %v, want just %s", branches[0], narrowed, ids[0])
+		}
+	})
+
+	t.Run("pr status lists what is waiting on the caller", func(t *testing.T) {
+		// A different endpoint entirely -- the cross-repository dashboard --
+		// reached through the command that exists for it.
+		output := mustLiveCLI(t, "pr", "status")
+		if !strings.Contains(output, ids[0]) {
+			t.Errorf("pr status omitted a pull request the caller authored:\n%s", output)
+		}
+	})
 }
