@@ -245,17 +245,17 @@ func (service *Service) DiffCommit(ctx context.Context, input DiffCommitInput) (
 	return Result{Patch: body}, nil
 }
 
-func (service *Service) CompareChanges(ctx context.Context, repo RepositoryRef, from, to string, limit int) ([]openapigenerated.RestChange, error) {
+func (service *Service) CompareChanges(ctx context.Context, repo RepositoryRef, from, to string, pageSize int) ([]openapigenerated.RestChange, error) {
 	if err := validateRepoRef(repo); err != nil {
 		return nil, err
 	}
 
-	if limit <= 0 {
-		limit = 25
+	if pageSize <= 0 {
+		pageSize = 25
 	}
 
 	start := float32(0)
-	pageLimit := float32(limit)
+	pageLimit := float32(pageSize)
 	var fromParam *string
 	if from != "" {
 		f := from

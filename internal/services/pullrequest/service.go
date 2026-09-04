@@ -635,7 +635,7 @@ type mergeVetoValue struct {
 }
 
 // GetBuildStatuses retrieves build statuses for the source commit of the given pull request.
-func (service *Service) GetBuildStatuses(ctx context.Context, repository RepositoryRef, pullRequestID string, limit int) ([]BuildStatus, error) {
+func (service *Service) GetBuildStatuses(ctx context.Context, repository RepositoryRef, pullRequestID string, pageSize int) ([]BuildStatus, error) {
 	if err := validateRepositoryRef(repository); err != nil {
 		return nil, err
 	}
@@ -645,8 +645,8 @@ func (service *Service) GetBuildStatuses(ctx context.Context, repository Reposit
 		return nil, err
 	}
 
-	if limit <= 0 {
-		limit = 25
+	if pageSize <= 0 {
+		pageSize = 25
 	}
 
 	// Fetch the PR to get the source commit hash.
@@ -667,8 +667,8 @@ func (service *Service) GetBuildStatuses(ctx context.Context, repository Reposit
 
 	for {
 		query := map[string]string{
-			"limit": strconv.Itoa(limit),
-			"start": strconv.Itoa(start),
+			"limit": strconv.Itoa(pageSize),
+			"start":    strconv.Itoa(start),
 		}
 
 		var response pagedBuildStatusResponse

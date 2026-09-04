@@ -95,17 +95,17 @@ func (service *Service) SetBuildStatus(ctx context.Context, commitID string, inp
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
 
-func (service *Service) GetBuildStatuses(ctx context.Context, commitID string, limit int, orderBy string) ([]openapigenerated.RestBuildStatus, error) {
+func (service *Service) GetBuildStatuses(ctx context.Context, commitID string, pageSize int, orderBy string) ([]openapigenerated.RestBuildStatus, error) {
 	trimmedCommitID := strings.TrimSpace(commitID)
 	if trimmedCommitID == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "commit id is required", nil)
 	}
-	if limit <= 0 {
-		limit = 25
+	if pageSize <= 0 {
+		pageSize = 25
 	}
 
 	start := float32(0)
-	pageLimit := float32(limit)
+	pageLimit := float32(pageSize)
 	statuses := make([]openapigenerated.RestBuildStatus, 0)
 
 	for {
@@ -163,16 +163,16 @@ func (service *Service) GetBuildStatusStats(ctx context.Context, commitID string
 	return openapigenerated.RestBuildStats{}, nil
 }
 
-func (service *Service) ListRequiredBuildChecks(ctx context.Context, repo RepositoryRef, limit int) ([]openapigenerated.RestRequiredBuildCondition, error) {
+func (service *Service) ListRequiredBuildChecks(ctx context.Context, repo RepositoryRef, pageSize int) ([]openapigenerated.RestRequiredBuildCondition, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-	if limit <= 0 {
-		limit = 25
+	if pageSize <= 0 {
+		pageSize = 25
 	}
 
 	start := float32(0)
-	pageLimit := float32(limit)
+	pageLimit := float32(pageSize)
 	checks := make([]openapigenerated.RestRequiredBuildCondition, 0)
 
 	for {
@@ -309,7 +309,7 @@ func (service *Service) DeleteRequiredBuildCheck(ctx context.Context, repo Repos
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
 
-func (service *Service) ListReports(ctx context.Context, repo RepositoryRef, commitID string, limit int) ([]openapigenerated.RestInsightReport, error) {
+func (service *Service) ListReports(ctx context.Context, repo RepositoryRef, commitID string, pageSize int) ([]openapigenerated.RestInsightReport, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
@@ -317,12 +317,12 @@ func (service *Service) ListReports(ctx context.Context, repo RepositoryRef, com
 	if trimmedCommitID == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "commit id is required", nil)
 	}
-	if limit <= 0 {
-		limit = 25
+	if pageSize <= 0 {
+		pageSize = 25
 	}
 
 	start := float32(0)
-	pageLimit := float32(limit)
+	pageLimit := float32(pageSize)
 	reports := make([]openapigenerated.RestInsightReport, 0)
 
 	for {

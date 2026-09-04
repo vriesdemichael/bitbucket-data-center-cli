@@ -17,14 +17,14 @@ func NewService(client *openapigenerated.ClientWithResponses) *Service {
 	return &Service{client: client}
 }
 
-func (s *Service) ListGpgKeys(ctx context.Context, limit int) ([]openapigenerated.RestGpgKey, error) {
-	if limit <= 0 {
-		limit = 25
+func (s *Service) ListGpgKeys(ctx context.Context, maxResults int) ([]openapigenerated.RestGpgKey, error) {
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 
-	return openapi.PageThrough(ctx, 0, limit,
-		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestGpgKey], error) {
-			startValue, limitValue := float32(start), float32(limit)
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, maxResults int) (openapi.Page[openapigenerated.RestGpgKey], error) {
+			startValue, limitValue := float32(start), float32(maxResults)
 			resp, err := s.client.GetKeysForUserWithResponse(ctx, &openapigenerated.GetKeysForUserParams{
 				Start: &startValue,
 				Limit: &limitValue,

@@ -3,15 +3,16 @@ title: List options say which limit they mean
 category: architecture
 status: accepted
 decision: >
-  A service list option names its pagination field for what it does. MaxResults caps the total
+  A service list option names its pagination field or parameter for what it does. MaxResults caps the total
   returned and truncates; PageSize is the per-request page size and the call pages to exhaustion.
-  Neither is called Limit.
+  Neither is called Limit, in a struct field or in a parameter.
   A caller that reads MaxResults: 100 and gets at most 100 is not surprised, and one that reads
   PageSize: 100 does not expect a cap. TestNoServiceOptionIsCalledLimit fails on a new one.
   Zero means the service's default page size, not unlimited. No service can currently be asked for
   everything; a caller that needs it must say how many it will accept.
 agent_instructions: >
-  Name a new list option MaxResults or PageSize. Do not add a field called Limit, and do not
+  Name a new list option MaxResults or PageSize, whether it is a struct field or a parameter.
+  Do not add either called Limit, and do not
   reuse a neighbouring service's name without checking which behaviour it has.
   Do not pass zero to mean unlimited. It yields one default-sized page, which is the smaller
   answer and the one that fails silently.

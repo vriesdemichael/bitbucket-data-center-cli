@@ -32,7 +32,7 @@ func TestNoServiceOptionIsCalledLimit(t *testing.T) {
 	fields := limitNamedFields(t, filepath.Join(root, servicesDirectory))
 	for _, field := range fields {
 		t.Errorf(
-			"%s declares a field called Limit.\n"+
+			"%s is named for a limit that does not say which one it is.\n"+
 				"Name it MaxResults if it caps the total and truncates, or PageSize if it is the\n"+
 				"per-request size and the call pages to exhaustion. ADR-074 explains why: the two\n"+
 				"behaviours were indistinguishable at the call site, and guessing wrong silently\n"+
@@ -122,17 +122,36 @@ func limitNamedFields(t *testing.T, root string) []string {
 		}
 
 		ast.Inspect(file, func(node ast.Node) bool {
-			structure, ok := node.(*ast.StructType)
-			if !ok || structure.Fields == nil {
+			if structure, ok := node.(*ast.StructType); ok && structure.Fields != nil {
+				for _, field := range structure.Fields.List {
+					for _, name := range field.Names {
+						if name.Name == "Limit" {
+							found = append(found, relative+" (field Limit)")
+						}
+					}
+				}
+
 				return true
 			}
-			for _, field := range structure.Fields.List {
-				for _, name := range field.Names {
-					if name.Name == "Limit" {
-						found = append(found, relative)
+
+			// A parameter is read at the call site exactly as a field is, and
+			// the same two meanings had grown there: eighteen exported methods
+			// took a bare `limit`, six capping and twelve paging to exhaustion.
+			// The guard watched only the fields, so the half it could not see
+			// went on doing what the rule was written to stop -- and `bb branch
+			// restriction list --limit` shipped returning everything.
+			function, ok := node.(*ast.FuncDecl)
+			if !ok || function.Type.Params == nil || !function.Name.IsExported() {
+				return true
+			}
+			for _, parameter := range function.Type.Params.List {
+				for _, name := range parameter.Names {
+					if name.Name == "limit" || name.Name == "Limit" {
+						found = append(found, relative+" ("+function.Name.Name+" parameter limit)")
 					}
 				}
 			}
+
 			return true
 		})
 		return nil

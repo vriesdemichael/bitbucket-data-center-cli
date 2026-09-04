@@ -18,14 +18,14 @@ func NewService(client *openapigenerated.ClientWithResponses) *Service {
 	return &Service{client: client}
 }
 
-func (s *Service) ListUserKeys(ctx context.Context, limit int, start int) ([]openapigenerated.RestSshKey, error) {
-	if limit <= 0 {
-		limit = 25
+func (s *Service) ListUserKeys(ctx context.Context, maxResults int, start int) ([]openapigenerated.RestSshKey, error) {
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 
-	return openapi.PageThrough(ctx, start, limit,
-		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestSshKey], error) {
-			startValue, limitValue := float32(start), float32(limit)
+	return openapi.PageThrough(ctx, start, maxResults,
+		func(ctx context.Context, start, maxResults int) (openapi.Page[openapigenerated.RestSshKey], error) {
+			startValue, limitValue := float32(start), float32(maxResults)
 			resp, err := s.client.GetSshKeysWithResponse(ctx, &openapigenerated.GetSshKeysParams{
 				Start: &startValue,
 				Limit: &limitValue,
@@ -91,18 +91,18 @@ func (s *Service) RemoveUserKey(ctx context.Context, keyId string) error {
 	return openapi.MapStatusError(resp.StatusCode(), resp.Body)
 }
 
-func (s *Service) ListProjectKeys(ctx context.Context, projectKey string, limit int) ([]openapigenerated.RestSshAccessKey, error) {
+func (s *Service) ListProjectKeys(ctx context.Context, projectKey string, maxResults int) ([]openapigenerated.RestSshAccessKey, error) {
 	trimmedProj := strings.TrimSpace(projectKey)
 	if trimmedProj == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
-	if limit <= 0 {
-		limit = 25
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 
-	return openapi.PageThrough(ctx, 0, limit,
-		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestSshAccessKey], error) {
-			startValue, limitValue := float32(start), float32(limit)
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, maxResults int) (openapi.Page[openapigenerated.RestSshAccessKey], error) {
+			startValue, limitValue := float32(start), float32(maxResults)
 			resp, err := s.client.GetSshKeysForProjectWithResponse(ctx, trimmedProj,
 				&openapigenerated.GetSshKeysForProjectParams{Start: &startValue, Limit: &limitValue})
 			if err != nil {
@@ -196,19 +196,19 @@ func (s *Service) RemoveProjectKey(ctx context.Context, projectKey string, keyId
 	return openapi.MapStatusError(resp.StatusCode(), resp.Body)
 }
 
-func (s *Service) ListRepoKeys(ctx context.Context, projectKey string, repoSlug string, limit int) ([]openapigenerated.RestSshAccessKey, error) {
+func (s *Service) ListRepoKeys(ctx context.Context, projectKey string, repoSlug string, maxResults int) ([]openapigenerated.RestSshAccessKey, error) {
 	trimmedProj := strings.TrimSpace(projectKey)
 	trimmedRepo := strings.TrimSpace(repoSlug)
 	if trimmedProj == "" || trimmedRepo == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "repository must be specified as project/repo", nil)
 	}
-	if limit <= 0 {
-		limit = 25
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 
-	return openapi.PageThrough(ctx, 0, limit,
-		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestSshAccessKey], error) {
-			startValue, limitValue := float32(start), float32(limit)
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, maxResults int) (openapi.Page[openapigenerated.RestSshAccessKey], error) {
+			startValue, limitValue := float32(start), float32(maxResults)
 			resp, err := s.client.GetForRepository1WithResponse(ctx, trimmedProj, trimmedRepo,
 				&openapigenerated.GetForRepository1Params{Start: &startValue, Limit: &limitValue})
 			if err != nil {

@@ -76,7 +76,7 @@ func NewService(client *openapigenerated.ClientWithResponses) *Service {
 	return &Service{client: client}
 }
 
-func (service *Service) List(ctx context.Context, target Target, path string, limit int) ([]openapigenerated.RestComment, error) {
+func (service *Service) List(ctx context.Context, target Target, path string, pageSize int) ([]openapigenerated.RestComment, error) {
 	if err := validateTarget(target); err != nil {
 		return nil, err
 	}
@@ -91,12 +91,12 @@ func (service *Service) List(ctx context.Context, target Target, path string, li
 	if !target.Blocker && trimmedPath == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "comment path is required for list operations", nil)
 	}
-	if limit <= 0 {
-		limit = 25
+	if pageSize <= 0 {
+		pageSize = 25
 	}
 
 	start := float32(0)
-	pageLimit := float32(limit)
+	pageLimit := float32(pageSize)
 	results := make([]openapigenerated.RestComment, 0)
 
 	for {
