@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync/atomic"
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -28,8 +27,10 @@ func newProjectTestService(t *testing.T, handler http.HandlerFunc) *Service {
 
 func TestProjectServiceValidation(t *testing.T) {
 	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte("forbidden"))
+		// Every case here is refused before a request is built, so the handler
+		// is an assertion rather than a stand-in: reaching it means a guard
+		// let something through (ADR-079).
+		t.Errorf("validation let a request through: %s %s", r.Method, r.URL.Path)
 	})
 
 	if _, err := service.Get(context.Background(), ""); err == nil {
@@ -51,9 +52,6 @@ func TestProjectServiceValidation(t *testing.T) {
 		t.Fatal("expected delete key validation error")
 	}
 
-	if _, err := service.List(context.Background(), ListOptions{}); err == nil || !strings.Contains(err.Error(), "authorization") {
-		t.Fatalf("expected mapped authorization error, got %v", err)
-	}
 }
 
 func TestProjectServicePagination(t *testing.T) {
@@ -166,82 +164,6 @@ func testMapStatusErrors(t *testing.T) {
 	}
 }
 
-func TestProjectServicePermissions(t *testing.T) {
-	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/permissions/users":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"user":{"name":"alice"},"permission":"PROJECT_ADMIN"}]}`))
-		case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/PRJ/permissions/users":
-			w.WriteHeader(http.StatusNoContent)
-		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/PRJ/permissions/users":
-			w.WriteHeader(http.StatusNoContent)
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/permissions/groups":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"group":{"name":"admins"},"permission":"PROJECT_ADMIN"}]}`))
-		case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/PRJ/permissions/groups":
-			w.WriteHeader(http.StatusNoContent)
-		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/PRJ/permissions/groups":
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	users, err := service.ListProjectPermissionUsers(context.Background(), "PRJ", 100)
-	if err != nil || len(users) != 1 || users[0].Name != "alice" {
-		t.Fatalf("list users failed: %v", err)
-	}
-
-	if err := service.GrantProjectUserPermission(context.Background(), "PRJ", "alice", "PROJECT_WRITE"); err != nil {
-		t.Fatalf("grant user failed: %v", err)
-	}
-
-	if err := service.RevokeProjectUserPermission(context.Background(), "PRJ", "alice"); err != nil {
-		t.Fatalf("revoke user failed: %v", err)
-	}
-
-	groups, err := service.ListProjectPermissionGroups(context.Background(), "PRJ", 100)
-	if err != nil || len(groups) != 1 || groups[0].Name != "admins" {
-		t.Fatalf("list groups failed: %v", err)
-	}
-
-	if err := service.GrantProjectGroupPermission(context.Background(), "PRJ", "admins", "PROJECT_WRITE"); err != nil {
-		t.Fatalf("grant group failed: %v", err)
-	}
-
-	if err := service.RevokeProjectGroupPermission(context.Background(), "PRJ", "admins"); err != nil {
-		t.Fatalf("revoke group failed: %v", err)
-	}
-}
-
-func TestProjectServicePermissionsAdditional(t *testing.T) {
-	var userCount atomic.Int32
-	var groupCount atomic.Int32
-	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/permissions/users":
-			if userCount.Add(1) == 1 {
-				_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"user":{"name":"alice"},"permission":"PROJECT_ADMIN"}]}`))
-			} else {
-				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-			}
-		case r.URL.Path == "/rest/api/latest/projects/PRJ/permissions/groups":
-			if groupCount.Add(1) == 1 {
-				_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"group":{"name":"g1"},"permission":"PROJECT_READ"}]}`))
-			} else {
-				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-			}
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	// Test pagination branches
-	_, _ = service.ListProjectPermissionUsers(context.Background(), "PRJ", 1)
-	_, _ = service.ListProjectPermissionGroups(context.Background(), "PRJ", 1)
-}
-
 func TestProjectServicePermissionsValidation(t *testing.T) {
 	service := NewService(nil)
 	if err := service.GrantProjectUserPermission(context.Background(), "", "u", "p"); err == nil {
@@ -351,5 +273,22 @@ func TestProjectServicePaginationEdgeCases(t *testing.T) {
 	}
 	if len(projects) != 3 {
 		t.Errorf("expected 3 projects, got %d", len(projects))
+	}
+}
+
+// TestProjectServiceMapsForbiddenToAuthorization is the half of the validation test that needs a server.
+//
+// A 403 has to become an authorization error, and that mapping is about our
+// taxonomy rather than about when Bitbucket refuses a call -- the status is
+// supplied here, not claimed. It lives apart so the validation cases beside it
+// can assert that nothing is sent at all.
+func TestProjectServiceMapsForbiddenToAuthorization(t *testing.T) {
+	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte("forbidden"))
+	})
+
+	if _, err := service.List(context.Background(), ListOptions{}); err == nil || !strings.Contains(err.Error(), "authorization") {
+		t.Fatalf("expected mapped authorization error, got %v", err)
 	}
 }

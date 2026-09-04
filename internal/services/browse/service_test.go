@@ -80,8 +80,10 @@ func TestBrowseServiceCoreCommands(t *testing.T) {
 
 func TestBrowseServiceValidation(t *testing.T) {
 	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte("forbidden"))
+		// Every case here is refused before a request is built, so the handler
+		// is an assertion rather than a stand-in: reaching it means a guard
+		// let something through (ADR-079).
+		t.Errorf("validation let a request through: %s %s", r.Method, r.URL.Path)
 	})
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
@@ -94,9 +96,6 @@ func TestBrowseServiceValidation(t *testing.T) {
 		t.Fatal("expected file path validation error")
 	}
 
-	if _, err := service.Tree(context.Background(), repo, "", TreeOptions{}); err == nil || !strings.Contains(err.Error(), "authorization") {
-		t.Fatalf("expected mapped authorization error, got %v", err)
-	}
 }
 
 func TestBrowseServicePagination(t *testing.T) {
@@ -504,5 +503,24 @@ func TestBrowseServiceTreeStopsOnRepeatedNextPageStart(t *testing.T) {
 	}
 	if calls != 1 || len(files) != 1 {
 		t.Fatalf("expected a single page, got calls=%d files=%#v", calls, files)
+	}
+}
+
+// TestBrowseServiceMapsForbiddenToAuthorization is the half of the validation test that needs a server.
+//
+// A 403 has to become an authorization error, and that mapping is about our
+// taxonomy rather than about when Bitbucket refuses a call -- the status is
+// supplied here, not claimed. It lives apart so the validation cases beside it
+// can assert that nothing is sent at all.
+func TestBrowseServiceMapsForbiddenToAuthorization(t *testing.T) {
+	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte("forbidden"))
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	if _, err := service.Tree(context.Background(), repo, "", TreeOptions{}); err == nil || !strings.Contains(err.Error(), "authorization") {
+		t.Fatalf("expected mapped authorization error, got %v", err)
 	}
 }
