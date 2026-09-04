@@ -6,6 +6,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Unit tests do not simulate Bitbucket`
 - Category: `development`
 - Status: `accepted`
+- Supersedes: `052`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/079-unit-tests-do-not-simulate-bitbucket.yaml`
 
@@ -23,6 +24,7 @@ A mock encodes the author's belief about the API, so when that belief is the def
 
 ## Rejected Alternatives
 
+- `Leave ADR-052 in force and enforce it properly`: ADR-052 decided mock elimination and was accepted, and 394 mocks that answer Bitbucket routes exist under it. Two carve-outs are why. It scoped removal to one-to-one pass-through methods echoing canned payloads, so a mock that routes and inspects request bodies read as something else entirely -- and those are the ones that hid the defects. And it declined moving that testing live because the live suite was already slow, which is the trade this record reverses: a long suite with real guarantees is the point, not a cost to be avoided. Restating it would leave both carve-outs standing.
 - `Keep the mocks and hold them to a stricter standard`: This was tried as written guidance. It asks reviewers to spot an assumption that looks correct by construction, which is the one thing reading cannot do. It also leaves the drift problem untouched: a mock correct today and wrong after an upgrade fails no differently.
 - `Generate the mocks from the OpenAPI specification`: The specification describes shapes, not semantics, and the semantics is where the defects are: an absent field meaning delete, a version defaulting to a value that is always rejected, an identifier accepted in one spelling and echoed in another. A generated mock would have reproduced every one of those bugs faithfully.
 - `Allow mocks for error and transport paths a live server will not produce`: Partly kept, and narrowed. Faults injected below the API -- a truncated body, a stalled connection -- are about our client and stay. A status code is not: "the server answers this here" is a claim about the server, so it is allowed only where a live test shows the server really does answer that way.

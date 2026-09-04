@@ -5,7 +5,8 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `052`
 - Title: `Layer-boundary testing policy and HTTP mock elimination`
 - Category: `development`
-- Status: `accepted`
+- Status: `superseded`
+- Superseded By: `079`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/052-layer-boundary-testing-and-mock-elimination.yaml`
 

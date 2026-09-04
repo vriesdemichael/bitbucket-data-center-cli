@@ -1,7 +1,8 @@
 number: 52
 title: Layer-boundary testing policy and HTTP mock elimination
 category: development
-status: accepted
+status: superseded
+superseded_by: 79
 decision: >
   Define strict testing boundaries per layer:
   1. Unit tests must only test fast, deterministic logic (parameter translation, CLI flag mutual
