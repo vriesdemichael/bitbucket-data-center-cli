@@ -2427,7 +2427,21 @@ func TestBranchCommandPaths(t *testing.T) {
 		switch {
 		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/branches":
 			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = writer.Write([]byte(`{"values":[{"displayId":"main","id":"refs/heads/main","latestCommit":"abc","default":true}],"isLastPage":true}`))
+			// filterText narrows the listing on the real endpoint, and setting
+			// a default branch now checks the branch exists first. Answering
+			// the same list to every query would tell that check "main" when it
+			// asked about "develop".
+			rows := []string{
+				`{"displayId":"main","id":"refs/heads/main","latestCommit":"abc","default":true}`,
+				`{"displayId":"develop","id":"refs/heads/develop","latestCommit":"def"}`,
+			}
+			matched := []string{}
+			for _, row := range rows {
+				if filter := request.URL.Query().Get("filterText"); filter == "" || strings.Contains(row, `"displayId":"`+filter) {
+					matched = append(matched, row)
+				}
+			}
+			_, _ = writer.Write([]byte(`{"values":[` + strings.Join(matched, ",") + `],"isLastPage":true}`))
 		case request.Method == http.MethodPost && request.URL.Path == "/rest/branch-utils/latest/projects/TEST/repos/demo/branches":
 			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
 			_, _ = writer.Write([]byte(`{"displayId":"feature/demo","id":"refs/heads/feature/demo"}`))
