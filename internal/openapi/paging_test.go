@@ -200,3 +200,69 @@ func TestPageThroughSurfacesTheFetchError(t *testing.T) {
 		t.Fatalf("err = %v, want it to carry the fetch failure", err)
 	}
 }
+
+// A page can come back empty with more behind it.
+//
+// Bitbucket filters some windows after sizing them -- entries the caller may
+// not see are removed from a page that still counts toward the offset -- so an
+// empty page can sit in front of a full one. Stopping there returns nothing for
+// a listing that has plenty, and the caller cannot tell that from "there is
+// nothing", which is the worst kind of wrong answer.
+func TestPageThroughLooksPastAnEmptyPage(t *testing.T) {
+	served := 0
+	fetch := func(_ context.Context, start, _ int) (openapi.Page[int], error) {
+		served++
+
+		notLast, last := false, true
+		switch start {
+		case 0:
+			// Sized at 25 and then filtered down to nothing.
+			next := int32(25)
+
+			return openapi.Page[int]{IsLastPage: &notLast, NextPageStart: &next}, nil
+		case 25:
+			next := int32(50)
+
+			return openapi.Page[int]{Values: items(3), IsLastPage: &notLast, NextPageStart: &next}, nil
+		default:
+			return openapi.Page[int]{Values: items(2), IsLastPage: &last}, nil
+		}
+	}
+
+	got, err := openapi.PageThrough(context.Background(), 0, 100, fetch)
+	if err != nil {
+		t.Fatalf("PageThrough: %v", err)
+	}
+
+	if len(got) != 5 {
+		t.Fatalf("returned %d items, want 5: an empty page ended the listing early", len(got))
+	}
+	if served != 3 {
+		t.Errorf("made %d requests, want 3", served)
+	}
+}
+
+// The other half: an empty page with nothing behind it still ends the listing,
+// or a server that answers empty forever would be followed forever.
+func TestPageThroughStopsAtAnEmptyLastPage(t *testing.T) {
+	served := 0
+	fetch := func(_ context.Context, _, _ int) (openapi.Page[int], error) {
+		served++
+		notLast := false
+		// Says there is more, but never advances.
+		stuck := int32(0)
+
+		return openapi.Page[int]{IsLastPage: &notLast, NextPageStart: &stuck}, nil
+	}
+
+	got, err := openapi.PageThrough(context.Background(), 0, 100, fetch)
+	if err != nil {
+		t.Fatalf("PageThrough: %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("returned %d items, want none", len(got))
+	}
+	if served != 1 {
+		t.Fatalf("made %d requests; a non-advancing empty page was followed", served)
+	}
+}

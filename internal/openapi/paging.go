@@ -28,12 +28,15 @@ type Page[T any] struct {
 // The stopping rules, in one place:
 //
 //   - ask only for what is still missing, so the last page is not oversized;
-//   - a page with no values ends the listing, however the flags read;
+//   - a page with no values ends the listing only if the server does not say
+//     there is more behind it: Bitbucket filters some windows after sizing
+//     them, so an empty page can sit in front of a full one;
 //   - isLastPage, an absent isLastPage, or an absent nextPageStart all end it;
 //   - a start that does not advance ends it, because a server repeating itself
 //     would otherwise loop forever;
 //   - the result is trimmed to maxResults, because a server may return more
 //     than the limit asked for.
+//
 // The start is where to begin, for the callers that expose an offset of their
 // own; zero is the beginning. It is absolute, and so is every value the server
 // answers with, which is why it is a parameter rather than something added to
@@ -62,20 +65,35 @@ func PageThrough[T any](
 		if err != nil {
 			return nil, err
 		}
+		// An empty page is not the end of the listing unless the server agrees.
+		//
+		// Bitbucket filters some windows after sizing them -- entries the caller
+		// may not see are removed from a page that still counts toward the
+		// offset -- so a page can come back with nothing in it while there is
+		// more behind it. Stopping there returns an empty answer for a listing
+		// that has plenty, and the caller cannot tell that from "there is
+		// nothing".
+		//
+		// The same shape arises for any caller whose fetch filters: a page that
+		// contributes nothing is not a page that ends anything.
 		if len(page.Values) == 0 {
-			break
+			next, ok := advance(page, start)
+			if !ok {
+				break
+			}
+			start = next
+
+			continue
 		}
 
 		results = append(results, page.Values...)
 
-		if len(results) >= maxResults || page.IsLastPage == nil || *page.IsLastPage || page.NextPageStart == nil {
+		if len(results) >= maxResults {
 			break
 		}
 
-		next := int(*page.NextPageStart)
-		// A server that answers with the same start again would otherwise be
-		// followed forever, one identical page at a time.
-		if next <= start {
+		next, ok := advance(page, start)
+		if !ok {
 			break
 		}
 		start = next
@@ -86,4 +104,22 @@ func PageThrough[T any](
 	}
 
 	return results, nil
+}
+
+// advance reports where the next page starts, and whether there is one.
+//
+// A page that does not say it has a successor ends the listing, and so does one
+// whose successor is not ahead of where this page began -- a server repeating
+// an offset would otherwise be followed forever, one identical page at a time.
+func advance[T any](page Page[T], start int) (int, bool) {
+	if page.IsLastPage == nil || *page.IsLastPage || page.NextPageStart == nil {
+		return 0, false
+	}
+
+	next := int(*page.NextPageStart)
+	if next <= start {
+		return 0, false
+	}
+
+	return next, true
 }
