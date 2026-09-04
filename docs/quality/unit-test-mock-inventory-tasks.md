@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 238 | write the live test, then delete the mock |
+| `move-to-live` | 236 | write the live test, then delete the mock |
 | `remove` | 63 | delete; it asserts nothing a live test would not already give |
 | `keep` | 45 | legitimate unit test under ADR-079 |
 | `follows-callers` | 19 | goes when the tests supplying its handlers go |
@@ -18,8 +18,8 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 |---|---:|---:|---:|---:|---:|
 | `internal/transport/httpclient/client_test.go` | 28 | 12 | 1 | 15 | 0 |
 | `internal/services/pullrequest/service_test.go` | 23 | 12 | 7 | 3 | 1 |
-| `internal/services/quality/service_test.go` | 12 | 9 | 0 | 2 | 1 |
 | `internal/services/comment/service_test.go` | 15 | 7 | 5 | 2 | 1 |
+| `internal/services/quality/service_test.go` | 10 | 7 | 0 | 2 | 1 |
 | `internal/cli/root_test.go` | 9 | 7 | 1 | 1 | 0 |
 | `internal/cli/permission_checker_test.go` | 8 | 6 | 0 | 1 | 1 |
 | `internal/services/tag/service_test.go` | 7 | 6 | 0 | 0 | 1 |

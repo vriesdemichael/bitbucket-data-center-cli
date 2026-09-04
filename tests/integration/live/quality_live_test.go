@@ -531,3 +531,162 @@ func requiredBuildCheckID(payload map[string]any) (int64, bool) {
 		return 0, false
 	}
 }
+
+// TestLiveQualityListingsPageToTheEnd drives the two quality listings past a
+// page boundary.
+//
+// Bitbucket's paging convention -- isLastPage, nextPageStart -- is the server's,
+// and the mocks these replace implemented it by hand and then checked that the
+// service followed the implementation. Each of these listings runs its own
+// paging loop, so proving the convention once elsewhere says nothing about
+// them: a loop that stops after the first page returns a short answer that
+// looks perfectly well formed.
+//
+// The page size is the lever. Asking for fewer per page than exist forces the
+// boundary without seeding hundreds of anything.
+func TestLiveQualityListingsPageToTheEnd(t *testing.T) {
+	harness := newLiveHarness(t)
+	service := qualityservice.NewService(harness.client)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := qualityservice.RepositoryRef{ProjectKey: seeded.Key, Slug: repo.Slug}
+	commitID := repo.CommitIDs[0]
+
+	const total = 5
+
+	t.Run("build statuses", func(t *testing.T) {
+		for index := range total {
+			key := fmt.Sprintf("paged-build-%d-%d", time.Now().UnixNano()%100000, index)
+			if err := service.SetBuildStatus(ctx, commitID, qualityservice.BuildStatusSetInput{
+				Key:   key,
+				State: "SUCCESSFUL",
+				URL:   "https://ci.example.invalid/" + key,
+				Name:  key,
+			}); err != nil {
+				t.Fatalf("set build status %d failed: %v", index, err)
+			}
+		}
+
+		// Two per page over five, so the loop has to come back three times.
+		statuses, err := service.GetBuildStatuses(ctx, commitID, 2, "NEWEST")
+		if err != nil {
+			t.Fatalf("get build statuses failed: %v", err)
+		}
+		if len(statuses) < total {
+			t.Fatalf("paging stopped early: got %d build statuses, want at least %d", len(statuses), total)
+		}
+	})
+
+	t.Run("insight reports", func(t *testing.T) {
+		passed := "PASS"
+		for index := range total {
+			key := fmt.Sprintf("paged-report-%d-%d", time.Now().UnixNano()%100000, index)
+			if _, err := service.SetReport(ctx, repoRef, commitID, key,
+				openapigenerated.SetACodeInsightsReportJSONRequestBody{Title: key, Result: &passed}); err != nil {
+				t.Fatalf("set report %d failed: %v", index, err)
+			}
+		}
+
+		reports, err := service.ListReports(ctx, repoRef, commitID, 2)
+		if err != nil {
+			t.Fatalf("list reports failed: %v", err)
+		}
+		if len(reports) < total {
+			t.Fatalf("paging stopped early: got %d reports, want at least %d", len(reports), total)
+		}
+	})
+
+	t.Run("required build checks", func(t *testing.T) {
+		// Each condition needs its own ref matcher, or the server treats the
+		// second as a duplicate of the first.
+		for index := range total {
+			payload := map[string]any{
+				"buildParentKeys": []string{fmt.Sprintf("ci-%d", index)},
+				"refMatcher": map[string]any{
+					"id":   fmt.Sprintf("refs/heads/paged-%d", index),
+					"type": map[string]any{"id": "BRANCH"},
+				},
+			}
+			if _, err := service.CreateRequiredBuildCheck(ctx, repoRef, payload); err != nil {
+				t.Fatalf("create required build check %d failed: %v", index, err)
+			}
+		}
+
+		checks, err := service.ListRequiredBuildChecks(ctx, repoRef, 2)
+		if err != nil {
+			t.Fatalf("list required build checks failed: %v", err)
+		}
+		if len(checks) < total {
+			t.Fatalf("paging stopped early: got %d checks, want at least %d", len(checks), total)
+		}
+	})
+}
+
+// TestLiveQualityEmptyAnswers covers what the quality endpoints send when there
+// is nothing to report.
+//
+// The mocks these replace chose 204 with an empty body and asserted the service
+// produced a zero value from it. That is the same shape as the rebase defect
+// (OPENAPI-028): an empty body is easy to mistake for a broken response, and
+// which endpoints send one is the server's decision, not ours. A commit nobody
+// has reported on answers the question without anyone deciding what it says.
+func TestLiveQualityEmptyAnswers(t *testing.T) {
+	harness := newLiveHarness(t)
+	service := qualityservice.NewService(harness.client)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := qualityservice.RepositoryRef{ProjectKey: seeded.Key, Slug: repo.Slug}
+	commitID := repo.CommitIDs[0]
+
+	t.Run("build status stats for a commit nobody built", func(t *testing.T) {
+		stats, err := service.GetBuildStatusStats(ctx, commitID, true)
+		if err != nil {
+			t.Fatalf("stats for an unbuilt commit must not fail: %v", err)
+		}
+		// Zero or absent are both honest; a failure is not.
+		if stats.Successful != nil && *stats.Successful != 0 {
+			t.Errorf("expected no successful builds, got %d", *stats.Successful)
+		}
+	})
+
+	t.Run("reports on a commit nobody reported on", func(t *testing.T) {
+		reports, err := service.ListReports(ctx, repoRef, commitID, 25)
+		if err != nil {
+			t.Fatalf("listing reports on an unreported commit must not fail: %v", err)
+		}
+		if len(reports) != 0 {
+			t.Errorf("expected no reports, got %d", len(reports))
+		}
+	})
+
+	t.Run("annotations on a report that has none", func(t *testing.T) {
+		passed := "PASS"
+		key := fmt.Sprintf("empty-report-%d", time.Now().UnixNano()%100000)
+		if _, err := service.SetReport(ctx, repoRef, commitID, key,
+			openapigenerated.SetACodeInsightsReportJSONRequestBody{Title: key, Result: &passed}); err != nil {
+			t.Fatalf("set report failed: %v", err)
+		}
+
+		annotations, err := service.ListAnnotations(ctx, repoRef, commitID, key)
+		if err != nil {
+			t.Fatalf("listing annotations on a report with none must not fail: %v", err)
+		}
+		if len(annotations) != 0 {
+			t.Errorf("expected no annotations, got %d", len(annotations))
+		}
+	})
+}
