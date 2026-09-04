@@ -432,6 +432,17 @@ func (service *Service) upsertRestriction(ctx context.Context, repo RepositoryRe
 
 	trimmedUpdateID := strings.TrimSpace(id)
 	if trimmedUpdateID != "" {
+		// The id is a path segment on a DELETE, and update is delete followed
+		// by create, so a value that cannot name a restriction is worth
+		// refusing before anything is sent rather than after something is
+		// removed (ADR-054). `restriction update bad` reached the server and
+		// came back as a not-found, which reads like the restriction is gone
+		// rather than like the id was never an id.
+		if _, err := strconv.Atoi(trimmedUpdateID); err != nil {
+			return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation,
+				fmt.Sprintf("restriction id must be a number, got %q", trimmedUpdateID), nil)
+		}
+
 		// Bitbucket REST API does not have a PUT endpoint for updating a single restriction.
 		// We implement update as a Delete followed by a Create (bulk POST).
 		if err := service.DeleteRestriction(ctx, repo, trimmedUpdateID); err != nil {
