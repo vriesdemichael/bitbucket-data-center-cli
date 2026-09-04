@@ -1,15 +1,15 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 377,
+    "mocked_servers": 366,
     "files": 93,
-    "functions": 354,
+    "functions": 343,
     "by_class": {
       "bitbucket-behaviour": 194,
       "canned-response": 63,
       "external-service": 14,
       "harness-constructor": 19,
-      "status-taxonomy": 42,
+      "status-taxonomy": 31,
       "transport-fault": 34,
       "unreached-guard": 11
     },
@@ -2568,19 +2568,6 @@
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
-      "file": "internal/services/branch/service_test.go",
-      "line": 395,
-      "function": "TestBranchServiceMapsForbiddenToAuthorization",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
       "file": "internal/services/browse/service_test.go",
       "line": 19,
       "function": "newBrowseTestService",
@@ -2704,19 +2691,6 @@
       ],
       "action": "remove",
       "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/services/browse/service_test.go",
-      "line": 379,
-      "function": "TestBrowseServiceMapsForbiddenToAuthorization",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
     },
     {
       "file": "internal/services/comment/service_test.go",
@@ -3087,19 +3061,6 @@
     {
       "file": "internal/services/diff/service_test.go",
       "line": 322,
-      "function": "TestDiffCommitStatusErrorMapping",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/diff/service_test.go",
-      "line": 347,
       "function": "TestDiffRefsTransportFailure",
       "class": "canned-response",
       "signals": [
@@ -3110,7 +3071,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 406,
+      "line": 381,
       "function": "TestDiffTransportFailureBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -3122,7 +3083,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 483,
+      "line": 458,
       "function": "newDiffServiceWithHandler",
       "class": "harness-constructor",
       "signals": [
@@ -3133,7 +3094,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 494,
+      "line": 469,
       "function": "TestFormatRestDiff",
       "class": "canned-response",
       "signals": [
@@ -3147,7 +3108,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 777,
+      "line": 752,
       "function": "TestStatRunsSurfaceAnUndecodableSummary",
       "class": "canned-response",
       "signals": [
@@ -3285,7 +3246,7 @@
     },
     {
       "file": "internal/services/jira/service_test.go",
-      "line": 16,
+      "line": 15,
       "function": "newJiraTestService",
       "class": "harness-constructor",
       "signals": [
@@ -3296,7 +3257,7 @@
     },
     {
       "file": "internal/services/jira/service_test.go",
-      "line": 26,
+      "line": 25,
       "function": "TestGetIssueCommits",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3312,20 +3273,7 @@
     },
     {
       "file": "internal/services/jira/service_test.go",
-      "line": 85,
-      "function": "TestGetPRIssuesError",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/jira/service_test.go",
-      "line": 96,
+      "line": 84,
       "function": "TestGetIssueCommitsLimitDefaults",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3341,20 +3289,7 @@
     },
     {
       "file": "internal/services/jira/service_test.go",
-      "line": 115,
-      "function": "TestGetIssueCommitsError",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/jira/service_test.go",
-      "line": 127,
+      "line": 103,
       "function": "TestGetIssueCommitsTruncates",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3369,7 +3304,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 16,
+      "line": 15,
       "function": "newProjectTestService",
       "class": "harness-constructor",
       "signals": [
@@ -3380,7 +3315,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 27,
+      "line": 26,
       "function": "TestProjectServiceValidation",
       "class": "unreached-guard",
       "signals": [
@@ -3394,7 +3329,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 56,
+      "line": 55,
       "function": "TestProjectServicePagination",
       "class": "canned-response",
       "signals": [
@@ -3407,7 +3342,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 74,
+      "line": 73,
       "function": "TestProjectServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -3424,20 +3359,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 176,
-      "function": "TestProjectServicePermissionsMapStatusError",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/project/service_test.go",
-      "line": 204,
+      "line": 174,
       "function": "TestProjectServicePaginationEdgeCases",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3447,19 +3369,6 @@
       ],
       "action": "move-to-live",
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/project/service_test.go",
-      "line": 228,
-      "function": "TestProjectServiceMapsForbiddenToAuthorization",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
     },
     {
       "file": "internal/services/pullrequest/inspection_test.go",
@@ -4071,20 +3980,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 17,
-      "function": "TestPermissionsNotFoundMapsError",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/reposettings/service_test.go",
-      "line": 42,
+      "line": 20,
       "function": "TestUpdateRepositoryPullRequestRequiredApproversCount",
       "class": "transport-fault",
       "signals": [
@@ -4102,7 +3998,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 101,
+      "line": 79,
       "function": "TestRepositorySettingsJSONFallbackAndValidationBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4117,7 +4013,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 177,
+      "line": 155,
       "function": "newServiceWithBaseURL",
       "class": "harness-constructor",
       "signals": [
@@ -4128,7 +4024,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 225,
+      "line": 203,
       "function": "TestRepositorySettingsAdditionalBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4144,7 +4040,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 441,
+      "line": 419,
       "function": "TestRepositoryServiceErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -4157,7 +4053,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 568,
+      "line": 546,
       "function": "TestNewRepositorySettingsMethods",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4394,46 +4290,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 13,
-      "function": "TestReviewerServiceErrors",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 84,
-      "function": "TestReviewerServiceUpdateErrors",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 107,
-      "function": "TestReviewerGroupsAndDefaultReviewersServiceErrors",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 200,
+      "line": 103,
       "function": "TestReviewerGroupsAndDefaultReviewersServiceContextCanceled",
       "class": "status-taxonomy",
       "signals": [
@@ -4446,7 +4303,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 250,
+      "line": 153,
       "function": "TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks",
       "class": "bitbucket-behaviour",
       "signals": [

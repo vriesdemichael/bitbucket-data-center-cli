@@ -1233,3 +1233,35 @@ fixes:
     verification:
       commands:
         - go test -tags=live ./tests/integration/live -run TestLivePRRebase
+
+  - id: OPENAPI-029
+    area: jira-issues-for-a-missing-pull-request
+    source: undocumented-behaviour
+    status: active
+    status_evidence: >
+      Observed on 10.4.2 by asking both endpoints about the same nonexistent pull request.
+    description: >
+      The Jira integration endpoint answers 200 with an empty array for a pull request that
+      does not exist, where the pull request endpoint answers 404.
+    reference:
+      type: endpoint
+      value: /jira/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/issues
+      upstream_issue: >
+        GET .../pull-requests/999999/issues  -> 200 []
+        GET .../pull-requests/999999         -> 404 {"errors":[{"message":"Pull request 999999
+                                                    does not exist in ...",
+                                                    "exceptionName":"...NoSuchPullRequestException"}]}
+
+        The empty array is indistinguishable from a pull request that exists and has no linked
+        issues, which is the answer a caller will act on.
+    change:
+      files:
+        - internal/cli/cmd/pr/pr.go
+      detail: >
+        `bb pr jira` confirms the pull request exists when, and only when, the issue list comes
+        back empty. Empty is the sole ambiguous answer, so it is the only one that pays for the
+        extra request. Without it the command reported "No Jira issues associated with pull
+        request" for a pull request nobody could open.
+    verification:
+      commands:
+        - go test -tags=live ./tests/integration/live -run TestLiveEveryServiceMapsItsFailures

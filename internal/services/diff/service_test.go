@@ -318,31 +318,6 @@ func TestDiffRefsStatAndCommitWithPath(t *testing.T) {
 	})
 }
 
-func TestDiffCommitStatusErrorMapping(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusNotFound)
-		_, _ = writer.Write([]byte("missing commit"))
-	}))
-	defer server.Close()
-
-	client, err := openapigenerated.NewClientWithResponses(server.URL)
-	if err != nil {
-		t.Fatalf("create generated client: %v", err)
-	}
-
-	service := NewService(client)
-	_, err = service.DiffCommit(context.Background(), DiffCommitInput{
-		Repository: RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-		CommitID:   "abc123",
-	})
-	if err == nil {
-		t.Fatal("expected not found error")
-	}
-	if apperrors.ExitCode(err) != 4 {
-		t.Fatalf("expected not found exit code 4, got %d (%v)", apperrors.ExitCode(err), err)
-	}
-}
-
 func TestDiffRefsTransportFailure(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte("ok"))

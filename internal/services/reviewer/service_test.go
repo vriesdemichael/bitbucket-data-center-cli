@@ -9,30 +9,6 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
-func TestReviewerServiceErrors(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte("error"))
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-	service := NewService(client)
-
-	if _, err := service.ListProjectConditions(context.Background(), "PRJ"); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.ListRepositoryConditions(context.Background(), "PRJ", "demo"); err == nil {
-		t.Fatal("expected error")
-	}
-	if err := service.DeleteProjectCondition(context.Background(), "PRJ", "1"); err == nil {
-		t.Fatal("expected delete project condition error")
-	}
-	if err := service.DeleteRepositoryCondition(context.Background(), "PRJ", "demo", "2"); err == nil {
-		t.Fatal("expected delete repository condition error")
-	}
-}
-
 func TestReviewerServiceValidation(t *testing.T) {
 	service := NewService(nil)
 	if _, err := service.ListProjectConditions(context.Background(), ""); err == nil {
@@ -76,79 +52,6 @@ func TestReviewerServiceUpdateValidation(t *testing.T) {
 		t.Fatal("expected error")
 	}
 	if _, err := service.CreateProjectCondition(context.Background(), "", openapigenerated.RestDefaultReviewersRequest{}); err == nil {
-		t.Fatal("expected error")
-	}
-}
-
-func TestReviewerServiceUpdateErrors(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL)
-	service := NewService(client)
-
-	if _, err := service.UpdateProjectCondition(context.Background(), "P", "1", openapigenerated.UpdatePullRequestConditionJSONRequestBody{}); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.UpdateRepositoryCondition(context.Background(), "P", "S", "1", openapigenerated.UpdatePullRequestCondition1JSONRequestBody{}); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.CreateRepositoryCondition(context.Background(), "P", "S", openapigenerated.RestDefaultReviewersRequest{}); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.CreateProjectCondition(context.Background(), "P", openapigenerated.RestDefaultReviewersRequest{}); err == nil {
-		t.Fatal("expected error")
-	}
-}
-
-func TestReviewerGroupsAndDefaultReviewersServiceErrors(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL)
-	service := NewService(client)
-
-	ctx := context.Background()
-
-	if _, err := service.ListRepositoryReviewerGroups(ctx, "P", "S"); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.CreateRepositoryReviewerGroup(ctx, "P", "S", "n", ""); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.GetRepositoryReviewerGroup(ctx, "P", "S", "1"); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.UpdateRepositoryReviewerGroup(ctx, "P", "S", "1", "n", ""); err == nil {
-		t.Fatal("expected error")
-	}
-	if err := service.DeleteRepositoryReviewerGroup(ctx, "P", "S", "1"); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.ListRepositoryReviewerGroupUsers(ctx, "P", "S", "1"); err == nil {
-		t.Fatal("expected error")
-	}
-
-	if _, err := service.ListProjectReviewerGroups(ctx, "P"); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.CreateProjectReviewerGroup(ctx, "P", "n", ""); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.GetProjectReviewerGroup(ctx, "P", "1"); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.UpdateProjectReviewerGroup(ctx, "P", "1", "n", ""); err == nil {
-		t.Fatal("expected error")
-	}
-	if err := service.DeleteProjectReviewerGroup(ctx, "P", "1"); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.GetDefaultReviewers(ctx, "P", "S", nil, nil, nil, nil); err == nil {
 		t.Fatal("expected error")
 	}
 }

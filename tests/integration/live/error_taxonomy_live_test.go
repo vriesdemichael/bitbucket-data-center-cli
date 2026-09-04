@@ -172,3 +172,107 @@ func TestLiveGovernanceCommandsMapTheirFailures(t *testing.T) {
 		})
 	}
 }
+
+// TestLiveEveryServiceMapsItsFailures asks one question of every service
+// package that talks to Bitbucket: when the thing you asked for is not there,
+// does the caller get not_found?
+//
+// The unit tests this replaces asked it per service by standing up a server
+// that answered 403 or 404 and checking the kind that came back. That is one
+// assertion about openapi.MapStatusError, which is a single pure function with
+// its own table test, wearing a service's clothes -- and it made the mapping
+// look like a per-service concern until ten packages had grown their own copy
+// of the same table.
+//
+// What is worth asking per service is narrower and cannot be answered by a
+// fixture: is this service wired to the taxonomy at all, against a server that
+// really refuses. One path per package settles that. Every path per package
+// would not be feasible, and is not what these ever claimed.
+//
+// A package missing from this table has no live proof that its failures carry
+// the right kind. Adding a service means adding a row.
+func TestLiveEveryServiceMapsItsFailures(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	missingRepo := seeded.Key + "/no-such-repository"
+	const missingProject = "NOSUCHPROJECT99999"
+	const missingCommit = "0000000000000000000000000000000000000000"
+
+	cases := []struct {
+		service string
+		args    []string
+	}{
+		{service: "branch", args: []string{"branch", "list", "--repo", missingRepo}},
+		{service: "browse", args: []string{"repo", "browse", "tree", "docs", "--repo", missingRepo}},
+		{service: "comment", args: []string{"pr", "comment", "list", "999999"}},
+		{service: "commit", args: []string{"commit", "list", "--repo", missingRepo}},
+		{service: "diff", args: []string{"pr", "diff", "999999"}},
+		{service: "jira", args: []string{"pr", "jira", "999999"}},
+		{service: "project", args: []string{"project", "get", missingProject}},
+		{service: "pullrequest", args: []string{"pr", "get", "999999"}},
+		{service: "pullrequestactivity", args: []string{"pr", "activity", "list", "999999"}},
+		{service: "quality", args: []string{"insights", "report", "list", missingCommit, "--repo", missingRepo}},
+		{service: "reposettings", args: []string{"repo", "settings", "pull-requests", "get", "--repo", missingRepo}},
+		{service: "repository", args: []string{"repo", "archive", "--repo", missingRepo}},
+		{service: "reviewer", args: []string{"reviewer", "condition", "list", "--project", missingProject}},
+		{service: "tag", args: []string{"tag", "view", "no-such-tag", "--repo", missingRepo}},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.service, func(t *testing.T) {
+			output, err := executeLiveCLI(t, append([]string{"--json"}, testCase.args...)...)
+			if err == nil {
+				t.Fatalf("expected a missing resource to fail, got:\n%s", output)
+			}
+
+			if code := apperrors.ExitCode(err); code != 4 {
+				t.Fatalf("exit code = %d, want 4 (not_found): %v", code, err)
+			}
+			// A permanent absence reported as transient tells an agent to retry
+			// forever, which is the failure the taxonomy exists to prevent.
+			if strings.Contains(err.Error(), "transient") {
+				t.Errorf("a missing resource was reported as transient: %v", err)
+			}
+		})
+	}
+}
+
+// TestLiveJiraIssuesOnARealPullRequest covers the other half of OPENAPI-029:
+// a pull request that does exist and has no linked issues must still report
+// none, rather than being turned into an error by the existence check that
+// empty answer now triggers.
+func TestLiveJiraIssuesOnARealPullRequest(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	const branch = "feature/jira-none"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "jira.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	prID := createLivePRForRegression(t, branch, "No linked issues", "--no-default-reviewers", "--no-codeowners")
+
+	output, err := executeLiveCLI(t, "pr", "jira", prID)
+	if err != nil {
+		t.Fatalf("a pull request with no linked issues must not fail: %v\noutput: %s", err, output)
+	}
+	if !strings.Contains(output, "No Jira issues") {
+		t.Fatalf("expected the empty message, got:\n%s", output)
+	}
+}

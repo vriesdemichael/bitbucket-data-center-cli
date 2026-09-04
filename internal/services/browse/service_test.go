@@ -369,22 +369,3 @@ func TestBrowseServiceTreeStopsOnRepeatedNextPageStart(t *testing.T) {
 		t.Fatalf("expected a single page, got calls=%d files=%#v", calls, files)
 	}
 }
-
-// TestBrowseServiceMapsForbiddenToAuthorization is the half of the validation test that needs a server.
-//
-// A 403 has to become an authorization error, and that mapping is about our
-// taxonomy rather than about when Bitbucket refuses a call -- the status is
-// supplied here, not claimed. It lives apart so the validation cases beside it
-// can assert that nothing is sent at all.
-func TestBrowseServiceMapsForbiddenToAuthorization(t *testing.T) {
-	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte("forbidden"))
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-	if _, err := service.Tree(context.Background(), repo, "", TreeOptions{}); err == nil || !strings.Contains(err.Error(), "authorization") {
-		t.Fatalf("expected mapped authorization error, got %v", err)
-	}
-}

@@ -234,26 +234,24 @@ func TestPRReviewJiraEdgeCases(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 
-	// 1. pr jira empty state
+	// 1. The empty-issue-list case moved to the live suite, because it stopped
+	// being answerable here. Bitbucket answers 200 [] for a pull request that
+	// does not exist (OPENAPI-029), so an empty list is only meaningful once
+	// the pull request is known to be there -- and a mock that serves the Jira
+	// route but not the pull request is a server no Bitbucket resembles.
+	// See TestLiveJiraIssuesOnARealPullRequest.
 	configureDryRunEnv(t, server.URL, "TEST", "demo")
-	out, err := executeTestCLI(t, "pr", "jira", "42")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !strings.Contains(out, "No Jira issues associated with pull request") {
-		t.Errorf("expected empty message, got: %s", out)
-	}
 
 	// 2. pr jira error state
 	configureDryRunEnv(t, server.URL, "ERR", "demo")
-	_, err = executeTestCLI(t, "pr", "jira", "42")
+	_, err := executeTestCLI(t, "pr", "jira", "42")
 	if err == nil {
 		t.Error("expected error but got nil")
 	}
 
 	// 3. review get empty state
 	configureDryRunEnv(t, server.URL, "TEST", "demo")
-	out, err = executeTestCLI(t, "pr", "review", "get", "42")
+	out, err := executeTestCLI(t, "pr", "review", "get", "42")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

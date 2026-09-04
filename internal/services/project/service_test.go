@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -172,35 +171,6 @@ func TestProjectServicePermissionsValidation(t *testing.T) {
 	}
 }
 
-func TestProjectServicePermissionsMapStatusError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer server.Close()
-
-	client, _ := openapigenerated.NewClientWithResponses(server.URL)
-	service := NewService(client)
-
-	if _, err := service.ListProjectPermissionUsers(context.Background(), "PRJ", 1); err == nil {
-		t.Fatal("expected error")
-	}
-	if err := service.GrantProjectUserPermission(context.Background(), "PRJ", "u", "PROJECT_READ"); err == nil {
-		t.Fatal("expected error")
-	}
-	if err := service.RevokeProjectUserPermission(context.Background(), "PRJ", "u"); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.ListProjectPermissionGroups(context.Background(), "PRJ", 1); err == nil {
-		t.Fatal("expected error")
-	}
-	if err := service.GrantProjectGroupPermission(context.Background(), "PRJ", "g", "PROJECT_READ"); err == nil {
-		t.Fatal("expected error")
-	}
-	if err := service.RevokeProjectGroupPermission(context.Background(), "PRJ", "g"); err == nil {
-		t.Fatal("expected error")
-	}
-}
-
 func TestProjectServicePaginationEdgeCases(t *testing.T) {
 	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -216,22 +186,5 @@ func TestProjectServicePaginationEdgeCases(t *testing.T) {
 	}
 	if len(projects) != 3 {
 		t.Errorf("expected 3 projects, got %d", len(projects))
-	}
-}
-
-// TestProjectServiceMapsForbiddenToAuthorization is the half of the validation test that needs a server.
-//
-// A 403 has to become an authorization error, and that mapping is about our
-// taxonomy rather than about when Bitbucket refuses a call -- the status is
-// supplied here, not claimed. It lives apart so the validation cases beside it
-// can assert that nothing is sent at all.
-func TestProjectServiceMapsForbiddenToAuthorization(t *testing.T) {
-	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte("forbidden"))
-	})
-
-	if _, err := service.List(context.Background(), ListOptions{}); err == nil || !strings.Contains(err.Error(), "authorization") {
-		t.Fatalf("expected mapped authorization error, got %v", err)
 	}
 }

@@ -385,22 +385,3 @@ func TestBranchServicePaginationEdgeCases(t *testing.T) {
 		t.Errorf("expected 3 branches, got %d", len(branches))
 	}
 }
-
-// TestBranchServiceMapsForbiddenToAuthorization is the half of the validation test that needs a server.
-//
-// A 403 has to become an authorization error, and that mapping is about our
-// taxonomy rather than about when Bitbucket refuses a call -- the status is
-// supplied here, not claimed. It lives apart so the validation cases beside it
-// can assert that nothing is sent at all.
-func TestBranchServiceMapsForbiddenToAuthorization(t *testing.T) {
-	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte("forbidden"))
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-	if _, err := service.List(context.Background(), repo, ListOptions{}); err == nil || !strings.Contains(err.Error(), "authorization") {
-		t.Fatalf("expected mapped authorization error, got %v", err)
-	}
-}

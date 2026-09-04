@@ -135,6 +135,19 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 		assertLivePreview(t, output, "no-op")
 	})
 
+	t.Run("unapprove over NEEDS_WORK predicts an update, not a no-op", func(t *testing.T) {
+		// `unapprove` clears whichever status is held, so with NEEDS_WORK held
+		// it has work to do. Its preview asked whether the caller had approved
+		// -- which they had not -- and called it a no-op, while the command
+		// went on to clear the request for changes.
+		output := mustLiveCLI(t, "--dry-run", "pr", "review", "unapprove", prID, "--repo", repoRef)
+		assertLivePreview(t, output, "update")
+
+		if status := held(t); status != "NEEDS_WORK" {
+			t.Fatalf("the dry run changed the status to %q", status)
+		}
+	})
+
 	t.Run("UNAPPROVED withdraws the request for changes", func(t *testing.T) {
 		// The behaviour `unapprove` performs but does not describe.
 		mustLiveCLI(t, "pr", "review", "set", prID, "UNAPPROVED", "--repo", repoRef)
