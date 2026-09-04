@@ -104,6 +104,37 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 		assertLivePreview(t, output, "no-op")
 	})
 
+	t.Run("the no-op is found under a token with no configured username", func(t *testing.T) {
+		// Finding the caller among the reviewers is what separates a no-op from
+		// an update, and the configured username is the wrong place to look for
+		// them: under a token there may not be one. The prediction then quietly
+		// degrades to "update" for a status already held -- safe, and wrong.
+		//
+		// Bitbucket names the caller on every authenticated response, so the
+		// answer costs one request and no configuration.
+		tokenName := fmt.Sprintf("live-review-set-%d", time.Now().UnixNano()%100000)
+		createOutput := mustLiveCLI(t, "auth", "token", "create", tokenName,
+			"--user", reviewer.Username, "--permission", "REPO_WRITE", "--expiry-days", "1")
+
+		created := decodeJSONMap(t, createOutput)
+		token, _ := created["token"].(string)
+		if token == "" {
+			t.Fatalf("no token in the create output:\n%s", createOutput)
+		}
+		if tokenID, ok := numericOrStringID(created["id"]); ok {
+			defer func() {
+				_, _ = executeLiveCLI(t, "auth", "token", "revoke", tokenID, "--user", reviewer.Username)
+			}()
+		}
+
+		t.Setenv("BITBUCKET_USERNAME", "")
+		t.Setenv("BITBUCKET_PASSWORD", "")
+		t.Setenv("BITBUCKET_TOKEN", token)
+
+		output := mustLiveCLI(t, "--dry-run", "pr", "review", "set", prID, "NEEDS_WORK", "--repo", repoRef)
+		assertLivePreview(t, output, "no-op")
+	})
+
 	t.Run("UNAPPROVED withdraws the request for changes", func(t *testing.T) {
 		// The behaviour `unapprove` performs but does not describe.
 		mustLiveCLI(t, "pr", "review", "set", prID, "UNAPPROVED", "--repo", repoRef)

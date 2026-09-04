@@ -141,7 +141,7 @@ func TestResolveAuthorUsername(t *testing.T) {
 		defer server.Close()
 
 		cfg := newConfig(server.URL, "configured.name@example.com")
-		got := resolveAuthorUsername(t.Context(), httpclient.NewFromConfig(cfg), cfg)
+		got := resolveCurrentUsername(t.Context(), httpclient.NewFromConfig(cfg), cfg)
 		if got != "server-slug" {
 			t.Fatalf("author = %q, want %q", got, "server-slug")
 		}
@@ -154,7 +154,7 @@ func TestResolveAuthorUsername(t *testing.T) {
 		defer server.Close()
 
 		cfg := newConfig(server.URL, "configured-user")
-		got := resolveAuthorUsername(t.Context(), httpclient.NewFromConfig(cfg), cfg)
+		got := resolveCurrentUsername(t.Context(), httpclient.NewFromConfig(cfg), cfg)
 		if got != "configured-user" {
 			t.Fatalf("author = %q, want %q", got, "configured-user")
 		}
