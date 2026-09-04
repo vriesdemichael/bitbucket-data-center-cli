@@ -5,6 +5,7 @@ package live_test
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -731,4 +732,71 @@ func TestLiveReviewerGroupDeleteAcceptsAName(t *testing.T) {
 			t.Errorf("expected kind not_found, got: %v\noutput: %s", err, output)
 		}
 	})
+}
+
+// TestLiveDefaultBranchFoundPastTheFirstPage is the boundary the existence
+// check has to survive.
+//
+// filterText is a substring match on the branch being looked for, so what
+// crowds the result is not a shared prefix but other branches that *contain*
+// the name. "release" is matched by "a-release-000" too, and those sort before
+// it, so the branch actually being checked lands last.
+//
+// A scan capped at one page would then report a branch that exists as missing
+// and refuse the operation, which is the worse of the two failures: it blocks
+// work that should succeed, where the typo this guard catches only lets through
+// work that should not.
+func TestLiveDefaultBranchFoundPastTheFirstPage(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// The branch the test actually sets. Every decoy contains this string, so
+	// every decoy comes back from the same filter.
+	const target = "release"
+
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, target, "release.txt"); err != nil {
+		t.Fatalf("push the target branch failed: %v", err)
+	}
+
+	commits, err := harness.listCommitIDs(ctx, seeded.Key, repo.Slug, 1)
+	if err != nil || len(commits) == 0 {
+		t.Fatalf("could not read a commit to branch from: %v", err)
+	}
+
+	// Named to sort before the target, so it cannot be on the first page.
+	// Refs are made directly: pushing 120 branches through git would dominate
+	// the runtime for no extra signal.
+	const decoys = 120
+	for index := range decoys {
+		name := fmt.Sprintf("a-%s-%03d", target, index)
+		if _, err := harness.liveJSON(ctx, http.MethodPost,
+			fmt.Sprintf("/rest/branch-utils/latest/projects/%s/repos/%s/branches", seeded.Key, repo.Slug),
+			map[string]any{"name": name, "startPoint": commits[0]}); err != nil {
+			t.Fatalf("create branch %s: %v", name, err)
+		}
+	}
+
+	before := currentLiveDefaultBranch(t)
+	mustLiveCLI(t, "branch", "default", "set", target)
+
+	if after := currentLiveDefaultBranch(t); after != target {
+		t.Fatalf("default branch = %q, want %q", after, target)
+	}
+
+	// The guard still has to refuse a branch that really is absent, with this
+	// many near-misses in the way.
+	if output, err := executeLiveCLI(t, "--json", "branch", "default", "set", target+"-does-not-exist"); err == nil {
+		t.Fatalf("expected a branch that does not exist to be refused, got:\n%s", output)
+	}
+
+	mustLiveCLI(t, "branch", "default", "set", before)
+
 }
