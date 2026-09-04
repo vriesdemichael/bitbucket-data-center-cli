@@ -148,3 +148,69 @@ func approverCountFrom(t *testing.T, settings map[string]any) string {
 
 	return ""
 }
+
+// TestLiveWebhookUpdatePreservesUnchangedFields is the #511 question asked of
+// webhooks: does changing one field quietly change another.
+//
+// The mock it replaces read the request body and asserted the untouched fields
+// were still in it, which only proves bb sent them. Whether the server keeps
+// what it was sent -- the events, the active flag, and the secret it never
+// echoes back -- is a different question, and the secret is the one that
+// matters: a webhook that silently loses it starts failing signature checks at
+// the far end, with nothing in bb's output to say why.
+func TestLiveWebhookUpdatePreservesUnchangedFields(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// Created through the API so it can carry a secret, which bb has no flag
+	// for and which the server never sends back in a listing.
+	created, err := harness.liveJSON(ctx, "POST",
+		"/rest/api/latest/projects/"+seeded.Key+"/repos/"+repo.Slug+"/webhooks",
+		map[string]any{
+			"name":          "preserve-me",
+			"url":           "http://example.invalid/hook",
+			"events":        []string{"repo:refs_changed", "pr:opened"},
+			"active":        true,
+			"configuration": map[string]any{"secret": "s3cr3t"},
+		})
+	if err != nil {
+		t.Fatalf("create the webhook: %v", err)
+	}
+	id := trimNumeric(created["id"])
+
+	mustLiveCLI(t, "webhook", "update", id, "--name", "renamed", "--repo", repoRef)
+
+	after, err := harness.liveJSON(ctx, "GET",
+		"/rest/api/latest/projects/"+seeded.Key+"/repos/"+repo.Slug+"/webhooks/"+id, nil)
+	if err != nil {
+		t.Fatalf("read the webhook back: %v", err)
+	}
+
+	if name, _ := after["name"].(string); name != "renamed" {
+		t.Errorf("name = %q, want renamed", name)
+	}
+	if url, _ := after["url"].(string); url != "http://example.invalid/hook" {
+		t.Errorf("the url changed to %q", url)
+	}
+	if active, _ := after["active"].(bool); !active {
+		t.Error("the webhook was deactivated by a rename")
+	}
+	if events, _ := after["events"].([]any); len(events) != 2 {
+		t.Errorf("events = %v, want both to survive", events)
+	}
+
+	// The one a listing cannot show and a mock cannot check.
+	configuration, _ := after["configuration"].(map[string]any)
+	if secret, _ := configuration["secret"].(string); secret != "s3cr3t" {
+		t.Errorf("the secret did not survive the rename: %q", secret)
+	}
+}
