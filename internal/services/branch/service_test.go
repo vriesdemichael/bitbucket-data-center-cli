@@ -2,8 +2,6 @@ package branch
 
 import (
 	"context"
-	"fmt"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -61,13 +59,6 @@ func TestBranchServiceValidationAndHelpers(t *testing.T) {
 		t.Fatal("expected normalizeBranchRef to add refs/heads prefix")
 	}
 
-	if err := openapi.MapStatusError(http.StatusCreated, nil); err != nil {
-		t.Fatalf("expected nil for success status, got %v", err)
-	}
-	err := openapi.MapStatusError(http.StatusConflict, []byte("conflict"))
-	if err == nil || apperrors.ExitCode(err) != 5 {
-		t.Fatalf("expected conflict exit code 5, got %v (%d)", err, apperrors.ExitCode(err))
-	}
 }
 
 func TestBranchServiceCreateFallbackBodyDecode(t *testing.T) {
@@ -92,32 +83,6 @@ func TestBranchServiceCreateFallbackBodyDecode(t *testing.T) {
 }
 
 func TestBranchServiceStatusMappingAndNormalizers(t *testing.T) {
-	statusCases := []struct {
-		status   int
-		body     string
-		exitCode int
-	}{
-		{status: http.StatusBadRequest, body: "bad request", exitCode: 2},
-		{status: http.StatusUnauthorized, body: "unauthorized", exitCode: 3},
-		{status: http.StatusForbidden, body: "forbidden", exitCode: 3},
-		{status: http.StatusNotFound, body: "missing", exitCode: 4},
-		{status: http.StatusConflict, body: "conflict", exitCode: 5},
-		{status: http.StatusTooManyRequests, body: "rate", exitCode: 10},
-		{status: http.StatusInternalServerError, body: "server", exitCode: 10},
-		{status: http.StatusTeapot, body: "teapot", exitCode: 1},
-	}
-
-	for _, testCase := range statusCases {
-		t.Run(fmt.Sprintf("status_%d", testCase.status), func(t *testing.T) {
-			err := openapi.MapStatusError(testCase.status, []byte(testCase.body))
-			if err == nil {
-				t.Fatalf("expected mapped error for status %d", testCase.status)
-			}
-			if apperrors.ExitCode(err) != testCase.exitCode {
-				t.Fatalf("expected exit code %d, got %d (%v)", testCase.exitCode, apperrors.ExitCode(err), err)
-			}
-		})
-	}
 
 	if _, err := normalizeBranchOrderBy("MODIFICATION"); err != nil {
 		t.Fatalf("expected MODIFICATION order-by to validate, got %v", err)

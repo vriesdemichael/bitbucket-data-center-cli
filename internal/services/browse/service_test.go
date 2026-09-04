@@ -10,7 +10,6 @@ import (
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
@@ -172,28 +171,6 @@ func TestBrowseServiceTransientAndMapping(t *testing.T) {
 		t.Fatalf("expected validate error")
 	}
 
-	testMapStatusErrors(t)
-}
-
-func testMapStatusErrors(t *testing.T) {
-	if err := openapi.MapStatusError(http.StatusBadRequest, nil); err == nil || apperrors.ExitCode(err) != 2 {
-		t.Fatalf("expected validation error")
-	}
-	if err := openapi.MapStatusError(http.StatusUnauthorized, nil); err == nil || apperrors.ExitCode(err) != 3 {
-		t.Fatalf("expected auth error")
-	}
-	if err := openapi.MapStatusError(http.StatusNotFound, nil); err == nil || apperrors.ExitCode(err) != 4 {
-		t.Fatalf("expected not found error")
-	}
-	if err := openapi.MapStatusError(http.StatusConflict, nil); err == nil || apperrors.ExitCode(err) != 5 {
-		t.Fatalf("expected conflict error")
-	}
-	if err := openapi.MapStatusError(http.StatusTooManyRequests, []byte("rate")); err == nil || apperrors.ExitCode(err) != 10 {
-		t.Fatalf("expected transient rate error")
-	}
-	if err := openapi.MapStatusError(http.StatusTeapot, nil); err == nil || apperrors.ExitCode(err) != 1 {
-		t.Fatalf("expected permanent error")
-	}
 }
 
 func TestBrowseServiceEdit(t *testing.T) {

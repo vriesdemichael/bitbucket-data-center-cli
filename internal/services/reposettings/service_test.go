@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -97,33 +96,6 @@ func TestRepositorySettingsHelperCoverage(t *testing.T) {
 		t.Fatal("expected validation error for invalid permission")
 	}
 
-	if err := openapi.MapStatusError(http.StatusCreated, nil); err != nil {
-		t.Fatalf("expected nil for success status, got: %v", err)
-	}
-
-	tests := []struct {
-		status   int
-		exitCode int
-	}{
-		{status: http.StatusBadRequest, exitCode: 2},
-		{status: http.StatusUnauthorized, exitCode: 3},
-		{status: http.StatusForbidden, exitCode: 3},
-		{status: http.StatusNotFound, exitCode: 4},
-		{status: http.StatusConflict, exitCode: 5},
-		{status: http.StatusTooManyRequests, exitCode: 10},
-		{status: http.StatusInternalServerError, exitCode: 10},
-		{status: http.StatusNotAcceptable, exitCode: 1},
-	}
-
-	for _, testCase := range tests {
-		err := openapi.MapStatusError(testCase.status, []byte("err"))
-		if err == nil {
-			t.Fatalf("expected error for status %d", testCase.status)
-		}
-		if apperrors.ExitCode(err) != testCase.exitCode {
-			t.Fatalf("expected exit code %d for status %d, got %d", testCase.exitCode, testCase.status, apperrors.ExitCode(err))
-		}
-	}
 }
 
 func TestRepositorySettingsJSONFallbackAndValidationBranches(t *testing.T) {

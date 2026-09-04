@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 379,
+    "mocked_servers": 377,
     "files": 93,
-    "functions": 356,
+    "functions": 354,
     "by_class": {
-      "bitbucket-behaviour": 196,
+      "bitbucket-behaviour": 194,
       "canned-response": 63,
       "external-service": 14,
       "harness-constructor": 19,
@@ -48,7 +48,7 @@
       "internal/services/project": 1,
       "internal/services/pullrequest": 16,
       "internal/services/pullrequestactivity": 2,
-      "internal/services/quality": 7,
+      "internal/services/quality": 5,
       "internal/services/reposettings": 3,
       "internal/services/repository": 5,
       "internal/services/reviewer": 4,
@@ -2456,7 +2456,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 18,
+      "line": 16,
       "function": "newBranchTestService",
       "class": "harness-constructor",
       "signals": [
@@ -2467,7 +2467,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 29,
+      "line": 27,
       "function": "TestBranchServiceValidationAndHelpers",
       "class": "unreached-guard",
       "signals": [
@@ -2481,7 +2481,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 73,
+      "line": 64,
       "function": "TestBranchServiceCreateFallbackBodyDecode",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2497,7 +2497,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 173,
+      "line": 138,
       "function": "TestBranchServiceEmptyResponsesAndTransientErrors",
       "class": "transport-fault",
       "signals": [
@@ -2513,7 +2513,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 251,
+      "line": 216,
       "function": "TestBranchServiceAdditionalValidationAndFallbackPaths",
       "class": "transport-fault",
       "signals": [
@@ -2530,7 +2530,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 338,
+      "line": 303,
       "function": "TestBranchServiceNotFoundAcrossOperations",
       "class": "status-taxonomy",
       "signals": [
@@ -2543,7 +2543,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 368,
+      "line": 333,
       "function": "TestBranchServiceTransientAcrossOperations",
       "class": "transport-fault",
       "signals": [
@@ -2556,7 +2556,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 405,
+      "line": 370,
       "function": "TestBranchServicePaginationEdgeCases",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2569,7 +2569,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 430,
+      "line": 395,
       "function": "TestBranchServiceMapsForbiddenToAuthorization",
       "class": "status-taxonomy",
       "signals": [
@@ -2582,7 +2582,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 20,
+      "line": 19,
       "function": "newBrowseTestService",
       "class": "harness-constructor",
       "signals": [
@@ -2593,7 +2593,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 39,
+      "line": 38,
       "function": "TestBrowseServiceCoreCommands",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2608,7 +2608,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 80,
+      "line": 79,
       "function": "TestBrowseServiceValidation",
       "class": "unreached-guard",
       "signals": [
@@ -2622,7 +2622,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 100,
+      "line": 99,
       "function": "TestBrowseServicePagination",
       "class": "canned-response",
       "signals": [
@@ -2635,7 +2635,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 120,
+      "line": 119,
       "function": "TestBrowseServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -2651,7 +2651,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 199,
+      "line": 176,
       "function": "TestBrowseServiceEdit",
       "class": "transport-fault",
       "signals": [
@@ -2668,7 +2668,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 299,
+      "line": 276,
       "function": "TestBrowseServiceRejectsTraversal",
       "class": "unreached-guard",
       "signals": [
@@ -2681,7 +2681,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 367,
+      "line": 344,
       "function": "TestBrowseServiceTreeRejectsTraversal",
       "class": "unreached-guard",
       "signals": [
@@ -2694,7 +2694,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 378,
+      "line": 355,
       "function": "TestBrowseServiceTreeStopsOnRepeatedNextPageStart",
       "class": "canned-response",
       "signals": [
@@ -2707,7 +2707,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 402,
+      "line": 379,
       "function": "TestBrowseServiceMapsForbiddenToAuthorization",
       "class": "status-taxonomy",
       "signals": [
@@ -2720,7 +2720,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 17,
+      "line": 16,
       "function": "newCommentTestService",
       "class": "harness-constructor",
       "signals": [
@@ -2731,7 +2731,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 40,
+      "line": 39,
       "function": "TestServiceValidationAndStatusMapping",
       "class": "status-taxonomy",
       "signals": [
@@ -2744,7 +2744,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 174,
+      "line": 143,
       "function": "TestCommentServiceAdditionalBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2760,7 +2760,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 209,
+      "line": 178,
       "function": "TestServiceCreateExplainsAnchorRejection",
       "class": "canned-response",
       "signals": [
@@ -2774,7 +2774,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 330,
+      "line": 299,
       "function": "TestServiceBlockerReactionsAndSuggestionsAdditionalErrors",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2789,7 +2789,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 399,
+      "line": 368,
       "function": "TestServiceFallbacks",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2802,7 +2802,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 464,
+      "line": 433,
       "function": "TestCountTasksValidatesTarget",
       "class": "canned-response",
       "signals": [
@@ -2814,7 +2814,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 474,
+      "line": 443,
       "function": "TestSetStateValidation",
       "class": "canned-response",
       "signals": [
@@ -2826,7 +2826,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 488,
+      "line": 457,
       "function": "TestSetStateErrorPaths",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2840,7 +2840,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 557,
+      "line": 526,
       "function": "TestListSurfacesAMalformedPage",
       "class": "transport-fault",
       "signals": [
@@ -2855,7 +2855,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 585,
+      "line": 554,
       "function": "TestCreateRefusesABlockerOnACommit",
       "class": "unreached-guard",
       "signals": [
@@ -2867,7 +2867,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 616,
+      "line": 585,
       "function": "TestAnUnreadableVersionLookupStopsTheWrite",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2879,7 +2879,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 669,
+      "line": 638,
       "function": "TestEveryEmptyReadIsRefused",
       "class": "canned-response",
       "signals": [
@@ -2891,7 +2891,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 713,
+      "line": 682,
       "function": "TestAStationaryPageEndsTheListing",
       "class": "canned-response",
       "signals": [
@@ -2904,7 +2904,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 746,
+      "line": 715,
       "function": "TestEveryEmptyWriteFallsBackToWhatWasSent",
       "class": "status-taxonomy",
       "signals": [
@@ -2917,7 +2917,7 @@
     },
     {
       "file": "internal/services/commit/service_test.go",
-      "line": 17,
+      "line": 16,
       "function": "newCommitTestService",
       "class": "harness-constructor",
       "signals": [
@@ -2928,7 +2928,7 @@
     },
     {
       "file": "internal/services/commit/service_test.go",
-      "line": 28,
+      "line": 27,
       "function": "TestCommitServiceValidationAndHelpers",
       "class": "status-taxonomy",
       "signals": [
@@ -2941,7 +2941,7 @@
     },
     {
       "file": "internal/services/commit/service_test.go",
-      "line": 57,
+      "line": 56,
       "function": "TestCommitServicePagination",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2956,7 +2956,7 @@
     },
     {
       "file": "internal/services/commit/service_test.go",
-      "line": 96,
+      "line": 95,
       "function": "TestCommitServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -2972,7 +2972,7 @@
     },
     {
       "file": "internal/services/commit/service_test.go",
-      "line": 164,
+      "line": 163,
       "function": "TestCommitServiceListTagsAndBranchesErrors",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2986,7 +2986,7 @@
     },
     {
       "file": "internal/services/commit/service_test.go",
-      "line": 221,
+      "line": 198,
       "function": "TestCommitServicePaginationLimit",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2999,7 +2999,7 @@
     },
     {
       "file": "internal/services/commit/service_test.go",
-      "line": 252,
+      "line": 229,
       "function": "TestCommitServicePaginationEdgeCases",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3012,7 +3012,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 15,
+      "line": 14,
       "function": "TestDiffRefsPatchAndStatErrorBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -3025,7 +3025,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 183,
+      "line": 152,
       "function": "TestDiffPRPatchAndStatModes",
       "class": "canned-response",
       "signals": [
@@ -3037,7 +3037,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 208,
+      "line": 177,
       "function": "TestDiffPRPatchAndStatModes",
       "class": "canned-response",
       "signals": [
@@ -3049,7 +3049,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 236,
+      "line": 205,
       "function": "TestDiffPRErrorBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -3062,7 +3062,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 297,
+      "line": 266,
       "function": "TestDiffRefsStatAndCommitWithPath",
       "class": "canned-response",
       "signals": [
@@ -3074,7 +3074,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 327,
+      "line": 296,
       "function": "TestDiffRefsStatAndCommitWithPath",
       "class": "canned-response",
       "signals": [
@@ -3086,7 +3086,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 353,
+      "line": 322,
       "function": "TestDiffCommitStatusErrorMapping",
       "class": "status-taxonomy",
       "signals": [
@@ -3099,7 +3099,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 378,
+      "line": 347,
       "function": "TestDiffRefsTransportFailure",
       "class": "canned-response",
       "signals": [
@@ -3110,7 +3110,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 444,
+      "line": 406,
       "function": "TestDiffTransportFailureBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -3122,7 +3122,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 521,
+      "line": 483,
       "function": "newDiffServiceWithHandler",
       "class": "harness-constructor",
       "signals": [
@@ -3133,7 +3133,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 532,
+      "line": 494,
       "function": "TestFormatRestDiff",
       "class": "canned-response",
       "signals": [
@@ -3147,7 +3147,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 815,
+      "line": 777,
       "function": "TestStatRunsSurfaceAnUndecodableSummary",
       "class": "canned-response",
       "signals": [
@@ -3369,7 +3369,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 17,
+      "line": 16,
       "function": "newProjectTestService",
       "class": "harness-constructor",
       "signals": [
@@ -3380,7 +3380,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 28,
+      "line": 27,
       "function": "TestProjectServiceValidation",
       "class": "unreached-guard",
       "signals": [
@@ -3394,7 +3394,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 57,
+      "line": 56,
       "function": "TestProjectServicePagination",
       "class": "canned-response",
       "signals": [
@@ -3407,7 +3407,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 75,
+      "line": 74,
       "function": "TestProjectServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -3424,7 +3424,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 199,
+      "line": 176,
       "function": "TestProjectServicePermissionsMapStatusError",
       "class": "status-taxonomy",
       "signals": [
@@ -3437,7 +3437,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 227,
+      "line": 204,
       "function": "TestProjectServicePaginationEdgeCases",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3450,7 +3450,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 251,
+      "line": 228,
       "function": "TestProjectServiceMapsForbiddenToAuthorization",
       "class": "status-taxonomy",
       "signals": [
@@ -3930,7 +3930,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 18,
+      "line": 17,
       "function": "newQualityTestService",
       "class": "harness-constructor",
       "signals": [
@@ -3941,7 +3941,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 29,
+      "line": 28,
       "function": "TestQualityServiceValidationGuards",
       "class": "unreached-guard",
       "signals": [
@@ -3955,24 +3955,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 98,
-      "function": "TestQualityServicePaginationAndFallbackBranches",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/quality/service_test.go",
-      "line": 237,
+      "line": 120,
       "function": "TestSetBuildStatusValidationAndOptionalFields",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -3988,7 +3971,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 280,
+      "line": 163,
       "function": "TestQualityReportAndAnnotationFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4003,7 +3986,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 344,
+      "line": 227,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4019,7 +4002,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 418,
+      "line": 301,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4035,7 +4018,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 440,
+      "line": 323,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4051,7 +4034,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 486,
+      "line": 369,
       "function": "TestQualityRequiredAndInsightsErrorHandlingBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -4063,7 +4046,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 546,
+      "line": 429,
       "function": "TestQualityRequiredAndInsightsErrorHandlingBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -4075,23 +4058,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 586,
-      "function": "TestQualityServiceScopedAndDeploymentsFlow",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/quality/service_test.go",
-      "line": 884,
+      "line": 638,
       "function": "TestQualityServiceScopedAndDeploymentsErrorPaths",
       "class": "transport-fault",
       "signals": [
@@ -4104,7 +4071,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 18,
+      "line": 17,
       "function": "TestPermissionsNotFoundMapsError",
       "class": "status-taxonomy",
       "signals": [
@@ -4117,7 +4084,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 43,
+      "line": 42,
       "function": "TestUpdateRepositoryPullRequestRequiredApproversCount",
       "class": "transport-fault",
       "signals": [
@@ -4135,7 +4102,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 129,
+      "line": 101,
       "function": "TestRepositorySettingsJSONFallbackAndValidationBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4150,7 +4117,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 205,
+      "line": 177,
       "function": "newServiceWithBaseURL",
       "class": "harness-constructor",
       "signals": [
@@ -4161,7 +4128,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 253,
+      "line": 225,
       "function": "TestRepositorySettingsAdditionalBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4177,7 +4144,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 469,
+      "line": 441,
       "function": "TestRepositoryServiceErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -4190,7 +4157,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 596,
+      "line": 568,
       "function": "TestNewRepositorySettingsMethods",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4206,7 +4173,7 @@
     },
     {
       "file": "internal/services/repository/admin_test.go",
-      "line": 17,
+      "line": 16,
       "function": "newAdminTestService",
       "class": "harness-constructor",
       "signals": [
@@ -4217,7 +4184,7 @@
     },
     {
       "file": "internal/services/repository/admin_test.go",
-      "line": 28,
+      "line": 27,
       "function": "TestAdminServiceCoreCommands",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4233,7 +4200,7 @@
     },
     {
       "file": "internal/services/repository/admin_test.go",
-      "line": 70,
+      "line": 69,
       "function": "TestAdminServiceValidation",
       "class": "status-taxonomy",
       "signals": [
@@ -4246,7 +4213,7 @@
     },
     {
       "file": "internal/services/repository/admin_test.go",
-      "line": 100,
+      "line": 99,
       "function": "TestAdminServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -4555,7 +4522,7 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 17,
+      "line": 16,
       "function": "newTagTestService",
       "class": "harness-constructor",
       "signals": [
@@ -4566,7 +4533,7 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 28,
+      "line": 27,
       "function": "TestTagServiceValidationAndStatusMapping",
       "class": "status-taxonomy",
       "signals": [
@@ -4579,7 +4546,7 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 47,
+      "line": 46,
       "function": "TestTagServicePaginationAndFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4596,7 +4563,7 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 93,
+      "line": 92,
       "function": "TestTagServiceValidationAndMapStatusHelpers",
       "class": "status-taxonomy",
       "signals": [
@@ -4609,7 +4576,7 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 164,
+      "line": 135,
       "function": "TestTagServiceTransportAndValidationBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4622,7 +4589,7 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 218,
+      "line": 189,
       "function": "TestTagServicePaginationLimit",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4635,7 +4602,7 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 249,
+      "line": 220,
       "function": "TestTagServicePaginationEdgeCases",
       "class": "bitbucket-behaviour",
       "signals": [
