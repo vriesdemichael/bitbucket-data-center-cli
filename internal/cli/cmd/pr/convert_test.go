@@ -144,8 +144,9 @@ func TestSummariesAndCountsCarryTheUnmeasuredDistinction(t *testing.T) {
 	t.Parallel()
 
 	unresolved, openTasks := 3, 1
+	required := true
 	converted := reviewSummaryFrom(pullrequestservice.ReviewSummary{
-		ActionRequired:    true,
+		ActionRequired:    &required,
 		UnresolvedThreads: &unresolved,
 		OpenTasks:         &openTasks,
 		NeedsWork:         []string{"carol"},
@@ -154,7 +155,7 @@ func TestSummariesAndCountsCarryTheUnmeasuredDistinction(t *testing.T) {
 		CountsSource:      "activities",
 	})
 
-	if !converted.ActionRequired || converted.CountsSource != "activities" {
+	if converted.ActionRequired == nil || !*converted.ActionRequired || converted.CountsSource != "activities" {
 		t.Fatalf("summary = %+v", converted)
 	}
 	if converted.UnresolvedThreads == nil || *converted.UnresolvedThreads != 3 {

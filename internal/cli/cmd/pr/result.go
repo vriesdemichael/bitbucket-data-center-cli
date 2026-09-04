@@ -13,7 +13,7 @@ import (
 // openTasks is a subset of unresolvedThreads, not a separate bucket, so the two
 // must not be added together.
 type ReviewSummary struct {
-	ActionRequired    bool     `json:"actionRequired" jsonschema:"True when the pull request is waiting on someone: an unresolved thread, an open task, or a reviewer who requested changes."`
+	ActionRequired    *bool    `json:"actionRequired,omitempty" jsonschema:"True when the pull request is waiting on someone: an unresolved thread, an open task, or a reviewer who requested changes. Absent when the counts it rests on were not all measured -- check countsSource."`
 	UnresolvedThreads *int     `json:"unresolvedThreads,omitempty" jsonschema:"Threads still open, tasks included. Absent when nothing could be measured."`
 	OpenTasks         *int     `json:"openTasks,omitempty" jsonschema:"The subset of unresolvedThreads that blocks the merge."`
 	ResolvedThreads   *int     `json:"resolvedThreads,omitempty" jsonschema:"Threads that have been resolved."`
