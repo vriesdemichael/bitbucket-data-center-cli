@@ -95,36 +95,30 @@ func (service *Service) List(ctx context.Context, target Target, path string, pa
 		pageSize = 25
 	}
 
-	start := float32(0)
-	pageLimit := float32(pageSize)
-	results := make([]openapigenerated.RestComment, 0)
+	return openapi.PageThrough(ctx, 0, everyComment,
+		func(ctx context.Context, start, _ int) (openapi.Page[openapigenerated.RestComment], error) {
+			page, err := service.fetchCommentPage(ctx, target, trimmedPath, float32(start), float32(pageSize))
+			if err != nil {
+				return openapi.Page[openapigenerated.RestComment]{}, err
+			}
 
-	for {
-		page, err := service.fetchCommentPage(ctx, target, trimmedPath, start, pageLimit)
-		if err != nil {
-			return nil, err
-		}
+			converted := openapi.Page[openapigenerated.RestComment]{
+				Values:     page.Values,
+				IsLastPage: page.IsLastPage,
+			}
+			// The decoded page carries the next start as *float32.
+			if page.NextPageStart != nil {
+				next := int32(*page.NextPageStart)
+				converted.NextPageStart = &next
+			}
 
-		results = append(results, page.Values...)
-		if page.IsLastPage != nil && *page.IsLastPage {
-			break
-		}
-		if page.NextPageStart == nil {
-			break
-		}
-		// A page that points back at itself ends the walk, the way the browse
-		// service already does it. Without this an instance that answers with a
-		// stationary nextPageStart makes the listing loop until the process is
-		// killed, collecting the same page each time -- a hang rather than a
-		// wrong answer, which is the worse of the two.
-		if *page.NextPageStart <= start {
-			break
-		}
-		start = *page.NextPageStart
-	}
-
-	return results, nil
+			return converted, nil
+		})
 }
+
+// everyComment reads a comment listing to its end. pageSize is the window, not
+// a cap (ADR-074).
+const everyComment = 1_000_000
 
 // commentPage fetches one page from whichever endpoint the target names.
 //
