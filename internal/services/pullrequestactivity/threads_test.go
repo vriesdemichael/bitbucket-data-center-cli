@@ -382,7 +382,16 @@ func TestPathObjectFromString(t *testing.T) {
 // Swallowing every failure would turn a broken token or a failing server into a
 // silent "nothing outstanding", which is the failure mode the review summary
 // exists to prevent.
-func TestTrySummarizeDegradesOnlyWhenTimelineUnavailable(t *testing.T) {
+// Whether a failed timeline read is degraded or reported is a decision over an
+// error, so it is tested over errors. The production classification is
+// mapActivityStatusError feeding timelineUnavailable, and both are called here
+// directly: standing up a server to manufacture a status only puts a socket
+// between the table and the branch it is testing.
+//
+// The two 404 body forms are the only wire detail this depends on, and they are
+// not assumed here -- TestLiveRouteMissingClassification pins both against a
+// genuinely retired Bitbucket endpoint.
+func TestTimelineUnavailableSeparatesDegradeFromReport(t *testing.T) {
 	const containerStatusDocument = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
 		`<status><status-code>404</status-code><message>HTTP 404 Not Found</message></status>`
 	const missingPullRequest = `{"errors":[{"message":"Pull request 12 does not exist in TEST/demo.",` +
@@ -405,28 +414,14 @@ func TestTrySummarizeDegradesOnlyWhenTimelineUnavailable(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			service := newActivityTestService(t, func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(testCase.status)
-				_, _ = w.Write([]byte(testCase.body))
-			})
-
-			summary, err := service.TrySummarize(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12", 25)
-
-			if testCase.wantDegrade {
-				if err != nil {
-					t.Fatalf("expected a silent degrade, got error: %v", err)
-				}
-				if summary != nil {
-					t.Fatalf("expected a nil summary when degrading, got %#v", summary)
-				}
-				return
-			}
-
+			err := mapActivityStatusError(testCase.status, []byte(testCase.body))
 			if err == nil {
-				t.Fatalf("expected status %d to be reported, got a silent degrade", testCase.status)
+				t.Fatalf("status %d produced no error to classify", testCase.status)
 			}
-			if summary != nil {
-				t.Fatalf("expected no summary alongside an error, got %#v", summary)
+
+			if got := timelineUnavailable(err); got != testCase.wantDegrade {
+				t.Fatalf("timelineUnavailable(%d) = %v, want %v (error: %v)",
+					testCase.status, got, testCase.wantDegrade, err)
 			}
 		})
 	}

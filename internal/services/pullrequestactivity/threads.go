@@ -190,6 +190,10 @@ func (service *Service) TrySummarize(ctx context.Context, repository RepositoryR
 // timelineUnavailable reports whether err means the activity timeline cannot be
 // read here, as opposed to something being wrong that the caller should hear
 // about.
+// The route-missing check is kept for intent rather than for effect: a
+// route-missing error is also KindNotFound, so the next clause already covers
+// it. Removing it changes no outcome, which is why no test can pin it here --
+// TestLiveRouteMissingClassification pins the classification itself instead.
 func timelineUnavailable(err error) bool {
 	return openapi.IsRouteMissing(err) ||
 		apperrors.IsKind(err, apperrors.KindNotFound) ||

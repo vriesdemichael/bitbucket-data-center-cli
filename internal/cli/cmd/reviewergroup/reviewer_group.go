@@ -292,7 +292,7 @@ func New(deps Dependencies) *cobra.Command {
 					predicted := "blocked"
 					reason := "reviewer group not found"
 					blocking := []string{"reviewer group not found"}
-					if existing, found := findReviewerGroupByID(groups, id); found {
+					if existing, found := findReviewerGroup(groups, id); found {
 						blocking = nil
 						predicted = "update"
 						reason = "reviewer group will be updated"
@@ -362,7 +362,7 @@ func New(deps Dependencies) *cobra.Command {
 				predicted := "blocked"
 				reason := "reviewer group not found"
 				blocking := []string{"reviewer group not found"}
-				if existing, found := findReviewerGroupByID(groups, id); found {
+				if existing, found := findReviewerGroup(groups, id); found {
 					blocking = nil
 					predicted = "update"
 					reason = "reviewer group will be updated"
@@ -696,8 +696,27 @@ func resolveReviewerGroupID(groups []openapigenerated.RestReviewerGroup, argumen
 		"no reviewer group named "+trimmed, nil)
 }
 
+// findReviewerGroup answers the question a dry run has to ask -- is there a
+// group this argument names -- through the resolver the executing path uses.
+//
+// Asking it any other way is how the two came apart: the dry runs looked the
+// argument up as a numeric id only, so `reviewer-group update qa-team
+// --dry-run` predicted "blocked: reviewer group not found" and the project
+// scoped `reviewer-group delete qa-team --dry-run` predicted a no-op, while
+// both commands without --dry-run resolved the name and did the work. A
+// preview that contradicts the run is worse than no preview. Deriving it from
+// resolveReviewerGroupID means they cannot disagree again.
+func findReviewerGroup(groups []openapigenerated.RestReviewerGroup, argument string) (openapigenerated.RestReviewerGroup, bool) {
+	resolvedID, err := resolveReviewerGroupID(groups, argument)
+	if err != nil {
+		return openapigenerated.RestReviewerGroup{}, false
+	}
+
+	return findReviewerGroupByID(groups, resolvedID)
+}
+
 func reviewerGroupExistsByID(groups []openapigenerated.RestReviewerGroup, id string) bool {
-	_, found := findReviewerGroupByID(groups, id)
+	_, found := findReviewerGroup(groups, id)
 	return found
 }
 

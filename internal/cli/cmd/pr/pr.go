@@ -244,12 +244,9 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			counts := pullrequestservice.ReviewCounts{}
-			if !noReviewSummary {
-				counts, err = resolveReviewCounts(cmd.Context(), client, repo, target.PullRequestID)
-				if err != nil {
-					return err
-				}
+			counts, err := resolveReviewCounts(cmd.Context(), client, repo, target.PullRequestID, !noReviewSummary)
+			if err != nil {
+				return err
 			}
 			reviewSummary := pullrequestservice.BuildReviewSummary(pullRequest, counts)
 
@@ -298,7 +295,7 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	getCmd.Flags().BoolVar(&noReviewSummary, "no-review-summary", false, "Skip the activity timeline lookup used to count unresolved comment threads")
+	getCmd.Flags().BoolVar(&noReviewSummary, "no-review-summary", false, "Skip the paged activity timeline walk; the summary still carries the open task tally, which costs one request")
 	prCmd.AddCommand(getCmd)
 
 	var commitsPaging paging.Options
