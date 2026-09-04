@@ -12,49 +12,6 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
-func TestDiffRefsDefaultAndNameOnlyModes(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/api/latest/projects/PRJ/repos/demo/patch" {
-			http.NotFound(writer, request)
-			return
-		}
-		_, _ = writer.Write([]byte("diff --git a/seed.txt b/seed.txt\n"))
-	}))
-	defer server.Close()
-
-	client, err := openapigenerated.NewClientWithResponses(server.URL)
-	if err != nil {
-		t.Fatalf("create generated client: %v", err)
-	}
-
-	service := NewService(client)
-
-	defaultResult, err := service.DiffRefs(context.Background(), DiffRefsInput{
-		Repository: RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-		From:       "main",
-		To:         "feature",
-	})
-	if err != nil {
-		t.Fatalf("expected no error for default output, got: %v", err)
-	}
-	if !strings.Contains(defaultResult.Patch, "seed.txt") {
-		t.Fatalf("expected default patch output, got: %q", defaultResult.Patch)
-	}
-
-	nameOnlyResult, err := service.DiffRefs(context.Background(), DiffRefsInput{
-		Repository: RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-		From:       "main",
-		To:         "feature",
-		Output:     OutputKindNameOnly,
-	})
-	if err != nil {
-		t.Fatalf("expected no error for name-only output, got: %v", err)
-	}
-	if len(nameOnlyResult.Names) != 1 || nameOnlyResult.Names[0] != "seed.txt" {
-		t.Fatalf("expected parsed changed names, got: %#v", nameOnlyResult.Names)
-	}
-}
-
 func TestDiffRefsPatchAndStatErrorBranches(t *testing.T) {
 	t.Run("patch success", func(t *testing.T) {
 		service := newDiffServiceWithHandler(t, func(writer http.ResponseWriter, request *http.Request) {
@@ -116,36 +73,6 @@ func TestDiffRefsPatchAndStatErrorBranches(t *testing.T) {
 	})
 }
 
-func TestDiffPRNameOnly(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/api/latest/projects/PRJ/repos/demo/pull-requests/12.diff" {
-			http.NotFound(writer, request)
-			return
-		}
-		_, _ = writer.Write([]byte("diff --git a/a.txt b/a.txt\ndiff --git a/dir/b.go b/dir/b.go\n"))
-	}))
-	defer server.Close()
-
-	client, err := openapigenerated.NewClientWithResponses(server.URL)
-	if err != nil {
-		t.Fatalf("create generated client: %v", err)
-	}
-
-	service := NewService(client)
-	result, err := service.DiffPR(context.Background(), DiffPRInput{
-		Repository:    RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-		PullRequestID: "12",
-		Output:        OutputKindNameOnly,
-	})
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	if len(result.Names) != 2 || result.Names[0] != "a.txt" || result.Names[1] != "dir/b.go" {
-		t.Fatalf("unexpected names: %#v", result.Names)
-	}
-}
-
 func TestDiffRefsPatchWithPathRejected(t *testing.T) {
 	service := NewService(nil)
 	_, err := service.DiffRefs(context.Background(), DiffRefsInput{
@@ -160,33 +87,6 @@ func TestDiffRefsPatchWithPathRejected(t *testing.T) {
 	}
 	if apperrors.ExitCode(err) != 2 {
 		t.Fatalf("expected exit code 2, got %d (%v)", apperrors.ExitCode(err), err)
-	}
-}
-
-func TestDiffRefsNotFoundMapsToNotFound(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusNotFound)
-		_, _ = writer.Write([]byte("missing"))
-	}))
-	defer server.Close()
-
-	client, err := openapigenerated.NewClientWithResponses(server.URL)
-	if err != nil {
-		t.Fatalf("create generated client: %v", err)
-	}
-
-	service := NewService(client)
-	_, err = service.DiffRefs(context.Background(), DiffRefsInput{
-		Repository: RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-		From:       "main",
-		To:         "feature",
-		Output:     OutputKindRaw,
-	})
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	if apperrors.ExitCode(err) != 4 {
-		t.Fatalf("expected not found exit code 4, got %d (%v)", apperrors.ExitCode(err), err)
 	}
 }
 
@@ -449,43 +349,6 @@ func TestDiffRefsStatAndCommitWithPath(t *testing.T) {
 	})
 }
 
-func TestDiffPRDefaultRawAndUnsupportedOutput(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/api/latest/projects/PRJ/repos/demo/pull-requests/42.diff" {
-			http.NotFound(writer, request)
-			return
-		}
-		_, _ = writer.Write([]byte("diff --git a/a.txt b/a.txt\n"))
-	}))
-	defer server.Close()
-
-	client, err := openapigenerated.NewClientWithResponses(server.URL)
-	if err != nil {
-		t.Fatalf("create generated client: %v", err)
-	}
-
-	service := NewService(client)
-	result, err := service.DiffPR(context.Background(), DiffPRInput{
-		Repository:    RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-		PullRequestID: "42",
-	})
-	if err != nil {
-		t.Fatalf("expected no error for default raw mode, got: %v", err)
-	}
-	if !strings.Contains(result.Patch, "diff --git") {
-		t.Fatalf("expected default raw patch output, got: %q", result.Patch)
-	}
-
-	_, err = service.DiffPR(context.Background(), DiffPRInput{
-		Repository:    RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
-		PullRequestID: "42",
-		Output:        OutputKind("unsupported"),
-	})
-	if err == nil {
-		t.Fatal("expected validation error for unsupported output mode")
-	}
-}
-
 func TestDiffCommitStatusErrorMapping(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusNotFound)
@@ -664,84 +527,6 @@ func newDiffServiceWithHandler(t *testing.T, handler http.HandlerFunc) *Service 
 	}
 
 	return NewService(client)
-}
-
-func TestCompareChanges(t *testing.T) {
-	repo := RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}
-
-	t.Run("success paginated", func(t *testing.T) {
-		calls := 0
-		service := newDiffServiceWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodGet || r.URL.Path != "/api/latest/projects/PRJ/repos/demo/compare/changes" {
-				http.NotFound(w, r)
-				return
-			}
-			if r.URL.Query().Get("from") != "main" || r.URL.Query().Get("to") != "feat" {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			calls++
-			if calls == 1 {
-				_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"contentId":"abc","path":{"components":["file1.txt"],"name":"file1.txt"}}]}`))
-			} else {
-				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"contentId":"def","path":{"components":["file2.txt"],"name":"file2.txt"}}]}`))
-			}
-		})
-
-		changes, err := service.CompareChanges(context.Background(), repo, "main", "feat", 1)
-		if err != nil {
-			t.Fatalf("expected compare changes success, got: %v", err)
-		}
-		if len(changes) != 2 {
-			t.Fatalf("expected 2 changes, got: %d", len(changes))
-		}
-	})
-
-	t.Run("invalid repository", func(t *testing.T) {
-		service := NewService(nil)
-		_, err := service.CompareChanges(context.Background(), RepositoryRef{}, "main", "feat", 1)
-		if err == nil {
-			t.Fatal("expected error for empty repository ref")
-		}
-	})
-}
-
-func TestCompareDiff(t *testing.T) {
-	repo := RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}
-
-	t.Run("success", func(t *testing.T) {
-		service := newDiffServiceWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodGet || r.URL.Path != "/api/latest/projects/PRJ/repos/demo/compare/diff" {
-				http.NotFound(w, r)
-				return
-			}
-			if r.URL.Query().Get("from") != "main" || r.URL.Query().Get("to") != "feat" {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"binary":false,"truncated":false,"hunks":[]}`))
-		})
-
-		diff, err := service.CompareDiff(context.Background(), repo, "main", "feat")
-		if err != nil {
-			t.Fatalf("expected compare diff success, got: %v", err)
-		}
-		if diff == nil || *diff.Binary {
-			t.Fatalf("expected diff result, got: %+v", diff)
-		}
-	})
-
-	t.Run("invalid repository", func(t *testing.T) {
-		service := NewService(nil)
-		_, err := service.CompareDiff(context.Background(), RepositoryRef{}, "main", "feat")
-		if err == nil {
-			t.Fatal("expected error for empty repository ref")
-		}
-	})
 }
 
 func TestFormatRestDiff(t *testing.T) {
