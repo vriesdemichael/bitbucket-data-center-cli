@@ -5,18 +5,18 @@
     "files": 96,
     "functions": 542,
     "by_class": {
-      "bitbucket-behaviour": 371,
+      "bitbucket-behaviour": 355,
       "canned-response": 80,
       "external-service": 14,
       "harness-constructor": 19,
       "status-taxonomy": 70,
-      "transport-fault": 13,
+      "transport-fault": 29,
       "unreached-guard": 7
     },
     "behaviour_by_package": {
-      "internal/cli": 133,
+      "internal/cli": 132,
       "internal/cli/cmd/admin": 1,
-      "internal/cli/cmd/api": 21,
+      "internal/cli/cmd/api": 20,
       "internal/cli/cmd/auth": 2,
       "internal/cli/cmd/branch": 1,
       "internal/cli/cmd/build": 2,
@@ -29,33 +29,33 @@
       "internal/cli/cmd/project": 4,
       "internal/cli/cmd/ref": 1,
       "internal/cli/cmd/repo": 25,
-      "internal/cli/cmd/reviewer": 2,
+      "internal/cli/cmd/reviewer": 1,
       "internal/cli/cmd/reviewergroup": 1,
       "internal/cli/cmd/search": 4,
       "internal/cli/cmd/sshkey": 1,
       "internal/cli/cmd/tag": 3,
       "internal/cli/cmd/webhook": 2,
-      "internal/cli/permissionchecker": 4,
+      "internal/cli/permissionchecker": 3,
       "internal/mcp": 5,
       "internal/openapi": 2,
-      "internal/services/branch": 6,
-      "internal/services/browse": 6,
+      "internal/services/branch": 4,
+      "internal/services/browse": 4,
       "internal/services/comment": 18,
-      "internal/services/commit": 5,
+      "internal/services/commit": 4,
       "internal/services/diff": 5,
       "internal/services/forksync": 1,
       "internal/services/gpgkey": 2,
       "internal/services/jira": 3,
-      "internal/services/project": 5,
+      "internal/services/project": 4,
       "internal/services/pullrequest": 25,
       "internal/services/pullrequestactivity": 2,
       "internal/services/quality": 7,
-      "internal/services/reposettings": 6,
-      "internal/services/repository": 6,
+      "internal/services/reposettings": 5,
+      "internal/services/repository": 5,
       "internal/services/reviewer": 15,
       "internal/services/sshkey": 2,
       "internal/services/tag": 4,
-      "internal/transport/httpclient": 21
+      "internal/transport/httpclient": 17
     }
   },
   "entries": [
@@ -304,16 +304,17 @@
       "file": "internal/cli/cmd/api/api_test.go",
       "line": 687,
       "function": "TestApiPaginatedErrors",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status",
         "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
+        "serves-bitbucket-routes",
+        "varies-by-attempt-count"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
@@ -1451,7 +1452,7 @@
       "file": "internal/cli/cmd/reviewer/reviewer_test.go",
       "line": 24,
       "function": "TestReviewerConditionCommands",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "asserts-http-method",
         "returns-a-status",
@@ -1459,8 +1460,8 @@
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/cli/cmd/reviewer/reviewer_test.go",
@@ -2099,15 +2100,15 @@
       "file": "internal/cli/governance_test.go",
       "line": 533,
       "function": "TestHookCLIAdditional",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "closes-on-cleanup",
         "returns-malformed-body",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/cli/governance_test.go",
@@ -3033,15 +3034,15 @@
       "file": "internal/cli/permissionchecker/permission_checker_test.go",
       "line": 474,
       "function": "TestASecondRequestFailingIsAlsoTransient",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "closes-on-cleanup",
         "serves-bitbucket-routes",
         "simulates-a-stalled-connection",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/cli/pr_checkout_command_test.go",
@@ -4509,7 +4510,7 @@
       "file": "internal/services/branch/service_test.go",
       "line": 238,
       "function": "TestBranchServiceEmptyResponsesAndTransientErrors",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "asserts-http-method",
         "handler-passed-to-a-helper",
@@ -4518,14 +4519,14 @@
         "serves-bitbucket-routes",
         "simulates-a-stalled-connection"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/services/branch/service_test.go",
       "line": 316,
       "function": "TestBranchServiceAdditionalValidationAndFallbackPaths",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "asserts-http-method",
         "handler-passed-to-a-helper",
@@ -4535,8 +4536,8 @@
         "serves-bitbucket-routes",
         "simulates-a-stalled-connection"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/services/branch/service_test.go",
@@ -4646,7 +4647,7 @@
       "file": "internal/services/browse/service_test.go",
       "line": 122,
       "function": "TestBrowseServiceTransientAndMapping",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "handler-passed-to-a-helper",
         "inspects-the-request-path",
@@ -4655,14 +4656,14 @@
         "serves-bitbucket-routes",
         "simulates-a-stalled-connection"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/services/browse/service_test.go",
       "line": 201,
       "function": "TestBrowseServiceEdit",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "asserts-http-method",
         "handler-passed-to-a-helper",
@@ -4672,8 +4673,8 @@
         "serves-bitbucket-routes",
         "simulates-a-stalled-connection"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/services/browse/service_test.go",
@@ -5225,7 +5226,7 @@
       "file": "internal/services/commit/service_test.go",
       "line": 96,
       "function": "TestCommitServiceTransientAndMapping",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "handler-passed-to-a-helper",
         "inspects-the-request-path",
@@ -5234,8 +5235,8 @@
         "serves-bitbucket-routes",
         "simulates-a-stalled-connection"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/services/commit/service_test.go",
@@ -5760,7 +5761,7 @@
       "file": "internal/services/project/service_test.go",
       "line": 77,
       "function": "TestProjectServiceTransientAndMapping",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "asserts-http-method",
         "handler-passed-to-a-helper",
@@ -5770,8 +5771,8 @@
         "serves-bitbucket-routes",
         "simulates-a-stalled-connection"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/services/project/service_test.go",
@@ -6633,7 +6634,7 @@
       "file": "internal/services/reposettings/service_test.go",
       "line": 43,
       "function": "TestUpdateRepositoryPullRequestRequiredApproversCount",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "asserts-http-method",
         "asserts-request-body",
@@ -6641,10 +6642,11 @@
         "returns-a-status",
         "returns-bitbucket-entity",
         "serves-bitbucket-routes",
+        "varies-by-attempt-count",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/services/reposettings/service_test.go",
@@ -6817,15 +6819,15 @@
       "file": "internal/services/repository/admin_test.go",
       "line": 100,
       "function": "TestAdminServiceTransientAndMapping",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "asserts-http-method",
         "handler-passed-to-a-helper",
         "returns-a-status",
         "simulates-a-stalled-connection"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/services/repository/service_test.go",
@@ -7749,7 +7751,7 @@
       "file": "internal/transport/httpclient/client_test.go",
       "line": 351,
       "function": "TestGetJSONTooManyRequestsUsesRetryAfter",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
@@ -7757,14 +7759,14 @@
         "serves-bitbucket-routes",
         "simulates-a-stalled-connection"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
       "line": 382,
       "function": "TestGetJSONRetryCanceledDuringBackoff",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
@@ -7772,8 +7774,8 @@
         "serves-bitbucket-routes",
         "simulates-a-stalled-connection"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
@@ -7893,15 +7895,15 @@
       "file": "internal/transport/httpclient/client_test.go",
       "line": 716,
       "function": "TestGetRawTransientNetworkFailure",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "serves-bitbucket-routes",
         "simulates-a-stalled-connection"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
@@ -7978,15 +7980,16 @@
       "file": "internal/transport/httpclient/client_test.go",
       "line": 899,
       "function": "TestDoRequestRetriesAndStatusErrors",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status",
-        "serves-bitbucket-routes"
+        "serves-bitbucket-routes",
+        "varies-by-attempt-count"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
       "file": "internal/transport/httpclient/client_test.go",

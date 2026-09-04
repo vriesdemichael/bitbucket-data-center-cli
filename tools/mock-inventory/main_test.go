@@ -186,3 +186,50 @@ func TestTheRepositoryHasNoUnclassifiedMocks(t *testing.T) {
 		}
 	}
 }
+
+// A retry test is not a Bitbucket simulation, and reading it as one would send
+// it to a live suite that cannot express it: no real server can be asked to
+// fail twice and then succeed. It serves a route and returns statuses like any
+// other mock, so the thing that tells them apart is answering with a status the
+// client is meant to retry, on a handler that counts its calls.
+//
+// Counting alone is not enough. A paging mock counts calls too, and Bitbucket's
+// paging convention is a claim about Bitbucket.
+func TestFaultInjectionIsToldApartFromPaging(t *testing.T) {
+	retry := preamble + `func TestRetries(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts == 1 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		_, _ = w.Write([]byte("{}"))
+	}))
+	defer server.Close()
+}`
+
+	paging := preamble + `func TestPages(t *testing.T) {
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/rest/api/latest/projects" {
+			http.NotFound(w, r)
+			return
+		}
+		calls++
+		if calls == 1 {
+			_, _ = w.Write([]byte("{\"values\":[1],\"isLastPage\":false,\"nextPageStart\":1}"))
+			return
+		}
+		_, _ = w.Write([]byte("{\"values\":[2],\"isLastPage\":true}"))
+	}))
+	defer server.Close()
+}`
+
+	if got := classOf(t, retry); got != ClassTransportFault {
+		t.Errorf("a retry sequence classified %q, want %q", got, ClassTransportFault)
+	}
+	if got := classOf(t, paging); got != ClassBehaviour {
+		t.Errorf("a paging sequence classified %q, want %q", got, ClassBehaviour)
+	}
+}
