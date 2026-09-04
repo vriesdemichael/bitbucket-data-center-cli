@@ -6,9 +6,9 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 244 | write the live test, then delete the mock |
+| `move-to-live` | 238 | write the live test, then delete the mock |
 | `remove` | 63 | delete; it asserts nothing a live test would not already give |
-| `keep` | 42 | legitimate unit test under ADR-079 |
+| `keep` | 45 | legitimate unit test under ADR-079 |
 | `follows-callers` | 19 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
@@ -16,7 +16,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | file | total | move-to-live | remove | keep | other |
 |---|---:|---:|---:|---:|---:|
-| `internal/transport/httpclient/client_test.go` | 31 | 18 | 1 | 12 | 0 |
+| `internal/transport/httpclient/client_test.go` | 28 | 12 | 1 | 15 | 0 |
 | `internal/services/pullrequest/service_test.go` | 23 | 12 | 7 | 3 | 1 |
 | `internal/services/quality/service_test.go` | 12 | 9 | 0 | 2 | 1 |
 | `internal/services/comment/service_test.go` | 15 | 7 | 5 | 2 | 1 |

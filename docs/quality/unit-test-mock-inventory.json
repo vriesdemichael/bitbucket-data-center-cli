@@ -1,16 +1,16 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 382,
+    "mocked_servers": 379,
     "files": 93,
-    "functions": 359,
+    "functions": 356,
     "by_class": {
-      "bitbucket-behaviour": 201,
+      "bitbucket-behaviour": 196,
       "canned-response": 63,
       "external-service": 14,
       "harness-constructor": 19,
-      "status-taxonomy": 43,
-      "transport-fault": 31,
+      "status-taxonomy": 42,
+      "transport-fault": 34,
       "unreached-guard": 11
     },
     "behaviour_by_package": {
@@ -54,7 +54,7 @@
       "internal/services/reviewer": 4,
       "internal/services/sshkey": 2,
       "internal/services/tag": 4,
-      "internal/transport/httpclient": 14
+      "internal/transport/httpclient": 9
     }
   },
   "entries": [
@@ -4843,34 +4843,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 28,
-      "function": "TestHealthAuthenticated",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/transport/httpclient/client_test.go",
-      "line": 68,
-      "function": "TestHealthUnauthorizedButReachable",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/transport/httpclient/client_test.go",
-      "line": 85,
+      "line": 47,
       "function": "TestHealthServerError",
       "class": "status-taxonomy",
       "signals": [
@@ -4883,7 +4856,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 102,
+      "line": 64,
       "function": "TestGetJSONSuccessWithTokenAuth",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4898,7 +4871,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 135,
+      "line": 97,
       "function": "TestGetJSONRetriesAndSucceeds",
       "class": "transport-fault",
       "signals": [
@@ -4913,7 +4886,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 161,
+      "line": 123,
       "function": "TestGetJSONMapsStatusErrors",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4927,7 +4900,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 181,
+      "line": 143,
       "function": "TestGetJSONDecodeFailure",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4941,7 +4914,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 219,
+      "line": 181,
       "function": "TestHealthRedirectConsideredReachable",
       "class": "status-taxonomy",
       "signals": [
@@ -4954,7 +4927,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 255,
+      "line": 217,
       "function": "TestGetJSONOutputTargetType",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4967,7 +4940,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 279,
+      "line": 241,
       "function": "TestWriteJSONMethods",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4981,20 +4954,21 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 305,
+      "line": 269,
       "function": "TestGetJSONTransportAndRetryExhaustion",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "returns-a-status",
         "serves-bitbucket-routes"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a refused connection and an exhausted retry",
+      "reviewed": true
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 326,
+      "line": 290,
       "function": "TestGetJSONTooManyRequestsRetryExhaustion",
       "class": "transport-fault",
       "signals": [
@@ -5009,7 +4983,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 351,
+      "line": 315,
       "function": "TestGetJSONTooManyRequestsUsesRetryAfter",
       "class": "transport-fault",
       "signals": [
@@ -5025,7 +4999,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 382,
+      "line": 346,
       "function": "TestGetJSONRetryCanceledDuringBackoff",
       "class": "transport-fault",
       "signals": [
@@ -5040,7 +5014,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 407,
+      "line": 371,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -5055,7 +5029,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 426,
+      "line": 390,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -5070,7 +5044,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 450,
+      "line": 414,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -5085,7 +5059,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 470,
+      "line": 434,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -5100,7 +5074,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 501,
+      "line": 465,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -5115,7 +5089,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 634,
+      "line": 598,
       "function": "TestGetRawReturnsBodyVerbatim",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5130,7 +5104,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 669,
+      "line": 633,
       "function": "TestGetRawMapsStatusErrors",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5145,7 +5119,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 688,
+      "line": 654,
       "function": "TestGetRawRetriesServerErrors",
       "class": "transport-fault",
       "signals": [
@@ -5156,11 +5130,12 @@
         "varies-by-attempt-count"
       ],
       "action": "keep",
-      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
+      "reason": "the retry is the subject, and the statuses",
+      "reviewed": true
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 716,
+      "line": 682,
       "function": "TestGetRawTransientNetworkFailure",
       "class": "transport-fault",
       "signals": [
@@ -5174,21 +5149,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 737,
-      "function": "TestCurrentUserSlugReadsResponseHeader",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/transport/httpclient/client_test.go",
-      "line": 760,
+      "line": 703,
       "function": "TestCurrentUserSlugMissingHeader",
       "class": "canned-response",
       "signals": [
@@ -5201,7 +5162,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 781,
+      "line": 724,
       "function": "TestCurrentUserSlugPropagatesStatusErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -5214,7 +5175,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 794,
+      "line": 737,
       "function": "TestDoRequestSuccess",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5231,7 +5192,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 853,
+      "line": 796,
       "function": "TestDoRequestFullURL",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5245,7 +5206,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 899,
+      "line": 842,
       "function": "TestDoRequestRetriesAndStatusErrors",
       "class": "transport-fault",
       "signals": [
@@ -5260,9 +5221,9 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 934,
+      "line": 879,
       "function": "TestDoRequestRetryExhaustion",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
@@ -5270,22 +5231,24 @@
         "returns-bitbucket-entity",
         "serves-bitbucket-routes"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "exhausting the retry budget needs a server",
+      "reviewed": true
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 975,
+      "line": 922,
       "function": "TestRetriesDoNotReplayMutations",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status",
         "serves-bitbucket-routes"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a server that fails and then succeeds is the",
+      "reviewed": true
     },
     {
       "file": "internal/transport/sigstore/trustedroot_test.go",

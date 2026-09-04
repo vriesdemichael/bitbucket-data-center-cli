@@ -1161,3 +1161,38 @@ fixes:
     verification:
       commands:
         - go test -tags=live ./tests/integration/live -run TestLiveReviewerGroupResolutionShapes
+
+  - id: OPENAPI-027
+    area: pull-request-participant-self-review
+    source: undocumented-constraint
+    status: active
+    status_evidence: >
+      Observed on 10.4.2 by driving submit_pr_review through the MCP server as the pull
+      request's own author.
+    description: >
+      The author of a pull request cannot set their own review status. Nothing in the schema
+      says so, and the refusal is a 400 rather than a 403.
+    reference:
+      type: endpoint
+      value: /api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/participants/{userSlug}
+      upstream_issue: >
+        Approving, unapproving or requesting changes on your own pull request is refused with
+        {"message": "Authors may not update their status.",
+         "exceptionName": "com.atlassian.bitbucket.pull.InvalidPullRequestRoleException"}
+        under status 400.
+
+        The status is the surprise. A role the caller does not hold reads naturally as
+        authorization, and 400 maps to validation, so `bb` reports exit 2 rather than exit 3.
+        That is the right answer for the wrong reason -- the request is well formed -- but it
+        is what the server sends, so the taxonomy follows it.
+    change:
+      files:
+        - tests/integration/live/mcp_live_test.go
+      detail: >
+        No production change. The constraint is recorded because it invalidates a whole class
+        of test: any review flow written against a single account passes only against a mock.
+        TestLiveMCPSubmitReviewMutatesForReal creates a second licensed user, adds them as a
+        reviewer and runs the MCP server as that account.
+    verification:
+      commands:
+        - go test -tags=live ./tests/integration/live -run TestLiveMCPSubmitReviewMutatesForReal

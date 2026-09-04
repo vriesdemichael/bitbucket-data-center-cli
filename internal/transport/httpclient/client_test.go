@@ -24,27 +24,6 @@ func init() {
 	os.Setenv("BB_BLOCK_EXTERNAL_NETWORK", "1")
 }
 
-func TestHealthAuthenticated(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/rest/api/1.0/projects" {
-			http.NotFound(writer, request)
-			return
-		}
-		writer.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	client := NewFromConfig(config.AppConfig{BitbucketURL: server.URL})
-	health, err := client.Health(context.Background())
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	if !health.Healthy || !health.Authenticated {
-		t.Fatalf("expected healthy authenticated state, got: %+v", health)
-	}
-}
-
 func TestNewFromConfigTransportOptions(t *testing.T) {
 	client := NewFromConfig(config.AppConfig{
 		BitbucketURL:   "http://example.local",
@@ -61,23 +40,6 @@ func TestNewFromConfigTransportOptions(t *testing.T) {
 	}
 	if client.backoff != 333*time.Millisecond {
 		t.Fatalf("expected backoff 333ms, got %s", client.backoff)
-	}
-}
-
-func TestHealthUnauthorizedButReachable(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusUnauthorized)
-	}))
-	defer server.Close()
-
-	client := NewFromConfig(config.AppConfig{BitbucketURL: server.URL})
-	health, err := client.Health(context.Background())
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	if !health.Healthy || health.Authenticated {
-		t.Fatalf("expected healthy but unauthenticated state, got: %+v", health)
 	}
 }
 
@@ -301,6 +263,8 @@ func TestWriteJSONMethods(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — a refused connection and an exhausted retry
+// budget are conditions of the network, not answers from Bitbucket.
 func TestGetJSONTransportAndRetryExhaustion(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
@@ -683,6 +647,8 @@ func TestGetRawMapsStatusErrors(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the retry is the subject, and the statuses
+// that drive it are injected rather than claimed of any endpoint.
 func TestGetRawRetriesServerErrors(t *testing.T) {
 	var calls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -730,29 +696,6 @@ func TestGetRawTransientNetworkFailure(t *testing.T) {
 
 	if _, err := client.GetRaw(context.Background(), "/rest/api/latest/dropped", nil); err == nil || apperrors.ExitCode(err) != 10 {
 		t.Fatalf("expected transient exit code 10, got %v", err)
-	}
-}
-
-func TestCurrentUserSlugReadsResponseHeader(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/rest/api/latest/users" {
-			http.NotFound(writer, request)
-			return
-		}
-		writer.Header().Set("X-AUSERNAME", " alice ")
-		writer.Header().Set("Content-Type", "application/json")
-		_, _ = writer.Write([]byte(`{"values":[]}`))
-	}))
-	defer server.Close()
-
-	client := NewFromConfig(config.AppConfig{BitbucketURL: server.URL})
-
-	slug, err := client.CurrentUserSlug(context.Background())
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if slug != "alice" {
-		t.Fatalf("expected trimmed slug alice, got %q", slug)
 	}
 }
 
@@ -930,6 +873,8 @@ func TestDoRequestRetriesAndStatusErrors(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — exhausting the retry budget needs a server
+// that keeps failing, which is injected rather than asked of Bitbucket.
 func TestDoRequestRetryExhaustion(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -956,6 +901,8 @@ func TestDoRequestRetryExhaustion(t *testing.T) {
 //
 // doJSON routes POST, PUT and DELETE through this loop, so the same guard has
 // to hold here or the fix only covers half the tool.
+// mock-inventory: transport-fault — a server that fails and then succeeds is the
+// subject; no live Bitbucket produces one on request.
 func TestRetriesDoNotReplayMutations(t *testing.T) {
 	for _, testCase := range []struct {
 		name       string

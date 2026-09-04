@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -254,4 +255,101 @@ func TestAnAtomicCounterCountsAttemptsToo(t *testing.T) {
 	if got := classOf(t, source); got != ClassTransportFault {
 		t.Errorf("class = %q, want %q", got, ClassTransportFault)
 	}
+}
+
+// A directive in the test overrides the classifier, and has to say why.
+//
+// The classifier reads signals, and a retry test leaves the same ones a routing
+// test leaves: serve a path, answer a status. It has already been widened twice
+// in that direction, and each widening risks a wrong answer somewhere it was
+// previously right. A reviewed judgement recorded at the site ends that, but
+// only if it cannot be used to quietly silence an entry -- so an override
+// without a stated reason is ignored.
+func TestAReviewedDirectiveOverridesTheClassifier(t *testing.T) {
+	const behaviourMock = preamble + `
+func TestSomething(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/rest/api/latest/projects" {
+			_, _ = w.Write([]byte(` + "`" + `{"values":[],"isLastPage":true}` + "`" + `))
+		}
+	}))
+	defer server.Close()
+}
+`
+
+	if class := classOf(t, behaviourMock); class != ClassBehaviour {
+		t.Fatalf("the sample must classify as behaviour before the override means anything, got %q", class)
+	}
+
+	cases := []struct {
+		name      string
+		directive string
+		want      Class
+	}{
+		{
+			name:      "an em dash separator",
+			directive: "// mock-inventory: transport-fault — the failure is injected below the API\n",
+			want:      ClassTransportFault,
+		},
+		{
+			name:      "a plain hyphen separator",
+			directive: "// mock-inventory: transport-fault - the failure is injected below the API\n",
+			want:      ClassTransportFault,
+		},
+		{
+			name:      "no reason given",
+			directive: "// mock-inventory: transport-fault\n",
+			want:      ClassBehaviour,
+		},
+		{
+			name:      "a class that does not exist",
+			directive: "// mock-inventory: not-a-class — because I say so\n",
+			want:      ClassBehaviour,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			source := insertDirective(behaviourMock, testCase.directive)
+			if class := classOf(t, source); class != testCase.want {
+				t.Fatalf("class = %q, want %q", class, testCase.want)
+			}
+		})
+	}
+}
+
+// The override's reason replaces the generated one, so the task list says what
+// the person said rather than what the classifier would have.
+func TestAReviewedDirectiveCarriesItsReason(t *testing.T) {
+	const reason = "the failure is injected below the API"
+	source := insertDirective(preamble+`
+func TestSomething(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/rest/api/latest/projects" {
+			_, _ = w.Write([]byte("{}"))
+		}
+	}))
+	defer server.Close()
+}
+`, "// mock-inventory: transport-fault — "+reason+"\n")
+
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "sample_test.go"), []byte(source), 0o644); err != nil {
+		t.Fatalf("write sample: %v", err)
+	}
+	entries, err := scan(dir)
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("scan: %v (%d entries)", err, len(entries))
+	}
+
+	if !entries[0].Reviewed {
+		t.Error("expected the entry to be marked reviewed")
+	}
+	if entries[0].Reason != reason {
+		t.Errorf("reason = %q, want %q", entries[0].Reason, reason)
+	}
+}
+
+func insertDirective(source, directive string) string {
+	return strings.Replace(source, "func TestSomething(", directive+"func TestSomething(", 1)
 }

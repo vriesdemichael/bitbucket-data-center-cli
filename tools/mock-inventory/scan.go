@@ -50,7 +50,7 @@ func scan(root string) ([]entry, error) {
 			return nil
 		}
 
-		parsed, err := parser.ParseFile(fileSet, path, source, 0)
+		parsed, err := parser.ParseFile(fileSet, path, source, parser.ParseComments)
 		if err != nil {
 			return err
 		}
@@ -94,6 +94,18 @@ func scan(root string) ([]entry, error) {
 				class = ClassExternalService
 			}
 
+			// A reviewed judgement beats the heuristic, and says so in the
+			// source rather than by another round of tuning. The signals a
+			// retry test leaves are the same ones a routing test leaves --
+			// serve a path, answer a status -- so the classifier has already
+			// had to be widened twice in the same direction. Widening it again
+			// for each new shape trades a wrong answer here for a wrong answer
+			// somewhere it was previously right.
+			overriddenClass, overrideReason, overridden := reviewedClass(function.Doc)
+			if overridden {
+				class = overriddenClass
+			}
+
 			// A function that hands a handler to a helper is one mock, recorded
 			// where the handler is written rather than where the listener is
 			// opened.
@@ -105,6 +117,9 @@ func scan(root string) ([]entry, error) {
 
 			for _, site := range sites {
 				action, reason := disposition(class)
+				if overridden {
+					reason = overrideReason
+				}
 				entries = append(entries, entry{
 					File:     filepath.ToSlash(path),
 					Line:     fileSet.Position(site).Line,
@@ -113,6 +128,7 @@ func scan(root string) ([]entry, error) {
 					Signals:  signals,
 					Action:   action,
 					Reason:   reason,
+					Reviewed: overridden,
 				})
 			}
 		}
@@ -549,4 +565,58 @@ func sourceRange(source string, fileSet *token.FileSet, from, to token.Pos) stri
 	}
 
 	return source[start:end]
+}
+
+// reviewedClass reads a directive that overrides the classifier for one test.
+//
+//	// mock-inventory: transport-fault — why the heuristic is wrong here
+//
+// The reason is required, and is what appears in the task list in place of the
+// generated one. An override with no reason is ignored, so the directive cannot
+// be used to quietly silence an entry: saying which class and why is the whole
+// cost of disagreeing.
+func reviewedClass(doc *ast.CommentGroup) (Class, string, bool) {
+	if doc == nil {
+		return "", "", false
+	}
+
+	for _, comment := range doc.List {
+		text := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(comment.Text, "//"), "/*"))
+		if !strings.HasPrefix(text, directivePrefix) {
+			continue
+		}
+
+		body := strings.TrimSpace(strings.TrimPrefix(text, directivePrefix))
+		name, reason, found := strings.Cut(body, "—")
+		if !found {
+			// An em dash is the separator, but a plain hyphen surrounded by
+			// spaces is what most keyboards produce.
+			name, reason, found = strings.Cut(body, " - ")
+		}
+		if !found {
+			continue
+		}
+
+		class := Class(strings.TrimSpace(name))
+		reason = strings.TrimSpace(reason)
+		if reason == "" || !knownClass(class) {
+			continue
+		}
+
+		return class, reason, true
+	}
+
+	return "", "", false
+}
+
+const directivePrefix = "mock-inventory:"
+
+func knownClass(class Class) bool {
+	switch class {
+	case ClassBehaviour, ClassStatusTaxonomy, ClassTransportFault, ClassCannedResponse,
+		ClassExternalService, ClassUnreachedGuard, ClassHarnessConstructor, ClassUnclear:
+		return true
+	default:
+		return false
+	}
 }
