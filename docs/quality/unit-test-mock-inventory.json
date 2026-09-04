@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 523,
+    "mocked_servers": 517,
     "files": 96,
-    "functions": 496,
+    "functions": 490,
     "by_class": {
-      "bitbucket-behaviour": 313,
+      "bitbucket-behaviour": 307,
       "canned-response": 77,
       "external-service": 14,
       "harness-constructor": 19,
@@ -38,14 +38,14 @@
       "internal/cli/permissionchecker": 3,
       "internal/mcp": 5,
       "internal/openapi": 2,
-      "internal/services/branch": 4,
-      "internal/services/browse": 4,
+      "internal/services/branch": 2,
+      "internal/services/browse": 1,
       "internal/services/comment": 12,
       "internal/services/commit": 4,
       "internal/services/forksync": 1,
       "internal/services/gpgkey": 2,
       "internal/services/jira": 3,
-      "internal/services/project": 2,
+      "internal/services/project": 1,
       "internal/services/pullrequest": 16,
       "internal/services/pullrequestactivity": 2,
       "internal/services/quality": 7,
@@ -4183,21 +4183,6 @@
     {
       "file": "internal/services/branch/service_test.go",
       "line": 73,
-      "function": "TestBranchServicePaginationAndFilters",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/branch/service_test.go",
-      "line": 136,
       "function": "TestBranchServiceCreateFallbackBodyDecode",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4213,7 +4198,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 236,
+      "line": 173,
       "function": "TestBranchServiceEmptyResponsesAndTransientErrors",
       "class": "transport-fault",
       "signals": [
@@ -4229,7 +4214,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 314,
+      "line": 251,
       "function": "TestBranchServiceAdditionalValidationAndFallbackPaths",
       "class": "transport-fault",
       "signals": [
@@ -4246,7 +4231,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 401,
+      "line": 338,
       "function": "TestBranchServiceNotFoundAcrossOperations",
       "class": "status-taxonomy",
       "signals": [
@@ -4259,7 +4244,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 431,
+      "line": 368,
       "function": "TestBranchServiceTransientAcrossOperations",
       "class": "transport-fault",
       "signals": [
@@ -4272,20 +4257,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 468,
-      "function": "TestBranchServicePaginationLimit",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "returns-bitbucket-entity"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/branch/service_test.go",
-      "line": 499,
+      "line": 405,
       "function": "TestBranchServicePaginationEdgeCases",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4298,7 +4270,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 524,
+      "line": 430,
       "function": "TestBranchServiceMapsForbiddenToAuthorization",
       "class": "status-taxonomy",
       "signals": [
@@ -4311,7 +4283,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 21,
+      "line": 20,
       "function": "newBrowseTestService",
       "class": "harness-constructor",
       "signals": [
@@ -4322,7 +4294,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 40,
+      "line": 39,
       "function": "TestBrowseServiceCoreCommands",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -4337,7 +4309,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 81,
+      "line": 80,
       "function": "TestBrowseServiceValidation",
       "class": "unreached-guard",
       "signals": [
@@ -4351,7 +4323,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 101,
+      "line": 100,
       "function": "TestBrowseServicePagination",
       "class": "canned-response",
       "signals": [
@@ -4364,7 +4336,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 121,
+      "line": 120,
       "function": "TestBrowseServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -4380,7 +4352,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 200,
+      "line": 199,
       "function": "TestBrowseServiceEdit",
       "class": "transport-fault",
       "signals": [
@@ -4397,35 +4369,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 303,
-      "function": "TestBrowseServiceNestedPathsKeepSeparators",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/browse/service_test.go",
-      "line": 351,
-      "function": "TestBrowseServiceEscapesPathSegments",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/browse/service_test.go",
-      "line": 377,
+      "line": 299,
       "function": "TestBrowseServiceRejectsTraversal",
       "class": "unreached-guard",
       "signals": [
@@ -4438,21 +4382,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 448,
-      "function": "TestBrowseServiceTreeNestedPathKeepsSeparators",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/browse/service_test.go",
-      "line": 480,
+      "line": 367,
       "function": "TestBrowseServiceTreeRejectsTraversal",
       "class": "unreached-guard",
       "signals": [
@@ -4465,7 +4395,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 491,
+      "line": 378,
       "function": "TestBrowseServiceTreeStopsOnRepeatedNextPageStart",
       "class": "canned-response",
       "signals": [
@@ -4478,7 +4408,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 515,
+      "line": 402,
       "function": "TestBrowseServiceMapsForbiddenToAuthorization",
       "class": "status-taxonomy",
       "signals": [
@@ -5339,20 +5269,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 229,
-      "function": "TestProjectServicePaginationLimit",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-query-parameters",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/project/service_test.go",
-      "line": 261,
+      "line": 227,
       "function": "TestProjectServicePaginationEdgeCases",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5365,7 +5282,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 285,
+      "line": 251,
       "function": "TestProjectServiceMapsForbiddenToAuthorization",
       "class": "status-taxonomy",
       "signals": [

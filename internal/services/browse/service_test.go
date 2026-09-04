@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -297,83 +296,6 @@ func TestBrowseServiceEdit(t *testing.T) {
 	})
 }
 
-// TestBrowseServiceNestedPathsKeepSeparators guards the bug this endpoint had
-// before: the generated client escaped "/" to "%2F", which Bitbucket rejects.
-// Separators must survive as real path separators.
-func TestBrowseServiceNestedPathsKeepSeparators(t *testing.T) {
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-	var gotRawPath string
-	var gotEscapedPath string
-	var gotQuery url.Values
-	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		gotRawPath = r.URL.EscapedPath()
-		gotEscapedPath = r.URL.Path
-		gotQuery = r.URL.Query()
-
-		// /raw streams bytes, /browse and /files answer with JSON.
-		if strings.Contains(r.URL.Path, "/raw/") {
-			_, _ = w.Write([]byte("ok"))
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"lines":[{"text":"ok"}]}`))
-	})
-
-	if _, err := service.Raw(context.Background(), repo, "src/main/java/App.java", "refs/heads/main"); err != nil {
-		t.Fatalf("expected raw success, got %v", err)
-	}
-
-	wantPath := "/rest/api/latest/projects/TEST/repos/demo/raw/src/main/java/App.java"
-	if gotEscapedPath != wantPath {
-		t.Fatalf("expected path %q, got %q", wantPath, gotEscapedPath)
-	}
-	if strings.Contains(gotRawPath, "%2F") {
-		t.Fatalf("path separators must not be percent-encoded, got %q", gotRawPath)
-	}
-	if gotQuery.Get("at") != "refs/heads/main" {
-		t.Fatalf("expected at=refs/heads/main, got %q", gotQuery.Get("at"))
-	}
-
-	if _, err := service.File(context.Background(), repo, "docs/readme.md", FileOptions{Blame: true}); err != nil {
-		t.Fatalf("expected file success, got %v", err)
-	}
-	if gotEscapedPath != "/rest/api/latest/projects/TEST/repos/demo/browse/docs/readme.md" {
-		t.Fatalf("unexpected browse path %q", gotEscapedPath)
-	}
-	if gotQuery.Get("blame") != "true" {
-		t.Fatalf("expected blame=true, got %q", gotQuery.Get("blame"))
-	}
-}
-
-// TestBrowseServiceEscapesPathSegments checks that characters which would
-// otherwise reshape the request URL are escaped inside each segment.
-func TestBrowseServiceEscapesPathSegments(t *testing.T) {
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-	var gotPath string
-	var gotQuery url.Values
-	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		gotQuery = r.URL.Query()
-		_, _ = w.Write([]byte("ok"))
-	})
-
-	// A "?" in a filename must stay part of the path, not start a query, and
-	// must not let a caller smuggle in their own parameters.
-	if _, err := service.Raw(context.Background(), repo, "weird/na?me=x&at=evil.txt", ""); err != nil {
-		t.Fatalf("expected raw success, got %v", err)
-	}
-
-	wantPath := "/rest/api/latest/projects/TEST/repos/demo/raw/weird/na?me=x&at=evil.txt"
-	if gotPath != wantPath {
-		t.Fatalf("expected literal path %q, got %q", wantPath, gotPath)
-	}
-	if gotQuery.Get("at") != "" || gotQuery.Get("me") != "" {
-		t.Fatalf("path characters leaked into the query: %v", gotQuery)
-	}
-}
-
 func TestBrowseServiceRejectsTraversal(t *testing.T) {
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
@@ -439,41 +361,6 @@ func TestRepositoryAPIPathEscapesRepositoryRef(t *testing.T) {
 	want := "/rest/api/latest/projects/a%20b/repos/c%2Fd/raw/file.txt"
 	if got != want {
 		t.Fatalf("repositoryAPIPath = %q, want %q", got, want)
-	}
-}
-
-// TestBrowseServiceTreeNestedPathKeepsSeparators covers the same encoding bug as
-// the raw and browse endpoints: /files takes the directory as a trailing
-// wildcard, so "/" must survive rather than becoming "%2F".
-func TestBrowseServiceTreeNestedPathKeepsSeparators(t *testing.T) {
-	var gotEscapedPath string
-	var gotQuery url.Values
-	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		gotEscapedPath = r.URL.EscapedPath()
-		gotQuery = r.URL.Query()
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"isLastPage":true,"values":["App.java"]}`))
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-	files, err := service.Tree(context.Background(), repo, "src/main/java", TreeOptions{PageSize: 10, At: "refs/heads/main"})
-	if err != nil {
-		t.Fatalf("expected tree success, got %v", err)
-	}
-	if len(files) != 1 || files[0] != "App.java" {
-		t.Fatalf("unexpected tree result %#v", files)
-	}
-
-	wantPath := "/rest/api/latest/projects/TEST/repos/demo/files/src/main/java"
-	if gotEscapedPath != wantPath {
-		t.Fatalf("expected path %q, got %q", wantPath, gotEscapedPath)
-	}
-	if strings.Contains(gotEscapedPath, "%2F") {
-		t.Fatalf("path separators must not be percent-encoded, got %q", gotEscapedPath)
-	}
-	if gotQuery.Get("at") != "refs/heads/main" || gotQuery.Get("limit") != "10" {
-		t.Fatalf("unexpected query %v", gotQuery)
 	}
 }
 
