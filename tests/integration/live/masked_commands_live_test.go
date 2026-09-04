@@ -114,6 +114,20 @@ func TestLiveReviewerGroupUpdate(t *testing.T) {
 		t.Fatalf("create reviewer group failed: %v", err)
 	}
 
+	// The dry run has to reach the same conclusion as the run. It resolved the
+	// argument as a numeric id only, so a group addressed by name was predicted
+	// "blocked: reviewer group not found" by the preview and renamed by the
+	// command -- a preview that contradicts the run is worse than none.
+	preview := mustLiveCLI(t, "--dry-run", "reviewer-group", "update", original,
+		"--name", "after_rename", "--repo", repoRef)
+	if !strings.Contains(preview, `"predictedAction": "update"`) {
+		t.Fatalf("the dry run disagrees with the run it previews:\n%s", preview)
+	}
+
+	if listing := mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef); !strings.Contains(listing, original) {
+		t.Fatalf("the dry run renamed the group:\n%s", listing)
+	}
+
 	mustLiveCLI(t, "reviewer-group", "update", original, "--name", "after_rename", "--repo", repoRef)
 
 	listing := mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef)

@@ -187,24 +187,34 @@ func formatReviewSummaryLines(summary pullrequestservice.ReviewSummary) []string
 	return lines
 }
 
+// resolveReviewCounts obtains the best counts it can. walkTimeline false skips
+// the paged activity walk and settles for the task tally, which is one request.
+//
+// Skipping the walk must not mean counting nothing. Bitbucket 10.x omits the
+// property counters from the single pull request endpoint, so with no cheap
+// lookup the summary would report "not checked" every time -- an exact open
+// task count is available for one request and is worth having.
 func resolveReviewCounts(
 	ctx context.Context,
 	client *openapigenerated.ClientWithResponses,
 	repo pullrequestservice.RepositoryRef,
 	pullRequestID string,
+	walkTimeline bool,
 ) (pullrequestservice.ReviewCounts, error) {
-	activityService := pullrequestactivityservice.NewService(client)
-	threads, err := activityService.TrySummarize(
-		ctx,
-		pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
-		pullRequestID,
-		reviewSummaryPageSize,
-	)
-	if err != nil {
-		return pullrequestservice.ReviewCounts{}, err
-	}
-	if threads != nil {
-		return pullrequestservice.ReviewCounts{Threads: threads}, nil
+	if walkTimeline {
+		activityService := pullrequestactivityservice.NewService(client)
+		threads, err := activityService.TrySummarize(
+			ctx,
+			pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+			pullRequestID,
+			reviewSummaryPageSize,
+		)
+		if err != nil {
+			return pullrequestservice.ReviewCounts{}, err
+		}
+		if threads != nil {
+			return pullrequestservice.ReviewCounts{Threads: threads}, nil
+		}
 	}
 
 	tasks, err := commentservice.NewService(client).CountTasks(ctx, commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, pullRequestID)
@@ -227,7 +237,7 @@ func collectReviewSummaries(
 	summaries := make([]pullrequestservice.ReviewSummary, len(pullRequests))
 
 	for index, pullRequest := range pullRequests {
-		counts, err := resolveReviewCounts(ctx, client, repo, strconv.FormatInt(pullRequest.ID, 10))
+		counts, err := resolveReviewCounts(ctx, client, repo, strconv.FormatInt(pullRequest.ID, 10), true)
 		if err != nil {
 			return nil, err
 		}

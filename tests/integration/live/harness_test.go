@@ -862,6 +862,25 @@ func (h *liveHarness) createLicensedUser(ctx context.Context) (restrictedUser, e
 // liveJSON sends an authenticated request to the Bitbucket REST API and decodes
 // the response, using whichever credential the harness was configured with.
 func (h *liveHarness) liveJSON(ctx context.Context, method, path string, payload any) (map[string]any, error) {
+	return h.sendLiveJSON(ctx, func(request *http.Request) {
+		if h.config.BitbucketToken != "" {
+			request.Header.Set("Authorization", "Bearer "+h.config.BitbucketToken)
+		} else if h.config.BitbucketUsername != "" && h.config.BitbucketPassword != "" {
+			request.SetBasicAuth(h.config.BitbucketUsername, h.config.BitbucketPassword)
+		}
+	}, method, path, payload)
+}
+
+// liveJSONAs is liveJSON as somebody else. A review status belongs to the
+// participant who holds it, so a test that needs a reviewer to have asked for
+// changes has to ask as that reviewer.
+func (h *liveHarness) liveJSONAs(ctx context.Context, user restrictedUser, method, path string, payload any) (map[string]any, error) {
+	return h.sendLiveJSON(ctx, func(request *http.Request) {
+		request.SetBasicAuth(user.Username, user.Password)
+	}, method, path, payload)
+}
+
+func (h *liveHarness) sendLiveJSON(ctx context.Context, authorize func(*http.Request), method, path string, payload any) (map[string]any, error) {
 	var reader io.Reader
 	if payload != nil {
 		encoded, err := json.Marshal(payload)
@@ -881,11 +900,7 @@ func (h *liveHarness) liveJSON(ctx context.Context, method, path string, payload
 		request.Header.Set("Content-Type", "application/json")
 	}
 
-	if h.config.BitbucketToken != "" {
-		request.Header.Set("Authorization", "Bearer "+h.config.BitbucketToken)
-	} else if h.config.BitbucketUsername != "" && h.config.BitbucketPassword != "" {
-		request.SetBasicAuth(h.config.BitbucketUsername, h.config.BitbucketPassword)
-	}
+	authorize(request)
 
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
