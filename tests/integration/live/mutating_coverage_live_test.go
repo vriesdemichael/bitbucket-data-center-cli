@@ -4,6 +4,7 @@ package live_test
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -518,4 +519,110 @@ func currentLivePRSourceCommit(t *testing.T, prID string) string {
 	}
 
 	return commit
+}
+
+// TestLiveDefaultTaskUpdateKeepsItsMatchers is the #511 defect in another
+// place, found by asking the same question of every update command: does
+// changing one field quietly change another.
+//
+// A default task carries two ref matchers, and both are mandatory on the wire.
+// On create an unset flag rightly becomes an any-ref matcher; update reused
+// that reasoning, so `--description` on a task scoped to feature/* -> main reset
+// both matchers and the checklist started applying to every pull request. The
+// output said nothing.
+func TestLiveDefaultTaskUpdateKeepsItsMatchers(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	t.Run("repository scope", func(t *testing.T) {
+		created := mustLiveCLI(t, "repo", "default-task", "add", "Check the changelog",
+			"--repo", repoRef, "--source-ref", "feature/*", "--target-ref", "main")
+		id := taskIDFrom(t, decodeJSONMap(t, created), "task")
+
+		updated := mustLiveCLI(t, "repo", "default-task", "update", id,
+			"--repo", repoRef, "--description", "Check the changelog and the ADR")
+		assertTaskMatchers(t, decodeJSONMap(t, updated), "task", "feature/*", "main")
+
+		// The escape hatch still has to exist: an empty ref widens on purpose.
+		widened := mustLiveCLI(t, "repo", "default-task", "update", id,
+			"--repo", repoRef, "--description", "Check the changelog and the ADR", "--source-ref", "")
+		assertTaskMatchers(t, decodeJSONMap(t, widened), "task", anyRefMatcher, "main")
+
+		// And an explicit ref still changes the one it names, only.
+		retargeted := mustLiveCLI(t, "repo", "default-task", "update", id,
+			"--repo", repoRef, "--description", "Check the changelog and the ADR", "--target-ref", "develop")
+		assertTaskMatchers(t, decodeJSONMap(t, retargeted), "task", anyRefMatcher, "develop")
+	})
+
+	t.Run("project scope", func(t *testing.T) {
+		created := mustLiveCLI(t, "project", "default-task", "add", seeded.Key, "Sign the release",
+			"--source-ref", "release/*", "--target-ref", "main")
+		id := taskIDFrom(t, decodeJSONMap(t, created), "")
+
+		updated := mustLiveCLI(t, "project", "default-task", "update", seeded.Key, id,
+			"--description", "Sign the release notes")
+		assertTaskMatchers(t, decodeJSONMap(t, updated), "", "release/*", "main")
+	})
+}
+
+// anyRefMatcher is the id Bitbucket echoes for "matches any ref". It is not the
+// value that is sent to set one, which is ANY_REF.
+const anyRefMatcher = "ANY_REF_MATCHER_ID"
+
+func taskIDFrom(t *testing.T, data map[string]any, wrapper string) string {
+	t.Helper()
+
+	task := taskPayload(t, data, wrapper)
+	id, ok := task["id"]
+	if !ok {
+		t.Fatalf("no task id in: %v", data)
+	}
+
+	return fmt.Sprintf("%v", id)
+}
+
+func assertTaskMatchers(t *testing.T, data map[string]any, wrapper, wantSource, wantTarget string) {
+	t.Helper()
+
+	task := taskPayload(t, data, wrapper)
+	for _, check := range []struct {
+		key  string
+		want string
+	}{
+		{"sourceMatcher", wantSource},
+		{"targetMatcher", wantTarget},
+	} {
+		matcher, ok := task[check.key].(map[string]any)
+		if !ok {
+			t.Fatalf("no %s in: %v", check.key, task)
+		}
+		if got, _ := matcher["displayId"].(string); got != check.want {
+			t.Errorf("%s = %q, want %q", check.key, got, check.want)
+		}
+	}
+}
+
+// taskPayload unwraps the task from a response, which the repository-scoped
+// command nests under "task" and the project-scoped one does not.
+func taskPayload(t *testing.T, data map[string]any, wrapper string) map[string]any {
+	t.Helper()
+
+	if wrapper == "" {
+		return data
+	}
+	task, ok := data[wrapper].(map[string]any)
+	if !ok {
+		t.Fatalf("no %q object in: %v", wrapper, data)
+	}
+
+	return task
 }
