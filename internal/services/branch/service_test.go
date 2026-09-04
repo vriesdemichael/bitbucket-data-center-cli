@@ -28,8 +28,10 @@ func newBranchTestService(t *testing.T, handler http.HandlerFunc) *Service {
 
 func TestBranchServiceValidationAndHelpers(t *testing.T) {
 	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte("forbidden"))
+		// Every case here is refused before a request is built, so the handler
+		// is an assertion rather than a stand-in: reaching it means a guard
+		// let something through (ADR-079).
+		t.Errorf("validation let a request through: %s %s", r.Method, r.URL.Path)
 	})
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
@@ -45,10 +47,6 @@ func TestBranchServiceValidationAndHelpers(t *testing.T) {
 	}
 	if _, err := service.FindByCommit(context.Background(), repo, "", 10); err == nil {
 		t.Fatal("expected commit validation error")
-	}
-
-	if _, err := service.List(context.Background(), repo, ListOptions{}); err == nil || !strings.Contains(err.Error(), "authorization") {
-		t.Fatalf("expected mapped authorization error, got %v", err)
 	}
 
 	if _, err := service.ListRestrictions(context.Background(), repo, RestrictionListOptions{MatcherType: "bad"}); err == nil {
@@ -514,5 +512,24 @@ func TestBranchServicePaginationEdgeCases(t *testing.T) {
 	}
 	if len(branches) != 3 {
 		t.Errorf("expected 3 branches, got %d", len(branches))
+	}
+}
+
+// TestBranchServiceMapsForbiddenToAuthorization is the half of the validation test that needs a server.
+//
+// A 403 has to become an authorization error, and that mapping is about our
+// taxonomy rather than about when Bitbucket refuses a call -- the status is
+// supplied here, not claimed. It lives apart so the validation cases beside it
+// can assert that nothing is sent at all.
+func TestBranchServiceMapsForbiddenToAuthorization(t *testing.T) {
+	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte("forbidden"))
+	})
+
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	if _, err := service.List(context.Background(), repo, ListOptions{}); err == nil || !strings.Contains(err.Error(), "authorization") {
+		t.Fatalf("expected mapped authorization error, got %v", err)
 	}
 }
