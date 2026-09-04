@@ -89,6 +89,17 @@ func main() {
 		fail("failed to scan live tests: %v", err)
 	}
 
+	if len(invoked.unreadable) > 0 {
+		for _, site := range invoked.unreadable {
+			fmt.Fprintln(os.Stderr, "FAIL: "+site)
+		}
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "A command reached through an unreadable call is missing from the report,")
+		fmt.Fprintln(os.Stderr, "which lowers reach without saying so. Keep the command words in the slice")
+		fmt.Fprintln(os.Stderr, "literal the call spreads, or teach stringSliceLiterals the new shape.")
+		os.Exit(1)
+	}
+
 	current := buildReport(runnable, invoked)
 	printSummary(current)
 
@@ -160,6 +171,9 @@ type invocations struct {
 	asserted map[string]struct{}
 	// masked holds commands invoked for real only by tests that skip on error.
 	masked map[string]struct{}
+	// unreadable holds call sites whose command words the scanner could not
+	// read, so a blind spot is reported rather than silently lowering reach.
+	unreadable []string
 	// dryRun holds commands only ever invoked with --dry-run.
 	//
 	// A --dry-run invocation exercises the planning path and deliberately does
@@ -209,7 +223,8 @@ func discoverLiveInvocations(dir string, valueFlags map[string]bool) (invocation
 				continue
 			}
 
-			real, dryRun := commandsInvokedBy(function, valueFlags, invokers, dryRunInvokers)
+			real, dryRun, unreadable := commandsInvokedBy(function, valueFlags, invokers, dryRunInvokers, fileSet, path)
+			found.unreadable = append(found.unreadable, unreadable...)
 			if len(real) == 0 && len(dryRun) == 0 {
 				continue
 			}
@@ -421,10 +436,11 @@ func callsAnyOf(body *ast.BlockStmt, invokers map[string]int) bool {
 	return found
 }
 
-func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool, invokers map[string]int, dryRunInvokers map[string]bool) (real, dryRun map[string]struct{}) {
+func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool, invokers map[string]int, dryRunInvokers map[string]bool, fileSet *token.FileSet, path string) (real, dryRun map[string]struct{}, unreadable []string) {
 	real = map[string]struct{}{}
 	dryRun = map[string]struct{}{}
 	argumentSlices := stringSliceLiterals(function)
+	tableRows := rangedTableRows(function)
 
 	ast.Inspect(function.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
@@ -448,36 +464,137 @@ func commandsInvokedBy(function *ast.FuncDecl, valueFlags map[string]bool, invok
 		// went unnoticed, because a --dry-run call elsewhere covered for them.
 		// The words themselves: the receiver, and the stdin or callback argument
 		// where there is one, are already behind leadingArgs.
-		args := call.Args[leadingArgs:]
-		if call.Ellipsis.IsValid() && len(args) == 1 {
-			identifier, ok := args[0].(*ast.Ident)
-			if !ok {
+		candidates := [][]ast.Expr{call.Args[leadingArgs:]}
+		if call.Ellipsis.IsValid() && len(call.Args[leadingArgs:]) == 1 {
+			// A spread whose words cannot be read is reported rather than
+			// skipped. Skipping is what made `repo comment update` look
+			// uncovered, and the mistake was invisible: the command simply did
+			// not appear, and a --dry-run call elsewhere covered for it.
+			//
+			// Resolving arbitrary Go is not the job here. Saying plainly that
+			// this call could not be read is, so the author either keeps the
+			// words in the literal or teaches the scanner the new shape.
+			resolved, reason := spreadElements(call.Args[leadingArgs], argumentSlices, tableRows)
+			if reason != "" {
+				unreadable = append(unreadable, describeCall(fileSet, path, call, reason))
+
 				return true
 			}
-			elements, ok := argumentSlices[identifier.Name]
-			if !ok {
-				return true
-			}
-			args = elements
+			candidates = resolved
 		}
 
-		path, isDryRun := commandPathFromArgs(args, valueFlags)
-		// A helper that supplies --dry-run itself makes every one of its
-		// callers a dry run, however the call site reads.
-		isDryRun = isDryRun || dryRunInvokers[identifier.Name]
-		if path == "" {
-			return true
-		}
-		if isDryRun {
-			dryRun[path] = struct{}{}
-		} else {
-			real[path] = struct{}{}
+		for _, args := range candidates {
+			commandPath, isDryRun := commandPathFromArgs(args, valueFlags)
+			// A helper that supplies --dry-run itself makes every one of its
+			// callers a dry run, however the call site reads.
+			isDryRun = isDryRun || dryRunInvokers[identifier.Name]
+			if commandPath == "" {
+				continue
+			}
+			if isDryRun {
+				dryRun[commandPath] = struct{}{}
+
+				continue
+			}
+			real[commandPath] = struct{}{}
 		}
 
 		return true
 	})
 
-	return real, dryRun
+	return real, dryRun, unreadable
+}
+
+// rangedTableRows maps each range variable over a table literal to the word
+// lists its rows carry.
+//
+// A table-driven test spreads one row per iteration -- `executeLiveCLI(t,
+// testCase.args...)` over a []struct{args []string} literal, or `args...` over
+// a [][]string one. The call site is a single expression standing for several
+// invocations, so every []string{...} inside the table counts as one.
+func rangedTableRows(function *ast.FuncDecl) map[string][][]ast.Expr {
+	tables := map[string][][]ast.Expr{}
+
+	// Tables assigned to a name first, so `range tests` can find them.
+	literals := map[string]*ast.CompositeLit{}
+	ast.Inspect(function.Body, func(n ast.Node) bool {
+		assign, ok := n.(*ast.AssignStmt)
+		if !ok || len(assign.Lhs) != 1 || len(assign.Rhs) != 1 {
+			return true
+		}
+		name, ok := assign.Lhs[0].(*ast.Ident)
+		if !ok {
+			return true
+		}
+		if literal, ok := assign.Rhs[0].(*ast.CompositeLit); ok {
+			literals[name.Name] = literal
+		}
+
+		return true
+	})
+
+	ast.Inspect(function.Body, func(n ast.Node) bool {
+		loop, ok := n.(*ast.RangeStmt)
+		if !ok || loop.Value == nil {
+			return true
+		}
+		variable, ok := loop.Value.(*ast.Ident)
+		if !ok || variable.Name == "_" {
+			return true
+		}
+
+		var table *ast.CompositeLit
+		switch source := loop.X.(type) {
+		case *ast.CompositeLit:
+			table = source
+		case *ast.Ident:
+			table = literals[source.Name]
+		}
+		if table == nil {
+			return true
+		}
+
+		rows := [][]ast.Expr{}
+		ast.Inspect(table, func(inner ast.Node) bool {
+			literal, ok := inner.(*ast.CompositeLit)
+			if !ok {
+				return true
+			}
+			// Inside a [][]string the element type is elided, so a row reads as
+			// {"browse", "--wiki"} with no type at all. Missing that case left
+			// the whole table unreadable.
+			if !isStringSliceType(literal.Type) && !(literal.Type == nil && allStringLiterals(literal.Elts)) {
+				return true
+			}
+			rows = append(rows, literal.Elts)
+
+			return true
+		})
+		if len(rows) > 0 {
+			tables[variable.Name] = rows
+		}
+
+		return true
+	})
+
+	return tables
+}
+
+// allStringLiterals reports whether every element is a string constant, which
+// is what an elided row of a [][]string looks like.
+func allStringLiterals(elements []ast.Expr) bool {
+	if len(elements) == 0 {
+		return false
+	}
+
+	for _, element := range elements {
+		literal, ok := element.(*ast.BasicLit)
+		if !ok || literal.Kind != token.STRING {
+			return false
+		}
+	}
+
+	return true
 }
 
 // stringSliceLiterals maps each local []string{...} in a function to its
@@ -527,6 +644,67 @@ func isStringSliceType(expr ast.Expr) bool {
 	identifier, ok := arrayType.Elt.(*ast.Ident)
 
 	return ok && identifier.Name == "string"
+}
+
+// spreadElements reads the command words out of whatever a call spreads, or
+// says why it could not.
+//
+// Three shapes appear in the live tests, and all three put the words in a
+// literal: the variable, the literal written at the call site, and an append
+// onto a literal -- `executeLiveCLI(t, append([]string{"--json", "pr", ...},
+// args...)...)`. The trailing arguments of an append are flags that follow the
+// command, which the path scan stops at anyway.
+func spreadElements(expr ast.Expr, argumentSlices map[string][]ast.Expr, tableRows map[string][][]ast.Expr) (candidates [][]ast.Expr, reason string) {
+	switch value := expr.(type) {
+	case *ast.Ident:
+		if rows, known := tableRows[value.Name]; known {
+			return rows, ""
+		}
+		found, known := argumentSlices[value.Name]
+		if !known {
+			return nil, fmt.Sprintf("%s is not assigned a []string{...} literal in this function", value.Name)
+		}
+
+		return [][]ast.Expr{found}, ""
+
+	case *ast.SelectorExpr:
+		// `testCase.args` in a table-driven test: the rows carry the words in a
+		// field, and the range variable is what names them.
+		receiver, ok := value.X.(*ast.Ident)
+		if !ok {
+			return nil, "the spread argument is a field of something this scanner cannot read"
+		}
+		rows, known := tableRows[receiver.Name]
+		if !known {
+			return nil, fmt.Sprintf("%s is not a range variable over a table literal in this function", receiver.Name)
+		}
+
+		return rows, ""
+
+	case *ast.CompositeLit:
+		if !isStringSliceType(value.Type) {
+			return nil, "the spread literal is not a []string"
+		}
+
+		return [][]ast.Expr{value.Elts}, ""
+
+	case *ast.CallExpr:
+		identifier, ok := value.Fun.(*ast.Ident)
+		if !ok || identifier.Name != "append" || len(value.Args) == 0 {
+			return nil, "the spread argument is a call this scanner cannot read"
+		}
+
+		return spreadElements(value.Args[0], argumentSlices, tableRows)
+
+	default:
+		return nil, "the spread argument is neither a variable nor a slice literal"
+	}
+}
+
+// describeCall names a call site the scanner could not read, so the report says
+// where to look rather than quietly leaving a command out.
+func describeCall(fileSet *token.FileSet, path string, call *ast.CallExpr, reason string) string {
+	return fmt.Sprintf("%s:%d: cannot read the command words (%s)", path, fileSet.Position(call.Pos()).Line, reason)
 }
 
 // skipsOnError reports whether a test can end itself as skipped because a call

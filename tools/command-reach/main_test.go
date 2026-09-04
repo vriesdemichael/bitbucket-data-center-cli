@@ -560,3 +560,91 @@ func TestPreview(t *testing.T) {
 		t.Errorf("expected the wrapped call to be recorded as a dry run; dryRun=%v", keysOf(found.dryRun))
 	}
 }
+
+// The scanner used to skip a call whose words it could not read, which is how
+// `repo comment update` looked uncovered: the command simply did not appear,
+// and a --dry-run call elsewhere covered for it. A blind spot that lowers reach
+// without saying so is the failure this tool exists to prevent, so an
+// unreadable call is now reported.
+func TestAnUnreadableCallIsReportedRatherThanSkipped(t *testing.T) {
+	dir := writeLiveTestFile(t, `package live_test
+
+func TestBuiltUpAcrossStatements(t *testing.T) {
+	var args []string
+	args = append(args, "repo", "delete")
+	if _, err := executeLiveCLI(t, args...); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+}
+`)
+
+	found, err := discoverLiveInvocations(dir, map[string]bool{})
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
+
+	if len(found.unreadable) == 0 {
+		t.Fatal("a call whose words cannot be read must be reported, not skipped")
+	}
+	if !strings.Contains(found.unreadable[0], "sample_live_test.go:6") {
+		t.Errorf("the report must name the call site, got: %s", found.unreadable[0])
+	}
+}
+
+// Three shapes put the words somewhere the literal-only scan could not see, and
+// all three appear in the live suite. Each was found by the report above rather
+// than by anyone noticing a command had gone missing.
+func TestTheShapesTheScannerCanRead(t *testing.T) {
+	dir := writeLiveTestFile(t, `package live_test
+
+func TestInlineAppend(t *testing.T) {
+	if _, err := executeLiveCLI(t, append([]string{"--json", "pr", "comment", "add", prID}, extra...)...); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+}
+
+func TestTableOfStructs(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "list", args: []string{"tag", "list"}},
+		{name: "get", args: []string{"repo", "archive"}},
+	}
+	for _, testCase := range tests {
+		if _, err := executeLiveCLI(t, testCase.args...); err != nil {
+			t.Fatalf("failed: %v", err)
+		}
+	}
+}
+
+func TestTableOfSlices(t *testing.T) {
+	unsupported := [][]string{
+		{"browse", "--wiki"},
+		{"branch", "list"},
+	}
+	for _, args := range unsupported {
+		if _, err := executeLiveCLI(t, args...); err != nil {
+			t.Fatalf("failed: %v", err)
+		}
+	}
+}
+`)
+
+	found, err := discoverLiveInvocations(dir, map[string]bool{})
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
+	if len(found.unreadable) > 0 {
+		t.Fatalf("these shapes must all be readable, got: %v", found.unreadable)
+	}
+
+	runnable := []string{"pr comment add", "tag list", "repo archive", "browse", "branch list"}
+	resolved := resolveInvocations(runnable, found.asserted)
+
+	for _, command := range runnable {
+		if _, ok := resolved[command]; !ok {
+			t.Errorf("%q was not found; asserted=%v", command, keysOf(found.asserted))
+		}
+	}
+}

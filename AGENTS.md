@@ -19,6 +19,36 @@ Then break each new test by reverting its own fix and watch it fail. A test
 written after the fix, against a mock built from the same assumption, proves
 nothing: it agrees with the code because both agree with the same guess.
 
+### What a unit mock is for, and what it is not
+
+A unit mock encodes what the author believed the server does. When that belief
+is the bug, the mock agrees with the code and the test passes. So mocks are not
+the correctness gate here and no effort is spent making them mimic Bitbucket's
+undocumented behaviour; the live suite is the gate, and command reach is what
+says the gate is actually closed.
+
+That only holds while every runnable command has a real, mutating live
+invocation. It does now, and `tools/command-reach -verify` fails if one slips
+back to dry-run-only or disappears. If that gate ever weakens, the lenient mocks
+start hiding untested production paths again and this trade stops being safe.
+
+What a mock still earns its place doing: pinning a behaviour you have already
+confirmed live, so the reason is recorded and a regression is caught in seconds
+rather than minutes. Write it to reject what the real server rejects -- the
+transition mocks now refuse a missing version, because accepting one is exactly
+what let three broken commands pass.
+
+### Writing a live test the scanner can read
+
+`tools/command-reach` finds invocations by parsing the tests, so a call it
+cannot read is a command missing from the report. It no longer skips those
+quietly: an unreadable call site fails the tool by name.
+
+It reads the words from a literal at the call site, a `[]string` variable, an
+`append` onto either, a helper that forwards its variadic arguments, and a table
+ranged over in the usual two shapes. It cannot follow a slice built up across
+statements. Keep the command words in the literal.
+
 ### Why the live test is not optional
 
 Every defect this project has shipped has the same shape: Bitbucket disagreeing
