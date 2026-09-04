@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 544,
+    "mocked_servers": 527,
     "files": 96,
-    "functions": 512,
+    "functions": 500,
     "by_class": {
-      "bitbucket-behaviour": 337,
+      "bitbucket-behaviour": 320,
       "canned-response": 77,
       "external-service": 14,
       "harness-constructor": 19,
@@ -46,12 +46,12 @@
       "internal/services/gpgkey": 2,
       "internal/services/jira": 3,
       "internal/services/project": 4,
-      "internal/services/pullrequest": 25,
+      "internal/services/pullrequest": 16,
       "internal/services/pullrequestactivity": 2,
       "internal/services/quality": 7,
       "internal/services/reposettings": 5,
       "internal/services/repository": 5,
-      "internal/services/reviewer": 15,
+      "internal/services/reviewer": 7,
       "internal/services/sshkey": 2,
       "internal/services/tag": 4,
       "internal/transport/httpclient": 17
@@ -5578,39 +5578,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 178,
-      "function": "TestPullRequestLifecycleAndReviewOperations",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 310,
-      "function": "TestCreatePullRequestWithReviewers",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 363,
+      "line": 199,
       "function": "TestGetPRBuildStatusesValidation",
       "class": "canned-response",
       "signals": [
@@ -5622,7 +5590,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 391,
+      "line": 227,
       "function": "TestGetBuildStatusesPaginationStuck",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5636,37 +5604,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 597,
-      "function": "TestAutoMergeGetAndDisable",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 676,
-      "function": "TestWatchUnwatchRebase",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 797,
+      "line": 504,
       "function": "TestWatchUnwatchRebaseAPIErrors",
       "class": "canned-response",
       "signals": [
@@ -5680,7 +5618,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 838,
+      "line": 545,
       "function": "TestListPullRequestsContainingCommitAndSearchParticipants",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5696,7 +5634,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 926,
+      "line": 633,
       "function": "TestListPullRequestsContainingCommitAndSearchParticipantsAPIErrors",
       "class": "canned-response",
       "signals": [
@@ -5710,7 +5648,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 959,
+      "line": 666,
       "function": "newCommentTestService",
       "class": "harness-constructor",
       "signals": [
@@ -5721,7 +5659,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 973,
+      "line": 680,
       "function": "TestNeedsWorkSetsParticipantStatus",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5737,7 +5675,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1015,
+      "line": 722,
       "function": "TestNeedsWorkValidation",
       "class": "unreached-guard",
       "signals": [
@@ -5750,7 +5688,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1028,
+      "line": 735,
       "function": "TestNeedsWorkPropagatesUserLookupFailure",
       "class": "canned-response",
       "signals": [
@@ -5763,22 +5701,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1040,
-      "function": "TestAddCommentPlainAndReply",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-request-body",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 1083,
+      "line": 747,
       "function": "TestAddCommentValidation",
       "class": "unreached-guard",
       "signals": [
@@ -5791,33 +5714,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1101,
-      "function": "TestAddInlineCommentBuildsAnchor",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "asserts-request-body",
-        "handler-passed-to-a-helper"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 1141,
-      "function": "TestAddInlineCommentRemovedLineAnchorsToOriginalFile",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "asserts-request-body",
-        "handler-passed-to-a-helper"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 1170,
+      "line": 765,
       "function": "TestAddInlineCommentValidation",
       "class": "unreached-guard",
       "signals": [
@@ -5830,7 +5727,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1293,
+      "line": 888,
       "function": "TestListPullRequestsAppliesRoleFilter",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5843,7 +5740,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1322,
+      "line": 917,
       "function": "TestListCapsResultsAtLimit",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5856,7 +5753,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1380,
+      "line": 975,
       "function": "TestListReturnsEverythingBelowTheLimit",
       "class": "canned-response",
       "signals": [
@@ -5869,7 +5766,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1422,
+      "line": 1017,
       "function": "TestListTrimsAnOvershootingPage",
       "class": "canned-response",
       "signals": [
@@ -5882,7 +5779,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1469,
+      "line": 1064,
       "function": "TestListDashboardParticipantStatus",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5897,23 +5794,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1524,
-      "function": "TestEnableAutoMergeUsesTheMergeEndpoint",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 1576,
+      "line": 1109,
       "function": "TestEnableAutoMergeReportsAnImmediateMerge",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5928,7 +5809,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1620,
+      "line": 1153,
       "function": "TestEnableAutoMergeSurfacesFailures",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5942,7 +5823,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1634,
+      "line": 1167,
       "function": "TestEnableAutoMergeSurfacesFailures",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5956,7 +5837,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1665,
+      "line": 1198,
       "function": "TestRebaseRejectsOutOfRangeVersion",
       "class": "status-taxonomy",
       "signals": [
@@ -5966,20 +5847,6 @@
       ],
       "action": "move-to-live",
       "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 1699,
-      "function": "TestUpdatePreservesReviewers",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
       "file": "internal/services/pullrequestactivity/service_test.go",
@@ -6592,7 +6459,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 15,
+      "line": 13,
       "function": "TestReviewerServiceAdditional",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -6605,7 +6472,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 37,
+      "line": 35,
       "function": "TestReviewerServiceErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -6618,7 +6485,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 108,
+      "line": 106,
       "function": "TestReviewerServiceUpdateErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -6631,7 +6498,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 131,
+      "line": 129,
       "function": "TestReviewerServiceCreationBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -6643,7 +6510,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 155,
+      "line": 153,
       "function": "TestReviewerServiceCreationUnmarshalFail",
       "class": "status-taxonomy",
       "signals": [
@@ -6656,7 +6523,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 169,
+      "line": 167,
       "function": "TestReviewerServiceUpdateResponseBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -6668,23 +6535,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 188,
-      "function": "TestReviewerGroupsAndDefaultReviewersService",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 304,
+      "line": 186,
       "function": "TestReviewerGroupsAndDefaultReviewersServiceErrors",
       "class": "status-taxonomy",
       "signals": [
@@ -6697,7 +6548,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 397,
+      "line": 279,
       "function": "TestReviewerGroupsAndDefaultReviewersServiceContextCanceled",
       "class": "status-taxonomy",
       "signals": [
@@ -6710,117 +6561,12 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 447,
+      "line": 329,
       "function": "TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks",
       "class": "bitbucket-behaviour",
       "signals": [
         "closes-on-cleanup",
         "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 498,
-      "function": "TestResolveReviewerGroupUsers",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 524,
-      "function": "TestResolveReviewerGroupUsers",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 550,
-      "function": "TestResolveReviewerGroupUsers",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 578,
-      "function": "TestResolveReviewerGroupUsers",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 604,
-      "function": "TestResolveReviewerGroupUsers",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 627,
-      "function": "TestResolveReviewerGroupUsers",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reviewer/service_test.go",
-      "line": 648,
-      "function": "TestResolveDefaultReviewers",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
