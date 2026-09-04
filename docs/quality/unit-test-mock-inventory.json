@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 527,
+    "mocked_servers": 522,
     "files": 96,
-    "functions": 500,
+    "functions": 495,
     "by_class": {
-      "bitbucket-behaviour": 320,
+      "bitbucket-behaviour": 315,
       "canned-response": 77,
       "external-service": 14,
       "harness-constructor": 19,
@@ -16,7 +16,7 @@
     "behaviour_by_package": {
       "internal/cli": 125,
       "internal/cli/cmd/admin": 1,
-      "internal/cli/cmd/api": 20,
+      "internal/cli/cmd/api": 15,
       "internal/cli/cmd/auth": 2,
       "internal/cli/cmd/branch": 1,
       "internal/cli/cmd/build": 2,
@@ -188,36 +188,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 271,
-      "function": "TestApiPaginated",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-query-parameters",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 337,
-      "function": "TestApiPaginatedNonPagedResponse",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 361,
+      "line": 270,
       "function": "TestApiDryRun",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -231,7 +202,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 402,
+      "line": 311,
       "function": "TestApiCustomHeaders",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -245,22 +216,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 477,
-      "function": "TestApiErrorResponses",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 549,
+      "line": 389,
       "function": "TestApiNonJSONOutput",
       "class": "status-taxonomy",
       "signals": [
@@ -273,35 +229,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 642,
-      "function": "TestApiTypedFieldQueryParamForGet",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-query-parameters",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 664,
-      "function": "TestApiEmptyResponseBody",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/api/api_test.go",
-      "line": 687,
+      "line": 484,
       "function": "TestApiPaginatedErrors",
       "class": "transport-fault",
       "signals": [
@@ -317,7 +245,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 711,
+      "line": 508,
       "function": "TestApiPaginatedInvalidJSON",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -331,7 +259,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 734,
+      "line": 531,
       "function": "TestApiHTMLResponseReturnsAuthenticationError",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -345,7 +273,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 761,
+      "line": 558,
       "function": "TestApiPaginatedHTMLResponse",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -359,7 +287,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 786,
+      "line": 583,
       "function": "TestApiMangledPathSanitization",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -373,7 +301,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 861,
+      "line": 658,
       "function": "TestApiHostFlagOverride",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -386,7 +314,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 896,
+      "line": 693,
       "function": "TestApiHostFlagDoesNotFallBackToDefaultHost",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -398,7 +326,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 903,
+      "line": 700,
       "function": "TestApiHostFlagDoesNotFallBackToDefaultHost",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -410,7 +338,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 945,
+      "line": 742,
       "function": "TestApiHostFlagLeavesEnvironmentAlone",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -423,7 +351,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 1002,
+      "line": 799,
       "function": "TestApiHTMLResponseAllowedOutsideRest",
       "class": "canned-response",
       "signals": [
@@ -5578,7 +5506,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 199,
+      "line": 192,
       "function": "TestGetPRBuildStatusesValidation",
       "class": "canned-response",
       "signals": [
@@ -5590,7 +5518,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 227,
+      "line": 220,
       "function": "TestGetBuildStatusesPaginationStuck",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5604,7 +5532,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 504,
+      "line": 497,
       "function": "TestWatchUnwatchRebaseAPIErrors",
       "class": "canned-response",
       "signals": [
@@ -5618,7 +5546,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 545,
+      "line": 538,
       "function": "TestListPullRequestsContainingCommitAndSearchParticipants",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5634,7 +5562,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 633,
+      "line": 626,
       "function": "TestListPullRequestsContainingCommitAndSearchParticipantsAPIErrors",
       "class": "canned-response",
       "signals": [
@@ -5648,7 +5576,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 666,
+      "line": 659,
       "function": "newCommentTestService",
       "class": "harness-constructor",
       "signals": [
@@ -5659,7 +5587,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 680,
+      "line": 673,
       "function": "TestNeedsWorkSetsParticipantStatus",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5675,7 +5603,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 722,
+      "line": 715,
       "function": "TestNeedsWorkValidation",
       "class": "unreached-guard",
       "signals": [
@@ -5688,7 +5616,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 735,
+      "line": 728,
       "function": "TestNeedsWorkPropagatesUserLookupFailure",
       "class": "canned-response",
       "signals": [
@@ -5701,7 +5629,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 747,
+      "line": 740,
       "function": "TestAddCommentValidation",
       "class": "unreached-guard",
       "signals": [
@@ -5714,7 +5642,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 765,
+      "line": 758,
       "function": "TestAddInlineCommentValidation",
       "class": "unreached-guard",
       "signals": [
@@ -5727,7 +5655,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 888,
+      "line": 881,
       "function": "TestListPullRequestsAppliesRoleFilter",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5740,7 +5668,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 917,
+      "line": 910,
       "function": "TestListCapsResultsAtLimit",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5753,7 +5681,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 975,
+      "line": 968,
       "function": "TestListReturnsEverythingBelowTheLimit",
       "class": "canned-response",
       "signals": [
@@ -5766,7 +5694,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1017,
+      "line": 1010,
       "function": "TestListTrimsAnOvershootingPage",
       "class": "canned-response",
       "signals": [
@@ -5779,7 +5707,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1064,
+      "line": 1057,
       "function": "TestListDashboardParticipantStatus",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5794,7 +5722,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1109,
+      "line": 1102,
       "function": "TestEnableAutoMergeReportsAnImmediateMerge",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5809,7 +5737,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1153,
+      "line": 1146,
       "function": "TestEnableAutoMergeSurfacesFailures",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5823,7 +5751,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1167,
+      "line": 1160,
       "function": "TestEnableAutoMergeSurfacesFailures",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -5837,7 +5765,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 1198,
+      "line": 1191,
       "function": "TestRebaseRejectsOutOfRangeVersion",
       "class": "status-taxonomy",
       "signals": [
