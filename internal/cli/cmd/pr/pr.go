@@ -1115,12 +1115,18 @@ NEEDS_WORK.`,
 				if err != nil {
 					return err
 				}
+				// A participant holds one status, and this command clears
+				// whichever it is. Asking whether they had *approved* answered
+				// the wrong question: a reviewer holding NEEDS_WORK has not
+				// approved, so the preview called it a no-op while the command
+				// went on to clear the request for changes -- exactly the
+				// contradiction the reviewer-group dry runs had.
 				currentUser := resolveCurrentUsername(cmd.Context(), httpclient.NewFromConfig(cfg), cfg)
 				predicted := "update"
-				reason := "pull request approval will be removed"
-				if currentUser != "" && !reviewerApprovedByUser(current.Reviewers, currentUser) {
+				reason := "review status will be cleared"
+				if held := reviewerStatusForUser(current.Reviewers, currentUser); held == "" || held == "UNAPPROVED" {
 					predicted = "no-op"
-					reason = "current user has not approved this pull request"
+					reason = "current user holds no review status to clear"
 				}
 
 				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
@@ -1728,10 +1734,25 @@ changes as readily as an approval, which its name does not suggest.`,
 			}
 			repo := target.RepositoryRef()
 
-			jiraService := jiraservice.NewService(httpclient.NewFromConfig(cfg))
+			client := httpclient.NewFromConfig(cfg)
+			jiraService := jiraservice.NewService(client)
 			issues, err := jiraService.GetPRIssues(cmd.Context(), jiraservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID)
 			if err != nil {
 				return err
+			}
+
+			// The Jira endpoint answers 200 with [] for a pull request that does
+			// not exist, where every other endpoint answers 404. Reporting "no
+			// linked issues" for a pull request nobody can open is a wrong
+			// answer wearing a fact's clothes, and an agent has no way to tell
+			// the two apart.
+			//
+			// Empty is the only ambiguous answer, so it is the only one that
+			// pays for the extra request.
+			if len(issues) == 0 {
+				if _, err := pullrequestservice.NewService(client).Get(cmd.Context(), repo, target.PullRequestID); err != nil {
+					return err
+				}
 			}
 
 			if deps.JSONEnabled() {

@@ -446,6 +446,13 @@ func hasApprovedReviewer(reviewers []pullrequestservice.Reviewer) bool {
 	return false
 }
 
+// reviewerApprovedByUser answers one question: has this user approved.
+//
+// It is not the question to ask when deciding whether a review command will
+// change anything. A participant holds one status, so "has not approved" covers
+// both UNAPPROVED and NEEDS_WORK, and treating the two alike is what made
+// `unapprove --dry-run` call clearing a request for changes a no-op. Use
+// reviewerStatusForUser for that.
 func reviewerApprovedByUser(reviewers []pullrequestservice.Reviewer, username string) bool {
 	trimmed := strings.TrimSpace(username)
 	if trimmed == "" {

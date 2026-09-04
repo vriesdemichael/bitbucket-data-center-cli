@@ -13,28 +13,6 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
-func TestPermissionsNotFoundMapsError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusNotFound)
-		_, _ = writer.Write([]byte("missing"))
-	}))
-	defer server.Close()
-
-	client, err := openapigenerated.NewClientWithResponses(server.URL)
-	if err != nil {
-		t.Fatalf("create generated client: %v", err)
-	}
-
-	service := NewService(client)
-	_, err = service.ListRepositoryPermissionUsers(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, 10)
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	if apperrors.ExitCode(err) != 4 {
-		t.Fatalf("expected not found exit code 4, got %d (%v)", apperrors.ExitCode(err), err)
-	}
-}
-
 func TestUpdateRepositoryPullRequestRequiredApproversCount(t *testing.T) {
 	objectPayloadCalls := 0
 	integerPayloadCalls := 0

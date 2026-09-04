@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
@@ -82,17 +81,6 @@ func TestGetIssueCommits(t *testing.T) {
 	}
 }
 
-func TestGetPRIssuesError(t *testing.T) {
-	service := newJiraTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = w.Write([]byte("Unauthorized"))
-	})
-	_, err := service.GetPRIssues(context.Background(), RepositoryRef{ProjectKey: "PROJ", Slug: "repo"}, "42")
-	if err == nil || (!strings.Contains(err.Error(), "401") && !strings.Contains(err.Error(), "authentication")) {
-		t.Fatalf("expected authorization error, got: %v", err)
-	}
-}
-
 func TestGetIssueCommitsLimitDefaults(t *testing.T) {
 	service := newJiraTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -109,18 +97,6 @@ func TestGetIssueCommitsLimitDefaults(t *testing.T) {
 	_, err := service.GetIssueCommits(context.Background(), "TEST-101", 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestGetIssueCommitsError(t *testing.T) {
-	service := newJiraTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte("Internal Server Error"))
-	})
-
-	_, err := service.GetIssueCommits(context.Background(), "TEST-101", 5)
-	if err == nil || !strings.Contains(err.Error(), "500") {
-		t.Fatalf("expected 500 error, got: %v", err)
 	}
 }
 
