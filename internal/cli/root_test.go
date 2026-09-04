@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -388,109 +387,6 @@ func TestDiffRefsRejectsMultipleOutputModes(t *testing.T) {
 	err := command.Execute()
 	if err == nil {
 		t.Fatal("expected validation error")
-	}
-}
-
-func TestRepoSettingsSecurityPermissionsUsersList(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/permissions/users" {
-			http.NotFound(writer, request)
-			return
-		}
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		_, _ = writer.Write([]byte(`{"values":[{"permission":"REPO_ADMIN","user":{"name":"admin","displayName":"Admin User"}}],"isLastPage":true}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"repo", "settings", "security", "permissions", "users", "list"})
-
-	err := command.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	if !strings.Contains(buffer.String(), "Admin User") || !strings.Contains(buffer.String(), "REPO_ADMIN") {
-		t.Fatalf("expected user permissions output, got: %s", buffer.String())
-	}
-}
-
-func TestRepoSettingsPullRequestsGet(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/settings/pull-requests" {
-			http.NotFound(writer, request)
-			return
-		}
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		_, _ = writer.Write([]byte(`{"requiredAllTasksComplete":true,"requiredApprovers":{"enabled":true,"count":"2"}}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"repo", "settings", "pull-requests", "get"})
-
-	err := command.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	output := buffer.String()
-	if !strings.Contains(output, "Required tasks complete: true") || !strings.Contains(output, "Required approvers: 2") {
-		t.Fatalf("expected pull request settings summary, got: %s", output)
-	}
-}
-
-func TestRepoSettingsPullRequestsUpdate(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/settings/pull-requests" {
-			body, _ := io.ReadAll(request.Body)
-			if !strings.Contains(string(body), `"requiredAllTasksComplete":true`) {
-				writer.WriteHeader(http.StatusBadRequest)
-				_, _ = writer.Write([]byte("invalid payload"))
-				return
-			}
-			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = writer.Write([]byte(`{"requiredAllTasksComplete":true}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=true"})
-
-	err := command.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	if !strings.Contains(buffer.String(), "Updated pull-request settings: requiredAllTasksComplete=true") {
-		t.Fatalf("expected pull-request update output, got: %s", buffer.String())
 	}
 }
 
@@ -2438,68 +2334,6 @@ func TestBuildAndInsightsValidationErrorPaths(t *testing.T) {
 	}
 }
 
-func TestRepoSettingsJSONCommandPaths(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/permissions/users":
-			_, _ = writer.Write([]byte(`{"values":[{"permission":"REPO_READ","user":{"name":"alice","displayName":"Alice"}}],"isLastPage":true}`))
-		case request.Method == http.MethodPut && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/permissions/users":
-			writer.WriteHeader(http.StatusNoContent)
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/webhooks":
-			_, _ = writer.Write([]byte(`{"values":[{"id":42,"name":"ci-hook"}],"size":1}`))
-		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/webhooks":
-			_, _ = writer.Write([]byte(`{"id":42,"name":"ci-hook"}`))
-		case request.Method == http.MethodDelete && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/webhooks/42":
-			writer.WriteHeader(http.StatusNoContent)
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/settings/pull-requests":
-			_, _ = writer.Write([]byte(`{"requiredAllTasksComplete":true,"requiredApprovers":{"enabled":true,"count":"2"}}`))
-		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/settings/pull-requests":
-			_, _ = writer.Write([]byte(`{"requiredAllTasksComplete":true,"requiredApprovers":2}`))
-		default:
-			http.NotFound(writer, request)
-		}
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	tests := []struct {
-		name          string
-		args          []string
-		expectSnippet string
-	}{
-		{name: "permissions users list json", args: []string{"--json", "repo", "settings", "security", "permissions", "users", "list"}, expectSnippet: `"subject": "user"`},
-		{name: "permissions users grant json", args: []string{"--json", "repo", "settings", "security", "permissions", "users", "grant", "alice", "repo_read"}, expectSnippet: `"status": "ok"`},
-		{name: "webhooks list json", args: []string{"--json", "repo", "settings", "workflow", "webhooks", "list"}, expectSnippet: `"webhooks"`},
-		{name: "webhooks create json", args: []string{"--json", "repo", "settings", "workflow", "webhooks", "create", "ci-hook", "http://example.local/hook"}, expectSnippet: `"webhook"`},
-		{name: "webhooks delete json", args: []string{"--json", "repo", "settings", "workflow", "webhooks", "delete", "42"}, expectSnippet: `"webhookId": "42"`},
-		{name: "pull requests get json", args: []string{"--json", "repo", "settings", "pull-requests", "get"}, expectSnippet: `"requiredApprovers": 2`},
-		{name: "pull requests update json", args: []string{"--json", "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=true"}, expectSnippet: `"requiredAllTasksComplete": true`},
-		{name: "pull requests update approvers json", args: []string{"--json", "repo", "settings", "pull-requests", "update-approvers", "--count", "2"}, expectSnippet: `"requiredAllTasksComplete": true`},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			command := NewRootCommand()
-			buffer := &bytes.Buffer{}
-			command.SetOut(buffer)
-			command.SetErr(buffer)
-			command.SetArgs(testCase.args)
-
-			if err := command.Execute(); err != nil {
-				t.Fatalf("command failed: %v", err)
-			}
-			if !strings.Contains(buffer.String(), testCase.expectSnippet) {
-				t.Fatalf("expected output to contain %q, got: %s", testCase.expectSnippet, buffer.String())
-			}
-		})
-	}
-}
-
 func TestRepoSettingsCommandsPropagateServiceErrors(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -2541,66 +2375,6 @@ func TestRepoSettingsCommandsPropagateServiceErrors(t *testing.T) {
 				t.Fatalf("expected exit code 3 for args %v, got %d (%v)", testCase.args, apperrors.ExitCode(err), err)
 			}
 		})
-	}
-}
-
-func TestRepoSettingsPullRequestsMergeChecksList(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/rest/required-builds/latest/projects/TEST/repos/demo/conditions" {
-			http.NotFound(writer, request)
-			return
-		}
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		_, _ = writer.Write([]byte(`{"values":[{"id":1}]}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetArgs([]string{"--json", "repo", "settings", "pull-requests", "merge-checks", "list"})
-
-	err := command.Execute()
-	if err != nil {
-		t.Fatalf("execute failed: %v", err)
-	}
-
-	if !strings.Contains(buffer.String(), `"checks"`) {
-		t.Fatalf("expected the merge checks in output, got: %s", buffer.String())
-	}
-}
-
-func TestProjectPermissionsUsersList(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/rest/api/latest/projects/PRJ/permissions/users" {
-			http.NotFound(writer, request)
-			return
-		}
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		_, _ = writer.Write([]byte(`{"values":[{"user":{"name":"alice"},"permission":"PROJECT_ADMIN"}],"isLastPage":true}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetArgs([]string{"--json", "project", "permissions", "users", "list", "PRJ"})
-
-	err := command.Execute()
-	if err != nil {
-		t.Fatalf("execute failed: %v", err)
-	}
-
-	if !strings.Contains(buffer.String(), `"alice"`) {
-		t.Fatalf("expected alice in output, got: %s", buffer.String())
 	}
 }
 

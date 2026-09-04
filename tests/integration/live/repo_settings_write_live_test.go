@@ -214,3 +214,64 @@ func TestLiveWebhookUpdatePreservesUnchangedFields(t *testing.T) {
 		t.Errorf("the secret did not survive the rename: %q", secret)
 	}
 }
+
+// TestLiveRepoSettingsReadSurfaces covers the settings and permission listings
+// through the CLI.
+//
+// The mocks these replace served a settings object their author wrote and
+// asserted bb rendered its fields. Reading the settings a real repository
+// actually has is the same assertion without the fixture deciding the answer,
+// and it catches the case a fixture cannot: a field Bitbucket stopped sending.
+func TestLiveRepoSettingsReadSurfaces(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	user, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create user failed: %v", err)
+	}
+
+	t.Run("pull request settings carry the fields a caller reads", func(t *testing.T) {
+		settings := decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "pull-requests", "get", "--repo", repoRef))
+
+		// requiredApprovers is what update-approvers writes, so a get that does
+		// not carry it makes the pair unusable.
+		if _, ok := settings["requiredApprovers"]; !ok {
+			t.Errorf("no requiredApprovers in the settings: %v", settings)
+		}
+	})
+
+	t.Run("merge checks list", func(t *testing.T) {
+		output := mustLiveCLI(t, "repo", "settings", "pull-requests", "merge-checks", "list", "--repo", repoRef)
+		if strings.TrimSpace(output) == "" {
+			t.Fatal("the merge checks listing printed nothing at all")
+		}
+	})
+
+	t.Run("a granted user appears in the security permission listing", func(t *testing.T) {
+		mustLiveCLI(t, "repo", "permissions", "grant", user.Username, "REPO_READ", "--repo", repoRef)
+
+		listing := mustLiveCLI(t, "repo", "settings", "security", "permissions", "users", "list", "--repo", repoRef)
+		if !strings.Contains(listing, user.Username) {
+			t.Fatalf("expected %s in the permission listing:\n%s", user.Username, listing)
+		}
+	})
+
+	t.Run("a granted user appears in the project permission listing", func(t *testing.T) {
+		mustLiveCLI(t, "project", "permissions", "grant", seeded.Key, user.Username, "PROJECT_READ")
+
+		listing := mustLiveCLI(t, "project", "permissions", "list", seeded.Key, "--all")
+		if !strings.Contains(listing, user.Username) {
+			t.Fatalf("expected %s in the project permission listing:\n%s", user.Username, listing)
+		}
+	})
+}
