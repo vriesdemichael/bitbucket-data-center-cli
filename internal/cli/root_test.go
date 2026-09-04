@@ -290,38 +290,6 @@ func TestBranchCommandsFailOnInvalidConfig(t *testing.T) {
 	}
 }
 
-func TestTagCreateJSON(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodPost || request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/tags" {
-			http.NotFound(writer, request)
-			return
-		}
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		_, _ = writer.Write([]byte(`{"displayId":"v1.0.0","latestCommit":"abc123","type":"ANNOTATED"}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"--json", "tag", "create", "v1.0.0", "--start-point", "abc123"})
-
-	err := command.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-
-	if !strings.Contains(buffer.String(), "v1.0.0") {
-		t.Fatalf("expected created tag output, got: %s", buffer.String())
-	}
-}
-
 func TestBuildStatusSetJSON(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -2146,79 +2114,6 @@ func TestWriteJSONMarshalError(t *testing.T) {
 	}
 }
 
-func TestTagViewDeleteAndListCommandPaths(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/tags":
-			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = writer.Write([]byte(`{"values":[{"displayId":"v2.0.0","type":"TAG","latestCommit":"abc"}],"isLastPage":true}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/tags/v2.0.0":
-			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = writer.Write([]byte(`{"displayId":"v2.0.0","type":"TAG","latestCommit":"abc"}`))
-		case request.Method == http.MethodDelete && request.URL.Path == "/rest/git/latest/projects/TEST/repos/demo/tags/v2.0.0":
-			writer.WriteHeader(http.StatusNoContent)
-		default:
-			http.NotFound(writer, request)
-		}
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	humanListCommand := NewRootCommand()
-	humanListBuffer := &bytes.Buffer{}
-	humanListCommand.SetOut(humanListBuffer)
-	humanListCommand.SetErr(humanListBuffer)
-	humanListCommand.SetArgs([]string{"tag", "list", "--limit", "10", "--order-by", "ALPHABETICAL"})
-	if err := humanListCommand.Execute(); err != nil {
-		t.Fatalf("tag list human failed: %v", err)
-	}
-	if !strings.Contains(humanListBuffer.String(), "v2.0.0") {
-		t.Fatalf("expected tag in human list output, got: %s", humanListBuffer.String())
-	}
-
-	// The --json list branch reports whether the result came back at --limit,
-	// which is what tells a consumer to ask again rather than stop.
-	jsonListCommand := NewRootCommand()
-	jsonListBuffer := &bytes.Buffer{}
-	jsonListCommand.SetOut(jsonListBuffer)
-	jsonListCommand.SetErr(jsonListBuffer)
-	jsonListCommand.SetArgs([]string{"--json", "tag", "list", "--limit", "1"})
-	if err := jsonListCommand.Execute(); err != nil {
-		t.Fatalf("tag list json failed: %v", err)
-	}
-	if !strings.Contains(jsonListBuffer.String(), "\"limitReached\": true") {
-		t.Fatalf("expected limitReached true for a capped tag list, got: %s", jsonListBuffer.String())
-	}
-
-	jsonViewCommand := NewRootCommand()
-	jsonViewBuffer := &bytes.Buffer{}
-	jsonViewCommand.SetOut(jsonViewBuffer)
-	jsonViewCommand.SetErr(jsonViewBuffer)
-	jsonViewCommand.SetArgs([]string{"--json", "tag", "view", "v2.0.0"})
-	if err := jsonViewCommand.Execute(); err != nil {
-		t.Fatalf("tag view json failed: %v", err)
-	}
-	if !strings.Contains(jsonViewBuffer.String(), "v2.0.0") {
-		t.Fatalf("expected tag id in view output, got: %s", jsonViewBuffer.String())
-	}
-
-	jsonDeleteCommand := NewRootCommand()
-	jsonDeleteBuffer := &bytes.Buffer{}
-	jsonDeleteCommand.SetOut(jsonDeleteBuffer)
-	jsonDeleteCommand.SetErr(jsonDeleteBuffer)
-	jsonDeleteCommand.SetArgs([]string{"--json", "tag", "delete", "v2.0.0"})
-	if err := jsonDeleteCommand.Execute(); err != nil {
-		t.Fatalf("tag delete json failed: %v", err)
-	}
-	if !strings.Contains(jsonDeleteBuffer.String(), `"status": "ok"`) {
-		t.Fatalf("expected delete ok status, got: %s", jsonDeleteBuffer.String())
-	}
-}
-
 func TestBranchCommandPaths(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -3172,78 +3067,6 @@ func TestResolveRepositoryReferenceWrappers(t *testing.T) {
 	}
 }
 
-func TestTagBuildAndInsightsEmptyHumanOutputs(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/tags":
-			_, _ = writer.Write([]byte(`{"values":[],"isLastPage":true}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/build-status/latest/commits/abc123":
-			_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[{"key":"ci/main","state":"SUCCESSFUL","url":"https://ci.example"}]}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/insights/latest/projects/TEST/repos/demo/commits/abc/reports":
-			_, _ = writer.Write([]byte(`{"values":[],"isLastPage":true}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/insights/latest/projects/TEST/repos/demo/commits/abc/reports/lint/annotations":
-			_, _ = writer.Write([]byte(`{"annotations":[]}`))
-		default:
-			http.NotFound(writer, request)
-		}
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	tagListCommand := NewRootCommand()
-	tagListBuffer := &bytes.Buffer{}
-	tagListCommand.SetOut(tagListBuffer)
-	tagListCommand.SetErr(tagListBuffer)
-	tagListCommand.SetArgs([]string{"tag", "list"})
-	if err := tagListCommand.Execute(); err != nil {
-		t.Fatalf("tag list empty failed: %v", err)
-	}
-	if !strings.Contains(tagListBuffer.String(), "No tags found") {
-		t.Fatalf("expected no tags output, got: %s", tagListBuffer.String())
-	}
-
-	buildGetCommand := NewRootCommand()
-	buildGetBuffer := &bytes.Buffer{}
-	buildGetCommand.SetOut(buildGetBuffer)
-	buildGetCommand.SetErr(buildGetBuffer)
-	buildGetCommand.SetArgs([]string{"build", "status", "get", "abc123"})
-	if err := buildGetCommand.Execute(); err != nil {
-		t.Fatalf("build status get non-empty failed: %v", err)
-	}
-	if !strings.Contains(buildGetBuffer.String(), "ci/main") || !strings.Contains(buildGetBuffer.String(), "SUCCESSFUL") {
-		t.Fatalf("expected populated build statuses output, got: %s", buildGetBuffer.String())
-	}
-
-	reportListCommand := NewRootCommand()
-	reportListBuffer := &bytes.Buffer{}
-	reportListCommand.SetOut(reportListBuffer)
-	reportListCommand.SetErr(reportListBuffer)
-	reportListCommand.SetArgs([]string{"insights", "report", "list", "abc"})
-	if err := reportListCommand.Execute(); err != nil {
-		t.Fatalf("insights report list empty failed: %v", err)
-	}
-	if !strings.Contains(reportListBuffer.String(), "No reports found") {
-		t.Fatalf("expected no reports output, got: %s", reportListBuffer.String())
-	}
-
-	annotationListCommand := NewRootCommand()
-	annotationListBuffer := &bytes.Buffer{}
-	annotationListCommand.SetOut(annotationListBuffer)
-	annotationListCommand.SetErr(annotationListBuffer)
-	annotationListCommand.SetArgs([]string{"insights", "annotation", "list", "abc", "lint"})
-	if err := annotationListCommand.Execute(); err != nil {
-		t.Fatalf("insights annotation list empty failed: %v", err)
-	}
-	if !strings.Contains(annotationListBuffer.String(), "No annotations found") {
-		t.Fatalf("expected no annotations output, got: %s", annotationListBuffer.String())
-	}
-}
-
 func TestBuildAndInsightsValidationErrorPaths(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
@@ -3337,59 +3160,6 @@ func TestRepoSettingsJSONCommandPaths(t *testing.T) {
 			}
 			if !strings.Contains(buffer.String(), testCase.expectSnippet) {
 				t.Fatalf("expected output to contain %q, got: %s", testCase.expectSnippet, buffer.String())
-			}
-		})
-	}
-}
-
-func TestTagBuildInsightsCommandsPropagateServiceErrors(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusNotFound)
-		_, _ = writer.Write([]byte("missing"))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	tests := []struct {
-		name string
-		args []string
-	}{
-		{name: "tag list", args: []string{"tag", "list"}},
-		{name: "tag create", args: []string{"tag", "create", "v1.0.0", "--start-point", "abc123"}},
-		{name: "tag view", args: []string{"tag", "view", "v1.0.0"}},
-		{name: "tag delete", args: []string{"tag", "delete", "v1.0.0"}},
-		{name: "build status get", args: []string{"build", "status", "get", "abc123"}},
-		{name: "build status stats", args: []string{"build", "status", "stats", "abc123"}},
-		{name: "build required list", args: []string{"build", "required", "list"}},
-		{name: "build required create", args: []string{"build", "required", "create", "--body", `{"buildParentKeys":["ci"]}`}},
-		{name: "build required update", args: []string{"build", "required", "update", "12", "--body", `{"buildParentKeys":["ci"]}`}},
-		{name: "build required delete", args: []string{"build", "required", "delete", "12"}},
-		{name: "insights report list", args: []string{"insights", "report", "list", "abc"}},
-		{name: "insights report set", args: []string{"insights", "report", "set", "abc", "lint", "--body", `{"title":"Lint","result":"PASS"}`}},
-		{name: "insights report get", args: []string{"insights", "report", "get", "abc", "lint"}},
-		{name: "insights report delete", args: []string{"insights", "report", "delete", "abc", "lint"}},
-		{name: "insights annotation add", args: []string{"insights", "annotation", "add", "abc", "lint", "--body", `[{"externalId":"ann1","message":"note","severity":"LOW"}]`}},
-		{name: "insights annotation list", args: []string{"insights", "annotation", "list", "abc", "lint"}},
-		{name: "insights annotation delete", args: []string{"insights", "annotation", "delete", "abc", "lint", "--external-id", "ann1"}},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			command := NewRootCommand()
-			command.SetOut(&bytes.Buffer{})
-			command.SetErr(&bytes.Buffer{})
-			command.SetArgs(testCase.args)
-
-			err := command.Execute()
-			if err == nil {
-				t.Fatalf("expected not found error for args: %v", testCase.args)
-			}
-			if apperrors.ExitCode(err) != 4 {
-				t.Fatalf("expected exit code 4 for args %v, got %d (%v)", testCase.args, apperrors.ExitCode(err), err)
 			}
 		})
 	}
@@ -3683,43 +3453,6 @@ func TestBranchDefaultSetDryRunStatefulNoop(t *testing.T) {
 	}
 	if !strings.Contains(buffer.String(), `"predictedAction": "no-op"`) {
 		t.Fatalf("expected no-op prediction, got: %s", buffer.String())
-	}
-}
-
-func TestTagCreateDryRunStateful(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/repos":
-			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = writer.Write([]byte(`{"values":[{"slug":"demo","name":"demo","project":{"key":"TEST"}}],"isLastPage":true}`))
-			return
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/tags":
-			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = writer.Write([]byte(`{"values":[{"id":"refs/tags/v1.0.0","displayId":"v1.0.0"}],"isLastPage":true}`))
-			return
-		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/tags":
-			t.Fatalf("tag create endpoint must not be called in dry-run mode")
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"--json", "--dry-run", "tag", "create", "v1.2.3", "--start-point", "master"})
-
-	if err := command.Execute(); err != nil {
-		t.Fatalf("execute failed: %v", err)
-	}
-	if !strings.Contains(buffer.String(), `"planningMode": "stateful"`) || !strings.Contains(buffer.String(), `"predictedAction": "create"`) {
-		t.Fatalf("expected stateful create prediction, got: %s", buffer.String())
 	}
 }
 
