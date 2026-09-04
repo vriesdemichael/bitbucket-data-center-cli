@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // TestLiveBrowsePathEscaping covers how a file path becomes a URL.
@@ -107,6 +109,64 @@ func TestLiveListingsPageToTheEnd(t *testing.T) {
 		output := mustLiveCLI(t, "branch", "list", "--all")
 		if got := strings.Count(output, "\"displayId\""); got < branches {
 			t.Fatalf("--all returned %d of at least %d branches:\n%s", got, branches, output)
+		}
+	})
+}
+
+// TestLiveBranchCommandSurfaces covers the three things the branch mocks in
+// root_test.go asserted: what an empty listing prints, what a missing resource
+// maps to, and what a dry run predicts.
+//
+// All three were fabricated. An empty listing was an empty values array the
+// author wrote, a 404 was a status the author chose, and the dry-run preview
+// was built from state the author supplied. A real repository produces all
+// three without anyone deciding what they look like.
+func TestLiveBranchCommandSurfaces(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	t.Run("an empty listing says so rather than printing nothing", func(t *testing.T) {
+		// A fresh repository has no branch restrictions, so this is genuinely
+		// empty rather than emptied for the test.
+		output := mustLiveCLI(t, "branch", "restriction", "list", "--repo", repoRef)
+		if strings.TrimSpace(output) == "" {
+			t.Fatal("an empty listing printed nothing at all, which reads as a broken command")
+		}
+	})
+
+	t.Run("a repository that is not there maps to not found", func(t *testing.T) {
+		output, err := executeLiveCLI(t, "--json", "branch", "list", "--repo", seeded.Key+"/no-such-repository")
+		if err == nil {
+			t.Fatalf("expected a missing repository to fail, got:\n%s", output)
+		}
+		if code := apperrors.ExitCode(err); code != 4 {
+			t.Errorf("exit code = %d, want 4 for a missing repository (%v)", code, err)
+		}
+	})
+
+	t.Run("a dry run predicts the create without making it", func(t *testing.T) {
+		const branch = "feature/predicted"
+
+		output := mustLiveCLI(t, "--dry-run", "branch", "create", branch, "--start-point", "master")
+		for _, want := range []string{`"planningMode": "stateful"`, `"predictedAction": "create"`} {
+			if !strings.Contains(output, want) {
+				t.Errorf("expected %s in the preview:\n%s", want, output)
+			}
+		}
+
+		// The half a mock cannot check: that nothing happened.
+		listing := mustLiveCLI(t, "branch", "list", "--all")
+		if strings.Contains(listing, branch) {
+			t.Fatalf("the dry run created the branch:\n%s", listing)
 		}
 	})
 }

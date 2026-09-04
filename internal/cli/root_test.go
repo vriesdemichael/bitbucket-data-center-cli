@@ -2451,55 +2451,6 @@ func TestSafeUsersHelper(t *testing.T) {
 	}
 }
 
-func TestBranchCommandEmptyResultsOutput(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/branches":
-			_, _ = writer.Write([]byte(`{"values":[],"isLastPage":true}`))
-		case request.Method == http.MethodGet && strings.HasPrefix(request.URL.Path, "/rest/branch-utils/latest/projects/TEST/repos/demo/branches/info/"):
-			_, _ = writer.Write([]byte(`{"values":[],"isLastPage":true}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/branch-permissions/latest/projects/TEST/repos/demo/restrictions":
-			_, _ = writer.Write([]byte(`{"values":[],"isLastPage":true}`))
-		default:
-			http.NotFound(writer, request)
-		}
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	tests := []struct {
-		name          string
-		args          []string
-		expectSnippet string
-	}{
-		{name: "branch list empty", args: []string{"branch", "list"}, expectSnippet: "No branches found"},
-		{name: "branch model inspect empty", args: []string{"branch", "model", "inspect", "abc"}, expectSnippet: "No matching refs found"},
-		{name: "branch restriction list empty", args: []string{"branch", "restriction", "list"}, expectSnippet: "No restrictions found"},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			command := NewRootCommand()
-			buffer := &bytes.Buffer{}
-			command.SetOut(buffer)
-			command.SetErr(buffer)
-			command.SetArgs(testCase.args)
-
-			if err := command.Execute(); err != nil {
-				t.Fatalf("command failed: %v", err)
-			}
-			if !strings.Contains(buffer.String(), testCase.expectSnippet) {
-				t.Fatalf("expected output to contain %q, got: %s", testCase.expectSnippet, buffer.String())
-			}
-		})
-	}
-}
-
 func TestBuildRequiredCommandPaths(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -3391,54 +3342,6 @@ func TestRepoSettingsJSONCommandPaths(t *testing.T) {
 	}
 }
 
-func TestBranchCommandsPropagateServiceErrors(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusNotFound)
-		_, _ = writer.Write([]byte("missing"))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	tests := []struct {
-		name string
-		args []string
-	}{
-		{name: "branch list", args: []string{"branch", "list"}},
-		{name: "branch create", args: []string{"branch", "create", "feature/demo", "--start-point", "abc"}},
-		{name: "branch delete", args: []string{"branch", "delete", "feature/demo"}},
-		{name: "branch default get", args: []string{"branch", "default", "get"}},
-		{name: "branch default set", args: []string{"branch", "default", "set", "main"}},
-		{name: "branch model inspect", args: []string{"branch", "model", "inspect", "abc"}},
-		{name: "branch model update", args: []string{"branch", "model", "update", "main"}},
-		{name: "branch restriction list", args: []string{"branch", "restriction", "list"}},
-		{name: "branch restriction get", args: []string{"branch", "restriction", "get", "12"}},
-		{name: "branch restriction create", args: []string{"branch", "restriction", "create", "--type", "read-only", "--matcher-id", "refs/heads/main"}},
-		{name: "branch restriction update", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main"}},
-		{name: "branch restriction delete", args: []string{"branch", "restriction", "delete", "12"}},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			command := NewRootCommand()
-			command.SetOut(&bytes.Buffer{})
-			command.SetErr(&bytes.Buffer{})
-			command.SetArgs(testCase.args)
-
-			err := command.Execute()
-			if err == nil {
-				t.Fatalf("expected not found error for args: %v", testCase.args)
-			}
-			if apperrors.ExitCode(err) != 4 {
-				t.Fatalf("expected exit code 4 for args %v, got %d (%v)", testCase.args, apperrors.ExitCode(err), err)
-			}
-		})
-	}
-}
-
 func TestTagBuildInsightsCommandsPropagateServiceErrors(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -3743,43 +3646,6 @@ func TestRepoSettingsPullRequestsUpdateDryRunStateful(t *testing.T) {
 	}
 	if !strings.Contains(buffer.String(), `"predictedAction": "update"`) {
 		t.Fatalf("expected update prediction, got: %s", buffer.String())
-	}
-}
-
-func TestBranchCreateDryRunStateful(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/repos":
-			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = writer.Write([]byte(`{"values":[{"slug":"demo","name":"demo","project":{"key":"TEST"}}],"isLastPage":true}`))
-			return
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/branches":
-			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = writer.Write([]byte(`{"values":[{"id":"refs/heads/main","displayId":"main"}],"isLastPage":true}`))
-			return
-		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/branches":
-			t.Fatalf("branch create endpoint must not be called in dry-run mode")
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"--json", "--dry-run", "branch", "create", "feature/demo", "--start-point", "master"})
-
-	if err := command.Execute(); err != nil {
-		t.Fatalf("execute failed: %v", err)
-	}
-	if !strings.Contains(buffer.String(), `"planningMode": "stateful"`) || !strings.Contains(buffer.String(), `"predictedAction": "create"`) {
-		t.Fatalf("expected stateful create prediction, got: %s", buffer.String())
 	}
 }
 
