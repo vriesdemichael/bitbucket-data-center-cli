@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -28,8 +27,11 @@ func newQualityTestService(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestQualityServiceValidationGuards(t *testing.T) {
+	// Every case here is refused before a request is built, so the handler is
+	// an assertion rather than a stand-in: reaching it means a guard let
+	// something through (ADR-079).
 	service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
+		t.Errorf("validation let a request through: %s %s", r.Method, r.URL.Path)
 	})
 
 	err := service.SetBuildStatus(context.Background(), "", BuildStatusSetInput{})
@@ -87,10 +89,10 @@ func TestQualityServiceValidationGuards(t *testing.T) {
 		t.Fatalf("expected annotation validation error, got %v", err)
 	}
 
-	_, err = service.CreateRequiredBuildCheck(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, map[string]any{"id": strconv.Itoa(1)})
-	if err != nil && !strings.Contains(err.Error(), "invalid required build check payload") {
-		t.Fatalf("expected either success or invalid required build check payload error, got %v", err)
-	}
+	// CreateRequiredBuildCheck with a valid payload used to sit here, which is
+	// not a validation case: it calls out, and its assertion accepted success
+	// or one particular error, so it could not fail. The create is covered
+	// against a real server by TestLiveRequiredBuildCheckLifecycle.
 }
 
 func TestQualityServicePaginationAndFallbackBranches(t *testing.T) {

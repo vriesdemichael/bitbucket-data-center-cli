@@ -1,17 +1,17 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 567,
+    "mocked_servers": 561,
     "files": 96,
-    "functions": 535,
+    "functions": 529,
     "by_class": {
-      "bitbucket-behaviour": 349,
+      "bitbucket-behaviour": 344,
       "canned-response": 80,
       "external-service": 14,
       "harness-constructor": 19,
-      "status-taxonomy": 69,
+      "status-taxonomy": 67,
       "transport-fault": 29,
-      "unreached-guard": 7
+      "unreached-guard": 8
     },
     "behaviour_by_package": {
       "internal/cli": 132,
@@ -42,7 +42,6 @@
       "internal/services/browse": 4,
       "internal/services/comment": 12,
       "internal/services/commit": 4,
-      "internal/services/diff": 5,
       "internal/services/forksync": 1,
       "internal/services/gpgkey": 2,
       "internal/services/jira": 3,
@@ -5182,20 +5181,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 16,
-      "function": "TestDiffRefsDefaultAndNameOnlyModes",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/diff/service_test.go",
-      "line": 58,
+      "line": 15,
       "function": "TestDiffRefsPatchAndStatErrorBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -5208,33 +5194,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 120,
-      "function": "TestDiffPRNameOnly",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/diff/service_test.go",
-      "line": 167,
-      "function": "TestDiffRefsNotFoundMapsToNotFound",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/diff/service_test.go",
-      "line": 283,
+      "line": 183,
       "function": "TestDiffPRPatchAndStatModes",
       "class": "canned-response",
       "signals": [
@@ -5246,7 +5206,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 308,
+      "line": 208,
       "function": "TestDiffPRPatchAndStatModes",
       "class": "canned-response",
       "signals": [
@@ -5258,7 +5218,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 336,
+      "line": 236,
       "function": "TestDiffPRErrorBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -5271,7 +5231,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 397,
+      "line": 297,
       "function": "TestDiffRefsStatAndCommitWithPath",
       "class": "canned-response",
       "signals": [
@@ -5283,7 +5243,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 427,
+      "line": 327,
       "function": "TestDiffRefsStatAndCommitWithPath",
       "class": "canned-response",
       "signals": [
@@ -5295,20 +5255,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 453,
-      "function": "TestDiffPRDefaultRawAndUnsupportedOutput",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/diff/service_test.go",
-      "line": 490,
+      "line": 353,
       "function": "TestDiffCommitStatusErrorMapping",
       "class": "status-taxonomy",
       "signals": [
@@ -5321,7 +5268,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 515,
+      "line": 378,
       "function": "TestDiffRefsTransportFailure",
       "class": "canned-response",
       "signals": [
@@ -5332,7 +5279,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 581,
+      "line": 444,
       "function": "TestDiffTransportFailureBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -5344,7 +5291,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 658,
+      "line": 521,
       "function": "newDiffServiceWithHandler",
       "class": "harness-constructor",
       "signals": [
@@ -5355,40 +5302,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 669,
-      "function": "TestCompareChanges",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/diff/service_test.go",
-      "line": 711,
-      "function": "TestCompareDiff",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/diff/service_test.go",
-      "line": 747,
+      "line": 532,
       "function": "TestFormatRestDiff",
       "class": "canned-response",
       "signals": [
@@ -5402,7 +5316,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 1030,
+      "line": 815,
       "function": "TestStatRunsSurfaceAnUndecodableSummary",
       "class": "canned-response",
       "signals": [
@@ -6348,7 +6262,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 19,
+      "line": 18,
       "function": "newQualityTestService",
       "class": "harness-constructor",
       "signals": [
@@ -6359,20 +6273,21 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 30,
+      "line": 29,
       "function": "TestQualityServiceValidationGuards",
-      "class": "status-taxonomy",
+      "class": "unreached-guard",
       "signals": [
-        "answers-any-request",
+        "asserts-http-method",
+        "fails-if-the-server-is-reached",
         "handler-passed-to-a-helper",
-        "returns-a-status"
+        "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 96,
+      "line": 98,
       "function": "TestQualityServicePaginationAndFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -6389,7 +6304,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 235,
+      "line": 237,
       "function": "TestSetBuildStatusValidationAndOptionalFields",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -6405,7 +6320,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 278,
+      "line": 280,
       "function": "TestQualityReportAndAnnotationFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -6420,7 +6335,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 342,
+      "line": 344,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -6436,7 +6351,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 416,
+      "line": 418,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -6452,7 +6367,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 438,
+      "line": 440,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -6468,7 +6383,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 484,
+      "line": 486,
       "function": "TestQualityRequiredAndInsightsErrorHandlingBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -6480,7 +6395,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 544,
+      "line": 546,
       "function": "TestQualityRequiredAndInsightsErrorHandlingBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -6492,7 +6407,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 584,
+      "line": 586,
       "function": "TestQualityServiceScopedAndDeploymentsFlow",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -6508,7 +6423,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 882,
+      "line": 884,
       "function": "TestQualityServiceScopedAndDeploymentsErrorPaths",
       "class": "transport-fault",
       "signals": [

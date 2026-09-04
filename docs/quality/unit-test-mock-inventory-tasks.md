@@ -6,9 +6,9 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 418 | write the live test, then delete the mock |
+| `move-to-live` | 411 | write the live test, then delete the mock |
 | `remove` | 80 | delete; it asserts nothing a live test would not already give |
-| `keep` | 36 | legitimate unit test under ADR-079 |
+| `keep` | 37 | legitimate unit test under ADR-079 |
 | `follows-callers` | 19 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
@@ -23,8 +23,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/api/api_test.go` | 23 | 21 | 1 | 1 | 0 |
 | `internal/services/reviewer/service_test.go` | 17 | 17 | 0 | 0 | 0 |
 | `internal/services/comment/service_test.go` | 24 | 14 | 7 | 2 | 1 |
-| `internal/services/diff/service_test.go` | 18 | 10 | 7 | 0 | 1 |
-| `internal/services/quality/service_test.go` | 12 | 10 | 0 | 1 | 1 |
+| `internal/services/quality/service_test.go` | 12 | 9 | 0 | 2 | 1 |
 | `internal/services/reposettings/service_test.go` | 11 | 9 | 0 | 1 | 1 |
 | `internal/cli/pr_review_visibility_test.go` | 8 | 8 | 0 | 0 | 0 |
 | `internal/cli/permission_checker_test.go` | 8 | 7 | 0 | 0 | 1 |
@@ -38,6 +37,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/repo/cat_edit_test.go` | 5 | 5 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/sync_test.go` | 5 | 5 | 0 | 0 | 0 |
 | `internal/cli/pr_comments_extension_test.go` | 5 | 5 | 0 | 0 | 0 |
+| `internal/services/diff/service_test.go` | 12 | 4 | 7 | 0 | 1 |
 | `internal/cli/cmd/search/search_test.go` | 5 | 4 | 1 | 0 | 0 |
 | `internal/cli/pr_status_command_test.go` | 5 | 4 | 1 | 0 | 0 |
 | `internal/services/repository/service_test.go` | 5 | 4 | 1 | 0 | 0 |
