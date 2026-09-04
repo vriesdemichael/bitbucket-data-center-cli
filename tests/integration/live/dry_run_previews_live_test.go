@@ -106,3 +106,65 @@ func assertLivePreview(t *testing.T, output, predictedAction string) {
 		}
 	}
 }
+
+// TestLiveAuthIdentity covers `auth identity` and its `whoami` alias against
+// the account actually being used.
+//
+// The mock answered with a user it invented and asserted bb printed that slug,
+// which proves the formatter and the fixture agree. Asking the server who it
+// thinks you are is the only version of this question worth answering.
+func TestLiveAuthIdentity(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	t.Setenv("BITBUCKET_URL", harness.config.BitbucketURL)
+	t.Setenv("BITBUCKET_USERNAME", harness.config.BitbucketUsername)
+	t.Setenv("BITBUCKET_PASSWORD", harness.config.BitbucketPassword)
+	t.Setenv("BITBUCKET_TOKEN", harness.config.BitbucketToken)
+
+	expected := harness.username()
+
+	t.Run("identity names the authenticated account", func(t *testing.T) {
+		output := mustLiveCLI(t, "auth", "identity")
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected %q in the identity output:\n%s", expected, output)
+		}
+	})
+
+	t.Run("whoami is the same answer", func(t *testing.T) {
+		output, err := executeLiveCLI(t, "auth", "whoami")
+		if err != nil {
+			t.Fatalf("auth whoami failed: %v\noutput: %s", err, output)
+		}
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected %q from whoami:\n%s", expected, output)
+		}
+	})
+}
+
+// TestLiveReviewerConditionCreateDryRun completes the dry-run set.
+func TestLiveReviewerConditionCreateDryRun(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	before := mustLiveCLI(t, "reviewer", "condition", "list", "--repo", repoRef)
+
+	condition := `{"sourceMatcher":{"id":"ANY_REF","type":{"id":"ANY_REF"}},` +
+		`"targetMatcher":{"id":"refs/heads/master","type":{"id":"BRANCH"}},"requiredApprovals":1}`
+	output := mustLiveCLI(t, "--dry-run", "reviewer", "condition", "create", condition, "--repo", repoRef)
+
+	assertLivePreview(t, output, "create")
+
+	if after := mustLiveCLI(t, "reviewer", "condition", "list", "--repo", repoRef); after != before {
+		t.Fatalf("the dry run changed the conditions\nbefore: %s\nafter:  %s", before, after)
+	}
+}
