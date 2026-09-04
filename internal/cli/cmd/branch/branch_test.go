@@ -36,7 +36,11 @@ func newMockBranchServer(t *testing.T) *httptest.Server {
 			w.WriteHeader(http.StatusNoContent)
 
 		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/branches":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"refs/heads/main","displayId":"main","latestCommit":"1111111"}]}`))
+			// The real endpoint filters by filterText, and setting a default
+			// branch now checks the branch exists before writing it. A mock
+			// that returned the same list whatever was asked would answer
+			// "main" to a query for "master" and quietly defeat that check.
+			_, _ = w.Write([]byte(branchListingFor(r.URL.Query().Get("filterText"))))
 
 		case r.Method == http.MethodPost && path == "/rest/branch-utils/latest/projects/PRJ/repos/demo/branches":
 			_, _ = w.Write([]byte(`{"id":"refs/heads/feature-1","displayId":"feature-1","latestCommit":"2222222"}`))
@@ -611,4 +615,25 @@ func TestBranchValidationErrors(t *testing.T) {
 			t.Fatalf("expected error for args %v, got nil", args)
 		}
 	}
+}
+
+// branchListingFor answers a branch listing the way Bitbucket does: filterText
+// narrows the result, and an unmatched filter comes back empty rather than
+// returning everything.
+func branchListingFor(filterText string) string {
+	branches := map[string]string{
+		"main":      `{"id":"refs/heads/main","displayId":"main","latestCommit":"1111111"}`,
+		"master":    `{"id":"refs/heads/master","displayId":"master","latestCommit":"3333333"}`,
+		"feature-1": `{"id":"refs/heads/feature-1","displayId":"feature-1","latestCommit":"2222222"}`,
+		"develop":   `{"id":"refs/heads/develop","displayId":"develop","latestCommit":"4444444"}`,
+	}
+
+	matched := []string{}
+	for _, name := range []string{"main", "master", "feature-1", "develop"} {
+		if filterText == "" || strings.Contains(name, filterText) {
+			matched = append(matched, branches[name])
+		}
+	}
+
+	return `{"isLastPage":true,"values":[` + strings.Join(matched, ",") + `]}`
 }

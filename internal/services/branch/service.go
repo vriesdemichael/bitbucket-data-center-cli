@@ -227,6 +227,18 @@ func (service *Service) SetDefault(ctx context.Context, repo RepositoryRef, bran
 		return apperrors.New(apperrors.KindValidation, "default branch name is required", nil)
 	}
 
+	// Bitbucket accepts a ref that does not exist -- 204, and the repository is
+	// left pointing at nothing. Its own UI only offers real branches, so a
+	// typo here is silent and the repository's default branch is broken until
+	// somebody notices. Refuse it (ADR-054).
+	//
+	// An empty repository is the exception and a real use: setting the default
+	// before the first push is how a repository gets `main` instead of
+	// `master`. There is nothing to check against there, so it is allowed.
+	if err := service.assertBranchExists(ctx, repo, ref, branch); err != nil {
+		return err
+	}
+
 	body := openapigenerated.SetDefaultBranch2JSONRequestBody{Id: &ref}
 	response, err := service.client.SetDefaultBranch2WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
@@ -235,6 +247,45 @@ func (service *Service) SetDefault(ctx context.Context, repo RepositoryRef, bran
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
+
+// assertBranchExists refuses a default branch that names no branch in a
+// repository that has some.
+func (service *Service) assertBranchExists(ctx context.Context, repo RepositoryRef, ref, requested string) error {
+	display := strings.TrimPrefix(ref, "refs/heads/")
+
+	matches, err := service.List(ctx, repo, ListOptions{FilterText: display, MaxResults: branchExistenceScanLimit})
+	if err != nil {
+		return err
+	}
+
+	for _, candidate := range matches {
+		if candidate.Id != nil && *candidate.Id == ref {
+			return nil
+		}
+		if candidate.DisplayId != nil && *candidate.DisplayId == display {
+			return nil
+		}
+	}
+
+	// The filter found nothing, which is either "no such branch" or "no
+	// branches at all". Only the first is an error.
+	any, err := service.List(ctx, repo, ListOptions{MaxResults: 1})
+	if err != nil {
+		return err
+	}
+	if len(any) == 0 {
+		return nil
+	}
+
+	return apperrors.New(apperrors.KindValidation,
+		fmt.Sprintf("branch %q does not exist in %s/%s; Bitbucket would accept it and leave the repository pointing at nothing",
+			requested, repo.ProjectKey, repo.Slug), nil)
+}
+
+// branchExistenceScanLimit bounds the filtered lookup. The filter is a prefix
+// match, so a name that is a prefix of many others could return a long page;
+// the exact match is what counts and it is on the first page.
+const branchExistenceScanLimit = 100
 
 func (service *Service) FindByCommit(ctx context.Context, repo RepositoryRef, commitID string, limit int) ([]openapigenerated.RestMinimalRef, error) {
 	if err := validateRepositoryRef(repo); err != nil {
