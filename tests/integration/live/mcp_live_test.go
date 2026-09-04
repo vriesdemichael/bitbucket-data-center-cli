@@ -5,7 +5,9 @@ package live_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -657,4 +659,141 @@ func TestLiveMCPAuditTrailRecordsInvocations(t *testing.T) {
 	if statuses[1] != "denied" {
 		t.Errorf("second audit status = %q, want denied; the denial is the event Bitbucket's own audit log cannot hold", statuses[1])
 	}
+}
+
+// TestLiveMCPSubmitReviewMutatesForReal covers submit_pr_review end to end.
+//
+// This is the one review action with no other way in: there is no `bb pr review
+// needs-work`, so NeedsWork is reachable through MCP and nowhere else. The
+// command-reach report says every CLI command is asserted live, and this sits
+// outside what that report can see -- its only coverage was a unit test against
+// a participant payload the fixture wrote, which is a claim about how Bitbucket
+// records a review status, made without asking Bitbucket.
+//
+// All three actions run against the same pull request, and each is read back
+// through a second tool rather than trusted from the write's own answer.
+func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	branch := fmt.Sprintf("lt-mcp-review-%d", time.Now().UnixNano()%100000)
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "mcp-review.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+	if err != nil {
+		t.Fatalf("create pull request failed: %v", err)
+	}
+
+	// A second account is not a convenience here. Bitbucket refuses the
+	// author's own review outright -- "Authors may not update their status",
+	// InvalidPullRequestRoleException, 400 -- so a test that reviews as the
+	// author proves nothing about the three actions, and a mock would never
+	// have said so.
+	reviewer, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create reviewer failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reviewer.Username, "REPO_WRITE"); err != nil {
+		t.Fatalf("grant the reviewer write access failed: %v", err)
+	}
+	if _, err := harness.liveJSON(ctx, http.MethodPost,
+		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/participants",
+			seeded.Key, repo.Slug, pullRequestID),
+		map[string]any{"user": map[string]any{"name": reviewer.Username}, "role": "REVIEWER"}); err != nil {
+		t.Fatalf("add the reviewer failed: %v", err)
+	}
+
+	// The server runs as the reviewer, because the review does.
+	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
+
+	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+		callCtx := context.Background()
+
+		// The two tools spell the same argument differently: submit_pr_review
+		// takes pr_id, get_pull_request takes id.
+		reviewArguments := map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID}
+		readArguments := map[string]any{"project": seeded.Key, "repo": repo.Slug, "id": pullRequestID}
+
+		submit := func(t *testing.T, action string) {
+			t.Helper()
+
+			args := map[string]any{}
+			for key, value := range reviewArguments {
+				args[key] = value
+			}
+			args["action"] = action
+
+			var payload struct {
+				PullRequest struct {
+					Reviewers []struct {
+						Name     string `json:"name"`
+						Status   string `json:"status"`
+						Approved bool   `json:"approved"`
+					} `json:"reviewers"`
+				} `json:"pull_request"`
+			}
+			callAndDecode(t, session, callCtx, "submit_pr_review", args, &payload)
+		}
+
+		statusOf := func(t *testing.T) (string, bool) {
+			t.Helper()
+
+			var payload struct {
+				PullRequest struct {
+					Reviewers []struct {
+						Name     string `json:"name"`
+						Status   string `json:"status"`
+						Approved bool   `json:"approved"`
+					} `json:"reviewers"`
+				} `json:"pull_request"`
+			}
+			callAndDecode(t, session, callCtx, "get_pull_request", readArguments, &payload)
+
+			for _, participant := range payload.PullRequest.Reviewers {
+				if participant.Name == reviewer.Username {
+					return participant.Status, participant.Approved
+				}
+			}
+
+			return "", false
+		}
+
+		t.Run("approve", func(t *testing.T) {
+			submit(t, "approve")
+
+			status, approved := statusOf(t)
+			if !approved || !strings.EqualFold(status, "APPROVED") {
+				t.Fatalf("after approve: status=%q approved=%v", status, approved)
+			}
+		})
+
+		t.Run("needs_work", func(t *testing.T) {
+			// The action with no CLI equivalent, and the reason this test
+			// exists.
+			submit(t, "needs_work")
+
+			status, approved := statusOf(t)
+			if approved || !strings.EqualFold(status, "NEEDS_WORK") {
+				t.Fatalf("after needs_work: status=%q approved=%v", status, approved)
+			}
+		})
+
+		t.Run("unapprove", func(t *testing.T) {
+			submit(t, "unapprove")
+
+			if status, approved := statusOf(t); approved || strings.EqualFold(status, "NEEDS_WORK") {
+				t.Fatalf("after unapprove: status=%q approved=%v", status, approved)
+			}
+		})
+	}, "ai", "mcp", "serve", "--yolo")
 }

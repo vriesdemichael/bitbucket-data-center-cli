@@ -38,6 +38,29 @@ rather than minutes. Write it to reject what the real server rejects -- the
 transition mocks now refuse a missing version, because accepting one is exactly
 what let three broken commands pass.
 
+### Disagreeing with the mock inventory
+
+`tools/mock-inventory` classifies every mocked server from signals in the test,
+and the signals a fault-injection test leaves are the same ones a routing test
+leaves: serve a path, answer a status. It has already had to be widened twice in
+that direction, and each widening risks a wrong answer somewhere it was
+previously right.
+
+So when the classifier is wrong about a test, say so at the test rather than
+tuning the classifier:
+
+```go
+// mock-inventory: transport-fault — a server that fails and then succeeds is
+// the subject; no live Bitbucket produces one on request.
+func TestRetriesDoNotReplayMutations(t *testing.T) {
+```
+
+The reason is required and replaces the generated one in the task list, and the
+entry is marked `reviewed` in the report. An override without a reason, or
+naming a class that does not exist, is ignored -- saying which class and why is
+the whole cost of disagreeing, and it keeps the judgement reviewable instead of
+buried in a heuristic.
+
 ### Writing a live test the scanner can read
 
 `tools/command-reach` finds invocations by parsing the tests, so a call it

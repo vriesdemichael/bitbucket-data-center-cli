@@ -84,6 +84,11 @@ type entry struct {
 	// judgement the classifier cannot make.
 	Action Action `json:"action"`
 	Reason string `json:"reason"`
+
+	// Reviewed marks an entry whose class came from a directive in the test
+	// rather than from the classifier, so somebody has already looked and said
+	// why. Reason then carries their words instead of the generated ones.
+	Reviewed bool `json:"reviewed,omitempty"`
 }
 
 // Action is the disposition proposed for a mock.
