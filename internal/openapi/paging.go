@@ -35,6 +35,21 @@ func Offset(start *int32) *int {
 	return &next
 }
 
+// pageWindow is how much PageThrough asks for at once.
+//
+// It is Bitbucket's own default page size, and it is the loop's number rather
+// than the caller's. Asking for the caller's whole cap looked simpler and was
+// not: AllResults put limit=1000000 on the wire, Bitbucket silently reduced it
+// to 1000, and the size of every request was therefore an artefact of a number
+// nobody chose. Worse, it meant the walk only ever ran a second time for a
+// listing above a thousand entries -- so on every listing a test suite can
+// afford to seed, the paging this whole file exists for did not happen.
+//
+// The cost is more requests for a very large listing: a thousand entries is
+// forty round trips rather than one. That is what paging is, and a `--all` over
+// thousands is rare next to a mechanism nothing exercises.
+const pageWindow = 25
+
 // PageThrough follows Bitbucket's paging convention until it has maxResults or
 // the server says there is no more.
 //
@@ -46,7 +61,8 @@ func Offset(start *int32) *int {
 //
 // The stopping rules, in one place:
 //
-//   - ask only for what is still missing, so the last page is not oversized;
+//   - ask for a page at a time, and never for more than is still missing, so
+//     the last page is not oversized;
 //   - a page with no values ends the listing only if the server does not say
 //     there is more behind it: Bitbucket filters some windows after sizing
 //     them, so an empty page can sit in front of a full one;
@@ -80,7 +96,7 @@ func PageThrough[T any](
 			break
 		}
 
-		page, err := fetch(ctx, start, remaining)
+		page, err := fetch(ctx, start, min(remaining, pageWindow))
 		if err != nil {
 			return nil, err
 		}

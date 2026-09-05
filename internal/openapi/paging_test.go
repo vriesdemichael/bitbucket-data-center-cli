@@ -171,6 +171,34 @@ func TestPageThroughNeverAsksForMoreThanItStillNeeds(t *testing.T) {
 	}
 }
 
+// The request size is the loop's, not the caller's.
+//
+// A caller asking for everything used to put its own number on the wire, and
+// Bitbucket reduced it to 1000 without saying so -- which meant the walk ran
+// once for any listing a test could seed, and the paging was never exercised.
+func TestPageThroughAsksForAPageAtATime(t *testing.T) {
+	source := &pagedSource{items: items(60), pageSize: 100}
+
+	got, err := openapi.PageThrough(context.Background(), 0, 1_000_000, source.fetch)
+	if err != nil {
+		t.Fatalf("PageThrough: %v", err)
+	}
+	if len(got) != 60 {
+		t.Fatalf("returned %d items, want all 60", len(got))
+	}
+
+	if len(source.requests) < 2 {
+		t.Fatalf("a cap of a million asked for everything in %d request(s): %v",
+			len(source.requests), source.requests)
+	}
+	for index, request := range source.requests {
+		if request.limit > 100 {
+			t.Errorf("request %d asked for %d, which is the caller's cap rather than a page",
+				index, request.limit)
+		}
+	}
+}
+
 // A server that overshoots the limit must not overshoot the caller.
 func TestPageThroughTrimsAnOversizedPage(t *testing.T) {
 	generous := func(_ context.Context, _, _ int) (openapi.Page[int], error) {

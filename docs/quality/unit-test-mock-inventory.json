@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 281,
+    "mocked_servers": 280,
     "files": 88,
-    "functions": 264,
+    "functions": 263,
     "by_class": {
-      "bitbucket-behaviour": 108,
+      "bitbucket-behaviour": 107,
       "canned-response": 36,
       "external-service": 14,
       "harness-constructor": 18,
@@ -14,7 +14,7 @@
       "unreached-guard": 15
     },
     "behaviour_by_package": {
-      "internal/cli": 25,
+      "internal/cli": 24,
       "internal/cli/cmd/admin": 1,
       "internal/cli/cmd/api": 4,
       "internal/cli/cmd/auth": 2,
@@ -1260,24 +1260,7 @@
     },
     {
       "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 36,
-      "function": "TestGovernanceAndRepoDryRunPredictionBranches",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 146,
+      "line": 50,
       "function": "TestBranchProjectAdminTagDryRunPredictionBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1294,7 +1277,7 @@
     },
     {
       "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 309,
+      "line": 213,
       "function": "TestReviewerDryRunRepositoryAndProjectBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1309,7 +1292,7 @@
     },
     {
       "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 360,
+      "line": 264,
       "function": "TestDryRunRepoPermissionPrechecksFailBeforePlanning",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1325,7 +1308,7 @@
     },
     {
       "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 439,
+      "line": 343,
       "function": "TestDryRunProjectPermissionPrechecksFailBeforePlanning",
       "class": "bitbucket-behaviour",
       "signals": [
