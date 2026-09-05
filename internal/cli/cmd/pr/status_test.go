@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
@@ -166,3 +167,18 @@ func TestPullRequestStatusNotOnBranchNotesSection(t *testing.T) {
 //
 // What is left is the note, and it needs a working tree with no branch
 // checked out. The live CLI runs inside this repository and is always on one.
+
+// testPrCommand wires the pr tree under a root carrying the persistent flags
+// the commands read.
+//
+// It used to live in checkout_test.go, which is gone: `pr checkout` is
+// exercised against a real clone in TestLivePullRequestCheckout, where the
+// refspec, the upstream and the branch config are things a stub cannot prove.
+func testPrCommand(deps Dependencies) *cobra.Command {
+	root := &cobra.Command{Use: "bb"}
+	root.PersistentFlags().Bool("json", false, "")
+	root.PersistentFlags().Bool("dry-run", false, "")
+	root.AddCommand(New(deps))
+
+	return root
+}

@@ -6,8 +6,8 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 6 | write the live test, then delete the mock |
-| `keep` | 141 | legitimate unit test under ADR-079 |
+| `move-to-live` | 4 | write the live test, then delete the mock |
+| `keep` | 142 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
@@ -18,8 +18,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/pr/reviewer_automation_test.go` | 4 | 1 | 0 | 3 | 0 |
 | `internal/cli/cmd/pr/pr_test.go` | 3 | 1 | 0 | 2 | 0 |
 | `internal/mcp/tools_pr_test.go` | 2 | 1 | 0 | 1 | 0 |
-| `internal/cli/cmd/pr/checkout_test.go` | 1 | 1 | 0 | 0 | 0 |
-| `internal/cli/pr_checkout_command_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/mcp/client_compat_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/transport/httpclient/client_test.go` | 23 | 0 | 0 | 23 | 0 |
 | `internal/transport/githubrelease/client_test.go` | 12 | 0 | 0 | 0 | 12 |
@@ -75,5 +73,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/reviewergroup/reviewer_group_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/tag/tag_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/commit_test.go` | 1 | 0 | 0 | 1 | 0 |
+| `internal/cli/pr_checkout_command_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/pr_checkout_failures_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/services/contract/paging_contract_test.go` | 1 | 0 | 0 | 1 | 0 |

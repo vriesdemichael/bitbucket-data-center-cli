@@ -1,21 +1,20 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 179,
-    "files": 62,
-    "functions": 170,
+    "mocked_servers": 178,
+    "files": 61,
+    "functions": 169,
     "by_class": {
-      "bitbucket-behaviour": 6,
+      "bitbucket-behaviour": 4,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
-      "unreachable-state": 21,
+      "unreachable-state": 22,
       "unreached-guard": 39
     },
     "behaviour_by_package": {
-      "internal/cli": 1,
-      "internal/cli/cmd/pr": 3,
+      "internal/cli/cmd/pr": 2,
       "internal/mcp": 2
     }
   },
@@ -200,19 +199,6 @@
       "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
-      "file": "internal/cli/cmd/pr/checkout_test.go",
-      "line": 139,
-      "function": "newCheckoutServer",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
       "file": "internal/cli/cmd/pr/create_interactive_test.go",
       "line": 21,
       "function": "TestPrCreateNamesEveryMissingFlagAtOnce",
@@ -375,7 +361,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/status_test.go",
-      "line": 58,
+      "line": 59,
       "function": "newPullRequestStatusServer",
       "class": "unreachable-state",
       "signals": [
@@ -610,16 +596,17 @@
     },
     {
       "file": "internal/cli/pr_checkout_command_test.go",
-      "line": 152,
+      "line": 153,
       "function": "newCheckoutServer",
-      "class": "bitbucket-behaviour",
+      "class": "unreachable-state",
       "signals": [
         "returns-bitbucket-entity",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "the git states these need are a remote that already exists, a name that would collide, a branch that has diverged and a working directory outside a repository; the pull request payload is scaffolding for them. TestLivePullRequestCheckout covers what a real clone can show.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/pr_checkout_failures_test.go",
