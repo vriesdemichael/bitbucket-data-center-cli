@@ -65,6 +65,47 @@ func TestLivePullRequestMergeability(t *testing.T) {
 		if !strings.EqualFold(outcome, "CONFLICTED") {
 			t.Errorf("outcome = %q, want CONFLICTED", outcome)
 		}
+
+		// A conflict is not a veto, which is worth stating because it is the
+		// natural place to look for one. Bitbucket reports a conflicted merge
+		// through its own flag and leaves the veto list empty, so `pr get`
+		// prints "Merge conflicts: yes" and no blockers at all.
+		human := mustLiveHumanCLI(t, "pr", "get", id)
+		if !strings.Contains(human, "Merge conflicts: yes") {
+			t.Errorf("expected the conflict to be named in the human output:\n%s", human)
+		}
+		if strings.Contains(human, "Merge blockers:") {
+			t.Errorf("a conflict was reported as a veto, which is a shape this suite says it is not:\n%s", human)
+		}
+	})
+
+	// The vetoes, against vetoes Bitbucket wrote.
+	//
+	// TestMergeBlockerLines covers the shapes a veto can take; what it cannot
+	// say is whether a real refusal produces one at all, or whether the bullets
+	// come out empty because the fields it reads are not the fields Bitbucket
+	// fills in. A required-approver check is the cheapest way to make the server
+	// refuse a pull request that merges cleanly.
+	t.Run("a merge check appears as a named blocker", func(t *testing.T) {
+		mustLiveCLI(t, "repo", "settings", "pull-requests", "update-approvers", "--count", "1")
+
+		const branch = "feature/needs-approval"
+		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "needs-approval.txt"); err != nil {
+			t.Fatalf("push commit on branch failed: %v", err)
+		}
+		id := createLivePRForRegression(t, branch, "Needs approval", "--no-default-reviewers", "--no-codeowners")
+
+		human := mustLiveHumanCLI(t, "pr", "get", id)
+		if !strings.Contains(human, "Merge blockers:") {
+			t.Fatalf("a pull request short of its required approvals named no blockers:\n%s", human)
+		}
+		// The defect the rendering exists for: a veto with no summary printed
+		// an empty bullet, which reads as a blocker with no name.
+		for _, line := range strings.Split(human, "\n") {
+			if strings.TrimSpace(line) == "-" {
+				t.Errorf("a merge blocker printed an empty bullet:\n%s", human)
+			}
+		}
 	})
 
 	t.Run("a declined pull request is readable without a mergeability answer", func(t *testing.T) {

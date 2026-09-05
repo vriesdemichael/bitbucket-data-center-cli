@@ -294,3 +294,28 @@ func TestPageThroughStopsAtAnEmptyLastPage(t *testing.T) {
 		t.Fatalf("made %d requests; a non-advancing empty page was followed", served)
 	}
 }
+
+// Offset adapts the generated client's *int32, and a nil start has to stay nil.
+//
+// Nil is how an endpoint says it has no successor. Turning it into a pointer to
+// zero would say the next page starts at the beginning, which PageThrough reads
+// as a server repeating itself -- the same answer by luck, and the wrong reason.
+func TestOffset(t *testing.T) {
+	if got := openapi.Offset(nil); got != nil {
+		t.Errorf("Offset(nil) = %v, want nil", got)
+	}
+
+	start := int32(25)
+	got := openapi.Offset(&start)
+	if got == nil {
+		t.Fatal("Offset(&25) = nil, want a pointer to 25")
+	}
+	if *got != 25 {
+		t.Errorf("Offset(&25) = %d, want 25", *got)
+	}
+
+	zero := int32(0)
+	if got := openapi.Offset(&zero); got == nil || *got != 0 {
+		t.Errorf("Offset(&0) = %v, want a pointer to 0 rather than nil", got)
+	}
+}

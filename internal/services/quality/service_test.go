@@ -2,7 +2,6 @@ package quality
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -116,48 +115,15 @@ func TestSetBuildStatusValidationAndOptionalFields(t *testing.T) {
 		}
 	})
 
-	t.Run("optional fields", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodPost || r.URL.Path != "/rest/build-status/latest/commits/abc" {
-				http.NotFound(w, r)
-				return
-			}
-
-			body, _ := io.ReadAll(r.Body)
-			bodyText := string(body)
-			checks := []string{"\"name\":\"Build\"", "\"description\":\"Desc\"", "\"ref\":\"refs/heads/main\"", "\"parent\":\"ci\"", "\"buildNumber\":\"42\"", "\"duration\":123", "\"state\":\"SUCCESSFUL\""}
-			for _, expected := range checks {
-				if !strings.Contains(bodyText, expected) {
-					w.WriteHeader(http.StatusBadRequest)
-					_, _ = w.Write([]byte("missing field: " + expected))
-					return
-				}
-			}
-			w.WriteHeader(http.StatusNoContent)
-		}))
-		defer server.Close()
-
-		client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-		if err != nil {
-			t.Fatalf("create client: %v", err)
-		}
-
-		service := NewService(client)
-		err = service.SetBuildStatus(context.Background(), "abc", BuildStatusSetInput{
-			Key:         "ci/main",
-			State:       "successful",
-			URL:         "https://ci.example/1",
-			Name:        "Build",
-			Description: "Desc",
-			Ref:         "refs/heads/main",
-			Parent:      "ci",
-			BuildNumber: "42",
-			DurationMS:  123,
-		})
-		if err != nil {
-			t.Fatalf("expected no error, got: %v", err)
-		}
-	})
+	// The optional fields moved to the live suite.
+	//
+	// What was here matched substrings in the request body against a mock --
+	// "name":"Build", "duration":123 -- which says the client serialised them
+	// and nothing about whether Bitbucket kept them. A field that is sent and
+	// silently dropped looks identical from this side, and is the failure worth
+	// catching: the caller is told the build was recorded with a description it
+	// does not have. TestLiveBuildStatusLifecycle sets every one of them and
+	// reads them back.
 }
 
 func TestQualityReportAndAnnotationFallbackBranches(t *testing.T) {

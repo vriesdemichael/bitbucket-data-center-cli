@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"time"
 )
 
@@ -144,6 +146,31 @@ func TestLiveReviewerGroupUpdate(t *testing.T) {
 	if !strings.Contains(users, member.Username) {
 		t.Fatalf("the rename lost the group's member:\n%s", users)
 	}
+
+	// The other side of the id-or-name resolution: a name that is not there.
+	//
+	// It has to say so rather than fail on the decode, because the resolution
+	// happens before the request and the endpoint would otherwise be sent a
+	// group name where it expects a number -- which came back as a transient
+	// error and told a caller to retry a name that will never exist.
+	t.Run("a group that is not there is reported as missing", func(t *testing.T) {
+		for _, args := range [][]string{
+			{"reviewer-group", "update", "no-such-group", "--name", "x", "--repo", repoRef},
+			{"reviewer-group", "delete", "no-such-group", "--repo", repoRef},
+			{"reviewer-group", "update", "no-such-group", "--name", "x", "--project", seeded.Key},
+			{"reviewer-group", "delete", "no-such-group", "--project", seeded.Key},
+		} {
+			output, err := executeLiveCLI(t, append([]string{"--json"}, args...)...)
+			if err == nil {
+				t.Errorf("%s succeeded for a group that does not exist:\n%s", strings.Join(args, " "), output)
+
+				continue
+			}
+			if code := apperrors.ExitCode(err); code != 4 {
+				t.Errorf("%s exited %d, want 4 (not_found): %v", strings.Join(args, " "), code, err)
+			}
+		}
+	})
 }
 
 // TestLiveGroupPermissionGrants covers the two group grants whose only

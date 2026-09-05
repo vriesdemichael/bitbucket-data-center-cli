@@ -59,6 +59,40 @@ func TestLiveCLIInferRepoContextFromGitRemote(t *testing.T) {
 	if !strings.Contains(strings.ToLower(output), "master") && !strings.Contains(strings.ToLower(output), "main") {
 		t.Fatalf("expected branch output, got: %s", output)
 	}
+
+	// The pull request commands read the same inferred context, and they used to
+	// be checked against a mocked Bitbucket answering a fabricated pull request.
+	// The inference is the same code either way; what a mock cannot say is that
+	// the inferred project and slug address a repository the server agrees
+	// exists, which is the only way the inference can be wrong.
+	t.Run("the pull request commands use it too", func(t *testing.T) {
+		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, "feature/inferred", "inferred.txt"); err != nil {
+			t.Fatalf("push commit on branch failed: %v", err)
+		}
+		prID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, "feature/inferred", "master")
+		if err != nil {
+			t.Fatalf("create pull request failed: %v", err)
+		}
+
+		// Written out rather than looped: command-reach reads the command words
+		// out of the literal at the call site, and a slice it cannot follow is
+		// a command missing from the reach report without anything saying so.
+		getOutput, err := executeLiveCLI(t, "pr", "get", prID)
+		if err != nil {
+			t.Fatalf("pr get with inferred context failed: %v\noutput: %s", err, getOutput)
+		}
+		if !strings.Contains(getOutput, `Using repository context from git remote "origin"`) {
+			t.Errorf("pr get did not report the inferred context:\n%s", getOutput)
+		}
+
+		buildOutput, err := executeLiveCLI(t, "pr", "build", "status", prID)
+		if err != nil {
+			t.Fatalf("pr build status with inferred context failed: %v\noutput: %s", err, buildOutput)
+		}
+		if !strings.Contains(buildOutput, `Using repository context from git remote "origin"`) {
+			t.Errorf("pr build status did not report the inferred context:\n%s", buildOutput)
+		}
+	})
 }
 
 func TestLiveCLIInferRepoContextAmbiguity(t *testing.T) {

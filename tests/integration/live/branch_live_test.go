@@ -49,6 +49,25 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 		t.Fatalf("expected branch %s in list output, got: %s", branchName, listOutput)
 	}
 
+	// The listing options, which nothing had driven.
+	//
+	// --filter, --base and --details each add one query parameter, and a query
+	// parameter built wrong does not fail: it comes back with the wrong branches
+	// or with all of them. --filter is the one with a visible answer, so it is
+	// the one asserted; the other two are asked for so that a request Bitbucket
+	// refuses is a failure rather than a silent no-op.
+	filtered := mustLiveCLI(t, "branch", "list", "--filter", branchName, "--all")
+	if !strings.Contains(filtered, branchName) {
+		t.Fatalf("--filter %s excluded the branch it names:\n%s", branchName, filtered)
+	}
+	if strings.Contains(filtered, `"displayId": "master"`) {
+		t.Fatalf("--filter %s returned master as well, so it filtered nothing:\n%s", branchName, filtered)
+	}
+
+	mustLiveCLI(t, "branch", "list", "--base", "master", "--all")
+	mustLiveCLI(t, "branch", "list", "--details", "--all")
+	mustLiveCLI(t, "branch", "list", "--order-by", "ALPHABETICAL", "--all")
+
 	// Get default branch
 	defaultOutput, err := executeLiveCLI(t, "--json", "branch", "default", "get")
 	if err != nil {

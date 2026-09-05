@@ -278,16 +278,10 @@ func New(deps Dependencies) *cobra.Command {
 				if mergeability.Conflicted {
 					fmt.Fprintln(cmd.OutOrStdout(), "Merge conflicts: yes")
 				}
-				if len(mergeability.Blockers) > 0 {
+				if lines := mergeBlockerLines(mergeability.Blockers); len(lines) > 0 {
 					fmt.Fprintln(cmd.OutOrStdout(), "Merge blockers:")
-					for _, blocker := range mergeability.Blockers {
-						message := blocker.Summary
-						if message == "" {
-							message = blocker.Detail
-						} else if blocker.Detail != "" && !strings.EqualFold(blocker.Detail, blocker.Summary) {
-							message = fmt.Sprintf("%s (%s)", blocker.Summary, blocker.Detail)
-						}
-						fmt.Fprintf(cmd.OutOrStdout(), "- %s\n", message)
+					for _, line := range lines {
+						fmt.Fprintf(cmd.OutOrStdout(), "- %s\n", line)
 					}
 				}
 			}
@@ -3424,6 +3418,40 @@ var (
 	reviewStatuses = []string{"APPROVED", "NEEDS_WORK", "UNAPPROVED"}
 	threadStates   = []string{"open", "unresolved", "resolved", "pending", "all"}
 )
+
+// mergeBlockerLines renders one line per veto for `bb pr get`.
+//
+// A veto carries a summary and a detail and either can be empty, so the line has
+// to be built rather than read off one field: a veto with only a detail used to
+// print an empty bullet. The two are joined only when they say different things,
+// because Bitbucket repeats the summary as the detail for several of its own
+// merge checks.
+//
+// It is deliberately not mergeBlockingReasons. That one feeds the dry-run
+// preview's blockingReasons and joins the pair as "summary: detail" rather than
+// "summary (detail)", and it adds a line for a conflict and a fallback for a
+// veto-less refusal, neither of which belongs in a display list that only runs
+// when there are vetoes. The two formats are a divergence worth removing, but
+// blockingReasons is machine output and changing its shape is a contract change.
+func mergeBlockerLines(blockers []pullrequestservice.MergeBlocker) []string {
+	lines := make([]string, 0, len(blockers))
+
+	for _, blocker := range blockers {
+		summary := strings.TrimSpace(blocker.Summary)
+		detail := strings.TrimSpace(blocker.Detail)
+
+		switch {
+		case summary != "" && detail != "" && !strings.EqualFold(summary, detail):
+			lines = append(lines, fmt.Sprintf("%s (%s)", summary, detail))
+		case summary != "":
+			lines = append(lines, summary)
+		case detail != "":
+			lines = append(lines, detail)
+		}
+	}
+
+	return lines
+}
 
 // mergeBlockingReasons turns Bitbucket's veto list into the preview's
 // blockingReasons.

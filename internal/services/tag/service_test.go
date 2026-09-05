@@ -24,10 +24,18 @@ func newTagTestService(t *testing.T, handler http.HandlerFunc) *Service {
 	return NewService(client)
 }
 
-func TestTagServiceValidationAndStatusMapping(t *testing.T) {
+// TestTagServiceRefusesAnEmptyName covers the guard that runs before a request
+// is built.
+//
+// The 403-maps-to-authorization half that stood beside it is gone: that is one
+// assertion about openapi.MapStatusError, which has its own table test and a
+// guard stopping it from being re-tested per service. Whether the tag service is
+// wired to the taxonomy at all is asked against a server that really refuses, in
+// TestLiveEveryServiceMapsItsFailures.
+func TestTagServiceRefusesAnEmptyName(t *testing.T) {
+	// Refused before a request is built, so reaching the handler is the failure.
 	service := newTagTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte("forbidden"))
+		t.Errorf("validation let a request through: %s %s", r.Method, r.URL.Path)
 	})
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
@@ -35,11 +43,6 @@ func TestTagServiceValidationAndStatusMapping(t *testing.T) {
 	_, err := service.Create(context.Background(), repo, "", "abc", "")
 	if err == nil || !strings.Contains(err.Error(), "tag name is required") {
 		t.Fatalf("expected tag name validation error, got %v", err)
-	}
-
-	_, err = service.List(context.Background(), repo, ListOptions{MaxResults: 25})
-	if err == nil || !strings.Contains(err.Error(), "authorization") {
-		t.Fatalf("expected mapped authorization error, got %v", err)
 	}
 }
 
@@ -65,6 +68,7 @@ func TestTagServiceValidationAndMapStatusHelpers(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — the server is closed before the call, which no live instance can be asked to do; the subject is that every tag operation classifies a dead connection as transient.
 func TestTagServiceTransportAndValidationBranches(t *testing.T) {
 	t.Run("repository validation branches", func(t *testing.T) {
 		service := newTagTestService(t, func(w http.ResponseWriter, r *http.Request) {
@@ -85,6 +89,10 @@ func TestTagServiceTransportAndValidationBranches(t *testing.T) {
 		}
 	})
 
+	// A server that is not there, which is the one failure a live instance
+	// cannot be asked for and the one every paged call has to classify: a walk
+	// that loses the connection halfway must report it rather than return the
+	// pages it managed.
 	t.Run("transport failures", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -113,29 +121,11 @@ func TestTagServiceTransportAndValidationBranches(t *testing.T) {
 		}
 	})
 
-	t.Run("list uses defaults and trims filters", func(t *testing.T) {
-		service := newTagTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Query().Get("limit") != "25" || r.URL.Query().Get("start") != "0" {
-				w.WriteHeader(http.StatusBadRequest)
-				_, _ = w.Write([]byte("expected default paging values"))
-				return
-			}
-			if r.URL.Query().Get("orderBy") != "ALPHABETICAL" || r.URL.Query().Get("filterText") != "release" {
-				w.WriteHeader(http.StatusBadRequest)
-				_, _ = w.Write([]byte("expected trimmed order/filter"))
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-		})
-
-		repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-		tags, err := service.List(context.Background(), repo, ListOptions{MaxResults: 0, OrderBy: " ALPHABETICAL ", FilterText: " release "})
-		if err != nil {
-			t.Fatalf("expected default/trim branch success, got: %v", err)
-		}
-		if len(tags) != 0 {
-			t.Fatalf("expected empty tags list, got: %#v", tags)
-		}
-	})
+	// "list uses defaults and trims filters" is gone.
+	//
+	// It matched limit=25 and start=0 on the wire, which is openapi.PageThrough's
+	// business now and tested where the loop lives, and orderBy/filterText, which
+	// TestLiveCLICommandCoverage sends to a real Bitbucket and reads the answer
+	// back from. Watching a query string leave says the parameter was built;
+	// only the server says it was understood.
 }

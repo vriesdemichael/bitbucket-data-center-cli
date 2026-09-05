@@ -131,3 +131,41 @@ func TestLivePullRequestFilesReportsARename(t *testing.T) {
 		t.Fatalf("the source path is missing, so the rename reads as an add:\n%s", output)
 	}
 }
+
+// TestLiveJiraIssueCommitsAnswerEmpty records what the Jira integration does
+// when no Jira is linked, which is the state every Bitbucket starts in.
+//
+// It answers 200 with an empty page for any issue key, including one that could
+// not exist. That is the same shape as OPENAPI-029 on the pull-request issues
+// endpoint: an empty list is not evidence the issue is real, so nothing may read
+// it as one. What is pinned here is that `bb commit list --jira` reports the
+// empty listing rather than failing, because failing would tell a caller their
+// issue key was wrong when the truth is that Bitbucket has no Jira to ask.
+func TestLiveJiraIssueCommitsAnswerEmpty(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	output := mustLiveCLI(t, "commit", "list", "--jira", "NOSUCH-1")
+	commits, _ := decodeJSONMap(t, output)["commits"].([]any)
+	if len(commits) != 0 {
+		t.Fatalf("expected no commits for an issue key with no Jira behind it, got %d:\n%s", len(commits), output)
+	}
+
+	// An empty listing has to say so.
+	//
+	// A caller cannot tell a command that found nothing from one that printed
+	// nothing because it broke, and a path no commit touched is the cheapest
+	// genuinely empty answer this repository can produce.
+	empty := mustLiveHumanCLI(t, "commit", "list", "--path", "no/such/path.txt")
+	if !strings.Contains(empty, "No commits found") {
+		t.Fatalf("an empty commit listing printed nothing that names the outcome:\n%s", empty)
+	}
+}

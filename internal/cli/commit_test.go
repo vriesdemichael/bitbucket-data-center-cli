@@ -160,28 +160,7 @@ func TestCommitCLICommandsMock(t *testing.T) {
 	}
 }
 
-func TestCommitListEmpty(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-	}))
-	t.Cleanup(server.Close)
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
-
-	out, err := executeTestCLI(t, "commit", "list")
-	if err != nil {
-		t.Fatalf("commit list empty failed: %v", err)
-	}
-	if !strings.Contains(out, "No commits found") {
-		t.Fatalf("expected empty-state message, got: %s", out)
-	}
-}
-
+// mock-inventory: canned-response — a linked Jira is what produces a non-empty answer and the live stack has none, so the payload is written here; the subject is that both renderings show the commit. TestLiveJiraIssueCommitsAnswerEmpty covers the empty answer a real instance gives.
 func TestCommitListJira(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -227,6 +206,7 @@ func TestCommitListJira(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — a server answering 500 is injected; the subject is that the failure reaches the caller rather than reading as an issue with no commits.
 func TestCommitListJiraError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
