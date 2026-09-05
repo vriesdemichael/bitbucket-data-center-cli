@@ -6,8 +6,8 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 21 | write the live test, then delete the mock |
-| `keep` | 122 | legitimate unit test under ADR-079 |
+| `move-to-live` | 17 | write the live test, then delete the mock |
+| `keep` | 124 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
@@ -15,7 +15,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | file | total | move-to-live | remove | keep | other |
 |---|---:|---:|---:|---:|---:|
-| `internal/cli/cmd/repo/clone_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/cmd/pr/reviewer_automation_test.go` | 4 | 2 | 0 | 2 | 0 |
 | `internal/services/pullrequest/review_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/services/reposettings/service_test.go` | 5 | 1 | 0 | 3 | 1 |
@@ -27,7 +26,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/pr/create_interactive_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/pr/reviewer_helpers_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/permission_contract_test.go` | 1 | 1 | 0 | 0 | 0 |
-| `internal/cli/cmd/webhook/webhook_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/pr_checkout_command_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/pr_checkout_failures_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/mcp/client_compat_test.go` | 1 | 1 | 0 | 0 | 0 |
@@ -52,6 +50,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/tag/service_test.go` | 3 | 0 | 0 | 2 | 1 |
 | `internal/cli/cmd/pr/permission_contract_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/cmd/reviewer/reviewer_test.go` | 2 | 0 | 0 | 2 | 0 |
+| `internal/cli/cmd/webhook/webhook_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/permissionchecker/permission_checker_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/openapi/client_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/services/commit/service_test.go` | 2 | 0 | 0 | 1 | 1 |
