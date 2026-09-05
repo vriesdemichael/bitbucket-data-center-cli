@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 184,
-    "files": 64,
-    "functions": 175,
+    "mocked_servers": 181,
+    "files": 63,
+    "functions": 172,
     "by_class": {
-      "bitbucket-behaviour": 17,
+      "bitbucket-behaviour": 14,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
@@ -18,8 +18,6 @@
       "internal/cli/cmd/pr": 6,
       "internal/cli/cmd/repo": 1,
       "internal/mcp": 3,
-      "internal/services/pullrequest": 2,
-      "internal/services/pullrequestactivity": 1,
       "internal/services/reposettings": 1
     }
   },
@@ -1419,34 +1417,6 @@
       "reviewed": true
     },
     {
-      "file": "internal/services/pullrequest/review_test.go",
-      "line": 19,
-      "function": "TestGetPullRequestDecodesPropertyCounters",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/pullrequest/review_test.go",
-      "line": 55,
-      "function": "TestGetPullRequestWithoutPropertyCounters",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
       "file": "internal/services/pullrequest/service_test.go",
       "line": 24,
       "function": "TestListPullRequestsValidation",
@@ -1538,22 +1508,7 @@
     },
     {
       "file": "internal/services/pullrequestactivity/service_test.go",
-      "line": 31,
-      "function": "TestListAndExtractComments",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/pullrequestactivity/service_test.go",
-      "line": 199,
+      "line": 163,
       "function": "TestListReportsATruncatedBodyAsTransient",
       "class": "transport-fault",
       "signals": [

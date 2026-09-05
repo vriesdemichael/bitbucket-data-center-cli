@@ -135,6 +135,33 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 		t.Fatalf("expected inline comment %d in the thread list, got %#v", inline.ID, threads)
 	}
 
+	// The decode itself, against a timeline Bitbucket built rather than one
+	// written beside the assertion. Three things a unit test used to check
+	// here: that a comment activity carries its comment, that an activity
+	// which is not a comment carries none, and that the raw payload survives
+	// so nothing is lost in the mapping.
+	extracted := pullrequestactivityservice.ExtractComments(activities)
+	if len(extracted) < 2 {
+		t.Fatalf("expected the comments to be extracted from the timeline, got %d", len(extracted))
+	}
+
+	var sawNonComment bool
+	for _, activity := range activities {
+		if len(activity.Raw) == 0 {
+			t.Fatalf("an activity lost its raw payload: %#v", activity)
+		}
+		if activity.Action != "COMMENTED" && activity.Comment == nil {
+			sawNonComment = true
+		}
+		if activity.Action != "COMMENTED" && activity.Comment != nil {
+			t.Errorf("a %s activity came back carrying a comment: %#v", activity.Action, activity.Comment)
+		}
+	}
+	if !sawNonComment {
+		// The pull request was opened, so the timeline has at least that.
+		t.Errorf("no non-comment activity in the timeline, so the nil-comment case was never reached: %#v", activities)
+	}
+
 	// 2. The listing payload must carry the undocumented property counters that
 	//    `bb pr list` renders for free. Bitbucket 10.x sends them here but not
 	//    on the single pull request endpoint, which is why `pr get` falls back
@@ -161,6 +188,20 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	}
 	if listedPullRequest.CommentCount == nil || *listedPullRequest.CommentCount < 1 {
 		t.Fatalf("expected properties.commentCount to be reported, got %#v", listedPullRequest.CommentCount)
+	}
+
+	// The other half of that asymmetry, asserted rather than assumed. Get and
+	// List share mapPullRequest, so the counters above prove the decode; what
+	// this proves is that the single-pull-request endpoint really does omit
+	// them, which is the whole reason `pr get` has a fallback at all. A unit
+	// test asserted both halves against payloads it wrote, so it could not
+	// have noticed the two endpoints disagreeing.
+	fetched, err := prSvc.Get(ctx, repoRef, pullRequestID)
+	if err != nil {
+		t.Fatalf("get pull request failed: %v", err)
+	}
+	if fetched.CommentCount != nil || fetched.OpenTaskCount != nil || fetched.ResolvedTaskCount != nil {
+		t.Fatalf("the single pull request endpoint now reports property counters, so the `pr get` fallback is no longer the only source: %#v", fetched)
 	}
 
 	// 3. The blocker-comment count endpoint backs the `pr get` fallback, so its
