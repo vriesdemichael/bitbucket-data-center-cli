@@ -1,8 +1,9 @@
 package searchcmd
 
 import (
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"testing"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 )
 
 func TestSearchDefaultsAndSafeString(t *testing.T) {

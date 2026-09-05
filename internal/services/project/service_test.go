@@ -171,20 +171,6 @@ func TestProjectServicePermissionsValidation(t *testing.T) {
 	}
 }
 
-func TestProjectServicePaginationEdgeCases(t *testing.T) {
-	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Query().Get("start") != "0" {
-			t.Errorf("expected start=0, got start=%s", r.URL.Query().Get("start"))
-		}
-		_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":4,"values":[{"key":"P1"},{"key":"P2"},{"key":"P3"},{"key":"P4"}]}`))
-	})
-
-	projects, err := service.List(context.Background(), ListOptions{Start: -1, MaxResults: 3})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(projects) != 3 {
-		t.Errorf("expected 3 projects, got %d", len(projects))
-	}
-}
+// The pagination edge case that was here is openapi.PageThrough's, for the same
+// reason it is gone from the branch service: an oversized page trimmed to the
+// cap is one of the loop's rules, tested where the loop lives.

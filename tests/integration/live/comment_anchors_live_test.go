@@ -4,6 +4,7 @@ package live_test
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -60,6 +61,32 @@ func TestLiveInlineCommentAnchoring(t *testing.T) {
 		}
 		if !strings.Contains(listing, file) {
 			t.Errorf("expected the anchor path %q in the listing:\n%s", file, listing)
+		}
+	})
+
+	// #473: --limit on a comment listing documents a maximum, and did nothing.
+	//
+	// The service took it as a page size and read to exhaustion, so a smaller
+	// --limit made more round trips and printed the same complete answer. The
+	// unit test that covered this served two hand-written pages; asking for
+	// fewer comments than a file has is the same question, and only the server
+	// can say how many it has.
+	t.Run("--limit caps the comments returned", func(t *testing.T) {
+		const wanted = 4
+		for index := range wanted {
+			mustLiveCLI(t, "repo", "comment", "create", "--pr", prID,
+				"--text", fmt.Sprintf("capped comment %d", index),
+				"--path", file, "--line", "1", "--line-type", "ADDED")
+		}
+
+		all := mustLiveCLI(t, "repo", "comment", "list", "--pr", prID, "--path", file, "--all")
+		if total := strings.Count(all, `"text"`); total <= wanted {
+			t.Fatalf("the file carries %d comments, too few to cap:\n%s", total, all)
+		}
+
+		limited := mustLiveCLI(t, "repo", "comment", "list", "--pr", prID, "--path", file, "--limit", "3")
+		if got := strings.Count(limited, `"text"`); got > 3 {
+			t.Errorf("--limit 3 returned %d comments; the flag documents a maximum, not a page size:\n%s", got, limited)
 		}
 	})
 

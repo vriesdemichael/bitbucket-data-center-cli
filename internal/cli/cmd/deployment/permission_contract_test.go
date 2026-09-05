@@ -68,7 +68,9 @@ func executeRefusing(t *testing.T, serverURL string, args ...string) ([]openapi.
 // Recording or removing a deployment mutates repository state, so each command
 // has to establish the caller may write before planning and stop when told no.
 func TestDeploymentCommandsHonourRefusedPermission(t *testing.T) {
-	server := newMockDeploymentServer(t)
+	// A URL, not a server: every case here is refused by the permission check
+	// before a request is built, so reaching a listener would be the failure.
+	const serverURL = "http://bitbucket.invalid"
 
 	tests := []struct {
 		name string
@@ -81,7 +83,7 @@ func TestDeploymentCommandsHonourRefusedPermission(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			recorded, err := executeRefusing(t, server.URL, testCase.args...)
+			recorded, err := executeRefusing(t, serverURL, testCase.args...)
 			if len(recorded) == 0 {
 				t.Fatal("command planned a mutation without checking any repository permission")
 			}

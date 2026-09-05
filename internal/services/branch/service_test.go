@@ -337,21 +337,10 @@ func TestBranchServiceTransientAcrossOperations(t *testing.T) {
 	}
 }
 
-func TestBranchServicePaginationEdgeCases(t *testing.T) {
-	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Query().Get("start") != "0" {
-			t.Errorf("expected start=0, got start=%s", r.URL.Query().Get("start"))
-		}
-		_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":4,"values":[{"displayId":"b1"},{"displayId":"b2"},{"displayId":"b3"},{"displayId":"b4"}]}`))
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-	branches, err := service.List(context.Background(), repo, ListOptions{Start: -1, MaxResults: 3})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(branches) != 3 {
-		t.Errorf("expected 3 branches, got %d", len(branches))
-	}
-}
+// The pagination edge case that was here is openapi.PageThrough's.
+//
+// It served an oversized page -- four values for a cap of three -- and checked
+// three came back. That is one of the loop's stopping rules, and it now has one
+// implementation and one test: TestPageThroughTrimsAnOversizedPage. Written per
+// service, the same assertion needed a fixture per service, and eight of them
+// disagreed about what the rules were.

@@ -3,14 +3,15 @@ package projectcmd
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
-	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"net/http"
 	"net/http/httptest"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"

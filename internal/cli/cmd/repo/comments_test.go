@@ -1,15 +1,9 @@
 package repocmd
 
 import (
-	"bytes"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
 )
@@ -56,177 +50,6 @@ func TestCommentOwnedByUser(t *testing.T) {
 	if commentOwnedByUser(commentWithName, "bob") {
 		t.Fatal("expected mismatched username to fail ownership check")
 	}
-}
-
-func TestRepoCommentCommands(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		path := r.URL.Path
-
-		switch {
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/repo1/commits/c123/comments":
-			_, _ = w.Write([]byte(`{"values":[{"id":101,"version":1,"text":"Commit comment","author":{"name":"alice"}}]}`))
-
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/repo1/commits/c123/comments/101":
-			_, _ = w.Write([]byte(`{"id":101,"version":1,"text":"Commit comment","author":{"name":"alice"}}`))
-
-		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/repo1/commits/c123/comments":
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"id":102,"version":1,"text":"Created comment","author":{"name":"alice"}}`))
-
-		case r.Method == http.MethodPut && path == "/rest/api/latest/projects/PRJ/repos/repo1/commits/c123/comments/101":
-			_, _ = w.Write([]byte(`{"id":101,"version":2,"text":"Updated comment","author":{"name":"alice"}}`))
-
-		case r.Method == http.MethodDelete && path == "/rest/api/latest/projects/PRJ/repos/repo1/commits/c123/comments/101":
-			w.WriteHeader(http.StatusNoContent)
-
-		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/repo1/commits/c123/comments/101/comments":
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"id":103,"version":1,"text":"Reply comment","author":{"name":"alice"}}`))
-
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	cfg := config.AppConfig{
-		BitbucketURL:      server.URL,
-		ProjectKey:        "PRJ",
-		BitbucketUsername: "alice",
-	}
-
-	jsonEnabled := false
-	dryRunEnabled := false
-
-	deps := Dependencies{
-		JSONEnabled:   func() bool { return jsonEnabled },
-		DryRunEnabled: func() bool { return dryRunEnabled },
-		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },
-		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
-			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
-			return cfg, client, err
-		},
-	}
-
-	// 1. Comment list (human & JSON)
-	cmd := New(deps)
-	buf := new(bytes.Buffer)
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"comment", "list", "--commit", "c123", "--path", "main.go", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on comment list: %v", err)
-	}
-	if !strings.Contains(buf.String(), "Commit comment") {
-		t.Fatalf("expected Commit comment in output: %s", buf.String())
-	}
-
-	jsonEnabled = true
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"comment", "list", "--commit", "c123", "--path", "main.go", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on comment list JSON: %v", err)
-	}
-	if !strings.Contains(buf.String(), "comments") {
-		t.Fatalf("expected comments in JSON output: %s", buf.String())
-	}
-	jsonEnabled = false
-
-	// 2. Comment create (dry-run & real)
-	dryRunEnabled = true
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"comment", "create", "--commit", "c123", "--text", "Created comment", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on comment create dry-run: %v", err)
-	}
-	dryRunEnabled = false
-
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"comment", "create", "--commit", "c123", "--text", "Created comment", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on comment create: %v", err)
-	}
-	if !strings.Contains(buf.String(), "Created comment") {
-		t.Fatalf("expected Created comment in output: %s", buf.String())
-	}
-
-	// 3. Comment update (dry-run & real)
-	dryRunEnabled = true
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"comment", "update", "--commit", "c123", "--id", "101", "--text", "Updated comment", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on comment update dry-run: %v", err)
-	}
-	dryRunEnabled = false
-
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"comment", "update", "--commit", "c123", "--id", "101", "--text", "Updated comment", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on comment update: %v", err)
-	}
-	if !strings.Contains(buf.String(), "Updated comment") {
-		t.Fatalf("expected Updated comment in output: %s", buf.String())
-	}
-
-	// 4. Comment delete (dry-run & real)
-	dryRunEnabled = true
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"comment", "delete", "--commit", "c123", "--id", "101", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on comment delete dry-run: %v", err)
-	}
-	dryRunEnabled = false
-
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"comment", "delete", "--commit", "c123", "--id", "101", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on comment delete: %v", err)
-	}
-	if !strings.Contains(buf.String(), "Deleted comment") {
-		t.Fatalf("expected Deleted comment in output: %s", buf.String())
-	}
-
-	// 5. Target validation errors (both commit and pr, or neither)
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"comment", "list", "--path", "main.go", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err == nil {
-		t.Fatalf("expected validation error when neither --commit nor --pr is passed")
-	}
-
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"comment", "list", "--commit", "c123", "--pr", "42", "--path", "main.go", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err == nil {
-		t.Fatalf("expected validation error when both --commit and --pr are passed")
-	}
-
 }
 
 func TestCommentHelpers(t *testing.T) {
@@ -304,45 +127,13 @@ func TestCreateTargetPreviewNamesTheParentOnlyWhenThereIsOne(t *testing.T) {
 // commentservice.List takes its limit as a page size and reads to exhaustion,
 // so --limit sized the requests and truncated nothing: a smaller --limit made
 // more round trips and printed the same complete answer.
-func TestCommentListLimitActuallyLimits(t *testing.T) {
-	pages := 0
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
 
-		if !strings.Contains(request.URL.Path, "/comments") {
-			_, _ = writer.Write([]byte(`{"id":"abc","displayId":"abc"}`))
-
-			return
-		}
-
-		// Two pages of ten, so a service reading to exhaustion returns twenty.
-		pages++
-		start := request.URL.Query().Get("start")
-
-		var values []string
-		for index := range 10 {
-			values = append(values, fmt.Sprintf(`{"id":%d,"text":"comment %d","version":0}`, index+pages*100, index))
-		}
-		body := `{"values":[` + strings.Join(values, ",") + `],"size":10,"limit":10,`
-		if start == "" || start == "0" {
-			body += `"isLastPage":false,"nextPageStart":10}`
-		} else {
-			body += `"isLastPage":true}`
-		}
-		_, _ = writer.Write([]byte(body))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_TOKEN", "token")
-
-	out, err := executeTestCLI(t, "--json", "repo", "comment", "list", "--commit", "abc", "--path", "a.go", "--repo", "PRJ/demo", "--limit", "3")
-	if err != nil {
-		t.Fatalf("comment list: %v\n%s", err, out)
-	}
-
-	got := strings.Count(out, `"text"`)
-	if got > 3 {
-		t.Errorf("--limit 3 returned %d comments; the flag documents a maximum, not a page size", got)
-	}
-}
+// The repo comment command suite and the #473 --limit regression are live
+// now.
+//
+// The suite drove create, get, list, update and delete against a
+// hand-written Bitbucket and read each command's line back out of the fixture
+// it had just written. The regression served two pages of ten and checked
+// --limit 3 did not return twenty; TestLiveInlineCommentAnchoring now puts
+// four comments on a real file and asks for three, which is the same question
+// of a server that decides how many there are.
