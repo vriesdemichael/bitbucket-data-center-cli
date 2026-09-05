@@ -12,36 +12,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
-// newReviewClients serves the endpoints the review-visibility tools touch, so
-// the handlers can be exercised end to end.
-func newReviewClients(t *testing.T, routes map[string]string) Clients {
-	t.Helper()
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		for suffix, body := range routes {
-			if strings.HasSuffix(r.URL.Path, suffix) {
-				_, _ = w.Write([]byte(body))
-				return
-			}
-		}
-		http.NotFound(w, r)
-	}))
-	t.Cleanup(server.Close)
-
-	clients, err := ClientsFromConfig(config.AppConfig{
-		BitbucketURL:   server.URL,
-		RequestTimeout: 5 * time.Second,
-		RetryCount:     0,
-		RetryBackoff:   time.Millisecond,
-	})
-	if err != nil {
-		t.Fatalf("ClientsFromConfig failed: %v", err)
-	}
-
-	return clients
-}
-
 func decodeToolJSON(t *testing.T, text string) map[string]any {
 	t.Helper()
 
@@ -58,10 +28,30 @@ func decodeToolJSON(t *testing.T, text string) map[string]any {
 //
 // mock-inventory: unreachable-state — an instance whose activity timeline is not there while the pull request is, which cannot be arranged; the subject is that the fallback counts rather than reporting nothing outstanding.
 func TestGetPullRequestFallsBackToBlockerCommentCounts(t *testing.T) {
-	clients := newReviewClients(t, map[string]string{
-		"/pull-requests/7/blocker-comments": `{"OPEN":2,"RESOLVED":1}`,
-		"/pull-requests/7":                  `{"id":7,"title":"Feature","state":"OPEN","open":true,"fromRef":{"displayId":"a"},"toRef":{"displayId":"b"}}`,
+	// The timeline is deliberately unrouted, so asking for it 404s: that is the
+	// state under test, and it is the only reason a server is here.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/pull-requests/7/blocker-comments"):
+			_, _ = w.Write([]byte(`{"OPEN":2,"RESOLVED":1}`))
+		case strings.HasSuffix(r.URL.Path, "/pull-requests/7"):
+			_, _ = w.Write([]byte(`{"id":7,"title":"Feature","state":"OPEN","open":true,"fromRef":{"displayId":"a"},"toRef":{"displayId":"b"}}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	clients, err := ClientsFromConfig(config.AppConfig{
+		BitbucketURL:   server.URL,
+		RequestTimeout: 5 * time.Second,
+		RetryCount:     0,
+		RetryBackoff:   time.Millisecond,
 	})
+	if err != nil {
+		t.Fatalf("ClientsFromConfig failed: %v", err)
+	}
 
 	result := callTool(t, specGetPullRequest(), clients, map[string]any{"project": "TEST", "repo": "demo", "id": "7"})
 	if result.IsError {
