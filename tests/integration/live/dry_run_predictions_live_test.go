@@ -292,6 +292,17 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 
 		mustLiveCLI(t, "repo", "settings", "pull-requests", "set-strategy", "squash")
 		predicts(t, "no-op", "repo", "settings", "pull-requests", "set-strategy", "squash")
+
+		// The other prediction, and the thing a preview must never do. Asking
+		// for the opposite of what is set predicts an update -- and the
+		// settings afterwards still say what they said, because a dry run that
+		// writes is the defect the whole tier exists to prevent.
+		predicts(t, "update", "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=false")
+
+		after := mustLiveCLI(t, "repo", "settings", "pull-requests", "get")
+		if allTasks, _ := decodeJSONMap(t, after)["requiredAllTasksComplete"].(bool); !allTasks {
+			t.Fatalf("the dry run wrote the change it only predicted:\n%s", after)
+		}
 	})
 
 	t.Run("commit comments", func(t *testing.T) {
