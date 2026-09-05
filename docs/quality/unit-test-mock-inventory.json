@@ -290,7 +290,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 169,
+      "line": 165,
       "function": "newReviewerFailureServer",
       "class": "unreachable-state",
       "signals": [
@@ -307,7 +307,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 364,
+      "line": 361,
       "function": "TestPRReviewerAddReportsPartialSuccess",
       "class": "transport-fault",
       "signals": [
@@ -325,23 +325,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 580,
-      "function": "newCodeOwnersServer",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 808,
+      "line": 465,
       "function": "TestPRReviewerAddPartialFailureEmitsOneJSONDocument",
       "class": "transport-fault",
       "signals": [
@@ -356,6 +340,22 @@
       "action": "keep",
       "reason": "same injected partial failure; the subject is that the envelope stays a single document.",
       "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
+      "line": 561,
+      "function": "newReviewerGroupServer",
+      "class": "bitbucket-behaviour",
+      "signals": [
+        "asserts-http-method",
+        "asserts-request-body",
+        "returns-a-status",
+        "returns-bitbucket-entity",
+        "serves-bitbucket-routes",
+        "inspects-the-request-path"
+      ],
+      "action": "move-to-live",
+      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_helpers_test.go",
@@ -1151,7 +1151,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 145,
+      "line": 176,
       "function": "TestDiffTransportFailureBranches",
       "class": "transport-fault",
       "signals": [
@@ -1165,7 +1165,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 221,
+      "line": 252,
       "function": "newDiffServiceWithHandler",
       "class": "harness-constructor",
       "signals": [
@@ -1176,7 +1176,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 479,
+      "line": 510,
       "function": "TestStatRunsSurfaceAnUndecodableSummary",
       "class": "transport-fault",
       "signals": [
@@ -1189,7 +1189,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 528,
+      "line": 559,
       "function": "TestCompareDiffRefusesABodylessSuccess",
       "class": "unreachable-state",
       "signals": [

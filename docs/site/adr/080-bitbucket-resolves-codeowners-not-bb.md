@@ -1,0 +1,29 @@
+# ADR 080: Bitbucket resolves CODEOWNERS, not bb
+
+This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
+
+- Number: `080`
+- Title: `Bitbucket resolves CODEOWNERS, not bb`
+- Category: `architecture`
+- Status: `accepted`
+- Supersedes: `056`
+- Provenance: `guided-ai`
+- Source: `docs/decisions/080-bitbucket-resolves-codeowners-not-bb.yaml`
+
+## Decision
+
+Ask Bitbucket who owns a change: `GET /rest/ui/latest/projects/{key}/repos/{slug}/code-owners?sourceRefId=&targetRefId=[&sourceRepo=]`. It returns the users, already resolved out of whatever the file named. Do not read `.bitbucket/CODEOWNERS`, match it against the diff, expand groups, or apply selection strategies. The syntax is Bitbucket's and so is its meaning. `--codeowners` and `--no-codeowners` keep their spelling and their defaults; what changes is who answers, and therefore that bb and the web interface now answer alike.
+
+## Agent Instructions
+
+Never parse CODEOWNERS. If a form seems unsupported, probe the endpoint against the live stack and pin what it answers -- the file's meaning is not ours to decide. Pass sourceRepo whenever the source ref lives in another repository, or a fork pull request resolves against the wrong one. Filter the author from the result: Bitbucket rejects a pull request whose author is a reviewer, and the endpoint does not know who is opening it.
+
+## Rationale
+
+ADR-056 read correctly that `POST /pull-requests` does not evaluate CODEOWNERS, and concluded wrongly that bb had to. Bitbucket's bundled code-owners module does the evaluation and exposes it at the endpoint above -- it is what the "add code owners" button in the pull request UI calls. Two implementations of one file format drifted, as two implementations do. Probed side by side on Bitbucket 10.4 with one CODEOWNERS and one diff: `@reviewer-group/platform` agreed, and `@platform` assigned that group's two members through bb and nobody through the button; a bare `couser1` assigned the user through bb and nobody through the button. bb had also invented `:least_busy(N)`, which Bitbucket does not implement, and made an unresolvable entry fatal, which Bitbucket does not do. Reviewers that differ between the CLI and the browser are worse than reviewers that are missing: nobody checks a list they believe is already right.
+
+## Rejected Alternatives
+
+- `Keep parsing locally, but align the semantics with Bitbucket's`: It removes today's divergence and leaves the mechanism that produced it. The file format is Bitbucket's to change, and a second implementation is a second thing to keep in step.
+- `Use the endpoint, then add bb's extra forms on top`: Both implementations then run on every pull request, and the answer is their union -- so the CLI still assigns reviewers the button does not, which is the failure being fixed.
+- `Avoid /rest/ui because it is not the documented public API`: It is the only server-side evaluation there is, it carries swagger annotations and a declared scope, and it is what the product's own UI depends on. The live suite pins its shape, so a change is a test failure here rather than a surprise in someone's pull request.
