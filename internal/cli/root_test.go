@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
@@ -1540,43 +1541,6 @@ func TestBuildAndInsightsValidationErrorPaths(t *testing.T) {
 	}
 }
 
-func TestRepoSettingsPullRequestsUpdateDryRunStateful(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/repos":
-			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = writer.Write([]byte(`{"values":[{"slug":"demo","name":"demo","project":{"key":"TEST"}}],"isLastPage":true}`))
-			return
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/settings/pull-requests":
-			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = writer.Write([]byte(`{"requiredAllTasksComplete":false}`))
-			return
-		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/settings/pull-requests":
-			t.Fatalf("update pull-request settings endpoint must not be called in dry-run mode")
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"--json", "--dry-run", "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=true"})
-
-	if err := command.Execute(); err != nil {
-		t.Fatalf("execute failed: %v", err)
-	}
-	if !strings.Contains(buffer.String(), `"predictedAction": "update"`) {
-		t.Fatalf("expected update prediction, got: %s", buffer.String())
-	}
-}
-
 // TestDiffPullRequestRejectsBadInvocations covers the error paths of the shared
 // diff-pull-request command, which both `bb diff pr` and `bb pr diff` use.
 func TestDiffPullRequestRejectsBadInvocations(t *testing.T) {
@@ -1732,3 +1696,12 @@ func TestIssueCommandIsNotOffered(t *testing.T) {
 		t.Fatalf("expected an unknown-command error, got: %v", err)
 	}
 }
+
+// TestRepoSettingsPullRequestsUpdateDryRunStateful is live now, in
+// TestLiveGovernanceDryRunPredictionsReadRealState.
+//
+// It predicted an update from settings this file wrote, and proved the dry run
+// did not write by failing the test from inside its own handler. The live
+// version sets the value for real, asks for the opposite, requires "update",
+// and then reads the settings back -- which is the same guarantee asked of the
+// server rather than of a switch statement.
