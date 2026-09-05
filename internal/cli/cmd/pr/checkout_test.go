@@ -252,28 +252,6 @@ func TestCheckoutSameRepositoryNewBranch(t *testing.T) {
 	}
 }
 
-func TestCheckoutForkAddsRemoteAndPrefixesBranch(t *testing.T) {
-	server := newCheckoutServer(t, "~alice", "demo", "bugfix")
-	backend := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
-
-	executeCheckout(t, backend, server.URL, "42")
-
-	if len(backend.addedRemotes) != 1 {
-		t.Fatalf("expected 1 added remote, got %v", backend.addedRemotes)
-	}
-	remote := backend.addedRemotes[0]
-	if remote.Name != "alice" || remote.URL != server.URL+"/scm/~alice/demo.git" {
-		t.Fatalf("unexpected added remote: %+v", remote)
-	}
-	if len(backend.checkouts) != 1 || backend.checkouts[0].NewBranch != "alice/bugfix" {
-		t.Fatalf("expected local branch alice/bugfix, got %+v", backend.checkouts)
-	}
-	if backend.configSets["branch.alice/bugfix.remote"] != "alice" ||
-		backend.configSets["branch.alice/bugfix.merge"] != "refs/heads/bugfix" {
-		t.Fatalf("unexpected branch config: %+v", backend.configSets)
-	}
-}
-
 func TestCheckoutExistingBranchFastForwards(t *testing.T) {
 	server := newCheckoutServer(t, "PRJ", "demo", "feature/x")
 	backend := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
@@ -339,3 +317,16 @@ func TestCheckoutRefusesDirtyWorkingTree(t *testing.T) {
 		t.Fatalf("expected validation exit code 2, got %d (err: %v)", apperrors.ExitCode(err), err)
 	}
 }
+
+// The fork case is live now, in TestLivePullRequestCheckoutFromAFork.
+//
+// It asserted the branch prefix and the added remote against a pull request
+// payload written here, with a stub backend recording what it was asked to do.
+// Two things could be wrong and neither was under test: whether Bitbucket's
+// payload distinguishes a fork the way bb reads it, and whether the remote bb
+// adds is one git can fetch from.
+//
+// The live version also turned up something the stub could not: the prefix bb
+// gives the branch is the name it gives the remote, so refs/heads/<owner>/…
+// and refs/remotes/<owner>/… both exist and `git rev-parse --abbrev-ref HEAD`
+// answers "heads/<owner>/…" to disambiguate.
