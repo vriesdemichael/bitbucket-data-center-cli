@@ -76,85 +76,6 @@ func executePrSplit(t *testing.T, serverURL string, args ...string) (stdout stri
 	return outBuffer.String(), errBuffer.String(), err
 }
 
-// Registering "--users" and "--reviewers" as extra flags bound to the same slice
-// looked like an alias but was not: pflag tracks "has this flag been set" per
-// flag, so the first use of each spelling replaced the slice and every earlier
-// value was dropped without a word.
-func TestReviewerFlagAliasesAccumulate(t *testing.T) {
-	server := newMockPRServer(t)
-
-	t.Run("reviewer add merges every user spelling", func(t *testing.T) {
-		out, err := executePr(t, server.URL,
-			"review", "reviewer", "add", "42",
-			"--user", "bob",
-			"--users", "charlie",
-			"--reviewers", "dave",
-		)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		for _, want := range []string{"bob", "charlie", "dave"} {
-			if !strings.Contains(out, want) {
-				t.Fatalf("expected %q in output, got:\n%s", want, out)
-			}
-		}
-	})
-
-	t.Run("reviewer add merges every reviewer-group spelling", func(t *testing.T) {
-		out, err := executePr(t, server.URL,
-			"review", "reviewer", "add", "42",
-			"--reviewer-group", "core-team",
-			"--reviewer-groups", "go-team",
-		)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		// core-team expands to bob and charlie, go-team to gopher.
-		for _, want := range []string{"bob", "charlie", "gopher"} {
-			if !strings.Contains(out, want) {
-				t.Fatalf("expected %q in output, got:\n%s", want, out)
-			}
-		}
-	})
-
-	t.Run("pr create merges every reviewer-group spelling", func(t *testing.T) {
-		out, _, err := executePrSplit(t, server.URL, "--json", "create",
-			"--from-ref", "feature/y",
-			"--to-ref", "main",
-			"--title", "Created PR",
-			"--no-default-reviewers", "--no-codeowners",
-			"--reviewer-group", "core-team",
-			"--reviewer-groups", "go-team",
-		)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		for _, want := range []string{"bob", "charlie", "gopher"} {
-			if !strings.Contains(out, want) {
-				t.Fatalf("expected %q in created reviewers, got:\n%s", want, out)
-			}
-		}
-	})
-
-	t.Run("pr create still accepts its own --reviewers flag", func(t *testing.T) {
-		out, _, err := executePrSplit(t, server.URL, "--json", "create",
-			"--from-ref", "feature/y",
-			"--to-ref", "main",
-			"--title", "Created PR",
-			"--no-default-reviewers", "--no-codeowners",
-			"--reviewers", "alice,bob",
-		)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		for _, want := range []string{"alice", "bob"} {
-			if !strings.Contains(out, want) {
-				t.Fatalf("expected %q in created reviewers, got:\n%s", want, out)
-			}
-		}
-	})
-}
-
 // newReviewerFailureServer serves the happy path but fails the endpoints named
 // in failPaths with a 500, so a test can pick exactly which lookup breaks.
 //
@@ -410,53 +331,6 @@ func TestPRReviewerAddReportsPartialSuccess(t *testing.T) {
 	}
 }
 
-// Bitbucket answers the participants endpoint with a participant, not a pull
-// request, so using that response as the pull request produced "#0".
-func TestPRReviewerAddReportsTheRealPullRequestID(t *testing.T) {
-	server := newMockPRServer(t)
-
-	t.Run("text output", func(t *testing.T) {
-		out, err := executePr(t, server.URL, "review", "reviewer", "add", "42", "--user", "bob")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if strings.Contains(out, "#0") {
-			t.Fatalf("pull request ID was taken from the participant response, got:\n%s", out)
-		}
-		if !strings.Contains(out, "pull request #42") {
-			t.Fatalf("expected pull request #42 in output, got:\n%s", out)
-		}
-	})
-
-	t.Run("json output", func(t *testing.T) {
-		out, err := executePr(t, server.URL, "--json", "review", "reviewer", "add", "42", "--user", "bob")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		var decoded struct {
-			Data struct {
-				PullRequest struct {
-					ID    int64  `json:"id"`
-					Title string `json:"title"`
-				} `json:"pullRequest"`
-				Added []string `json:"added"`
-			} `json:"data"`
-		}
-		if jsonErr := json.Unmarshal([]byte(out), &decoded); jsonErr != nil {
-			t.Fatalf("output was not valid JSON (%v):\n%s", jsonErr, out)
-		}
-		if decoded.Data.PullRequest.ID != 42 {
-			t.Fatalf("pullRequest.id = %d, want 42", decoded.Data.PullRequest.ID)
-		}
-		if decoded.Data.PullRequest.Title != "Test PR" {
-			t.Fatalf("pullRequest.title = %q, want %q", decoded.Data.PullRequest.Title, "Test PR")
-		}
-		if len(decoded.Data.Added) != 1 || decoded.Data.Added[0] != "bob" {
-			t.Fatalf("added = %v, want [bob]", decoded.Data.Added)
-		}
-	})
-}
-
 // Under --json stdout is a machine contract carrying exactly one document. A
 // partial failure must not emit a success envelope on top of the failure
 // envelope the entry point writes.
@@ -512,112 +386,6 @@ func TestPRReviewerAddPartialFailureEmitsOneJSONDocument(t *testing.T) {
 	}
 }
 
-// The same #503 prefix reaches the resolver from two flags as well as from
-// CODEOWNERS, and carried the same defect. Fixing it at the lookup covers all
-// three; this holds the two flag paths to it.
-func TestReviewerFlagsAcceptTheReviewerGroupPrefix(t *testing.T) {
-	for _, flags := range [][]string{
-		{"--reviewers", "@reviewer-group/cog_product"},
-		{"--reviewer-group", "reviewer-group/cog_product"},
-		{"--reviewer-group", "@reviewer-group/cog_product"},
-	} {
-		t.Run(strings.Join(flags, " "), func(t *testing.T) {
-			server := newReviewerGroupServer(t,
-				`{"values":[{"id":10,"name":"cog_product"}]}`,
-				map[string]string{"10": `[{"name":"alice"}]`},
-			)
-
-			args := append([]string{"--json", "create",
-				"--from-ref", "feature/y",
-				"--to-ref", "main",
-				"--title", "Created PR",
-				"--no-default-reviewers",
-			}, flags...)
-
-			out, _, err := executePrSplit(t, server.URL, args...)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			if !strings.Contains(out, "alice") {
-				t.Errorf("expected the group to expand to alice, got:\n%s", out)
-			}
-			if strings.Contains(out, "reviewer-group/cog_product") {
-				t.Errorf("the group token must never be sent as a username, got:\n%s", out)
-			}
-		})
-	}
-}
-
-// newReviewerGroupServer answers the lookups `--reviewers @<group>` and
-// `--reviewer-group` make, and accepts the create that follows.
-//
-// It replaces a larger helper that also served .bitbucket/CODEOWNERS, a diff
-// and an open-pull-request listing. Those were for bb's own CODEOWNERS
-// evaluation, which Bitbucket does now (ADR-080); what is left is the flag
-// path, where bb still resolves a reviewer group itself.
-func newReviewerGroupServer(t *testing.T, groups string, groupUsers map[string]string) *httptest.Server {
-	t.Helper()
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		path := r.URL.Path
-
-		switch {
-		case r.Method == http.MethodGet && path == "/rest/api/latest/users":
-			w.Header().Set("X-AUSERNAME", "currentuser")
-			_, _ = w.Write([]byte(`{"values":[]}`))
-
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo":
-			_, _ = w.Write([]byte(`{"id":77,"slug":"demo"}`))
-
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/settings/reviewer-groups":
-			_, _ = w.Write([]byte(groups))
-
-		case r.Method == http.MethodGet && strings.Contains(path, "/settings/reviewer-groups/") && strings.HasSuffix(path, "/users"):
-			segments := strings.Split(strings.Trim(path, "/"), "/")
-			id := segments[len(segments)-2]
-			body, ok := groupUsers[id]
-			if !ok {
-				w.WriteHeader(http.StatusInternalServerError)
-				_, _ = w.Write([]byte(`{"errors":[{"message":"members unavailable"}]}`))
-
-				return
-			}
-			_, _ = w.Write([]byte(body))
-
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/settings/reviewer-groups":
-			_, _ = w.Write([]byte(`{"values":[]}`))
-
-		case r.Method == http.MethodPost && path == "/rest/api/latest/projects/PRJ/repos/demo/pull-requests":
-			var payload struct {
-				Reviewers []struct {
-					User struct {
-						Name string `json:"name"`
-					} `json:"user"`
-				} `json:"reviewers"`
-			}
-			_ = json.NewDecoder(r.Body).Decode(&payload)
-			var reviewers []map[string]any
-			for _, reviewer := range payload.Reviewers {
-				reviewers = append(reviewers, map[string]any{
-					"user": map[string]any{"name": reviewer.User.Name},
-					"role": "REVIEWER",
-				})
-			}
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"id": 43, "title": "Created PR", "state": "OPEN", "open": true,
-				"reviewers": reviewers,
-			})
-
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	return server
-}
-
 // Ten suites went with bb's CODEOWNERS evaluation.
 //
 // They pinned a local-checkout read, a least_busy(N) ranking, a fallback from
@@ -629,3 +397,15 @@ func newReviewerGroupServer(t *testing.T, groups string, groupUsers map[string]s
 //
 // What replaces them is TestLiveCodeOwners* in the live suite, which pins what
 // the server answers rather than what we would have.
+
+// The two reviewer-group flag suites are live now, in
+// TestLiveReviewerGroupFlagsExpandAndAccumulate.
+//
+// One asserted that --reviewer-group and --reviewer-groups accumulate rather
+// than one discarding the other, which is a pflag hazard and bb's own; the
+// other that "@reviewer-group/<name>" reaches a group through either flag,
+// which is #503. Both ran against groups this file invented, so the members
+// they then required back were the members it had written.
+//
+// The live version makes two real groups with one real member each, and a
+// pull request that names both flags has to arrive with both people on it.

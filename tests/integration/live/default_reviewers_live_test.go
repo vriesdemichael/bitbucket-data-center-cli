@@ -314,3 +314,83 @@ func TestLiveReviewerConditionInputRoutes(t *testing.T) {
 		t.Fatalf("the update read from stdin did not take:\n%s", afterUpdate)
 	}
 }
+
+// TestLiveReviewerGroupFlagsExpandAndAccumulate covers the two flag spellings
+// and the prefix, against groups a real Bitbucket holds.
+//
+// Two things are under test and only one of them is bb's arithmetic.
+// --reviewer-group and --reviewer-groups are the same flag under two names,
+// and pflag tracks "has this been set" per flag -- bound twice, the second
+// binding silently discards what was given under the first. The other is that
+// each name expands to its members at all, which is what #503 broke for the
+// "@reviewer-group/" spelling.
+func TestLiveReviewerGroupFlagsExpandAndAccumulate(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	core := liveCodeOwner(t, ctx, harness, seeded.Key, repo.Slug)
+	gopher := liveCodeOwner(t, ctx, harness, seeded.Key, repo.Slug)
+	if err := harness.createReviewerGroup(ctx, seeded.Key, repo.Slug, "core-team", core.Username); err != nil {
+		t.Fatalf("create core-team failed: %v", err)
+	}
+	if err := harness.createReviewerGroup(ctx, seeded.Key, repo.Slug, "go-team", gopher.Username); err != nil {
+		t.Fatalf("create go-team failed: %v", err)
+	}
+
+	createWith := func(t *testing.T, branch string, args ...string) []string {
+		t.Helper()
+
+		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, branch+".txt"); err != nil {
+			t.Fatalf("push %s failed: %v", branch, err)
+		}
+
+		output := mustLiveCLI(t, append([]string{"pr", "create",
+			"--from-ref", branch, "--to-ref", "refs/heads/master",
+			"--title", branch, "--no-default-reviewers", "--no-codeowners",
+		}, args...)...)
+
+		return decodeLivePRReviewers(t, decodeJSONMap(t, output))
+	}
+
+	t.Run("both spellings accumulate rather than one discarding the other", func(t *testing.T) {
+		names := createWith(t, "feature/flag-aliases",
+			"--reviewer-group", "core-team", "--reviewer-groups", "go-team")
+
+		for _, want := range []string{core.Username, gopher.Username} {
+			if !containsFold(names, want) {
+				t.Errorf("expected %s from one of the two flags, got %v", want, names)
+			}
+		}
+	})
+
+	t.Run("the reviewer-group prefix is accepted by both flags", func(t *testing.T) {
+		for index, flags := range [][]string{
+			{"--reviewers", "@reviewer-group/core-team"},
+			{"--reviewer-group", "reviewer-group/core-team"},
+			{"--reviewer-group", "@reviewer-group/core-team"},
+		} {
+			t.Run(strings.Join(flags, " "), func(t *testing.T) {
+				names := createWith(t, fmt.Sprintf("feature/prefix-%d", index), append(flags, "--repo", repoRef)...)
+
+				if !containsFold(names, core.Username) {
+					t.Errorf("expected the group to expand to %s, got %v", core.Username, names)
+				}
+				for _, name := range names {
+					if strings.Contains(strings.ToLower(name), "reviewer-group/") {
+						t.Errorf("the group token was sent as a username: %v", names)
+					}
+				}
+			})
+		}
+	})
+}
