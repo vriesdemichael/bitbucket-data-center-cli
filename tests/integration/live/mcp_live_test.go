@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -363,6 +364,180 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 				t.Errorf("search_repositories did not return the seeded repository %q", repo.Slug)
 			}
 		})
+
+		// skip_review_summary is the argument an agent reaches for when it
+		// wants the pull request and not the reading of it. What it saves is
+		// the activity walk, and what a caller can see of that is
+		// counts_source: a summary that says "none" is one nothing was
+		// counted for.
+		//
+		// A unit test counted requests to a handler it wrote. Counting is not
+		// something a caller can do, and a server does not report it -- the
+		// field is what the contract actually offers.
+		t.Run("get_pull_request skip_review_summary", func(t *testing.T) {
+			branch := fmt.Sprintf("lt-mcp-skip-%d", time.Now().UnixNano()%100000)
+			if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "mcp-skip.txt"); err != nil {
+				t.Fatalf("push commit on branch failed: %v", err)
+			}
+			pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+			if err != nil {
+				t.Fatalf("create pull request failed: %v", err)
+			}
+
+			countsSource := func(t *testing.T, arguments map[string]any) string {
+				t.Helper()
+
+				var payload struct {
+					ReviewSummary struct {
+						CountsSource string `json:"counts_source"`
+					} `json:"review_summary"`
+				}
+				callAndDecode(t, session, callCtx, "get_pull_request", arguments, &payload)
+
+				return payload.ReviewSummary.CountsSource
+			}
+
+			base := map[string]any{"project": seeded.Key, "repo": repo.Slug, "id": pullRequestID}
+			if got := countsSource(t, base); got == "none" || got == "" {
+				t.Errorf("counts_source = %q without skip_review_summary, want the summary to have been read", got)
+			}
+
+			skipped := map[string]any{}
+			for key, value := range base {
+				skipped[key] = value
+			}
+			skipped["skip_review_summary"] = true
+			if got := countsSource(t, skipped); got != "none" {
+				t.Errorf("counts_source = %q with skip_review_summary, want %q", got, "none")
+			}
+
+			// list_pr_comments against a timeline Bitbucket built. A unit test
+			// held these shapes against one written beside it -- the thread
+			// count, the ordering, the browser link -- so the summary it
+			// checked was a tally of a fixture.
+			//
+			// The nested-payload guard is the one that matters most here: the
+			// activity timeline repeats the entire pull request inside every
+			// entry, and forwarding that to an agent spends its context on the
+			// same object over and over.
+			const remark = "an ordinary remark from the mcp live suite"
+			if output, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID, "--text", remark); err != nil {
+				t.Fatalf("pr comment add failed: %v\noutput: %s", err, output)
+			}
+
+			var comments struct {
+				Summary struct {
+					Unresolved float64 `json:"unresolved"`
+				} `json:"summary"`
+				Threads []struct {
+					ID       float64 `json:"id"`
+					URL      string  `json:"url"`
+					Resolved bool    `json:"resolved"`
+				} `json:"threads"`
+			}
+			raw := callAndDecode(t, session, callCtx, "list_pr_comments", map[string]any{
+				"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID,
+			}, &comments)
+
+			if len(comments.Threads) == 0 {
+				t.Fatalf("list_pr_comments returned no threads for a pull request with a comment on it:\n%s", raw)
+			}
+			if comments.Summary.Unresolved < 1 {
+				t.Errorf("an unresolved comment was not counted: %s", raw)
+			}
+			first := comments.Threads[0]
+			if first.ID == 0 || first.URL == "" {
+				t.Errorf("a thread came back without an id or a browser link: %s", raw)
+			}
+			if strings.Contains(raw, `"fromRef"`) || strings.Contains(raw, `"toRef"`) {
+				t.Errorf("the pull request payload nested in every activity was forwarded to the caller: %s", raw)
+			}
+
+			// path scopes the listing to one file, and reaches a different
+			// endpoint to do it: the comments resource rather than the
+			// timeline. The anchored comment is posted directly because bb
+			// cannot create one, the same way TestLivePullRequestApplySuggestion
+			// arranges its subject.
+			const anchoredText = "an inline remark from the mcp live suite"
+			if _, err := harness.liveJSON(ctx, http.MethodPost,
+				fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/comments",
+					seeded.Key, repo.Slug, pullRequestID),
+				map[string]any{
+					"text": anchoredText,
+					"anchor": map[string]any{
+						"line": 1, "lineType": "ADDED", "fileType": "TO", "path": "mcp-skip.txt",
+					},
+				}); err != nil {
+				t.Fatalf("post an inline comment failed: %v", err)
+			}
+
+			var scoped struct {
+				Threads []struct {
+					Text string `json:"text"`
+				} `json:"threads"`
+			}
+			scopedRaw := callAndDecode(t, session, callCtx, "list_pr_comments", map[string]any{
+				"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "path": "mcp-skip.txt",
+			}, &scoped)
+
+			var sawAnchored, sawPlain bool
+			for _, thread := range scoped.Threads {
+				switch thread.Text {
+				case anchoredText:
+					sawAnchored = true
+				case remark:
+					sawPlain = true
+				}
+			}
+			if !sawAnchored {
+				t.Errorf("scoping to a path lost the comment anchored to it: %s", scopedRaw)
+			}
+			if sawPlain {
+				t.Errorf("scoping to a path returned a comment anchored to nothing: %s", scopedRaw)
+			}
+
+			// state, against a thread that is resolved because it was
+			// resolved. The unit version filtered a fixture whose entries were
+			// marked resolved by the same file that then required them back.
+			if output, err := executeLiveCLI(t, "--json", "pr", "comment", "resolve", pullRequestID,
+				fmt.Sprintf("%d", int(first.ID))); err != nil {
+				t.Fatalf("pr comment resolve failed: %v\noutput: %s", err, output)
+			}
+
+			byState := func(t *testing.T, state string) []string {
+				t.Helper()
+
+				var payload struct {
+					Threads []struct {
+						Text     string `json:"text"`
+						Resolved bool   `json:"resolved"`
+					} `json:"threads"`
+				}
+				stateRaw := callAndDecode(t, session, callCtx, "list_pr_comments", map[string]any{
+					"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "state": state,
+				}, &payload)
+
+				texts := make([]string, 0, len(payload.Threads))
+				for _, thread := range payload.Threads {
+					texts = append(texts, thread.Text)
+					if state == "resolved" && !thread.Resolved {
+						t.Errorf("state=resolved returned an unresolved thread: %s", stateRaw)
+					}
+					if state == "unresolved" && thread.Resolved {
+						t.Errorf("state=unresolved returned a resolved thread: %s", stateRaw)
+					}
+				}
+
+				return texts
+			}
+
+			if resolved := byState(t, "resolved"); !slices.Contains(resolved, remark) {
+				t.Errorf("state=resolved did not return the thread that was just resolved: %v", resolved)
+			}
+			if unresolved := byState(t, "unresolved"); slices.Contains(unresolved, remark) {
+				t.Errorf("state=unresolved returned the thread that was just resolved: %v", unresolved)
+			}
+		})
 	}, "ai", "mcp", "serve")
 }
 
@@ -406,7 +581,10 @@ func listedToolNames(t *testing.T, session *mcp.ClientSession) []string {
 }
 
 // callAndDecode calls a tool and unmarshals its structuredContent into target.
-func callAndDecode(t *testing.T, session *mcp.ClientSession, ctx context.Context, name string, args map[string]any, target any) {
+// callAndDecode calls a tool, decodes its structured content into target, and
+// returns that content as JSON so a caller can also assert on what is not in
+// it.
+func callAndDecode(t *testing.T, session *mcp.ClientSession, ctx context.Context, name string, args map[string]any, target any) string {
 	t.Helper()
 
 	result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: args})
@@ -427,6 +605,8 @@ func callAndDecode(t *testing.T, session *mcp.ClientSession, ctx context.Context
 	if err := json.Unmarshal(encoded, target); err != nil {
 		t.Fatalf("%s: decode structuredContent %s: %v", name, encoded, err)
 	}
+
+	return string(encoded)
 }
 
 // mcpResultText flattens a tool result's text content for failure messages.

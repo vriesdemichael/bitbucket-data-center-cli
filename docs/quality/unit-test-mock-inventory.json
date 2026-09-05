@@ -1,17 +1,17 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 184,
+    "mocked_servers": 183,
     "files": 63,
-    "functions": 175,
+    "functions": 174,
     "by_class": {
-      "bitbucket-behaviour": 39,
+      "bitbucket-behaviour": 37,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
       "unreachable-state": 8,
-      "unreached-guard": 24
+      "unreached-guard": 25
     },
     "behaviour_by_package": {
       "internal/cli": 8,
@@ -20,7 +20,7 @@
       "internal/cli/cmd/repo": 4,
       "internal/cli/cmd/reviewer": 1,
       "internal/cli/cmd/webhook": 1,
-      "internal/mcp": 5,
+      "internal/mcp": 3,
       "internal/services/branch": 1,
       "internal/services/forksync": 1,
       "internal/services/pullrequest": 2,
@@ -794,7 +794,7 @@
     },
     {
       "file": "internal/mcp/tools_pr_review_test.go",
-      "line": 29,
+      "line": 20,
       "function": "newReviewClients",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -805,16 +805,15 @@
     },
     {
       "file": "internal/mcp/tools_pr_review_test.go",
-      "line": 116,
-      "function": "TestGetPullRequestSkipReviewSummary",
-      "class": "bitbucket-behaviour",
+      "line": 83,
+      "function": "TestListPRCommentsRejectsUnknownState",
+      "class": "unreached-guard",
       "signals": [
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "inspects-the-request-path"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/mcp/tools_pr_test.go",
@@ -824,21 +823,6 @@
       "signals": [
         "answers-any-request",
         "asserts-request-body"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/mcp/tools_pr_test.go",
-      "line": 276,
-      "function": "TestSubmitPRReviewNeedsWorkAction",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
       ],
       "action": "move-to-live",
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"

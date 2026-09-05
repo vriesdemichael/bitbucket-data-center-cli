@@ -268,60 +268,6 @@ func TestListPullRequestsModeSelection(t *testing.T) {
 	})
 }
 
-func TestSubmitPRReviewNeedsWorkAction(t *testing.T) {
-	var gotMethod string
-	var gotPath string
-	var payload map[string]any
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-
-		// Every authenticated response carries the current user, which is how
-		// needs_work resolves the participant to update.
-		w.Header().Set("X-AUSERNAME", "alice")
-		if r.URL.Path == "/rest/api/latest/users" {
-			_, _ = w.Write([]byte(`{"values":[]}`))
-			return
-		}
-
-		body, _ := io.ReadAll(r.Body)
-		gotMethod = r.Method
-		gotPath = r.URL.Path
-		payload = map[string]any{}
-		_ = json.Unmarshal(body, &payload)
-
-		_, _ = w.Write([]byte(`{"id":30,"state":"OPEN","open":true,"participants":[{"role":"REVIEWER","status":"NEEDS_WORK","user":{"name":"alice"}}]}`))
-	}))
-	defer srv.Close()
-
-	clients, err := ClientsFromConfig(config.AppConfig{
-		BitbucketURL:   srv.URL,
-		RequestTimeout: 5 * time.Second,
-		RetryCount:     0,
-		RetryBackoff:   time.Millisecond,
-	})
-	if err != nil {
-		t.Fatalf("ClientsFromConfig failed: %v", err)
-	}
-
-	result := callTool(t, specSubmitPRReview(), clients, map[string]any{
-		"project": "TEST", "repo": "demo", "pr_id": "30", "action": "needs_work",
-	})
-	if result.IsError {
-		t.Fatalf("expected success, got: %s", resultText(result))
-	}
-
-	if gotMethod != http.MethodPut {
-		t.Fatalf("expected PUT for needs_work, got %s", gotMethod)
-	}
-	if gotPath != "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/participants/alice" {
-		t.Fatalf("unexpected participant path %q", gotPath)
-	}
-	if payload["status"] != "NEEDS_WORK" {
-		t.Fatalf("expected a NEEDS_WORK payload, got %#v", payload)
-	}
-}
-
 func TestSubmitPRReviewRejectsUnknownAction(t *testing.T) {
 	clients := newRecordingClients(t, `{}`, nil)
 
@@ -393,3 +339,10 @@ func TestAddPRCommentRejectsLineTypeWithoutAnchor(t *testing.T) {
 		t.Fatalf("expected a line_type message, got %q", text)
 	}
 }
+
+// TestSubmitPRReviewNeedsWorkAction is live now, in
+// TestLiveMCPSubmitReviewMutatesForReal, which submits all three actions as a
+// second account -- Bitbucket refuses the author's own review outright -- and
+// reads the participant status back after each. The unit version asserted the
+// PUT reached a participant path this file had written the reply for, which
+// says nothing about whether Bitbucket keeps a NEEDS_WORK sent that way.
