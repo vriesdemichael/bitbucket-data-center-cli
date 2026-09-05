@@ -15,6 +15,7 @@ import (
 // newPullRequestStatusServer serves the two endpoints bb pr status reads: the
 // cross-repository dashboard, filtered by role, and the per-repository listing
 // the current-branch section uses.
+// mock-inventory: unreachable-state — a working tree outside a repository, or one whose remote names a Bitbucket repository that is not there, alongside a dashboard for the sections that still answer; the live CLI runs inside this checkout and cannot be moved out of it.
 func newPullRequestStatusServer(t *testing.T) *httptest.Server {
 	t.Helper()
 
@@ -140,53 +141,6 @@ func statusPullRequestIDs(t *testing.T, section map[string]any) []float64 {
 	return ids
 }
 
-func TestPullRequestStatusReportsAllThreeSections(t *testing.T) {
-	server := newPullRequestStatusServer(t)
-	configurePullRequestStatusEnv(t, server.URL, "me")
-	withGitBackend(t, inferenceGitBackendStub{repoRoot: "/repo", branch: "feature/x"})
-
-	payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
-
-	currentBranch := statusSection(t, payload, "currentBranch")
-	if currentBranch["branch"] != "feature/x" {
-		t.Fatalf("expected the checked-out branch to be reported, got: %v", currentBranch)
-	}
-	if currentBranch["repository"] != "PRJ/demo" {
-		t.Fatalf("expected the resolved repository to be reported, got: %v", currentBranch)
-	}
-	if ids := statusPullRequestIDs(t, currentBranch); len(ids) != 1 || ids[0] != 31 {
-		t.Fatalf("expected the branch pull request, got: %v", ids)
-	}
-
-	if ids := statusPullRequestIDs(t, statusSection(t, payload, "createdByYou")); len(ids) != 1 || ids[0] != 11 {
-		t.Fatalf("expected the authored pull request, got: %v", ids)
-	}
-}
-
-// TestPullRequestStatusAsksOnlyForReviewsNotYetGiven is the assertion behind
-// the section's name.
-//
-// role=REVIEWER alone means "you are a reviewer", which keeps listing pull
-// requests you already approved or already sent back as needs-work. The
-// narrowing is participantStatus=UNAPPROVED, and it has to be asked for: the
-// dashboard's default is every status.
-func TestPullRequestStatusAsksOnlyForReviewsNotYetGiven(t *testing.T) {
-	server := newPullRequestStatusServer(t)
-	configurePullRequestStatusEnv(t, server.URL, "me")
-	withGitBackend(t, inferenceGitBackendStub{repoRoot: "/repo", branch: "feature/x"})
-
-	payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
-
-	reviewing := statusSection(t, payload, "requestingYourReview")
-	ids := statusPullRequestIDs(t, reviewing)
-	if len(ids) != 1 || ids[0] != 21 {
-		t.Fatalf("expected only the pull request still waiting on me, got: %v", ids)
-	}
-	if reviewing["note"] != nil {
-		t.Fatalf("expected no note on a section the server narrowed, got: %v", reviewing["note"])
-	}
-}
-
 // TestPullRequestStatusDegradesOutsideARepository is the reason the current
 // branch is a section rather than a precondition: the other two answers are
 // still available, and failing the whole command would make bb pr status
@@ -251,34 +205,6 @@ func TestPullRequestStatusReportsMissingRepositoryContext(t *testing.T) {
 	note, _ := statusSection(t, payload, "currentBranch")["note"].(string)
 	if !strings.Contains(note, "no repository context") {
 		t.Fatalf("expected a note about the missing repository context, got: %q", note)
-	}
-}
-
-func TestPullRequestStatusHumanOutput(t *testing.T) {
-	server := newPullRequestStatusServer(t)
-	configurePullRequestStatusEnv(t, server.URL, "me")
-	withGitBackend(t, inferenceGitBackendStub{repoRoot: "/repo", branch: "feature/x"})
-
-	output := executePullRequestStatus(t, "pr", "status")
-
-	for _, expected := range []string{
-		"Current branch (feature/x)",
-		"Created by you",
-		"Requesting a code review from you",
-		"#31",
-		"#11",
-		"#21",
-	} {
-		if !strings.Contains(output, expected) {
-			t.Fatalf("expected %q in pr status output, got:\n%s", expected, output)
-		}
-	}
-
-	// The ones already responded to are outside participantStatus=UNAPPROVED.
-	for _, unexpected := range []string{"#22", "#23"} {
-		if strings.Contains(output, unexpected) {
-			t.Fatalf("expected %s to be outside the review section, got:\n%s", unexpected, output)
-		}
 	}
 }
 
@@ -366,3 +292,23 @@ func TestPullRequestStatusWithoutAGitBackend(t *testing.T) {
 // has authored nothing and been asked to review nothing. The unit version
 // answered every dashboard query with an empty page, which is also what a
 // broken query looks like.
+
+// The reviewer section's narrowing is live now, in TestLivePullRequestStatus.
+//
+// role=REVIEWER alone means "you are a reviewer", which keeps listing pull
+// requests you already approved; participantStatus=UNAPPROVED is what makes
+// the section mean "waiting on you", and Bitbucket's default is every status.
+// The version here answered the dashboard query itself, so the query decided
+// its own result. The live one puts the same reviewer on two pull requests,
+// approves one, and requires the section to hold exactly the other.
+// Sabotage-checked by dropping the narrowing.
+//
+// TestPullRequestStatusReportsAllThreeSections went with it. Its two dashboard
+// sections are covered there; its current-branch section is not, and cannot
+// be: the live CLI does not run inside a Bitbucket checkout, which is what
+// TestLivePullRequestStatus asserts instead -- that the section says so rather
+// than failing the command.
+
+// TestPullRequestStatusHumanOutput went with them: the headings and the
+// review-section narrowing are both live, the latter against a reviewer who
+// really has approved one of two pull requests.

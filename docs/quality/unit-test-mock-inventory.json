@@ -5,17 +5,17 @@
     "files": 60,
     "functions": 166,
     "by_class": {
-      "bitbucket-behaviour": 23,
+      "bitbucket-behaviour": 21,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
-      "unreachable-state": 13,
+      "unreachable-state": 15,
       "unreached-guard": 26
     },
     "behaviour_by_package": {
-      "internal/cli": 4,
-      "internal/cli/cmd/pr": 7,
+      "internal/cli": 3,
+      "internal/cli/cmd/pr": 6,
       "internal/cli/cmd/repo": 4,
       "internal/cli/cmd/webhook": 1,
       "internal/mcp": 3,
@@ -319,17 +319,18 @@
     },
     {
       "file": "internal/cli/cmd/pr/status_test.go",
-      "line": 57,
+      "line": 58,
       "function": "newPullRequestStatusServer",
-      "class": "bitbucket-behaviour",
+      "class": "unreachable-state",
       "signals": [
         "asserts-query-parameters",
         "returns-bitbucket-entity",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a working tree with no branch checked out, alongside a dashboard for the other two sections; the live CLI runs inside this repository, on a branch, so the note this test is about cannot be reached there.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/project/permissions_test.go",
@@ -599,21 +600,22 @@
     },
     {
       "file": "internal/cli/pr_status_command_test.go",
-      "line": 21,
+      "line": 22,
       "function": "newPullRequestStatusServer",
-      "class": "bitbucket-behaviour",
+      "class": "unreachable-state",
       "signals": [
         "asserts-query-parameters",
         "returns-bitbucket-entity",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a working tree outside a repository, or one whose remote names a Bitbucket repository that is not there, alongside a dashboard for the sections that still answer; the live CLI runs inside this checkout and cannot be moved out of it.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/pr_status_command_test.go",
-      "line": 300,
+      "line": 226,
       "function": "TestPullRequestStatusFailsWhenTheDashboardFails",
       "class": "transport-fault",
       "signals": [
@@ -629,7 +631,7 @@
     },
     {
       "file": "internal/cli/pr_status_command_test.go",
-      "line": 331,
+      "line": 257,
       "function": "TestPullRequestStatusNotesABranchListingFailure",
       "class": "transport-fault",
       "signals": [
