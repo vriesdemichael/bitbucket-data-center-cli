@@ -13,30 +13,53 @@ import (
 // servicesDirectory holds the packages this guard reads.
 const servicesDirectory = "internal/services"
 
-// TestNoServiceOptionIsCalledLimit fails when a list option reintroduces the
-// name that meant two opposite things.
+// bannedName reports the offending name, or "" when it is allowed.
 //
-// Eleven services capped their results and truncated; eight passed the value
-// through as a page size and paged to exhaustion. The field was called Limit in
-// all nineteen, so a call site could not tell which it was getting, and the
-// wrong guess failed silently and in the direction that loses data: fewer
-// results, no error, no flag. Two user-visible bugs came from reading it as a
-// page size, which is the natural reading.
+// Limit says nothing about which of the two behaviours it selects. PageSize
+// says exactly which, and is the one no caller can use.
+func bannedName(name string) string {
+	switch name {
+	case "Limit", "PageSize":
+		return name
+	case "pageSize":
+		return name
+	}
+
+	return ""
+}
+
+// TestNoServiceOptionIsCalledLimit fails when a list option names a limit the
+// call site cannot act on.
 //
-// The check is on the name rather than on the behaviour because the behaviour
-// is not statically decidable, and because the name is what the call site
-// reads. ADR-074 records the rule.
+// It began as a rule about ambiguity. Eleven services capped their results and
+// truncated; eight passed the value through as a page size and paged to
+// exhaustion. The field was called Limit in all nineteen, so a call site could
+// not tell which it was getting, and the wrong guess failed silently and in the
+// direction that loses data: fewer results, no error, no flag.
+//
+// Renaming was not enough. Seven `--limit` flags shipped doing nothing --
+// branch restriction list, commit compare, pr commits, pr files, repo browse
+// tree, branch model inspect, and the pr comment listings -- and in every one of
+// them the field was honestly called PageSize. The CLI handed a cap to something
+// that took a window, and no name could have said that was wrong, because both
+// halves were correctly named.
+//
+// So the rule is now that a service does not take a page size at all. Paging is
+// an HTTP detail openapi.PageThrough owns; a caller has no cursor to advance
+// and nothing to do with the window, and the only number worth accepting from
+// outside is a cap. With page size gone from the surface, a cap can no longer
+// land on one. ADR-074 records it.
 func TestNoServiceOptionIsCalledLimit(t *testing.T) {
 	root := repositoryRoot(t)
 
 	fields := limitNamedFields(t, filepath.Join(root, servicesDirectory))
 	for _, field := range fields {
 		t.Errorf(
-			"%s is named for a limit that does not say which one it is.\n"+
-				"Name it MaxResults if it caps the total and truncates, or PageSize if it is the\n"+
-				"per-request size and the call pages to exhaustion. ADR-074 explains why: the two\n"+
-				"behaviours were indistinguishable at the call site, and guessing wrong silently\n"+
-				"returned fewer results.",
+			"%s names a limit a caller cannot act on.\n"+
+				"Call it MaxResults and let openapi.PageThrough size the requests. A service does\n"+
+				"not take Limit, because it does not say whether it caps or paginates, and it does\n"+
+				"not take PageSize, because a caller has no cursor to advance and every caller that\n"+
+				"passed one was passing a cap. ADR-074 explains what each of those cost.",
 			field,
 		)
 	}
@@ -61,13 +84,25 @@ func TestTheLimitScannerFindsAField(t *testing.T) {
 			want:   true,
 		},
 		{
+			name:   "a field called PageSize",
+			source: "package p\ntype ListOptions struct {\n\tPageSize int\n}\n",
+			want:   true,
+		},
+		{
+			name:   "an exported method taking a page size",
+			source: "package p\nimport \"context\"\nfunc (s *S) List(ctx context.Context, pageSize int) error { return nil }\n",
+			want:   true,
+		},
+		{
 			name:   "MaxResults is fine",
 			source: "package p\ntype ListOptions struct {\n\tMaxResults int\n}\n",
 			want:   false,
 		},
 		{
-			name:   "PageSize is fine",
-			source: "package p\ntype ListOptions struct {\n\tPageSize int\n}\n",
+			// The window still exists inside a service; what it must not do is
+			// reach the surface.
+			name:   "an unexported helper may still speak of pages",
+			source: "package p\nfunc fetch(pageSize int) int { return pageSize }\n",
 			want:   false,
 		},
 		{
@@ -92,7 +127,8 @@ func TestTheLimitScannerFindsAField(t *testing.T) {
 	}
 }
 
-// limitNamedFields finds every struct field named Limit under a directory.
+// limitNamedFields finds every struct field and exported parameter under a
+// directory that names a limit the caller cannot act on.
 func limitNamedFields(t *testing.T, root string) []string {
 	t.Helper()
 
@@ -125,8 +161,8 @@ func limitNamedFields(t *testing.T, root string) []string {
 			if structure, ok := node.(*ast.StructType); ok && structure.Fields != nil {
 				for _, field := range structure.Fields.List {
 					for _, name := range field.Names {
-						if name.Name == "Limit" {
-							found = append(found, relative+" (field Limit)")
+						if banned := bannedName(name.Name); banned != "" {
+							found = append(found, relative+" (field "+banned+")")
 						}
 					}
 				}
@@ -135,19 +171,22 @@ func limitNamedFields(t *testing.T, root string) []string {
 			}
 
 			// A parameter is read at the call site exactly as a field is, and
-			// the same two meanings had grown there: eighteen exported methods
-			// took a bare `limit`, six capping and twelve paging to exhaustion.
-			// The guard watched only the fields, so the half it could not see
-			// went on doing what the rule was written to stop -- and `bb branch
+			// the same meanings had grown there: eighteen exported methods took
+			// a bare `limit`, six capping and twelve paging to exhaustion. The
+			// guard watched only the fields, so the half it could not see went
+			// on doing what the rule was written to stop -- and `bb branch
 			// restriction list --limit` shipped returning everything.
+			//
+			// Unexported functions are left alone. A window is a real thing
+			// inside a service; the rule is about what a caller is offered.
 			function, ok := node.(*ast.FuncDecl)
 			if !ok || function.Type.Params == nil || !function.Name.IsExported() {
 				return true
 			}
 			for _, parameter := range function.Type.Params.List {
 				for _, name := range parameter.Names {
-					if name.Name == "limit" || name.Name == "Limit" {
-						found = append(found, relative+" ("+function.Name.Name+" parameter limit)")
+					if banned := bannedName(name.Name); banned != "" {
+						found = append(found, relative+" ("+function.Name.Name+" parameter "+banned+")")
 					}
 				}
 			}

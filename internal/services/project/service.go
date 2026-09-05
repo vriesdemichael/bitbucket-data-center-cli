@@ -176,55 +176,53 @@ func (service *Service) Delete(ctx context.Context, key string) error {
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
-func (service *Service) ListProjectPermissionUsers(ctx context.Context, projectKey string, pageSize int) ([]PermissionUser, error) {
+func (service *Service) ListProjectPermissionUsers(ctx context.Context, projectKey string, maxResults int) ([]PermissionUser, error) {
 	if strings.TrimSpace(projectKey) == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
-	if pageSize <= 0 {
-		pageSize = 100
+	if maxResults <= 0 {
+		maxResults = 100
 	}
 
-	start := float32(0)
-	pageLimit := float32(pageSize)
-	results := make([]PermissionUser, 0)
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[PermissionUser], error) {
+			startValue, limitValue := float32(start), float32(limit)
 
-	for {
-		response, err := service.client.GetUsersWithAnyPermission1WithResponse(ctx, projectKey, &openapigenerated.GetUsersWithAnyPermission1Params{
-			Start: &start,
-			Limit: &pageLimit,
+			response, err := service.client.GetUsersWithAnyPermission1WithResponse(ctx, projectKey, &openapigenerated.GetUsersWithAnyPermission1Params{
+				Start: &startValue,
+				Limit: &limitValue,
+			})
+			if err != nil {
+				return openapi.Page[PermissionUser]{}, apperrors.New(apperrors.KindTransient, "failed to list project user permissions", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[PermissionUser]{}, err
+			}
+
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[PermissionUser]{}, nil
+			}
+
+			entries := make([]PermissionUser, 0, len(*page.Values))
+			for _, value := range *page.Values {
+				entry := PermissionUser{}
+				if value.User != nil {
+					entry.Name = value.User.Name
+					entry.Display = value.User.DisplayName
+				}
+				if value.Permission != nil {
+					entry.Permission = string(*value.Permission)
+				}
+				entries = append(entries, entry)
+			}
+
+			return openapi.Page[PermissionUser]{
+				Values:        entries,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
 		})
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list project user permissions", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return nil, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
-
-		for _, value := range *response.ApplicationjsonCharsetUTF8200.Values {
-			entry := PermissionUser{}
-			if value.User != nil {
-				entry.Name = value.User.Name
-				entry.Display = value.User.DisplayName
-			}
-			if value.Permission != nil {
-				entry.Permission = string(*value.Permission)
-			}
-			results = append(results, entry)
-		}
-
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	return results, nil
 }
 
 func (service *Service) GrantProjectUserPermission(ctx context.Context, projectKey string, username string, permission string) error {
@@ -271,56 +269,52 @@ func (service *Service) RevokeProjectUserPermission(ctx context.Context, project
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
 
-func (service *Service) ListProjectPermissionGroups(ctx context.Context, projectKey string, pageSize int) ([]PermissionGroup, error) {
+func (service *Service) ListProjectPermissionGroups(ctx context.Context, projectKey string, maxResults int) ([]PermissionGroup, error) {
 	if strings.TrimSpace(projectKey) == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
-	if pageSize <= 0 {
-		pageSize = 100
+	if maxResults <= 0 {
+		maxResults = 100
 	}
 
-	start := float32(0)
-	pageLimit := float32(pageSize)
-	results := make([]PermissionGroup, 0)
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[PermissionGroup], error) {
+			startValue, limitValue := float32(start), float32(limit)
 
-	for {
-		response, err := service.client.GetGroupsWithAnyPermission1WithResponse(ctx, projectKey, &openapigenerated.GetGroupsWithAnyPermission1Params{
-			Start: &start,
-			Limit: &pageLimit,
-		})
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list project group permissions", err)
-		}
-		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-			return nil, err
-		}
-		if response.ApplicationjsonCharsetUTF8200 == nil || response.ApplicationjsonCharsetUTF8200.Values == nil {
-			break
-		}
+			response, err := service.client.GetGroupsWithAnyPermission1WithResponse(ctx, projectKey, &openapigenerated.GetGroupsWithAnyPermission1Params{
+				Start: &startValue,
+				Limit: &limitValue,
+			})
+			if err != nil {
+				return openapi.Page[PermissionGroup]{}, apperrors.New(apperrors.KindTransient, "failed to list project group permissions", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[PermissionGroup]{}, err
+			}
 
-		for _, value := range *response.ApplicationjsonCharsetUTF8200.Values {
-			entry := PermissionGroup{}
-			if value.Group != nil {
-				if value.Group.Name != nil {
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[PermissionGroup]{}, nil
+			}
+
+			entries := make([]PermissionGroup, 0, len(*page.Values))
+			for _, value := range *page.Values {
+				entry := PermissionGroup{}
+				if value.Group != nil && value.Group.Name != nil {
 					entry.Name = *value.Group.Name
 				}
+				if value.Permission != nil {
+					entry.Permission = *value.Permission
+				}
+				entries = append(entries, entry)
 			}
-			if value.Permission != nil {
-				entry.Permission = *value.Permission
-			}
-			results = append(results, entry)
-		}
 
-		if response.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *response.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if response.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-		start = float32(*response.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	return results, nil
+			return openapi.Page[PermissionGroup]{
+				Values:        entries,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (service *Service) GrantProjectGroupPermission(ctx context.Context, projectKey string, group string, permission string) error {

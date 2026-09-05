@@ -435,7 +435,7 @@ func TestTrySummarizeReportsCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	if _, err := service.TrySummarize(ctx, RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12", 25); err == nil {
+	if _, err := service.TrySummarize(ctx, RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12"); err == nil {
 		t.Fatal("expected a cancelled context to be reported rather than degraded")
 	}
 }
@@ -446,7 +446,7 @@ func TestTrySummarizeReturnsCountsOnSuccess(t *testing.T) {
 		_, _ = w.Write([]byte(threadFixture))
 	})
 
-	summary, err := service.TrySummarize(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12", 25)
+	summary, err := service.TrySummarize(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12")
 	if err != nil {
 		t.Fatalf("TrySummarize: %v", err)
 	}

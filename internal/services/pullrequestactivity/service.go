@@ -19,9 +19,16 @@ type RepositoryRef struct {
 	Slug       string `json:"slug"`
 }
 
+// AllResults asks for the whole timeline rather than a page of it.
+//
+// A thread summary counts what it was given, so a summary built from a capped
+// timeline reports fewer open threads than there are and says nothing about the
+// ones it did not see. Every caller that summarises has to ask for all of them.
+const AllResults = 1_000_000
+
 type ListOptions struct {
-	PageSize int `json:"limit"`
-	Start    int `json:"start"`
+	MaxResults int `json:"limit"`
+	Start      int `json:"start"`
 }
 
 type Activity struct {
@@ -50,42 +57,42 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, pull
 		return nil, err
 	}
 
-	if options.PageSize <= 0 {
-		options.PageSize = 25
+	if options.MaxResults <= 0 {
+		options.MaxResults = 25
 	}
 	if options.Start < 0 {
 		return nil, apperrors.New(apperrors.KindValidation, "start must be greater than or equal to 0", nil)
 	}
 
-	start := float32(options.Start)
-	limit := float32(options.PageSize)
-	results := make([]Activity, 0)
+	return openapi.PageThrough(ctx, options.Start, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[Activity], error) {
+			startValue, limitValue := float32(start), float32(limit)
 
-	for {
-		response, err := service.client.GetActivitiesWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID, &openapigenerated.GetActivitiesParams{Start: &start, Limit: &limit})
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to list pull request activities", err)
-		}
-		if response.StatusCode() >= 400 {
-			return nil, mapActivityStatusError(response.StatusCode(), response.Body)
-		}
+			response, err := service.client.GetActivitiesWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID,
+				&openapigenerated.GetActivitiesParams{Start: &startValue, Limit: &limitValue})
+			if err != nil {
+				return openapi.Page[Activity]{}, apperrors.New(apperrors.KindTransient, "failed to list pull request activities", err)
+			}
+			if response.StatusCode() >= 400 {
+				return openapi.Page[Activity]{}, mapActivityStatusError(response.StatusCode(), response.Body)
+			}
 
-		page, err := decodeActivityPage(response.Body)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindInternal, "failed to decode pull request activities", err)
-		}
+			page, err := decodeActivityPage(response.Body)
+			if err != nil {
+				return openapi.Page[Activity]{}, apperrors.New(apperrors.KindInternal, "failed to decode pull request activities", err)
+			}
 
-		results = append(results, page.Values...)
-		if page.IsLastPage || page.NextPageStart == nil {
-			break
-		}
-		if *page.NextPageStart == int(start) {
-			break
-		}
-		start = float32(*page.NextPageStart)
-	}
+			// The hand-decoded page carries isLastPage as a plain bool and the
+			// next start as *int, so both are adapted rather than passed on.
+			isLastPage := page.IsLastPage
+			converted := openapi.Page[Activity]{Values: page.Values, IsLastPage: &isLastPage}
+			if page.NextPageStart != nil {
+				next := int32(*page.NextPageStart)
+				converted.NextPageStart = &next
+			}
 
-	return results, nil
+			return converted, nil
+		})
 }
 
 func ExtractComments(activities []Activity) []openapigenerated.RestComment {

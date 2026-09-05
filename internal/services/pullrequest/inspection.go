@@ -7,12 +7,19 @@ import (
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 )
 
 // PageOptions controls pagination for pull request inspection listings.
+//
+// MaxResults caps the total and was called PageSize, which is what it was: both
+// listings read to the last page whatever it said, and neither caller trimmed
+// afterwards, so `bb pr commits --limit 5` printed every commit in the pull
+// request. ADR-074 is the naming rule; this is the third field to have been on
+// the wrong side of it.
 type PageOptions struct {
-	PageSize int `json:"limit"`
-	Start    int `json:"start"`
+	MaxResults int `json:"limit"`
+	Start      int `json:"start"`
 }
 
 // Commit is a commit reachable from a pull request (its commit list or merge base).
@@ -42,26 +49,25 @@ func (service *Service) ListCommits(ctx context.Context, repository RepositoryRe
 	}
 
 	path := fmt.Sprintf("%s/%s/commits", pullRequestPath(repository), resolvedID)
-	results := make([]Commit, 0)
-	start := options.Start
 
-	for {
-		var response pagedCommitsResponse
-		if err := service.client.GetJSON(ctx, path, pageQuery(options.PageSize, start), &response); err != nil {
-			return nil, err
-		}
+	return openapi.PageThrough(ctx, options.Start, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[Commit], error) {
+			var response pagedCommitsResponse
+			if err := service.client.GetJSON(ctx, path, pageQuery(limit, start), &response); err != nil {
+				return openapi.Page[Commit]{}, err
+			}
 
-		for _, value := range response.Values {
-			results = append(results, mapCommit(value))
-		}
+			commits := make([]Commit, 0, len(response.Values))
+			for _, value := range response.Values {
+				commits = append(commits, mapCommit(value))
+			}
 
-		if response.IsLastPage || response.NextPageStart == start {
-			break
-		}
-		start = response.NextPageStart
-	}
-
-	return results, nil
+			return openapi.Page[Commit]{
+				Values:        commits,
+				IsLastPage:    &response.IsLastPage,
+				NextPageStart: &response.NextPageStart,
+			}, nil
+		})
 }
 
 // ListChanges returns the file changes in a pull request.
@@ -72,26 +78,25 @@ func (service *Service) ListChanges(ctx context.Context, repository RepositoryRe
 	}
 
 	path := fmt.Sprintf("%s/%s/changes", pullRequestPath(repository), resolvedID)
-	results := make([]Change, 0)
-	start := options.Start
 
-	for {
-		var response pagedChangesResponse
-		if err := service.client.GetJSON(ctx, path, pageQuery(options.PageSize, start), &response); err != nil {
-			return nil, err
-		}
+	return openapi.PageThrough(ctx, options.Start, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[Change], error) {
+			var response pagedChangesResponse
+			if err := service.client.GetJSON(ctx, path, pageQuery(limit, start), &response); err != nil {
+				return openapi.Page[Change]{}, err
+			}
 
-		for _, value := range response.Values {
-			results = append(results, mapChange(value))
-		}
+			changes := make([]Change, 0, len(response.Values))
+			for _, value := range response.Values {
+				changes = append(changes, mapChange(value))
+			}
 
-		if response.IsLastPage || response.NextPageStart == start {
-			break
-		}
-		start = response.NextPageStart
-	}
-
-	return results, nil
+			return openapi.Page[Change]{
+				Values:        changes,
+				IsLastPage:    &response.IsLastPage,
+				NextPageStart: &response.NextPageStart,
+			}, nil
+		})
 }
 
 // GetMergeBase returns the common ancestor commit between the source and target
@@ -123,8 +128,8 @@ func (service *Service) validateInspectionRequest(repository RepositoryRef, pull
 	if err != nil {
 		return "", err
 	}
-	if options.PageSize <= 0 {
-		options.PageSize = 25
+	if options.MaxResults <= 0 {
+		options.MaxResults = 25
 	}
 	if options.Start < 0 {
 		return "", apperrors.New(apperrors.KindValidation, "start must be greater than or equal to 0", nil)
@@ -142,7 +147,7 @@ func pageQuery(limit, start int) map[string]string {
 type pagedCommitsResponse struct {
 	Values        []commitValue `json:"values"`
 	IsLastPage    bool          `json:"isLastPage"`
-	NextPageStart int           `json:"nextPageStart"`
+	NextPageStart int32         `json:"nextPageStart"`
 }
 
 type commitValue struct {
@@ -162,7 +167,7 @@ type commitAuthor struct {
 type pagedChangesResponse struct {
 	Values        []changeValue `json:"values"`
 	IsLastPage    bool          `json:"isLastPage"`
-	NextPageStart int           `json:"nextPageStart"`
+	NextPageStart int32         `json:"nextPageStart"`
 }
 
 type changeValue struct {

@@ -317,7 +317,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 			repo := target.RepositoryRef()
 
-			commits, err := service.ListCommits(cmd.Context(), repo, target.PullRequestID, pullrequestservice.PageOptions{PageSize: commitsPaging.ServiceLimit(), Start: commitsStart})
+			commits, err := service.ListCommits(cmd.Context(), repo, target.PullRequestID, pullrequestservice.PageOptions{MaxResults: commitsPaging.ServiceLimit(), Start: commitsStart})
 			if err != nil {
 				return err
 			}
@@ -360,7 +360,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 			repo := target.RepositoryRef()
 
-			changes, err := service.ListChanges(cmd.Context(), repo, target.PullRequestID, pullrequestservice.PageOptions{PageSize: filesPaging.ServiceLimit(), Start: filesStart})
+			changes, err := service.ListChanges(cmd.Context(), repo, target.PullRequestID, pullrequestservice.PageOptions{MaxResults: filesPaging.ServiceLimit(), Start: filesStart})
 			if err != nil {
 				return err
 			}
@@ -1835,6 +1835,17 @@ changes as readily as an approval, which its name does not suggest.`,
 			var threads []pullrequestactivityservice.Thread
 			var summary pullrequestactivityservice.Summary
 
+			// Every branch reads the whole set and the cap lands on the threads
+			// below, because the thing being listed here is threads and the
+			// grouping happens after the fetch.
+			//
+			// It had landed on the fetch, where it did nothing: all three
+			// services took it as a page size and read to the last page anyway,
+			// so --limit changed neither the requests' outcome nor the output.
+			// Moving it to the fetch properly would have been worse than
+			// leaving it broken -- a comment and its replies arrive separately,
+			// so a truncated window ends mid-thread and the summary reports
+			// fewer open threads than the pull request has.
 			if commentBlocker {
 				source = "blocker_comments"
 				service := commentservice.NewService(client)
@@ -1842,7 +1853,7 @@ changes as readily as an approval, which its name does not suggest.`,
 					Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
 					PullRequestID: target.PullRequestID,
 					Blocker:       true,
-				}, "", commentPaging.ServiceLimit())
+				}, "", commentservice.AllResults)
 				if err != nil {
 					return err
 				}
@@ -1850,7 +1861,8 @@ changes as readily as an approval, which its name does not suggest.`,
 			} else if trimmedCommentPath == "" {
 				source = "activities"
 				activityService := pullrequestactivityservice.NewService(client)
-				activities, listErr := activityService.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID, pullrequestactivityservice.ListOptions{PageSize: commentPaging.ServiceLimit()})
+				activities, listErr := activityService.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID,
+					pullrequestactivityservice.ListOptions{MaxResults: pullrequestactivityservice.AllResults})
 				if listErr != nil {
 					return listErr
 				}
@@ -1861,12 +1873,16 @@ changes as readily as an approval, which its name does not suggest.`,
 				comments, err = service.List(cmd.Context(), commentservice.Target{
 					Repository:    commentservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
 					PullRequestID: target.PullRequestID,
-				}, trimmedCommentPath, commentPaging.ServiceLimit())
+				}, trimmedCommentPath, commentservice.AllResults)
 				if err != nil {
 					return err
 				}
 				threads, summary = pullrequestactivityservice.ThreadsFromComments(comments, threadOptions)
 			}
+
+			// The summary above counts the whole pull request and keeps doing
+			// so: it is what says how much the listing is not showing.
+			threads = paging.Truncate(commentPaging, threads)
 
 			if commentFull {
 				// --full asks for the same comments ungrouped, not for a
@@ -2322,7 +2338,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			repo := target.RepositoryRef()
 
 			service := pullrequestactivityservice.NewService(client)
-			activities, err := service.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID, pullrequestactivityservice.ListOptions{PageSize: activityPaging.ServiceLimit()})
+			activities, err := service.List(cmd.Context(), pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID, pullrequestactivityservice.ListOptions{MaxResults: activityPaging.ServiceLimit()})
 			if err != nil {
 				return err
 			}

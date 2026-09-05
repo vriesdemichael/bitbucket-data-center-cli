@@ -170,8 +170,11 @@ func buildThreads(comments []openapigenerated.RestComment, orphaned map[int64]bo
 // Every other failure is reported. Swallowing them indiscriminately would turn
 // a broken token or a failing server into a silent "nothing outstanding", which
 // is the exact failure mode the review summary exists to prevent.
-func (service *Service) TrySummarize(ctx context.Context, repository RepositoryRef, pullRequestID string, pageSize int) (*Summary, error) {
-	activities, err := service.List(ctx, repository, pullRequestID, ListOptions{PageSize: pageSize})
+// It takes no limit. A count of the open threads is either of all of them or it
+// is a different number wearing the same name, and both callers were passing a
+// value that happened to be a page size and so happened to be right.
+func (service *Service) TrySummarize(ctx context.Context, repository RepositoryRef, pullRequestID string) (*Summary, error) {
+	activities, err := service.List(ctx, repository, pullRequestID, ListOptions{MaxResults: AllResults})
 	if err != nil {
 		if ctx.Err() != nil {
 			return nil, err

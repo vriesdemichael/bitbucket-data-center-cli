@@ -76,7 +76,12 @@ func NewService(client *openapigenerated.ClientWithResponses) *Service {
 	return &Service{client: client}
 }
 
-func (service *Service) List(ctx context.Context, target Target, path string, pageSize int) ([]openapigenerated.RestComment, error) {
+// AllResults asks for every comment rather than a page of them. A caller that
+// groups comments into threads needs the whole set, because a cap applied
+// before the grouping cuts a thread rather than dropping one.
+const AllResults = 1_000_000
+
+func (service *Service) List(ctx context.Context, target Target, path string, maxResults int) ([]openapigenerated.RestComment, error) {
 	if err := validateTarget(target); err != nil {
 		return nil, err
 	}
@@ -91,13 +96,13 @@ func (service *Service) List(ctx context.Context, target Target, path string, pa
 	if !target.Blocker && trimmedPath == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "comment path is required for list operations", nil)
 	}
-	if pageSize <= 0 {
-		pageSize = 25
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 
-	return openapi.PageThrough(ctx, 0, everyComment,
-		func(ctx context.Context, start, _ int) (openapi.Page[openapigenerated.RestComment], error) {
-			page, err := service.fetchCommentPage(ctx, target, trimmedPath, float32(start), float32(pageSize))
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestComment], error) {
+			page, err := service.fetchCommentPage(ctx, target, trimmedPath, float32(start), float32(limit))
 			if err != nil {
 				return openapi.Page[openapigenerated.RestComment]{}, err
 			}
@@ -115,10 +120,6 @@ func (service *Service) List(ctx context.Context, target Target, path string, pa
 			return converted, nil
 		})
 }
-
-// everyComment reads a comment listing to its end. pageSize is the window, not
-// a cap (ADR-074).
-const everyComment = 1_000_000
 
 // commentPage fetches one page from whichever endpoint the target names.
 //

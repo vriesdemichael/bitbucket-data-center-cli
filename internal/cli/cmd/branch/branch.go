@@ -511,8 +511,12 @@ func New(deps Dependencies) *cobra.Command {
 
 	modelInspectCmd := &cobra.Command{
 		Use:   "inspect <commit>",
-		Short: "Inspect branch refs that contain a commit",
-		Args:  cobra.ExactArgs(1),
+		Short: "Show the branch a commit belongs to",
+		// Not "the branches that contain it", which is what this said and what
+		// the endpoint's name suggests. Bitbucket answers with one ref -- the
+		// branch it considers the commit's home -- however many branches point
+		// at it. TestLiveBranchModelInspectAnswersWithOneRef pins that.
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {

@@ -1,12 +1,12 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 290,
+    "mocked_servers": 287,
     "files": 90,
-    "functions": 273,
+    "functions": 270,
     "by_class": {
-      "bitbucket-behaviour": 115,
-      "canned-response": 37,
+      "bitbucket-behaviour": 113,
+      "canned-response": 36,
       "external-service": 14,
       "harness-constructor": 19,
       "status-taxonomy": 18,
@@ -37,12 +37,11 @@
       "internal/mcp": 5,
       "internal/openapi": 2,
       "internal/services/branch": 2,
-      "internal/services/browse": 1,
       "internal/services/forksync": 1,
       "internal/services/jira": 3,
       "internal/services/project": 1,
       "internal/services/pullrequest": 2,
-      "internal/services/pullrequestactivity": 2,
+      "internal/services/pullrequestactivity": 1,
       "internal/services/quality": 5,
       "internal/services/reposettings": 3,
       "internal/services/repository": 1,
@@ -2102,21 +2101,6 @@
     {
       "file": "internal/services/browse/service_test.go",
       "line": 38,
-      "function": "TestBrowseServiceCoreCommands",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/browse/service_test.go",
-      "line": 79,
       "function": "TestBrowseServiceValidation",
       "class": "unreached-guard",
       "signals": [
@@ -2130,20 +2114,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 99,
-      "function": "TestBrowseServicePagination",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/services/browse/service_test.go",
-      "line": 119,
+      "line": 58,
       "function": "TestBrowseServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -2159,7 +2130,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 176,
+      "line": 115,
       "function": "TestBrowseServiceEdit",
       "class": "transport-fault",
       "signals": [
@@ -2176,7 +2147,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 276,
+      "line": 215,
       "function": "TestBrowseServiceRejectsTraversal",
       "class": "unreached-guard",
       "signals": [
@@ -2189,7 +2160,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 344,
+      "line": 283,
       "function": "TestBrowseServiceTreeRejectsTraversal",
       "class": "unreached-guard",
       "signals": [
@@ -2199,19 +2170,6 @@
       ],
       "action": "keep",
       "reason": "asserts that no request is made, which needs no server to be true"
-    },
-    {
-      "file": "internal/services/browse/service_test.go",
-      "line": 355,
-      "function": "TestBrowseServiceTreeStopsOnRepeatedNextPageStart",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
     },
     {
       "file": "internal/services/comment/service_test.go",
@@ -2945,18 +2903,15 @@
       "file": "internal/services/pullrequestactivity/service_test.go",
       "line": 84,
       "function": "TestListPaginationAndStatusBranches",
-      "class": "bitbucket-behaviour",
+      "class": "canned-response",
       "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
+        "answers-any-request",
         "handler-passed-to-a-helper",
-        "inspects-the-request-path",
         "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
+        "returns-bitbucket-entity"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "remove",
+      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
     },
     {
       "file": "internal/services/quality/service_test.go",
@@ -3121,14 +3076,12 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 203,
+      "line": 182,
       "function": "TestRepositorySettingsAdditionalBranches",
       "class": "bitbucket-behaviour",
       "signals": [
         "asserts-http-method",
-        "asserts-query-parameters",
         "returns-a-status",
-        "returns-bitbucket-entity",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
@@ -3137,7 +3090,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 419,
+      "line": 398,
       "function": "TestNewRepositorySettingsMethods",
       "class": "bitbucket-behaviour",
       "signals": [
