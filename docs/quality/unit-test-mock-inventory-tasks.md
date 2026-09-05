@@ -8,7 +8,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 |---|---:|---|
 | `move-to-live` | 105 | write the live test, then delete the mock |
 | `remove` | 40 | delete; it asserts nothing a live test would not already give |
-| `keep` | 91 | legitimate unit test under ADR-079 |
+| `keep` | 92 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
@@ -102,4 +102,5 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/repo/sync_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/reviewer/condition_stdin_test.go` | 1 | 0 | 1 | 0 | 0 |
 | `internal/mcp/server_test.go` | 1 | 0 | 1 | 0 | 0 |
+| `internal/services/contract/paging_contract_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/services/repository/service_test.go` | 1 | 0 | 1 | 0 | 0 |
