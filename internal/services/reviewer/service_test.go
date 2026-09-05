@@ -150,6 +150,7 @@ func TestReviewerGroupsAndDefaultReviewersServiceContextCanceled(t *testing.T) {
 	}
 }
 
+// mock-inventory: unreachable-state — an object with no values key where a page belongs, which Bitbucket does not send; the subject is that a listing missing its values reads as empty rather than as a nil dereference.
 func TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -917,28 +917,6 @@ func (service *Service) UpdateWebhook(ctx context.Context, repo RepositoryRef, i
 	return payload, nil
 }
 
-func (service *Service) SearchWebhooks(ctx context.Context, repo RepositoryRef, event *string) (any, error) {
-	if err := validateRepositoryRef(repo); err != nil {
-		return nil, err
-	}
-	params := &openapigenerated.SearchWebhooksParams{}
-	if event != nil && *event != "" {
-		params.Event = event
-	}
-	response, err := service.client.SearchWebhooksWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
-	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to search webhooks", err)
-	}
-	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-		return nil, err
-	}
-	var payload any
-	if err := json.Unmarshal(response.Body, &payload); err != nil {
-		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode webhooks search payload", err)
-	}
-	return payload, nil
-}
-
 // TestWebhook asks the server to deliver a test payload to a webhook.
 //
 // The url query parameter is required in practice even though the specification
@@ -1012,38 +990,6 @@ func (service *Service) webhookURL(ctx context.Context, repo RepositoryRef, id s
 	}
 
 	return url, nil
-}
-
-func (service *Service) GetWebhookLatestInvocation(ctx context.Context, repo RepositoryRef, id string, event *string, outcome *string) (any, error) {
-	if err := validateRepositoryRef(repo); err != nil {
-		return nil, err
-	}
-	trimmedID := strings.TrimSpace(id)
-	if trimmedID == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
-	}
-	var params *openapigenerated.GetLatestInvocation1Params
-	if (event != nil && *event != "") || (outcome != nil && *outcome != "") {
-		params = &openapigenerated.GetLatestInvocation1Params{}
-		if event != nil && *event != "" {
-			params.Event = event
-		}
-		if outcome != nil && *outcome != "" {
-			params.Outcome = outcome
-		}
-	}
-	response, err := service.client.GetLatestInvocation1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, params)
-	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get latest invocation", err)
-	}
-	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-		return nil, err
-	}
-	var payload any
-	if err := json.Unmarshal(response.Body, &payload); err != nil {
-		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode latest invocation response", err)
-	}
-	return payload, nil
 }
 
 func (service *Service) GetWebhookStatistics(ctx context.Context, repo RepositoryRef, id string) (any, error) {

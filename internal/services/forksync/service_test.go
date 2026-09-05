@@ -123,6 +123,8 @@ func TestForkSyncSynchronizeRequiresRefAndAction(t *testing.T) {
 
 // An omitted action means MERGE rather than an empty field, since the server
 // requires one and merging is what the endpoint is for.
+//
+// mock-inventory: unreachable-state — a caller that omits the action, which no command does: `repo sync` defaults the flag to MERGE, so this defence is only reachable from here. TestLiveRepositoryForkSync covers the wire form the CLI actually sends, with and without the flag.
 func TestForkSyncSynchronizeDefaultsToMerge(t *testing.T) {
 	var captured map[string]any
 	service := newForkSyncTestService(t, func(w http.ResponseWriter, r *http.Request) {
