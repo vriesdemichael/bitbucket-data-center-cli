@@ -14,7 +14,6 @@ import (
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
-	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 type retryRoundTripperFunc func(*http.Request) (*http.Response, error)
@@ -365,6 +364,17 @@ func TestNewClientWithResponsesFromConfigInvalidClientCert(t *testing.T) {
 	}
 }
 
+// The auth and base-path test that stood here is gone.
+//
+// It recorded the Authorization header a mock received and checked it began
+// with "Bearer " or "Basic ", which says the client wrote the string it was
+// told to write. Whether Bitbucket honours either form is the server's answer:
+// the whole live suite authenticates with basic, and
+// TestLiveAuthTokenLifecycle now creates a real access token and makes a
+// request with it as a bearer credential. The base path it also asserted --
+// /rest/api/latest -- is proved by every live request that reaches an endpoint
+// at all.
+
 func TestDiagnosticsWriter(t *testing.T) {
 	buffer := &bytes.Buffer{}
 
@@ -375,76 +385,6 @@ func TestDiagnosticsWriter(t *testing.T) {
 	if writer := diagnostics.EnabledWriter(false, buffer); writer != io.Discard {
 		t.Fatalf("expected discard writer when disabled, got %T", writer)
 	}
-}
-
-func TestNewClientWithResponsesFromConfigAuthAndBasePath(t *testing.T) {
-	t.Run("uses bearer token auth", func(t *testing.T) {
-		var receivedAuth string
-		var receivedPath string
-		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			receivedAuth = request.Header.Get("Authorization")
-			receivedPath = request.URL.Path
-			writer.Header().Set("Content-Type", "application/json")
-			_, _ = writer.Write([]byte(`{"size":0,"limit":1,"isLastPage":true,"values":[]}`))
-		}))
-		defer server.Close()
-
-		client, err := NewClientWithResponsesFromConfig(config.AppConfig{
-			BitbucketURL:   server.URL,
-			BitbucketToken: "abc123",
-			RequestTimeout: time.Second,
-			RetryCount:     0,
-			RetryBackoff:   time.Millisecond,
-		})
-		if err != nil {
-			t.Fatalf("new client: %v", err)
-		}
-
-		limit := float32(1)
-		response, err := client.GetProjectsWithResponse(context.Background(), &openapigenerated.GetProjectsParams{Limit: &limit})
-		if err != nil {
-			t.Fatalf("get projects: %v", err)
-		}
-		if response.StatusCode() != http.StatusOK {
-			t.Fatalf("expected 200 response, got %d", response.StatusCode())
-		}
-		if receivedAuth != "Bearer abc123" {
-			t.Fatalf("expected bearer auth header, got %q", receivedAuth)
-		}
-		if receivedPath != "/rest/api/latest/projects" {
-			t.Fatalf("expected /rest path prefix, got %q", receivedPath)
-		}
-	})
-
-	t.Run("uses basic auth when token is absent", func(t *testing.T) {
-		var authHeader string
-		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			authHeader = request.Header.Get("Authorization")
-			writer.Header().Set("Content-Type", "application/json")
-			_, _ = writer.Write([]byte(`{"size":0,"limit":1,"isLastPage":true,"values":[]}`))
-		}))
-		defer server.Close()
-
-		client, err := NewClientWithResponsesFromConfig(config.AppConfig{
-			BitbucketURL:      server.URL,
-			BitbucketUsername: "alice",
-			BitbucketPassword: "secret",
-			RequestTimeout:    time.Second,
-			RetryCount:        0,
-			RetryBackoff:      time.Millisecond,
-		})
-		if err != nil {
-			t.Fatalf("new client: %v", err)
-		}
-
-		limit := float32(1)
-		if _, err := client.GetProjectsWithResponse(context.Background(), &openapigenerated.GetProjectsParams{Limit: &limit}); err != nil {
-			t.Fatalf("get projects: %v", err)
-		}
-		if !strings.HasPrefix(authHeader, "Basic ") {
-			t.Fatalf("expected basic auth header, got %q", authHeader)
-		}
-	})
 }
 
 // closeResponse releases a response body when there is one.

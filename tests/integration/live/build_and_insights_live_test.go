@@ -52,6 +52,28 @@ func TestLiveBuildStatusLifecycle(t *testing.T) {
 		t.Fatalf("expected the build status just set, got: %s", getOutput)
 	}
 
+	// Every optional field, read back rather than watched on the wire.
+	//
+	// A unit test asserted these by matching substrings in the request body
+	// against a mock, which says the client serialised them and nothing about
+	// whether Bitbucket kept them. A field that is sent and dropped looks
+	// identical from the client side and is the failure worth catching: the
+	// caller was told the build was recorded with a description it does not
+	// have.
+	for field, want := range map[string]string{
+		"name":        "Live Suite Build",
+		"description": "set by the live suite",
+		"url":         "http://localhost:7990/builds/1",
+		"buildNumber": "1",
+	} {
+		if got, _ := decodeJSONMap(t, getOutput)[field].(string); got != want {
+			t.Errorf("%s came back as %q, want %q:\n%s", field, got, want, getOutput)
+		}
+	}
+	if duration, _ := decodeJSONMap(t, getOutput)["duration"].(float64); int64(duration) != 1234 {
+		t.Errorf("duration came back as %v, want 1234:\n%s", duration, getOutput)
+	}
+
 	deleteOutput, err := executeLiveCLI(t, "--json", "build", "delete", commit, "--key", buildKey, "--repo", repoRef)
 	if err != nil {
 		t.Fatalf("build delete failed: %v\noutput: %s", err, deleteOutput)

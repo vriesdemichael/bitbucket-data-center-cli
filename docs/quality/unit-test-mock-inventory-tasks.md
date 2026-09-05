@@ -6,9 +6,9 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 121 | write the live test, then delete the mock |
-| `remove` | 36 | delete; it asserts nothing a live test would not already give |
-| `keep` | 87 | legitimate unit test under ADR-079 |
+| `move-to-live` | 105 | write the live test, then delete the mock |
+| `remove` | 40 | delete; it asserts nothing a live test would not already give |
+| `keep` | 91 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
@@ -16,15 +16,10 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | file | total | move-to-live | remove | keep | other |
 |---|---:|---:|---:|---:|---:|
-| `internal/cli/root_test.go` | 9 | 7 | 1 | 1 | 0 |
 | `internal/services/quality/service_test.go` | 8 | 5 | 0 | 2 | 1 |
-| `internal/cli/cmd/api/api_test.go` | 5 | 4 | 0 | 1 | 0 |
+| `internal/cli/root_test.go` | 6 | 4 | 0 | 2 | 0 |
 | `internal/cli/new_commands_test.go` | 4 | 4 | 0 | 0 | 0 |
 | `internal/services/reposettings/service_test.go` | 5 | 3 | 0 | 1 | 1 |
-| `internal/cli/commit_test.go` | 4 | 3 | 1 | 0 | 0 |
-| `internal/openapi/client_test.go` | 4 | 3 | 0 | 1 | 0 |
-| `internal/services/jira/service_test.go` | 4 | 3 | 0 | 0 | 1 |
-| `internal/services/tag/service_test.go` | 4 | 3 | 0 | 0 | 1 |
 | `internal/cli/cmd/pr/pr_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/clone_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/misc_test.go` | 3 | 3 | 0 | 0 | 0 |
@@ -51,7 +46,9 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/project/service_test.go` | 5 | 1 | 1 | 2 | 1 |
 | `internal/cli/cmd/reviewer/reviewer_test.go` | 4 | 1 | 1 | 2 | 0 |
 | `internal/cli/pr_status_command_test.go` | 4 | 1 | 1 | 2 | 0 |
+| `internal/services/tag/service_test.go` | 4 | 1 | 0 | 2 | 1 |
 | `internal/cli/cmd/pr/reviewer_helpers_test.go` | 3 | 1 | 2 | 0 | 0 |
+| `internal/cli/commit_test.go` | 3 | 1 | 1 | 1 | 0 |
 | `internal/cli/pr_inspection_test.go` | 3 | 1 | 1 | 1 | 0 |
 | `internal/services/commit/service_test.go` | 3 | 1 | 0 | 1 | 1 |
 | `internal/cli/cmd/admin/admin_test.go` | 2 | 1 | 1 | 0 | 0 |
@@ -59,6 +56,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/insights/insights_internal_test.go` | 2 | 1 | 1 | 0 | 0 |
 | `internal/cli/cmd/pr/create_interactive_test.go` | 2 | 1 | 1 | 0 | 0 |
 | `internal/cli/cmd/reviewergroup/reviewer_group_test.go` | 2 | 1 | 1 | 0 | 0 |
+| `internal/openapi/client_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/services/reviewer/service_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/cli/auth_token_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/auth/token_test.go` | 1 | 1 | 0 | 0 | 0 |
@@ -86,6 +84,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/transport/httpclient/client_test.go` | 25 | 0 | 0 | 25 | 0 |
 | `internal/transport/githubrelease/client_test.go` | 12 | 0 | 0 | 0 | 12 |
 | `internal/services/browse/service_test.go` | 6 | 0 | 0 | 5 | 1 |
+| `internal/cli/cmd/api/api_test.go` | 5 | 0 | 4 | 1 | 0 |
 | `internal/services/diff/service_test.go` | 5 | 0 | 1 | 3 | 1 |
 | `internal/services/gpgkey/service_test.go` | 5 | 0 | 0 | 4 | 1 |
 | `internal/services/sshkey/service_test.go` | 5 | 0 | 0 | 4 | 1 |
@@ -93,6 +92,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/token/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/cli/cmd/repo/repo_test.go` | 3 | 0 | 3 | 0 | 0 |
 | `internal/cli/permissionchecker/permission_checker_test.go` | 2 | 0 | 0 | 2 | 0 |
+| `internal/services/jira/service_test.go` | 2 | 0 | 1 | 0 | 1 |
 | `internal/services/pullrequest/inspection_test.go` | 2 | 0 | 0 | 1 | 1 |
 | `internal/services/reviewer/service_coverage_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/transport/sigstore/trustedroot_test.go` | 2 | 0 | 0 | 0 | 2 |

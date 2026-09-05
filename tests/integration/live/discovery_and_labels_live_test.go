@@ -58,6 +58,49 @@ func TestLiveSearchCommands(t *testing.T) {
 		t.Fatalf("expected a commits payload, got: %s", commitsOutput)
 	}
 
+	// The filters, which nothing had driven.
+	//
+	// --since and --until are the only way the commit listing's Since and Until
+	// options are ever set, and --path the only way its Path is set outside the
+	// history command. They are three lines that build query parameters, and a
+	// query parameter that is built wrong does not fail -- it comes back with
+	// the wrong commits, or with all of them.
+	t.Run("the commit filters narrow the answer", func(t *testing.T) {
+		// Not a skip on a short history: the repository is seeded with two
+		// commits, so fewer than two is a broken fixture rather than a reason
+		// to pass. A test that can skip itself passes whether or not the
+		// command works, which is what command-reach refuses to count.
+		commits, err := harness.listCommitIDs(ctx, seeded.Key, repo.Slug, 10)
+		if err != nil {
+			t.Fatalf("list commit ids failed: %v", err)
+		}
+		if len(commits) < 2 {
+			t.Fatalf("the seeded repository has %d commits, want at least two to bound a range", len(commits))
+		}
+		newest, oldest := commits[0], commits[len(commits)-1]
+
+		// since is exclusive and until inclusive, so the range excludes the
+		// commit it starts from.
+		ranged := mustLiveCLI(t, "search", "commits", "--repo", repoRef,
+			"--since", oldest, "--until", newest, "--limit", "50")
+		bounded, _ := decodeJSONMap(t, ranged)["commits"].([]any)
+
+		all := mustLiveCLI(t, "search", "commits", "--repo", repoRef, "--limit", "50")
+		everything, _ := decodeJSONMap(t, all)["commits"].([]any)
+
+		if len(bounded) >= len(everything) {
+			t.Errorf("--since/--until returned %d of %d commits, so the range was not applied:\n%s",
+				len(bounded), len(everything), ranged)
+		}
+
+		// A path nothing touches, so the filter has something to exclude.
+		byPath := mustLiveCLI(t, "search", "commits", "--repo", repoRef,
+			"--path", "no/such/path.txt", "--limit", "50")
+		if listed, _ := decodeJSONMap(t, byPath)["commits"].([]any); len(listed) != 0 {
+			t.Errorf("--path on a file that does not exist returned %d commits:\n%s", len(listed), byPath)
+		}
+	})
+
 	// Dashboard-scoped, so it needs no repository and exercises a different
 	// endpoint from the repository listing.
 	prsOutput, err := executeLiveCLI(t, "--json", "search", "prs", "--state", "open", "--limit", "10")

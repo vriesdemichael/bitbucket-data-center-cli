@@ -118,14 +118,18 @@ func init() {
 	os.Setenv("BB_RETRY_BACKOFF", "1ms")
 }
 
+// TestAuthStatusSmoke covers what `bb auth status` reports when there are no
+// credentials to report.
+//
+// It asks nothing of Bitbucket. The version that stood up a server answering 404
+// to everything did not need it either -- the command reads the resolved
+// configuration and says where each part came from -- and pointing at a host
+// that does not resolve says so: the output is identical, and the command still
+// exits zero. The live half, what the server says about an account that does
+// exist, is TestLiveAuthIdentity.
 func TestAuthStatusSmoke(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.NotFound(w, r)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_URL", "http://bitbucket.invalid")
 	t.Setenv("BITBUCKET_VERSION_TARGET", "9.4.16")
 	t.Setenv("BITBUCKET_TOKEN", "")
 	t.Setenv("BITBUCKET_USERNAME", "")
@@ -390,6 +394,7 @@ func TestDiffRefsRejectsMultipleOutputModes(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — a server answering 503 to everything is injected; the subject is that bb reports it as transient rather than as a bad request, and a live instance cannot be asked to be unavailable.
 func TestAdminHealthPropagatesHardFailure(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -416,57 +421,6 @@ func TestAdminHealthPropagatesHardFailure(t *testing.T) {
 	}
 	if apperrors.ExitCode(err) != 10 {
 		t.Fatalf("expected transient exit code 10, got %d (%v)", apperrors.ExitCode(err), err)
-	}
-}
-
-func TestPRListAndIssueCommandUnavailable(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodGet || request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/pull-requests" {
-			http.NotFound(writer, request)
-			return
-		}
-
-		if request.URL.Query().Get("state") != "OPEN" {
-			writer.WriteHeader(http.StatusBadRequest)
-			_, _ = writer.Write([]byte("unexpected state query"))
-			return
-		}
-
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		_, _ = writer.Write([]byte(`{"isLastPage":true,"nextPageStart":0,"values":[{"id":22,"title":"Feature PR","state":"OPEN","open":true,"closed":false,"fromRef":{"displayId":"feature/demo"},"toRef":{"displayId":"master"}}]}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	prCommand := NewRootCommand()
-	prOutput := &bytes.Buffer{}
-	prCommand.SetOut(prOutput)
-	prCommand.SetErr(prOutput)
-	prCommand.SetArgs([]string{"pr", "list", "--state", "open", "--limit", "10"})
-
-	if err := prCommand.Execute(); err != nil {
-		t.Fatalf("expected pr list to succeed, got: %v", err)
-	}
-	if !strings.Contains(prOutput.String(), "#22") || !strings.Contains(prOutput.String(), "feature/demo -> master") {
-		t.Fatalf("expected pull request in human output, got: %s", prOutput.String())
-	}
-
-	issueCommand := NewRootCommand()
-	issueOutput := &bytes.Buffer{}
-	issueCommand.SetOut(issueOutput)
-	issueCommand.SetErr(issueOutput)
-	issueCommand.SetArgs([]string{"issue", "list"})
-
-	err := issueCommand.Execute()
-	if err == nil {
-		t.Fatal("expected issue command to be unavailable")
-	}
-	if !strings.Contains(err.Error(), "unknown command") {
-		t.Fatalf("expected unknown command error, got: %v", err)
 	}
 }
 
@@ -760,40 +714,6 @@ func TestPRCommandsUseInferredRepositoryContext(t *testing.T) {
 				t.Fatalf("expected output to contain %q, got: %s", testCase.expectSnippet, output.String())
 			}
 		})
-	}
-}
-
-func TestPRGetHumanMergeabilityDetailOnlyBlocker(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30":
-			_, _ = writer.Write([]byte(`{"id":30,"title":"Feature PR","state":"OPEN","open":true,"closed":false,"fromRef":{"displayId":"feature/demo"},"toRef":{"displayId":"master"}}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/30/merge":
-			_, _ = writer.Write([]byte(`{"conflicted":false,"outcome":"UNKNOWN","vetoes":[{"summaryMessage":"","detailedMessage":"detail only blocker"}]}`))
-		default:
-			http.NotFound(writer, request)
-		}
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
-	output := &bytes.Buffer{}
-	command.SetOut(output)
-	command.SetErr(output)
-	command.SetArgs([]string{"pr", "get", "30"})
-
-	if err := command.Execute(); err != nil {
-		t.Fatalf("expected pr get to succeed, got: %v (output: %s)", err, output.String())
-	}
-	if !strings.Contains(output.String(), "- detail only blocker") {
-		t.Fatalf("expected detail-only merge blocker in output, got: %s", output.String())
 	}
 }
 
@@ -1859,5 +1779,28 @@ func TestAFlagLeftAloneDoesNotDisplaceTheEnvironment(t *testing.T) {
 	}
 	if options.runtime.CAFile != nil {
 		t.Errorf("an unpassed flag produced an override (%v)", options.runtime.CAFile)
+	}
+}
+
+// TestIssueCommandIsNotOffered pins that `bb issue` does not exist.
+//
+// gh has one and the muscle memory carries over, so an agent reaching for it
+// has to be told the command is unknown rather than have it silently do
+// something else. Cobra answers this without a server; the half of the old test
+// that ran `pr list` against a mocked Bitbucket and read "#22" back out of its
+// own fixture is live in TestLivePullRequestHumanOutput.
+func TestIssueCommandIsNotOffered(t *testing.T) {
+	command := NewRootCommand()
+	output := &bytes.Buffer{}
+	command.SetOut(output)
+	command.SetErr(output)
+	command.SetArgs([]string{"issue", "list"})
+
+	err := command.Execute()
+	if err == nil {
+		t.Fatal("expected `bb issue` to be unknown")
+	}
+	if !strings.Contains(err.Error(), "unknown command") {
+		t.Fatalf("expected an unknown-command error, got: %v", err)
 	}
 }

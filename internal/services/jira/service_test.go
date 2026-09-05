@@ -22,46 +22,39 @@ func newJiraTestService(t *testing.T, handler http.HandlerFunc) *Service {
 	return NewService(client)
 }
 
-func TestGetIssueCommits(t *testing.T) {
+// TestGetIssueCommitsUnwrapsToCommit covers the one thing about this endpoint
+// that cannot be reached against the live stack.
+//
+// The Jira integration answers with commits nested under "toCommit" rather than
+// as commits, and unwrapping them is what the service adds. Reaching a payload
+// with anything in it needs a Jira instance linked to Bitbucket; without one the
+// endpoint answers 200 with an empty page for any issue key at all, which is
+// what TestLiveJiraIssueCommitsAnswerEmpty pins.
+//
+// The two tests that stood beside this one are gone rather than moved. One
+// asserted limit=25 reached the wire for a caller passing zero and the other
+// that two values came back as one under a cap of one; both are
+// openapi.PageThrough's rules now, and they are tested where the loop lives
+// instead of once per service that uses it.
+//
+// mock-inventory: canned-response — the shape cannot be produced without a linked Jira; the subject is that toCommit is unwrapped, not what Bitbucket sends.
+func TestGetIssueCommitsUnwrapsToCommit(t *testing.T) {
 	service := newJiraTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet && r.URL.Path == "/rest/jira/latest/issues/TEST-101/commits" {
-			start := r.URL.Query().Get("start")
-			if start == "0" || start == "" {
-				_, _ = w.Write([]byte(`{
-					"size": 1,
-					"limit": 1,
-					"isLastPage": false,
-					"values": [
-						{
-							"toCommit": {
-								"id": "commit1",
-								"displayId": "c1",
-								"message": "fix commit 1"
-							}
-						}
-					]
-				}`))
-				return
-			} else if start == "1" {
-				_, _ = w.Write([]byte(`{
-					"size": 1,
-					"limit": 1,
-					"isLastPage": true,
-					"values": [
-						{
-							"toCommit": {
-								"id": "commit2",
-								"displayId": "c2",
-								"message": "fix commit 2"
-							}
-						}
-					]
-				}`))
-				return
-			}
+		if r.Method != http.MethodGet || r.URL.Path != "/rest/jira/latest/issues/TEST-101/commits" {
+			http.NotFound(w, r)
+
+			return
 		}
-		http.NotFound(w, r)
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"size": 2,
+			"isLastPage": true,
+			"values": [
+				{"toCommit": {"id": "commit1", "displayId": "c1", "message": "fix commit 1"}},
+				{"toCommit": {"id": "commit2", "displayId": "c2", "message": "fix commit 2"}}
+			]
+		}`))
 	})
 
 	commits, err := service.GetIssueCommits(context.Background(), "TEST-101", 5)
@@ -72,58 +65,13 @@ func TestGetIssueCommits(t *testing.T) {
 	if len(commits) != 2 {
 		t.Fatalf("expected 2 commits, got %d", len(commits))
 	}
-
+	// The wrapper is gone and the commit is what is left, which is the whole
+	// transformation: a caller that got the wrapper back would see every field
+	// nil.
 	if *commits[0].Id != "commit1" || *commits[0].DisplayId != "c1" || *commits[0].Message != "fix commit 1" {
 		t.Errorf("unexpected commit 0: %+v", commits[0])
 	}
-	if *commits[1].Id != "commit2" || *commits[1].DisplayId != "c2" || *commits[1].Message != "fix commit 2" {
+	if *commits[1].Id != "commit2" {
 		t.Errorf("unexpected commit 1: %+v", commits[1])
-	}
-}
-
-func TestGetIssueCommitsLimitDefaults(t *testing.T) {
-	service := newJiraTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet && r.URL.Path == "/rest/jira/latest/issues/TEST-101/commits" {
-			limit := r.URL.Query().Get("limit")
-			if limit == "25" { // Default limit
-				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-				return
-			}
-		}
-		http.NotFound(w, r)
-	})
-
-	_, err := service.GetIssueCommits(context.Background(), "TEST-101", 0)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestGetIssueCommitsTruncates(t *testing.T) {
-	service := newJiraTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet && r.URL.Path == "/rest/jira/latest/issues/TEST-101/commits" {
-			_, _ = w.Write([]byte(`{
-				"size": 2,
-				"limit": 2,
-				"isLastPage": true,
-				"values": [
-					{"toCommit": {"id": "c1", "displayId": "c1", "message": "msg1"}},
-					{"toCommit": {"id": "c2", "displayId": "c2", "message": "msg2"}}
-				]
-			}`))
-			return
-		}
-		http.NotFound(w, r)
-	})
-
-	commits, err := service.GetIssueCommits(context.Background(), "TEST-101", 1)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(commits) != 1 {
-		t.Fatalf("expected 1 commit (truncated), got %d", len(commits))
 	}
 }

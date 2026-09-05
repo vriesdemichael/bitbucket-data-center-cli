@@ -1,22 +1,21 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 276,
+    "mocked_servers": 268,
     "files": 87,
-    "functions": 259,
+    "functions": 252,
     "by_class": {
-      "bitbucket-behaviour": 103,
-      "canned-response": 36,
+      "bitbucket-behaviour": 89,
+      "canned-response": 40,
       "external-service": 14,
       "harness-constructor": 18,
-      "status-taxonomy": 18,
-      "transport-fault": 72,
-      "unreached-guard": 15
+      "status-taxonomy": 16,
+      "transport-fault": 75,
+      "unreached-guard": 16
     },
     "behaviour_by_package": {
-      "internal/cli": 20,
+      "internal/cli": 17,
       "internal/cli/cmd/admin": 1,
-      "internal/cli/cmd/api": 4,
       "internal/cli/cmd/auth": 2,
       "internal/cli/cmd/branch": 1,
       "internal/cli/cmd/build": 2,
@@ -35,18 +34,15 @@
       "internal/cli/cmd/tag": 3,
       "internal/cli/cmd/webhook": 2,
       "internal/mcp": 5,
-      "internal/openapi": 2,
       "internal/services/branch": 2,
       "internal/services/forksync": 1,
-      "internal/services/jira": 3,
       "internal/services/project": 1,
       "internal/services/pullrequest": 2,
       "internal/services/pullrequestactivity": 1,
-      "internal/services/quality": 5,
+      "internal/services/quality": 4,
       "internal/services/reposettings": 3,
       "internal/services/repository": 1,
-      "internal/services/reviewer": 1,
-      "internal/services/tag": 1
+      "internal/services/reviewer": 1
     }
   },
   "entries": [
@@ -92,7 +88,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 138,
+      "line": 139,
       "function": "TestApiPaginatedErrors",
       "class": "transport-fault",
       "signals": [
@@ -104,57 +100,62 @@
         "varies-by-attempt-count"
       ],
       "action": "keep",
-      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
+      "reason": "the second page is made to fail, which no live instance can be asked for; the subject is that a walk interrupted halfway reports rather than returning the pages it got.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 178,
+      "line": 180,
       "function": "TestApiHostFlagOverride",
-      "class": "bitbucket-behaviour",
+      "class": "canned-response",
       "signals": [
         "answers-any-request",
         "returns-a-status",
         "serves-bitbucket-routes"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "remove",
+      "reason": "the server is an identity beacon rather than a Bitbucket, answering only with which one it is; the subject is which host the request reached.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 213,
+      "line": 216,
       "function": "TestApiHostFlagDoesNotFallBackToDefaultHost",
-      "class": "bitbucket-behaviour",
+      "class": "canned-response",
       "signals": [
         "answers-any-request",
         "serves-bitbucket-routes"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "remove",
+      "reason": "two identity beacons, neither pretending to be Bitbucket; the subject is that --host beats the stored default, which needs two hosts to tell apart.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 220,
+      "line": 223,
       "function": "TestApiHostFlagDoesNotFallBackToDefaultHost",
-      "class": "bitbucket-behaviour",
+      "class": "canned-response",
       "signals": [
         "answers-any-request",
         "serves-bitbucket-routes"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "remove",
+      "reason": "two identity beacons, neither pretending to be Bitbucket; the subject is that --host beats the stored default, which needs two hosts to tell apart.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 262,
+      "line": 266,
       "function": "TestApiHostFlagLeavesEnvironmentAlone",
-      "class": "bitbucket-behaviour",
+      "class": "canned-response",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "serves-bitbucket-routes"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "remove",
+      "reason": "an identity beacon; the subject is that --host does not write BITBUCKET_URL into the process environment.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/auth/auth_test.go",
@@ -1222,41 +1223,31 @@
     },
     {
       "file": "internal/cli/commit_test.go",
-      "line": 164,
-      "function": "TestCommitListEmpty",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/commit_test.go",
-      "line": 186,
+      "line": 165,
       "function": "TestCommitListJira",
-      "class": "bitbucket-behaviour",
+      "class": "canned-response",
       "signals": [
         "asserts-http-method",
         "returns-bitbucket-entity",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "remove",
+      "reason": "a linked Jira is what produces a non-empty answer and the live stack has none, so the payload is written here; the subject is that both renderings show the commit. TestLiveJiraIssueCommitsAnswerEmpty covers the empty answer a real instance gives.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/commit_test.go",
-      "line": 231,
+      "line": 211,
       "function": "TestCommitListJiraError",
-      "class": "status-taxonomy",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "returns-a-status"
       ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
+      "action": "keep",
+      "reason": "a server answering 500 is injected; the subject is that the failure reaches the caller rather than reading as an issue with no commits.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/governance_harden_test.go",
@@ -1544,19 +1535,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 123,
-      "function": "TestAuthStatusSmoke",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/root_test.go",
-      "line": 164,
+      "line": 168,
       "function": "TestBranchValidationErrors",
       "class": "unreached-guard",
       "signals": [
@@ -1570,37 +1549,21 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 395,
+      "line": 400,
       "function": "TestAdminHealthPropagatesHardFailure",
-      "class": "status-taxonomy",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status"
       ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
+      "action": "keep",
+      "reason": "a server answering 503 to everything is injected; the subject is that bb reports it as transient rather than as a bad request, and a live instance cannot be asked to be unavailable.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 424,
-      "function": "TestPRListAndIssueCommandUnavailable",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/root_test.go",
-      "line": 695,
+      "line": 649,
       "function": "TestPRCommandsUseInferredRepositoryContext",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1615,22 +1578,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 768,
-      "function": "TestPRGetHumanMergeabilityDetailOnlyBlocker",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/root_test.go",
-      "line": 1205,
+      "line": 1125,
       "function": "TestLoadConfigAndClientAndClientFactoryBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -1643,7 +1591,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 1248,
+      "line": 1168,
       "function": "TestLoadQualityRepoAndServiceBranches",
       "class": "status-taxonomy",
       "signals": [
@@ -1656,7 +1604,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 1697,
+      "line": 1617,
       "function": "TestRepoSettingsPullRequestsUpdateDryRunStateful",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1765,7 +1713,7 @@
     },
     {
       "file": "internal/openapi/client_test.go",
-      "line": 190,
+      "line": 189,
       "function": "TestRetryTransport",
       "class": "transport-fault",
       "signals": [
@@ -1779,35 +1727,7 @@
     },
     {
       "file": "internal/openapi/client_test.go",
-      "line": 384,
-      "function": "TestNewClientWithResponsesFromConfigAuthAndBasePath",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/openapi/client_test.go",
-      "line": 421,
-      "function": "TestNewClientWithResponsesFromConfigAuthAndBasePath",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/openapi/client_test.go",
-      "line": 484,
+      "line": 424,
       "function": "TestRetriesDoNotReplayMutations",
       "class": "status-taxonomy",
       "signals": [
@@ -2394,41 +2314,9 @@
     },
     {
       "file": "internal/services/jira/service_test.go",
-      "line": 25,
-      "function": "TestGetIssueCommits",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/jira/service_test.go",
-      "line": 84,
-      "function": "TestGetIssueCommitsLimitDefaults",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/jira/service_test.go",
-      "line": 103,
-      "function": "TestGetIssueCommitsTruncates",
-      "class": "bitbucket-behaviour",
+      "line": 41,
+      "function": "TestGetIssueCommitsUnwrapsToCommit",
+      "class": "canned-response",
       "signals": [
         "asserts-http-method",
         "handler-passed-to-a-helper",
@@ -2436,8 +2324,9 @@
         "returns-bitbucket-entity",
         "serves-bitbucket-routes"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "remove",
+      "reason": "the shape cannot be produced without a linked Jira; the subject is that toCommit is unwrapped, not what Bitbucket sends.",
+      "reviewed": true
     },
     {
       "file": "internal/services/project/service_test.go",
@@ -2746,7 +2635,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 17,
+      "line": 16,
       "function": "newQualityTestService",
       "class": "harness-constructor",
       "signals": [
@@ -2757,7 +2646,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 28,
+      "line": 27,
       "function": "TestQualityServiceValidationGuards",
       "class": "unreached-guard",
       "signals": [
@@ -2771,23 +2660,20 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 120,
+      "line": 96,
       "function": "TestSetBuildStatusValidationAndOptionalFields",
-      "class": "bitbucket-behaviour",
+      "class": "status-taxonomy",
       "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
+        "answers-any-request",
+        "handler-passed-to-a-helper",
+        "returns-a-status"
       ],
       "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 163,
+      "line": 129,
       "function": "TestQualityReportAndAnnotationFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2802,7 +2688,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 227,
+      "line": 193,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2818,7 +2704,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 301,
+      "line": 267,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2834,7 +2720,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 323,
+      "line": 289,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2850,7 +2736,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 514,
+      "line": 480,
       "function": "TestQualityServiceScopedAndDeploymentsErrorPaths",
       "class": "transport-fault",
       "signals": [
@@ -3196,20 +3082,21 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 27,
-      "function": "TestTagServiceValidationAndStatusMapping",
-      "class": "status-taxonomy",
+      "line": 35,
+      "function": "TestTagServiceRefusesAnEmptyName",
+      "class": "unreached-guard",
       "signals": [
-        "answers-any-request",
+        "asserts-http-method",
+        "fails-if-the-server-is-reached",
         "handler-passed-to-a-helper",
-        "returns-a-status"
+        "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 46,
+      "line": 49,
       "function": "TestTagServiceValidationAndMapStatusHelpers",
       "class": "status-taxonomy",
       "signals": [
@@ -3222,16 +3109,16 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 89,
+      "line": 97,
       "function": "TestTagServiceTransportAndValidationBranches",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
-        "asserts-query-parameters",
-        "returns-a-status",
-        "returns-bitbucket-entity"
+        "answers-any-request",
+        "returns-a-status"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "the server is closed before the call, which no live instance can be asked to do; the subject is that every tag operation classifies a dead connection as transient.",
+      "reviewed": true
     },
     {
       "file": "internal/services/token/service_test.go",

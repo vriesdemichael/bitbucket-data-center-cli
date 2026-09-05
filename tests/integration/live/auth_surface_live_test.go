@@ -152,13 +152,43 @@ func TestLiveAuthTokenLifecycle(t *testing.T) {
 		t.Fatalf("auth token create failed: %v\noutput: %s", err, createOutput)
 	}
 
-	tokenID, ok := numericOrStringID(decodeJSONMap(t, createOutput)["id"])
+	created := decodeJSONMap(t, createOutput)
+	tokenID, ok := numericOrStringID(created["id"])
 	if !ok {
 		t.Fatalf("expected a token id in the create output: %s", createOutput)
 	}
 	defer func() {
 		_, _ = executeLiveCLI(t, "auth", "token", "revoke", tokenID, "--user", "admin")
 	}()
+
+	// The token is worth having only if Bitbucket accepts it the way bb sends
+	// it, which is Authorization: Bearer.
+	//
+	// A unit test asserted that header against a mock that recorded it, which
+	// says the client wrote the string it was told to write. Whether Bitbucket
+	// honours that form -- rather than requiring the token as basic-auth
+	// password, which some Atlassian products do -- is the server's answer, and
+	// it is the difference between a CLI that works with a token and one that
+	// only ever worked because the suite used a password.
+	t.Run("bitbucket accepts the token as a bearer credential", func(t *testing.T) {
+		secret, _ := created["token"].(string)
+		if secret == "" {
+			t.Skipf("the create response carried no secret to authenticate with:\n%s", createOutput)
+		}
+
+		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+		t.Setenv("BITBUCKET_URL", harness.config.BitbucketURL)
+		t.Setenv("BITBUCKET_TOKEN", secret)
+		t.Setenv("BITBUCKET_USERNAME", "")
+		t.Setenv("BITBUCKET_PASSWORD", "")
+		t.Setenv("ADMIN_USER", "")
+		t.Setenv("ADMIN_PASSWORD", "")
+
+		output, err := executeLiveCLI(t, "--json", "project", "list", "--limit", "1")
+		if err != nil {
+			t.Fatalf("a bearer token bb just created was refused: %v\noutput: %s", err, output)
+		}
+	})
 
 	listOutput, err := executeLiveCLI(t, "--json", "auth", "token", "list", "--user", "admin", "--limit", "50")
 	if err != nil {
