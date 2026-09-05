@@ -2,10 +2,7 @@ package mcp
 
 import (
 	"context"
-	"io"
-	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -40,19 +37,17 @@ func TestParseCommaList(t *testing.T) {
 	}
 }
 
-// newRecordingClients builds Clients against a server that records the last
-// request it saw and replies with a canned JSON body.
-func newRecordingClients(t *testing.T, response string, record func(r *http.Request, body []byte)) Clients {
+// newUnreachedClients builds Clients against a server that fails the test if a
+// request arrives.
+//
+// Every tool test left in this file is about a refusal that has to happen
+// before anything is asked, so the server is the assertion rather than the
+// scenery. It used to record and reply, and the tests that read what it replied
+// are live now.
+func newUnreachedClients(t *testing.T) Clients {
 	t.Helper()
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, _ := io.ReadAll(r.Body)
-		if record != nil {
-			record(r, body)
-		}
-		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		_, _ = w.Write([]byte(response))
-	}))
+	srv := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(srv.Close)
 
 	clients, err := ClientsFromConfig(config.AppConfig{
@@ -91,9 +86,7 @@ func callTool(t *testing.T, spec Spec, clients Clients, args map[string]any) *mc
 }
 
 func TestAddPRCommentRejectsPartialAnchors(t *testing.T) {
-	clients := newRecordingClients(t, `{"id":1}`, func(r *http.Request, body []byte) {
-		t.Errorf("no request should be made for an invalid anchor, got %s %s", r.Method, r.URL.Path)
-	})
+	clients := newUnreachedClients(t)
 
 	base := map[string]any{"project": "TEST", "repo": "demo", "pr_id": "30", "text": "hi"}
 
@@ -154,18 +147,7 @@ func TestAddPRCommentRejectsPartialAnchors(t *testing.T) {
 //
 // What is left is the refusal, which never reaches a request.
 func TestAddPRCommentRejectsAnUnknownLineType(t *testing.T) {
-	server := httptest.NewServer(testsupport.UnreachedHandler(t))
-	t.Cleanup(server.Close)
-
-	clients, err := ClientsFromConfig(config.AppConfig{
-		BitbucketURL:   server.URL,
-		RequestTimeout: 5 * time.Second,
-		RetryCount:     0,
-		RetryBackoff:   time.Millisecond,
-	})
-	if err != nil {
-		t.Fatalf("ClientsFromConfig failed: %v", err)
-	}
+	clients := newUnreachedClients(t)
 
 	result := callTool(t, specAddPRComment(), clients, map[string]any{
 		"project": "TEST", "repo": "demo", "pr_id": "30", "text": "nit",
@@ -176,66 +158,33 @@ func TestAddPRCommentRejectsAnUnknownLineType(t *testing.T) {
 	}
 }
 
-func TestListPullRequestsModeSelection(t *testing.T) {
-	t.Run("repo mode queries the repository endpoint", func(t *testing.T) {
-		var gotPath string
-		var gotQuery url.Values
-		clients := newRecordingClients(t, `{"values":[],"isLastPage":true}`, func(r *http.Request, body []byte) {
-			gotPath = r.URL.Path
-			gotQuery = r.URL.Query()
-		})
+// TestListPullRequestsRejectsHalfARepository covers the one thing the mode
+// selection decides locally.
+//
+// Which endpoint each mode reaches, and what each answers, is Bitbucket's --
+// TestLiveMCPListPullRequestsModeSelection holds that, including the refusal
+// to filter a repository by a role the repository endpoint does not have.
+// Naming one half of a repository reaches no endpoint at all, so the recorder
+// here is a guard: a request would mean the check did not run.
+func TestListPullRequestsRejectsHalfARepository(t *testing.T) {
+	clients := newUnreachedClients(t)
 
-		result := callTool(t, specListPullRequests(), clients, map[string]any{
-			"project": "TEST", "repo": "demo", "role": "author",
-		})
-		if result.IsError {
-			t.Fatalf("expected success, got: %s", resultText(result))
+	for _, args := range []map[string]any{
+		{"project": "TEST"},
+		{"repo": "demo"},
+	} {
+		result := callTool(t, specListPullRequests(), clients, args)
+		if !result.IsError {
+			t.Fatalf("expected an error result for %#v, got: %+v", args, result)
 		}
-		if gotPath != "/rest/api/latest/projects/TEST/repos/demo/pull-requests" {
-			t.Fatalf("unexpected path %q", gotPath)
+		if text := resultText(result); !strings.Contains(text, "both project and repo") {
+			t.Fatalf("expected a both-or-neither message, got %q", text)
 		}
-		if gotQuery.Get("role") != "AUTHOR" {
-			t.Fatalf("expected role AUTHOR, got %q", gotQuery.Get("role"))
-		}
-	})
-
-	t.Run("dashboard mode queries the dashboard endpoint", func(t *testing.T) {
-		var gotPath string
-		clients := newRecordingClients(t, `{"values":[],"isLastPage":true}`, func(r *http.Request, body []byte) {
-			gotPath = r.URL.Path
-		})
-
-		result := callTool(t, specListPullRequests(), clients, map[string]any{})
-		if result.IsError {
-			t.Fatalf("expected success, got: %s", resultText(result))
-		}
-		if !strings.Contains(gotPath, "dashboard") {
-			t.Fatalf("expected the dashboard endpoint, got %q", gotPath)
-		}
-	})
-
-	t.Run("project without repo is rejected", func(t *testing.T) {
-		clients := newRecordingClients(t, `{}`, func(r *http.Request, body []byte) {
-			t.Errorf("no request should be made, got %s", r.URL.Path)
-		})
-
-		for _, args := range []map[string]any{
-			{"project": "TEST"},
-			{"repo": "demo"},
-		} {
-			result := callTool(t, specListPullRequests(), clients, args)
-			if !result.IsError {
-				t.Fatalf("expected an error result for %#v, got: %+v", args, result)
-			}
-			if text := resultText(result); !strings.Contains(text, "both project and repo") {
-				t.Fatalf("expected a both-or-neither message, got %q", text)
-			}
-		}
-	})
+	}
 }
 
 func TestSubmitPRReviewRejectsUnknownAction(t *testing.T) {
-	clients := newRecordingClients(t, `{}`, nil)
+	clients := newUnreachedClients(t)
 
 	result := callTool(t, specSubmitPRReview(), clients, map[string]any{
 		"project": "TEST", "repo": "demo", "pr_id": "30", "action": "merge",
@@ -245,30 +194,8 @@ func TestSubmitPRReviewRejectsUnknownAction(t *testing.T) {
 	}
 }
 
-func TestGetFileContentReturnsRawText(t *testing.T) {
-	var gotPath string
-	clients := newRecordingClients(t, "package main\n", func(r *http.Request, body []byte) {
-		gotPath = r.URL.Path
-	})
-
-	result := callTool(t, specGetFileContent(), clients, map[string]any{
-		"project": "TEST", "repo": "demo", "path": "src/main.go", "at": "refs/heads/main",
-	})
-	if result.IsError {
-		t.Fatalf("expected success, got: %s", resultText(result))
-	}
-	if gotPath != "/rest/api/latest/projects/TEST/repos/demo/raw/src/main.go" {
-		t.Fatalf("unexpected path %q", gotPath)
-	}
-	if text := resultText(result); !strings.Contains(text, "package main") {
-		t.Fatalf("expected the file body, got %q", text)
-	}
-}
-
 func TestGetFileContentRejectsTraversal(t *testing.T) {
-	clients := newRecordingClients(t, `{}`, func(r *http.Request, body []byte) {
-		t.Errorf("no request should be made for a traversal path, got %s", r.URL.Path)
-	})
+	clients := newUnreachedClients(t)
 
 	result := callTool(t, specGetFileContent(), clients, map[string]any{
 		"project": "TEST", "repo": "demo", "path": "../../../etc/passwd",
@@ -290,9 +217,7 @@ func resultText(result *mcp.CallToolResult) string {
 }
 
 func TestAddPRCommentRejectsLineTypeWithoutAnchor(t *testing.T) {
-	clients := newRecordingClients(t, `{"id":1}`, func(r *http.Request, body []byte) {
-		t.Errorf("no request should be made, got %s %s", r.Method, r.URL.Path)
-	})
+	clients := newUnreachedClients(t)
 
 	result := callTool(t, specAddPRComment(), clients, map[string]any{
 		"project": "TEST", "repo": "demo", "pr_id": "30", "text": "hi",
