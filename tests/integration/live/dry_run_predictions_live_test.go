@@ -229,6 +229,17 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 
 		// And now the identical condition is a duplicate.
 		predicts(t, "conflict", "reviewer", "condition", "create", condition, "--project", seeded.Key)
+
+		// The repository scope is a separate code path with its own listing, so
+		// it gets the same three questions rather than being assumed to follow.
+		repoRef := seeded.Key + "/" + repo.Slug
+		created := mustLiveCLI(t, "reviewer", "condition", "create", condition, "--repo", repoRef)
+		conditionID := fmt.Sprintf("%d", int(decodeJSONMap(t, created)["id"].(float64)))
+
+		predicts(t, "conflict", "reviewer", "condition", "create", condition, "--repo", repoRef)
+		predicts(t, "delete", "reviewer", "condition", "delete", conditionID, "--repo", repoRef)
+		predicts(t, "update", "reviewer", "condition", "update", conditionID,
+			`{"requiredApprovals":2}`, "--repo", repoRef)
 	})
 
 	t.Run("repository permissions", func(t *testing.T) {
