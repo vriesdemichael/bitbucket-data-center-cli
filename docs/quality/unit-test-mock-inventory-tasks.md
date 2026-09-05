@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 125 | write the live test, then delete the mock |
+| `move-to-live` | 123 | write the live test, then delete the mock |
 | `remove` | 36 | delete; it asserts nothing a live test would not already give |
 | `keep` | 87 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
@@ -19,7 +19,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/root_test.go` | 9 | 7 | 1 | 1 | 0 |
 | `internal/services/quality/service_test.go` | 8 | 5 | 0 | 2 | 1 |
 | `internal/cli/cmd/api/api_test.go` | 5 | 4 | 0 | 1 | 0 |
-| `internal/cli/dryrun_stateful_commands_test.go` | 4 | 4 | 0 | 0 | 0 |
 | `internal/cli/new_commands_test.go` | 4 | 4 | 0 | 0 | 0 |
 | `internal/services/reposettings/service_test.go` | 5 | 3 | 0 | 1 | 1 |
 | `internal/cli/commit_test.go` | 4 | 3 | 1 | 0 | 0 |
@@ -43,6 +42,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/repo/admin_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/comments_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/cli/cmd/webhook/webhook_test.go` | 2 | 2 | 0 | 0 | 0 |
+| `internal/cli/dryrun_stateful_commands_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/cli/governance_harden_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/mcp/tools_pr_review_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/mcp/tools_pr_test.go` | 2 | 2 | 0 | 0 | 0 |
