@@ -14,6 +14,8 @@ package live_test
 
 import (
 	"context"
+	"encoding/json"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -710,4 +712,239 @@ func grantedPermissions(t *testing.T, payload map[string]any, output string) map
 	}
 
 	return granted
+}
+
+// TestLivePermissionAliasSubjects is the `--group` flag, asked of a real
+// Bitbucket.
+//
+// A pile of unit tests drove these commands against a handwritten permissions
+// endpoint: which route a --group grant reached, which subject the JSON named,
+// which action the dry run predicted. Every one of those answers came out of a
+// fixture that already held "alice with REPO_READ" and "admins with
+// REPO_ADMIN", so the prediction it checked was a lookup in the same file.
+//
+// Here the entries are ones the command itself created a moment earlier, and
+// the no-op, update, create and delete predictions are read against them.
+func TestLivePermissionAliasSubjects(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	holder, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create user failed: %v", err)
+	}
+	// stash-users is the group every licensed account is in, so it is a group
+	// Bitbucket will accept without one being created for the test.
+	const group = "stash-users"
+
+	t.Run("the subject reaches the right route and is named in the payload", func(t *testing.T) {
+		userGrant := mustLiveCLI(t, "repo", "permissions", "grant", holder.Username, "repo_write")
+		if !strings.Contains(userGrant, `"subject": "user"`) || !strings.Contains(userGrant, `"name": "`+holder.Username+`"`) {
+			t.Fatalf("a user grant did not name its subject:\n%s", userGrant)
+		}
+
+		groupGrant := mustLiveCLI(t, "repo", "permissions", "grant", "--group", group, "repo_read")
+		if !strings.Contains(groupGrant, `"subject": "group"`) || !strings.Contains(groupGrant, `"name": "`+group+`"`) {
+			t.Fatalf("a group grant did not name its subject:\n%s", groupGrant)
+		}
+
+		// The route, read back rather than recorded: a --group grant that went
+		// to the users endpoint would have created a user by that name or
+		// failed, and either way the group listing would not hold it.
+		users := mustLiveCLI(t, "repo", "permissions", "list")
+		if !strings.Contains(users, holder.Username) {
+			t.Errorf("the user grant is not in the user listing:\n%s", users)
+		}
+		if strings.Contains(users, `"name": "`+group+`"`) {
+			t.Errorf("the group grant landed in the user listing:\n%s", users)
+		}
+
+		groups := mustLiveCLI(t, "repo", "permissions", "list", "--group")
+		if !strings.Contains(groups, group) {
+			t.Errorf("the group grant is not in the group listing:\n%s", groups)
+		}
+	})
+
+	t.Run("human output names a group as one and a user plainly", func(t *testing.T) {
+		userOutput := mustLiveHumanCLI(t, "repo", "permissions", "grant", holder.Username, "repo_write")
+		if !strings.Contains(userOutput, "to "+holder.Username) || strings.Contains(userOutput, "to group") {
+			t.Errorf("expected a bare user name, got: %s", userOutput)
+		}
+
+		groupOutput := mustLiveHumanCLI(t, "repo", "permissions", "revoke", "--group", group)
+		if !strings.Contains(groupOutput, "for group "+group) {
+			t.Errorf("expected the group to be named as one, got: %s", groupOutput)
+		}
+	})
+
+	t.Run("the dry-run intent follows the subject", func(t *testing.T) {
+		userPreview := mustLiveCLI(t, "--dry-run", "repo", "permissions", "grant", holder.Username, "repo_write")
+		if !strings.Contains(userPreview, `"repo.permission.user.grant"`) {
+			t.Errorf("expected a user grant intent, got: %s", userPreview)
+		}
+
+		groupPreview := mustLiveCLI(t, "--dry-run", "repo", "permissions", "grant", "--group", group, "repo_admin")
+		if !strings.Contains(groupPreview, `"repo.permission.group.grant"`) {
+			t.Errorf("expected a group grant intent, got: %s", groupPreview)
+		}
+		if !strings.Contains(groupPreview, `"subject": "group"`) || !strings.Contains(groupPreview, `"name": "`+group+`"`) {
+			t.Errorf("expected the group named in the dry-run target, got: %s", groupPreview)
+		}
+	})
+
+	// The four predictions, against entries the commands above left behind:
+	// holder holds REPO_WRITE and nobody else holds anything.
+	t.Run("the prediction reads the permissions that are there", func(t *testing.T) {
+		stranger, err := harness.createLicensedUser(ctx)
+		if err != nil {
+			t.Fatalf("create user failed: %v", err)
+		}
+
+		for _, testCase := range []struct {
+			name string
+			want string
+			args []string
+		}{
+			{name: "granting what is already held", want: "no-op", args: []string{"grant", holder.Username, "repo_write"}},
+			{name: "granting a different level", want: "update", args: []string{"grant", holder.Username, "repo_admin"}},
+			{name: "granting someone with nothing", want: "create", args: []string{"grant", stranger.Username, "repo_read"}},
+			{name: "revoking what is held", want: "delete", args: []string{"revoke", holder.Username}},
+			{name: "revoking what is not", want: "no-op", args: []string{"revoke", stranger.Username}},
+		} {
+			t.Run(testCase.name, func(t *testing.T) {
+				output := mustLiveCLI(t, append([]string{"--dry-run", "repo", "permissions"}, testCase.args...)...)
+				if !strings.Contains(output, `"predictedAction": "`+testCase.want+`"`) {
+					t.Fatalf("expected %q, got:\n%s", testCase.want, output)
+				}
+			})
+		}
+
+		// A dry run that predicted all that must not have changed any of it.
+		after := mustLiveCLI(t, "repo", "permissions", "list")
+		if !strings.Contains(after, holder.Username) {
+			t.Errorf("a dry run revoked a permission it only predicted revoking:\n%s", after)
+		}
+		if strings.Contains(after, stranger.Username) {
+			t.Errorf("a dry run granted a permission it only predicted granting:\n%s", after)
+		}
+	})
+}
+
+// TestLivePermissionAliasSubjectsForProjects is the project twin.
+//
+// It carries one assertion the repository version does not: a user grant and a
+// group grant have to publish the same field names. Naming the subject in a
+// field rather than in the key is what lets `--describe` state one shape for
+// one command, and a consumer needs two code paths the moment they diverge.
+func TestLivePermissionAliasSubjectsForProjects(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	configureLiveCLIEnv(t, harness, seeded.Key, seeded.Repos[0].Slug)
+
+	holder, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create user failed: %v", err)
+	}
+	const group = "stash-users"
+
+	userGrant := mustLiveCLI(t, "project", "permissions", "grant", seeded.Key, holder.Username, "project_write")
+	if !strings.Contains(userGrant, `"subject": "user"`) ||
+		!strings.Contains(userGrant, `"name": "`+holder.Username+`"`) ||
+		!strings.Contains(userGrant, `"project": "`+seeded.Key+`"`) {
+		t.Fatalf("a user grant did not name its subject, name and project:\n%s", userGrant)
+	}
+
+	groupGrant := mustLiveCLI(t, "project", "permissions", "grant", "--group", seeded.Key, group, "project_read")
+	if !strings.Contains(groupGrant, `"subject": "group"`) || !strings.Contains(groupGrant, `"name": "`+group+`"`) {
+		t.Fatalf("a group grant did not name its subject:\n%s", groupGrant)
+	}
+
+	if userKeys, groupKeys := jsonFieldNames(t, userGrant), jsonFieldNames(t, groupGrant); userKeys != groupKeys {
+		t.Fatalf("user and group grants published different shapes\nuser:  %s\ngroup: %s", userKeys, groupKeys)
+	}
+
+	users := mustLiveCLI(t, "project", "permissions", "list", seeded.Key)
+	if !strings.Contains(users, holder.Username) {
+		t.Errorf("the user grant is not in the user listing:\n%s", users)
+	}
+	groups := mustLiveCLI(t, "project", "permissions", "list", "--group", seeded.Key)
+	if !strings.Contains(groups, group) {
+		t.Errorf("the group grant is not in the group listing:\n%s", groups)
+	}
+	if listKeys, groupListKeys := jsonFieldNames(t, users), jsonFieldNames(t, groups); listKeys != groupListKeys {
+		t.Errorf("user and group listings published different shapes\nusers:  %s\ngroups: %s", listKeys, groupListKeys)
+	}
+
+	humanGrant := mustLiveHumanCLI(t, "project", "permissions", "grant", seeded.Key, holder.Username, "project_write")
+	if !strings.Contains(humanGrant, "Granted PROJECT_WRITE") ||
+		!strings.Contains(humanGrant, "to "+holder.Username+" for project "+seeded.Key) {
+		t.Errorf("expected a bare user name in the human grant, got: %s", humanGrant)
+	}
+
+	humanRevoke := mustLiveHumanCLI(t, "project", "permissions", "revoke", "--group", seeded.Key, group)
+	if !strings.Contains(humanRevoke, "Revoked permission") ||
+		!strings.Contains(humanRevoke, "for group "+group+" on project "+seeded.Key) {
+		t.Errorf("expected the group to be named as one, got: %s", humanRevoke)
+	}
+
+	userPreview := mustLiveCLI(t, "--dry-run", "project", "permissions", "grant", seeded.Key, holder.Username, "project_write")
+	if !strings.Contains(userPreview, `"project.permission.user.grant"`) {
+		t.Errorf("expected a user grant intent, got: %s", userPreview)
+	}
+	groupPreview := mustLiveCLI(t, "--dry-run", "project", "permissions", "grant", "--group", seeded.Key, group, "project_admin")
+	if !strings.Contains(groupPreview, `"project.permission.group.grant"`) {
+		t.Errorf("expected a group grant intent, got: %s", groupPreview)
+	}
+}
+
+// jsonFieldNames returns every field name in a document, sorted, so two
+// payloads can be compared on shape rather than on values.
+func jsonFieldNames(t *testing.T, document string) string {
+	t.Helper()
+
+	var decoded any
+	if err := json.Unmarshal([]byte(document), &decoded); err != nil {
+		t.Fatalf("payload is not JSON: %v\n%s", err, document)
+	}
+
+	names := map[string]struct{}{}
+	var walk func(node any, prefix string)
+	walk = func(node any, prefix string) {
+		switch typed := node.(type) {
+		case map[string]any:
+			for key, value := range typed {
+				names[prefix+key] = struct{}{}
+				walk(value, prefix+key+".")
+			}
+		case []any:
+			for _, item := range typed {
+				walk(item, prefix)
+			}
+		}
+	}
+	walk(decoded, "")
+
+	collected := make([]string, 0, len(names))
+	for name := range names {
+		collected = append(collected, name)
+	}
+	sort.Strings(collected)
+
+	return strings.Join(collected, ",")
 }

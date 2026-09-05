@@ -224,6 +224,7 @@ func TestLiveEveryServiceMapsItsFailures(t *testing.T) {
 		{service: "reposettings", args: []string{"repo", "settings", "pull-requests", "get", "--repo", missingRepo}},
 		{service: "repository", args: []string{"repo", "archive", "--repo", missingRepo}},
 		{service: "reviewer", args: []string{"reviewer", "condition", "list", "--project", missingProject}},
+		{service: "project permissions", args: []string{"project", "permissions", "list", missingProject}},
 		{service: "tag", args: []string{"tag", "view", "no-such-tag", "--repo", missingRepo}},
 	}
 

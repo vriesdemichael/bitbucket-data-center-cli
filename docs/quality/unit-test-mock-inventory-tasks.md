@@ -6,8 +6,8 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 44 | write the live test, then delete the mock |
-| `keep` | 111 | legitimate unit test under ADR-079 |
+| `move-to-live` | 39 | write the live test, then delete the mock |
+| `keep` | 113 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
@@ -17,7 +17,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 |---|---:|---:|---:|---:|---:|
 | `internal/services/reposettings/service_test.go` | 6 | 4 | 0 | 1 | 1 |
 | `internal/cli/cmd/repo/clone_test.go` | 3 | 3 | 0 | 0 | 0 |
-| `internal/cli/cmd/repo/settings_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/cmd/pr/reviewer_automation_test.go` | 4 | 2 | 0 | 2 | 0 |
 | `internal/cli/cmd/bulk/bulk_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/cli/governance_harden_test.go` | 2 | 2 | 0 | 0 | 0 |
@@ -38,9 +37,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/pr/create_interactive_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/pr/reviewer_helpers_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/pr/status_test.go` | 1 | 1 | 0 | 0 | 0 |
-| `internal/cli/cmd/project/permissions_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/permission_contract_test.go` | 1 | 1 | 0 | 0 | 0 |
-| `internal/cli/cmd/repo/permissions_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/webhook/webhook_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/pr_checkout_command_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/pr_checkout_failures_test.go` | 1 | 1 | 0 | 0 | 0 |
@@ -74,6 +71,8 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/commit/commit_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/diff/diff_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/insights/insights_test.go` | 1 | 0 | 0 | 1 | 0 |
+| `internal/cli/cmd/project/permissions_test.go` | 1 | 0 | 0 | 1 | 0 |
+| `internal/cli/cmd/repo/permissions_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/repo/sync_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/tag/tag_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/commit_test.go` | 1 | 0 | 0 | 1 | 0 |
