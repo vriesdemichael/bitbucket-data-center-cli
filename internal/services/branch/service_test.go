@@ -61,6 +61,7 @@ func TestBranchServiceValidationAndHelpers(t *testing.T) {
 
 }
 
+// mock-inventory: unreachable-state — a JSON body served as text/plain, which Bitbucket does not do; the subject is that the decode falls back on the content type rather than giving up.
 func TestBranchServiceCreateFallbackBodyDecode(t *testing.T) {
 	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost && r.URL.Path == "/rest/branch-utils/latest/projects/TEST/repos/demo/branches" {

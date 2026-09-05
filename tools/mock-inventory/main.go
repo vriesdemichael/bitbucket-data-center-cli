@@ -63,14 +63,17 @@ const (
 	// rather than the reply.
 	ClassRoutingBeacon Class = "routing-beacon"
 
-	// ClassUnreachableState: the mock stands for a state the live instance
-	// cannot be put into -- a linked Jira, a mirror, a licence tier we do not
-	// have. ADR-079 still says what it says; what makes these keepable is that
-	// the alternative is no assertion at all, so each one has to name the thing
-	// that is missing and point at the live test covering what the instance
-	// does answer.
+	// ClassUnreachableState: the mock stands for something the live suite
+	// cannot arrange. Usually a state the instance cannot be put into -- a
+	// linked Jira, a mirror, a licence tier we do not have -- and sometimes a
+	// call no command makes, where the code under test is a defence against a
+	// caller that does not exist yet.
 	//
-	// Directive-only, and the name of the missing state is the reason.
+	// ADR-079 still says what it says; what makes these keepable is that the
+	// alternative is no assertion at all, so each one has to name the thing
+	// that is missing and point at the live test covering what can be reached.
+	//
+	// Directive-only, and naming what is out of reach is the reason.
 	ClassUnreachableState Class = "unreachable-state"
 
 	// ClassUnclear: nothing decisive was found. Reported rather than cleared,

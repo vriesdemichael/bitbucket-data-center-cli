@@ -104,6 +104,21 @@ func TestLiveRepositoryForkSync(t *testing.T) {
 		t.Fatalf("repo sync failed: %v\noutput: %s", syncErr, syncOutput)
 	}
 
+	// And again with no --action, which is the case that used to send an empty
+	// field. The action is required despite the schema marking it optional, so
+	// a default that did not arrive is a 500 for every fork in every state --
+	// the two answers accepted above are both proof that one did.
+	//
+	// A unit test asserted this by decoding the body it had just been handed,
+	// which says what we send and not whether the server takes it.
+	defaultOutput, defaultErr := executeLiveCLI(t, "--json", "repo", "sync", "--repo", forkRef)
+	switch {
+	case defaultErr == nil:
+	case strings.Contains(defaultErr.Error(), "already synchronized"):
+	default:
+		t.Fatalf("repo sync with no --action failed: %v\noutput: %s", defaultErr, defaultOutput)
+	}
+
 	disableOutput, err := executeLiveCLI(t, "--json", "repo", "sync", "disable", "--repo", forkRef)
 	if err != nil {
 		t.Fatalf("repo sync disable failed: %v\noutput: %s", err, disableOutput)

@@ -24,48 +24,6 @@ func newAdminTestService(t *testing.T, handler http.HandlerFunc) *AdminService {
 	return NewAdminService(client)
 }
 
-func TestAdminServiceCoreCommands(t *testing.T) {
-	service := newAdminTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/repos":
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"slug":"repo","name":"repo"}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo":
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"slug":"forked","name":"forked"}`))
-		case r.Method == http.MethodDelete && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo":
-			w.WriteHeader(http.StatusAccepted)
-		case r.Method == http.MethodPut && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo":
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"slug":"repo","name":"updated"}`))
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	repoRef := RepositoryRef{ProjectKey: "PRJ", Slug: "repo"}
-
-	created, err := service.Create(context.Background(), "PRJ", CreateInput{Name: "repo", Forkable: true, Description: "desc", DefaultBranch: "main"})
-	if err != nil || created.Name == nil || *created.Name != "repo" {
-		t.Fatalf("expected create success, got %#v err=%v", created, err)
-	}
-
-	forked, err := service.Fork(context.Background(), repoRef, ForkInput{Name: "forked", Project: "PRJ2"})
-	if err != nil || forked.Name == nil || *forked.Name != "forked" {
-		t.Fatalf("expected fork success, got %#v err=%v", forked, err)
-	}
-
-	updated, err := service.Update(context.Background(), repoRef, UpdateInput{Name: "updated", Description: "desc", DefaultBranch: "main"})
-	if err != nil || updated.Name == nil || *updated.Name != "updated" {
-		t.Fatalf("expected update success, got %#v err=%v", updated, err)
-	}
-
-	if err := service.Delete(context.Background(), repoRef); err != nil {
-		t.Fatalf("expected delete success, got %v", err)
-	}
-}
-
 func TestAdminServiceValidation(t *testing.T) {
 	service := newAdminTestService(t, testsupport.UnreachedHandler(t))
 
@@ -146,3 +104,9 @@ func TestAdminServiceTransientAndMapping(t *testing.T) {
 	}
 
 }
+
+// TestAdminServiceCoreCommands is gone rather than moved. Create, fork, update
+// and delete each answered from a handler that had been written to answer
+// them, so what it checked was that a slug we wrote comes back. All four are
+// live: TestLiveMutatingCoverage creates and forks against a real instance,
+// and the dry-run suites predict against repositories that are really there.

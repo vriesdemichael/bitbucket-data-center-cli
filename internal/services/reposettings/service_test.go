@@ -2,7 +2,6 @@ package reposettings
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -143,6 +142,7 @@ func TestRepositorySettingsHelperCoverage(t *testing.T) {
 
 }
 
+// mock-inventory: unreachable-state — a bare array where an object belongs and non-JSON bodies on a 200, neither of which Bitbucket sends; the subject is what the service does with a reply it cannot read.
 func TestRepositorySettingsJSONFallbackAndValidationBranches(t *testing.T) {
 	service := newServiceWithBaseURL(t, func(writer http.ResponseWriter, request *http.Request) {
 		switch {
@@ -231,6 +231,7 @@ func newServiceWithBaseURL(t *testing.T, handler http.HandlerFunc) *Service {
 	return NewService(client)
 }
 
+// mock-inventory: unreachable-state — "not-json" and a bare array where a settings object belongs, alongside a closed listener; the subject is that an unreadable reply is an error rather than an empty result.
 func TestRepositorySettingsAdditionalBranches(t *testing.T) {
 	// The pagination half of this used to live here: two hand-written pages and
 	// an assertion that the second request carried the limit the first one had.
@@ -260,9 +261,9 @@ func TestRepositorySettingsAdditionalBranches(t *testing.T) {
 	})
 
 	t.Run("permission and webhook validations", func(t *testing.T) {
-		service := newServiceWithBaseURL(t, func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusNoContent)
-		})
+		// Refused before a request exists, so the listener fails the test if
+		// one arrives.
+		service := newServiceWithBaseURL(t, testsupport.UnreachedHandler(t))
 
 		if err := service.GrantRepositoryUserPermission(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, " ", "REPO_READ"); err == nil {
 			t.Fatal("expected username validation error")
@@ -297,19 +298,13 @@ func TestRepositorySettingsAdditionalBranches(t *testing.T) {
 			t.Fatal("expected error for approvers update map")
 		}
 
-		statusService := newServiceWithBaseURL(t, func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusUnauthorized)
-			_, _ = writer.Write([]byte("unauthorized"))
-		})
-		if _, err := statusService.GetRepositoryPullRequestSettings(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}); err == nil || apperrors.ExitCode(err) != 3 {
-			t.Fatalf("expected auth mapping, got: %v", err)
-		}
+		// A 401 mapping to exit 3 stood here, from a handler answering 401 to
+		// everything. Every call in this service goes through
+		// openapi.MapStatusError, so TestMapStatusError asserts it once.
 	})
 
 	t.Run("validate repository ref branch", func(t *testing.T) {
-		service := newServiceWithBaseURL(t, func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusOK)
-		})
+		service := newServiceWithBaseURL(t, testsupport.UnreachedHandler(t))
 		if _, err := service.ListRepositoryPermissionUsers(context.Background(), RepositoryRef{}, 10); err == nil {
 			t.Fatal("expected repository validation error")
 		}
@@ -400,13 +395,7 @@ func TestNewRepositoryServiceValidationErrors(t *testing.T) {
 	if _, err := service.UpdateWebhook(ctx, emptyRepo, "1", "name", "url", nil, nil); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.SearchWebhooks(ctx, emptyRepo, nil); err == nil {
-		t.Fatal("expected error")
-	}
 	if _, err := service.TestWebhook(ctx, emptyRepo, "1", ""); err == nil {
-		t.Fatal("expected error")
-	}
-	if _, err := service.GetWebhookLatestInvocation(ctx, emptyRepo, "1", nil, nil); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := service.GetWebhookStatistics(ctx, emptyRepo, "1"); err == nil {
@@ -447,9 +436,6 @@ func TestNewRepositoryServiceValidationErrors(t *testing.T) {
 	if _, err := service.TestWebhook(ctx, repo, "not-an-int", ""); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.GetWebhookLatestInvocation(ctx, repo, "", nil, nil); err == nil {
-		t.Fatal("expected error")
-	}
 	if _, err := service.GetWebhookStatistics(ctx, repo, ""); err == nil {
 		t.Fatal("expected error")
 	}
@@ -458,184 +444,15 @@ func TestNewRepositoryServiceValidationErrors(t *testing.T) {
 	}
 }
 
-func TestNewRepositorySettingsMethods(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-merge":
-			_, _ = writer.Write([]byte(`{"enabled":true}`))
-		case request.Method == http.MethodPut && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-merge":
-			_, _ = writer.Write([]byte(`{"enabled":true}`))
-		case request.Method == http.MethodDelete && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-merge":
-			writer.WriteHeader(http.StatusNoContent)
-		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-decline":
-			_, _ = writer.Write([]byte(`{"enabled":true,"inactivityWeeks":4}`))
-		case request.Method == http.MethodPut && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-decline":
-			_, _ = writer.Write([]byte(`{"enabled":true,"inactivityWeeks":4}`))
-		case request.Method == http.MethodDelete && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/auto-decline":
-			writer.WriteHeader(http.StatusNoContent)
-		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/labels":
-			_, _ = writer.Write([]byte(`{"values":[{"name":"label1"},{"name":"label2"}]}`))
-		case request.Method == http.MethodPost && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/labels":
-			writer.WriteHeader(http.StatusNoContent)
-		case request.Method == http.MethodDelete && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/labels/label1":
-			writer.WriteHeader(http.StatusNoContent)
-		case request.Method == http.MethodPost && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/watch":
-			writer.WriteHeader(http.StatusNoContent)
-		case request.Method == http.MethodDelete && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/watch":
-			writer.WriteHeader(http.StatusNoContent)
-		case request.Method == http.MethodGet && request.URL.Path == "/default-tasks/latest/projects/PRJ/repos/demo/tasks":
-			_, _ = writer.Write([]byte(`{"values":[{"id":123,"description":"task1"}]}`))
-		case request.Method == http.MethodPost && request.URL.Path == "/default-tasks/latest/projects/PRJ/repos/demo/tasks":
-			_, _ = writer.Write([]byte(`{"id":123,"description":"task1"}`))
-		case request.Method == http.MethodPut && request.URL.Path == "/default-tasks/latest/projects/PRJ/repos/demo/tasks/123":
-			_, _ = writer.Write([]byte(`{"id":123,"description":"task1-updated"}`))
-		case request.Method == http.MethodDelete && request.URL.Path == "/default-tasks/latest/projects/PRJ/repos/demo/tasks/123":
-			writer.WriteHeader(http.StatusNoContent)
-		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1":
-			_, _ = writer.Write([]byte(`{"id":1,"name":"hook1","url":"http://hook.example"}`))
-		case request.Method == http.MethodPut && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1":
-			_, _ = writer.Write([]byte(`{"id":1,"name":"hook1-updated"}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/search":
-			_, _ = writer.Write([]byte(`{"values":[{"id":1}]}`))
-		case request.Method == http.MethodPost && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/test":
-			_, _ = writer.Write([]byte(`{"status":"success"}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1/latest":
-			_, _ = writer.Write([]byte(`{"outcome":"success"}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1/statistics":
-			_, _ = writer.Write([]byte(`{"invocations":10}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks/1/statistics/summary":
-			_, _ = writer.Write([]byte(`{"summary":"ok"}`))
-		default:
-			http.NotFound(writer, request)
-		}
-	}))
-	defer server.Close()
-
-	client, err := openapigenerated.NewClientWithResponses(server.URL)
-	if err != nil {
-		t.Fatalf("create generated client: %v", err)
-	}
-
-	service := NewService(client)
-	repo := RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}
-	ctx := context.Background()
-
-	// Auto-merge settings tests
-	amSettings, err := service.GetRepositoryAutoMergeSettings(ctx, repo)
-	if err != nil || amSettings == nil || amSettings.Enabled == nil || !*amSettings.Enabled {
-		t.Errorf("GetRepositoryAutoMergeSettings failed: %v", err)
-	}
-	amSettings, err = service.UpdateRepositoryAutoMergeSettings(ctx, repo, true)
-	if err != nil || amSettings == nil || amSettings.Enabled == nil || !*amSettings.Enabled {
-		t.Errorf("UpdateRepositoryAutoMergeSettings failed: %v", err)
-	}
-	err = service.DeleteRepositoryAutoMergeSettings(ctx, repo)
-	if err != nil {
-		t.Errorf("DeleteRepositoryAutoMergeSettings failed: %v", err)
-	}
-
-	// Auto-decline settings tests
-	adSettings, err := service.GetRepositoryAutoDeclineSettings(ctx, repo)
-	if err != nil || adSettings == nil || adSettings.Enabled == nil || !*adSettings.Enabled || adSettings.InactivityWeeks == nil || *adSettings.InactivityWeeks != 4 {
-		t.Errorf("GetRepositoryAutoDeclineSettings failed: %v", err)
-	}
-	adSettings, err = service.UpdateRepositoryAutoDeclineSettings(ctx, repo, true, 4)
-	if err != nil || adSettings == nil || adSettings.Enabled == nil || !*adSettings.Enabled || adSettings.InactivityWeeks == nil || *adSettings.InactivityWeeks != 4 {
-		t.Errorf("UpdateRepositoryAutoDeclineSettings failed: %v", err)
-	}
-	err = service.DeleteRepositoryAutoDeclineSettings(ctx, repo)
-	if err != nil {
-		t.Errorf("DeleteRepositoryAutoDeclineSettings failed: %v", err)
-	}
-
-	// Labels tests
-	labels, err := service.ListRepositoryLabels(ctx, repo)
-	if err != nil || len(labels) != 2 || labels[0] != "label1" {
-		t.Errorf("ListRepositoryLabels failed: %v", err)
-	}
-	err = service.AddRepositoryLabel(ctx, repo, "label3")
-	if err != nil {
-		t.Errorf("AddRepositoryLabel failed: %v", err)
-	}
-	err = service.RemoveRepositoryLabel(ctx, repo, "label1")
-	if err != nil {
-		t.Errorf("RemoveRepositoryLabel failed: %v", err)
-	}
-
-	// Watch tests
-	err = service.WatchRepository(ctx, repo)
-	if err != nil {
-		t.Errorf("WatchRepository failed: %v", err)
-	}
-	err = service.UnwatchRepository(ctx, repo)
-	if err != nil {
-		t.Errorf("UnwatchRepository failed: %v", err)
-	}
-
-	// Default tasks tests
-	tasks, err := service.ListDefaultTasks(ctx, repo)
-	if err != nil || len(tasks) != 1 || tasks[0].Id == nil || *tasks[0].Id != 123 {
-		t.Errorf("ListDefaultTasks failed: %v", err)
-	}
-	sourceRef := "refs/heads/feature"
-	targetRef := "refs/heads/master"
-	task, err := service.AddDefaultTask(ctx, repo, "task1", &sourceRef, &targetRef)
-	if err != nil || task == nil || task.Id == nil || *task.Id != 123 {
-		t.Errorf("AddDefaultTask failed: %v", err)
-	}
-	task, err = service.UpdateDefaultTask(ctx, repo, "123", "task1-updated", &sourceRef, &targetRef)
-	if err != nil || task == nil || task.Id == nil || *task.Id != 123 || task.Description == nil || *task.Description != "task1-updated" {
-		t.Errorf("UpdateDefaultTask failed: %v", err)
-	}
-	err = service.DeleteDefaultTask(ctx, repo, "123")
-	if err != nil {
-		t.Errorf("DeleteDefaultTask failed: %v", err)
-	}
-
-	// Webhook lifecycle tests
-	webhook, err := service.GetWebhook(ctx, repo, "1")
-	if err != nil {
-		t.Errorf("GetWebhook failed: %v", err)
-	}
-	// Asserting the fetched hook is what separates "GetWebhook returned"
-	// from "GetWebhook returned the hook that was asked for". It comes back as
-	// a decoded any, so the check goes through the encoded form.
-	if encoded, marshalErr := json.Marshal(webhook); marshalErr != nil {
-		t.Errorf("GetWebhook result is not encodable: %v", marshalErr)
-	} else if !strings.Contains(string(encoded), "hook1") {
-		t.Errorf("GetWebhook returned the wrong hook: %s", encoded)
-	}
-	webhook, err = service.UpdateWebhook(ctx, repo, "1", "hook1-updated", "http://url", []string{"repo:refs_changed"}, nil)
-	if err != nil {
-		t.Errorf("UpdateWebhook failed: %v", err)
-	}
-	searchRes, err := service.SearchWebhooks(ctx, repo, &sourceRef)
-	if err != nil {
-		t.Errorf("SearchWebhooks failed: %v", err)
-	}
-	testRes, err := service.TestWebhook(ctx, repo, "1", "")
-	if err != nil {
-		t.Errorf("TestWebhook failed: %v", err)
-	}
-	latestRes, err := service.GetWebhookLatestInvocation(ctx, repo, "1", nil, nil)
-	if err != nil {
-		t.Errorf("GetWebhookLatestInvocation failed: %v", err)
-	}
-	statsRes, err := service.GetWebhookStatistics(ctx, repo, "1")
-	if err != nil {
-		t.Errorf("GetWebhookStatistics failed: %v", err)
-	}
-	summaryRes, err := service.GetWebhookStatisticsSummary(ctx, repo, "1")
-	if err != nil {
-		t.Errorf("GetWebhookStatisticsSummary failed: %v", err)
-	}
-
-	_ = webhook
-	_ = searchRes
-	_ = testRes
-	_ = latestRes
-	_ = statsRes
-	_ = summaryRes
-}
+// TestNewRepositorySettingsMethods is gone rather than moved.
+//
+// It drove twenty-odd service methods -- auto-merge, auto-decline, labels,
+// watch, default tasks, webhook lifecycle -- past a handwritten Bitbucket and
+// asserted that each returned what the fixture beside it had written. Every
+// one of them is a command, and command reach is 234/234, so each is asserted
+// against a real instance with the state read back.
+//
+// Two of them were not commands. SearchWebhooks and
+// GetWebhookLatestInvocation had no caller anywhere: not the CLI, not the MCP
+// server. This test was the only thing keeping them compiled, and a mock is
+// the only place they could ever have been called from. They are deleted.

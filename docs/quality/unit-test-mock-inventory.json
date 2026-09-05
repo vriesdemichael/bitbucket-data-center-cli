@@ -1,16 +1,16 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 183,
+    "mocked_servers": 181,
     "files": 63,
-    "functions": 174,
+    "functions": 172,
     "by_class": {
-      "bitbucket-behaviour": 37,
+      "bitbucket-behaviour": 30,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
-      "unreachable-state": 8,
+      "unreachable-state": 13,
       "unreached-guard": 25
     },
     "behaviour_by_package": {
@@ -21,13 +21,9 @@
       "internal/cli/cmd/reviewer": 1,
       "internal/cli/cmd/webhook": 1,
       "internal/mcp": 3,
-      "internal/services/branch": 1,
-      "internal/services/forksync": 1,
       "internal/services/pullrequest": 2,
       "internal/services/pullrequestactivity": 1,
-      "internal/services/reposettings": 4,
-      "internal/services/repository": 1,
-      "internal/services/reviewer": 1
+      "internal/services/reposettings": 1
     }
   },
   "entries": [
@@ -882,9 +878,9 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 64,
+      "line": 65,
       "function": "TestBranchServiceCreateFallbackBodyDecode",
-      "class": "bitbucket-behaviour",
+      "class": "unreachable-state",
       "signals": [
         "asserts-http-method",
         "handler-passed-to-a-helper",
@@ -893,12 +889,13 @@
         "returns-bitbucket-entity",
         "serves-bitbucket-routes"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a JSON body served as text/plain, which Bitbucket does not do; the subject is that the decode falls back on the content type rather than giving up.",
+      "reviewed": true
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 138,
+      "line": 139,
       "function": "TestBranchServiceEmptyResponsesAndTransientErrors",
       "class": "transport-fault",
       "signals": [
@@ -914,7 +911,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 216,
+      "line": 217,
       "function": "TestBranchServiceAdditionalValidationAndFallbackPaths",
       "class": "transport-fault",
       "signals": [
@@ -931,7 +928,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 303,
+      "line": 304,
       "function": "TestBranchServiceTransientAcrossOperations",
       "class": "transport-fault",
       "signals": [
@@ -1241,17 +1238,18 @@
     },
     {
       "file": "internal/services/forksync/service_test.go",
-      "line": 126,
+      "line": 128,
       "function": "TestForkSyncSynchronizeDefaultsToMerge",
-      "class": "bitbucket-behaviour",
+      "class": "unreachable-state",
       "signals": [
         "answers-any-request",
         "asserts-request-body",
         "handler-passed-to-a-helper",
         "returns-a-status"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a caller that omits the action, which no command does: `repo sync` defaults the flag to MERGE, so this defence is only reachable from here. TestLiveRepositoryForkSync covers the wire form the CLI actually sends, with and without the flag.",
+      "reviewed": true
     },
     {
       "file": "internal/services/gpgkey/service_test.go",
@@ -1622,7 +1620,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 33,
+      "line": 32,
       "function": "TestUpdateRepositoryPullRequestRequiredApproversCount",
       "class": "unreachable-state",
       "signals": [
@@ -1639,7 +1637,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 115,
+      "line": 114,
       "function": "settingsServiceOn",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1654,7 +1652,7 @@
       "file": "internal/services/reposettings/service_test.go",
       "line": 146,
       "function": "TestRepositorySettingsJSONFallbackAndValidationBranches",
-      "class": "bitbucket-behaviour",
+      "class": "unreachable-state",
       "signals": [
         "asserts-http-method",
         "handler-passed-to-a-helper",
@@ -1662,8 +1660,9 @@
         "returns-a-status",
         "serves-bitbucket-routes"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a bare array where an object belongs and non-JSON bodies on a 200, neither of which Bitbucket sends; the subject is what the service does with a reply it cannot read.",
+      "reviewed": true
     },
     {
       "file": "internal/services/reposettings/service_test.go",
@@ -1678,34 +1677,18 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 234,
+      "line": 235,
       "function": "TestRepositorySettingsAdditionalBranches",
-      "class": "bitbucket-behaviour",
+      "class": "unreachable-state",
       "signals": [
         "asserts-http-method",
         "handler-passed-to-a-helper",
         "inspects-the-request-path",
-        "returns-a-status",
         "serves-bitbucket-routes"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/reposettings/service_test.go",
-      "line": 462,
-      "function": "TestNewRepositorySettingsMethods",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "\"not-json\" and a bare array where a settings object belongs, alongside a closed listener; the subject is that an unreadable reply is an error rather than an empty result.",
+      "reviewed": true
     },
     {
       "file": "internal/services/repository/admin_test.go",
@@ -1720,23 +1703,7 @@
     },
     {
       "file": "internal/services/repository/admin_test.go",
-      "line": 27,
-      "function": "TestAdminServiceCoreCommands",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/services/repository/admin_test.go",
-      "line": 97,
+      "line": 55,
       "function": "TestAdminServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -1838,17 +1805,18 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 154,
+      "line": 155,
       "function": "TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks",
-      "class": "bitbucket-behaviour",
+      "class": "unreachable-state",
       "signals": [
         "closes-on-cleanup",
         "returns-a-status",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "an object with no values key where a page belongs, which Bitbucket does not send; the subject is that a listing missing its values reads as empty rather than as a nil dereference.",
+      "reviewed": true
     },
     {
       "file": "internal/services/sshkey/service_test.go",
