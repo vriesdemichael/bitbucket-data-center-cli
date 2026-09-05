@@ -51,6 +51,7 @@ func (stub *statusBackendStub) GetConfig(context.Context, git.ConfigOptions) (st
 func (stub *statusBackendStub) SetConfig(context.Context, git.ConfigOptions) error   { return nil }
 func (stub *statusBackendStub) UnsetConfig(context.Context, git.ConfigOptions) error { return nil }
 
+// mock-inventory: unreachable-state — a working tree with no branch checked out, alongside a dashboard for the other two sections; the live CLI runs inside this repository, on a branch, so the note this test is about cannot be reached there.
 func newPullRequestStatusServer(t *testing.T) *httptest.Server {
 	t.Helper()
 
@@ -142,67 +143,6 @@ func decodeStatusOutput(t *testing.T, output string) map[string]any {
 	return payload
 }
 
-func TestPullRequestStatusThreeSections(t *testing.T) {
-	server := newPullRequestStatusServer(t)
-	backend := &statusBackendStub{branch: "feature/x"}
-
-	output := executeStatus(t, backend, server.URL)
-
-	wantHeadings := []string{
-		"Current branch (feature/x)",
-		"Created by you",
-		"Requesting a code review from you",
-	}
-	for _, heading := range wantHeadings {
-		if !strings.Contains(output, heading) {
-			t.Fatalf("expected heading %q in output:\n%s", heading, output)
-		}
-	}
-	if !strings.Contains(output, "#31\tOPEN\tOn this branch") {
-		t.Fatalf("expected current-branch PR in output:\n%s", output)
-	}
-	if !strings.Contains(output, "#11\tOPEN\t[PRJ/demo] Mine") {
-		t.Fatalf("expected created PR in output:\n%s", output)
-	}
-	if !strings.Contains(output, "#21\tOPEN\tWaiting on me") {
-		t.Fatalf("expected review-requested PR in output:\n%s", output)
-	}
-}
-
-func TestPullRequestStatusJSONShape(t *testing.T) {
-	server := newPullRequestStatusServer(t)
-	backend := &statusBackendStub{branch: "feature/x"}
-
-	output := executeStatus(t, backend, server.URL, "--json")
-	payload := decodeStatusOutput(t, output)
-
-	currentBranch, ok := payload["currentBranch"].(map[string]any)
-	if !ok {
-		t.Fatalf("expected currentBranch section, got %#v", payload)
-	}
-	if currentBranch["branch"] != "feature/x" {
-		t.Fatalf("expected branch feature/x, got %v", currentBranch["branch"])
-	}
-
-	created, ok := payload["createdByYou"].(map[string]any)
-	if !ok {
-		t.Fatalf("expected createdByYou section, got %#v", payload)
-	}
-	createdPRs, _ := created["pullRequests"].([]any)
-	if len(createdPRs) != 1 {
-		t.Fatalf("expected 1 created PR, got %v", createdPRs)
-	}
-
-	reviewing, ok := payload["requestingYourReview"].(map[string]any)
-	if !ok {
-		t.Fatalf("expected requestingYourReview section, got %#v", payload)
-	}
-	reviewingPRs, _ := reviewing["pullRequests"].([]any)
-	if len(reviewingPRs) != 1 {
-		t.Fatalf("expected 1 reviewing PR, got %v", reviewingPRs)
-	}
-}
-
 func TestPullRequestStatusNotOnBranchNotesSection(t *testing.T) {
 	server := newPullRequestStatusServer(t)
 	backend := &statusBackendStub{branch: ""}
@@ -219,3 +159,10 @@ func TestPullRequestStatusNotOnBranchNotesSection(t *testing.T) {
 		t.Fatalf("expected note about not being on a branch, got %q", note)
 	}
 }
+
+// Two suites went live. The three headings and the JSON section shapes are
+// TestLivePullRequestStatus, against a real dashboard; here they were checked
+// against three pull requests this file invented, one per section.
+//
+// What is left is the note, and it needs a working tree with no branch
+// checked out. The live CLI runs inside this repository and is always on one.

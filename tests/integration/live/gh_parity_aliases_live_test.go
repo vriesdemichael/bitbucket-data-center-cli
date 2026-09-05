@@ -4,9 +4,14 @@ package live_test
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"slices"
 	"strings"
 	"testing"
 	"time"
+
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 // TestLiveRepoPermissionShallowAliasesMatchDeepPaths pins the shallow spellings
@@ -221,6 +226,76 @@ func TestLivePullRequestStatus(t *testing.T) {
 			if !strings.Contains(empty, message) {
 				t.Fatalf("an empty section printed nothing that says so, want %q:\n%s", message, empty)
 			}
+		}
+	})
+
+	// The narrowing behind the section's name.
+	//
+	// role=REVIEWER alone means "you are a reviewer", which keeps listing pull
+	// requests you already approved. What makes the section mean "waiting on
+	// you" is participantStatus=UNAPPROVED, and it has to be asked for --
+	// Bitbucket's default is every status. A unit test asserted this against a
+	// dashboard it answered itself, which is the query deciding its own result.
+	t.Run("only reviews not yet given", func(t *testing.T) {
+		reviewer, err := harness.createLicensedUser(ctx)
+		if err != nil {
+			t.Fatalf("create reviewer failed: %v", err)
+		}
+		if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reviewer.Username,
+			openapigenerated.SetPermissionForUserParamsPermissionREPOWRITE); err != nil {
+			t.Fatalf("grant the reviewer write access failed: %v", err)
+		}
+
+		// Two pull requests, both with the same reviewer on them. One gets
+		// approved and one does not, so the section has something to leave out
+		// as well as something to show.
+		ids := make([]string, 0, 2)
+		for index, branch := range []string{"feature/status-approved", "feature/status-pending"} {
+			if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch,
+				fmt.Sprintf("status-%d.txt", index)); err != nil {
+				t.Fatalf("push %s failed: %v", branch, err)
+			}
+			id, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+			if err != nil {
+				t.Fatalf("create the pull request on %s failed: %v", branch, err)
+			}
+			if _, err := harness.liveJSON(ctx, http.MethodPost,
+				fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/participants",
+					seeded.Key, repo.Slug, id),
+				map[string]any{"user": map[string]any{"name": reviewer.Username}, "role": "REVIEWER"}); err != nil {
+				t.Fatalf("add the reviewer to %s failed: %v", branch, err)
+			}
+			ids = append(ids, id)
+		}
+
+		configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
+
+		approved, pending := ids[0], ids[1]
+		if output, err := executeLiveCLI(t, "--json", "pr", "review", "approve", approved); err != nil {
+			t.Fatalf("approve failed: %v\noutput: %s", err, output)
+		}
+
+		output, err := executeLiveCLI(t, "--json", "pr", "status")
+		if err != nil {
+			t.Fatalf("pr status as the reviewer failed: %v\noutput: %s", err, output)
+		}
+		section, ok := decodeJSONMap(t, output)["requestingYourReview"].(map[string]any)
+		if !ok {
+			t.Fatalf("pr status carries no requestingYourReview section:\n%s", output)
+		}
+		entries, _ := section["pullRequests"].([]any)
+
+		listed := make([]string, 0, len(entries))
+		for _, entry := range entries {
+			pullRequest, _ := entry.(map[string]any)
+			id, _ := pullRequest["id"].(float64)
+			listed = append(listed, fmt.Sprintf("%d", int(id)))
+		}
+		if !slices.Contains(listed, pending) {
+			t.Errorf("the pull request still waiting on this reviewer is missing: %v\n%s", listed, output)
+		}
+		if slices.Contains(listed, approved) {
+			t.Errorf("a pull request this reviewer already approved is still being asked for: %v\n%s", listed, output)
 		}
 	})
 }
