@@ -146,6 +146,7 @@ func (stub *checkoutBackendStub) UnsetConfig(context.Context, git.ConfigOptions)
 
 // newCheckoutServer serves one pull request whose source ref points wherever
 // the caller says, which is how the fork and same-repository cases differ.
+// mock-inventory: unreachable-state — the git states these need are a remote that already exists, a name that would collide, a branch that has diverged and a working directory outside a repository; the pull request payload is scaffolding for them. TestLivePullRequestCheckout covers what a real clone can show.
 func newCheckoutServer(t *testing.T, sourceProject string, sourceSlug string, sourceBranch string) *httptest.Server {
 	t.Helper()
 
@@ -240,58 +241,6 @@ func decodeCheckoutResult(t *testing.T, output string) map[string]any {
 	return data
 }
 
-func TestPullRequestCheckoutSameRepository(t *testing.T) {
-	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
-
-	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
-	withGitBackend(t, stub)
-
-	output := runCheckout(t, "--json", "pr", "checkout", "42")
-	result := decodeCheckoutResult(t, output)
-
-	if result["fork"] != false {
-		t.Fatalf("expected a same-repository checkout, got: %v", result)
-	}
-	if result["remote"] != "origin" {
-		t.Fatalf("expected the existing origin remote, got: %v", result)
-	}
-	if result["remoteAdded"] != false {
-		t.Fatalf("expected no new remote, got: %v", result)
-	}
-	// The local branch keeps the source name: nothing to collide with.
-	if result["branch"] != "feature/login" {
-		t.Fatalf("expected the source branch name, got: %v", result)
-	}
-
-	if len(stub.addedRemotes) != 0 {
-		t.Fatalf("expected no remote to be added, got: %v", stub.addedRemotes)
-	}
-	if len(stub.fetches) != 1 || stub.fetches[0].Remote != "origin" {
-		t.Fatalf("expected one fetch from origin, got: %v", stub.fetches)
-	}
-	wantRefspec := "+refs/heads/feature/login:refs/remotes/origin/feature/login"
-	if len(stub.fetches[0].Refspecs) != 1 || stub.fetches[0].Refspecs[0] != wantRefspec {
-		t.Fatalf("expected refspec %q, got: %v", wantRefspec, stub.fetches[0].Refspecs)
-	}
-
-	if len(stub.checkouts) != 1 {
-		t.Fatalf("expected one checkout, got: %v", stub.checkouts)
-	}
-	checkout := stub.checkouts[0]
-	if checkout.NewBranch != "feature/login" || checkout.Ref != "refs/remotes/origin/feature/login" {
-		t.Fatalf("expected a new branch at the fetched ref, got: %#v", checkout)
-	}
-
-	// Upstream config is what makes a later bare `git push` work.
-	if got := stub.configSets["branch.feature/login.remote"]; got != "origin" {
-		t.Fatalf("expected branch remote origin, got %q", got)
-	}
-	if got := stub.configSets["branch.feature/login.merge"]; got != "refs/heads/feature/login" {
-		t.Fatalf("expected branch merge ref, got %q", got)
-	}
-}
-
 // TestPullRequestCheckoutReusesAnExistingForkRemote keeps a second name for a
 // place the caller already tracks from appearing. Two remotes for one
 // repository means a later push can go to whichever git resolves first.
@@ -339,30 +288,6 @@ func TestPullRequestCheckoutAvoidsRemoteNameCollisions(t *testing.T) {
 	}
 }
 
-// TestPullRequestCheckoutUpdatesAnExistingBranch covers the second run. Leaving
-// the branch where an earlier checkout put it means silently reviewing an old
-// revision, which looks identical to reviewing the current one.
-func TestPullRequestCheckoutUpdatesAnExistingBranch(t *testing.T) {
-	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
-
-	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
-	stub.branches["feature/login"] = true
-	withGitBackend(t, stub)
-
-	result := decodeCheckoutResult(t, runCheckout(t, "--json", "pr", "checkout", "42"))
-
-	if result["fastForwarded"] != true {
-		t.Fatalf("expected the existing branch to be fast-forwarded, got: %v", result)
-	}
-	if stub.fastForwardRef != "refs/remotes/origin/feature/login" {
-		t.Fatalf("expected a fast-forward to the fetched ref, got %q", stub.fastForwardRef)
-	}
-	if len(stub.checkouts) != 1 || stub.checkouts[0].NewBranch != "" || stub.checkouts[0].Ref != "feature/login" {
-		t.Fatalf("expected the existing branch to be checked out, not recreated: %#v", stub.checkouts)
-	}
-}
-
 // TestPullRequestCheckoutSurfacesADivergedBranch: --ff-only failing is the
 // answer, not a problem to work around. Resetting would discard local commits.
 func TestPullRequestCheckoutSurfacesADivergedBranch(t *testing.T) {
@@ -377,81 +302,6 @@ func TestPullRequestCheckoutSurfacesADivergedBranch(t *testing.T) {
 	err := runCheckoutExpectingError(t, "--json", "pr", "checkout", "42")
 	if !strings.Contains(err.Error(), "fast-forward") {
 		t.Fatalf("expected the fast-forward failure to surface, got: %v", err)
-	}
-}
-
-func TestPullRequestCheckoutRefusesADirtyWorkingTree(t *testing.T) {
-	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
-
-	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
-	stub.status = git.WorkingTreeStatus{Dirty: true, Entries: []string{" M internal/cli/root.go", " M go.mod"}}
-	withGitBackend(t, stub)
-
-	err := runCheckoutExpectingError(t, "pr", "checkout", "42")
-	for _, expected := range []string{"uncommitted changes", "--force", "internal/cli/root.go"} {
-		if !strings.Contains(err.Error(), expected) {
-			t.Fatalf("expected %q in the refusal, got: %v", expected, err)
-		}
-	}
-
-	// Nothing may have happened: a refusal that already fetched is not a refusal.
-	if len(stub.calls) != 0 {
-		t.Fatalf("expected the repository to be untouched, got calls: %v", stub.calls)
-	}
-}
-
-func TestPullRequestCheckoutForceProceedsOnADirtyTree(t *testing.T) {
-	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
-
-	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
-	stub.status = git.WorkingTreeStatus{Dirty: true, Entries: []string{" M go.mod"}}
-	withGitBackend(t, stub)
-
-	runCheckout(t, "pr", "checkout", "42", "--force")
-
-	if len(stub.checkouts) != 1 || !stub.checkouts[0].Force {
-		t.Fatalf("expected --force to reach the checkout, got: %#v", stub.checkouts)
-	}
-}
-
-func TestPullRequestCheckoutDetached(t *testing.T) {
-	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
-
-	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
-	withGitBackend(t, stub)
-
-	result := decodeCheckoutResult(t, runCheckout(t, "--json", "pr", "checkout", "42", "--detach"))
-
-	if result["detached"] != true || result["branch"] != nil {
-		t.Fatalf("expected a detached checkout with no branch, got: %v", result)
-	}
-	if len(stub.checkouts) != 1 || !stub.checkouts[0].Detach || stub.checkouts[0].NewBranch != "" {
-		t.Fatalf("expected a detached checkout, got: %#v", stub.checkouts)
-	}
-	// No branch means no upstream to configure.
-	if len(stub.configSets) != 0 {
-		t.Fatalf("expected no branch config on a detached checkout, got: %v", stub.configSets)
-	}
-}
-
-func TestPullRequestCheckoutHonoursAnExplicitBranchName(t *testing.T) {
-	server := newCheckoutServer(t, "~jdoe", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
-
-	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
-	withGitBackend(t, stub)
-
-	result := decodeCheckoutResult(t, runCheckout(t, "--json", "pr", "checkout", "42", "--branch", "review-42"))
-
-	if result["branch"] != "review-42" {
-		t.Fatalf("expected the requested branch name, got: %v", result)
-	}
-	// The upstream still points at the fork's real branch, not the local alias.
-	if got := stub.configSets["branch.review-42.merge"]; got != "refs/heads/feature/login" {
-		t.Fatalf("expected the merge ref to name the source branch, got %q", got)
 	}
 }
 
@@ -595,3 +445,15 @@ func TestForkRemoteDoesNotBreakRepositoryInference(t *testing.T) {
 // TestPullRequestCheckoutFromFork is live now, in
 // TestLivePullRequestCheckoutFromAFork: a real fork, a real cross-repository
 // pull request, and `git remote -v` afterwards.
+
+// Six suites are live now, in TestLivePullRequestCheckout: a same-repository
+// checkout, a second run that fast-forwards, a dirty tree refused, --force
+// getting past it, --branch naming the local branch and --detach leaving none.
+// Each ran here against a stub backend that recorded the git commands it was
+// asked for, which is a different claim from the branch actually being checked
+// out with a working upstream.
+//
+// What is left needs a git state rather than a Bitbucket answer -- a remote
+// that already exists, a name that would collide, a branch that has diverged,
+// a working directory outside a repository. The pull request payload is
+// scaffolding for those, which is why the server stays.
