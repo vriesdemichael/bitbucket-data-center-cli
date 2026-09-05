@@ -292,46 +292,6 @@ func TestPullRequestCheckoutSameRepository(t *testing.T) {
 	}
 }
 
-// TestPullRequestCheckoutFromFork is the case the issue calls out as the one
-// agents reliably get wrong: the source branch does not exist in the repository
-// the caller is standing in.
-func TestPullRequestCheckoutFromFork(t *testing.T) {
-	server := newCheckoutServer(t, "~jdoe", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
-
-	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
-	withGitBackend(t, stub)
-
-	result := decodeCheckoutResult(t, runCheckout(t, "--json", "pr", "checkout", "42"))
-
-	if result["fork"] != true {
-		t.Fatalf("expected a fork checkout, got: %v", result)
-	}
-	if result["remote"] != "jdoe" || result["remoteAdded"] != true {
-		t.Fatalf("expected a new remote named after the fork owner, got: %v", result)
-	}
-	// Prefixed so it cannot collide with a local branch of the same name, or
-	// with the same branch from a second fork.
-	if result["branch"] != "jdoe/feature/login" {
-		t.Fatalf("expected a fork-prefixed branch name, got: %v", result)
-	}
-
-	if len(stub.addedRemotes) != 1 {
-		t.Fatalf("expected exactly one remote to be added, got: %v", stub.addedRemotes)
-	}
-	if !strings.Contains(stub.addedRemotes[0].URL, "/scm/~jdoe/demo.git") {
-		t.Fatalf("expected the fork clone URL, got: %q", stub.addedRemotes[0].URL)
-	}
-
-	// Pushing must go back to the fork, not to the repository being stood in.
-	if got := stub.configSets["branch.jdoe/feature/login.remote"]; got != "jdoe" {
-		t.Fatalf("expected the fork remote as upstream, got %q", got)
-	}
-	if got := stub.configSets["branch.jdoe/feature/login.merge"]; got != "refs/heads/feature/login" {
-		t.Fatalf("expected the fork's branch as the merge ref, got %q", got)
-	}
-}
-
 // TestPullRequestCheckoutReusesAnExistingForkRemote keeps a second name for a
 // place the caller already tracks from appearing. Two remotes for one
 // repository means a later push can go to whichever git resolves first.
@@ -631,3 +591,7 @@ func TestForkRemoteDoesNotBreakRepositoryInference(t *testing.T) {
 		})
 	}
 }
+
+// TestPullRequestCheckoutFromFork is live now, in
+// TestLivePullRequestCheckoutFromAFork: a real fork, a real cross-repository
+// pull request, and `git remote -v` afterwards.
