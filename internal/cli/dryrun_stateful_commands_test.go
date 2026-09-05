@@ -20,114 +20,17 @@ func configureDryRunEnv(t *testing.T, serverURL, projectKey, repoSlug string) {
 	t.Setenv("BITBUCKET_PASSWORD", "")
 }
 
-func TestInsightsAndPRDryRunPredictionBranches(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/repos":
-			_, _ = writer.Write([]byte(`{"values":[{"slug":"demo","name":"test-repo","project":{"key":"TEST"}},{"slug":"demo","name":"project-repo","project":{"key":"PRJ"}}],"isLastPage":true}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/insights/latest/projects/TEST/repos/demo/commits/abc/reports/existing":
-			_, _ = writer.Write([]byte(`{"key":"existing","title":"Existing"}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/insights/latest/projects/TEST/repos/demo/commits/abc/reports/missing":
-			writer.WriteHeader(http.StatusNotFound)
-			_, _ = writer.Write([]byte(`{"errors":[{"message":"not found"}]}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/insights/latest/projects/TEST/repos/demo/commits/abc/reports/lint/annotations":
-			_, _ = writer.Write([]byte(`{"annotations":[{"externalId":"ann1","message":"note","severity":"LOW"}]}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests":
-			_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[{"id":20,"title":"Existing","state":"OPEN","open":true,"closed":false,"fromRef":{"displayId":"feature/demo"},"toRef":{"displayId":"master"}}]}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/20":
-			_, _ = writer.Write([]byte(`{"id":20,"title":"Same","description":"Same desc","state":"OPEN","open":true,"closed":false,"participants":[{"role":"REVIEWER","status":"APPROVED","approved":true,"user":{"name":"alice"}}]}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/21":
-			_, _ = writer.Write([]byte(`{"id":21,"title":"Merged","state":"MERGED","open":false,"closed":true,"participants":[]}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/22":
-			_, _ = writer.Write([]byte(`{"id":22,"title":"Declined","state":"DECLINED","open":false,"closed":true,"participants":[]}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/20/tasks":
-			_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[{"id":700,"text":"same task","state":"OPEN","resolved":false}]}`))
-		default:
-			http.NotFound(writer, request)
-		}
-	}))
-	defer server.Close()
-
-	configureDryRunEnv(t, server.URL, "TEST", "demo")
-	t.Setenv("BITBUCKET_USERNAME", "alice")
-	t.Setenv("BITBUCKET_PASSWORD", "placeholder")
-
-	out, err := executeTestCLI(t, "--json", "--dry-run", "insights", "report", "set", "abc", "existing", "--body", `{"title":"x","result":"PASS"}`)
-	if err != nil || !strings.Contains(out, `"predictedAction": "update"`) {
-		t.Fatalf("expected report set dry-run update prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "insights", "report", "delete", "abc", "missing")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected report delete dry-run no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "insights", "annotation", "add", "abc", "lint", "--body", `[{"externalId":"ann2","message":"m","severity":"LOW"}]`)
-	if err != nil || !strings.Contains(out, `"predictedAction": "create"`) {
-		t.Fatalf("expected annotation add dry-run create prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "insights", "annotation", "delete", "abc", "lint", "--external-id", "ann1")
-	if err != nil || !strings.Contains(out, `"predictedAction": "delete"`) {
-		t.Fatalf("expected annotation delete dry-run delete prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "insights", "annotation", "delete", "abc", "lint", "--external-id", "absent")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected annotation delete dry-run no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "create", "--from-ref", "feature/demo", "--to-ref", "master", "--title", "Same")
-	if err != nil || !strings.Contains(out, `"predictedAction": "conflict"`) {
-		t.Fatalf("expected pr create conflict prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "update", "20", "--title", "Same", "--description", "Same desc", "--version", "1")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected pr update no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "merge", "21")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected pr merge no-op prediction for merged PR, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "merge", "22")
-	if err != nil || !strings.Contains(out, `"predictedAction": "blocked"`) {
-		t.Fatalf("expected pr merge blocked prediction for declined PR, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "decline", "22")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected pr decline no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "reopen", "20")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected pr reopen no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "review", "approve", "20")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected pr approve no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "review", "unapprove", "21")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected pr unapprove no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "review", "reviewer", "add", "20", "--user", "alice")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected pr reviewer add no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "pr", "review", "reviewer", "remove", "21", "--user", "bob")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected pr reviewer remove no-op prediction, err=%v output=%s", err, out)
-	}
-}
+// The pull-request and code-insights predictions that were here are live now,
+// in TestLiveDryRunPredictionsReadRealState. They are the ones whose answer is
+// a property of the server rather than of the command: merging a merged pull
+// request, declining a declined one, approving one you have already approved,
+// setting a report that already exists.
+//
+// The mock decided each of those states for itself, and one of them was a state
+// Bitbucket does not allow. Its fixture listed the author as an APPROVED
+// reviewer and ran the approve preview as them; a real Bitbucket answers
+// "Authors may not update their status" and refuses. So the no-op that test
+// asserted was read off a pull request that could not exist.
 
 func TestGovernanceAndRepoDryRunPredictionBranches(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

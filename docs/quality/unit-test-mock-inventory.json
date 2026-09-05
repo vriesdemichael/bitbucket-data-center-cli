@@ -1,20 +1,20 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 287,
-    "files": 90,
-    "functions": 270,
+    "mocked_servers": 281,
+    "files": 88,
+    "functions": 264,
     "by_class": {
-      "bitbucket-behaviour": 113,
+      "bitbucket-behaviour": 108,
       "canned-response": 36,
       "external-service": 14,
-      "harness-constructor": 19,
+      "harness-constructor": 18,
       "status-taxonomy": 18,
       "transport-fault": 72,
       "unreached-guard": 15
     },
     "behaviour_by_package": {
-      "internal/cli": 30,
+      "internal/cli": 25,
       "internal/cli/cmd/admin": 1,
       "internal/cli/cmd/api": 4,
       "internal/cli/cmd/auth": 2,
@@ -1260,23 +1260,7 @@
     },
     {
       "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 24,
-      "function": "TestInsightsAndPRDryRunPredictionBranches",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 133,
+      "line": 36,
       "function": "TestGovernanceAndRepoDryRunPredictionBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1293,7 +1277,7 @@
     },
     {
       "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 243,
+      "line": 146,
       "function": "TestBranchProjectAdminTagDryRunPredictionBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1310,7 +1294,7 @@
     },
     {
       "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 406,
+      "line": 309,
       "function": "TestReviewerDryRunRepositoryAndProjectBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1325,7 +1309,7 @@
     },
     {
       "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 457,
+      "line": 360,
       "function": "TestDryRunRepoPermissionPrechecksFailBeforePlanning",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1341,7 +1325,7 @@
     },
     {
       "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 536,
+      "line": 439,
       "function": "TestDryRunProjectPermissionPrechecksFailBeforePlanning",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1441,17 +1425,6 @@
       ],
       "action": "move-to-live",
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/permission_checker_test.go",
-      "line": 20,
-      "function": "newPermissionCheckerTestClient",
-      "class": "harness-constructor",
-      "signals": [
-        "handler-supplied-by-the-caller"
-      ],
-      "action": "follows-callers",
-      "reason": "opens a listener around a handler it was handed; it assumes nothing itself"
     },
     {
       "file": "internal/cli/permissionchecker/permission_checker_test.go",
@@ -1591,67 +1564,6 @@
       "action": "keep",
       "reason": "the failures are injected; the subject is that each command reports rather than rendering an empty result.",
       "reviewed": true
-    },
-    {
-      "file": "internal/cli/pr_review_jira_test.go",
-      "line": 14,
-      "function": "TestPRJiraCommand",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/pr_review_jira_test.go",
-      "line": 47,
-      "function": "TestPRCommentPendingCommand",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/pr_review_jira_test.go",
-      "line": 102,
-      "function": "TestPRReviewCommands",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/pr_review_jira_test.go",
-      "line": 209,
-      "function": "TestPRReviewJiraEdgeCases",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
       "file": "internal/cli/pr_status_command_test.go",
