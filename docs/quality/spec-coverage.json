@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-openapi.json",
-  "covered": 210,
+  "covered": 208,
   "total": 572,
-  "coverage_percent": 36.71328671328671,
+  "coverage_percent": 36.36363636363637,
   "by_tag": [
     {
       "tag": "",
@@ -77,7 +77,7 @@
     },
     {
       "tag": "Repository",
-      "covered": 55,
+      "covered": 53,
       "total": 99
     },
     {
@@ -1253,6 +1253,18 @@
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/settings/hooks/{hookKey}/settings",
       "tag": "Repository",
       "summary": "Update repository hook settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/search",
+      "tag": "Repository",
+      "summary": "Search webhooks"
+    },
+    {
+      "method": "GET",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/webhooks/{webhookId}/latest",
+      "tag": "Repository",
+      "summary": "Get last webhook invocation details"
     },
     {
       "method": "GET",
