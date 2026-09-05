@@ -76,7 +76,7 @@ func scan(root string) ([]entry, error) {
 			if len(sites) > 0 && !ownHandler {
 				signals = append(signals, "handler-supplied-by-the-caller")
 			}
-			if handlerFailsTheTest(function.Body) {
+			if handlerFailsTheTest(function.Body) || handlerIsTheSharedUnreachedGuard(function.Body) {
 				signals = append(signals, "fails-if-the-server-is-reached")
 			}
 			if handlerVariesByAttempt(function.Body) {
@@ -146,18 +146,7 @@ func mockServerCalls(body *ast.BlockStmt) []token.Pos {
 
 	ast.Inspect(body, func(node ast.Node) bool {
 		call, ok := node.(*ast.CallExpr)
-		if !ok {
-			return true
-		}
-		selector, ok := call.Fun.(*ast.SelectorExpr)
-		if !ok {
-			return true
-		}
-		receiver, ok := selector.X.(*ast.Ident)
-		if !ok || receiver.Name != "httptest" {
-			return true
-		}
-		if selector.Sel.Name == "NewServer" || selector.Sel.Name == "NewTLSServer" {
+		if ok && isMockServerCall(call) {
 			positions = append(positions, call.Pos())
 		}
 
@@ -165,6 +154,20 @@ func mockServerCalls(body *ast.BlockStmt) []token.Pos {
 	})
 
 	return positions
+}
+
+// isMockServerCall reports whether a call opens an httptest listener.
+func isMockServerCall(call *ast.CallExpr) bool {
+	selector, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+	receiver, ok := selector.X.(*ast.Ident)
+	if !ok || receiver.Name != "httptest" {
+		return false
+	}
+
+	return selector.Sel.Name == "NewServer" || selector.Sel.Name == "NewTLSServer"
 }
 
 // externalService reports whether a package talks to something other than
@@ -620,3 +623,49 @@ func knownClass(class Class) bool {
 		return false
 	}
 }
+
+// handlerIsTheSharedUnreachedGuard reports whether every listener in the
+// function is handed testsupport.UnreachedHandler.
+//
+// handlerFailsTheTest looks inside a handler literal, and there is no literal
+// here: the handler is a call. Without this the shared helper would read as a
+// handler supplied by the caller, and the one class of mock that assumes
+// nothing at all would be filed as work still to do.
+func handlerIsTheSharedUnreachedGuard(body *ast.BlockStmt) bool {
+	listeners := 0
+	guarded := 0
+
+	ast.Inspect(body, func(node ast.Node) bool {
+		call, ok := node.(*ast.CallExpr)
+		if !ok || !isMockServerCall(call) {
+			return true
+		}
+		listeners++
+		if len(call.Args) == 1 && namesUnreachedHandler(call.Args[0]) {
+			guarded++
+		}
+
+		return true
+	})
+
+	return listeners > 0 && listeners == guarded
+}
+
+// namesUnreachedHandler reports whether an expression is a call to the shared
+// guard, however the package was imported.
+func namesUnreachedHandler(expr ast.Expr) bool {
+	call, ok := expr.(*ast.CallExpr)
+	if !ok {
+		return false
+	}
+	switch function := call.Fun.(type) {
+	case *ast.SelectorExpr:
+		return function.Sel.Name == unreachedHandlerName
+	case *ast.Ident:
+		return function.Name == unreachedHandlerName
+	}
+
+	return false
+}
+
+const unreachedHandlerName = "UnreachedHandler"

@@ -1,28 +1,23 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 202,
+    "mocked_servers": 195,
     "files": 65,
-    "functions": 190,
+    "functions": 186,
     "by_class": {
-      "bitbucket-behaviour": 50,
+      "bitbucket-behaviour": 44,
       "external-service": 14,
-      "harness-constructor": 20,
+      "harness-constructor": 18,
       "routing-beacon": 5,
       "status-taxonomy": 13,
-      "transport-fault": 84,
+      "transport-fault": 75,
       "unreachable-state": 7,
-      "unreached-guard": 9
+      "unreached-guard": 19
     },
     "behaviour_by_package": {
       "internal/cli": 8,
-      "internal/cli/cmd/branch": 1,
-      "internal/cli/cmd/build": 1,
       "internal/cli/cmd/bulk": 2,
-      "internal/cli/cmd/commit": 1,
-      "internal/cli/cmd/diff": 1,
-      "internal/cli/cmd/insights": 1,
-      "internal/cli/cmd/pr": 8,
+      "internal/cli/cmd/pr": 7,
       "internal/cli/cmd/project": 1,
       "internal/cli/cmd/repo": 8,
       "internal/cli/cmd/reviewer": 1,
@@ -123,35 +118,27 @@
     },
     {
       "file": "internal/cli/cmd/branch/branch_test.go",
-      "line": 27,
+      "line": 29,
       "function": "newMockBranchServer",
-      "class": "bitbucket-behaviour",
+      "class": "unreached-guard",
       "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/cli/cmd/build/build_test.go",
-      "line": 26,
+      "line": 28,
       "function": "newMockBuildServer",
-      "class": "bitbucket-behaviour",
+      "class": "unreached-guard",
       "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/cli/cmd/bulk/bulk_test.go",
@@ -186,48 +173,39 @@
     },
     {
       "file": "internal/cli/cmd/commit/commit_test.go",
-      "line": 18,
+      "line": 21,
       "function": "newMockCommitServer",
-      "class": "bitbucket-behaviour",
+      "class": "unreached-guard",
       "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/cli/cmd/diff/diff_test.go",
-      "line": 19,
+      "line": 21,
       "function": "newMockDiffServer",
-      "class": "bitbucket-behaviour",
+      "class": "unreached-guard",
       "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/cli/cmd/insights/insights_test.go",
-      "line": 26,
+      "line": 29,
       "function": "newMockInsightsServer",
-      "class": "bitbucket-behaviour",
+      "class": "unreached-guard",
       "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/cli/cmd/pr/checkout_test.go",
@@ -256,8 +234,32 @@
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
+      "file": "internal/cli/cmd/pr/permission_contract_test.go",
+      "line": 90,
+      "function": "TestPRCommandsCheckRepositoryPermission",
+      "class": "unreached-guard",
+      "signals": [
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
+      "file": "internal/cli/cmd/pr/permission_contract_test.go",
+      "line": 170,
+      "function": "TestPRCommandsCheckPermissionBeforePlanning",
+      "class": "unreached-guard",
+      "signals": [
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
       "file": "internal/cli/cmd/pr/pr_test.go",
-      "line": 29,
+      "line": 38,
       "function": "newMockPRServer",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -273,18 +275,15 @@
     },
     {
       "file": "internal/cli/cmd/pr/pr_test.go",
-      "line": 1649,
-      "function": "TestPRMergeDryRunReadsMergeability",
-      "class": "bitbucket-behaviour",
+      "line": 301,
+      "function": "TestPRValidationErrors",
+      "class": "unreached-guard",
       "signals": [
-        "asserts-http-method",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
@@ -356,7 +355,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_helpers_test.go",
-      "line": 125,
+      "line": 126,
       "function": "TestAtGroupShorthandDoesNotMaskServerFailures",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -368,18 +367,6 @@
       ],
       "action": "move-to-live",
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/pr/reviewer_helpers_test.go",
-      "line": 164,
-      "function": "TestResolveAuthorUsernameFallsBackWhenTheLookupFails",
-      "class": "transport-fault",
-      "signals": [
-        "answers-any-request"
-      ],
-      "action": "keep",
-      "reason": "a closed listener, which is what \"the lookup did not answer\" is; the subject is that the configured username survives it rather than being replaced by the empty string.",
-      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/pr/status_test.go",
@@ -869,18 +856,6 @@
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
-      "file": "internal/mcp/server_test.go",
-      "line": 25,
-      "function": "testClients",
-      "class": "transport-fault",
-      "signals": [
-        "answers-any-request"
-      ],
-      "action": "keep",
-      "reason": "the listener is closed before the first request, which is a fault below the API rather than an answer.",
-      "reviewed": true
-    },
-    {
       "file": "internal/mcp/tools_pr_review_test.go",
       "line": 29,
       "function": "newReviewClients",
@@ -1277,7 +1252,7 @@
     },
     {
       "file": "internal/services/contract/paging_contract_test.go",
-      "line": 210,
+      "line": 211,
       "function": "TestZeroMeansTheServiceDefault",
       "class": "routing-beacon",
       "signals": [
@@ -1291,39 +1266,13 @@
       "reviewed": true
     },
     {
-      "file": "internal/services/contract/paging_contract_test.go",
-      "line": 247,
-      "function": "TestEveryPagedListingReportsALostConnection",
-      "class": "transport-fault",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "simulates-a-stalled-connection"
-      ],
-      "action": "keep",
-      "reason": "the listener is closed before the call, which no live instance can be asked to do; the subject is that every paged service classifies a dead connection rather than returning a short answer.",
-      "reviewed": true
-    },
-    {
       "file": "internal/services/diff/service_test.go",
-      "line": 91,
-      "function": "TestDiffRefsTransportFailure",
-      "class": "transport-fault",
-      "signals": [
-        "answers-any-request"
-      ],
-      "action": "keep",
-      "reason": "the connection is broken on purpose; no live server refuses on request.",
-      "reviewed": true
-    },
-    {
-      "file": "internal/services/diff/service_test.go",
-      "line": 151,
+      "line": 145,
       "function": "TestDiffTransportFailureBranches",
       "class": "transport-fault",
       "signals": [
         "answers-any-request",
+        "handler-passed-to-a-helper",
         "returns-a-status"
       ],
       "action": "keep",
@@ -1332,7 +1281,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 228,
+      "line": 221,
       "function": "newDiffServiceWithHandler",
       "class": "harness-constructor",
       "signals": [
@@ -1343,7 +1292,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 486,
+      "line": 479,
       "function": "TestStatRunsSurfaceAnUndecodableSummary",
       "class": "transport-fault",
       "signals": [
@@ -1356,7 +1305,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 535,
+      "line": 528,
       "function": "TestCompareDiffRefusesABodylessSuccess",
       "class": "unreachable-state",
       "signals": [
@@ -1588,25 +1537,27 @@
       "file": "internal/services/pullrequest/service_test.go",
       "line": 24,
       "function": "TestListPullRequestsValidation",
-      "class": "harness-constructor",
+      "class": "unreached-guard",
       "signals": [
         "closes-on-cleanup",
-        "handler-supplied-by-the-caller"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "follows-callers",
-      "reason": "opens a listener around a handler it was handed; it assumes nothing itself"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
       "line": 94,
       "function": "TestGetPRBuildStatusesValidation",
-      "class": "harness-constructor",
+      "class": "unreached-guard",
       "signals": [
         "closes-on-cleanup",
-        "handler-supplied-by-the-caller"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "follows-callers",
-      "reason": "opens a listener around a handler it was handed; it assumes nothing itself"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
@@ -1625,19 +1576,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 402,
-      "function": "TestWatchUnwatchRebaseAPIErrors",
-      "class": "transport-fault",
-      "signals": [
-        "answers-any-request"
-      ],
-      "action": "keep",
-      "reason": "the listener is closed before the first request; the subject is that each of these returns the failure rather than reporting success.",
-      "reviewed": true
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 487,
+      "line": 485,
       "function": "newCommentTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1648,7 +1587,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 513,
+      "line": 511,
       "function": "TestNeedsWorkPropagatesUserLookupFailure",
       "class": "unreachable-state",
       "signals": [
@@ -1662,7 +1601,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 669,
+      "line": 667,
       "function": "TestRebaseRejectsOutOfRangeVersion",
       "class": "status-taxonomy",
       "signals": [
@@ -1782,15 +1721,15 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 208,
+      "line": 187,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "transport-fault",
       "signals": [
         "asserts-http-method",
+        "handler-passed-to-a-helper",
+        "inspects-the-request-path",
         "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
+        "serves-bitbucket-routes"
       ],
       "action": "keep",
       "reason": "a conflict and three closed connections are injected, none of which a live instance can be asked for; the subject is that each build-status call classifies them rather than reporting success.",
@@ -1798,43 +1737,12 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 245,
-      "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
-      "class": "transport-fault",
-      "signals": [
-        "asserts-http-method",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "keep",
-      "reason": "a conflict and three closed connections are injected, none of which a live instance can be asked for; the subject is that each build-status call classifies them rather than reporting success.",
-      "reviewed": true
-    },
-    {
-      "file": "internal/services/quality/service_test.go",
-      "line": 267,
-      "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
-      "class": "transport-fault",
-      "signals": [
-        "asserts-http-method",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "keep",
-      "reason": "a conflict and three closed connections are injected, none of which a live instance can be asked for; the subject is that each build-status call classifies them rather than reporting success.",
-      "reviewed": true
-    },
-    {
-      "file": "internal/services/quality/service_test.go",
-      "line": 458,
+      "line": 277,
       "function": "TestQualityServiceScopedAndDeploymentsErrorPaths",
       "class": "transport-fault",
       "signals": [
         "answers-any-request",
+        "handler-passed-to-a-helper",
         "returns-a-status",
         "returns-malformed-body"
       ],
@@ -1843,7 +1751,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 32,
+      "line": 33,
       "function": "TestUpdateRepositoryPullRequestRequiredApproversCount",
       "class": "unreachable-state",
       "signals": [
@@ -1860,7 +1768,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 114,
+      "line": 115,
       "function": "settingsServiceOn",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1873,7 +1781,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 145,
+      "line": 146,
       "function": "TestRepositorySettingsJSONFallbackAndValidationBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1888,7 +1796,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 222,
+      "line": 223,
       "function": "newServiceWithBaseURL",
       "class": "harness-constructor",
       "signals": [
@@ -1899,21 +1807,22 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 249,
+      "line": 234,
       "function": "TestRepositorySettingsAdditionalBranches",
       "class": "bitbucket-behaviour",
       "signals": [
         "asserts-http-method",
+        "handler-passed-to-a-helper",
+        "inspects-the-request-path",
         "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
+        "serves-bitbucket-routes"
       ],
       "action": "move-to-live",
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 465,
+      "line": 462,
       "function": "TestNewRepositorySettingsMethods",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2151,7 +2060,7 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 16,
+      "line": 17,
       "function": "newTagTestService",
       "class": "harness-constructor",
       "signals": [
@@ -2162,7 +2071,7 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 35,
+      "line": 36,
       "function": "TestTagServiceRefusesAnEmptyName",
       "class": "unreached-guard",
       "signals": [
@@ -2176,7 +2085,7 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 49,
+      "line": 50,
       "function": "TestTagServiceValidationAndMapStatusHelpers",
       "class": "status-taxonomy",
       "signals": [
@@ -2189,11 +2098,12 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 97,
+      "line": 73,
       "function": "TestTagServiceTransportAndValidationBranches",
       "class": "transport-fault",
       "signals": [
         "answers-any-request",
+        "handler-passed-to-a-helper",
         "returns-a-status"
       ],
       "action": "keep",
@@ -2400,7 +2310,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 48,
+      "line": 49,
       "function": "TestHealthServerError",
       "class": "transport-fault",
       "signals": [
@@ -2414,7 +2324,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 66,
+      "line": 67,
       "function": "TestGetJSONSuccessWithTokenAuth",
       "class": "transport-fault",
       "signals": [
@@ -2430,7 +2340,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 99,
+      "line": 100,
       "function": "TestGetJSONRetriesAndSucceeds",
       "class": "transport-fault",
       "signals": [
@@ -2445,7 +2355,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 126,
+      "line": 127,
       "function": "TestGetJSONDecodeFailure",
       "class": "transport-fault",
       "signals": [
@@ -2460,7 +2370,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 165,
+      "line": 166,
       "function": "TestHealthRedirectConsideredReachable",
       "class": "transport-fault",
       "signals": [
@@ -2474,7 +2384,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 202,
+      "line": 203,
       "function": "TestGetJSONOutputTargetType",
       "class": "transport-fault",
       "signals": [
@@ -2488,7 +2398,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 227,
+      "line": 228,
       "function": "TestWriteJSONMethods",
       "class": "transport-fault",
       "signals": [
@@ -2503,21 +2413,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 255,
-      "function": "TestGetJSONTransportAndRetryExhaustion",
-      "class": "transport-fault",
-      "signals": [
-        "answers-any-request",
-        "returns-a-status",
-        "serves-bitbucket-routes"
-      ],
-      "action": "keep",
-      "reason": "a refused connection and an exhausted retry",
-      "reviewed": true
-    },
-    {
-      "file": "internal/transport/httpclient/client_test.go",
-      "line": 276,
+      "line": 273,
       "function": "TestGetJSONTooManyRequestsRetryExhaustion",
       "class": "transport-fault",
       "signals": [
@@ -2532,7 +2428,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 301,
+      "line": 298,
       "function": "TestGetJSONTooManyRequestsUsesRetryAfter",
       "class": "transport-fault",
       "signals": [
@@ -2548,7 +2444,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 332,
+      "line": 329,
       "function": "TestGetJSONRetryCanceledDuringBackoff",
       "class": "transport-fault",
       "signals": [
@@ -2563,7 +2459,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 357,
+      "line": 369,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -2578,7 +2474,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 376,
+      "line": 393,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -2593,7 +2489,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 400,
+      "line": 413,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -2608,7 +2504,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 420,
+      "line": 444,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -2623,22 +2519,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 451,
-      "function": "TestHealthTransportAndPermanentErrorBranches",
-      "class": "transport-fault",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "simulates-a-stalled-connection",
-        "varies-by-attempt-count"
-      ],
-      "action": "keep",
-      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
-    },
-    {
-      "file": "internal/transport/httpclient/client_test.go",
-      "line": 585,
+      "line": 578,
       "function": "TestGetRawReturnsBodyVerbatim",
       "class": "transport-fault",
       "signals": [
@@ -2654,7 +2535,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 623,
+      "line": 616,
       "function": "TestGetRawRetriesServerErrors",
       "class": "transport-fault",
       "signals": [
@@ -2670,7 +2551,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 651,
+      "line": 644,
       "function": "TestGetRawTransientNetworkFailure",
       "class": "transport-fault",
       "signals": [
@@ -2684,7 +2565,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 673,
+      "line": 666,
       "function": "TestCurrentUserSlugMissingHeader",
       "class": "transport-fault",
       "signals": [
@@ -2698,7 +2579,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 695,
+      "line": 688,
       "function": "TestDoRequestSuccess",
       "class": "transport-fault",
       "signals": [
@@ -2716,7 +2597,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 755,
+      "line": 748,
       "function": "TestDoRequestFullURL",
       "class": "transport-fault",
       "signals": [
@@ -2731,7 +2612,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 801,
+      "line": 794,
       "function": "TestDoRequestRetriesAndStatusErrors",
       "class": "transport-fault",
       "signals": [
@@ -2746,7 +2627,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 838,
+      "line": 831,
       "function": "TestDoRequestRetryExhaustion",
       "class": "transport-fault",
       "signals": [
@@ -2762,7 +2643,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 881,
+      "line": 874,
       "function": "TestRetriesDoNotReplayMutations",
       "class": "transport-fault",
       "signals": [

@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
@@ -161,9 +162,7 @@ func TestAtGroupShorthandDoesNotMaskServerFailures(t *testing.T) {
 //
 // mock-inventory: transport-fault — a closed listener, which is what "the lookup did not answer" is; the subject is that the configured username survives it rather than being replaced by the empty string.
 func TestResolveAuthorUsernameFallsBackWhenTheLookupFails(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-	closedURL := server.URL
-	server.Close()
+	closedURL := testsupport.ClosedListenerURL(t)
 
 	cfg := config.AppConfig{
 		BitbucketURL:      closedURL,

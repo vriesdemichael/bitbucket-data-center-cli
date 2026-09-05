@@ -106,6 +106,19 @@ func TestLivePullRequestMergeability(t *testing.T) {
 				t.Errorf("a merge blocker printed an empty bullet:\n%s", human)
 			}
 		}
+
+		// #479, against the refusal rather than a written one. The prediction
+		// used to come from the pull request's state alone, so an open pull
+		// request was "will be merged" at full confidence however many vetoes
+		// stood against it -- the weakest prediction in the tool making the
+		// strongest claim, about the one operation that cannot be undone.
+		preview := mustLiveCLI(t, "--dry-run", "pr", "merge", id)
+		if !strings.Contains(preview, `"predictedAction": "blocked"`) {
+			t.Fatalf("a pull request the server will not merge was not predicted blocked:\n%s", preview)
+		}
+		if !strings.Contains(preview, "blockingReasons") || strings.Contains(preview, `"blockingReasons": []`) {
+			t.Fatalf("the preview named no reason for the block:\n%s", preview)
+		}
 	})
 
 	t.Run("a declined pull request is readable without a mergeability answer", func(t *testing.T) {

@@ -180,6 +180,22 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 	if asString(decodeJSONMap(t, deleteOutput)["status"]) != "ok" {
 		t.Fatalf("expected delete status ok, got: %s", deleteOutput)
 	}
+
+	// A restriction id that is not an id at all. A unit test asked these of a
+	// stub whose default was 404, so what it checked was the stub's default; a
+	// real instance is what says whether "abc" is refused and not, say, read as
+	// zero.
+	for _, verb := range []string{"get", "update", "delete"} {
+		if output, err := executeLiveCLI(t, "branch", "restriction", verb, "abc"); err == nil {
+			t.Fatalf("restriction %s accepted a non-numeric id:\n%s", verb, output)
+		}
+	}
+
+	// And one that is a number, for a restriction that is gone: the delete
+	// above makes this the same id that worked a moment ago.
+	if output, err := executeLiveCLI(t, "branch", "restriction", "get", restrictionID); err == nil {
+		t.Fatalf("restriction get found a restriction that was deleted:\n%s", output)
+	}
 }
 
 func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {

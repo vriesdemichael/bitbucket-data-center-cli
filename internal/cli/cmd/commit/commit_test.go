@@ -2,7 +2,6 @@ package commitcmd_test
 
 import (
 	"bytes"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -10,46 +9,16 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
+// newMockCommitServer opens a listener that fails the test if anything reaches it.
+//
+// Everything still here refuses before it asks. The handwritten Bitbucket it used to be answered commits nobody reads any more.
 func newMockCommitServer(t *testing.T) *httptest.Server {
 	t.Helper()
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		path := r.URL.Path
-
-		switch {
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/commits":
-			if r.URL.Query().Get("empty") == "true" || r.URL.Query().Get("start") == "999" {
-				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"abcdef123456","displayId":"abcdef1","message":"Initial commit\nSecond line"}]}`))
-
-		case r.Method == http.MethodGet && path == "/rest/jira/latest/issues/ISSUE-101/commits":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"toCommit":{"id":"jira123456","displayId":"jira123","message":"Jira commit"}}]}`))
-
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/commits/abcdef123456":
-			_, _ = w.Write([]byte(`{"id":"abcdef123456","displayId":"abcdef1","message":"Initial commit"}`))
-
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/commits/abcdef123456/pull-requests":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":1,"title":"Add feature","state":"OPEN"}]}`))
-
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/commits/emptycommit/pull-requests":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/compare/commits":
-			if r.URL.Query().Get("from") == "empty" {
-				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"abcdef123456","displayId":"abcdef1","message":"Initial commit"}]}`))
-
-		default:
-			http.NotFound(w, r)
-		}
-	}))
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(server.Close)
 
 	return server

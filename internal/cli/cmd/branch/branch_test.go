@@ -4,15 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	branchcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/branch"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 type testPermissionChecker struct{}
@@ -21,59 +20,13 @@ func (testPermissionChecker) CheckRepoPermission(ctx context.Context, projectKey
 	return nil
 }
 
+// newMockBranchServer opens a listener that fails the test if anything reaches it.
+//
+// Everything still here refuses before it asks -- bad flags, a missing selector, a permission that is denied. The handwritten Bitbucket it used to be answered branches nobody reads any more.
 func newMockBranchServer(t *testing.T) *httptest.Server {
 	t.Helper()
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		path := r.URL.Path
-
-		switch {
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/default-branch":
-			_, _ = w.Write([]byte(`{"id":"refs/heads/main","displayId":"main"}`))
-
-		case r.Method == http.MethodPut && path == "/rest/api/latest/projects/PRJ/repos/demo/default-branch":
-			w.WriteHeader(http.StatusNoContent)
-
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/demo/branches":
-			// The real endpoint filters by filterText, and setting a default
-			// branch now checks the branch exists before writing it. A mock
-			// that returned the same list whatever was asked would answer
-			// "main" to a query for "master" and quietly defeat that check.
-			_, _ = w.Write([]byte(branchListingFor(r.URL.Query().Get("filterText"))))
-
-		case r.Method == http.MethodPost && path == "/rest/branch-utils/latest/projects/PRJ/repos/demo/branches":
-			_, _ = w.Write([]byte(`{"id":"refs/heads/feature-1","displayId":"feature-1","latestCommit":"2222222"}`))
-
-		case r.Method == http.MethodDelete && path == "/rest/branch-utils/latest/projects/PRJ/repos/demo/branches":
-			w.WriteHeader(http.StatusNoContent)
-
-		case r.Method == http.MethodPut && path == "/rest/branch-utils/latest/projects/PRJ/repos/demo/branch-model/configuration":
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"development":{"refId":"refs/heads/develop"}}`))
-
-		case r.Method == http.MethodGet && strings.Contains(path, "/branches/info/"):
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"refs/heads/main","displayId":"main"}]}`))
-
-		case r.Method == http.MethodGet && path == "/rest/branch-permissions/latest/projects/PRJ/repos/demo/restrictions":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":42,"type":"read-only","matcher":{"id":"refs/heads/main","displayId":"main","type":{"id":"BRANCH"}}}]}`))
-
-		case r.Method == http.MethodPost && path == "/rest/branch-permissions/latest/projects/PRJ/repos/demo/restrictions":
-			_, _ = w.Write([]byte(`[{"id":43,"type":"read-only","matcher":{"id":"refs/heads/main","displayId":"main","type":{"id":"BRANCH"}}}]`))
-
-		case r.Method == http.MethodGet && path == "/rest/branch-permissions/latest/projects/PRJ/repos/demo/restrictions/42":
-			_, _ = w.Write([]byte(`{"id":42,"type":"read-only","matcher":{"id":"refs/heads/main","displayId":"main","type":{"id":"BRANCH"}}}`))
-
-		case r.Method == http.MethodPut && path == "/rest/branch-permissions/latest/projects/PRJ/repos/demo/restrictions/42":
-			_, _ = w.Write([]byte(`{"id":42,"type":"read-only","matcher":{"id":"refs/heads/main","displayId":"main","type":{"id":"BRANCH"}}}`))
-
-		case r.Method == http.MethodDelete && path == "/rest/branch-permissions/latest/projects/PRJ/repos/demo/restrictions/42":
-			w.WriteHeader(http.StatusNoContent)
-
-		default:
-			http.NotFound(w, r)
-		}
-	}))
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(server.Close)
 
 	return server
@@ -171,10 +124,11 @@ func TestBranchValidationErrors(t *testing.T) {
 	server := newMockBranchServer(t)
 	deps := newTestDependencies(t, server.URL, false, false)
 
+	// A non-numeric restriction id is not refused here; it goes to the server
+	// and the server refuses it. That is live in
+	// TestLiveCLIBranchRestrictionLifecycle, which asks a real instance what it
+	// makes of "abc" -- the version here asked a stub whose default was 404.
 	cases := [][]string{
-		{"restriction", "get", "abc"},
-		{"restriction", "update", "abc"},
-		{"restriction", "delete", "abc"},
 		{"restriction", "create", "--type", "read-only", "--matcher-id", ""},
 		{"restriction", "create", "--type", "read-only", "--matcher-id", "main", "--access-key-id", "-1"},
 		{"create", ""},
@@ -192,23 +146,7 @@ func TestBranchValidationErrors(t *testing.T) {
 	}
 }
 
-// branchListingFor answers a branch listing the way Bitbucket does: filterText
-// narrows the result, and an unmatched filter comes back empty rather than
-// returning everything.
-func branchListingFor(filterText string) string {
-	branches := map[string]string{
-		"main":      `{"id":"refs/heads/main","displayId":"main","latestCommit":"1111111"}`,
-		"master":    `{"id":"refs/heads/master","displayId":"master","latestCommit":"3333333"}`,
-		"feature-1": `{"id":"refs/heads/feature-1","displayId":"feature-1","latestCommit":"2222222"}`,
-		"develop":   `{"id":"refs/heads/develop","displayId":"develop","latestCommit":"4444444"}`,
-	}
-
-	matched := []string{}
-	for _, name := range []string{"main", "master", "feature-1", "develop"} {
-		if filterText == "" || strings.Contains(name, filterText) {
-			matched = append(matched, branches[name])
-		}
-	}
-
-	return `{"isLastPage":true,"values":[` + strings.Join(matched, ",") + `]}`
-}
+// branchListingFor went with the mock server. It reimplemented Bitbucket's
+// filterText -- narrowing on a substring, answering empty for an unmatched
+// filter -- so a test using it checked our CLI against our second guess at
+// the rule, and the two agreed because the same person wrote both.

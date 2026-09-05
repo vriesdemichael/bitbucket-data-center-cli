@@ -399,9 +399,7 @@ func TestWatchUnwatchRebaseValidation(t *testing.T) {
 //
 // mock-inventory: transport-fault — the listener is closed before the first request; the subject is that each of these returns the failure rather than reporting success.
 func TestWatchUnwatchRebaseAPIErrors(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-	closedURL := server.URL
-	server.Close()
+	closedURL := testsupport.ClosedListenerURL(t)
 
 	client, err := openapigenerated.NewClientWithResponses(closedURL + "/rest")
 	if err != nil {

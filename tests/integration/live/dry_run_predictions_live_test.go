@@ -95,6 +95,14 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 		predicts(t, "blocked", "pr", "merge", declinedPR)
 	})
 
+	// The other side of the same prediction: nothing stands against this one,
+	// so it must not be reported as blocked. A preview that says blocked for
+	// everything is as useless as one that says merge for everything, and only
+	// having both cases against a real server tells them apart.
+	t.Run("merging one nothing stands against", func(t *testing.T) {
+		predicts(t, "update", "pr", "merge", openPR)
+	})
+
 	t.Run("declining one that is already declined", func(t *testing.T) {
 		predicts(t, "no-op", "pr", "decline", declinedPR)
 	})

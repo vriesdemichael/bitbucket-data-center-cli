@@ -3,7 +3,6 @@ package insightscmd
 import (
 	"bytes"
 	"context"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 type testPermissionChecker struct{}
@@ -20,60 +20,13 @@ func (testPermissionChecker) CheckRepoPermission(ctx context.Context, projectKey
 	return nil
 }
 
+// newMockInsightsServer opens a listener that fails the test if anything reaches it.
+//
+// Everything still here refuses before it asks. The handwritten Bitbucket it used to be answered reports and annotations nobody reads any more.
 func newMockInsightsServer(t *testing.T) *httptest.Server {
 	t.Helper()
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		path := r.URL.Path
-
-		switch {
-		case r.Method == http.MethodPut && path == "/rest/insights/latest/projects/PRJ/repos/demo/commits/commit1/reports/report1":
-			_, _ = w.Write([]byte(`{"key":"report1","title":"Report 1","result":"PASS"}`))
-
-		case r.Method == http.MethodGet && path == "/rest/insights/latest/projects/PRJ/repos/demo/commits/commit1/reports/report1":
-			_, _ = w.Write([]byte(`{"key":"report1","title":"Report 1","result":"PASS","details":"All tests passed"}`))
-
-		case r.Method == http.MethodGet && path == "/rest/insights/latest/projects/PRJ/repos/demo/commits/commit1/reports/report-empty":
-			http.NotFound(w, r)
-
-		case r.Method == http.MethodDelete && path == "/rest/insights/latest/projects/PRJ/repos/demo/commits/commit1/reports/report1":
-			w.WriteHeader(http.StatusNoContent)
-
-		case r.Method == http.MethodDelete && path == "/rest/insights/latest/projects/PRJ/repos/demo/commits/commit1/reports/report-empty":
-			http.NotFound(w, r)
-
-		case r.Method == http.MethodGet && path == "/rest/insights/latest/projects/PRJ/repos/demo/commits/commit1/reports":
-			if r.URL.Query().Get("empty") == "true" {
-				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"key":"report1","title":"Report 1","result":"PASS"}]}`))
-
-		case r.Method == http.MethodPost && path == "/rest/insights/latest/projects/PRJ/repos/demo/commits/commit1/reports/report1/annotations":
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"totalAdded":1}`))
-
-		case r.Method == http.MethodGet && path == "/rest/insights/latest/projects/PRJ/repos/demo/commits/commit1/reports/report1/annotations":
-			if r.URL.Query().Get("empty") == "true" {
-				_, _ = w.Write([]byte(`{"annotations":[]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"annotations":[{"externalId":"ann1","severity":"HIGH","message":"Issue found","path":"main.go","line":42}]}`))
-
-		case r.Method == http.MethodGet && path == "/rest/insights/latest/projects/PRJ/repos/demo/commits/commit1/annotations":
-			_, _ = w.Write([]byte(`{"annotations":[{"externalId":"ann1","severity":"HIGH","message":"Issue found"}]}`))
-
-		case r.Method == http.MethodPut && path == "/rest/insights/latest/projects/PRJ/repos/demo/commits/commit1/reports/report1/annotations/ann1":
-			_, _ = w.Write([]byte(`{"externalId":"ann1","severity":"HIGH","message":"Issue found","path":"main.go","line":42}`))
-
-		case r.Method == http.MethodDelete && path == "/rest/insights/latest/projects/PRJ/repos/demo/commits/commit1/reports/report1/annotations":
-			w.WriteHeader(http.StatusNoContent)
-
-		default:
-			http.NotFound(w, r)
-		}
-	}))
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(server.Close)
 
 	return server

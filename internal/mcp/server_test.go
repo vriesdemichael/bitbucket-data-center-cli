@@ -2,17 +2,15 @@ package mcp
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
-// mock-inventory: transport-fault — the listener is closed before the first request, which is a fault below the API rather than an answer.
 // testClients builds Clients against a listener that has been closed, so every
 // request fails at the transport.
 //
@@ -22,11 +20,8 @@ import (
 // of these routes -- which it does not, and which no assertion here needs.
 func testClients(t *testing.T) Clients {
 	t.Helper()
-	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-	closedURL := server.URL
-	server.Close()
 
-	return clientsForURL(t, closedURL)
+	return clientsForURL(t, testsupport.ClosedListenerURL(t))
 }
 
 // clientsForURL builds Clients against an arbitrary base URL.

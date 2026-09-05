@@ -28,6 +28,7 @@ import (
 	sshkeyservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/sshkey"
 	tagservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/tag"
 	tokenservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/token"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
@@ -244,11 +245,7 @@ func TestZeroMeansTheServiceDefault(t *testing.T) {
 //
 // mock-inventory: transport-fault — the listener is closed before the call, which no live instance can be asked to do; the subject is that every paged service classifies a dead connection rather than returning a short answer.
 func TestEveryPagedListingReportsALostConnection(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	baseURL := server.URL
-	server.Close()
+	baseURL := testsupport.ClosedListenerURL(t)
 
 	for _, listing := range listings() {
 		t.Run(listing.name, func(t *testing.T) {

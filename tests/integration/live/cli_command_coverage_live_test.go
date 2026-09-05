@@ -87,7 +87,10 @@ func TestLiveCLIDiffPRAndCommitHumanOutput(t *testing.T) {
 		t.Fatalf("create pull request failed: %v", err)
 	}
 
-	prDiffOutput, err := executeLiveCLI(t, "diff", "pr", pullRequestID, "--patch")
+	// --repo is spelled out rather than left to the environment: a pull request
+	// is found in a repository, and passing one to a command that takes its id
+	// from elsewhere is a combination that has been rejected before.
+	prDiffOutput, err := executeLiveCLI(t, "diff", "pr", pullRequestID, "--patch", "--repo", seeded.Key+"/"+repo.Slug)
 	if err != nil {
 		t.Fatalf("diff pr failed: %v\noutput: %s", err, prDiffOutput)
 	}
@@ -98,7 +101,7 @@ func TestLiveCLIDiffPRAndCommitHumanOutput(t *testing.T) {
 	// `bb pr diff` is the gh-shaped spelling of the same command. Asserting the
 	// two produce identical output is what makes it an alias rather than a
 	// second implementation that can drift.
-	prDiffAliasOutput, err := executeLiveCLI(t, "pr", "diff", pullRequestID, "--patch")
+	prDiffAliasOutput, err := executeLiveCLI(t, "pr", "diff", pullRequestID, "--patch", "--repo", seeded.Key+"/"+repo.Slug)
 	if err != nil {
 		t.Fatalf("pr diff failed: %v\noutput: %s", err, prDiffAliasOutput)
 	}

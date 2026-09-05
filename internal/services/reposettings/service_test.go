@@ -11,6 +11,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestUpdateRepositoryPullRequestRequiredApproversCount covers the fallback
@@ -246,11 +247,7 @@ func TestRepositorySettingsAdditionalBranches(t *testing.T) {
 			t.Fatal("expected invalid json payload error")
 		}
 
-		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusOK)
-		}))
-		baseURL := server.URL
-		server.Close()
+		baseURL := testsupport.ClosedListenerURL(t)
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL)
 		if err != nil {
