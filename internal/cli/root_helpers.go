@@ -37,6 +37,20 @@ type inferredRepositoryContext struct {
 	RemoteName string
 }
 
+// annotationNoAmbientRepoInference opts a command out of ambient git
+// repository inference.
+//
+// Inference exists so a command run inside a clone does not have to repeat the
+// repository it is obviously about. `ai mcp serve` is the one command where that
+// convenience is wrong: its --repo is a confinement decision (ADR-062), and
+// scope must come from an explicit flag, never from the directory the server
+// happens to start in.
+//
+// The value the serve command sets is a literal in another package, which
+// cannot import this one; TestMCPServeOptsOutOfAmbientRepositoryInference pins
+// the literal to this constant so the two cannot drift apart.
+const annotationNoAmbientRepoInference = "bb/no-ambient-repo-inference"
+
 func resolveRepositoryReference(selector string, cfg config.AppConfig) (diffservice.RepositoryRef, error) {
 	repo, err := resolveRepositorySelector(selector, cfg)
 	if err != nil {
@@ -73,6 +87,10 @@ func resolveRepositorySelector(selector string, cfg config.AppConfig) (repositor
 
 func (options *rootOptions) applyInferredRepositoryContext(cmd *cobra.Command, asJSON bool) error {
 	if cmd == nil {
+		return nil
+	}
+
+	if cmd.Annotations[annotationNoAmbientRepoInference] == "true" {
 		return nil
 	}
 

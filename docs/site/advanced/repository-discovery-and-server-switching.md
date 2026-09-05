@@ -30,6 +30,8 @@ Using repository context from git remote "origin": PLAT/payments-api on https://
 
 JSON mode suppresses that banner to preserve machine output contracts on `stdout`.
 
+`bb ai mcp serve` is the one command that never inherits discovery. Its `--repo` and `--project` are confinement flags (see [ADR-062](../adr/062-mcp-workspace-scoping-and-agent-audit-trail.md)), so the server is scoped only when the flags are passed explicitly — never by the repository of the directory it starts in.
+
 ## Precedence and safety
 
 Repository selection precedence for repo-scoped commands:
