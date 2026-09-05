@@ -28,42 +28,6 @@ func newActivityTestService(t *testing.T, handler http.HandlerFunc) *Service {
 	return NewService(client)
 }
 
-func TestListAndExtractComments(t *testing.T) {
-	service := newActivityTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet || r.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/pull-requests/12/activities" {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":1001,"action":"COMMENTED","createdDate":123,"comment":{"id":41,"text":"general comment","version":2}},{"id":1002,"action":"COMMENTED","createdDate":124,"comment":{"id":42,"text":"anchored comment","version":1,"anchor":{"path":{"parent":"src","name":"main.go"}}}},{"id":1003,"action":"APPROVED","createdDate":125}]}`))
-	})
-
-	activities, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12", ListOptions{MaxResults: 10})
-	if err != nil {
-		t.Fatalf("expected list to succeed, got: %v", err)
-	}
-	if len(activities) != 3 {
-		t.Fatalf("expected 3 activities, got %d", len(activities))
-	}
-	if activities[0].Comment == nil || activities[0].Comment.Text == nil || *activities[0].Comment.Text != "general comment" {
-		t.Fatalf("expected first activity comment to be decoded, got: %#v", activities[0])
-	}
-	if activities[2].Comment != nil {
-		t.Fatalf("expected non-comment activity to have nil comment, got: %#v", activities[2])
-	}
-
-	comments := ExtractComments(activities)
-	if len(comments) != 2 {
-		t.Fatalf("expected 2 extracted comments, got %d", len(comments))
-	}
-	if comments[1].Anchor == nil || comments[1].Anchor.Path == nil || comments[1].Anchor.Path.Name == nil || *comments[1].Anchor.Path.Name != "main.go" {
-		t.Fatalf("expected anchored comment path to be preserved, got: %#v", comments[1])
-	}
-	if activities[0].Raw["action"] != "COMMENTED" {
-		t.Fatalf("expected raw activity payload to be preserved, got: %#v", activities[0].Raw)
-	}
-}
-
 func TestListValidation(t *testing.T) {
 	service := newActivityTestService(t, testsupport.UnreachedHandler(t))
 
@@ -207,3 +171,13 @@ func TestListReportsATruncatedBodyAsTransient(t *testing.T) {
 		t.Fatalf("a truncated body was reported as %s, want transient (err=%v)", apperrors.KindOf(err), err)
 	}
 }
+
+// TestListAndExtractComments is live now, in
+// TestLivePullRequestReviewVisibility, against a timeline Bitbucket built: a
+// comment, an inline comment that keeps its anchor, a task, and the
+// non-comment activities that come with opening a pull request. Three things
+// it checked are checked there -- a comment activity carries its comment, one
+// that is not carries none, and the raw payload survives the mapping.
+//
+// The version here wrote three activities, including an APPROVED one with no
+// comment field, so the nil it then required was the nil it had left out.
