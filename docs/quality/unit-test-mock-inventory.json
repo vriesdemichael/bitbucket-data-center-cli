@@ -1,20 +1,20 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 269,
+    "mocked_servers": 266,
     "files": 88,
-    "functions": 253,
+    "functions": 250,
     "by_class": {
-      "bitbucket-behaviour": 89,
+      "bitbucket-behaviour": 86,
       "canned-response": 40,
       "external-service": 14,
       "harness-constructor": 18,
-      "status-taxonomy": 16,
-      "transport-fault": 76,
+      "status-taxonomy": 15,
+      "transport-fault": 77,
       "unreached-guard": 16
     },
     "behaviour_by_package": {
-      "internal/cli": 17,
+      "internal/cli": 14,
       "internal/cli/cmd/admin": 1,
       "internal/cli/cmd/auth": 2,
       "internal/cli/cmd/branch": 1,
@@ -1278,63 +1278,16 @@
     },
     {
       "file": "internal/cli/new_commands_test.go",
-      "line": 11,
-      "function": "TestNewCLICommandsMock",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/new_commands_test.go",
-      "line": 301,
-      "function": "TestNewCLICommandsDryRunAndJSON",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/new_commands_test.go",
-      "line": 512,
+      "line": 78,
       "function": "TestNewCLICommandsErrorPaths",
-      "class": "status-taxonomy",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "returns-a-status"
       ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/cli/new_commands_test.go",
-      "line": 556,
-      "function": "TestIssue221CLICommands",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-query-parameters",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a server answering 500 to everything is injected, alongside a malformed URL and a malformed repository reference that never reach one; the subject is that each command reports rather than printing an empty success.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/permissionchecker/permission_checker_test.go",
