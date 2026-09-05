@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -155,9 +156,9 @@ func TestLiveProjectPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 // TestLivePullRequestStatus exercises bb pr status against a real Bitbucket.
 //
 // The two dashboard sections are cross-repository and always answerable. The
-// current-branch section is not: the live CLI does not run inside a Bitbucket
-// checkout, so it reports why rather than failing, and asserting that is
-// asserting the degradation actually degrades.
+// current-branch section depends on where the command is standing, so the
+// subtest that reads it stands somewhere known rather than wherever the suite
+// was started.
 func TestLivePullRequestStatus(t *testing.T) {
 	harness := newLiveHarness(t)
 
@@ -199,10 +200,9 @@ func TestLivePullRequestStatus(t *testing.T) {
 	}
 
 	// Every section empty, which is a real state rather than a written one: a
-	// user made a moment ago has authored nothing and been asked to review
-	// nothing, and the branch checked out here has no pull request in the
-	// project just seeded. The admin cannot show this -- the rest of the live
-	// suite fills their board.
+	// user made a moment ago has authored nothing, has been asked to review
+	// nothing, and stands on a branch with no pull request open on it. The
+	// admin cannot show this -- the rest of the live suite fills their board.
 	t.Run("nothing anywhere", func(t *testing.T) {
 		newcomer, err := harness.createLicensedUser(ctx)
 		if err != nil {
@@ -213,6 +213,33 @@ func TestLivePullRequestStatus(t *testing.T) {
 		}
 
 		configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, newcomer)
+
+		// A repository of its own, standing on a branch that has no pull
+		// request. The section reads the branch from the working directory, and
+		// CI checks out a merge ref, so running here reported "not on a branch"
+		// -- true, and a different sentence from the one this is about. A
+		// branch with nothing open on it is the state being tested, and it has
+		// to be arranged rather than inherited from wherever the suite runs.
+		workingDirectory := t.TempDir()
+		if err := runGit(workingDirectory, "init"); err != nil {
+			t.Fatalf("git init failed: %v", err)
+		}
+		// No commit: symbolic-ref answers on an unborn branch, which is what
+		// the command reads.
+		if err := runGit(workingDirectory, "checkout", "-b", "feature/no-pull-request-here"); err != nil {
+			t.Fatalf("git checkout -b failed: %v", err)
+		}
+
+		originalDirectory, wdErr := os.Getwd()
+		if wdErr != nil {
+			t.Fatalf("getwd failed: %v", wdErr)
+		}
+		if err := os.Chdir(workingDirectory); err != nil {
+			t.Fatalf("chdir failed: %v", err)
+		}
+		t.Cleanup(func() {
+			_ = os.Chdir(originalDirectory)
+		})
 
 		empty, err := executeLiveCLI(t, "pr", "status")
 		if err != nil {
