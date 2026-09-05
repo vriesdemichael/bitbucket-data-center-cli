@@ -1,16 +1,16 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 268,
-    "files": 87,
-    "functions": 252,
+    "mocked_servers": 269,
+    "files": 88,
+    "functions": 253,
     "by_class": {
       "bitbucket-behaviour": 89,
       "canned-response": 40,
       "external-service": 14,
       "harness-constructor": 18,
       "status-taxonomy": 16,
-      "transport-fault": 75,
+      "transport-fault": 76,
       "unreached-guard": 16
     },
     "behaviour_by_package": {
@@ -2106,6 +2106,21 @@
       ],
       "action": "keep",
       "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
+    },
+    {
+      "file": "internal/services/contract/paging_contract_test.go",
+      "line": 208,
+      "function": "TestEveryPagedListingReportsALostConnection",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup",
+        "returns-a-status",
+        "simulates-a-stalled-connection"
+      ],
+      "action": "keep",
+      "reason": "the listener is closed before the call, which no live instance can be asked to do; the subject is that every paged service classifies a dead connection rather than returning a short answer.",
+      "reviewed": true
     },
     {
       "file": "internal/services/diff/service_test.go",
