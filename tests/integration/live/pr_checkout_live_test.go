@@ -4,8 +4,11 @@ package live_test
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -135,5 +138,121 @@ func TestLivePullRequestCheckout(t *testing.T) {
 	forcedOutput, err := executeLiveCLI(t, "pr", "checkout", pullRequestID, "--force")
 	if err != nil {
 		t.Fatalf("pr checkout --force over a dirty tree failed: %v\noutput: %s", err, forcedOutput)
+	}
+}
+
+// TestLivePullRequestCheckoutFromAFork covers the case the same-repository
+// test cannot reach: a pull request whose source is a different repository.
+//
+// Unit tests asserted the branch prefix and the added remote against a pull
+// request payload they wrote, with a stub backend recording what it was asked
+// to do. Two things there could be wrong and neither was under test: whether
+// Bitbucket's payload distinguishes a fork the way bb reads it, and whether
+// the remote bb adds is one git can fetch from.
+func TestLivePullRequestCheckoutFromAFork(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	upstream := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, upstream.Slug)
+
+	forkName := fmt.Sprintf("lt-fork-checkout-%d", time.Now().UnixNano()%100000)
+	forkOutput, err := executeLiveCLI(t, "--json", "repo", "admin", "fork",
+		"--repo", seeded.Key+"/"+upstream.Slug, "--name", forkName, "--project", seeded.Key)
+	if err != nil {
+		t.Fatalf("repo admin fork failed: %v\noutput: %s", err, forkOutput)
+	}
+	forkSlug := asString(decodeJSONMap(t, forkOutput)["slug"])
+	if forkSlug == "" {
+		if inner, ok := decodeJSONMap(t, forkOutput)["repository"].(map[string]any); ok {
+			forkSlug = asString(inner["slug"])
+		}
+	}
+	if forkSlug == "" {
+		t.Fatalf("the fork has no slug:\n%s", forkOutput)
+	}
+
+	const sourceBranch = "feature/from-the-fork"
+	if err := harness.pushCommitOnBranch(seeded.Key, forkSlug, sourceBranch, "from-the-fork.txt"); err != nil {
+		t.Fatalf("push a commit on the fork failed: %v", err)
+	}
+
+	// Cross-repository, which the harness helper cannot express: the source ref
+	// carries its own repository.
+	created, err := harness.liveJSON(ctx, http.MethodPost,
+		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests", seeded.Key, upstream.Slug),
+		map[string]any{
+			"title": "From the fork",
+			"fromRef": map[string]any{
+				"id":         "refs/heads/" + sourceBranch,
+				"repository": map[string]any{"slug": forkSlug, "project": map[string]any{"key": seeded.Key}},
+			},
+			"toRef": map[string]any{"id": "refs/heads/master"},
+		})
+	if err != nil {
+		t.Fatalf("create the cross-repository pull request failed: %v", err)
+	}
+	rawID, _ := created["id"].(float64)
+	pullRequestID := strconv.Itoa(int(rawID))
+	if pullRequestID == "0" {
+		t.Fatalf("the created pull request has no id: %#v", created)
+	}
+
+	cloneDir := filepath.Join(t.TempDir(), "upstream-clone")
+	if output, err := executeLiveCLI(t, "repo", "clone", seeded.Key+"/"+upstream.Slug, cloneDir); err != nil {
+		t.Fatalf("repo clone failed: %v\noutput: %s", err, output)
+	}
+
+	originalDirectory, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd failed: %v", err)
+	}
+	if err := os.Chdir(cloneDir); err != nil {
+		t.Fatalf("chdir into the clone failed: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(originalDirectory) })
+
+	output, err := executeLiveCLI(t, "--json", "pr", "checkout", pullRequestID)
+	if err != nil {
+		t.Fatalf("pr checkout of a fork pull request failed: %v\noutput: %s", err, output)
+	}
+
+	data := decodeJSONMap(t, output)
+	if data["fork"] != true {
+		t.Fatalf("a pull request from a fork was not reported as one: %s", output)
+	}
+
+	// The branch is prefixed so it cannot collide with a local branch of the
+	// same name, and HEAD is actually on it.
+	branch := asString(data["branch"])
+	if branch == sourceBranch || !strings.Contains(branch, sourceBranch) {
+		t.Fatalf("expected the fork's branch to be prefixed, got %q: %s", branch, output)
+	}
+	// symbolic-ref rather than rev-parse --abbrev-ref: the prefix bb gives the
+	// branch is the name it gives the remote, so refs/heads/<owner>/<branch>
+	// and refs/remotes/<owner>/<branch> both exist and --abbrev-ref answers
+	// "heads/<owner>/<branch>" to disambiguate.
+	head, err := runGitCapture(cloneDir, "symbolic-ref", "--short", "HEAD")
+	if err != nil {
+		t.Fatalf("symbolic-ref HEAD failed: %v", err)
+	}
+	if strings.TrimSpace(head) != branch {
+		t.Fatalf("expected HEAD on %q, got %q", branch, strings.TrimSpace(head))
+	}
+
+	// And the remote it fetched from is a real one pointing at the fork -- the
+	// half a recording stub cannot establish.
+	remotes, err := runGitCapture(cloneDir, "remote", "-v")
+	if err != nil {
+		t.Fatalf("git remote -v failed: %v", err)
+	}
+	if !strings.Contains(remotes, "/"+forkSlug+".git") {
+		t.Fatalf("no remote points at the fork:\n%s", remotes)
 	}
 }
