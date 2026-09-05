@@ -332,9 +332,13 @@ func TestPRValidationErrors(t *testing.T) {
 //
 // What is left is the case that never reaches a server.
 func TestPRCreateFromAForkRefusesAMalformedRepository(t *testing.T) {
-	// A URL that does not resolve, so a command that got as far as a request
-	// would fail for a different reason and the kind would say so.
-	_, err := executePr(t, "http://bitbucket.invalid", "create", "--from-ref", "feature/x", "--to-ref", "main",
+	// A listener that fails the test if it is reached. The kind asserted below
+	// is the whole point -- a command that got as far as a request would fail
+	// for a different reason and report a different kind.
+	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(guard.Close)
+
+	_, err := executePr(t, guard.URL, "create", "--from-ref", "feature/x", "--to-ref", "main",
 		"--title", "probe", "--from-repo", "no-slash", "--repo", "GHBS/uploader",
 		"--no-default-reviewers", "--no-codeowners")
 	if err == nil {

@@ -79,10 +79,16 @@ func TestCanonicalPermissionCommandsPointAtTheirAlias(t *testing.T) {
 // the repository test: an unwired dependency is genuinely internal, and now
 // says so rather than arriving there by falling through (#475).
 func TestProjectPermissionsShowRequiresAWiredChecker(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "http://127.0.0.1:1")
+	// A listener that fails the test if it is reached: an unwired checker is
+	// caught before a request exists, and a request arriving would mean the
+	// guard was skipped rather than that it held.
+	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(guard.Close)
+
+	t.Setenv("BITBUCKET_URL", guard.URL)
 	t.Setenv("BITBUCKET_TOKEN", "token")
 
-	cfg := config.AppConfig{BitbucketURL: "http://127.0.0.1:1"}
+	cfg := config.AppConfig{BitbucketURL: guard.URL}
 	root := &cobra.Command{Use: "bb"}
 	root.PersistentFlags().Bool("json", false, "")
 	root.PersistentFlags().Bool("dry-run", false, "")

@@ -52,7 +52,13 @@ func TestRepoPermissionAliasRejectsBadInvocations(t *testing.T) {
 // internal by falling through, which is the difference between a
 // classification and an accident (#475).
 func TestPermissionsShowRequiresAWiredChecker(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "http://127.0.0.1:1")
+	// A listener that fails the test if it is reached: an unwired checker is
+	// caught before a request exists, and a request arriving would mean the
+	// guard was skipped rather than that it held.
+	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(guard.Close)
+
+	t.Setenv("BITBUCKET_URL", guard.URL)
 	t.Setenv("BITBUCKET_TOKEN", "token")
 
 	root := &cobra.Command{Use: "bb"}
@@ -63,9 +69,9 @@ func TestPermissionsShowRequiresAWiredChecker(t *testing.T) {
 	root.AddCommand(New(Dependencies{
 		JSONEnabled:   func() bool { return false },
 		DryRunEnabled: func() bool { return false },
-		LoadConfig:    func() (config.AppConfig, error) { return config.AppConfig{BitbucketURL: "http://127.0.0.1:1"}, nil },
+		LoadConfig:    func() (config.AppConfig, error) { return config.AppConfig{BitbucketURL: guard.URL}, nil },
 		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
-			cfg := config.AppConfig{BitbucketURL: "http://127.0.0.1:1"}
+			cfg := config.AppConfig{BitbucketURL: guard.URL}
 			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
 
 			return cfg, client, err

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // Arguments a command can reject on its own, rejected without a server.
@@ -20,13 +21,16 @@ import (
 // reaches the network fails with a connection error and a transient kind, so a
 // validation kind is proof the argument never left the process, which is what
 // ADR-054 asks for.
-const unreachableBitbucket = "http://127.0.0.1:1"
-
+//
+// The port is one testsupport took and released rather than a number picked in
+// the hope that nothing is listening on it, and the handler it was opened with
+// fails the test -- so a request that does arrive says so instead of quietly
+// succeeding against whatever answered.
 func configureUnreachableEnv(t *testing.T) {
 	t.Helper()
 
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", unreachableBitbucket)
+	t.Setenv("BITBUCKET_URL", testsupport.ClosedListenerURL(t))
 	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
 	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
 	t.Setenv("BITBUCKET_TOKEN", "test-token")

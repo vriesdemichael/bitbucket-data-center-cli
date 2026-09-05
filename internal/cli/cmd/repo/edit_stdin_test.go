@@ -3,6 +3,8 @@ package repocmd
 import (
 	"strings"
 	"testing"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestRepoEditRequiresContentToBeAskedFor covers the fallback that used to
@@ -13,10 +15,11 @@ import (
 // returned nothing and committed an empty file over a real one. ADR-073 now
 // requires the caller to ask, with --content -.
 func TestRepoEditRequiresContentToBeAskedFor(t *testing.T) {
-	// A URL, not a server. Both cases are decided before a reply matters: one
-	// refuses without asking, and the other only has to get past the same
-	// refusal, so a failed request is a pass.
-	t.Setenv("BITBUCKET_URL", "http://bitbucket.invalid")
+	// A closed listener rather than a guarded one: the second case is supposed
+	// to reach a request. Both are decided before a reply matters -- one
+	// refuses without asking, and the other only has to get past that same
+	// refusal, so a request that fails at the transport is a pass.
+	t.Setenv("BITBUCKET_URL", testsupport.ClosedListenerURL(t))
 	t.Setenv("BITBUCKET_TOKEN", "token")
 
 	t.Run("no content given", func(t *testing.T) {
