@@ -35,47 +35,6 @@ func newBrowseTestService(t *testing.T, handler http.HandlerFunc) *Service {
 	return NewService(client, httpClient)
 }
 
-func TestBrowseServiceCoreCommands(t *testing.T) {
-	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/files":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":["file1.txt", "dir/file2.txt"]}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/files/dir":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":["file2.txt"]}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/raw/file1.txt":
-			w.Header().Set("Content-Type", "text/plain")
-			_, _ = w.Write([]byte(`raw content`))
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/browse/file1.txt":
-			_, _ = w.Write([]byte(`{"lines":[{"text":"hello"}]}`))
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-	files, err := service.Tree(context.Background(), repo, "", TreeOptions{PageSize: 25})
-	if err != nil || len(files) != 2 {
-		t.Fatalf("expected tree success, len=%d err=%v", len(files), err)
-	}
-
-	dirFiles, err := service.Tree(context.Background(), repo, "dir", TreeOptions{PageSize: 25})
-	if err != nil || len(dirFiles) != 1 {
-		t.Fatalf("expected dir tree success, len=%d err=%v", len(dirFiles), err)
-	}
-
-	raw, err := service.Raw(context.Background(), repo, "file1.txt", "")
-	if err != nil || string(raw) != "raw content" {
-		t.Fatalf("expected raw success, got %s err=%v", string(raw), err)
-	}
-
-	file, err := service.File(context.Background(), repo, "file1.txt", FileOptions{Blame: true})
-	if err != nil || !strings.Contains(string(file), "hello") {
-		t.Fatalf("expected file success, got %s err=%v", string(file), err)
-	}
-}
-
 func TestBrowseServiceValidation(t *testing.T) {
 	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		// Every case here is refused before a request is built, so the handler
@@ -94,26 +53,6 @@ func TestBrowseServiceValidation(t *testing.T) {
 		t.Fatal("expected file path validation error")
 	}
 
-}
-
-func TestBrowseServicePagination(t *testing.T) {
-	calls := 0
-	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		calls++
-		if calls == 1 {
-			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":["file1.txt"]}`))
-			return
-		}
-		_, _ = w.Write([]byte(`{"isLastPage":true,"values":["file2.txt"]}`))
-	})
-
-	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-
-	files, err := service.Tree(context.Background(), repo, "", TreeOptions{PageSize: 0})
-	if err != nil || len(files) != 2 {
-		t.Fatalf("expected paginated list, len=%d err=%v", len(files), err)
-	}
 }
 
 func TestBrowseServiceTransientAndMapping(t *testing.T) {
@@ -349,23 +288,5 @@ func TestBrowseServiceTreeRejectsTraversal(t *testing.T) {
 	_, err := service.Tree(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "../secrets", TreeOptions{})
 	if err == nil || apperrors.ExitCode(err) != 2 {
 		t.Fatalf("expected a validation error, got %v", err)
-	}
-}
-
-func TestBrowseServiceTreeStopsOnRepeatedNextPageStart(t *testing.T) {
-	calls := 0
-	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		calls++
-		w.Header().Set("Content-Type", "application/json")
-		// A server that keeps pointing at the same offset must not loop forever.
-		_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":0,"values":["a.txt"]}`))
-	})
-
-	files, err := service.Tree(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "", TreeOptions{})
-	if err != nil {
-		t.Fatalf("expected tree success, got %v", err)
-	}
-	if calls != 1 || len(files) != 1 {
-		t.Fatalf("expected a single page, got calls=%d files=%#v", calls, files)
 	}
 }

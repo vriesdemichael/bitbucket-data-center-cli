@@ -838,7 +838,7 @@ func newRepoCompareCommand(deps Dependencies) *cobra.Command {
 				return nil
 			}
 
-			changes, err := service.CompareChanges(cmd.Context(), repo, from, to, 1000)
+			changes, err := service.CompareChanges(cmd.Context(), repo, from, to, diffservice.AllResults)
 			if err != nil {
 				return err
 			}

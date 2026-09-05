@@ -50,8 +50,8 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 			}
 
 			files, err := service.Tree(cmd.Context(), repo, path, browseservice.TreeOptions{
-				At:       treeAt,
-				PageSize: treePaging.ServiceLimit(),
+				At:         treeAt,
+				MaxResults: treePaging.ServiceLimit(),
 			})
 			if err != nil {
 				return err

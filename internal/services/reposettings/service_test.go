@@ -164,33 +164,12 @@ func newServiceWithBaseURL(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestRepositorySettingsAdditionalBranches(t *testing.T) {
-	t.Run("permission users pagination and defaults", func(t *testing.T) {
-		service := newServiceWithBaseURL(t, func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method != http.MethodGet || request.URL.Path != "/api/latest/projects/PRJ/repos/demo/permissions/users" {
-				http.NotFound(writer, request)
-				return
-			}
-			writer.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			if request.URL.Query().Get("limit") != "100" {
-				writer.WriteHeader(http.StatusBadRequest)
-				_, _ = writer.Write([]byte("expected default limit=100"))
-				return
-			}
-			if request.URL.Query().Get("start") == "1" {
-				_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[{"permission":"REPO_WRITE","user":{"name":"bob"}}]}`))
-				return
-			}
-			_, _ = writer.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"permission":"REPO_READ","user":{"name":"alice","displayName":"Alice"}}]}`))
-		})
-
-		users, err := service.ListRepositoryPermissionUsers(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, 0)
-		if err != nil {
-			t.Fatalf("expected paginated permission users success, got: %v", err)
-		}
-		if len(users) != 2 {
-			t.Fatalf("expected 2 users from pagination, got: %d", len(users))
-		}
-	})
+	// The pagination half of this used to live here: two hand-written pages and
+	// an assertion that the second request carried the limit the first one had.
+	// Both halves were the author's, so they agreed by construction, and the
+	// only thing under test was the walk -- which is openapi.PageThrough's now,
+	// and tested where it lives. TestLiveLimitActuallyCaps drives the listing
+	// against a real Bitbucket.
 
 	t.Run("webhooks invalid json and transport", func(t *testing.T) {
 		invalidService := newServiceWithBaseURL(t, func(writer http.ResponseWriter, request *http.Request) {

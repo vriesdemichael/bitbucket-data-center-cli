@@ -95,20 +95,18 @@ func (service *Service) SetBuildStatus(ctx context.Context, commitID string, inp
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
 
-func (service *Service) GetBuildStatuses(ctx context.Context, commitID string, pageSize int, orderBy string) ([]openapigenerated.RestBuildStatus, error) {
+func (service *Service) GetBuildStatuses(ctx context.Context, commitID string, maxResults int, orderBy string) ([]openapigenerated.RestBuildStatus, error) {
 	trimmedCommitID := strings.TrimSpace(commitID)
 	if trimmedCommitID == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "commit id is required", nil)
 	}
-	if pageSize <= 0 {
-		pageSize = 25
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 
-	// pageSize is the window, not a cap: this reads every build status on the
-	// commit, as ADR-074 names it.
-	return openapi.PageThrough(ctx, 0, everyResult,
-		func(ctx context.Context, start, _ int) (openapi.Page[openapigenerated.RestBuildStatus], error) {
-			startValue, limitValue := float32(start), float32(pageSize)
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestBuildStatus], error) {
+			startValue, limitValue := float32(start), float32(limit)
 			params := &openapigenerated.GetBuildStatusParams{Start: &startValue, Limit: &limitValue}
 			if resolvedOrderBy := strings.TrimSpace(orderBy); resolvedOrderBy != "" {
 				params.OrderBy = &resolvedOrderBy
@@ -135,10 +133,6 @@ func (service *Service) GetBuildStatuses(ctx context.Context, commitID string, p
 		})
 }
 
-// everyResult reads a listing to its end. These methods take a page size, not
-// a cap (ADR-074), so the walk is bounded by the server rather than by us.
-const everyResult = 1_000_000
-
 func (service *Service) GetBuildStatusStats(ctx context.Context, commitID string, includeUnique bool) (openapigenerated.RestBuildStats, error) {
 	trimmedCommitID := strings.TrimSpace(commitID)
 	if trimmedCommitID == "" {
@@ -161,17 +155,17 @@ func (service *Service) GetBuildStatusStats(ctx context.Context, commitID string
 	return openapigenerated.RestBuildStats{}, nil
 }
 
-func (service *Service) ListRequiredBuildChecks(ctx context.Context, repo RepositoryRef, pageSize int) ([]openapigenerated.RestRequiredBuildCondition, error) {
+func (service *Service) ListRequiredBuildChecks(ctx context.Context, repo RepositoryRef, maxResults int) ([]openapigenerated.RestRequiredBuildCondition, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-	if pageSize <= 0 {
-		pageSize = 25
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 
-	return openapi.PageThrough(ctx, 0, everyResult,
-		func(ctx context.Context, start, _ int) (openapi.Page[openapigenerated.RestRequiredBuildCondition], error) {
-			startValue, limitValue := float32(start), float32(pageSize)
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestRequiredBuildCondition], error) {
+			startValue, limitValue := float32(start), float32(limit)
 			response, err := service.client.GetPageOfRequiredBuildsMergeChecksWithResponse(ctx, repo.ProjectKey, repo.Slug,
 				&openapigenerated.GetPageOfRequiredBuildsMergeChecksParams{Start: &startValue, Limit: &limitValue})
 			if err != nil {
@@ -296,7 +290,7 @@ func (service *Service) DeleteRequiredBuildCheck(ctx context.Context, repo Repos
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
 
-func (service *Service) ListReports(ctx context.Context, repo RepositoryRef, commitID string, pageSize int) ([]openapigenerated.RestInsightReport, error) {
+func (service *Service) ListReports(ctx context.Context, repo RepositoryRef, commitID string, maxResults int) ([]openapigenerated.RestInsightReport, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
@@ -304,13 +298,13 @@ func (service *Service) ListReports(ctx context.Context, repo RepositoryRef, com
 	if trimmedCommitID == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "commit id is required", nil)
 	}
-	if pageSize <= 0 {
-		pageSize = 25
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 
-	return openapi.PageThrough(ctx, 0, everyResult,
-		func(ctx context.Context, start, _ int) (openapi.Page[openapigenerated.RestInsightReport], error) {
-			startValue, limitValue := float32(start), float32(pageSize)
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestInsightReport], error) {
+			startValue, limitValue := float32(start), float32(limit)
 			response, err := service.client.GetReportsWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID,
 				&openapigenerated.GetReportsParams{Start: &startValue, Limit: &limitValue})
 			if err != nil {

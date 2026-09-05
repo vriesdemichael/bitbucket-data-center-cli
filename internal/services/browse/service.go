@@ -22,8 +22,8 @@ type RepositoryRef struct {
 }
 
 type TreeOptions struct {
-	At       string
-	PageSize int
+	At         string
+	MaxResults int
 }
 
 type FileOptions struct {
@@ -60,8 +60,8 @@ func (service *Service) Tree(ctx context.Context, repo RepositoryRef, path strin
 		return nil, err
 	}
 
-	if options.PageSize <= 0 {
-		options.PageSize = 1000
+	if options.MaxResults <= 0 {
+		options.MaxResults = 1000
 	}
 
 	apiPath := repositoryRootPath(repo, "files")
@@ -69,11 +69,11 @@ func (service *Service) Tree(ctx context.Context, repo RepositoryRef, path strin
 		apiPath = repositoryAPIPath(repo, "files", encodedPath)
 	}
 
-	return openapi.PageThrough(ctx, 0, everyFile,
-		func(ctx context.Context, start, _ int) (openapi.Page[string], error) {
+	return openapi.PageThrough(ctx, 0, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[string], error) {
 			query := map[string]string{
 				"start": strconv.Itoa(start),
-				"limit": strconv.Itoa(options.PageSize),
+				"limit": strconv.Itoa(limit),
 			}
 			if at := strings.TrimSpace(options.At); at != "" {
 				query["at"] = at
@@ -104,9 +104,12 @@ func (service *Service) Tree(ctx context.Context, repo RepositoryRef, path strin
 		})
 }
 
-// everyFile reads a directory listing to its end. PageSize is the window, not
-// a cap (ADR-074).
-const everyFile = 1_000_000
+// AllResults asks Tree for every entry in a directory rather than a page.
+//
+// It used to be the only behaviour: TreeOptions carried a page size, the walk
+// ran to the last page whatever it was, and `bb repo browse tree --limit 5`
+// listed the whole directory.
+const AllResults = 1_000_000
 
 type fileListResponse struct {
 	Values        []any `json:"values"`

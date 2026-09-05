@@ -174,49 +174,55 @@ func (service *Service) ListDashboard(ctx context.Context, options DashboardList
 		return nil, apperrors.New(apperrors.KindValidation, "start must be greater than or equal to 0", nil)
 	}
 
+	// MaxResults caps the dashboard, which it did not until now: the walk ran to
+	// the last page and nothing trimmed it, so `bb pr status --limit 5` listed
+	// every open pull request the caller authors and every one awaiting their
+	// review. The field was already called MaxResults, which is why neither
+	// ADR-074 nor its guard could see this one -- converting the loop is what
+	// found it.
 	path := "/rest/api/1.0/dashboard/pull-requests"
-	results := make([]PullRequest, 0)
-	start := options.Start
 
-	for {
-		query := map[string]string{
-			"limit": strconv.Itoa(options.MaxResults),
-			"start": strconv.Itoa(start),
-		}
-		if normalizedState != "" {
-			query["state"] = bitbucketState(normalizedState)
-		}
+	return openapi.PageThrough(ctx, options.Start, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[PullRequest], error) {
+			query := map[string]string{
+				"limit": strconv.Itoa(limit),
+				"start": strconv.Itoa(start),
+			}
+			if normalizedState != "" {
+				query["state"] = bitbucketState(normalizedState)
+			}
+			if options.Role != "" {
+				query["role"] = strings.ToUpper(options.Role)
+			}
+			if strings.TrimSpace(options.ParticipantStatus) != "" {
+				query["participantStatus"] = strings.ToUpper(strings.TrimSpace(options.ParticipantStatus))
+			}
 
-		if options.Role != "" {
-			query["role"] = strings.ToUpper(options.Role)
-		}
+			var response pagedPullRequestResponse
+			if err := service.client.GetJSON(ctx, path, query, &response); err != nil {
+				return openapi.Page[PullRequest]{}, err
+			}
 
-		if strings.TrimSpace(options.ParticipantStatus) != "" {
-			query["participantStatus"] = strings.ToUpper(strings.TrimSpace(options.ParticipantStatus))
-		}
+			mapped := make([]PullRequest, 0, len(response.Values))
+			for _, value := range response.Values {
+				mapped = append(mapped, mapPullRequest(value))
+			}
 
-		var response pagedPullRequestResponse
-		if err := service.client.GetJSON(ctx, path, query, &response); err != nil {
-			return nil, err
-		}
+			return pullRequestPage(response, mapped), nil
+		})
+}
 
-		for _, value := range response.Values {
-			mapped := mapPullRequest(value)
-			results = append(results, mapped)
-		}
+// pullRequestPage adapts a hand-decoded page for the shared walk. isLastPage is
+// a plain bool here and the next start a plain int, so both are addressed.
+//
+// The values are passed in rather than read off the response, because one
+// caller filters them and a page that filters to nothing still has to carry the
+// offsets that say what comes after it.
+func pullRequestPage(response pagedPullRequestResponse, values []PullRequest) openapi.Page[PullRequest] {
+	isLastPage := response.IsLastPage
+	next := int32(response.NextPageStart)
 
-		if response.IsLastPage {
-			break
-		}
-
-		if response.NextPageStart == start {
-			break
-		}
-
-		start = response.NextPageStart
-	}
-
-	return results, nil
+	return openapi.Page[PullRequest]{Values: values, IsLastPage: &isLastPage, NextPageStart: &next}
 }
 
 func (service *Service) List(ctx context.Context, repository RepositoryRef, options ListOptions) ([]PullRequest, error) {
@@ -237,59 +243,44 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, opti
 	}
 
 	path := pullRequestPath(repository)
-	results := make([]PullRequest, 0)
-	start := options.Start
 
-	for {
-		query := map[string]string{
-			"limit": strconv.Itoa(options.MaxResults),
-			"start": strconv.Itoa(start),
-		}
-		query["state"] = bitbucketState(normalizedState)
-		if options.Role != "" {
-			query["role"] = strings.ToUpper(options.Role)
-		}
-
-		var response pagedPullRequestResponse
-		if err := service.client.GetJSON(ctx, path, query, &response); err != nil {
-			return nil, err
-		}
-
-		for _, value := range response.Values {
-			mapped := mapPullRequest(value)
-			if matchesFilters(mapped, normalizedState, options.SourceBranch, options.TargetBranch) {
-				results = append(results, mapped)
+	// MaxResults caps the results, as it does in every other list service. This
+	// loop used to run to the last page and return everything, treating the
+	// value purely as a page size — so `bb pr list --limit 10` against a
+	// repository with 500 open pull requests returned all 500.
+	//
+	// The filter runs inside the fetch, which is why this was the last loop
+	// converted: matchesFilters removes entries after the server has sized the
+	// page, so a page can contribute nothing while there is more behind it. A
+	// walk that reads an empty page as the end would return nothing for a
+	// repository full of pull requests. openapi.PageThrough looks past one, and
+	// the cap counts what survived the filter rather than what came back.
+	return openapi.PageThrough(ctx, options.Start, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[PullRequest], error) {
+			query := map[string]string{
+				"limit": strconv.Itoa(limit),
+				"start": strconv.Itoa(start),
+				"state": bitbucketState(normalizedState),
 			}
-		}
+			if options.Role != "" {
+				query["role"] = strings.ToUpper(options.Role)
+			}
 
-		// Limit caps the results returned, as it does in every other list
-		// service. This loop used to run to the last page and return everything,
-		// treating Limit purely as a page size — so `bb pr list --limit 10`
-		// against a repository with 500 open pull requests returned all 500.
-		//
-		// The pages still have to be walked, because matchesFilters runs after
-		// the fetch and a page can contribute nothing; the cap belongs on the
-		// results, not on the requests.
-		if len(results) >= options.MaxResults {
-			break
-		}
+			var response pagedPullRequestResponse
+			if err := service.client.GetJSON(ctx, path, query, &response); err != nil {
+				return openapi.Page[PullRequest]{}, err
+			}
 
-		if response.IsLastPage {
-			break
-		}
+			matched := make([]PullRequest, 0, len(response.Values))
+			for _, value := range response.Values {
+				mapped := mapPullRequest(value)
+				if matchesFilters(mapped, normalizedState, options.SourceBranch, options.TargetBranch) {
+					matched = append(matched, mapped)
+				}
+			}
 
-		if response.NextPageStart == start {
-			break
-		}
-
-		start = response.NextPageStart
-	}
-
-	if len(results) > options.MaxResults {
-		results = results[:options.MaxResults]
-	}
-
-	return results, nil
+			return pullRequestPage(response, matched), nil
+		})
 }
 
 func (service *Service) Get(ctx context.Context, repository RepositoryRef, pullRequestID string) (PullRequest, error) {
@@ -613,7 +604,7 @@ type BuildStatus struct {
 type pagedBuildStatusResponse struct {
 	Values        []buildStatusValue `json:"values"`
 	IsLastPage    bool               `json:"isLastPage"`
-	NextPageStart int                `json:"nextPageStart"`
+	NextPageStart int32              `json:"nextPageStart"`
 }
 
 type buildStatusValue struct {
@@ -635,7 +626,7 @@ type mergeVetoValue struct {
 }
 
 // GetBuildStatuses retrieves build statuses for the source commit of the given pull request.
-func (service *Service) GetBuildStatuses(ctx context.Context, repository RepositoryRef, pullRequestID string, pageSize int) ([]BuildStatus, error) {
+func (service *Service) GetBuildStatuses(ctx context.Context, repository RepositoryRef, pullRequestID string, maxResults int) ([]BuildStatus, error) {
 	if err := validateRepositoryRef(repository); err != nil {
 		return nil, err
 	}
@@ -645,8 +636,8 @@ func (service *Service) GetBuildStatuses(ctx context.Context, repository Reposit
 		return nil, err
 	}
 
-	if pageSize <= 0 {
-		pageSize = 25
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 
 	// Fetch the PR to get the source commit hash.
@@ -662,40 +653,34 @@ func (service *Service) GetBuildStatuses(ctx context.Context, repository Reposit
 
 	// Fetch build statuses for the source commit via the build-status API.
 	path := fmt.Sprintf("/rest/build-status/latest/commits/%s", url.PathEscape(commitID))
-	results := make([]BuildStatus, 0)
-	start := 0
 
-	for {
-		query := map[string]string{
-			"limit": strconv.Itoa(pageSize),
-			"start":    strconv.Itoa(start),
-		}
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[BuildStatus], error) {
+			query := map[string]string{
+				"limit": strconv.Itoa(limit),
+				"start": strconv.Itoa(start),
+			}
 
-		var response pagedBuildStatusResponse
-		if err := service.client.GetJSON(ctx, path, query, &response); err != nil {
-			return nil, err
-		}
+			var response pagedBuildStatusResponse
+			if err := service.client.GetJSON(ctx, path, query, &response); err != nil {
+				return openapi.Page[BuildStatus]{}, err
+			}
 
-		for _, v := range response.Values {
-			// A conversion rather than a literal: the two structs must stay
-			// field-for-field identical, and a conversion stops compiling if
-			// they diverge. The literal would silently drop a field added to
-			// only one of them.
-			results = append(results, BuildStatus(v))
-		}
+			statuses := make([]BuildStatus, 0, len(response.Values))
+			for _, value := range response.Values {
+				// A conversion rather than a literal: the two structs must stay
+				// field-for-field identical, and a conversion stops compiling if
+				// they diverge. The literal would silently drop a field added to
+				// only one of them.
+				statuses = append(statuses, BuildStatus(value))
+			}
 
-		if response.IsLastPage {
-			break
-		}
-
-		if response.NextPageStart == start {
-			break
-		}
-
-		start = response.NextPageStart
-	}
-
-	return results, nil
+			return openapi.Page[BuildStatus]{
+				Values:        statuses,
+				IsLastPage:    &response.IsLastPage,
+				NextPageStart: &response.NextPageStart,
+			}, nil
+		})
 }
 
 // GetAutoMerge returns the auto-merge configuration for a pull request.

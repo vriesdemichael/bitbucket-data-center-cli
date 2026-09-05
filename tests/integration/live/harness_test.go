@@ -1039,3 +1039,56 @@ func (h *liveHarness) renameFileOnBranch(projectKey, repositorySlug, branch, fro
 
 	return nil
 }
+
+// pushCommitsOnBranch puts several commits on one branch, each adding a file.
+//
+// pushFileOnBranch branches from master every time it is called, so calling it
+// twice for the same branch pushes two unrelated roots and the second is
+// rejected. A listing that has to cross a page boundary, or a cap that has to
+// have something to cut, needs the commits stacked rather than parallel.
+func (h *liveHarness) pushCommitsOnBranch(projectKey, repositorySlug, branch string, commitCount int) error {
+	tempDir := h.t.TempDir()
+
+	for _, args := range [][]string{
+		{"init"},
+		{"config", "user.name", "bb-live-test"},
+		{"config", "user.email", "bb-live-test@example.local"},
+	} {
+		if err := runGit(tempDir, args...); err != nil {
+			return fmt.Errorf("git %s failed: %w", args[0], err)
+		}
+	}
+
+	pushURL, err := repositoryPushURL(h.config, projectKey, repositorySlug)
+	if err != nil {
+		return err
+	}
+	if err := runGit(tempDir, "remote", "add", "origin", pushURL); err != nil {
+		return fmt.Errorf("git remote add failed: %w", err)
+	}
+	if err := runGit(tempDir, "fetch", "origin", "master"); err != nil {
+		return fmt.Errorf("git fetch origin master failed: %w", err)
+	}
+	if err := runGit(tempDir, "checkout", "-b", branch, "FETCH_HEAD"); err != nil {
+		return fmt.Errorf("git checkout branch failed: %w", err)
+	}
+
+	for index := range commitCount {
+		name := fmt.Sprintf("%s-%d.txt", branch, index)
+		if err := os.WriteFile(filepath.Join(tempDir, name), []byte(fmt.Sprintf("file %d\n", index)), 0o600); err != nil {
+			return fmt.Errorf("write %s: %w", name, err)
+		}
+		if err := runGit(tempDir, "add", name); err != nil {
+			return fmt.Errorf("git add %s failed: %w", name, err)
+		}
+		if err := runGit(tempDir, "commit", "-m", fmt.Sprintf("add %s", name)); err != nil {
+			return fmt.Errorf("git commit %s failed: %w", name, err)
+		}
+	}
+
+	if err := runGit(tempDir, "push", "-u", "origin", branch); err != nil {
+		return fmt.Errorf("git push branch failed: %w", err)
+	}
+
+	return nil
+}

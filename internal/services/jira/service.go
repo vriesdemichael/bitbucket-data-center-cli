@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
@@ -57,35 +58,35 @@ func (s *Service) GetIssueCommits(ctx context.Context, issueKey string, maxResul
 		maxResults = 25
 	}
 	path := fmt.Sprintf("/rest/jira/latest/issues/%s/commits", issueKey)
-	start := 0
-	var allCommits []openapigenerated.RestCommit
 
-	for {
-		query := map[string]string{
-			"start":      strconv.Itoa(start),
-			"limit": strconv.Itoa(maxResults),
-		}
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestCommit], error) {
+			query := map[string]string{
+				"start": strconv.Itoa(start),
+				"limit": strconv.Itoa(limit),
+			}
 
-		var response jiraCommitsResponse
-		err := s.client.GetJSON(ctx, path, query, &response)
-		if err != nil {
-			return nil, err
-		}
+			var response jiraCommitsResponse
+			if err := s.client.GetJSON(ctx, path, query, &response); err != nil {
+				return openapi.Page[openapigenerated.RestCommit]{}, err
+			}
 
-		for _, v := range response.Values {
-			allCommits = append(allCommits, v.ToCommit)
-		}
+			commits := make([]openapigenerated.RestCommit, 0, len(response.Values))
+			for _, value := range response.Values {
+				commits = append(commits, value.ToCommit)
+			}
 
-		if len(allCommits) >= maxResults || response.IsLastPage || len(response.Values) == 0 {
-			break
-		}
+			// This endpoint sends no nextPageStart, so the offset is counted
+			// here as the old loop counted it. An empty page therefore points
+			// at the offset it was served from, which is what PageThrough reads
+			// as the end.
+			isLastPage := response.IsLastPage
+			next := int32(start + len(response.Values))
 
-		start += len(response.Values)
-	}
-
-	if len(allCommits) > maxResults {
-		allCommits = allCommits[:maxResults]
-	}
-
-	return allCommits, nil
+			return openapi.Page[openapigenerated.RestCommit]{
+				Values:        commits,
+				IsLastPage:    &isLastPage,
+				NextPageStart: &next,
+			}, nil
+		})
 }

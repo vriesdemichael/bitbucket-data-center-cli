@@ -21,6 +21,14 @@ const (
 	OutputKindNameOnly OutputKind = "name_only"
 )
 
+// AllResults asks CompareChanges for every change rather than a page of them.
+//
+// `bb repo compare` has no --limit: it passed 1000 as the page size and read to
+// the last page, so the answer was always everything. The number was a page
+// size then and is a cap now, and the cap has to stay out of the way of the
+// comparison it is describing.
+const AllResults = 1_000_000
+
 type RepositoryRef struct {
 	ProjectKey string
 	Slug       string
@@ -245,17 +253,15 @@ func (service *Service) DiffCommit(ctx context.Context, input DiffCommitInput) (
 	return Result{Patch: body}, nil
 }
 
-func (service *Service) CompareChanges(ctx context.Context, repo RepositoryRef, from, to string, pageSize int) ([]openapigenerated.RestChange, error) {
+func (service *Service) CompareChanges(ctx context.Context, repo RepositoryRef, from, to string, maxResults int) ([]openapigenerated.RestChange, error) {
 	if err := validateRepoRef(repo); err != nil {
 		return nil, err
 	}
 
-	if pageSize <= 0 {
-		pageSize = 25
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 
-	start := float32(0)
-	pageLimit := float32(pageSize)
 	var fromParam *string
 	if from != "" {
 		f := from
@@ -267,41 +273,35 @@ func (service *Service) CompareChanges(ctx context.Context, repo RepositoryRef, 
 		toParam = &t
 	}
 
-	results := make([]openapigenerated.RestChange, 0)
-	for {
-		params := &openapigenerated.StreamChangesParams{
-			Start: &start,
-			Limit: &pageLimit,
-			From:  fromParam,
-			To:    toParam,
-		}
-		resp, err := service.client.StreamChangesWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
-		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to stream compare changes", err)
-		}
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestChange], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			params := &openapigenerated.StreamChangesParams{
+				Start: &startValue,
+				Limit: &limitValue,
+				From:  fromParam,
+				To:    toParam,
+			}
 
-		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
-			return nil, err
-		}
+			response, err := service.client.StreamChangesWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
+			if err != nil {
+				return openapi.Page[openapigenerated.RestChange]{}, apperrors.New(apperrors.KindTransient, "failed to stream compare changes", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[openapigenerated.RestChange]{}, err
+			}
 
-		if resp.ApplicationjsonCharsetUTF8200 == nil {
-			break
-		}
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[openapigenerated.RestChange]{}, nil
+			}
 
-		if resp.ApplicationjsonCharsetUTF8200.Values != nil {
-			results = append(results, *resp.ApplicationjsonCharsetUTF8200.Values...)
-		}
-
-		if resp.ApplicationjsonCharsetUTF8200.IsLastPage != nil && *resp.ApplicationjsonCharsetUTF8200.IsLastPage {
-			break
-		}
-		if resp.ApplicationjsonCharsetUTF8200.NextPageStart == nil {
-			break
-		}
-		start = float32(*resp.ApplicationjsonCharsetUTF8200.NextPageStart)
-	}
-
-	return results, nil
+			return openapi.Page[openapigenerated.RestChange]{
+				Values:        *page.Values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: page.NextPageStart,
+			}, nil
+		})
 }
 
 func (service *Service) CompareDiff(ctx context.Context, repo RepositoryRef, from, to string) (*openapigenerated.RestDiff, error) {

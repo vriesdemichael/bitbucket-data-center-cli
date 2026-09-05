@@ -16,8 +16,6 @@ import (
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
 )
 
-const reviewSummaryPageSize = 25
-
 func commentIDString(comment openapigenerated.RestComment) string {
 	if comment.Id == nil {
 		return "unknown"
@@ -229,7 +227,6 @@ func resolveReviewCounts(
 			ctx,
 			pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
 			pullRequestID,
-			reviewSummaryPageSize,
 		)
 		if err != nil {
 			return pullrequestservice.ReviewCounts{}, err

@@ -6,8 +6,8 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 133 | write the live test, then delete the mock |
-| `remove` | 37 | delete; it asserts nothing a live test would not already give |
+| `move-to-live` | 131 | write the live test, then delete the mock |
+| `remove` | 36 | delete; it asserts nothing a live test would not already give |
 | `keep` | 87 | legitimate unit test under ADR-079 |
 | `follows-callers` | 19 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
@@ -26,7 +26,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/commit_test.go` | 4 | 3 | 1 | 0 | 0 |
 | `internal/openapi/client_test.go` | 4 | 3 | 0 | 1 | 0 |
 | `internal/services/jira/service_test.go` | 4 | 3 | 0 | 0 | 1 |
-| `internal/services/pullrequestactivity/service_test.go` | 4 | 3 | 0 | 0 | 1 |
 | `internal/services/tag/service_test.go` | 4 | 3 | 0 | 0 | 1 |
 | `internal/cli/cmd/pr/pr_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/clone_test.go` | 3 | 3 | 0 | 0 | 0 |
@@ -40,6 +39,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/auth/gpg_test.go` | 4 | 2 | 2 | 0 | 0 |
 | `internal/cli/cmd/bulk/bulk_test.go` | 4 | 2 | 2 | 0 | 0 |
 | `internal/cli/cmd/pr/reviewer_automation_test.go` | 4 | 2 | 0 | 2 | 0 |
+| `internal/services/pullrequestactivity/service_test.go` | 4 | 2 | 1 | 0 | 1 |
 | `internal/services/repository/admin_test.go` | 4 | 2 | 0 | 1 | 1 |
 | `internal/cli/cmd/repo/admin_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/comments_test.go` | 2 | 2 | 0 | 0 | 0 |
@@ -49,7 +49,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/mcp/tools_pr_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/services/pullrequest/review_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/services/pullrequest/service_test.go` | 10 | 1 | 4 | 4 | 1 |
-| `internal/services/browse/service_test.go` | 9 | 1 | 2 | 5 | 1 |
 | `internal/services/forksync/service_test.go` | 5 | 1 | 2 | 1 | 1 |
 | `internal/services/project/service_test.go` | 5 | 1 | 1 | 2 | 1 |
 | `internal/cli/cmd/reviewer/reviewer_test.go` | 4 | 1 | 1 | 2 | 0 |
@@ -88,6 +87,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/mcp/client_compat_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/transport/httpclient/client_test.go` | 25 | 0 | 0 | 25 | 0 |
 | `internal/transport/githubrelease/client_test.go` | 12 | 0 | 0 | 0 | 12 |
+| `internal/services/browse/service_test.go` | 6 | 0 | 0 | 5 | 1 |
 | `internal/services/diff/service_test.go` | 5 | 0 | 1 | 3 | 1 |
 | `internal/services/gpgkey/service_test.go` | 5 | 0 | 0 | 4 | 1 |
 | `internal/services/sshkey/service_test.go` | 5 | 0 | 0 | 4 | 1 |

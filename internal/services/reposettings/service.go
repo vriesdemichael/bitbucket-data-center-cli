@@ -66,17 +66,17 @@ func NewService(client *openapigenerated.ClientWithResponses) *Service {
 // permissionLookupLimit and expects the whole set back.
 const everyPermissionEntry = 1_000_000
 
-func (service *Service) ListRepositoryPermissionUsers(ctx context.Context, repo RepositoryRef, pageSize int) ([]PermissionUser, error) {
+func (service *Service) ListRepositoryPermissionUsers(ctx context.Context, repo RepositoryRef, maxResults int) ([]PermissionUser, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-	if pageSize <= 0 {
-		pageSize = 100
+	if maxResults <= 0 {
+		maxResults = 100
 	}
 
 	return openapi.PageThrough(ctx, 0, everyPermissionEntry,
-		func(ctx context.Context, start, _ int) (openapi.Page[PermissionUser], error) {
-			startValue, limitValue := float32(start), float32(pageSize)
+		func(ctx context.Context, start, limit int) (openapi.Page[PermissionUser], error) {
+			startValue, limitValue := float32(start), float32(limit)
 			response, err := service.client.GetUsersWithAnyPermission2WithResponse(ctx, repo.ProjectKey, repo.Slug,
 				&openapigenerated.GetUsersWithAnyPermission2Params{Start: &startValue, Limit: &limitValue})
 			if err != nil {
@@ -111,17 +111,17 @@ func (service *Service) ListRepositoryPermissionUsers(ctx context.Context, repo 
 			}, nil
 		})
 }
-func (service *Service) ListRepositoryPermissionGroups(ctx context.Context, repo RepositoryRef, pageSize int) ([]PermissionGroup, error) {
+func (service *Service) ListRepositoryPermissionGroups(ctx context.Context, repo RepositoryRef, maxResults int) ([]PermissionGroup, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-	if pageSize <= 0 {
-		pageSize = 100
+	if maxResults <= 0 {
+		maxResults = 100
 	}
 
 	return openapi.PageThrough(ctx, 0, everyPermissionEntry,
-		func(ctx context.Context, start, _ int) (openapi.Page[PermissionGroup], error) {
-			startValue, limitValue := float32(start), float32(pageSize)
+		func(ctx context.Context, start, limit int) (openapi.Page[PermissionGroup], error) {
+			startValue, limitValue := float32(start), float32(limit)
 			response, err := service.client.GetGroupsWithAnyPermission2WithResponse(ctx, repo.ProjectKey, repo.Slug,
 				&openapigenerated.GetGroupsWithAnyPermission2Params{Start: &startValue, Limit: &limitValue})
 			if err != nil {

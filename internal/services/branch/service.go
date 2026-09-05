@@ -278,7 +278,7 @@ func (service *Service) assertBranchExists(ctx context.Context, repo RepositoryR
 			requested, repo.ProjectKey, repo.Slug), nil)
 }
 
-func (service *Service) FindByCommit(ctx context.Context, repo RepositoryRef, commitID string, pageSize int) ([]openapigenerated.RestMinimalRef, error) {
+func (service *Service) FindByCommit(ctx context.Context, repo RepositoryRef, commitID string, maxResults int) ([]openapigenerated.RestMinimalRef, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
@@ -287,15 +287,13 @@ func (service *Service) FindByCommit(ctx context.Context, repo RepositoryRef, co
 	if trimmedCommitID == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "commit id is required", nil)
 	}
-	if pageSize <= 0 {
-		pageSize = 25
+	if maxResults <= 0 {
+		maxResults = 25
 	}
 
-	// The pageSize here is the page size, not a cap: this reads every ref that
-	// points at the commit, and always has.
-	return openapi.PageThrough(ctx, 0, AllResults,
-		func(ctx context.Context, start, _ int) (openapi.Page[openapigenerated.RestMinimalRef], error) {
-			startValue, limitValue := float32(start), float32(pageSize)
+	return openapi.PageThrough(ctx, 0, maxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestMinimalRef], error) {
+			startValue, limitValue := float32(start), float32(limit)
 			response, err := service.client.FindByCommitWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID,
 				&openapigenerated.FindByCommitParams{Start: &startValue, Limit: &limitValue})
 			if err != nil {

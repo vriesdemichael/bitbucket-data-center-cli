@@ -122,8 +122,8 @@ func newProjectPermissionListCommand(deps Dependencies, subjectFor projectPermis
 				return err
 			}
 
-			// The backing service reads to exhaustion, so --limit only sized the
-			// pages until now. A no-op under --all.
+			// The service caps to this number now, so this is belt and braces
+			// rather than the truncation that made --limit mean anything.
 			entries = paging.Truncate(listPaging, entries)
 
 			if deps.JSONEnabled() {

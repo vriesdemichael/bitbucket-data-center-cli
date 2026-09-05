@@ -51,7 +51,7 @@ func specGetPullRequest() Spec {
 
 			counts := pullrequestservice.ReviewCounts{}
 			if !in.SkipReviewSummary {
-				threads, summaryErr := activitySvc.TrySummarize(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID, 100)
+				threads, summaryErr := activitySvc.TrySummarize(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
 				if summaryErr != nil {
 					return nil, GetPullRequestOutput{}, fmt.Errorf("get_pull_request failed: %w", summaryErr)
 				}
@@ -248,10 +248,17 @@ func specListPRComments() Spec {
 				PullRequestID: in.PRID,
 			}
 
+			// The limit counts threads, and the grouping happens here, so the
+			// whole timeline is read and the cap applied to what comes out of
+			// it. Capping the fetch instead would cut a thread in half: a reply
+			// arrives as its own activity, so the last thread in a truncated
+			// window is missing the replies that did not fit, and the summary
+			// counts fewer open threads than the pull request has.
 			var threads []pullrequestactivityservice.Thread
 			var summary pullrequestactivityservice.Summary
 			if in.Path == "" {
-				activities, listErr := activitySvc.List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID, pullrequestactivityservice.ListOptions{PageSize: limit})
+				activities, listErr := activitySvc.List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID,
+					pullrequestactivityservice.ListOptions{MaxResults: pullrequestactivityservice.AllResults})
 				if listErr != nil {
 					return nil, ListPRCommentsOutput{}, fmt.Errorf("list_pr_comments failed: %w", listErr)
 				}
@@ -261,11 +268,15 @@ func specListPRComments() Spec {
 					Repository:    commentservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 					PullRequestID: in.PRID,
 				}
-				comments, listErr := commentSvc.List(ctx, target, in.Path, limit)
+				comments, listErr := commentSvc.List(ctx, target, in.Path, commentservice.AllResults)
 				if listErr != nil {
 					return nil, ListPRCommentsOutput{}, fmt.Errorf("list_pr_comments failed: %w", listErr)
 				}
 				threads, summary = pullrequestactivityservice.ThreadsFromComments(comments, threadOptions)
+			}
+
+			if len(threads) > limit {
+				threads = threads[:limit]
 			}
 
 			return nil, ListPRCommentsOutput{Summary: summary, Threads: threads}, nil
