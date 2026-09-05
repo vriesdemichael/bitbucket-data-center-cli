@@ -205,11 +205,7 @@ func TestBuildStatusFocusedErrorAndFallbackBranches(t *testing.T) {
 	})
 
 	t.Run("set build status transport failure", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
-		}))
-		baseURL := server.URL
-		server.Close()
+		baseURL := testsupport.ClosedListenerURL(t)
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 		if err != nil {
@@ -242,11 +238,7 @@ func TestBuildStatusFocusedErrorAndFallbackBranches(t *testing.T) {
 	// could reach.
 
 	t.Run("get build statuses transport failure", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-		}))
-		baseURL := server.URL
-		server.Close()
+		baseURL := testsupport.ClosedListenerURL(t)
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 		if err != nil {
@@ -264,11 +256,7 @@ func TestBuildStatusFocusedErrorAndFallbackBranches(t *testing.T) {
 	})
 
 	t.Run("get build status stats transport failure", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, _ = w.Write([]byte(`{"successful":1}`))
-		}))
-		baseURL := server.URL
-		server.Close()
+		baseURL := testsupport.ClosedListenerURL(t)
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 		if err != nil {
@@ -455,9 +443,7 @@ func TestQualityServiceScopedAndDeploymentsErrorPaths(t *testing.T) {
 
 	// 3. Transient transport failures
 	t.Run("transient transport failures", func(t *testing.T) {
-		server := httptest.NewServer(testsupport.UnreachedHandler(t))
-		baseURL := server.URL
-		server.Close()
+		baseURL := testsupport.ClosedListenerURL(t)
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 		if err != nil {

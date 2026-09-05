@@ -353,3 +353,70 @@ func TestSomething(t *testing.T) {
 func insertDirective(source, directive string) string {
 	return strings.Replace(source, "func TestSomething(", directive+"func TestSomething(", 1)
 }
+
+// TestTheSharedGuardIsRecognised covers the handler that is a call rather than
+// a literal.
+//
+// handlerFailsTheTest looks inside a func literal, and testsupport.
+// UnreachedHandler has none to look inside. Without this the shared helper
+// reads as a handler supplied by the caller, and the whole point of moving
+// eleven hand-written guards onto it was that they say the same thing --
+// including to this tool.
+func TestTheSharedGuardIsRecognised(t *testing.T) {
+	source := preamble + `func TestX(t *testing.T) {
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
+	defer server.Close()
+}`
+
+	if got := classOf(t, source); got != ClassUnreachedGuard {
+		t.Errorf("class = %q, want %q", got, ClassUnreachedGuard)
+	}
+}
+
+// A guard on one listener does not make the file's other mocks guards. The
+// same rule handlerFailsTheTest applies to literals has to hold for the shared
+// helper, or a serving mock beside a guarded one would be waved through.
+func TestOneSharedGuardDoesNotCoverAServingMock(t *testing.T) {
+	source := preamble + `func TestX(t *testing.T) {
+	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
+	defer guard.Close()
+
+	serving := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/rest/api/latest/projects/PRJ" {
+			_, _ = w.Write([]byte("{\"key\":\"PRJ\"}"))
+		}
+	}))
+	defer serving.Close()
+}`
+
+	for index, got := range classesOf(t, source) {
+		if got != ClassBehaviour {
+			t.Errorf("mock %d class = %q, want %q", index, got, ClassBehaviour)
+		}
+	}
+}
+
+// classesOf is classOf for a source with more than one listener in it.
+func classesOf(t *testing.T, source string) []Class {
+	t.Helper()
+
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "sample_test.go"), []byte(source), 0o644); err != nil {
+		t.Fatalf("write sample: %v", err)
+	}
+
+	entries, err := scan(dir)
+	if err != nil {
+		t.Fatalf("scan: %v", err)
+	}
+	if len(entries) == 0 {
+		t.Fatal("no mocks found in a source that opens two listeners")
+	}
+
+	classes := make([]Class, 0, len(entries))
+	for _, entry := range entries {
+		classes = append(classes, entry.Class)
+	}
+
+	return classes
+}

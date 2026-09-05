@@ -9,6 +9,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func newTagTestService(t *testing.T, handler http.HandlerFunc) *Service {
@@ -94,11 +95,7 @@ func TestTagServiceTransportAndValidationBranches(t *testing.T) {
 	// that loses the connection halfway must report it rather than return the
 	// pages it managed.
 	t.Run("transport failures", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		}))
-		baseURL := server.URL
-		server.Close()
+		baseURL := testsupport.ClosedListenerURL(t)
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 		if err != nil {

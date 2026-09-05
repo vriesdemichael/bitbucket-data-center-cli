@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // errPermissionRefused stands in for the error a real checker returns when the
@@ -83,7 +85,10 @@ func executePrRecordingPermissions(t *testing.T, serverURL string, args ...strin
 // it plans anything, and has to stop when told no. Nothing asserted either: not
 // which permission each command demands, nor that a refusal is honoured.
 func TestPRCommandsCheckRepositoryPermission(t *testing.T) {
-	server := newMockPRServer(t)
+	// A listener that fails the test if reached: every case is refused by the
+	// permission check before a request is built.
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(server.Close)
 
 	tests := []struct {
 		name string
@@ -160,7 +165,10 @@ func TestRepositoryPermissionValues(t *testing.T) {
 // The check has to come before the plan, so a caller who cannot perform the
 // operation never receives a preview implying they can.
 func TestPRCommandsCheckPermissionBeforePlanning(t *testing.T) {
-	server := newMockPRServer(t)
+	// A listener that fails the test if reached: every case is refused by the
+	// permission check before a request is built.
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(server.Close)
 
 	recorded, err := executePrRecordingPermissions(t, server.URL, "merge", "42")
 	if !errors.Is(err, errPermissionRefused) {

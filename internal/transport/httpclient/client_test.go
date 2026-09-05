@@ -17,6 +17,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func init() {
@@ -252,11 +253,7 @@ func TestWriteJSONMethods(t *testing.T) {
 // mock-inventory: transport-fault — a refused connection and an exhausted retry
 // budget are conditions of the network, not answers from Bitbucket.
 func TestGetJSONTransportAndRetryExhaustion(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusOK)
-	}))
-	baseURL := server.URL
-	server.Close()
+	baseURL := testsupport.ClosedListenerURL(t)
 
 	client := NewFromConfig(config.AppConfig{BitbucketURL: baseURL})
 	client.retries = 1
@@ -354,11 +351,7 @@ func TestGetJSONRetryCanceledDuringBackoff(t *testing.T) {
 
 func TestHealthTransportAndPermanentErrorBranches(t *testing.T) {
 	t.Run("transport failure", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusOK)
-		}))
-		baseURL := server.URL
-		server.Close()
+		baseURL := testsupport.ClosedListenerURL(t)
 
 		client := NewFromConfig(config.AppConfig{BitbucketURL: baseURL})
 		client.retries = 1

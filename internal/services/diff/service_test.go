@@ -9,6 +9,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestDiffRefsPatchWithPathRejected(t *testing.T) {
@@ -88,11 +89,7 @@ func TestDiffHelpers(t *testing.T) {
 
 // mock-inventory: transport-fault — the connection is broken on purpose; no live server refuses on request.
 func TestDiffRefsTransportFailure(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		_, _ = writer.Write([]byte("ok"))
-	}))
-	baseURL := server.URL
-	server.Close()
+	baseURL := testsupport.ClosedListenerURL(t)
 
 	client, err := openapigenerated.NewClientWithResponses(baseURL)
 	if err != nil {
@@ -148,11 +145,7 @@ func TestDiffValidationAndHelperEdgeBranches(t *testing.T) {
 func TestDiffTransportFailureBranches(t *testing.T) {
 	closedService := func(t *testing.T) *Service {
 		t.Helper()
-		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusOK)
-		}))
-		baseURL := server.URL
-		server.Close()
+		baseURL := testsupport.ClosedListenerURL(t)
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL)
 		if err != nil {

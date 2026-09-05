@@ -6,9 +6,9 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 63 | write the live test, then delete the mock |
-| `keep` | 105 | legitimate unit test under ADR-079 |
-| `follows-callers` | 20 | goes when the tests supplying its handlers go |
+| `move-to-live` | 57 | write the live test, then delete the mock |
+| `keep` | 106 | legitimate unit test under ADR-079 |
+| `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
 ## By file
@@ -24,14 +24,13 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/pullrequestactivity/service_test.go` | 4 | 2 | 0 | 1 | 1 |
 | `internal/services/repository/admin_test.go` | 4 | 2 | 0 | 1 | 1 |
 | `internal/cli/cmd/bulk/bulk_test.go` | 2 | 2 | 0 | 0 | 0 |
-| `internal/cli/cmd/pr/pr_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/cli/governance_harden_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/mcp/tools_pr_review_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/mcp/tools_pr_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/services/pullrequest/review_test.go` | 2 | 2 | 0 | 0 | 0 |
-| `internal/services/quality/service_test.go` | 8 | 1 | 0 | 6 | 1 |
-| `internal/services/pullrequest/service_test.go` | 7 | 1 | 0 | 3 | 3 |
 | `internal/services/branch/service_test.go` | 6 | 1 | 0 | 4 | 1 |
+| `internal/services/pullrequest/service_test.go` | 6 | 1 | 0 | 4 | 1 |
+| `internal/services/quality/service_test.go` | 6 | 1 | 0 | 4 | 1 |
 | `internal/services/tag/service_test.go` | 4 | 1 | 0 | 2 | 1 |
 | `internal/cli/cmd/reviewer/reviewer_test.go` | 3 | 1 | 0 | 2 | 0 |
 | `internal/cli/pr_inspection_test.go` | 3 | 1 | 0 | 2 | 0 |
@@ -39,17 +38,13 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/root_test.go` | 3 | 1 | 0 | 2 | 0 |
 | `internal/services/commit/service_test.go` | 3 | 1 | 0 | 1 | 1 |
 | `internal/services/forksync/service_test.go` | 3 | 1 | 0 | 1 | 1 |
-| `internal/cli/cmd/pr/reviewer_helpers_test.go` | 2 | 1 | 0 | 1 | 0 |
+| `internal/cli/cmd/pr/pr_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/openapi/client_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/services/reviewer/service_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/cli/cmd/auth/gpg_test.go` | 1 | 1 | 0 | 0 | 0 |
-| `internal/cli/cmd/branch/branch_test.go` | 1 | 1 | 0 | 0 | 0 |
-| `internal/cli/cmd/build/build_test.go` | 1 | 1 | 0 | 0 | 0 |
-| `internal/cli/cmd/commit/commit_test.go` | 1 | 1 | 0 | 0 | 0 |
-| `internal/cli/cmd/diff/diff_test.go` | 1 | 1 | 0 | 0 | 0 |
-| `internal/cli/cmd/insights/insights_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/pr/checkout_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/pr/create_interactive_test.go` | 1 | 1 | 0 | 0 | 0 |
+| `internal/cli/cmd/pr/reviewer_helpers_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/pr/status_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/project/permissions_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/permission_contract_test.go` | 1 | 1 | 0 | 0 | 0 |
@@ -59,24 +54,29 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/pr_checkout_failures_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/pr_draft_automerge_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/mcp/client_compat_test.go` | 1 | 1 | 0 | 0 | 0 |
-| `internal/transport/httpclient/client_test.go` | 25 | 0 | 0 | 25 | 0 |
+| `internal/transport/httpclient/client_test.go` | 23 | 0 | 0 | 23 | 0 |
 | `internal/transport/githubrelease/client_test.go` | 12 | 0 | 0 | 0 | 12 |
 | `internal/cli/cmd/api/api_test.go` | 5 | 0 | 0 | 5 | 0 |
-| `internal/services/diff/service_test.go` | 5 | 0 | 0 | 4 | 1 |
 | `internal/services/sshkey/service_test.go` | 5 | 0 | 0 | 4 | 1 |
 | `internal/services/browse/service_test.go` | 4 | 0 | 0 | 3 | 1 |
+| `internal/services/diff/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/services/gpgkey/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/services/token/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/services/project/service_test.go` | 3 | 0 | 0 | 2 | 1 |
 | `internal/services/reviewer/regressions_test.go` | 3 | 0 | 0 | 3 | 0 |
+| `internal/cli/cmd/pr/permission_contract_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/permissionchecker/permission_checker_test.go` | 2 | 0 | 0 | 2 | 0 |
-| `internal/services/contract/paging_contract_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/services/jira/service_test.go` | 2 | 0 | 0 | 1 | 1 |
 | `internal/services/pullrequest/inspection_test.go` | 2 | 0 | 0 | 1 | 1 |
 | `internal/services/reviewer/service_coverage_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/transport/sigstore/trustedroot_test.go` | 2 | 0 | 0 | 0 | 2 |
+| `internal/cli/cmd/branch/branch_test.go` | 1 | 0 | 0 | 1 | 0 |
+| `internal/cli/cmd/build/build_test.go` | 1 | 0 | 0 | 1 | 0 |
+| `internal/cli/cmd/commit/commit_test.go` | 1 | 0 | 0 | 1 | 0 |
+| `internal/cli/cmd/diff/diff_test.go` | 1 | 0 | 0 | 1 | 0 |
+| `internal/cli/cmd/insights/insights_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/repo/sync_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/tag/tag_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/commit_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/new_commands_test.go` | 1 | 0 | 0 | 1 | 0 |
-| `internal/mcp/server_test.go` | 1 | 0 | 0 | 1 | 0 |
+| `internal/services/contract/paging_contract_test.go` | 1 | 0 | 0 | 1 | 0 |

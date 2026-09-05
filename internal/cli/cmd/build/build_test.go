@@ -3,15 +3,14 @@ package buildcmd_test
 import (
 	"bytes"
 	"context"
-	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	buildcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/build"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 type testPermissionChecker struct{}
@@ -20,59 +19,13 @@ func (testPermissionChecker) CheckRepoPermission(ctx context.Context, projectKey
 	return nil
 }
 
+// newMockBuildServer opens a listener that fails the test if anything reaches it.
+//
+// Everything still here refuses before it asks -- bad flags, a missing repository selector, a body that is not JSON, a permission that is denied. The handwritten Bitbucket it used to be answered build statuses nobody reads any more, and would have answered a request that should never have been made.
 func newMockBuildServer(t *testing.T) *httptest.Server {
 	t.Helper()
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		path := r.URL.Path
-
-		switch {
-		case r.Method == http.MethodPost && path == "/rest/build-status/latest/commits/commit1":
-			w.WriteHeader(http.StatusNoContent)
-
-		case r.Method == http.MethodGet && path == "/rest/build-status/latest/commits/commit1":
-			if r.URL.Query().Get("key") == "empty" {
-				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"key":"ci1","name":"CI Build","state":"SUCCESSFUL","url":"http://ci.example.com","description":"Passed"}]}`))
-
-		case r.Method == http.MethodGet && path == "/rest/build-status/latest/commits/stats/commit1":
-			_, _ = w.Write([]byte(`{"successful":1,"failed":0,"inProgress":0,"unknown":0,"cancelled":0}`))
-
-		case r.Method == http.MethodPost && path == "/rest/build-status/latest/commits/stats":
-			_, _ = w.Write([]byte(`{"commit1":{"successful":1,"failed":0,"inProgress":0,"unknown":0,"cancelled":0}}`))
-
-		case (r.Method == http.MethodPost || r.Method == http.MethodPut) && strings.HasSuffix(path, "/commits/commit1/builds"):
-			w.WriteHeader(http.StatusNoContent)
-
-		case r.Method == http.MethodGet && strings.HasSuffix(path, "/commits/commit1/builds"):
-			_, _ = w.Write([]byte(`{"key":"ci1","name":"CI Build","state":"SUCCESSFUL","url":"http://ci.example.com"}`))
-
-		case r.Method == http.MethodDelete && strings.HasSuffix(path, "/commits/commit1/builds"):
-			w.WriteHeader(http.StatusNoContent)
-
-		case r.Method == http.MethodGet && strings.Contains(path, "/required-builds/latest/projects/PRJ/repos/demo/conditions"):
-			if r.URL.Query().Get("empty") == "true" {
-				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-				return
-			}
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":501,"refMatcher":{"id":"refs/heads/main"},"buildParentKeys":["ci-required"],"count":1}]}`))
-
-		case r.Method == http.MethodPost && strings.Contains(path, "/required-builds/latest/projects/PRJ/repos/demo/condition"):
-			_, _ = w.Write([]byte(`{"id":501,"refMatcher":{"id":"refs/heads/main"},"buildParentKeys":["ci-required"],"count":1}`))
-
-		case r.Method == http.MethodPut && strings.Contains(path, "/required-builds/latest/projects/PRJ/repos/demo/condition/501"):
-			_, _ = w.Write([]byte(`{"id":501,"refMatcher":{"id":"refs/heads/main"},"buildParentKeys":["ci-updated"],"count":1}`))
-
-		case r.Method == http.MethodDelete && strings.Contains(path, "/required-builds/latest/projects/PRJ/repos/demo/condition/501"):
-			w.WriteHeader(http.StatusNoContent)
-
-		default:
-			http.NotFound(w, r)
-		}
-	}))
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(server.Close)
 
 	return server
