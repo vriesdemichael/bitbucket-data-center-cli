@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 4 | write the live test, then delete the mock |
+| `move-to-live` | 2 | write the live test, then delete the mock |
 | `keep` | 142 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
@@ -15,8 +15,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | file | total | move-to-live | remove | keep | other |
 |---|---:|---:|---:|---:|---:|
-| `internal/cli/cmd/pr/reviewer_automation_test.go` | 4 | 1 | 0 | 3 | 0 |
-| `internal/cli/cmd/pr/pr_test.go` | 3 | 1 | 0 | 2 | 0 |
 | `internal/mcp/tools_pr_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/mcp/client_compat_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/transport/httpclient/client_test.go` | 23 | 0 | 0 | 23 | 0 |
@@ -32,6 +30,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/diff/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/services/gpgkey/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/services/token/service_test.go` | 4 | 0 | 0 | 3 | 1 |
+| `internal/cli/cmd/pr/reviewer_automation_test.go` | 3 | 0 | 0 | 3 | 0 |
 | `internal/cli/cmd/reviewer/reviewer_test.go` | 3 | 0 | 0 | 3 | 0 |
 | `internal/cli/pr_inspection_test.go` | 3 | 0 | 0 | 3 | 0 |
 | `internal/cli/pr_status_command_test.go` | 3 | 0 | 0 | 3 | 0 |
@@ -40,6 +39,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/reviewer/regressions_test.go` | 3 | 0 | 0 | 3 | 0 |
 | `internal/services/tag/service_test.go` | 3 | 0 | 0 | 2 | 1 |
 | `internal/cli/cmd/pr/permission_contract_test.go` | 2 | 0 | 0 | 2 | 0 |
+| `internal/cli/cmd/pr/pr_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/cmd/project/permissions_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/cmd/repo/permissions_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/cmd/webhook/webhook_test.go` | 2 | 0 | 0 | 2 | 0 |

@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 178,
+    "mocked_servers": 176,
     "files": 61,
-    "functions": 169,
+    "functions": 167,
     "by_class": {
-      "bitbucket-behaviour": 4,
+      "bitbucket-behaviour": 2,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
@@ -14,7 +14,6 @@
       "unreached-guard": 39
     },
     "behaviour_by_package": {
-      "internal/cli/cmd/pr": 2,
       "internal/mcp": 2
     }
   },
@@ -236,23 +235,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/pr_test.go",
-      "line": 38,
-      "function": "newMockPRServer",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/pr/pr_test.go",
-      "line": 301,
+      "line": 90,
       "function": "TestPRValidationErrors",
       "class": "unreached-guard",
       "signals": [
@@ -264,7 +247,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/pr_test.go",
-      "line": 338,
+      "line": 127,
       "function": "TestPRCreateFromAForkRefusesAMalformedRepository",
       "class": "unreached-guard",
       "signals": [
@@ -276,7 +259,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 165,
+      "line": 86,
       "function": "newReviewerFailureServer",
       "class": "unreachable-state",
       "signals": [
@@ -293,7 +276,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 361,
+      "line": 282,
       "function": "TestPRReviewerAddReportsPartialSuccess",
       "class": "transport-fault",
       "signals": [
@@ -311,7 +294,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 465,
+      "line": 339,
       "function": "TestPRReviewerAddPartialFailureEmitsOneJSONDocument",
       "class": "transport-fault",
       "signals": [
@@ -326,22 +309,6 @@
       "action": "keep",
       "reason": "same injected partial failure; the subject is that the envelope stays a single document.",
       "reviewed": true
-    },
-    {
-      "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 561,
-      "function": "newReviewerGroupServer",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_helpers_test.go",

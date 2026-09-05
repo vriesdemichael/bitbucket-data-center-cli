@@ -147,6 +147,29 @@ func TestLivePRReviewerAddAndRemove(t *testing.T) {
 		t.Fatalf("expected %s to be a reviewer, got %v", reviewer.Username, names)
 	}
 
+	// The id in the result is the pull request's, not the participant
+	// response's -- that payload carries no id, so reading it from there
+	// reported "#0". A unit test caught this against a written reply; here the
+	// number has to be the one the pull request really has.
+	if id, _ := extractPRData(decodeJSONMap(t, addOutput))["id"].(float64); fmt.Sprintf("%d", int(id)) != prID {
+		t.Errorf("reviewer add reported pull request id %v, want %s:\n%s", id, prID, addOutput)
+	}
+
+	// A second reviewer, because adding the first one again reports "already
+	// present" and never names the pull request.
+	second, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create the second reviewer failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, second.Username, "REPO_READ"); err != nil {
+		t.Fatalf("grant the second reviewer read access failed: %v", err)
+	}
+
+	humanAdd := mustLiveHumanCLI(t, "pr", "review", "reviewer", "add", prID, "--user", second.Username)
+	if !strings.Contains(humanAdd, "pull request #"+prID) {
+		t.Errorf("the human line names the wrong pull request:\n%s", humanAdd)
+	}
+
 	removeOutput, err := executeLiveCLI(t, "--json", "pr", "review", "reviewer", "remove", prID, "--user", reviewer.Username)
 	if err != nil {
 		t.Fatalf("pr review reviewer remove failed: %v\noutput: %s", err, removeOutput)
