@@ -28,7 +28,7 @@ import (
 // began with a request that could not succeed. This now pins the order: the
 // number first, the object only after a validation error.
 //
-// mock-inventory: canned-response — two servers that disagree about a payload shape, which is what a version fallback is for and what one instance cannot be; the subject is the order of the attempts.
+// mock-inventory: unreachable-state — an instance that wants the object shape, which is the older Bitbucket this fallback exists for and not the one we can run; the subject is the order of the attempts.
 func TestUpdateRepositoryPullRequestRequiredApproversCount(t *testing.T) {
 	t.Run("the number is enough, and is all that is sent", func(t *testing.T) {
 		calls := 0

@@ -1,17 +1,9 @@
 package commitcmd
 
 import (
-	"bytes"
-	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
-
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
-	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 func TestCommitSafeHelpers(t *testing.T) {
@@ -49,31 +41,8 @@ func TestCommitDefaults(t *testing.T) {
 	}
 }
 
-func TestCommitListEmptyState(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-	}))
-	t.Cleanup(server.Close)
-
-	cfg := config.AppConfig{BitbucketURL: server.URL, ProjectKey: "PRJ"}
-	deps := Dependencies{
-		LoadConfig: func() (config.AppConfig, error) { return cfg, nil },
-		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
-			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
-			return cfg, client, err
-		},
-	}
-
-	cmd := New(deps)
-	buf := new(bytes.Buffer)
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"list", "--repo", "PRJ/demo"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on empty commit list: %v", err)
-	}
-	if !strings.Contains(buf.String(), "No commits found") {
-		t.Fatalf("expected No commits found in output: %s", buf.String())
-	}
-}
+// TestCommitListEmptyState is live now, in TestLivePRInspectionEmptyResults:
+// `commit list --path no/such/path.txt` against a real repository, which is
+// the cheapest genuinely empty answer Bitbucket will give. The unit version
+// held the message against an empty page it wrote itself, so it agreed that
+// the page was empty by construction.

@@ -101,40 +101,6 @@ func TestRepositoryIDValidation(t *testing.T) {
 	}
 }
 
-func TestRepositoryID(t *testing.T) {
-	t.Run("returns the numeric id", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"id":77,"slug":"demo"}`))
-		}))
-		defer server.Close()
-
-		client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-
-		id, err := NewService(client).RepositoryID(context.Background(), "PRJ", "demo")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if id != "77" {
-			t.Fatalf("id = %q, want %q", id, "77")
-		}
-	})
-
-	t.Run("errors when the response carries no id", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"slug":"demo"}`))
-		}))
-		defer server.Close()
-
-		client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-
-		if _, err := NewService(client).RepositoryID(context.Background(), "PRJ", "demo"); err == nil {
-			t.Fatal("expected an error when the repository response has no id")
-		}
-	})
-}
-
 func TestSelectMembers(t *testing.T) {
 	members := []string{"alice", "bob", "carol", "dave"}
 	busy := map[string]int{"alice": 5, "bob": 0, "carol": 3, "dave": 1}
@@ -186,4 +152,30 @@ func TestSelectMembers(t *testing.T) {
 			}
 		}
 	})
+}
+
+// The half of TestRepositoryID that returned the numeric id is live now, and
+// not as its own test: a reviewer condition on a repository will not be
+// created without one, so every `reviewer condition create --repo` in
+// TestLiveDefaultReviewers depends on this call having found it. The unit
+// version read 77 out of a payload that said 77.
+//
+// What is left is the response with no id at all.
+//
+// mock-inventory: unreachable-state — a repository Bitbucket describes without an id, which it does not do; the subject is that a missing id is an error rather than a nil dereference or the string "0".
+func TestRepositoryIDErrorsWhenTheResponseCarriesNoID(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"slug":"demo"}`))
+	}))
+	defer server.Close()
+
+	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	if err != nil {
+		t.Fatalf("create client: %v", err)
+	}
+
+	if _, err := NewService(client).RepositoryID(context.Background(), "PRJ", "demo"); err == nil {
+		t.Fatal("a repository with no id resolved to one anyway")
+	}
 }

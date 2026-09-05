@@ -11,6 +11,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
@@ -159,7 +160,7 @@ func TestBrowseServiceEdit(t *testing.T) {
 	})
 
 	t.Run("empty path validation", func(t *testing.T) {
-		service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {})
+		service := newBrowseTestService(t, testsupport.UnreachedHandler(t))
 		_, err := service.Edit(context.Background(), repo, "", EditInput{})
 		if err == nil || !strings.Contains(err.Error(), "path is required") {
 			t.Fatalf("expected path validation error, got %v", err)
@@ -167,7 +168,7 @@ func TestBrowseServiceEdit(t *testing.T) {
 	})
 
 	t.Run("empty repo validation", func(t *testing.T) {
-		service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {})
+		service := newBrowseTestService(t, testsupport.UnreachedHandler(t))
 		_, err := service.Edit(context.Background(), RepositoryRef{}, "file.txt", EditInput{})
 		if err == nil || !strings.Contains(err.Error(), "project/repo") {
 			t.Fatalf("expected repo validation error, got %v", err)
@@ -215,9 +216,7 @@ func TestBrowseServiceEdit(t *testing.T) {
 func TestBrowseServiceRejectsTraversal(t *testing.T) {
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
-	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		t.Errorf("server must not be reached for a traversal path, got %s", r.URL.Path)
-	})
+	service := newBrowseTestService(t, testsupport.UnreachedHandler(t))
 
 	for _, path := range []string{"../../../etc/passwd", "docs/../../secret", ".."} {
 		if _, err := service.Raw(context.Background(), repo, path, ""); err == nil {
@@ -281,9 +280,7 @@ func TestRepositoryAPIPathEscapesRepositoryRef(t *testing.T) {
 }
 
 func TestBrowseServiceTreeRejectsTraversal(t *testing.T) {
-	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		t.Errorf("server must not be reached for a traversal path, got %s", r.URL.Path)
-	})
+	service := newBrowseTestService(t, testsupport.UnreachedHandler(t))
 
 	_, err := service.Tree(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "../secrets", TreeOptions{})
 	if err == nil || apperrors.ExitCode(err) != 2 {

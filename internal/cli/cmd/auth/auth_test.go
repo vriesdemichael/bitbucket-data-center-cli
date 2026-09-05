@@ -5,10 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,7 +18,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -824,43 +821,6 @@ func TestPersonalAccessTokenURL(t *testing.T) {
 			t.Fatal("expected validation error for empty host")
 		}
 	})
-}
-
-func TestTokenURLCommandWithUserSlug(t *testing.T) {
-	slug := "alice"
-	respondWith := func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"name":"alice","slug":%q,"displayName":"Alice","id":1,"type":"NORMAL","active":true}`, slug)
-	}
-	server := httptest.NewServer(http.HandlerFunc(respondWith))
-	defer server.Close()
-
-	cmd := New(Dependencies{
-		JSONEnabled: func() bool { return false },
-		LoadConfig: func() (config.AppConfig, error) {
-			return config.AppConfig{BitbucketURL: server.URL, BitbucketToken: "tok"}, nil
-		},
-		WriteJSON: func(writer io.Writer, payload any) error {
-			return jsonoutput.Write(writer, payload)
-		},
-		NewUsersClient: func(cfg config.AppConfig) (usersClient, error) {
-			return openapi.NewClientWithResponsesFromConfig(cfg)
-		},
-	})
-
-	buf := &bytes.Buffer{}
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"token-url"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("token-url with slug failed: %v", err)
-	}
-
-	got := buf.String()
-	expected := fmt.Sprintf("/plugins/servlet/access-tokens/users/%s/manage", slug)
-	if !strings.Contains(got, expected) {
-		t.Fatalf("expected per-user PAT URL in output, got: %q", got)
-	}
 }
 
 // TestAuthNonJSONHumanOutputPaths covers the human-readable output branches that are skipped
@@ -1884,3 +1844,8 @@ func TestNoGlobalCertificateFallsBackToTheEnvironment(t *testing.T) {
 		t.Errorf("client cert = %q, want the environment's value when no flag was passed", got)
 	}
 }
+
+// TestTokenURLCommandWithUserSlug is live now, in
+// TestLiveAuthIdentityAndTokenURL: `auth token-url` with no --host, whose
+// per-user path can only be built from the slug the server reports. The unit
+// version wrote the users payload the command then read back.

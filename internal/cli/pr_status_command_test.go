@@ -282,29 +282,6 @@ func TestPullRequestStatusHumanOutput(t *testing.T) {
 	}
 }
 
-// mock-inventory: canned-response — an instance with nothing on the board; the subject is that each section says so.
-func TestPullRequestStatusReportsEmptySections(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[]}`))
-	}))
-	t.Cleanup(server.Close)
-
-	configurePullRequestStatusEnv(t, server.URL, "me")
-	withGitBackend(t, inferenceGitBackendStub{repoRoot: "/repo", branch: "feature/x"})
-
-	output := executePullRequestStatus(t, "pr", "status")
-	for _, expected := range []string{
-		"No pull request for the current branch",
-		"You have no open pull requests",
-		"You have no pull requests to review",
-	} {
-		if !strings.Contains(output, expected) {
-			t.Fatalf("expected %q in pr status output, got:\n%s", expected, output)
-		}
-	}
-}
-
 // TestPullRequestStatusFailsWhenTheDashboardFails draws the line the other way
 // from the current-branch section: the two dashboard queries are the command's
 // reason to exist, so a failure there is a failure, not a note.
@@ -383,3 +360,9 @@ func TestPullRequestStatusWithoutAGitBackend(t *testing.T) {
 		t.Fatalf("expected a note when there is no git backend at all, got: %q", note)
 	}
 }
+
+// TestPullRequestStatusReportsEmptySections is live now, in
+// TestLivePullRequestStatus, as a user created a moment earlier who
+// has authored nothing and been asked to review nothing. The unit version
+// answered every dashboard query with an empty page, which is also what a
+// broken query looks like.

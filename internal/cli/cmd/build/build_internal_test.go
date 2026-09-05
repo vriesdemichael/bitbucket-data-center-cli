@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
@@ -123,13 +121,10 @@ func (m *mockBuildPermChecker) CheckProjectAdmin(ctx context.Context, projectKey
 }
 
 func TestBuildDryRunPermissionRejection(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{}`))
-	}))
-	t.Cleanup(server.Close)
+	// A URL, not a server: the permission checker refuses before a request is built, so a listener here could only hide the refusal not happening.
+	const serverURL = "http://bitbucket.invalid"
 
-	cfg := config.AppConfig{BitbucketURL: server.URL, ProjectKey: "PRJ"}
+	cfg := config.AppConfig{BitbucketURL: serverURL, ProjectKey: "PRJ"}
 	deps := Dependencies{
 		DryRunEnabled: func() bool { return true },
 		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },
@@ -173,46 +168,8 @@ func TestBuildDryRunPermissionRejection(t *testing.T) {
 	}
 }
 
-func TestBuildStatusSetExtendedFlags(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodPost {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		http.NotFound(w, r)
-	}))
-	t.Cleanup(server.Close)
-
-	cfg := config.AppConfig{BitbucketURL: server.URL}
-	deps := Dependencies{
-		LoadConfig: func() (config.AppConfig, error) { return cfg, nil },
-		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
-			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
-			return cfg, client, err
-		},
-	}
-
-	cmd := New(deps)
-	buf := new(bytes.Buffer)
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{
-		"status", "set", "commit123",
-		"--key", "ci-build",
-		"--state", "SUCCESSFUL",
-		"--url", "https://ci.example.com/build/1",
-		"--name", "CI Build",
-		"--description", "Build succeeded",
-		"--duration-ms", "120000",
-		"--ref", "refs/heads/main",
-		"--parent", "parent-key",
-		"--build-number", "42",
-	})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error setting build status with extended flags: %v", err)
-	}
-	if !strings.Contains(buf.String(), "Build status ci-build set on commit123") {
-		t.Fatalf("expected Build status set in output: %s", buf.String())
-	}
-}
+// TestBuildStatusSetExtendedFlags is live now, in
+// TestLiveCLICommandCoverage: the same ten flags, and then a `build status
+// get` that has to find them. The unit version posted them at a handler that
+// answered 204 to anything, so it could only fail if the command did not send
+// a POST at all.

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
@@ -54,13 +53,9 @@ func TestReviewerGroupDefaults(t *testing.T) {
 }
 
 func TestReviewerGroupPermissionRejections(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`[{"id":201,"name":"group1"}]`))
-	}))
-	t.Cleanup(server.Close)
-
-	cfg := config.AppConfig{BitbucketURL: server.URL, ProjectKey: "PRJ"}
+	// A URL, not a server: the permission checker refuses before a request is
+	// built, so a listener here could only hide the refusal not happening.
+	cfg := config.AppConfig{BitbucketURL: "http://bitbucket.invalid", ProjectKey: "PRJ"}
 	deps := Dependencies{
 		DryRunEnabled: func() bool { return true },
 		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },

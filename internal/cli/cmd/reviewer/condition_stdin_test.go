@@ -2,8 +2,6 @@ package reviewercmd
 
 import (
 	"bytes"
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -12,17 +10,15 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
-// conditionDeps builds a command against a stub that accepts any write.
+// conditionDeps builds a command against a URL that is not a server.
+//
+// Nothing here needs a reply. A case that must be refused is refused before a
+// request exists, and a case that must get past that refusal only has to fail
+// some other way.
 func conditionDeps(t *testing.T) Dependencies {
 	t.Helper()
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":1,"requiredApprovals":1}`))
-	}))
-	t.Cleanup(server.Close)
-
-	cfg := config.AppConfig{BitbucketURL: server.URL, ProjectKey: "PRJ"}
+	cfg := config.AppConfig{BitbucketURL: "http://bitbucket.invalid", ProjectKey: "PRJ"}
 	return Dependencies{
 		JSONEnabled:   func() bool { return false },
 		DryRunEnabled: func() bool { return false },

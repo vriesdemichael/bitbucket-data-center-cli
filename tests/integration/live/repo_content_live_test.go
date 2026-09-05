@@ -49,6 +49,17 @@ func TestLiveRepoContentCommands(t *testing.T) {
 		}
 	}
 
+	// A commit compared with itself: no changes, and no error either. A unit
+	// test asserted this against a handwritten empty page, which cannot tell an
+	// empty comparison from a comparison that was never made.
+	sameOutput, err := executeLiveCLI(t, "--json", "repo", "compare", repo.CommitIDs[0], repo.CommitIDs[0], "--repo", repoRef)
+	if err != nil {
+		t.Fatalf("repo compare of a commit with itself failed: %v\noutput: %s", err, sameOutput)
+	}
+	if changes, _ := decodeJSONMap(t, sameOutput)["changes"].([]any); len(changes) != 0 {
+		t.Fatalf("a commit compared with itself reported %d changes:\n%s", len(changes), sameOutput)
+	}
+
 	// Without -o the command writes <slug>.<format> into the working directory,
 	// which for a test is the package directory. Naming the path keeps the
 	// archive in the temp directory and gives the test something to open.

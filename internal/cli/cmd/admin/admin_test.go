@@ -3,43 +3,10 @@ package admincmd
 import (
 	"bytes"
 	"errors"
-	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
-
-func TestAdminHealthLimitedAuth(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = w.Write([]byte(`{"errors":[{"message":"Unauthorized"}]}`))
-	}))
-	t.Cleanup(server.Close)
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_TOKEN", "")
-
-	deps := Dependencies{
-		LoadConfig: func() (config.AppConfig, error) {
-			return config.AppConfig{BitbucketURL: server.URL}, nil
-		},
-	}
-
-	cmd := New(deps)
-	buf := new(bytes.Buffer)
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"health"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on limited auth: %v", err)
-	}
-	if !strings.Contains(buf.String(), "auth=limited") {
-		t.Fatalf("expected auth=limited in output: %s", buf.String())
-	}
-}
 
 func TestAdminHealthErrors(t *testing.T) {
 	// Error on LoadConfig
@@ -91,3 +58,9 @@ func TestAdminDefaults(t *testing.T) {
 		}
 	}
 }
+
+// TestAdminHealthLimitedAuth is live now, in
+// TestLiveAdminHealthReportsLimitedAuth: a real instance asked without
+// credentials, and the reduced report that comes back. The unit version
+// answered 401 to every request, so it asserted that our reader reads a status
+// we wrote.

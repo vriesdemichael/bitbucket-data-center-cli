@@ -119,48 +119,6 @@ func TestIsMissingResource(t *testing.T) {
 	}
 }
 
-// The server's own username wins over whatever was configured, because the
-// configured value may be an email address or differ in case and a mismatch
-// leaves the author in the reviewer list.
-func TestResolveAuthorUsername(t *testing.T) {
-	newConfig := func(serverURL, username string) config.AppConfig {
-		return config.AppConfig{
-			BitbucketURL:      serverURL,
-			BitbucketToken:    "test-token",
-			BitbucketUsername: username,
-			RequestTimeout:    5 * time.Second,
-		}
-	}
-
-	t.Run("prefers the authenticated username", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("X-AUSERNAME", "server-slug")
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"values":[]}`))
-		}))
-		defer server.Close()
-
-		cfg := newConfig(server.URL, "configured.name@example.com")
-		got := resolveCurrentUsername(t.Context(), httpclient.NewFromConfig(cfg), cfg)
-		if got != "server-slug" {
-			t.Fatalf("author = %q, want %q", got, "server-slug")
-		}
-	})
-
-	t.Run("falls back to the configured username", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusInternalServerError)
-		}))
-		defer server.Close()
-
-		cfg := newConfig(server.URL, "configured-user")
-		got := resolveCurrentUsername(t.Context(), httpclient.NewFromConfig(cfg), cfg)
-		if got != "configured-user" {
-			t.Fatalf("author = %q, want %q", got, "configured-user")
-		}
-	})
-}
-
 // A group name that cannot be read because the server failed is not a licence to
 // treat the name as a username; only a genuine "no such group" is.
 func TestAtGroupShorthandDoesNotMaskServerFailures(t *testing.T) {
@@ -188,5 +146,34 @@ func TestAtGroupShorthandDoesNotMaskServerFailures(t *testing.T) {
 	}
 	if strings.Contains(out, "Added reviewer some-team") {
 		t.Fatalf("the group name must not be assigned as a username, got:\n%s", out)
+	}
+}
+
+// The half of TestResolveAuthorUsername that preferred the server's slug is
+// live now, and not as its own test: under a token there is no configured
+// username at all, so the approve preview in
+// TestLiveDryRunPredictionsReadRealState can only reach "no-op" if
+// X-AUSERNAME resolved the caller. The unit version set that header itself,
+// which proved the CLI reads a header the CLI chose.
+//
+// What is left is the fallback, and it needs no header -- only a lookup that
+// does not answer.
+//
+// mock-inventory: transport-fault — a closed listener, which is what "the lookup did not answer" is; the subject is that the configured username survives it rather than being replaced by the empty string.
+func TestResolveAuthorUsernameFallsBackWhenTheLookupFails(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	closedURL := server.URL
+	server.Close()
+
+	cfg := config.AppConfig{
+		BitbucketURL:      closedURL,
+		BitbucketToken:    "test-token",
+		BitbucketUsername: "configured-user",
+		RequestTimeout:    5 * time.Second,
+	}
+
+	got := resolveCurrentUsername(t.Context(), httpclient.NewFromConfig(cfg), cfg)
+	if got != "configured-user" {
+		t.Fatalf("author = %q, want the configured username to survive a failed lookup", got)
 	}
 }

@@ -81,32 +81,9 @@ func TestAuthGpgKeyCommandsAdditionalCoverage(t *testing.T) {
 			t.Fatal("expected error when client creation fails")
 		}
 	}
-
-	// 3. List keys when keys list is empty
-	{
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-		}))
-		defer server.Close()
-		deps := Dependencies{
-			LoadConfig: func() (config.AppConfig, error) {
-				return config.AppConfig{
-					BitbucketURL: server.URL,
-				}, nil
-			},
-		}
-		cmd := New(deps)
-		buffer := &bytes.Buffer{}
-		cmd.SetOut(buffer)
-		cmd.SetArgs([]string{"gpg-key", "list"})
-		if err := cmd.Execute(); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !strings.Contains(buffer.String(), "No GPG keys found") {
-			t.Fatalf("expected empty message, got: %s", buffer.String())
-		}
-	}
+	// 3. Listing an empty set of keys is live now, in
+	// TestLiveGPGKeyLifecycle, against a list that is empty because clear
+	// emptied it. It used to be here, against a page written to be empty.
 
 	// 4. Add key with empty key text
 	{
@@ -137,14 +114,12 @@ func TestAuthGpgKeyCommandsAdditionalCoverage(t *testing.T) {
 
 	// 6. Clear keys confirmation ("y")
 	{
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
-		}))
-		defer server.Close()
+		// A URL, not a server: the confirmation is refused before a request is
+		// built, so a listener could only hide the refusal not happening.
 		deps := Dependencies{
 			LoadConfig: func() (config.AppConfig, error) {
 				return config.AppConfig{
-					BitbucketURL: server.URL,
+					BitbucketURL: "http://bitbucket.invalid",
 				}, nil
 			},
 		}

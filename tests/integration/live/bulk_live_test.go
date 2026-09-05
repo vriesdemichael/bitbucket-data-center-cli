@@ -98,6 +98,24 @@ func TestLiveBulkPolicyPlanApplyStatus(t *testing.T) {
 		t.Fatalf("expected status operation id %s, got %s", status.OperationID, loaded.OperationID)
 	}
 
+	// The human renderings, against the same real project. A unit test held
+	// these against a repository listing and a settings reply it wrote itself,
+	// so the target count it printed was the count the fixture contained.
+	humanPlan := mustLiveHumanCLI(t, "bulk", "plan", "-f", policyPath)
+	if !strings.Contains(humanPlan, "Bulk plan ready") {
+		t.Fatalf("expected the human plan summary, got: %s", humanPlan)
+	}
+	for _, repo := range seeded.Repos {
+		if !strings.Contains(humanPlan, seeded.Key+"/"+repo.Slug) {
+			t.Fatalf("the human plan named no target %s/%s:\n%s", seeded.Key, repo.Slug, humanPlan)
+		}
+	}
+
+	humanStatus := mustLiveHumanCLI(t, "bulk", "status", status.OperationID)
+	if !strings.Contains(humanStatus, "Plan hash:") || !strings.Contains(humanStatus, status.OperationID) {
+		t.Fatalf("expected the human status to name the plan hash and operation, got: %s", humanStatus)
+	}
+
 	for _, repo := range seeded.Repos {
 		settings, err := service.GetRepositoryPullRequestSettings(ctx, reposettings.RepositoryRef{ProjectKey: seeded.Key, Slug: repo.Slug})
 		if err != nil {

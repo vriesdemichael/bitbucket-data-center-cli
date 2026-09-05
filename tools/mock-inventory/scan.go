@@ -614,7 +614,7 @@ const directivePrefix = "mock-inventory:"
 func knownClass(class Class) bool {
 	switch class {
 	case ClassBehaviour, ClassStatusTaxonomy, ClassTransportFault, ClassCannedResponse,
-		ClassExternalService, ClassUnreachedGuard, ClassHarnessConstructor, ClassUnclear:
+		ClassExternalService, ClassUnreachedGuard, ClassHarnessConstructor, ClassRoutingBeacon, ClassUnreachableState, ClassUnclear:
 		return true
 	default:
 		return false
