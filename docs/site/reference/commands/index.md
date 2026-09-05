@@ -1706,7 +1706,7 @@ Usage:
   bb branch model [command]
 
 Available Commands:
-  inspect     Inspect branch refs that contain a commit
+  inspect     Show the branch a commit belongs to
   update      Update repository default branch used by branch model settings
 
 Global Flags:
@@ -1732,10 +1732,10 @@ Use "bb branch model [command] --help" for more information about a command.
 
 ## `bb branch model inspect`
 
-Inspect branch refs that contain a commit
+Show the branch a commit belongs to
 
 ```text
-Inspect branch refs that contain a commit
+Show the branch a commit belongs to
 
 Usage:
   bb branch model inspect <commit> [flags]
