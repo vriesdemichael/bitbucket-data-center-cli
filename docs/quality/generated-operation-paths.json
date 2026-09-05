@@ -426,10 +426,6 @@
       "method": "GET",
       "path": "/gpg/latest/keys"
     },
-    "GetLatestInvocation1": {
-      "method": "GET",
-      "path": "/api/latest/projects/%s/repos/%s/webhooks/%s/latest"
-    },
     "GetMultipleBuildStatusStats": {
       "method": "POST",
       "path": "/build-status/latest/commits/stats"
@@ -625,10 +621,6 @@
     "Search": {
       "method": "GET",
       "path": "/api/latest/projects/%s/repos/%s/participants"
-    },
-    "SearchWebhooks": {
-      "method": "GET",
-      "path": "/api/latest/projects/%s/repos/%s/webhooks/search"
     },
     "Set1": {
       "method": "PUT",
