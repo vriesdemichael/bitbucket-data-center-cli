@@ -96,7 +96,7 @@ func (service *Service) Tree(ctx context.Context, repo RepositoryRef, path strin
 			isLastPage := response.IsLastPage
 			page := openapi.Page[string]{Values: names, IsLastPage: &isLastPage}
 			if response.NextPageStart != nil {
-				next := int32(*response.NextPageStart)
+				next := *response.NextPageStart
 				page.NextPageStart = &next
 			}
 

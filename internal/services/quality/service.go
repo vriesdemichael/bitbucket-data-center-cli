@@ -128,7 +128,7 @@ func (service *Service) GetBuildStatuses(ctx context.Context, commitID string, m
 			return openapi.Page[openapigenerated.RestBuildStatus]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }
@@ -183,7 +183,7 @@ func (service *Service) ListRequiredBuildChecks(ctx context.Context, repo Reposi
 			return openapi.Page[openapigenerated.RestRequiredBuildCondition]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }
@@ -322,7 +322,7 @@ func (service *Service) ListReports(ctx context.Context, repo RepositoryRef, com
 			return openapi.Page[openapigenerated.RestInsightReport]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }

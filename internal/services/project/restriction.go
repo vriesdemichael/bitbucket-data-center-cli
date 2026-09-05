@@ -12,8 +12,9 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
-// AllResults asks for every restriction rather than a page of them. A dry-run
-// existence check needs the complete set (#470).
+// AllResults asks a project listing for everything rather than a page of it. A
+// dry-run existence check needs the complete set (#470): it is looking for one
+// entry, and a cap can stop just short of the entry it is looking for.
 const AllResults = 1_000_000
 
 type RestrictionListOptions struct {
@@ -95,7 +96,7 @@ func (service *Service) ListRestrictions(ctx context.Context, projectKey string,
 			return openapi.Page[openapigenerated.RestRefRestriction]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }

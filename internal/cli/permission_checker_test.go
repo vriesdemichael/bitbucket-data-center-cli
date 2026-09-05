@@ -1,9 +1,6 @@
 package cli
 
 import (
-	"context"
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -11,22 +8,6 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 )
-
-var testContext = context.Background()
-
-func newPermissionCheckerTestClient(t *testing.T, handler http.HandlerFunc) (*PermissionChecker, *httptest.Server) {
-	t.Helper()
-
-	server := httptest.NewServer(handler)
-	t.Cleanup(server.Close)
-
-	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
-	if err != nil {
-		t.Fatalf("create client: %v", err)
-	}
-
-	return NewPermissionChecker(client), server
-}
 
 func TestReviewerApprovedByUser(t *testing.T) {
 	reviewers := []pullrequestservice.Reviewer{

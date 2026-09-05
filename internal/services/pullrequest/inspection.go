@@ -147,7 +147,7 @@ func pageQuery(limit, start int) map[string]string {
 type pagedCommitsResponse struct {
 	Values        []commitValue `json:"values"`
 	IsLastPage    bool          `json:"isLastPage"`
-	NextPageStart int32         `json:"nextPageStart"`
+	NextPageStart int           `json:"nextPageStart"`
 }
 
 type commitValue struct {
@@ -167,7 +167,7 @@ type commitAuthor struct {
 type pagedChangesResponse struct {
 	Values        []changeValue `json:"values"`
 	IsLastPage    bool          `json:"isLastPage"`
-	NextPageStart int32         `json:"nextPageStart"`
+	NextPageStart int           `json:"nextPageStart"`
 }
 
 type changeValue struct {

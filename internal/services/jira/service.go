@@ -81,7 +81,7 @@ func (s *Service) GetIssueCommits(ctx context.Context, issueKey string, maxResul
 			// at the offset it was served from, which is what PageThrough reads
 			// as the end.
 			isLastPage := response.IsLastPage
-			next := int32(start + len(response.Values))
+			next := start + len(response.Values)
 
 			return openapi.Page[openapigenerated.RestCommit]{
 				Values:        commits,

@@ -110,7 +110,7 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 			return openapi.Page[openapigenerated.RestBranch]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }
@@ -311,7 +311,7 @@ func (service *Service) FindByCommit(ctx context.Context, repo RepositoryRef, co
 			return openapi.Page[openapigenerated.RestMinimalRef]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }
@@ -372,7 +372,7 @@ func (service *Service) ListRestrictions(ctx context.Context, repo RepositoryRef
 			return openapi.Page[openapigenerated.RestRefRestriction]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }

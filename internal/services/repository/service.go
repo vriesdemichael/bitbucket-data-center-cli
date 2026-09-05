@@ -104,7 +104,7 @@ func (service *Service) listPaged(ctx context.Context, path string, opts ListOpt
 			isLastPage := response.IsLastPage
 			page := openapi.Page[Repository]{Values: repositories, IsLastPage: &isLastPage}
 			if !isLastPage {
-				next := int32(response.NextPageStart)
+				next := response.NextPageStart
 				page.NextPageStart = &next
 			}
 

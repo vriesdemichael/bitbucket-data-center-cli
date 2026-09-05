@@ -87,7 +87,7 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, pull
 			isLastPage := page.IsLastPage
 			converted := openapi.Page[Activity]{Values: page.Values, IsLastPage: &isLastPage}
 			if page.NextPageStart != nil {
-				next := int32(*page.NextPageStart)
+				next := *page.NextPageStart
 				converted.NextPageStart = &next
 			}
 

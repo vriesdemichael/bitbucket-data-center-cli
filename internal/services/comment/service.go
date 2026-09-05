@@ -113,7 +113,7 @@ func (service *Service) List(ctx context.Context, target Target, path string, ma
 			}
 			// The decoded page carries the next start as *float32.
 			if page.NextPageStart != nil {
-				next := int32(*page.NextPageStart)
+				next := int(*page.NextPageStart)
 				converted.NextPageStart = &next
 			}
 

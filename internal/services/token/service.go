@@ -86,7 +86,7 @@ func (s *Service) List(ctx context.Context, scope ScopeType, target string, maxR
 				}
 				statusCode, raw = resp.StatusCode(), resp.Body
 				if body := resp.ApplicationjsonCharsetUTF8200; body != nil && body.Values != nil {
-					page = tokenPage{Values: *body.Values, IsLastPage: body.IsLastPage, NextPageStart: body.NextPageStart}
+					page = tokenPage{Values: *body.Values, IsLastPage: body.IsLastPage, NextPageStart: openapi.Offset(body.NextPageStart)}
 				}
 
 			case ScopeProject:
@@ -97,7 +97,7 @@ func (s *Service) List(ctx context.Context, scope ScopeType, target string, maxR
 				}
 				statusCode, raw = resp.StatusCode(), resp.Body
 				if body := resp.ApplicationjsonCharsetUTF8200; body != nil && body.Values != nil {
-					page = tokenPage{Values: *body.Values, IsLastPage: body.IsLastPage, NextPageStart: body.NextPageStart}
+					page = tokenPage{Values: *body.Values, IsLastPage: body.IsLastPage, NextPageStart: openapi.Offset(body.NextPageStart)}
 				}
 
 			default:
@@ -108,7 +108,7 @@ func (s *Service) List(ctx context.Context, scope ScopeType, target string, maxR
 				}
 				statusCode, raw = resp.StatusCode(), resp.Body
 				if body := resp.ApplicationjsonCharsetUTF8200; body != nil && body.Values != nil {
-					page = tokenPage{Values: *body.Values, IsLastPage: body.IsLastPage, NextPageStart: body.NextPageStart}
+					page = tokenPage{Values: *body.Values, IsLastPage: body.IsLastPage, NextPageStart: openapi.Offset(body.NextPageStart)}
 				}
 			}
 

@@ -74,7 +74,7 @@ func (service *Service) List(ctx context.Context, options ListOptions) ([]openap
 			return openapi.Page[openapigenerated.RestProject]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }
@@ -220,7 +220,7 @@ func (service *Service) ListProjectPermissionUsers(ctx context.Context, projectK
 			return openapi.Page[PermissionUser]{
 				Values:        entries,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }
@@ -312,7 +312,7 @@ func (service *Service) ListProjectPermissionGroups(ctx context.Context, project
 			return openapi.Page[PermissionGroup]{
 				Values:        entries,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }
