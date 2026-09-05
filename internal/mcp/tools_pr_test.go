@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestParseCommaList(t *testing.T) {
@@ -145,69 +145,35 @@ func TestAddPRCommentRejectsPartialAnchors(t *testing.T) {
 	}
 }
 
-func TestAddPRCommentRoutesInlineAndPlain(t *testing.T) {
-	t.Run("inline anchors the comment", func(t *testing.T) {
-		var payload map[string]any
-		clients := newRecordingClients(t, `{"id":1}`, func(r *http.Request, body []byte) {
-			payload = map[string]any{}
-			_ = json.Unmarshal(body, &payload)
-		})
+// The two routing cases are live now, in
+// TestLiveMCPAddPRCommentRoutesInlineAndReply: the inline comment has to come
+// back anchored to the file and line it named, and the reply has to come back
+// inside the thread it answered. This decoded the request body its own
+// recording handler had just been handed, which says what bb sends and not
+// whether Bitbucket keeps it.
+//
+// What is left is the refusal, which never reaches a request.
+func TestAddPRCommentRejectsAnUnknownLineType(t *testing.T) {
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(server.Close)
 
-		result := callTool(t, specAddPRComment(), clients, map[string]any{
-			"project": "TEST", "repo": "demo", "pr_id": "30", "text": "nit",
-			"path": "src/main.go", "line": 12, "line_type": "CONTEXT",
-		})
-		if result.IsError {
-			t.Fatalf("expected success, got: %s", resultText(result))
-		}
-
-		anchor, ok := payload["anchor"].(map[string]any)
-		if !ok {
-			t.Fatalf("expected an anchor in the payload, got %#v", payload)
-		}
-		if anchor["lineType"] != "CONTEXT" {
-			t.Fatalf("expected the requested lineType to be forwarded, got %#v", anchor["lineType"])
-		}
+	clients, err := ClientsFromConfig(config.AppConfig{
+		BitbucketURL:   server.URL,
+		RequestTimeout: 5 * time.Second,
+		RetryCount:     0,
+		RetryBackoff:   time.Millisecond,
 	})
+	if err != nil {
+		t.Fatalf("ClientsFromConfig failed: %v", err)
+	}
 
-	t.Run("reply carries the parent", func(t *testing.T) {
-		var payload map[string]any
-		clients := newRecordingClients(t, `{"id":1}`, func(r *http.Request, body []byte) {
-			payload = map[string]any{}
-			_ = json.Unmarshal(body, &payload)
-		})
-
-		result := callTool(t, specAddPRComment(), clients, map[string]any{
-			"project": "TEST", "repo": "demo", "pr_id": "30", "text": "agreed",
-			"parent_id": 900,
-		})
-		if result.IsError {
-			t.Fatalf("expected success, got: %s", resultText(result))
-		}
-
-		parent, ok := payload["parent"].(map[string]any)
-		if !ok {
-			t.Fatalf("expected a parent in the payload, got %#v", payload)
-		}
-		if id, _ := parent["id"].(float64); int(id) != 900 {
-			t.Fatalf("expected parent id 900, got %#v", parent["id"])
-		}
-		if _, hasAnchor := payload["anchor"]; hasAnchor {
-			t.Fatalf("a reply must not be anchored, got %#v", payload)
-		}
+	result := callTool(t, specAddPRComment(), clients, map[string]any{
+		"project": "TEST", "repo": "demo", "pr_id": "30", "text": "nit",
+		"path": "src/main.go", "line": 12, "line_type": "SIDEWAYS",
 	})
-
-	t.Run("invalid line_type is rejected", func(t *testing.T) {
-		clients := newRecordingClients(t, `{"id":1}`, nil)
-
-		result := callTool(t, specAddPRComment(), clients, map[string]any{
-			"project": "TEST", "repo": "demo", "pr_id": "30", "text": "nit",
-			"path": "src/main.go", "line": 12, "line_type": "SIDEWAYS",
-		})
-		if !result.IsError {
-			t.Fatalf("expected an error result, got: %+v", result)
-		}
-	})
+	if !result.IsError {
+		t.Fatalf("expected an error result, got: %+v", result)
+	}
 }
 
 func TestListPullRequestsModeSelection(t *testing.T) {

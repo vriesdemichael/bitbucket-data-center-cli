@@ -991,3 +991,123 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 		})
 	}, "ai", "mcp", "serve", "--yolo")
 }
+
+// TestLiveMCPAddPRCommentRoutesInlineAndReply covers the two shapes
+// add_pr_comment builds beyond a plain remark: an anchored comment and a reply.
+//
+// A unit test decoded the request body its own recording handler had just been
+// handed, which says what bb sends and not whether Bitbucket keeps it. Here
+// each comment is read back: the inline one has to come back anchored to the
+// file and line it named, and the reply has to come back inside the thread it
+// answered rather than as a comment of its own.
+func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	const anchoredFile = "mcp-comment.txt"
+	branch := fmt.Sprintf("lt-mcp-comment-%d", time.Now().UnixNano()%100000)
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, anchoredFile); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+	if err != nil {
+		t.Fatalf("create pull request failed: %v", err)
+	}
+
+	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+		callCtx := context.Background()
+		base := map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID}
+
+		add := func(t *testing.T, extra map[string]any) float64 {
+			t.Helper()
+
+			args := map[string]any{}
+			for key, value := range base {
+				args[key] = value
+			}
+			for key, value := range extra {
+				args[key] = value
+			}
+
+			var payload struct {
+				Comment struct {
+					ID float64 `json:"id"`
+				} `json:"comment"`
+			}
+			raw := callAndDecode(t, session, callCtx, "add_pr_comment", args, &payload)
+			if payload.Comment.ID == 0 {
+				t.Fatalf("add_pr_comment returned no comment id:\n%s", raw)
+			}
+
+			return payload.Comment.ID
+		}
+
+		const plainText = "a plain remark from the mcp tool"
+		plainID := add(t, map[string]any{"text": plainText})
+
+		const inlineText = "this line needs a guard"
+		inlineID := add(t, map[string]any{
+			"text": inlineText, "path": anchoredFile, "line": 1, "line_type": "ADDED",
+		})
+
+		const replyText = "agreed, will fix"
+		replyID := add(t, map[string]any{"text": replyText, "parent_id": plainID})
+
+		// Read back through the same surface an agent would use.
+		var listed struct {
+			Threads []struct {
+				ID     float64 `json:"id"`
+				Text   string  `json:"text"`
+				Anchor *struct {
+					Path string  `json:"path"`
+					Line float64 `json:"line"`
+				} `json:"anchor"`
+				Replies []struct {
+					ID   float64 `json:"id"`
+					Text string  `json:"text"`
+				} `json:"replies"`
+			} `json:"threads"`
+		}
+		raw := callAndDecode(t, session, callCtx, "list_pr_comments", map[string]any{
+			"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "with_replies": true,
+		}, &listed)
+
+		var sawInline, sawReply bool
+		for _, thread := range listed.Threads {
+			if thread.ID == inlineID {
+				if thread.Anchor == nil || thread.Anchor.Path != anchoredFile || int(thread.Anchor.Line) != 1 {
+					t.Errorf("the inline comment did not come back anchored where it was put: %#v", thread.Anchor)
+				}
+				sawInline = true
+			}
+			if thread.ID == plainID {
+				if thread.Anchor != nil {
+					t.Errorf("a plain remark came back anchored: %#v", thread.Anchor)
+				}
+				for _, reply := range thread.Replies {
+					if reply.ID == replyID {
+						sawReply = true
+					}
+				}
+			}
+			if thread.ID == replyID {
+				t.Errorf("the reply came back as a thread of its own rather than inside the one it answered:\n%s", raw)
+			}
+		}
+		if !sawInline {
+			t.Errorf("the inline comment is not in the listing:\n%s", raw)
+		}
+		if !sawReply {
+			t.Errorf("the reply is not inside the thread it answered:\n%s", raw)
+		}
+	}, "ai", "mcp", "serve", "--yolo")
+}

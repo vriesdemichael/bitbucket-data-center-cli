@@ -5,16 +5,16 @@
     "files": 62,
     "functions": 170,
     "by_class": {
-      "bitbucket-behaviour": 11,
+      "bitbucket-behaviour": 10,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
       "unreachable-state": 17,
-      "unreached-guard": 38
+      "unreached-guard": 39
     },
     "behaviour_by_package": {
-      "internal/cli": 3,
+      "internal/cli": 2,
       "internal/cli/cmd/pr": 4,
       "internal/mcp": 3,
       "internal/services/reposettings": 1
@@ -722,7 +722,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 168,
+      "line": 169,
       "function": "TestBranchValidationErrors",
       "class": "unreached-guard",
       "signals": [
@@ -736,7 +736,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 400,
+      "line": 401,
       "function": "TestAdminHealthPropagatesHardFailure",
       "class": "transport-fault",
       "signals": [
@@ -747,21 +747,6 @@
       "action": "keep",
       "reason": "a server answering 503 to everything is injected; the subject is that bb reports it as transient rather than as a bad request, and a live instance cannot be asked to be unavailable.",
       "reviewed": true
-    },
-    {
-      "file": "internal/cli/root_test.go",
-      "line": 1545,
-      "function": "TestRepoSettingsPullRequestsUpdateDryRunStateful",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
       "file": "internal/mcp/client_compat_test.go",
@@ -811,6 +796,18 @@
       ],
       "action": "move-to-live",
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+    },
+    {
+      "file": "internal/mcp/tools_pr_test.go",
+      "line": 157,
+      "function": "TestAddPRCommentRejectsAnUnknownLineType",
+      "class": "unreached-guard",
+      "signals": [
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/openapi/client_test.go",
