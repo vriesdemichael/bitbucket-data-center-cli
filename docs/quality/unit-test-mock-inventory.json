@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 180,
-    "files": 62,
-    "functions": 171,
+    "mocked_servers": 175,
+    "files": 60,
+    "functions": 166,
     "by_class": {
-      "bitbucket-behaviour": 28,
+      "bitbucket-behaviour": 23,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
@@ -14,11 +14,9 @@
       "unreached-guard": 26
     },
     "behaviour_by_package": {
-      "internal/cli": 6,
-      "internal/cli/cmd/bulk": 2,
+      "internal/cli": 4,
       "internal/cli/cmd/pr": 7,
       "internal/cli/cmd/repo": 4,
-      "internal/cli/cmd/reviewer": 1,
       "internal/cli/cmd/webhook": 1,
       "internal/mcp": 3,
       "internal/services/pullrequest": 2,
@@ -121,37 +119,6 @@
       ],
       "action": "keep",
       "reason": "asserts that no request is made, which needs no server to be true"
-    },
-    {
-      "file": "internal/cli/cmd/bulk/bulk_test.go",
-      "line": 50,
-      "function": "TestBulkPlanApplyAndStatusCommands",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/bulk/bulk_test.go",
-      "line": 156,
-      "function": "TestBulkApplyReturnsStructuredFailure",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
       "file": "internal/cli/cmd/commit/commit_test.go",
@@ -471,21 +438,7 @@
     },
     {
       "file": "internal/cli/cmd/reviewer/reviewer_test.go",
-      "line": 527,
-      "function": "TestReviewerConditionStdin",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "returns-a-status",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/reviewer/reviewer_test.go",
-      "line": 672,
+      "line": 617,
       "function": "TestConditionJSONIsValidatedNotReportedAsADefect",
       "class": "transport-fault",
       "signals": [
@@ -535,33 +488,6 @@
       "action": "keep",
       "reason": "a server answering 500 is injected; the subject is that the failure reaches the caller rather than reading as an issue with no commits.",
       "reviewed": true
-    },
-    {
-      "file": "internal/cli/governance_harden_test.go",
-      "line": 43,
-      "function": "TestReviewerConditionCreateFileAndStdinCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/governance_harden_test.go",
-      "line": 78,
-      "function": "TestReviewerConditionUpdateFileAndStdinCLI",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
       "file": "internal/cli/new_commands_test.go",
