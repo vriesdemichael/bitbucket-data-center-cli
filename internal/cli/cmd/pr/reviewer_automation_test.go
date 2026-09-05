@@ -161,6 +161,8 @@ func TestReviewerFlagAliasesAccumulate(t *testing.T) {
 
 // newReviewerFailureServer serves the happy path but fails the endpoints named
 // in failPaths with a 500, so a test can pick exactly which lookup breaks.
+//
+// mock-inventory: unreachable-state — one endpoint failing while the rest of the instance answers. A missing plugin gives 404, which is the "not found" case these tests exist to tell apart, and a closed listener would fail every lookup so the error would arrive for the wrong reason.
 func newReviewerFailureServer(t *testing.T, failPaths map[string]bool) *httptest.Server {
 	t.Helper()
 
