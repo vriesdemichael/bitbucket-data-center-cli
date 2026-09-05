@@ -1,16 +1,16 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 174,
-    "files": 60,
-    "functions": 165,
+    "mocked_servers": 176,
+    "files": 62,
+    "functions": 167,
     "by_class": {
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
       "unreachable-state": 22,
-      "unreached-guard": 39
+      "unreached-guard": 41
     },
     "behaviour_by_package": {}
   },
@@ -911,6 +911,18 @@
       ],
       "action": "keep",
       "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
+    },
+    {
+      "file": "internal/services/codeowners/service_test.go",
+      "line": 45,
+      "function": "TestOwnersRefusesBeforeItAsks",
+      "class": "unreached-guard",
+      "signals": [
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/services/comment/service_test.go",
@@ -1847,6 +1859,19 @@
       "action": "keep",
       "reason": "the failure is injected below the API; no live server refuses on request.",
       "reviewed": true
+    },
+    {
+      "file": "internal/testsupport/unreached_test.go",
+      "line": 39,
+      "function": "TestUnreachedHandlerFailsWhenItIsReached",
+      "class": "unreached-guard",
+      "signals": [
+        "serves-bitbucket-routes",
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
