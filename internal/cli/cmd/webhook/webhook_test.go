@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
@@ -64,87 +65,84 @@ func TestWebhookWithDefaults(t *testing.T) {
 	}
 }
 
-func TestWebhookErrorsAndEdgeCases(t *testing.T) {
+// A webhook listing that is a bare array rather than a page.
+//
+// mock-inventory: unreachable-state — Bitbucket answers this endpoint with a page; the array is a shape it does not send, and the subject is that the listing reads either.
+func TestWebhookListAcceptsABareArray(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		path := r.URL.Path
-
-		switch {
-		case r.Method == http.MethodGet && path == "/rest/api/latest/projects/PRJ/repos/repo1/webhooks":
-			// Non-paginated array payload
+		if r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo1/webhooks" {
 			_, _ = w.Write([]byte(`[{"id":123,"name":"wh","url":"http://url","active":true,"events":["repo:refs_changed"]}]`))
 
-		default:
-			http.NotFound(w, r)
+			return
 		}
+		http.NotFound(w, r)
 	}))
 	t.Cleanup(server.Close)
 
-	cfg := config.AppConfig{
-		BitbucketURL: server.URL,
-		ProjectKey:   "PRJ",
-	}
-
-	// 1. Array payload in list
+	cfg := config.AppConfig{BitbucketURL: server.URL, ProjectKey: "PRJ"}
 	deps := Dependencies{
 		LoadConfig: func() (config.AppConfig, error) { return cfg, nil },
 		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
 			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+
 			return cfg, client, err
 		},
 	}
+
 	cmd := New(deps)
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"list", "--repo", "PRJ/repo1"})
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on list array payload: %v", err)
+		t.Fatalf("a bare array listing failed: %v", err)
 	}
 	if !strings.Contains(buf.String(), "wh") {
-		t.Fatalf("expected wh in list output: %s", buf.String())
+		t.Fatalf("the webhook in the array is not in the output: %s", buf.String())
+	}
+}
+
+// Every mutating webhook command checks the caller may write before planning,
+// and stops when told no. The listener fails the test if anything reaches it,
+// because nothing should: the refusal comes first.
+func TestWebhookCommandsHonourRefusedPermission(t *testing.T) {
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(server.Close)
+
+	cfg := config.AppConfig{BitbucketURL: server.URL, ProjectKey: "PRJ"}
+	deps := Dependencies{
+		DryRunEnabled: func() bool { return true },
+		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },
+		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+
+			return cfg, client, err
+		},
+		PermissionChecker: func(*openapigenerated.ClientWithResponses) PermissionChecker {
+			return &mockPermChecker{err: http.ErrAbortHandler}
+		},
 	}
 
-	// 2. Dry-run with permission checker returning error
-	deps.DryRunEnabled = func() bool { return true }
-	deps.PermissionChecker = func(c *openapigenerated.ClientWithResponses) PermissionChecker {
-		return &mockPermChecker{err: http.ErrAbortHandler}
-	}
-
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"create", "wh", "http://url", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err == nil {
-		t.Fatal("expected permission error on create dry-run")
-	}
-
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"update", "123", "--name", "wh-new", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err == nil {
-		t.Fatal("expected permission error on update dry-run")
-	}
-
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"delete", "123", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err == nil {
-		t.Fatal("expected permission error on delete dry-run")
-	}
-
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"test", "123", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err == nil {
-		t.Fatal("expected permission error on test dry-run")
+	for _, testCase := range []struct {
+		name string
+		args []string
+	}{
+		{name: "create", args: []string{"create", "wh", "http://url", "--repo", "PRJ/repo1"}},
+		{name: "update", args: []string{"update", "123", "--name", "wh-new", "--repo", "PRJ/repo1"}},
+		{name: "delete", args: []string{"delete", "123", "--repo", "PRJ/repo1"}},
+		{name: "test", args: []string{"test", "123", "--repo", "PRJ/repo1"}},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			cmd := New(deps)
+			buf := new(bytes.Buffer)
+			cmd.SetOut(buf)
+			cmd.SetErr(buf)
+			cmd.SetArgs(testCase.args)
+			if err := cmd.Execute(); err == nil {
+				t.Fatalf("planned a mutation the caller may not make: %s", buf.String())
+			}
+		})
 	}
 }
 
