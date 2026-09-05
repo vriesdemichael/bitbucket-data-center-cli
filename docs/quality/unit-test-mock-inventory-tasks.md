@@ -6,9 +6,9 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 101 | write the live test, then delete the mock |
-| `remove` | 40 | delete; it asserts nothing a live test would not already give |
-| `keep` | 93 | legitimate unit test under ADR-079 |
+| `move-to-live` | 98 | write the live test, then delete the mock |
+| `remove` | 42 | delete; it asserts nothing a live test would not already give |
+| `keep` | 95 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
@@ -16,9 +16,8 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | file | total | move-to-live | remove | keep | other |
 |---|---:|---:|---:|---:|---:|
-| `internal/services/quality/service_test.go` | 8 | 5 | 0 | 2 | 1 |
 | `internal/cli/root_test.go` | 6 | 4 | 0 | 2 | 0 |
-| `internal/services/reposettings/service_test.go` | 5 | 3 | 0 | 1 | 1 |
+| `internal/services/reposettings/service_test.go` | 6 | 4 | 1 | 0 | 1 |
 | `internal/cli/cmd/pr/pr_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/clone_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/misc_test.go` | 3 | 3 | 0 | 0 | 0 |
@@ -41,6 +40,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/mcp/tools_pr_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/services/pullrequest/review_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/services/pullrequest/service_test.go` | 10 | 1 | 4 | 4 | 1 |
+| `internal/services/quality/service_test.go` | 8 | 1 | 1 | 5 | 1 |
 | `internal/services/forksync/service_test.go` | 5 | 1 | 2 | 1 | 1 |
 | `internal/services/project/service_test.go` | 5 | 1 | 1 | 2 | 1 |
 | `internal/cli/cmd/reviewer/reviewer_test.go` | 4 | 1 | 1 | 2 | 0 |

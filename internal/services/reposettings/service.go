@@ -425,31 +425,40 @@ func (service *Service) UpdateRepositoryPullRequestRequiredApproversCount(ctx co
 		return nil, apperrors.New(apperrors.KindValidation, "required approvers count must be >= 0", nil)
 	}
 
-	// Try object structure first (modern Bitbucket)
-	settings := map[string]any{
-		"requiredApprovers": map[string]any{
-			"enabled": count > 0,
-			"count":   count,
-		},
-	}
-	if count == 0 {
-		settings["requiredApprovers"] = map[string]any{
-			"enabled": false,
-		}
+	// The count goes as a plain number, and the object shape is the fallback.
+	//
+	// This was the other way round, on a comment saying the object was what
+	// modern Bitbucket wanted. It is not: a running 10.x answers
+	// {"requiredApprovers":{"enabled":true,"count":2}} with 400 "The number of
+	// required approvals is invalid", and the plain number with 200 for every
+	// count including zero. So every call spent a round trip on a request that
+	// could not succeed, and then made the real one -- and it only recovered at
+	// all because the message Bitbucket happens to use contains the word the
+	// fallback sniffs for.
+	//
+	// The object shape is kept behind it rather than deleted, because a server
+	// that wants it would otherwise have no path at all, and one failed request
+	// on such a server is the cost this ordering moves off the common case.
+	result, err := service.UpdateRepositoryPullRequestSettings(ctx, repo,
+		map[string]any{"requiredApprovers": count})
+	if err == nil {
+		return result, nil
 	}
 
-	result, err := service.UpdateRepositoryPullRequestSettings(ctx, repo, settings)
-	if err != nil {
-		// Only fallback if it's a validation error AND it likely relates to the payload structure.
-		// Our MapStatusError includes the body in the message.
-		if apperrors.IsKind(err, apperrors.KindValidation) &&
-			(strings.Contains(strings.ToLower(err.Error()), "invalid") || strings.Contains(strings.ToLower(err.Error()), "payload")) {
-			return service.UpdateRepositoryPullRequestSettings(ctx, repo, map[string]any{"requiredApprovers": count})
-		}
+	// Only fall back for a validation error that reads like the payload shape.
+	// Our MapStatusError includes the body in the message.
+	if !apperrors.IsKind(err, apperrors.KindValidation) ||
+		(!strings.Contains(strings.ToLower(err.Error()), "invalid") && !strings.Contains(strings.ToLower(err.Error()), "payload")) {
 		return nil, err
 	}
 
-	return result, nil
+	object := map[string]any{"enabled": count > 0, "count": count}
+	if count == 0 {
+		object = map[string]any{"enabled": false}
+	}
+
+	return service.UpdateRepositoryPullRequestSettings(ctx, repo,
+		map[string]any{"requiredApprovers": object})
 }
 
 func (service *Service) ListRequiredBuildsMergeChecks(ctx context.Context, repo RepositoryRef) (any, error) {

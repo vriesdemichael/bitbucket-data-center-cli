@@ -1,16 +1,16 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 266,
+    "mocked_servers": 267,
     "files": 88,
-    "functions": 250,
+    "functions": 251,
     "by_class": {
-      "bitbucket-behaviour": 86,
-      "canned-response": 40,
+      "bitbucket-behaviour": 83,
+      "canned-response": 42,
       "external-service": 14,
       "harness-constructor": 18,
       "status-taxonomy": 15,
-      "transport-fault": 77,
+      "transport-fault": 79,
       "unreached-guard": 16
     },
     "behaviour_by_package": {
@@ -39,8 +39,7 @@
       "internal/services/project": 1,
       "internal/services/pullrequest": 2,
       "internal/services/pullrequestactivity": 1,
-      "internal/services/quality": 4,
-      "internal/services/reposettings": 3,
+      "internal/services/reposettings": 4,
       "internal/services/repository": 1,
       "internal/services/reviewer": 1
     }
@@ -2641,9 +2640,9 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 129,
+      "line": 142,
       "function": "TestQualityReportAndAnnotationFallbackBranches",
-      "class": "bitbucket-behaviour",
+      "class": "canned-response",
       "signals": [
         "asserts-http-method",
         "handler-passed-to-a-helper",
@@ -2651,60 +2650,61 @@
         "returns-a-status",
         "serves-bitbucket-routes"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "remove",
+      "reason": "a 204 with no body, which the probed endpoints never return; the subject is the fallback branch, not what Bitbucket sends.",
+      "reviewed": true
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 193,
+      "line": 207,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "asserts-http-method",
-        "asserts-query-parameters",
         "returns-a-status",
         "returns-bitbucket-entity",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a conflict and three closed connections are injected, none of which a live instance can be asked for; the subject is that each build-status call classifies them rather than reporting success.",
+      "reviewed": true
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 267,
+      "line": 244,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "asserts-http-method",
-        "asserts-query-parameters",
         "returns-a-status",
         "returns-bitbucket-entity",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a conflict and three closed connections are injected, none of which a live instance can be asked for; the subject is that each build-status call classifies them rather than reporting success.",
+      "reviewed": true
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 289,
+      "line": 266,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "asserts-http-method",
-        "asserts-query-parameters",
         "returns-a-status",
         "returns-bitbucket-entity",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a conflict and three closed connections are injected, none of which a live instance can be asked for; the subject is that each build-status call classifies them rather than reporting success.",
+      "reviewed": true
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 480,
+      "line": 457,
       "function": "TestQualityServiceScopedAndDeploymentsErrorPaths",
       "class": "transport-fault",
       "signals": [
@@ -2717,25 +2717,37 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 20,
+      "line": 32,
       "function": "TestUpdateRepositoryPullRequestRequiredApproversCount",
-      "class": "transport-fault",
+      "class": "canned-response",
       "signals": [
-        "asserts-http-method",
+        "answers-any-request",
         "asserts-request-body",
-        "closes-on-cleanup",
+        "handler-passed-to-a-helper",
         "returns-a-status",
         "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "varies-by-attempt-count",
-        "inspects-the-request-path"
+        "varies-by-attempt-count"
       ],
-      "action": "keep",
-      "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
+      "action": "remove",
+      "reason": "two servers that disagree about a payload shape, which is what a version fallback is for and what one instance cannot be; the subject is the order of the attempts.",
+      "reviewed": true
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 79,
+      "line": 114,
+      "function": "settingsServiceOn",
+      "class": "bitbucket-behaviour",
+      "signals": [
+        "asserts-http-method",
+        "serves-bitbucket-routes",
+        "inspects-the-request-path"
+      ],
+      "action": "move-to-live",
+      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+    },
+    {
+      "file": "internal/services/reposettings/service_test.go",
+      "line": 145,
       "function": "TestRepositorySettingsJSONFallbackAndValidationBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2750,7 +2762,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 155,
+      "line": 222,
       "function": "newServiceWithBaseURL",
       "class": "harness-constructor",
       "signals": [
@@ -2761,7 +2773,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 182,
+      "line": 249,
       "function": "TestRepositorySettingsAdditionalBranches",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2775,7 +2787,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 398,
+      "line": 465,
       "function": "TestNewRepositorySettingsMethods",
       "class": "bitbucket-behaviour",
       "signals": [

@@ -696,9 +696,29 @@ func TestLiveQualityEmptyAnswers(t *testing.T) {
 	t.Run("annotations on a report that has none", func(t *testing.T) {
 		passed := "PASS"
 		key := fmt.Sprintf("empty-report-%d", time.Now().UnixNano()%100000)
-		if _, err := service.SetReport(ctx, repoRef, commitID, key,
-			openapigenerated.SetACodeInsightsReportJSONRequestBody{Title: key, Result: &passed}); err != nil {
+		created, err := service.SetReport(ctx, repoRef, commitID, key,
+			openapigenerated.SetACodeInsightsReportJSONRequestBody{Title: key, Result: &passed})
+		if err != nil {
 			t.Fatalf("set report failed: %v", err)
+		}
+
+		// Writing a report answers with the report, not with 204 and nothing.
+		//
+		// A unit test asserted the other shape -- an empty body yielding a
+		// zero-value report -- and the service still carries the branch that
+		// produces it. Bitbucket answers 200 with the whole object here and on
+		// the read, so that branch is defensive rather than something the
+		// server exercises, and pinning what it does send is what says so.
+		if created.Key == nil || *created.Key != key {
+			t.Errorf("set report answered with %#v, want the report it just wrote", created)
+		}
+
+		fetched, err := service.GetReport(ctx, repoRef, commitID, key)
+		if err != nil {
+			t.Fatalf("get report failed: %v", err)
+		}
+		if fetched.Key == nil || *fetched.Key != key {
+			t.Errorf("get report answered with %#v, want the report that is there", fetched)
 		}
 
 		annotations, err := service.ListAnnotations(ctx, repoRef, commitID, key)

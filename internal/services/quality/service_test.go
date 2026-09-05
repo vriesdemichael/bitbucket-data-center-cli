@@ -126,6 +126,19 @@ func TestSetBuildStatusValidationAndOptionalFields(t *testing.T) {
 	// reads them back.
 }
 
+// TestQualityReportAndAnnotationFallbackBranches covers what the service does
+// with a body Bitbucket does not send.
+//
+// Probed against a running instance: writing a report answers 200 with the whole
+// object and so does reading one, and TestLiveQualityEmptyAnswers pins that. The
+// 204-with-nothing these branches handle is therefore defensive, and what they
+// do with it -- return a zero value and no error -- is the reading #537 exists to
+// settle. Four places in this codebase answer an empty body four different ways;
+// ADR-077 already moved the diff stats summary to refusing it outright, on the
+// grounds that an unreadable body is not an empty one. These have not moved yet,
+// so this records the current answer rather than endorsing it.
+//
+// mock-inventory: canned-response — a 204 with no body, which the probed endpoints never return; the subject is the fallback branch, not what Bitbucket sends.
 func TestQualityReportAndAnnotationFallbackBranches(t *testing.T) {
 	service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		switch {
@@ -169,6 +182,7 @@ func TestQualityReportAndAnnotationFallbackBranches(t *testing.T) {
 	}
 }
 
+// mock-inventory: transport-fault — a conflict and three closed connections are injected, none of which a live instance can be asked for; the subject is that each build-status call classifies them rather than reporting success.
 func TestBuildStatusFocusedErrorAndFallbackBranches(t *testing.T) {
 	t.Run("set build status maps conflict", func(t *testing.T) {
 		service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
@@ -211,57 +225,20 @@ func TestBuildStatusFocusedErrorAndFallbackBranches(t *testing.T) {
 		}
 	})
 
-	t.Run("get build statuses default limit and empty payload", func(t *testing.T) {
-		service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == http.MethodGet && r.URL.Path == "/rest/build-status/latest/commits/abc" {
-				if r.URL.Query().Get("limit") != "25" || r.URL.Query().Get("start") != "0" {
-					w.WriteHeader(http.StatusBadRequest)
-					_, _ = w.Write([]byte("unexpected paging defaults"))
-					return
-				}
-				if r.URL.Query().Get("orderBy") != "" {
-					w.WriteHeader(http.StatusBadRequest)
-					_, _ = w.Write([]byte("orderBy should be omitted when blank"))
-					return
-				}
-				_, _ = w.Write([]byte(`{"isLastPage":false}`))
-				return
-			}
-			http.NotFound(w, r)
-		})
-
-		statuses, err := service.GetBuildStatuses(context.Background(), "abc", 0, "   ")
-		if err != nil {
-			t.Fatalf("expected empty payload fallback success, got: %v", err)
-		}
-		if len(statuses) != 0 {
-			t.Fatalf("expected empty statuses, got: %#v", statuses)
-		}
-	})
-
-	t.Run("get build statuses orderBy and not-found mapping", func(t *testing.T) {
-		service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == http.MethodGet && r.URL.Path == "/rest/build-status/latest/commits/missing" {
-				if r.URL.Query().Get("orderBy") != "NEWEST" {
-					w.WriteHeader(http.StatusBadRequest)
-					_, _ = w.Write([]byte("missing orderBy"))
-					return
-				}
-				w.WriteHeader(http.StatusNotFound)
-				_, _ = w.Write([]byte("missing commit"))
-				return
-			}
-			http.NotFound(w, r)
-		})
-
-		_, err := service.GetBuildStatuses(context.Background(), "missing", 5, "NEWEST")
-		if err == nil {
-			t.Fatal("expected not found error")
-		}
-		if apperrors.ExitCode(err) != 4 {
-			t.Fatalf("expected not found exit code 4, got %d (%v)", apperrors.ExitCode(err), err)
-		}
-	})
+	// Two wire assertions went from here.
+	//
+	// One watched limit=25 and start=0 leave for a caller passing zero, which is
+	// openapi.PageThrough's business and tested where the loop lives. The other
+	// watched orderBy=NEWEST leave and then answered 404 to check the mapping,
+	// which is one assertion about openapi.MapStatusError wearing a service's
+	// clothes -- the mapping has its own table test and a guard stopping it from
+	// being re-tested per service, and whether this service is wired to the
+	// taxonomy at all is asked against a server that really refuses, in
+	// TestLiveEveryServiceMapsItsFailures.
+	//
+	// TestLiveQualityListingsPageToTheEnd sends orderBy NEWEST to a real
+	// Bitbucket and reads the answer back, which is the half neither of them
+	// could reach.
 
 	t.Run("get build statuses transport failure", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
