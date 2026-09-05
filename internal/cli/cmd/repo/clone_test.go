@@ -5,8 +5,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -570,50 +568,6 @@ func TestResolveHTTPCloneURLNormalizesSSHCloneHost(t *testing.T) {
 	}
 }
 
-func TestRepoCloneCommandNoUpstreamAndAddRemoteFailure(t *testing.T) {
-	originalFactory := gitBackendFactory
-	stub := &cloneBackendStub{addErr: errors.New("add remote failed")}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
-
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path == "/rest/api/1.0/projects/PRJ/repos/demo" {
-			writer.Header().Set("Content-Type", "application/json")
-			_, _ = writer.Write([]byte(`{"origin":{"project":{"key":"UP"},"slug":"upstream-demo"}}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	t.Cleanup(server.Close)
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	_, err := executeTestCLI(t, "repo", "clone", "--no-upstream", "PRJ/demo")
-	if err != nil {
-		t.Fatalf("repo clone with --no-upstream failed: %v", err)
-	}
-	if len(stub.addCalls) != 0 {
-		t.Fatalf("expected no add-remote calls with --no-upstream, got: %#v", stub.addCalls)
-	}
-
-	_, err = executeTestCLI(t, "repo", "clone", "--upstream-remote-name", "@owner", "PRJ/demo")
-	if err == nil {
-		t.Fatal("expected add-remote failure")
-	}
-	if !strings.Contains(err.Error(), "add remote failed") {
-		t.Fatalf("unexpected add-remote error: %v", err)
-	}
-	if len(stub.addCalls) == 0 {
-		t.Fatal("expected add-remote to be attempted")
-	}
-	if stub.addCalls[len(stub.addCalls)-1].remote.Name != "up" {
-		t.Fatalf("expected @owner to resolve to project key remote name, got: %s", stub.addCalls[len(stub.addCalls)-1].remote.Name)
-	}
-}
-
 func TestBuildBitbucketCloneURL(t *testing.T) {
 	cloneURL, err := buildBitbucketCloneURL("https://bitbucket.example.com/context", "PRJ", "demo")
 	if err != nil {
@@ -702,91 +656,6 @@ func TestCloneHelpersAndValidation(t *testing.T) {
 	name, err = normalizeUpstreamRemoteName("@owner", "")
 	if err != nil || name != "owner" {
 		t.Fatalf("unexpected @owner fallback mapping: name=%q err=%v", name, err)
-	}
-}
-
-func TestLookupParentCloneURL(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		switch request.URL.Path {
-		case "/rest/api/1.0/projects/PRJ/repos/demo":
-			writer.Header().Set("Content-Type", "application/json")
-			_, _ = writer.Write([]byte(`{"origin":{"project":{"key":"UP"},"slug":"upstream-demo"}}`))
-		case "/rest/api/1.0/projects/PRJ/repos/no-origin":
-			writer.Header().Set("Content-Type", "application/json")
-			_, _ = writer.Write([]byte(`{"slug":"no-origin"}`))
-		default:
-			http.NotFound(writer, request)
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	cfg := config.AppConfig{BitbucketURL: server.URL}
-
-	owner, parentURL, err := lookupParentCloneURL(context.Background(), cfg, server.URL, repositorySelector{ProjectKey: "PRJ", Slug: "demo"})
-	if err != nil {
-		t.Fatalf("lookup parent clone URL failed: %v", err)
-	}
-	if owner != "UP" {
-		t.Fatalf("unexpected owner: %s", owner)
-	}
-	if !strings.Contains(parentURL, "/scm/UP/upstream-demo.git") {
-		t.Fatalf("unexpected parent clone URL: %s", parentURL)
-	}
-
-	owner, parentURL, err = lookupParentCloneURL(context.Background(), cfg, server.URL, repositorySelector{ProjectKey: "PRJ", Slug: "no-origin"})
-	if err != nil {
-		t.Fatalf("lookup parent clone URL without origin failed: %v", err)
-	}
-	if owner != "" || parentURL != "" {
-		t.Fatalf("expected no parent URL when origin missing, got owner=%q url=%q", owner, parentURL)
-	}
-
-	owner, parentURL, err = lookupParentCloneURL(context.Background(), cfg, server.URL, repositorySelector{ProjectKey: "PRJ", Slug: "does-not-exist"})
-	if err != nil {
-		t.Fatalf("expected graceful lookup when repo not found, got: %v", err)
-	}
-	if owner != "" || parentURL != "" {
-		t.Fatalf("expected empty parent on lookup failure, got owner=%q url=%q", owner, parentURL)
-	}
-}
-
-func TestRepoCloneCommandJSONAndUpstreamSuccess(t *testing.T) {
-	originalFactory := gitBackendFactory
-	stub := &cloneBackendStub{}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
-
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path == "/rest/api/1.0/projects/PRJ/repos/demo" {
-			writer.Header().Set("Content-Type", "application/json")
-			_, _ = writer.Write([]byte(`{"origin":{"project":{"key":"UP"},"slug":"upstream-demo"}}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	t.Cleanup(server.Close)
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	output, err := executeTestCLI(t, "--json", "repo", "clone", "PRJ/demo")
-	if err != nil {
-		t.Fatalf("repo clone json failed: %v", err)
-	}
-
-	if len(stub.addCalls) != 1 {
-		t.Fatalf("expected add remote call, got %d", len(stub.addCalls))
-	}
-	if stub.addCalls[0].remote.Name != "upstream" {
-		t.Fatalf("unexpected upstream remote name: %s", stub.addCalls[0].remote.Name)
-	}
-	if !strings.Contains(stub.addCalls[0].remote.URL, "/scm/UP/upstream-demo.git") {
-		t.Fatalf("unexpected upstream remote URL: %s", stub.addCalls[0].remote.URL)
-	}
-	if !strings.Contains(output, `"configured": true`) {
-		t.Fatalf("expected upstream configured in json output, got: %s", output)
 	}
 }
 
@@ -1477,3 +1346,14 @@ func (stub *cloneBackendStub) BranchExists(context.Context, string, string) (boo
 func (stub *cloneBackendStub) FastForward(context.Context, string, string) error {
 	return nil
 }
+
+// Three suites are live now, in TestLiveRepoCloneAddsTheUpstreamRemote.
+//
+// They asserted the upstream remote against a repository payload carrying an
+// origin this file had written, with a stub git backend recording the remote
+// it was asked to add. Two things could actually be wrong there and neither
+// was under test: whether Bitbucket reports a fork's parent in that field, and
+// whether the URL built from it is one git accepts. The live version forks a
+// real repository, clones the fork, and reads `git remote -v` -- then clones
+// it again with --no-upstream and requires the parent to be absent.
+// Sabotage-checked by skipping the AddRemote call.

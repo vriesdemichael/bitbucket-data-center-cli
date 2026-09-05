@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -99,5 +101,69 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(workDir3, "hybrid-proof.txt")); err != nil {
 		t.Fatalf("expected hybrid-proof.txt on master in client-3 after merge: %v", err)
+	}
+}
+
+// TestLiveRepoCloneAddsTheUpstreamRemote covers what `bb repo clone` does that
+// `git clone` does not: a fork gets a second remote pointing at its parent.
+//
+// Unit tests asserted this against a repository payload carrying an origin
+// they had written, with a stub git backend recording the remote it was asked
+// to add. Whether Bitbucket reports a fork's parent in that field, and whether
+// the URL built from it is one git accepts, are the two things that could
+// actually be wrong.
+func TestLiveRepoCloneAddsTheUpstreamRemote(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	upstream := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, upstream.Slug)
+
+	forkName := fmt.Sprintf("lt-fork-clone-%d", time.Now().UnixNano()%100000)
+	forkOutput, err := executeLiveCLI(t, "--json", "repo", "admin", "fork",
+		"--repo", seeded.Key+"/"+upstream.Slug, "--name", forkName, "--project", seeded.Key)
+	if err != nil {
+		t.Fatalf("repo admin fork failed: %v\noutput: %s", err, forkOutput)
+	}
+	forkSlug := asString(decodeJSONMap(t, forkOutput)["slug"])
+	if forkSlug == "" {
+		if inner, ok := decodeJSONMap(t, forkOutput)["repository"].(map[string]any); ok {
+			forkSlug = asString(inner["slug"])
+		}
+	}
+	if forkSlug == "" {
+		t.Fatalf("the fork has no slug:\n%s", forkOutput)
+	}
+
+	cloneDir := filepath.Join(t.TempDir(), "fork")
+	if output, err := executeLiveCLI(t, "repo", "clone", seeded.Key+"/"+forkSlug, cloneDir); err != nil {
+		t.Fatalf("repo clone of the fork failed: %v\noutput: %s", err, output)
+	}
+
+	remotes, err := exec.CommandContext(ctx, "git", "-C", cloneDir, "remote", "-v").CombinedOutput()
+	if err != nil {
+		t.Fatalf("git remote -v failed: %v\n%s", err, remotes)
+	}
+	if !strings.Contains(string(remotes), "/"+upstream.Slug+".git") {
+		t.Fatalf("the clone of a fork has no remote pointing at its parent:\n%s", remotes)
+	}
+
+	// --no-upstream is the other half: the same clone, and only origin.
+	bareDir := filepath.Join(t.TempDir(), "fork-bare")
+	if output, err := executeLiveCLI(t, "repo", "clone", "--no-upstream", seeded.Key+"/"+forkSlug, bareDir); err != nil {
+		t.Fatalf("repo clone --no-upstream failed: %v\noutput: %s", err, output)
+	}
+	bareRemotes, err := exec.CommandContext(ctx, "git", "-C", bareDir, "remote", "-v").CombinedOutput()
+	if err != nil {
+		t.Fatalf("git remote -v failed: %v\n%s", err, bareRemotes)
+	}
+	if strings.Contains(string(bareRemotes), "/"+upstream.Slug+".git") {
+		t.Fatalf("--no-upstream added the parent remote anyway:\n%s", bareRemotes)
 	}
 }

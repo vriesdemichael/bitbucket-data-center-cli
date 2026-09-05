@@ -1,23 +1,22 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 175,
-    "files": 60,
-    "functions": 166,
+    "mocked_servers": 173,
+    "files": 59,
+    "functions": 164,
     "by_class": {
-      "bitbucket-behaviour": 21,
+      "bitbucket-behaviour": 17,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
-      "unreachable-state": 15,
-      "unreached-guard": 26
+      "unreachable-state": 16,
+      "unreached-guard": 27
     },
     "behaviour_by_package": {
       "internal/cli": 3,
       "internal/cli/cmd/pr": 6,
-      "internal/cli/cmd/repo": 4,
-      "internal/cli/cmd/webhook": 1,
+      "internal/cli/cmd/repo": 1,
       "internal/mcp": 3,
       "internal/services/pullrequest": 2,
       "internal/services/pullrequestactivity": 1,
@@ -345,45 +344,6 @@
       "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
-      "file": "internal/cli/cmd/repo/clone_test.go",
-      "line": 579,
-      "function": "TestRepoCloneCommandNoUpstreamAndAddRemoteFailure",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/repo/clone_test.go",
-      "line": 709,
-      "function": "TestLookupParentCloneURL",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/repo/clone_test.go",
-      "line": 759,
-      "function": "TestRepoCloneCommandJSONAndUpstreamSuccess",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
       "file": "internal/cli/cmd/repo/permission_contract_test.go",
       "line": 54,
       "function": "newPermissiveServer",
@@ -466,16 +426,29 @@
     },
     {
       "file": "internal/cli/cmd/webhook/webhook_test.go",
-      "line": 68,
-      "function": "TestWebhookErrorsAndEdgeCases",
-      "class": "bitbucket-behaviour",
+      "line": 72,
+      "function": "TestWebhookListAcceptsABareArray",
+      "class": "unreachable-state",
       "signals": [
         "asserts-http-method",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "Bitbucket answers this endpoint with a page; the array is a shape it does not send, and the subject is that the listing reads either.",
+      "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/webhook/webhook_test.go",
+      "line": 110,
+      "function": "TestWebhookCommandsHonourRefusedPermission",
+      "class": "unreached-guard",
+      "signals": [
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/cli/commit_test.go",
