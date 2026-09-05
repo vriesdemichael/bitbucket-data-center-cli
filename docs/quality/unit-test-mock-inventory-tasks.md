@@ -6,8 +6,8 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 7 | write the live test, then delete the mock |
-| `keep` | 140 | legitimate unit test under ADR-079 |
+| `move-to-live` | 6 | write the live test, then delete the mock |
+| `keep` | 141 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
@@ -17,7 +17,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 |---|---:|---:|---:|---:|---:|
 | `internal/cli/cmd/pr/reviewer_automation_test.go` | 4 | 1 | 0 | 3 | 0 |
 | `internal/cli/cmd/pr/pr_test.go` | 3 | 1 | 0 | 2 | 0 |
-| `internal/mcp/tools_pr_review_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/mcp/tools_pr_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/cli/cmd/pr/checkout_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/pr_checkout_command_test.go` | 1 | 1 | 0 | 0 | 0 |
@@ -49,6 +48,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/new_commands_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/permissionchecker/permission_checker_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/root_test.go` | 2 | 0 | 0 | 2 | 0 |
+| `internal/mcp/tools_pr_review_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/openapi/client_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/services/commit/service_test.go` | 2 | 0 | 0 | 1 | 1 |
 | `internal/services/jira/service_test.go` | 2 | 0 | 0 | 1 | 1 |

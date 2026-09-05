@@ -5,18 +5,18 @@
     "files": 62,
     "functions": 170,
     "by_class": {
-      "bitbucket-behaviour": 7,
+      "bitbucket-behaviour": 6,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
-      "unreachable-state": 20,
+      "unreachable-state": 21,
       "unreached-guard": 39
     },
     "behaviour_by_package": {
       "internal/cli": 1,
       "internal/cli/cmd/pr": 3,
-      "internal/mcp": 3
+      "internal/mcp": 2
     }
   },
   "entries": [
@@ -765,18 +765,21 @@
     },
     {
       "file": "internal/mcp/tools_pr_review_test.go",
-      "line": 20,
-      "function": "newReviewClients",
-      "class": "bitbucket-behaviour",
+      "line": 33,
+      "function": "TestGetPullRequestFallsBackToBlockerCommentCounts",
+      "class": "unreachable-state",
       "signals": [
+        "returns-bitbucket-entity",
+        "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "an instance whose activity timeline is not there while the pull request is, which cannot be arranged; the subject is that the fallback counts rather than reporting nothing outstanding.",
+      "reviewed": true
     },
     {
       "file": "internal/mcp/tools_pr_review_test.go",
-      "line": 83,
+      "line": 73,
       "function": "TestListPRCommentsRejectsUnknownState",
       "class": "unreached-guard",
       "signals": [
