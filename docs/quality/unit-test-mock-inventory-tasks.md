@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 94 | write the live test, then delete the mock |
+| `move-to-live` | 90 | write the live test, then delete the mock |
 | `remove` | 43 | delete; it asserts nothing a live test would not already give |
 | `keep` | 96 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
@@ -16,9 +16,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | file | total | move-to-live | remove | keep | other |
 |---|---:|---:|---:|---:|---:|
-| `internal/cli/root_test.go` | 6 | 4 | 0 | 2 | 0 |
 | `internal/services/reposettings/service_test.go` | 6 | 4 | 1 | 0 | 1 |
-| `internal/cli/cmd/pr/pr_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/clone_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/misc_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/settings_test.go` | 3 | 3 | 0 | 0 | 0 |
@@ -30,6 +28,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/pr/reviewer_automation_test.go` | 4 | 2 | 0 | 2 | 0 |
 | `internal/services/pullrequestactivity/service_test.go` | 4 | 2 | 1 | 0 | 1 |
 | `internal/services/repository/admin_test.go` | 4 | 2 | 0 | 1 | 1 |
+| `internal/cli/cmd/pr/pr_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/admin_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/comments_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/cli/cmd/webhook/webhook_test.go` | 2 | 2 | 0 | 0 | 0 |
@@ -47,6 +46,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/pr/reviewer_helpers_test.go` | 3 | 1 | 2 | 0 | 0 |
 | `internal/cli/commit_test.go` | 3 | 1 | 1 | 1 | 0 |
 | `internal/cli/pr_inspection_test.go` | 3 | 1 | 1 | 1 | 0 |
+| `internal/cli/root_test.go` | 3 | 1 | 0 | 2 | 0 |
 | `internal/services/commit/service_test.go` | 3 | 1 | 0 | 1 | 1 |
 | `internal/cli/cmd/admin/admin_test.go` | 2 | 1 | 1 | 0 | 0 |
 | `internal/cli/cmd/build/build_internal_test.go` | 2 | 1 | 1 | 0 | 0 |

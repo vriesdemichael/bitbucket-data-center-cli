@@ -440,6 +440,57 @@ func TestLivePRCreateFromAFork(t *testing.T) {
 	assertLivePRRepository(t, pr, "sourceRepository", forkSlug)
 	assertLivePRRepository(t, pr, "repository", upstream.Slug)
 
+	// The other side of the flag: a pull request that is not from a fork must
+	// not become one.
+	//
+	// A unit test asserted this by reading the POST body and checking fromRef
+	// carried no repository. That says the payload was built a certain way; it
+	// does not say Bitbucket read it the same way, and the field it watches is
+	// the one whose absence is the whole signal. Here the answer comes back from
+	// the server: source and target are the same repository.
+	t.Run("without --from-repo the pull request stays same-repository", func(t *testing.T) {
+		const branch = "feature/not-from-a-fork"
+		if err := harness.pushCommitOnBranch(seeded.Key, upstream.Slug, branch, "same-repo.txt"); err != nil {
+			t.Fatalf("push commit on the upstream failed: %v", err)
+		}
+
+		output := mustLiveCLI(t, "pr", "create",
+			"--repo", seeded.Key+"/"+upstream.Slug,
+			"--from-ref", branch,
+			"--to-ref", "refs/heads/master",
+			"--title", "Not from a fork",
+			"--no-default-reviewers", "--no-codeowners",
+		)
+
+		created := extractPRData(decodeJSONMap(t, output))
+		assertLivePRRepository(t, created, "repository", upstream.Slug)
+
+		// Absent or equal to the target are both "not from a fork"; a different
+		// repository is the failure.
+		if _, present := created["sourceRepository"]; present {
+			assertLivePRRepository(t, created, "sourceRepository", upstream.Slug)
+		}
+	})
+
+	// Naming the target as the source is the same-repository case spelled out,
+	// and has to behave as though the flag were absent.
+	t.Run("--from-repo naming the target is still same-repository", func(t *testing.T) {
+		const branch = "feature/from-repo-is-the-target"
+		if err := harness.pushCommitOnBranch(seeded.Key, upstream.Slug, branch, "target-as-source.txt"); err != nil {
+			t.Fatalf("push commit on the upstream failed: %v", err)
+		}
+
+		output := mustLiveCLI(t, "pr", "create",
+			"--repo", seeded.Key+"/"+upstream.Slug,
+			"--from-repo", seeded.Key+"/"+upstream.Slug,
+			"--from-ref", branch,
+			"--to-ref", "refs/heads/master",
+			"--title", "Target named as source",
+			"--no-default-reviewers", "--no-codeowners",
+		)
+
+		assertLivePRRepository(t, extractPRData(decodeJSONMap(t, output)), "repository", upstream.Slug)
+	})
 }
 
 // assertLivePRRepository checks which repository one side of a pull request
