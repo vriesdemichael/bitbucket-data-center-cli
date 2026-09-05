@@ -309,5 +309,5 @@ func safeCommentState(comment openapigenerated.RestComment) string {
 		return ""
 	}
 
-	return string(*comment.State)
+	return *comment.State
 }

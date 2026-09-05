@@ -299,7 +299,7 @@ func (service *Service) CompareChanges(ctx context.Context, repo RepositoryRef, 
 			return openapi.Page[openapigenerated.RestChange]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }

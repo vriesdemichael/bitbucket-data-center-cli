@@ -61,10 +61,11 @@ func NewService(client *openapigenerated.ClientWithResponses) *Service {
 	return &Service{client: client}
 }
 
-// everyPermissionEntry reads a permission listing to its end. The limit these
-// methods take is the page size, not a cap: the caller fixes it at
-// permissionLookupLimit and expects the whole set back.
-const everyPermissionEntry = 1_000_000
+// AllResults asks for every permission entry rather than a page of them.
+//
+// The listings took a page size and read to the end whatever it was, so this is
+// what a caller that wants all of them now says.
+const AllResults = 1_000_000
 
 func (service *Service) ListRepositoryPermissionUsers(ctx context.Context, repo RepositoryRef, maxResults int) ([]PermissionUser, error) {
 	if err := validateRepositoryRef(repo); err != nil {
@@ -74,7 +75,7 @@ func (service *Service) ListRepositoryPermissionUsers(ctx context.Context, repo 
 		maxResults = 100
 	}
 
-	return openapi.PageThrough(ctx, 0, everyPermissionEntry,
+	return openapi.PageThrough(ctx, 0, maxResults,
 		func(ctx context.Context, start, limit int) (openapi.Page[PermissionUser], error) {
 			startValue, limitValue := float32(start), float32(limit)
 			response, err := service.client.GetUsersWithAnyPermission2WithResponse(ctx, repo.ProjectKey, repo.Slug,
@@ -107,7 +108,7 @@ func (service *Service) ListRepositoryPermissionUsers(ctx context.Context, repo 
 			return openapi.Page[PermissionUser]{
 				Values:        entries,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }
@@ -119,7 +120,7 @@ func (service *Service) ListRepositoryPermissionGroups(ctx context.Context, repo
 		maxResults = 100
 	}
 
-	return openapi.PageThrough(ctx, 0, everyPermissionEntry,
+	return openapi.PageThrough(ctx, 0, maxResults,
 		func(ctx context.Context, start, limit int) (openapi.Page[PermissionGroup], error) {
 			startValue, limitValue := float32(start), float32(limit)
 			response, err := service.client.GetGroupsWithAnyPermission2WithResponse(ctx, repo.ProjectKey, repo.Slug,
@@ -151,7 +152,7 @@ func (service *Service) ListRepositoryPermissionGroups(ctx context.Context, repo
 			return openapi.Page[PermissionGroup]{
 				Values:        entries,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }

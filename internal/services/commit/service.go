@@ -78,7 +78,7 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 			return openapi.Page[openapigenerated.RestCommit]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }
@@ -153,7 +153,7 @@ func (service *Service) Compare(ctx context.Context, repo RepositoryRef, options
 			return openapi.Page[openapigenerated.RestCommit]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }

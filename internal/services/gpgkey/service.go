@@ -44,7 +44,7 @@ func (s *Service) ListGpgKeys(ctx context.Context, maxResults int) ([]openapigen
 			return openapi.Page[openapigenerated.RestGpgKey]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }

@@ -40,9 +40,9 @@ func (source *pagedSource) fetch(_ context.Context, start, limit int) (openapi.P
 	last := end >= len(source.items)
 	page.IsLastPage = &last
 	if !last {
-		next := int32(end)
+		next := end
 		if source.stuckAt > 0 && end >= source.stuckAt {
-			next = int32(start)
+			next = start
 		}
 		page.NextPageStart = &next
 	}
@@ -217,11 +217,11 @@ func TestPageThroughLooksPastAnEmptyPage(t *testing.T) {
 		switch start {
 		case 0:
 			// Sized at 25 and then filtered down to nothing.
-			next := int32(25)
+			next := 25
 
 			return openapi.Page[int]{IsLastPage: &notLast, NextPageStart: &next}, nil
 		case 25:
-			next := int32(50)
+			next := 50
 
 			return openapi.Page[int]{Values: items(3), IsLastPage: &notLast, NextPageStart: &next}, nil
 		default:
@@ -250,7 +250,7 @@ func TestPageThroughStopsAtAnEmptyLastPage(t *testing.T) {
 		served++
 		notLast := false
 		// Says there is more, but never advances.
-		stuck := int32(0)
+		stuck := 0
 
 		return openapi.Page[int]{IsLastPage: &notLast, NextPageStart: &stuck}, nil
 	}

@@ -12,8 +12,27 @@ type Page[T any] struct {
 	// IsLastPage and NextPageStart are pointers because Bitbucket omits them,
 	// and an omitted IsLastPage is not "there is more": a page that does not
 	// say it has a successor is treated as the end, which is the safe reading.
-	IsLastPage    *bool
-	NextPageStart *int32
+	IsLastPage *bool
+	// NextPageStart is an int rather than the generated client's int32, so that
+	// every adapter widens and none narrows. The endpoints that are decoded by
+	// hand count the next offset themselves, and writing it back into an int32
+	// is a conversion the compiler cannot prove safe -- five of them, each an
+	// offset no Bitbucket will ever return, each needing its own suppression.
+	NextPageStart *int
+}
+
+// Offset adapts the generated client's next-page start for a Page.
+//
+// A nil start stays nil: it is how an endpoint says it has no successor, which
+// is not the same as starting at zero.
+func Offset(start *int32) *int {
+	if start == nil {
+		return nil
+	}
+
+	next := int(*start)
+
+	return &next
 }
 
 // PageThrough follows Bitbucket's paging convention until it has maxResults or
@@ -116,7 +135,7 @@ func advance[T any](page Page[T], start int) (int, bool) {
 		return 0, false
 	}
 
-	next := int(*page.NextPageStart)
+	next := *page.NextPageStart
 	if next <= start {
 		return 0, false
 	}

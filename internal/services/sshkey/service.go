@@ -45,7 +45,7 @@ func (s *Service) ListUserKeys(ctx context.Context, maxResults int, start int) (
 			return openapi.Page[openapigenerated.RestSshKey]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }
@@ -120,7 +120,7 @@ func (s *Service) ListProjectKeys(ctx context.Context, projectKey string, maxRes
 			return openapi.Page[openapigenerated.RestSshAccessKey]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }
@@ -226,7 +226,7 @@ func (s *Service) ListRepoKeys(ctx context.Context, projectKey string, repoSlug 
 			return openapi.Page[openapigenerated.RestSshAccessKey]{
 				Values:        *page.Values,
 				IsLastPage:    page.IsLastPage,
-				NextPageStart: page.NextPageStart,
+				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
 }

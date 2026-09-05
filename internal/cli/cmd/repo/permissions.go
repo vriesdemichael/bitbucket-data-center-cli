@@ -236,7 +236,7 @@ func runPermissionGrantDryRun(
 		return err
 	}
 
-	entries, err := subject.list(cmd.Context(), service, repo, permissionLookupLimit)
+	entries, err := subject.list(cmd.Context(), service, repo, reposettings.AllResults)
 	if err != nil {
 		return err
 	}
@@ -297,7 +297,7 @@ func runPermissionRevokeDryRun(
 		return err
 	}
 
-	entries, err := subject.list(cmd.Context(), service, repo, permissionLookupLimit)
+	entries, err := subject.list(cmd.Context(), service, repo, reposettings.AllResults)
 	if err != nil {
 		return err
 	}

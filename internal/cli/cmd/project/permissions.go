@@ -176,7 +176,7 @@ func newProjectPermissionGrantCommand(deps Dependencies, subjectFor projectPermi
 					return err
 				}
 
-				entries, err := subject.list(cmd.Context(), service, projectKey, permissionLookupLimit)
+				entries, err := subject.list(cmd.Context(), service, projectKey, projectservice.AllResults)
 				if err != nil {
 					return err
 				}
@@ -270,7 +270,7 @@ func newProjectPermissionRevokeCommand(deps Dependencies, subjectFor projectPerm
 					return err
 				}
 
-				entries, err := subject.list(cmd.Context(), service, projectKey, permissionLookupLimit)
+				entries, err := subject.list(cmd.Context(), service, projectKey, projectservice.AllResults)
 				if err != nil {
 					return err
 				}

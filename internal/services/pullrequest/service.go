@@ -220,7 +220,7 @@ func (service *Service) ListDashboard(ctx context.Context, options DashboardList
 // offsets that say what comes after it.
 func pullRequestPage(response pagedPullRequestResponse, values []PullRequest) openapi.Page[PullRequest] {
 	isLastPage := response.IsLastPage
-	next := int32(response.NextPageStart)
+	next := response.NextPageStart
 
 	return openapi.Page[PullRequest]{Values: values, IsLastPage: &isLastPage, NextPageStart: &next}
 }
@@ -604,7 +604,7 @@ type BuildStatus struct {
 type pagedBuildStatusResponse struct {
 	Values        []buildStatusValue `json:"values"`
 	IsLastPage    bool               `json:"isLastPage"`
-	NextPageStart int32              `json:"nextPageStart"`
+	NextPageStart int                `json:"nextPageStart"`
 }
 
 type buildStatusValue struct {
