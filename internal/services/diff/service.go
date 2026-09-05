@@ -480,35 +480,124 @@ func pathOrDot(value string) string {
 	return strings.TrimSpace(value)
 }
 
+// extractNamesFromUnifiedDiff reads the changed paths out of a unified diff.
+//
+// The path is taken from the "--- a/x" and "+++ b/x" lines rather than from
+// the "diff --git a/x b/x" header, because the header cannot be parsed. It
+// carries two paths separated by a space and git does not quote a path that
+// merely contains one, so "diff --git a/docs site/x b/docs site/x" splits into
+// six fields and the fourth is "site/x". That is what this used to return: a
+// path no repository has, handed to `--name-only` callers and to the CODEOWNERS
+// matcher, which then found no owner for the file and assigned nobody.
+//
+// The "+++" line carries one path and ends at a tab, so it has no such
+// ambiguity. A record with neither -- a binary change -- falls back to the
+// header, where the two paths are the same string and can be split down the
+// middle.
 func extractNamesFromUnifiedDiff(diffText string) []string {
-	lines := strings.Split(diffText, "\n")
 	seen := map[string]struct{}{}
 	names := make([]string, 0)
 
-	for _, line := range lines {
-		if !strings.HasPrefix(line, "diff --git ") {
-			continue
+	add := func(candidate string) {
+		if candidate == "" {
+			return
 		}
-
-		parts := strings.Fields(line)
-		if len(parts) < 4 {
-			continue
-		}
-
-		candidate := strings.TrimPrefix(parts[3], "b/")
-		if candidate == "dev/null" || candidate == "/dev/null" || candidate == "" {
-			candidate = strings.TrimPrefix(parts[2], "a/")
-		}
-		if candidate == "" || candidate == "dev/null" || candidate == "/dev/null" {
-			continue
-		}
-
 		if _, exists := seen[candidate]; exists {
-			continue
+			return
 		}
 		seen[candidate] = struct{}{}
 		names = append(names, candidate)
 	}
 
+	// header is the "diff --git" line of the record being read, kept until the
+	// record yields a path so a binary change can fall back to it.
+	header := ""
+	// fromPath is the "---" side, used when the "+++" side is /dev/null.
+	fromPath := ""
+	recordNamed := false
+
+	closeRecord := func() {
+		if recordNamed {
+			return
+		}
+		if fromPath != "" {
+			add(fromPath)
+
+			return
+		}
+		if header != "" {
+			add(pathFromDiffGitHeader(header))
+		}
+	}
+
+	for _, line := range strings.Split(diffText, "\n") {
+		switch {
+		case strings.HasPrefix(line, "diff --git "):
+			closeRecord()
+			header = strings.TrimSuffix(line, "\r")
+			fromPath = ""
+			recordNamed = false
+
+		case header != "" && strings.HasPrefix(line, "--- "):
+			fromPath = diffSidePath(line, "--- ", "a/")
+
+		case header != "" && strings.HasPrefix(line, "+++ "):
+			if path := diffSidePath(line, "+++ ", "b/"); path != "" {
+				add(path)
+				recordNamed = true
+			}
+		}
+	}
+	closeRecord()
+
 	return names
+}
+
+// diffSidePath reads the path off one side of a unified diff header.
+//
+// Git appends an optional tab-separated field after the path, and writes
+// /dev/null for a side that does not exist.
+func diffSidePath(line, marker, sidePrefix string) string {
+	rest := strings.TrimPrefix(line, marker)
+	rest = strings.TrimSuffix(rest, "\r")
+	if index := strings.IndexByte(rest, '\t'); index >= 0 {
+		rest = rest[:index]
+	}
+	rest = strings.TrimPrefix(rest, sidePrefix)
+	if rest == "/dev/null" || rest == "dev/null" {
+		return ""
+	}
+
+	return rest
+}
+
+// pathFromDiffGitHeader recovers the path from "diff --git a/P b/P".
+//
+// Only usable when both sides name the same path, which is every case except a
+// rename -- and a rename always carries "---" and "+++" lines, so it never
+// reaches here. The two operands have equal length, so the split point is
+// fixed: the space at the midpoint is the separator whatever the path contains.
+func pathFromDiffGitHeader(header string) string {
+	rest := strings.TrimPrefix(header, "diff --git ")
+	if len(rest) < 5 || (len(rest)-1)%2 != 0 {
+		return ""
+	}
+
+	half := (len(rest) - 1) / 2
+	if rest[half] != ' ' {
+		return ""
+	}
+
+	left, right := rest[:half], rest[half+1:]
+	if !strings.HasPrefix(left, "a/") || !strings.HasPrefix(right, "b/") {
+		return ""
+	}
+	if left[2:] != right[2:] {
+		return ""
+	}
+	if path := left[2:]; path != "/dev/null" && path != "dev/null" {
+		return path
+	}
+
+	return ""
 }

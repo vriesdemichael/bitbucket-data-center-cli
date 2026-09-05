@@ -70,20 +70,51 @@ func TestDiffHelpers(t *testing.T) {
 	if pathOrDot(" seed.txt ") != "seed.txt" {
 		t.Fatal("expected path trimming")
 	}
-
+	// Records in the shape git writes them, which is not the shape this test
+	// used to use: it had "diff --git a/dev/null b/new.txt" for an add, and git
+	// never does that -- the header names the same path on both sides and
+	// /dev/null appears only on the --- and +++ lines. Reading the header was
+	// what made a path containing a space come back truncated.
+	//
+	// The trailing tab on a +++ line is git's, not a typo: it separates the
+	// optional timestamp field, and it is what a live diff carries.
 	diffText := strings.Join([]string{
 		"diff --git a/a.txt b/a.txt",
+		"index 111..222 100644",
+		"--- a/a.txt",
+		"+++ b/a.txt",
+		"@@ -1 +1 @@",
 		"diff --git a/a.txt b/a.txt",
-		"diff --git a/dev/null b/new.txt",
-		"diff --git a/old.txt b/dev/null",
+		"--- a/a.txt",
+		"+++ b/a.txt",
+		"diff --git a/new.txt b/new.txt",
+		"new file mode 100644",
+		"--- /dev/null",
+		"+++ b/new.txt",
+		"diff --git a/old.txt b/old.txt",
+		"deleted file mode 100644",
+		"--- a/old.txt",
+		"+++ /dev/null",
+		"diff --git a/was.txt b/now.txt",
+		"similarity index 100%",
+		"--- a/was.txt",
+		"+++ b/now.txt",
+		"diff --git a/docs site/guide.txt b/docs site/guide.txt",
+		"--- /dev/null",
+		"+++ b/docs site/guide.txt\t",
+		"diff --git a/logo.png b/logo.png",
+		"Binary files a/logo.png and b/logo.png differ",
 	}, "\n")
 
 	names := extractNamesFromUnifiedDiff(diffText)
-	if len(names) != 3 {
-		t.Fatalf("expected 3 names, got %d: %#v", len(names), names)
+	want := []string{"a.txt", "new.txt", "old.txt", "now.txt", "docs site/guide.txt", "logo.png"}
+	if len(names) != len(want) {
+		t.Fatalf("expected %d names, got %d: %#v", len(want), len(names), names)
 	}
-	if names[0] != "a.txt" || names[1] != "new.txt" || names[2] != "old.txt" {
-		t.Fatalf("unexpected names extraction: %#v", names)
+	for index, expected := range want {
+		if names[index] != expected {
+			t.Fatalf("name %d = %q, want %q (all: %#v)", index, names[index], expected, names)
+		}
 	}
 }
 
