@@ -5,6 +5,7 @@ package live_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -155,4 +156,152 @@ func decodeJSONEnvelopeData(value string, target any) error {
 	}
 
 	return json.Unmarshal(encodedData, target)
+}
+
+// TestLiveBulkEveryOperationType is the runner's dispatch table, asked of a
+// real Bitbucket.
+//
+// A unit test ran all nine operation types past a handler that answered
+// `{"status":"ok"}` to every request and checked only that Run returned no
+// error. That says an operation was dispatched somewhere; it cannot say the
+// request it built was one Bitbucket accepts, and it passes just as well for
+// an operation that sends nonsense to the wrong route.
+//
+// Here the apply status is Bitbucket's verdict on each of the nine, one
+// operation result at a time, and the settings are read back afterwards.
+func TestLiveBulkEveryOperationType(t *testing.T) {
+	harness := newLiveHarness(t)
+	service := reposettings.NewService(harness.client)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// A real user to grant to: a username Bitbucket does not know is refused,
+	// which would make the grant fail for a reason that is not the runner's.
+	grantee, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create user failed: %v", err)
+	}
+
+	hookName := fmt.Sprintf("bulk-hook-%d", time.Now().UnixNano()%100000)
+	policy := strings.Join([]string{
+		"apiVersion: bb.io/v1alpha1",
+		"selector:",
+		"  projectKey: " + seeded.Key,
+		"  repoPattern: " + repo.Slug,
+		"operations:",
+		"  - type: repo.permission.user.grant",
+		"    username: " + grantee.Username,
+		"    permission: REPO_READ",
+		"  - type: repo.permission.group.grant",
+		"    group: stash-users",
+		"    permission: REPO_READ",
+		"  - type: repo.webhook.create",
+		"    name: " + hookName,
+		"    url: https://example.invalid/bulk-hook",
+		"    events:",
+		"      - repo:refs_changed",
+		"  - type: repo.pull-request-settings.required-all-tasks-complete",
+		"    requiredAllTasksComplete: true",
+		"  - type: repo.pull-request-settings.required-approvers-count",
+		"    count: 1",
+		"  - type: build.required.create",
+		"    payload:",
+		"      buildParentKeys:",
+		"        - ci",
+		"      refMatcher:",
+		"        id: refs/heads/master",
+		"        type:",
+		"          id: BRANCH",
+		"  - type: repo.settings.auto-merge",
+		"    enabled: true",
+		"  - type: repo.settings.auto-decline",
+		"    enabled: true",
+		"    inactivityWeeks: 4",
+		"  - type: repo.default-task.create",
+		"    description: bulk default task",
+	}, "\n")
+
+	tempDir := t.TempDir()
+	policyPath := filepath.Join(tempDir, "every-operation.yaml")
+	planPath := filepath.Join(tempDir, "every-operation-plan.json")
+	if err := os.WriteFile(policyPath, []byte(policy), 0o600); err != nil {
+		t.Fatalf("write bulk policy: %v", err)
+	}
+
+	planOutput, err := executeLiveCLI(t, "--json", "bulk", "plan", "-f", policyPath, "-o", planPath)
+	if err != nil {
+		t.Fatalf("bulk plan failed: %v\noutput: %s", err, planOutput)
+	}
+
+	var plan bulkworkflow.Plan
+	if err := decodeJSONEnvelopeData(planOutput, &plan); err != nil {
+		t.Fatalf("decode bulk plan output: %v\noutput: %s", err, planOutput)
+	}
+	if plan.Summary.OperationCount != 9 {
+		t.Fatalf("expected all nine operation types in the plan, got %d:\n%s", plan.Summary.OperationCount, planOutput)
+	}
+
+	applyOutput, err := executeLiveCLI(t, "--json", "bulk", "apply", "--from-plan", planPath)
+	if err != nil {
+		t.Fatalf("bulk apply failed: %v\noutput: %s", err, applyOutput)
+	}
+
+	var status bulkworkflow.ApplyStatus
+	if err := decodeJSONEnvelopeData(applyOutput, &status); err != nil {
+		t.Fatalf("decode bulk apply output: %v\noutput: %s", err, applyOutput)
+	}
+
+	// Per operation rather than per target: a target counted successful hides
+	// which of the nine the server actually took.
+	applied := map[string]string{}
+	for _, target := range status.Targets {
+		for _, operation := range target.Operations {
+			applied[operation.Type] = operation.Status
+			if operation.Error != "" {
+				t.Errorf("%s failed: %s", operation.Type, operation.Error)
+			}
+		}
+	}
+	for _, operationType := range []string{
+		"repo.permission.user.grant",
+		"repo.permission.group.grant",
+		"repo.webhook.create",
+		"repo.pull-request-settings.required-all-tasks-complete",
+		"repo.pull-request-settings.required-approvers-count",
+		"build.required.create",
+		"repo.settings.auto-merge",
+		"repo.settings.auto-decline",
+		"repo.default-task.create",
+	} {
+		if applied[operationType] != "success" {
+			t.Errorf("%s reported %q, want success", operationType, applied[operationType])
+		}
+	}
+
+	// And the state Bitbucket now holds, for the operations whose effect is
+	// readable: a request the server accepted and then ignored would pass
+	// everything above.
+	settings, err := service.GetRepositoryPullRequestSettings(ctx, reposettings.RepositoryRef{ProjectKey: seeded.Key, Slug: repo.Slug})
+	if err != nil {
+		t.Fatalf("read pull request settings failed: %v", err)
+	}
+	if allTasks, _ := settings["requiredAllTasksComplete"].(bool); !allTasks {
+		t.Errorf("requiredAllTasksComplete was reported applied and is not set: %#v", settings["requiredAllTasksComplete"])
+	}
+	if approvers, _ := settings["requiredApprovers"].(float64); int(approvers) != 1 {
+		t.Errorf("requiredApprovers = %#v, want 1", settings["requiredApprovers"])
+	}
+
+	hooks := mustLiveCLI(t, "--json", "webhook", "list", "--limit", "50")
+	if !strings.Contains(hooks, hookName) {
+		t.Errorf("the webhook the policy created is not in the repository's hooks:\n%s", hooks)
+	}
 }

@@ -3,7 +3,6 @@ package bulk
 import (
 	"context"
 	"math"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -12,41 +11,8 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	qualityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/quality"
 	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
-
-func TestServiceRunnerOperations(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
-	}))
-	defer server.Close()
-
-	client, _ := openapi.NewClientWithResponsesFromConfig(config.AppConfig{BitbucketURL: server.URL})
-	runner := NewServiceRunner(reposettings.NewService(client), qualityservice.NewService(client))
-	repo := RepositoryTarget{ProjectKey: "PRJ", Slug: "repo"}
-
-	testCases := []OperationSpec{
-		{Type: OperationRepoPermissionUserGrant, Username: "u", Permission: "REPO_READ"},
-		{Type: OperationRepoPermissionGroupGrant, Group: "g", Permission: "REPO_ADMIN"},
-		{Type: OperationRepoWebhookCreate, Name: "h", URL: "http://h", Events: []string{"repo:refs_changed"}, Active: boolPtr(true)},
-		{Type: OperationRepoPullRequestRequiredAllTasksComplete, RequiredAllTasksComplete: boolPtr(true)},
-		{Type: OperationRepoPullRequestRequiredApproversCount, Count: intPtr(1)},
-		{Type: OperationBuildRequiredCreate, Payload: map[string]any{"foo": "bar"}},
-		{Type: OperationRepoSettingsAutoMerge, Enabled: boolPtr(true)},
-		{Type: OperationRepoSettingsAutoDecline, Enabled: boolPtr(true), InactivityWeeks: intPtr(4)},
-		{Type: OperationRepoDefaultTaskCreate, Description: stringPtr("my task")},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.Type, func(t *testing.T) {
-			_, err := runner.Run(context.Background(), repo, tc)
-			if err != nil {
-				t.Fatalf("run failed: %v", err)
-			}
-		})
-	}
-}
 
 func TestServiceRunnerUnconfigured(t *testing.T) {
 	t.Run("nil runner", func(t *testing.T) {
@@ -80,29 +46,21 @@ func TestServiceRunnerUnconfigured(t *testing.T) {
 	})
 }
 
+// Every case here is refused before a request is built, so the listener fails
+// the test if one arrives.
+//
+// The one that was not -- a webhook create defaulting active to true -- went
+// with TestServiceRunnerOperations: it needed the write to succeed, and a
+// handler answering ok to everything cannot tell a hook Bitbucket accepted
+// from one it did not. TestLiveBulkEveryOperationType creates that hook and
+// then finds it in `webhook list`.
 func TestServiceRunnerValidationBranches(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
-	}))
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer server.Close()
 
 	client, _ := openapi.NewClientWithResponsesFromConfig(config.AppConfig{BitbucketURL: server.URL})
 	runner := NewServiceRunner(reposettings.NewService(client), qualityservice.NewService(client))
 	repo := RepositoryTarget{ProjectKey: "PRJ", Slug: "repo"}
-
-	t.Run("webhook defaults active true", func(t *testing.T) {
-		_, err := runner.Run(context.Background(), repo, OperationSpec{
-			Type:   OperationRepoWebhookCreate,
-			Name:   "hook",
-			URL:    "https://example.test/hook",
-			Events: []string{"repo:refs_changed"},
-		})
-		if err != nil {
-			t.Fatalf("expected webhook create to succeed with default active=true: %v", err)
-		}
-	})
 
 	t.Run("requiredAllTasksComplete nil is validation error", func(t *testing.T) {
 		_, err := runner.Run(context.Background(), repo, OperationSpec{Type: OperationRepoPullRequestRequiredAllTasksComplete})
@@ -154,11 +112,7 @@ func TestServiceRunnerValidationBranches(t *testing.T) {
 // wrapped rather than being rejected, so a policy could silently configure the
 // opposite of what it said.
 func TestAutoDeclineRejectsOutOfRangeInactivityWeeks(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
-	}))
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer server.Close()
 
 	client, _ := openapi.NewClientWithResponsesFromConfig(config.AppConfig{BitbucketURL: server.URL})
@@ -181,3 +135,12 @@ func TestAutoDeclineRejectsOutOfRangeInactivityWeeks(t *testing.T) {
 		}
 	}
 }
+
+// TestServiceRunnerOperations is live now, in TestLiveBulkEveryOperationType.
+//
+// It ran all nine operation types past a handler that answered
+// `{"status":"ok"}` to every request and checked only that Run returned no
+// error, which is true of an operation that sends nonsense to the wrong
+// route. The live version reads the apply status one operation result at a
+// time -- Bitbucket's verdict on each of the nine -- and then reads the
+// settings and the webhook back.

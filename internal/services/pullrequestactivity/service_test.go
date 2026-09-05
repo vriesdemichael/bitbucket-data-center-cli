@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -64,9 +65,7 @@ func TestListAndExtractComments(t *testing.T) {
 }
 
 func TestListValidation(t *testing.T) {
-	service := newActivityTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	service := newActivityTestService(t, testsupport.UnreachedHandler(t))
 
 	if _, err := service.List(context.Background(), RepositoryRef{}, "12", ListOptions{}); err == nil {
 		t.Fatal("expected repository validation error")

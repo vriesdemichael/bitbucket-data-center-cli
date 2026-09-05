@@ -4,11 +4,11 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func newAdminTestService(t *testing.T, handler http.HandlerFunc) *AdminService {
@@ -67,10 +67,7 @@ func TestAdminServiceCoreCommands(t *testing.T) {
 }
 
 func TestAdminServiceValidation(t *testing.T) {
-	service := newAdminTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte("forbidden"))
-	})
+	service := newAdminTestService(t, testsupport.UnreachedHandler(t))
 
 	if _, err := service.Create(context.Background(), "", CreateInput{Name: "repo"}); err == nil {
 		t.Fatal("expected create validation error")
@@ -91,9 +88,10 @@ func TestAdminServiceValidation(t *testing.T) {
 		t.Fatal("expected delete validation error")
 	}
 
-	if _, err := service.Create(context.Background(), "PRJ", CreateInput{Name: "repo"}); err == nil || !strings.Contains(err.Error(), "authorization") {
-		t.Fatalf("expected mapped authorization error, got %v", err)
-	}
+	// A 403 mapping to an authorization error used to be asserted here. It is
+	// TestMapStatusError's, once for every caller, and it is live besides:
+	// TestLivePermissionRepoCreateDeniedWithProjectReadOnly makes a real
+	// instance refuse a create the caller may not make.
 }
 
 func TestAdminServiceTransientAndMapping(t *testing.T) {

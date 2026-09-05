@@ -1,18 +1,17 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 195,
-    "files": 65,
-    "functions": 186,
+    "mocked_servers": 187,
+    "files": 64,
+    "functions": 178,
     "by_class": {
       "bitbucket-behaviour": 44,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
-      "status-taxonomy": 13,
-      "transport-fault": 75,
-      "unreachable-state": 7,
-      "unreached-guard": 19
+      "transport-fault": 76,
+      "unreachable-state": 8,
+      "unreached-guard": 22
     },
     "behaviour_by_package": {
       "internal/cli": 8,
@@ -103,18 +102,6 @@
       "action": "keep",
       "reason": "the subject is that --host does not write BITBUCKET_URL into the process environment.",
       "reviewed": true
-    },
-    {
-      "file": "internal/cli/cmd/auth/gpg_test.go",
-      "line": 17,
-      "function": "TestAuthGpgKeyCommandsErrors",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
     },
     {
       "file": "internal/cli/cmd/branch/branch_test.go",
@@ -922,16 +909,17 @@
     },
     {
       "file": "internal/openapi/client_test.go",
-      "line": 424,
+      "line": 425,
       "function": "TestRetriesDoNotReplayMutations",
-      "class": "status-taxonomy",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "returns-a-status"
       ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
+      "action": "keep",
+      "reason": "503 and 429 are served on demand to drive our own retry policy; no live instance can be asked to be unavailable, and the subject is which methods we replay.",
+      "reviewed": true
     },
     {
       "file": "internal/services/branch/service_test.go",
@@ -1091,20 +1079,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 40,
-      "function": "TestServiceValidationAndStatusMapping",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/comment/service_test.go",
-      "line": 61,
+      "line": 57,
       "function": "TestServiceCreateExplainsAnchorRejection",
       "class": "transport-fault",
       "signals": [
@@ -1119,7 +1094,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 105,
+      "line": 101,
       "function": "TestCountTasksValidatesTarget",
       "class": "unreached-guard",
       "signals": [
@@ -1132,7 +1107,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 134,
+      "line": 130,
       "function": "TestListSurfacesAMalformedPage",
       "class": "transport-fault",
       "signals": [
@@ -1147,7 +1122,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 162,
+      "line": 158,
       "function": "TestCreateRefusesABlockerOnACommit",
       "class": "unreached-guard",
       "signals": [
@@ -1159,7 +1134,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 194,
+      "line": 190,
       "function": "TestAnUnreadableVersionLookupStopsTheWrite",
       "class": "transport-fault",
       "signals": [
@@ -1172,7 +1147,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 248,
+      "line": 244,
       "function": "TestEveryEmptyReadIsRefused",
       "class": "transport-fault",
       "signals": [
@@ -1185,7 +1160,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 293,
+      "line": 289,
       "function": "TestAStationaryPageEndsTheListing",
       "class": "transport-fault",
       "signals": [
@@ -1199,20 +1174,21 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 326,
+      "line": 323,
       "function": "TestEveryEmptyWriteFallsBackToWhatWasSent",
-      "class": "status-taxonomy",
+      "class": "unreachable-state",
       "signals": [
         "answers-any-request",
         "handler-passed-to-a-helper",
         "returns-a-status"
       ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
+      "action": "keep",
+      "reason": "a 201 carrying nothing, a null, or an empty object, none of which Bitbucket sends for a comment it created; the subject is what we answer when the response cannot be read.",
+      "reviewed": true
     },
     {
       "file": "internal/services/commit/service_test.go",
-      "line": 16,
+      "line": 17,
       "function": "newCommitTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1220,19 +1196,6 @@
       ],
       "action": "follows-callers",
       "reason": "opens a listener around a handler it was handed; it assumes nothing itself"
-    },
-    {
-      "file": "internal/services/commit/service_test.go",
-      "line": 27,
-      "function": "TestCommitServiceValidationAndHelpers",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
     },
     {
       "file": "internal/services/commit/service_test.go",
@@ -1601,20 +1564,20 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 667,
+      "line": 670,
       "function": "TestRebaseRejectsOutOfRangeVersion",
-      "class": "status-taxonomy",
+      "class": "unreached-guard",
       "signals": [
-        "answers-any-request",
         "closes-on-cleanup",
-        "returns-a-status"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/services/pullrequestactivity/service_test.go",
-      "line": 19,
+      "line": 20,
       "function": "newActivityTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1625,7 +1588,7 @@
     },
     {
       "file": "internal/services/pullrequestactivity/service_test.go",
-      "line": 30,
+      "line": 31,
       "function": "TestListAndExtractComments",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1640,20 +1603,7 @@
     },
     {
       "file": "internal/services/pullrequestactivity/service_test.go",
-      "line": 66,
-      "function": "TestListValidation",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/pullrequestactivity/service_test.go",
-      "line": 200,
+      "line": 199,
       "function": "TestListReportsATruncatedBodyAsTransient",
       "class": "transport-fault",
       "signals": [
@@ -1692,20 +1642,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 97,
-      "function": "TestSetBuildStatusValidationAndOptionalFields",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/quality/service_test.go",
-      "line": 143,
+      "line": 141,
       "function": "TestQualityReportAndAnnotationFallbackBranches",
       "class": "unreachable-state",
       "signals": [
@@ -1721,7 +1658,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 187,
+      "line": 185,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "transport-fault",
       "signals": [
@@ -1737,7 +1674,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 277,
+      "line": 275,
       "function": "TestQualityServiceScopedAndDeploymentsErrorPaths",
       "class": "transport-fault",
       "signals": [
@@ -1865,20 +1802,7 @@
     },
     {
       "file": "internal/services/repository/admin_test.go",
-      "line": 69,
-      "function": "TestAdminServiceValidation",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/repository/admin_test.go",
-      "line": 99,
+      "line": 97,
       "function": "TestAdminServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -2085,20 +2009,7 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 50,
-      "function": "TestTagServiceValidationAndMapStatusHelpers",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/services/tag/service_test.go",
-      "line": 73,
+      "line": 71,
       "function": "TestTagServiceTransportAndValidationBranches",
       "class": "transport-fault",
       "signals": [
@@ -2682,42 +2593,29 @@
     },
     {
       "file": "internal/workflows/bulk/runner_test.go",
-      "line": 18,
-      "function": "TestServiceRunnerOperations",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/workflows/bulk/runner_test.go",
-      "line": 84,
+      "line": 58,
       "function": "TestServiceRunnerValidationBranches",
-      "class": "status-taxonomy",
+      "class": "unreached-guard",
       "signals": [
-        "answers-any-request",
         "closes-on-cleanup",
-        "returns-a-status"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/workflows/bulk/runner_test.go",
-      "line": 157,
+      "line": 115,
       "function": "TestAutoDeclineRejectsOutOfRangeInactivityWeeks",
-      "class": "status-taxonomy",
+      "class": "unreached-guard",
       "signals": [
-        "answers-any-request",
         "closes-on-cleanup",
-        "returns-a-status"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     }
   ]
 }

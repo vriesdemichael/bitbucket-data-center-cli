@@ -37,20 +37,16 @@ func TestTargetContext(t *testing.T) {
 	}
 }
 
+// The 401 mapping that stood beside this is gone. It went through
+// openapi.MapStatusError like every other caller, so TestMapStatusError
+// asserts it once with no server -- and TestLiveErrorTaxonomyRejectedCredentials
+// asks a real instance what a rejected token gets.
 func TestServiceValidationAndStatusMapping(t *testing.T) {
-	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = w.Write([]byte("unauthorized"))
-	})
+	service := newCommentTestService(t, testsupport.UnreachedHandler(t))
 
 	_, err := service.List(context.Background(), Target{}, "", 25)
 	if err == nil || !strings.Contains(err.Error(), "repository must be specified") {
 		t.Fatalf("expected repository validation error, got %v", err)
-	}
-
-	_, err = service.List(context.Background(), Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}, "seed.txt", 25)
-	if err == nil || !strings.Contains(err.Error(), "authentication") {
-		t.Fatalf("expected mapped auth error, got %v", err)
 	}
 }
 
@@ -323,6 +319,7 @@ func TestAStationaryPageEndsTheListing(t *testing.T) {
 //
 // Reads refuse and writes fall back. That difference is the point: nothing
 // happened on a failed read, and something did on a failed write.
+// mock-inventory: unreachable-state — a 201 carrying nothing, a null, or an empty object, none of which Bitbucket sends for a comment it created; the subject is what we answer when the response cannot be read.
 func TestEveryEmptyWriteFallsBackToWhatWasSent(t *testing.T) {
 	for _, shape := range []struct {
 		what string
