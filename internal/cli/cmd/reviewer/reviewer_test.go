@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"

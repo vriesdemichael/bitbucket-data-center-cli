@@ -2,15 +2,16 @@ package repocmd
 
 import (
 	"bytes"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
 )
 
 // newRepoPermissionTestServer serves the four repository permission endpoints

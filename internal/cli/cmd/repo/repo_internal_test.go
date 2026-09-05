@@ -1,11 +1,12 @@
 package repocmd
 
 import (
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )

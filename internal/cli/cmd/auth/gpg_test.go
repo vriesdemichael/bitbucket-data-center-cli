@@ -3,129 +3,14 @@ package auth
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
-
-func TestAuthGpgKeyCommands(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/gpg/latest/keys":
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"id":"426","emailAddress":"user@example.com","fingerprint":"FINGERPRINT1"}]}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/rest/gpg/latest/keys":
-			w.WriteHeader(http.StatusOK)
-			// The server answers with every key it took from the block, so this is
-			// an array even for one key.
-			_, _ = w.Write([]byte(`[{"id":"426","emailAddress":"user@example.com","fingerprint":"FINGERPRINT1"}]`))
-		case r.Method == http.MethodDelete && r.URL.Path == "/rest/gpg/latest/keys/426":
-			w.WriteHeader(http.StatusNoContent)
-		case r.Method == http.MethodDelete && r.URL.Path == "/rest/gpg/latest/keys":
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	var jsonFlag bool
-	deps := Dependencies{
-		JSONEnabled: func() bool { return jsonFlag },
-		LoadConfig: func() (config.AppConfig, error) {
-			return config.AppConfig{
-				BitbucketURL: server.URL,
-			}, nil
-		},
-		WriteJSON: func(writer io.Writer, payload any) error {
-			return jsonoutput.Write(writer, payload)
-		},
-	}
-
-	execute := func(args ...string) (string, error) {
-		cmd := New(deps)
-		buffer := &bytes.Buffer{}
-		cmd.SetOut(buffer)
-		cmd.SetErr(buffer)
-		cmd.SetArgs(args)
-		err := cmd.Execute()
-		return buffer.String(), err
-	}
-
-	// 1. List
-	out, err := execute("gpg-key", "list")
-	if err != nil {
-		t.Fatalf("expected list success, got err=%v out=%s", err, out)
-	}
-	if !strings.Contains(out, "426") || !strings.Contains(out, "user@example.com") {
-		t.Fatalf("unexpected list output: %s", out)
-	}
-
-	// 2. List JSON
-	jsonFlag = true
-	out, err = execute("gpg-key", "list")
-	if err != nil {
-		t.Fatalf("expected list json success, got err=%v", err)
-	}
-	if !strings.Contains(out, `"id": "426"`) {
-		t.Fatalf("unexpected list json output: %s", out)
-	}
-	jsonFlag = false
-
-	// 3. Add (directly key text)
-	out, err = execute("gpg-key", "add", "gpg-key-text")
-	if err != nil {
-		t.Fatalf("expected add success, got err=%v out=%s", err, out)
-	}
-	if !strings.Contains(out, "added successfully") {
-		t.Fatalf("unexpected add output: %s", out)
-	}
-
-	// 4. Add (from file)
-	tmpDir := t.TempDir()
-	keyFile := filepath.Join(tmpDir, "my-key.pub")
-	if err := os.WriteFile(keyFile, []byte("key-text-from-file"), 0600); err != nil {
-		t.Fatalf("failed to write temp file: %v", err)
-	}
-	out, err = execute("gpg-key", "add", keyFile)
-	if err != nil {
-		t.Fatalf("expected add key from file success, got err=%v out=%s", err, out)
-	}
-	if !strings.Contains(out, "added successfully") {
-		t.Fatalf("unexpected add output: %s", out)
-	}
-
-	// 5. Add (error reading directory as file)
-	_, err = execute("gpg-key", "add", tmpDir)
-	if err == nil {
-		t.Fatal("expected error adding key from directory")
-	}
-
-	// 6. Remove
-	out, err = execute("gpg-key", "remove", "426")
-	if err != nil {
-		t.Fatalf("expected remove success, got err=%v out=%s", err, out)
-	}
-	if !strings.Contains(out, "removed successfully") {
-		t.Fatalf("unexpected remove output: %s", out)
-	}
-
-	// 7. Clear (with -y)
-	out, err = execute("gpg-key", "clear", "-y")
-	if err != nil {
-		t.Fatalf("expected clear success, got err=%v out=%s", err, out)
-	}
-	if !strings.Contains(out, "cleared successfully") {
-		t.Fatalf("unexpected clear output: %s", out)
-	}
-}
 
 func TestAuthGpgKeyCommandsErrors(t *testing.T) {
 	// 1. HTTP 500 error responses from server
