@@ -3,24 +3,10 @@ package repocmd
 import (
 	"bytes"
 	"encoding/base64"
-	"errors"
-	"os"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 )
-
-// failOnCloseWriter writes through to a real file and fails on Close, which is
-// what a full disk or a network filesystem does and what os.File will not do on
-// demand.
-type failOnCloseWriter struct {
-	*os.File
-}
-
-func (w failOnCloseWriter) Close() error {
-	_ = w.File.Close()
-	return errors.New("simulated close failure")
-}
 
 // TestRepoCatBase64EncodesBytesThatAreNotText is the guard on the encoding
 // field.

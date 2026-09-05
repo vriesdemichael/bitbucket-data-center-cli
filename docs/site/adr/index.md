@@ -82,7 +82,7 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 071: Tests must not reconfigure the repository they run in](071-tests-must-not-reconfigure-the-repository-they-run-in.md) (`development`, `accepted`)
 - [ADR 072: Interactivity is decided in one place, and the escape hatch costs nothing per call](072-interactivity-is-decided-in-one-place.md) (`architecture`, `accepted`)
 - [ADR 073: Interactive when a person is there, explicit when not](073-interactive-when-a-person-is-there-explicit-when-not.md) (`architecture`, `accepted`)
-- [ADR 074: List options say which limit they mean](074-list-options-say-which-limit-they-mean.md) (`architecture`, `accepted`)
+- [ADR 074: A service takes a cap, never a page size](074-a-service-takes-a-cap-never-a-page-size.md) (`architecture`, `accepted`)
 - [ADR 075: A machine-mode command emits one document, and a failed run is named by its id](075-a-machine-run-emits-one-document.md) (`architecture`, `accepted`)
 - [ADR 076: Machine output field names are camelCase, matching the Bitbucket API](076-machine-output-field-names-are-camelcase.md) (`architecture`, `accepted`)
 - [ADR 077: Comment endpoints are views, not collections](077-comment-endpoints-are-views-not-collections.md) (`architecture`, `accepted`)
