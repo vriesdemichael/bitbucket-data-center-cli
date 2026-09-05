@@ -98,6 +98,50 @@ func TestLiveGovernanceCLI(t *testing.T) {
 		t.Fatalf("expected squash as the default merge strategy: %s", output)
 	}
 
+	// The other half of that defect, read back rather than recorded. Bitbucket
+	// refuses a default that is not among the enabled strategies, so the
+	// command has to send the enabled set along with it -- and it must send the
+	// set that was there, not turn everything on. A unit test asserted this by
+	// decoding the request body it had just been handed; here the settings are
+	// read again afterwards and the server says what it kept.
+	output, err = executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "get", "--repo", seeded.Key+"/"+repo.Slug)
+	if err != nil {
+		t.Fatalf("repo PR settings get after set-strategy failed: %v\noutput: %s", err, output)
+	}
+
+	var settingsPayload struct {
+		DefaultMergeStrategy string `json:"defaultMergeStrategy"`
+		MergeStrategies      []struct {
+			ID      string `json:"id"`
+			Enabled bool   `json:"enabled"`
+		} `json:"mergeStrategies"`
+	}
+	if err := decodeJSONEnvelopeData(output, &settingsPayload); err != nil {
+		t.Fatalf("decode pull request settings: %v\noutput: %s", err, output)
+	}
+
+	if settingsPayload.DefaultMergeStrategy != "squash" {
+		t.Fatalf("the default strategy did not survive the write: %s", output)
+	}
+	enabled := map[string]bool{}
+	for _, strategy := range settingsPayload.MergeStrategies {
+		enabled[strategy.ID] = strategy.Enabled
+	}
+	if !enabled["squash"] {
+		t.Errorf("squash is the default and is not enabled, which Bitbucket refuses:\n%s", output)
+	}
+	// no-ff is what a fresh repository has enabled, and it has to survive: the
+	// command sends the enabled set with the default, and sending only the
+	// default is the defect. The other direction would be as quiet -- turning
+	// every strategy on because one was named -- so a strategy that was off
+	// stays off.
+	if !enabled["no-ff"] {
+		t.Errorf("set-strategy turned off a strategy that was enabled:\n%s", output)
+	}
+	if enabled["ff-only"] {
+		t.Errorf("set-strategy enabled a strategy nobody asked for:\n%s", output)
+	}
+
 	// Test listing merge checks
 	output, err = executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "merge-checks", "list", "--repo", seeded.Key+"/"+repo.Slug)
 	if err != nil {

@@ -1,24 +1,23 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 187,
-    "files": 64,
-    "functions": 178,
+    "mocked_servers": 184,
+    "files": 63,
+    "functions": 175,
     "by_class": {
-      "bitbucket-behaviour": 44,
+      "bitbucket-behaviour": 39,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
       "unreachable-state": 8,
-      "unreached-guard": 22
+      "unreached-guard": 24
     },
     "behaviour_by_package": {
       "internal/cli": 8,
       "internal/cli/cmd/bulk": 2,
       "internal/cli/cmd/pr": 7,
-      "internal/cli/cmd/project": 1,
-      "internal/cli/cmd/repo": 8,
+      "internal/cli/cmd/repo": 4,
       "internal/cli/cmd/reviewer": 1,
       "internal/cli/cmd/webhook": 1,
       "internal/mcp": 5,
@@ -371,18 +370,15 @@
     },
     {
       "file": "internal/cli/cmd/project/permissions_test.go",
-      "line": 26,
-      "function": "newProjectPermissionTestServer",
-      "class": "bitbucket-behaviour",
+      "line": 22,
+      "function": "TestProjectPermissionAliasRejectsBadInvocations",
+      "class": "unreached-guard",
       "signals": [
-        "asserts-http-method",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/cli/cmd/repo/clone_test.go",
@@ -439,61 +435,15 @@
     },
     {
       "file": "internal/cli/cmd/repo/permissions_test.go",
-      "line": 23,
-      "function": "newRepoPermissionTestServer",
-      "class": "bitbucket-behaviour",
+      "line": 24,
+      "function": "TestRepoPermissionAliasRejectsBadInvocations",
+      "class": "unreached-guard",
       "signals": [
-        "asserts-http-method",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/repo/settings_test.go",
-      "line": 36,
-      "function": "TestRepoSettingsCommands",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/repo/settings_test.go",
-      "line": 315,
-      "function": "TestRepoSettingsJSONAndDryRunModes",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/repo/settings_test.go",
-      "line": 562,
-      "function": "TestSetStrategySendsTheEnabledStrategiesWithTheDefault",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "closes-on-cleanup"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/cli/cmd/repo/sync_test.go",
