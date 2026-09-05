@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 17 | write the live test, then delete the mock |
+| `move-to-live` | 14 | write the live test, then delete the mock |
 | `keep` | 135 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
@@ -16,11 +16,9 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | file | total | move-to-live | remove | keep | other |
 |---|---:|---:|---:|---:|---:|
 | `internal/cli/cmd/pr/reviewer_automation_test.go` | 4 | 2 | 0 | 2 | 0 |
-| `internal/services/pullrequest/review_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/services/reposettings/service_test.go` | 5 | 1 | 0 | 3 | 1 |
 | `internal/cli/cmd/pr/pr_test.go` | 3 | 1 | 0 | 2 | 0 |
 | `internal/cli/root_test.go` | 3 | 1 | 0 | 2 | 0 |
-| `internal/services/pullrequestactivity/service_test.go` | 3 | 1 | 0 | 1 | 1 |
 | `internal/cli/cmd/pr/create_interactive_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/mcp/tools_pr_review_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/cli/cmd/pr/checkout_test.go` | 1 | 1 | 0 | 0 | 0 |
@@ -59,6 +57,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/commit/service_test.go` | 2 | 0 | 0 | 1 | 1 |
 | `internal/services/jira/service_test.go` | 2 | 0 | 0 | 1 | 1 |
 | `internal/services/pullrequest/inspection_test.go` | 2 | 0 | 0 | 1 | 1 |
+| `internal/services/pullrequestactivity/service_test.go` | 2 | 0 | 0 | 1 | 1 |
 | `internal/services/repository/admin_test.go` | 2 | 0 | 0 | 1 | 1 |
 | `internal/services/reviewer/service_coverage_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/services/reviewer/service_test.go` | 2 | 0 | 0 | 2 | 0 |

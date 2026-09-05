@@ -1,83 +1,10 @@
 package pullrequest
 
 import (
-	"context"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	pullrequestactivity "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
-
-// Bitbucket ships comment and task counters in an undocumented "properties"
-// object. They are decoded defensively, so both the present and absent cases
-// need to hold.
-func TestGetPullRequestDecodesPropertyCounters(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/pull-requests/22" {
-			http.NotFound(w, request)
-			return
-		}
-		_, _ = fmt.Fprint(w, `{"id":22,"title":"Feature","state":"OPEN","open":true,
-          "fromRef":{"displayId":"feature/a"},"toRef":{"displayId":"master"},
-          "properties":{"commentCount":7,"openTaskCount":2,"resolvedTaskCount":5}}`)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-
-	cfg, err := config.LoadFromEnv()
-	if err != nil {
-		t.Fatalf("failed to load config: %v", err)
-	}
-
-	fetched, err := NewService(httpclient.NewFromConfig(cfg)).Get(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "22")
-	if err != nil {
-		t.Fatalf("get pull request: %v", err)
-	}
-
-	if fetched.CommentCount == nil || *fetched.CommentCount != 7 {
-		t.Fatalf("expected comment count 7, got %#v", fetched.CommentCount)
-	}
-	if fetched.OpenTaskCount == nil || *fetched.OpenTaskCount != 2 {
-		t.Fatalf("expected open task count 2, got %#v", fetched.OpenTaskCount)
-	}
-	if fetched.ResolvedTaskCount == nil || *fetched.ResolvedTaskCount != 5 {
-		t.Fatalf("expected resolved task count 5, got %#v", fetched.ResolvedTaskCount)
-	}
-}
-
-func TestGetPullRequestWithoutPropertyCounters(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/pull-requests/22" {
-			http.NotFound(w, request)
-			return
-		}
-		_, _ = fmt.Fprint(w, `{"id":22,"title":"Feature","state":"OPEN","open":true,"fromRef":{"displayId":"a"},"toRef":{"displayId":"b"}}`)
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-
-	cfg, err := config.LoadFromEnv()
-	if err != nil {
-		t.Fatalf("failed to load config: %v", err)
-	}
-
-	fetched, err := NewService(httpclient.NewFromConfig(cfg)).Get(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "22")
-	if err != nil {
-		t.Fatalf("get pull request: %v", err)
-	}
-
-	if fetched.CommentCount != nil || fetched.OpenTaskCount != nil || fetched.ResolvedTaskCount != nil {
-		t.Fatalf("expected counters to stay nil when the server omits them, got %#v", fetched)
-	}
-}
 
 func TestBuildReviewSummaryFromThreads(t *testing.T) {
 	pullRequest := PullRequest{
@@ -238,3 +165,15 @@ func assertActionRequired(t *testing.T, got, want *bool) {
 		t.Fatalf("ActionRequired = %v, want %v", *got, *want)
 	}
 }
+
+// Both property-counter suites are live now, in
+// TestLivePullRequestReviewVisibility, and moving them made the point of them
+// sharper.
+//
+// Get and List share mapPullRequest, so the counters the live listing carries
+// prove the decode against a payload Bitbucket really sends. What the unit
+// tests could not notice is that the two endpoints disagree: Bitbucket 10.x
+// reports properties on the listing and omits them on the single pull
+// request, which is the entire reason `pr get` falls back to the
+// blocker-comment tally. Asserting both halves against payloads written here
+// would have gone on passing whichever way the server went.
