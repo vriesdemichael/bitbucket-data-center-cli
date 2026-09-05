@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 278,
-    "files": 88,
-    "functions": 261,
+    "mocked_servers": 276,
+    "files": 87,
+    "functions": 259,
     "by_class": {
-      "bitbucket-behaviour": 105,
+      "bitbucket-behaviour": 103,
       "canned-response": 36,
       "external-service": 14,
       "harness-constructor": 18,
@@ -14,7 +14,7 @@
       "unreached-guard": 15
     },
     "behaviour_by_package": {
-      "internal/cli": 22,
+      "internal/cli": 20,
       "internal/cli/cmd/admin": 1,
       "internal/cli/cmd/api": 4,
       "internal/cli/cmd/auth": 2,
@@ -1257,38 +1257,6 @@
       ],
       "action": "move-to-live",
       "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 59,
-      "function": "TestDryRunRepoPermissionPrechecksFailBeforePlanning",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/dryrun_stateful_commands_test.go",
-      "line": 138,
-      "function": "TestDryRunProjectPermissionPrechecksFailBeforePlanning",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
       "file": "internal/cli/governance_harden_test.go",
