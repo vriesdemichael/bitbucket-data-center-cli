@@ -39,6 +39,13 @@ func newMCPServeCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Short: "Start the MCP server (stdio transport)",
+		// The literal matches cli.annotationNoAmbientRepoInference (this package
+		// cannot import internal/cli); the test of that name pins them together.
+		// Ambient inference fills --repo from the git remote of the working
+		// directory, which is a convenience for commands that merely target a
+		// repository. Here --repo is a confinement decision (ADR-062): it must
+		// come from the operator's flags, not from where the server starts.
+		Annotations: map[string]string{"bb/no-ambient-repo-inference": "true"},
 		Long: `Start the bb MCP server using stdio transport for IDE integration.
 
 Configure your IDE's MCP client to run:
@@ -67,6 +74,8 @@ Use --project or --repo to confine the server to one project or repository. Any
 tool call aimed elsewhere is refused. Tools that address a resource Bitbucket
 does not scope to a project — build statuses, which hang off a commit SHA — are
 withheld entirely while a scope is set, because there is no argument to bound.
+Confinement applies only when the flags are passed explicitly: the server is
+never scoped by the repository of the directory it starts in.
 
 Use --audit-file to record every tool call as JSON Lines for SIEM collection.
 Pass a path, or 'stderr' for a containerised deployment whose log collector
