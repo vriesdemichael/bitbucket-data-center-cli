@@ -240,69 +240,6 @@ func currentLivePRVersion(t *testing.T, prID string) string {
 	return extractPRVersion(decodeJSONMap(t, output))
 }
 
-// TestLiveCodeOwnersExpandsAReviewerGroup is #503.
-//
-// "@reviewer-group/<name>" is how Bitbucket's own Code Owners plugin spells a
-// reviewer group. The whole token went into the lookup, missed, and the
-// unknown-group fallback then offered it to the reviewers API as a username --
-// answered with the 409 the issue reported. Nothing in the live suite touched
-// CODEOWNERS at all, so only a server could have caught it.
-func TestLiveCodeOwnersExpandsAReviewerGroup(t *testing.T) {
-	harness := newLiveHarness(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
-	if err != nil {
-		t.Fatalf("seed project failed: %v", err)
-	}
-	repo := seeded.Repos[0]
-
-	member, err := harness.createLicensedUser(ctx)
-	if err != nil {
-		t.Fatalf("create group member failed: %v", err)
-	}
-	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, member.Username, "REPO_READ"); err != nil {
-		t.Fatalf("grant member read access failed: %v", err)
-	}
-
-	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
-
-	const groupName = "cog_product"
-	if err := harness.createReviewerGroup(ctx, seeded.Key, repo.Slug, groupName, member.Username); err != nil {
-		t.Fatalf("reviewer group create failed: %v", err)
-	}
-
-	// The file has to be on the target branch, which is where the lookup reads
-	// it from.
-	codeOwners := fmt.Sprintf("*.txt @reviewer-group/%s\n", groupName)
-	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", ".bitbucket/CODEOWNERS", codeOwners); err != nil {
-		t.Fatalf("push CODEOWNERS failed: %v", err)
-	}
-
-	branch := "feature/codeowners-reviewer-group"
-	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "owned.txt"); err != nil {
-		t.Fatalf("push commit on branch failed: %v", err)
-	}
-
-	// --codeowners explicitly, so an entry that cannot be resolved is fatal
-	// rather than a warning: this must resolve, not merely fail to complain.
-	output, err := createLivePRWithOutput(t, branch, "CODEOWNERS reviewer group", "--codeowners", "--no-default-reviewers")
-	if err != nil {
-		t.Fatalf("pr create with a CODEOWNERS reviewer group failed: %v\noutput: %s", err, output)
-	}
-
-	reviewers := decodeLivePRReviewers(t, decodeJSONMap(t, output))
-	if !containsFold(reviewers, member.Username) {
-		t.Errorf("expected the reviewer group to expand to %s, got %v\noutput: %s", member.Username, reviewers, output)
-	}
-	for _, name := range reviewers {
-		if strings.Contains(name, "reviewer-group/") {
-			t.Errorf("the group token was assigned as a username: %v", reviewers)
-		}
-	}
-}
-
 // TestLiveReviewerFlagsAcceptTheReviewerGroupPrefix covers the two neighbours
 // of #503: the same prefix reaches the same lookup from --reviewers and from
 // --reviewer-group, and carried the same defect.
@@ -513,70 +450,11 @@ func assertLivePRRepository(t *testing.T, pr map[string]any, key, wantSlug strin
 	}
 }
 
-// TestLiveCodeOwnersUnknownReviewerGroup is the other half of #503, and the
-// half only the parser can answer.
+// The two #503 CODEOWNERS tests moved to codeowners_live_test.go, where the
+// rest of the syntax is covered.
 //
-// An "@reviewer-group/<name>" entry has said what it is, so the username
-// fallback does not apply -- that reading is only for the ambiguous bare
-// "@name". Taking it anyway is what sent a group name to the reviewers API and
-// produced the 409 the issue reported, naming the server rather than the file
-// that caused it. What happens instead is the documented --codeowners contract.
-func TestLiveCodeOwnersUnknownReviewerGroup(t *testing.T) {
-	harness := newLiveHarness(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
-	if err != nil {
-		t.Fatalf("seed project failed: %v", err)
-	}
-	repo := seeded.Repos[0]
-	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
-
-	// A group that does not exist, named beside an owner that does.
-	owners := "*.txt @reviewer-group/no_such_group " + harness.username() + "\n"
-	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", ".bitbucket/CODEOWNERS", owners); err != nil {
-		t.Fatalf("push CODEOWNERS failed: %v", err)
-	}
-
-	// Explicit --codeowners: the caller asked for these reviewers by name, so
-	// an entry that cannot be resolved is fatal.
-	t.Run("explicit, so it fails naming the group", func(t *testing.T) {
-		branch := "feature/unknown-group-explicit"
-		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "explicit.txt"); err != nil {
-			t.Fatalf("push commit on branch failed: %v", err)
-		}
-
-		output, err := createLivePRWithOutput(t, branch, "Unknown reviewer group, explicit",
-			"--codeowners", "--no-default-reviewers")
-		if err == nil {
-			t.Fatalf("expected an unresolvable entry to be fatal, got:\n%s", output)
-		}
-
-		combined := err.Error() + output
-		if !strings.Contains(combined, "no_such_group") {
-			t.Errorf("the failure must name the group, got: %v\noutput: %s", err, output)
-		}
-		// The defect was the group name reaching the reviewers API as a user.
-		if strings.Contains(combined, "InvalidPullRequestReviewersException") {
-			t.Errorf("the group name was still sent as a username: %v\noutput: %s", err, output)
-		}
-	})
-
-	// Defaulted: code owners are a convenience, so one bad entry warns and the
-	// owner named beside it is still assigned.
-	t.Run("defaulted, so it warns and keeps the rest", func(t *testing.T) {
-		branch := "feature/unknown-group-defaulted"
-		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "defaulted.txt"); err != nil {
-			t.Fatalf("push commit on branch failed: %v", err)
-		}
-
-		output, err := createLivePRWithOutput(t, branch, "Unknown reviewer group, defaulted", "--no-default-reviewers")
-		if err != nil {
-			t.Fatalf("a defaulted lookup must not fail on one bad entry: %v\noutput: %s", err, output)
-		}
-		if !strings.Contains(output, "no_such_group") {
-			t.Errorf("expected a warning naming the group, got:\n%s", output)
-		}
-	})
-}
+// One of them no longer describes anything bb does: it asserted that an
+// unresolvable "@reviewer-group/<name>" is fatal under an explicit
+// --codeowners and a warning otherwise. Bitbucket resolves CODEOWNERS now
+// (ADR-080) and it has no such contract -- it skips the entry and answers with
+// the owners named beside it, which is what the live suite pins.

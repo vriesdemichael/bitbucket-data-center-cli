@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `79`
-- Accepted ADRs: `70`
+- Total ADRs: `80`
+- Accepted ADRs: `71`
 
 ## ADR List
 
@@ -88,4 +88,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 077: Comment endpoints are views, not collections](077-comment-endpoints-are-views-not-collections.md) (`architecture`, `accepted`)
 - [ADR 078: Dry-run confidence is derived from a tier, not written by the author](078-dry-run-confidence-is-derived-from-a-tier.md) (`development`, `accepted`)
 - [ADR 079: Unit tests do not simulate Bitbucket](079-unit-tests-do-not-simulate-bitbucket.md) (`development`, `accepted`)
+- [ADR 080: Bitbucket resolves CODEOWNERS, not bb](080-bitbucket-resolves-codeowners-not-bb.md) (`architecture`, `accepted`)
 

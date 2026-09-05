@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
-	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
 // Default reviewer resolution, proven against the server rather than against a
@@ -314,72 +313,4 @@ func TestLiveReviewerConditionInputRoutes(t *testing.T) {
 	if !strings.Contains(afterUpdate, `"requiredApprovals": 2`) {
 		t.Fatalf("the update read from stdin did not take:\n%s", afterUpdate)
 	}
-}
-
-// TestLiveCodeOwnersAssignsFromTheRepository is the flag the rest of the live
-// suite turns off.
-//
-// Every other pull request here passes --no-codeowners, so the path that reads
-// .bitbucket/CODEOWNERS, matches it against the diff and resolves the owners
-// had no live coverage at all -- only unit tests against a handwritten server
-// that served the CODEOWNERS file, the reviewer groups and the diff, which is
-// every input the feature has.
-func TestLiveCodeOwnersAssignsFromTheRepository(t *testing.T) {
-	harness := newLiveHarness(t)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
-	if err != nil {
-		t.Fatalf("seed project with repositories failed: %v", err)
-	}
-	repo := seeded.Repos[0]
-	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
-
-	owner, err := harness.createLicensedUser(ctx)
-	if err != nil {
-		t.Fatalf("create the code owner failed: %v", err)
-	}
-	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, owner.Username,
-		openapigenerated.SetPermissionForUserParamsPermissionREPOREAD); err != nil {
-		t.Fatalf("grant the code owner read access failed: %v", err)
-	}
-
-	// The file lands on master, because that is what the pull request is
-	// compared against and where bb looks for it.
-	codeOwners := fmt.Sprintf("docs/ @%s\n", owner.Username)
-	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", ".bitbucket/CODEOWNERS", codeOwners); err != nil {
-		t.Fatalf("push CODEOWNERS failed: %v", err)
-	}
-
-	t.Run("a diff the rule matches gets the owner", func(t *testing.T) {
-		const branch = "feature/touches-docs"
-		if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, "docs/guide.md", "a guide\n"); err != nil {
-			t.Fatalf("push a commit under docs failed: %v", err)
-		}
-
-		output := mustLiveCLI(t, "pr", "create",
-			"--from-ref", branch, "--to-ref", "refs/heads/master",
-			"--title", "Touches docs", "--codeowners", "--no-default-reviewers")
-
-		if names := decodeLivePRReviewers(t, decodeJSONMap(t, output)); !containsFold(names, owner.Username) {
-			t.Fatalf("the code owner for docs/ was not assigned, got %v:\n%s", names, output)
-		}
-	})
-
-	t.Run("a diff it does not match gets nobody", func(t *testing.T) {
-		const branch = "feature/touches-nothing-owned"
-		if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, "src/unowned.txt", "not owned\n"); err != nil {
-			t.Fatalf("push a commit outside docs failed: %v", err)
-		}
-
-		output := mustLiveCLI(t, "pr", "create",
-			"--from-ref", branch, "--to-ref", "refs/heads/master",
-			"--title", "Touches nothing owned", "--codeowners", "--no-default-reviewers")
-
-		if names := decodeLivePRReviewers(t, decodeJSONMap(t, output)); containsFold(names, owner.Username) {
-			t.Fatalf("a diff outside docs/ still assigned its owner, got %v:\n%s", names, output)
-		}
-	})
 }
