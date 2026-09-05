@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -44,216 +42,6 @@ func testDependencies(serverURL string) Dependencies {
 			}, nil
 		},
 	}
-}
-
-func TestBulkPlanApplyAndStatusCommands(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/1.0/projects/PRJ/repos":
-			_, _ = writer.Write([]byte(`{"isLastPage":true,"values":[{"slug":"repo-a","name":"Repo A","public":false,"project":{"key":"PRJ"}},{"slug":"repo-b","name":"Repo B","public":false,"project":{"key":"PRJ"}}]}`))
-		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo-a/settings/pull-requests":
-			_, _ = writer.Write([]byte(`{"requiredAllTasksComplete":true}`))
-		case request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo-b/settings/pull-requests":
-			_, _ = writer.Write([]byte(`{"requiredAllTasksComplete":true}`))
-		default:
-			http.NotFound(writer, request)
-		}
-	}))
-	defer server.Close()
-
-	tempDir := t.TempDir()
-	statusDir := filepath.Join(tempDir, "status")
-	t.Setenv("BB_BULK_STATUS_DIR", statusDir)
-	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "config.yaml"))
-
-	policyPath := filepath.Join(tempDir, "policy.yaml")
-	planPath := filepath.Join(tempDir, "plan.json")
-	policy := strings.Join([]string{
-		"apiVersion: bb.io/v1alpha1",
-		"selector:",
-		"  projectKey: PRJ",
-		"  repoPattern: repo-*",
-		"operations:",
-		"  - type: repo.pull-request-settings.required-all-tasks-complete",
-		"    requiredAllTasksComplete: true",
-	}, "\n")
-	if err := os.WriteFile(policyPath, []byte(policy), 0o600); err != nil {
-		t.Fatalf("write policy: %v", err)
-	}
-
-	planCommand := New(testDependencies(server.URL))
-	planOutput := &bytes.Buffer{}
-	planCommand.SetOut(planOutput)
-	planCommand.SetErr(planOutput)
-	planCommand.SetArgs([]string{"plan", "-f", policyPath, "-o", planPath})
-	if err := planCommand.Execute(); err != nil {
-		t.Fatalf("plan execute failed: %v", err)
-	}
-
-	var plan bulkworkflow.Plan
-	if err := decodeJSONEnvelopeData(planOutput.Bytes(), &plan); err != nil {
-		t.Fatalf("decode plan output: %v", err)
-	}
-	if plan.Summary.TargetCount != 2 || plan.Summary.OperationCount != 2 {
-		t.Fatalf("unexpected plan summary: %#v", plan.Summary)
-	}
-	if strings.TrimSpace(plan.PlanHash) == "" {
-		t.Fatal("expected plan hash to be populated")
-	}
-
-	rawPlan, err := os.ReadFile(planPath)
-	if err != nil {
-		t.Fatalf("read plan artifact: %v", err)
-	}
-	var persistedPlan bulkworkflow.Plan
-	if err := json.Unmarshal(rawPlan, &persistedPlan); err != nil {
-		t.Fatalf("decode persisted plan: %v", err)
-	}
-	if persistedPlan.PlanHash != plan.PlanHash {
-		t.Fatalf("expected persisted plan hash %s, got %s", plan.PlanHash, persistedPlan.PlanHash)
-	}
-
-	applyCommand := New(testDependencies(server.URL))
-	applyOutput := &bytes.Buffer{}
-	applyCommand.SetOut(applyOutput)
-	applyCommand.SetErr(applyOutput)
-	applyCommand.SetArgs([]string{"apply", "--from-plan", planPath})
-	if err := applyCommand.Execute(); err != nil {
-		t.Fatalf("apply execute failed: %v", err)
-	}
-
-	var status bulkworkflow.ApplyStatus
-	if err := decodeJSONEnvelopeData(applyOutput.Bytes(), &status); err != nil {
-		t.Fatalf("decode apply output: %v", err)
-	}
-	if status.Summary.SuccessfulTargets != 2 || status.Summary.FailedTargets != 0 {
-		t.Fatalf("unexpected apply summary: %#v", status.Summary)
-	}
-	if strings.TrimSpace(status.OperationID) == "" {
-		t.Fatal("expected operation id")
-	}
-
-	statusCommand := New(testDependencies(server.URL))
-	statusOutput := &bytes.Buffer{}
-	statusCommand.SetOut(statusOutput)
-	statusCommand.SetErr(statusOutput)
-	statusCommand.SetArgs([]string{"status", status.OperationID})
-	if err := statusCommand.Execute(); err != nil {
-		t.Fatalf("status execute failed: %v", err)
-	}
-
-	var loaded bulkworkflow.ApplyStatus
-	if err := decodeJSONEnvelopeData(statusOutput.Bytes(), &loaded); err != nil {
-		t.Fatalf("decode status output: %v", err)
-	}
-	if loaded.OperationID != status.OperationID {
-		t.Fatalf("expected operation id %s, got %s", status.OperationID, loaded.OperationID)
-	}
-}
-
-func TestBulkApplyReturnsStructuredFailure(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method == http.MethodPost && request.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo-a/settings/pull-requests" {
-			writer.WriteHeader(http.StatusConflict)
-			_, _ = writer.Write([]byte(`{"errors":[{"message":"conflict"}]}`))
-			return
-		}
-		http.NotFound(writer, request)
-	}))
-	defer server.Close()
-
-	tempDir := t.TempDir()
-	t.Setenv("BB_BULK_STATUS_DIR", filepath.Join(tempDir, "status"))
-	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "config.yaml"))
-
-	planner := bulkworkflow.NewPlanner(fakeCatalog{repositories: map[string][]repository.Repository{
-		"PRJ": {{ProjectKey: "PRJ", Slug: "repo-a", Name: "Repo A"}},
-	}})
-	plan, err := planner.Plan(context.TODO(), bulkworkflow.Policy{
-		APIVersion: bulkworkflow.APIVersion,
-		Selector:   bulkworkflow.Selector{ProjectKey: "PRJ", Repositories: []string{"repo-a"}},
-		Operations: []bulkworkflow.OperationSpec{{Type: bulkworkflow.OperationRepoPullRequestRequiredAllTasksComplete, RequiredAllTasksComplete: boolPointer(true)}},
-	})
-	if err != nil {
-		t.Fatalf("plan failed: %v", err)
-	}
-
-	planPath := filepath.Join(tempDir, "plan.json")
-	encodedPlan, err := json.Marshal(plan)
-	if err != nil {
-		t.Fatalf("marshal plan: %v", err)
-	}
-	if err := os.WriteFile(planPath, encodedPlan, 0o600); err != nil {
-		t.Fatalf("write plan: %v", err)
-	}
-
-	command := New(testDependencies(server.URL))
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"apply", "--from-plan", planPath})
-
-	err = command.Execute()
-	if err == nil {
-		t.Fatal("expected apply failure")
-	}
-	if apperrors.ExitCode(err) != 5 {
-		t.Fatalf("expected conflict exit code, got %d (%v)", apperrors.ExitCode(err), err)
-	}
-
-	// Nothing on stdout. This test used to require the status envelope here,
-	// which is what made the failure path write two documents: cmd/bb writes
-	// the error envelope for the returned error, and a consumer then reads one
-	// document too many -- a strict decoder errors, jq quietly returns a result
-	// per document and exits 0. Under --json the failure envelope is the one
-	// document (ADR-075).
-	if written := strings.TrimSpace(buffer.String()); written != "" {
-		t.Fatalf("a failing apply wrote to stdout under --json; cmd/bb appends the error envelope after it:\n%s", written)
-	}
-
-	// The operation id is in the error, because it is the only handle the
-	// caller is left with -- `bb bulk status <id>` returns the artifact.
-	operationID := operationIDFrom(t, err)
-
-	statusCommand := New(testDependencies(server.URL))
-	statusBuffer := &bytes.Buffer{}
-	statusCommand.SetOut(statusBuffer)
-	statusCommand.SetErr(statusBuffer)
-	statusCommand.SetArgs([]string{"status", operationID})
-	if statusErr := statusCommand.Execute(); statusErr != nil {
-		t.Fatalf("the id named in the error does not resolve: %v", statusErr)
-	}
-
-	var status bulkworkflow.ApplyStatus
-	if decodeErr := decodeJSONEnvelopeData(statusBuffer.Bytes(), &status); decodeErr != nil {
-		t.Fatalf("expected structured JSON status, got %q (%v)", statusBuffer.String(), decodeErr)
-	}
-	if status.Status != "failed" {
-		t.Fatalf("expected failed apply status, got %s", status.Status)
-	}
-	if status.Targets[0].Operations[0].Status != "failed" {
-		t.Fatalf("expected failed operation, got %#v", status.Targets[0].Operations)
-	}
-}
-
-// operationIDFrom reads the operation id off the error as a field.
-//
-// Deliberately not by scanning the message. An earlier version did exactly
-// that, which meant the test agreed with the skill in telling callers to scrape
-// a sentence for an identifier no schema described -- the failure #474 was
-// about. Reading error.details is what a consumer does, so it is what the test
-// does.
-func operationIDFrom(t *testing.T, err error) string {
-	t.Helper()
-
-	details := apperrors.DetailsOf(err)
-	if id := details["operationId"]; id != "" {
-		return id
-	}
-
-	t.Fatalf("the error carries no operationId detail, so the artifact cannot be reached: %v (details: %v)", err, details)
-	return ""
 }
 
 func TestBulkCommandErrorPaths(t *testing.T) {
@@ -594,3 +382,34 @@ func TestTheHumanSummaryOmitsCancelledWhenThereIsNone(t *testing.T) {
 // the harness seeds. The unit version rendered a plan whose targets came from
 // a repository listing it wrote, so "1 target" was the fixture's number and
 // not the selector's.
+
+// Two more suites are live.
+//
+// TestBulkPlanApplyAndStatusCommands walked plan, apply and status past a
+// repository listing and two settings replies this file wrote, so the two
+// targets it counted were the two the fixture held.
+// TestLiveBulkPolicyPlanApplyStatus does the same walk against a real project
+// and reads the settings back afterwards.
+//
+// TestBulkApplyReturnsStructuredFailure built its failure from a 409 it served
+// itself, which decided the exit code it then checked.
+// TestLiveBulkApplyReportsAFailedTarget grants to a username Bitbucket does
+// not know and keeps all three guarantees: the command fails, --json writes
+// nothing to stdout so the error envelope is the only document (ADR-075), and
+// the operation id in the error resolves through `bb bulk status`.
+
+// operationIDFrom reads the operation id off a failed apply's error, which is
+// the only handle the caller is left with: `bb bulk status <id>` is how they
+// find out what did happen before the run stopped.
+func operationIDFrom(t *testing.T, err error) string {
+	t.Helper()
+
+	details := apperrors.DetailsOf(err)
+	if id := details["operationId"]; id != "" {
+		return id
+	}
+
+	t.Fatalf("the error carries no operationId detail, so the artifact cannot be reached: %v (details: %v)", err, details)
+
+	return ""
+}

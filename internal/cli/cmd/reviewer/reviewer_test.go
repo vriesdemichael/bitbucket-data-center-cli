@@ -523,61 +523,6 @@ func TestReviewerDefaultsAndHelpers(t *testing.T) {
 	}
 }
 
-func TestReviewerConditionStdin(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		path := r.URL.Path
-
-		switch {
-		case r.Method == http.MethodPost && path == "/rest/default-reviewers/latest/projects/PRJ/repos/repo1/condition":
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"id":105,"requiredApprovals":1}`))
-
-		case r.Method == http.MethodPut && path == "/rest/default-reviewers/latest/projects/PRJ/repos/repo1/condition/101":
-			_, _ = w.Write([]byte(`{"id":101,"requiredApprovals":1}`))
-
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	cfg := config.AppConfig{
-		BitbucketURL: server.URL,
-		ProjectKey:   "PRJ",
-	}
-
-	deps := Dependencies{
-		LoadConfig: func() (config.AppConfig, error) { return cfg, nil },
-		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
-			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
-			return cfg, client, err
-		},
-	}
-
-	// Create via stdin
-	cmd := New(deps)
-	buf := new(bytes.Buffer)
-	cmd.SetIn(strings.NewReader(`{"requiredApprovals":1}`))
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"condition", "create", "-", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error creating condition via stdin: %v", err)
-	}
-
-	// Update via stdin
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetIn(strings.NewReader(`{"requiredApprovals":1}`))
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"condition", "update", "101", "-", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error updating condition via stdin: %v", err)
-	}
-}
-
 func TestReviewerPermissionErrors(t *testing.T) {
 	// A URL, not a server: the permission checker refuses before a request is built, so a listener here could only hide the refusal not happening.
 	const serverURL = "http://bitbucket.invalid"
@@ -812,3 +757,9 @@ func TestUnreadableConditionInputIsValidation(t *testing.T) {
 		})
 	}
 }
+
+// TestReviewerConditionStdin is live now, in
+// TestLiveReviewerConditionInputRoutes: a condition created from a file and
+// then updated from stdin, with the approval count read back out of the
+// listing. The version here posted to a handler that answered 201 for the one
+// path it knew, so the body could have been anything.

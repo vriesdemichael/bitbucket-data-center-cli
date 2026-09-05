@@ -6,9 +6,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
 )
 
 // Default reviewer resolution, proven against the server rather than against a
@@ -228,4 +232,85 @@ func TestLiveReviewerGroupResolutionShapes(t *testing.T) {
 			t.Errorf("expected the empty-group refusal, got: %v", err)
 		}
 	})
+}
+
+// TestLiveReviewerConditionInputRoutes covers the two ways a condition can be
+// handed to bb that are not an argument: --config-file and stdin.
+//
+// Unit tests drove both against a handler that answered 201 to any POST whose
+// path contained "condition", so a body that was not a condition at all would
+// have passed. The proof here is that the condition exists afterwards and says
+// what the file said.
+func TestLiveReviewerConditionInputRoutes(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	reviewer, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create reviewer failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reviewer.Username, "REPO_READ"); err != nil {
+		t.Fatalf("grant reviewer read access failed: %v", err)
+	}
+	reviewerID, err := harness.userID(ctx, reviewer.Username)
+	if err != nil {
+		t.Fatalf("look up the reviewer id: %v", err)
+	}
+
+	condition := func(approvals int) string {
+		return fmt.Sprintf(`{
+			"sourceMatcher": {"id": "ANY_REF", "type": {"id": "ANY_REF"}},
+			"targetMatcher": {"id": "refs/heads/master", "type": {"id": "BRANCH"}},
+			"reviewers": [{"id": %d}],
+			"requiredApprovals": %d
+		}`, reviewerID, approvals)
+	}
+
+	configPath := filepath.Join(t.TempDir(), "condition.json")
+	if err := os.WriteFile(configPath, []byte(condition(1)), 0o600); err != nil {
+		t.Fatalf("write condition file: %v", err)
+	}
+
+	created := mustLiveCLI(t, "reviewer", "condition", "create", "--config-file", configPath, "--repo", repoRef)
+	conditionID := asString(decodeJSONMap(t, created)["id"])
+	if conditionID == "" {
+		if inner, ok := decodeJSONMap(t, created)["condition"].(map[string]any); ok {
+			conditionID = asString(inner["id"])
+		}
+	}
+	if conditionID == "" {
+		t.Fatalf("the created condition has no id:\n%s", created)
+	}
+
+	listed := mustLiveCLI(t, "reviewer", "condition", "list", "--repo", repoRef)
+	if !strings.Contains(listed, conditionID) {
+		t.Fatalf("the condition created from a file is not in the listing:\n%s", listed)
+	}
+
+	// stdin, on the update. Two required approvals rather than one, so the
+	// listing afterwards says which body arrived.
+	updateCommand := cli.NewRootCommand()
+	updateCommand.SetIn(strings.NewReader(condition(2)))
+	updateOutput := &strings.Builder{}
+	updateCommand.SetOut(updateOutput)
+	updateCommand.SetErr(updateOutput)
+	updateCommand.SetArgs([]string{"--json", "reviewer", "condition", "update", conditionID, "-", "--repo", repoRef})
+	if err := updateCommand.Execute(); err != nil {
+		t.Fatalf("reviewer condition update from stdin failed: %v\noutput: %s", err, updateOutput.String())
+	}
+
+	afterUpdate := mustLiveCLI(t, "reviewer", "condition", "list", "--repo", repoRef)
+	if !strings.Contains(afterUpdate, `"requiredApprovals": 2`) {
+		t.Fatalf("the update read from stdin did not take:\n%s", afterUpdate)
+	}
 }

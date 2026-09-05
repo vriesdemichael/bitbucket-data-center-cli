@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
 	bulkworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/bulk"
 )
@@ -304,4 +305,101 @@ func TestLiveBulkEveryOperationType(t *testing.T) {
 	if !strings.Contains(hooks, hookName) {
 		t.Errorf("the webhook the policy created is not in the repository's hooks:\n%s", hooks)
 	}
+}
+
+// TestLiveBulkApplyReportsAFailedTarget covers what a partly-refused apply
+// leaves the caller with.
+//
+// A unit test built this from a 409 it served itself, which decided the exit
+// code it then checked. Here the refusal is Bitbucket's: a grant to a username
+// it does not know.
+//
+// The three guarantees are the ones an agent depends on. The command fails
+// rather than reporting success. Under --json it writes nothing to stdout, so
+// the error envelope cmd/bb appends is the only document -- two documents make
+// a strict decoder error and make jq quietly return one result too many
+// (ADR-075). And the operation id travels in the error, because
+// `bb bulk status <id>` is the only way back to what did happen.
+func TestLiveBulkApplyReportsAFailedTarget(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	tempDir := t.TempDir()
+	policyPath := filepath.Join(tempDir, "doomed.yaml")
+	planPath := filepath.Join(tempDir, "doomed-plan.json")
+	policy := strings.Join([]string{
+		"apiVersion: bb.io/v1alpha1",
+		"selector:",
+		"  projectKey: " + seeded.Key,
+		"  repoPattern: " + repo.Slug,
+		"operations:",
+		"  - type: repo.permission.user.grant",
+		"    username: no-such-account-anywhere",
+		"    permission: REPO_READ",
+	}, "\n")
+	if err := os.WriteFile(policyPath, []byte(policy), 0o600); err != nil {
+		t.Fatalf("write bulk policy: %v", err)
+	}
+
+	if output, err := executeLiveCLI(t, "--json", "bulk", "plan", "-f", policyPath, "-o", planPath); err != nil {
+		t.Fatalf("bulk plan failed: %v\noutput: %s", err, output)
+	}
+
+	applyOutput, applyErr := executeLiveCLI(t, "--json", "bulk", "apply", "--from-plan", planPath)
+	if applyErr == nil {
+		t.Fatalf("granting to an account that does not exist was reported as a success:\n%s", applyOutput)
+	}
+	if code := apperrors.ExitCode(applyErr); code == 0 || code == 10 {
+		t.Errorf("exit code = %d, want a permanent failure rather than success or a retry", code)
+	}
+	if written := strings.TrimSpace(applyOutput); written != "" {
+		t.Errorf("a failing apply wrote to stdout under --json; cmd/bb appends the error envelope after it:\n%s", written)
+	}
+
+	operationID := bulkOperationIDFrom(t, applyErr)
+	statusOutput, err := executeLiveCLI(t, "--json", "bulk", "status", operationID)
+	if err != nil {
+		t.Fatalf("the id named in the error does not resolve: %v\noutput: %s", err, statusOutput)
+	}
+
+	var status bulkworkflow.ApplyStatus
+	if err := decodeJSONEnvelopeData(statusOutput, &status); err != nil {
+		t.Fatalf("decode bulk status output: %v\noutput: %s", err, statusOutput)
+	}
+	if status.Status != "failed" {
+		t.Errorf("apply status = %q, want failed:\n%s", status.Status, statusOutput)
+	}
+	if len(status.Targets) == 0 || len(status.Targets[0].Operations) == 0 {
+		t.Fatalf("the saved status names no operation:\n%s", statusOutput)
+	}
+	operation := status.Targets[0].Operations[0]
+	if operation.Status != "failed" {
+		t.Errorf("operation status = %q, want failed:\n%s", operation.Status, statusOutput)
+	}
+	if strings.TrimSpace(operation.Error) == "" {
+		t.Errorf("a failed operation carries no reason:\n%s", statusOutput)
+	}
+}
+
+// bulkOperationIDFrom reads the operation id off a failed apply's error.
+func bulkOperationIDFrom(t *testing.T, err error) string {
+	t.Helper()
+
+	details := apperrors.DetailsOf(err)
+	if id := strings.TrimSpace(details["operationId"]); id != "" {
+		return id
+	}
+
+	t.Fatalf("the error names no operation id, so there is no way back to the status: %v (details: %v)", err, details)
+
+	return ""
 }
