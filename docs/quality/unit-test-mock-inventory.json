@@ -5,19 +5,18 @@
     "files": 62,
     "functions": 170,
     "by_class": {
-      "bitbucket-behaviour": 10,
+      "bitbucket-behaviour": 7,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
-      "unreachable-state": 17,
+      "unreachable-state": 20,
       "unreached-guard": 39
     },
     "behaviour_by_package": {
-      "internal/cli": 2,
-      "internal/cli/cmd/pr": 4,
-      "internal/mcp": 3,
-      "internal/services/reposettings": 1
+      "internal/cli": 1,
+      "internal/cli/cmd/pr": 3,
+      "internal/mcp": 3
     }
   },
   "entries": [
@@ -291,9 +290,9 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 167,
+      "line": 169,
       "function": "newReviewerFailureServer",
-      "class": "bitbucket-behaviour",
+      "class": "unreachable-state",
       "signals": [
         "asserts-http-method",
         "asserts-request-body",
@@ -302,12 +301,13 @@
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "one endpoint failing while the rest of the instance answers. A missing plugin gives 404, which is the \"not found\" case these tests exist to tell apart, and a closed listener would fail every lookup so the error would arrive for the wrong reason.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 362,
+      "line": 364,
       "function": "TestPRReviewerAddReportsPartialSuccess",
       "class": "transport-fault",
       "signals": [
@@ -325,7 +325,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 578,
+      "line": 580,
       "function": "newCodeOwnersServer",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -341,7 +341,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 806,
+      "line": 808,
       "function": "TestPRReviewerAddPartialFailureEmitsOneJSONDocument",
       "class": "transport-fault",
       "signals": [
@@ -623,15 +623,16 @@
     },
     {
       "file": "internal/cli/pr_checkout_failures_test.go",
-      "line": 63,
+      "line": 65,
       "function": "newIncompletePullRequestServer",
-      "class": "bitbucket-behaviour",
+      "class": "unreachable-state",
       "signals": [
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a pull request Bitbucket describes without both refs, which it does not do; the subject is that bb refuses rather than guessing a repository to fetch from.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/pr_inspection_test.go",
@@ -1580,20 +1581,21 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 114,
+      "line": 115,
       "function": "settingsServiceOn",
-      "class": "bitbucket-behaviour",
+      "class": "unreachable-state",
       "signals": [
         "asserts-http-method",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "an instance that wants the object shape for required approvers, which is the older Bitbucket this fallback exists for and not the one we can run; TestLiveRepositorySettings covers what a running instance accepts.",
+      "reviewed": true
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 146,
+      "line": 147,
       "function": "TestRepositorySettingsJSONFallbackAndValidationBranches",
       "class": "unreachable-state",
       "signals": [
@@ -1609,7 +1611,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 223,
+      "line": 224,
       "function": "newServiceWithBaseURL",
       "class": "harness-constructor",
       "signals": [
@@ -1620,7 +1622,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 235,
+      "line": 236,
       "function": "TestRepositorySettingsAdditionalBranches",
       "class": "unreachable-state",
       "signals": [
