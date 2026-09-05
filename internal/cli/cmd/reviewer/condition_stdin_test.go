@@ -8,6 +8,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // conditionDeps builds a command against a URL that is not a server.
@@ -18,7 +19,7 @@ import (
 func conditionDeps(t *testing.T) Dependencies {
 	t.Helper()
 
-	cfg := config.AppConfig{BitbucketURL: "http://bitbucket.invalid", ProjectKey: "PRJ"}
+	cfg := config.AppConfig{BitbucketURL: testsupport.ClosedListenerURL(t), ProjectKey: "PRJ"}
 	return Dependencies{
 		JSONEnabled:   func() bool { return false },
 		DryRunEnabled: func() bool { return false },

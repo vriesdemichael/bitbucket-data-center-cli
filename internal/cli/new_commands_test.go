@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // Two suites that drove commands against a hand-written Bitbucket are gone:
@@ -133,10 +134,14 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 // These two are different: they are the CLI refusing a value, which needs no
 // server and produces no request.
 func TestFlagValuesTheseCommandsRefuse(t *testing.T) {
-	// A URL that does not resolve, so a command that got as far as a request
-	// would fail for the wrong reason and the exit code would say so.
+	// A listener that fails the test if it is reached. The exit code asserted
+	// below is the whole point -- a command that got as far as a request would
+	// fail for the wrong reason and report a different one.
+	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(guard.Close)
+
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://bitbucket.invalid")
+	t.Setenv("BITBUCKET_URL", guard.URL)
 	t.Setenv("BITBUCKET_TOKEN", "unused")
 	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
 	t.Setenv("BITBUCKET_REPO_SLUG", "repo")

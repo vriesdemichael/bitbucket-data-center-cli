@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"fmt"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -118,12 +119,15 @@ func TestAuthGpgKeyCommandsAdditionalCoverage(t *testing.T) {
 
 	// 6. Clear keys confirmation ("y")
 	{
-		// A URL, not a server: the confirmation is refused before a request is
-		// built, so a listener could only hide the refusal not happening.
+		// A listener that fails the test if it is reached, which is the
+		// assertion: the confirmation is refused before a request exists.
+		guard := httptest.NewServer(testsupport.UnreachedHandler(t))
+		defer guard.Close()
+
 		deps := Dependencies{
 			LoadConfig: func() (config.AppConfig, error) {
 				return config.AppConfig{
-					BitbucketURL: "http://bitbucket.invalid",
+					BitbucketURL: guard.URL,
 				}, nil
 			},
 		}
