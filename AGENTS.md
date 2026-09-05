@@ -331,8 +331,9 @@ The governance guards, so the set is knowable:
 | `TestADRDoesNotNameToolsThatDoNotExist` | decision records do not name tools that were removed |
 | `TestGatedToolsAreTheOnesThatMergeOrGate` | the `--yolo` set is exactly the tools that merge or gate |
 | `TestUnsafeToolsAreAnnotatedDestructive`, `TestSafeToolsAreNotAnnotatedDestructive` | the safety flag and the annotations agree, both ways |
-| `TestEveryToolHasCallArguments` | every MCP tool is actually called by a test |
-| `TestEveryToolReturnsAClientCompatibleResult` | a tool result is a JSON object with a text fallback |
+| `TestLiveMCPEveryToolReturnsAClientCompatibleResult` | every MCP tool is actually called, and its result is a JSON object with a text fallback |
+| `TestTheStatusMappingIsOnlyTestedWhereItLives` | no package outside `internal/openapi` tests the status-to-kind mapping |
+| `TestNoServiceOptionIsCalledLimit` | no service option names a limit the call site cannot act on |
 | `gittest` ambient config snapshot | no test reconfigures the repository it runs in |
 | `TestEveryHookRunnableGateRunsOnBothSides` | every gate needing no Bitbucket runs locally and in CI |
 
