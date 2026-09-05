@@ -142,6 +142,82 @@ func TestLivePullRequestPendingReview(t *testing.T) {
 	}
 }
 
+// TestLivePullRequestReviewDryRuns covers the three review previews.
+//
+// The mocked versions asserted the preview names the right intent, which is a
+// question about a string the command wrote. What a preview has to be right
+// about is the pull request in front of it, and the half worth checking is that
+// nothing happened -- which needs something that would have happened.
+func TestLivePullRequestReviewDryRuns(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+
+	const branch = "feature/review-dry-runs"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "review-dry-runs.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+	if err != nil {
+		t.Fatalf("create pull request failed: %v", err)
+	}
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	const draft = "a draft the dry runs must not touch"
+	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID, "--text", draft, "--pending"); err != nil {
+		t.Fatalf("pr comment add --pending failed: %v", err)
+	}
+
+	draftIsStillPending := func(t *testing.T) {
+		t.Helper()
+
+		output, err := executeLiveCLI(t, "--json", "pr", "review", "get", pullRequestID)
+		if err != nil {
+			t.Fatalf("pr review get failed: %v\noutput: %s", err, output)
+		}
+		if !strings.Contains(output, draft) {
+			t.Fatalf("the dry run acted on the review: the draft is gone\n%s", output)
+		}
+	}
+
+	t.Run("adding a pending comment", func(t *testing.T) {
+		output := mustLiveCLI(t, "--dry-run", "pr", "comment", "add", pullRequestID,
+			"--text", "predicted only", "--pending")
+		if !strings.Contains(output, `"pending": true`) {
+			t.Errorf("expected the preview to say the comment would be pending:\n%s", output)
+		}
+
+		listing := mustLiveCLI(t, "pr", "review", "get", pullRequestID)
+		if strings.Contains(listing, "predicted only") {
+			t.Fatalf("the dry run created the comment:\n%s", listing)
+		}
+	})
+
+	t.Run("completing the review", func(t *testing.T) {
+		output := mustLiveCLI(t, "--dry-run", "pr", "review", "complete", pullRequestID, "--status", "NEEDS_WORK")
+		if !strings.Contains(output, "pr.review.complete") {
+			t.Errorf("expected the preview to name the intent:\n%s", output)
+		}
+
+		draftIsStillPending(t)
+	})
+
+	t.Run("discarding the review", func(t *testing.T) {
+		output := mustLiveCLI(t, "--dry-run", "pr", "review", "discard", pullRequestID)
+		if !strings.Contains(output, "pr.review.discard") {
+			t.Errorf("expected the preview to name the intent:\n%s", output)
+		}
+
+		draftIsStillPending(t)
+	})
+}
+
 // TestLivePullRequestCommentReaction covers bb pr comment react in both
 // directions.
 func TestLivePullRequestCommentReaction(t *testing.T) {
