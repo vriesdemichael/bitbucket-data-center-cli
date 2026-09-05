@@ -309,9 +309,15 @@ tasks:
 
   test:unit:coverage:
     desc: Run Go unit tests with coverage profile output
+    # -coverpkg for the same reason test:live:coverage has it: without it, Go
+    # records only what a package's own tests cover in that package, so a test
+    # that exercises another package is invisible. internal/services/contract
+    # drives eighteen service packages and has no code of its own, so it counted
+    # for nothing; every CLI test that reaches a service was under-counted the
+    # same way. The measurement was wrong, not the tests.
     cmds:
       - mkdir -p .tmp
-      - go test -covermode=count -coverprofile=.tmp/coverage.unit.out ./cmd/... ./internal/... ./tools/...
+      - go test -covermode=count -coverpkg=./cmd/...,./internal/...,./tools/... -coverprofile=.tmp/coverage.unit.out ./cmd/... ./internal/... ./tools/...
       - go tool cover -func=.tmp/coverage.unit.out | tail -n 1
 
   test:live:coverage:
