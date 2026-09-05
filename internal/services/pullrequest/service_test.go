@@ -664,11 +664,10 @@ func TestMapReviewersPrefersParticipants(t *testing.T) {
 // would have rebased against a different version than the caller named — the
 // one case where silently using the wrong number is worse than refusing.
 func TestRebaseRejectsOutOfRangeVersion(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{}`))
-	}))
+	// The bound is checked before a request is built, so the listener fails the
+	// test if one arrives -- which is the whole assertion: an out-of-range
+	// version must not reach the wire wrapped.
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer server.Close()
 
 	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")

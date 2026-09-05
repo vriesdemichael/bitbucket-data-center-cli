@@ -9,6 +9,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func newCommitTestService(t *testing.T, handler http.HandlerFunc) *Service {
@@ -25,10 +26,7 @@ func newCommitTestService(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestCommitServiceValidationAndHelpers(t *testing.T) {
-	service := newCommitTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte("forbidden"))
-	})
+	service := newCommitTestService(t, testsupport.UnreachedHandler(t))
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
@@ -43,9 +41,11 @@ func TestCommitServiceValidationAndHelpers(t *testing.T) {
 		t.Fatal("expected compare to validation error")
 	}
 
-	if _, err := service.List(context.Background(), repo, ListOptions{}); err == nil || !strings.Contains(err.Error(), "authorization") {
-		t.Fatalf("expected mapped authorization error, got %v", err)
-	}
+	// A 403 mapping to an authorization error used to be asserted here, from a
+	// handler that answered 403 to everything. Every one of these calls goes
+	// through openapi.MapStatusError, so the mapping is asserted once in
+	// TestMapStatusError -- with no server, and therefore no claim that
+	// Bitbucket answers 403 for a commit listing.
 
 	invalidRepo := RepositoryRef{ProjectKey: "", Slug: ""}
 	if _, err := service.List(context.Background(), invalidRepo, ListOptions{}); err == nil {

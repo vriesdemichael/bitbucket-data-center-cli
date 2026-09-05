@@ -96,9 +96,7 @@ func TestQualityServiceValidationGuards(t *testing.T) {
 
 func TestSetBuildStatusValidationAndOptionalFields(t *testing.T) {
 	t.Run("validation", func(t *testing.T) {
-		service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
-		})
+		service := newQualityTestService(t, testsupport.UnreachedHandler(t))
 
 		err := service.SetBuildStatus(context.Background(), "abc", BuildStatusSetInput{State: "SUCCESSFUL", URL: "https://ci.example"})
 		if err == nil || !strings.Contains(err.Error(), "build status key is required") {

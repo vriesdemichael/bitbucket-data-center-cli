@@ -3,26 +3,30 @@ package auth
 import (
 	"bytes"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
+// Each of these commands has to report a failed request rather than a result.
+// A key listing that prints nothing on failure reads as an account with no
+// keys, and a clear that reports success without one is worse.
+//
+// The failure is a dropped connection rather than a 500: the subject is that
+// the error reaches the caller, and answering 500 to everything would say
+// besides that Bitbucket does, which it has no reason to.
+//
+// mock-inventory: transport-fault — nothing is listening; the subject is that each command surfaces the failure instead of rendering an empty result.
 func TestAuthGpgKeyCommandsErrors(t *testing.T) {
-	// 1. HTTP 500 error responses from server
-	errorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer errorServer.Close()
+	unreachable := testsupport.ClosedListenerURL(t)
 
 	deps := Dependencies{
 		LoadConfig: func() (config.AppConfig, error) {
 			return config.AppConfig{
-				BitbucketURL: errorServer.URL,
+				BitbucketURL: unreachable,
 			}, nil
 		},
 	}
@@ -38,16 +42,16 @@ func TestAuthGpgKeyCommandsErrors(t *testing.T) {
 	}
 
 	if _, err := execute("gpg-key", "list"); err == nil {
-		t.Fatal("expected error listing GPG keys on 500 status")
+		t.Fatal("a failed key listing was reported as an empty one")
 	}
 	if _, err := execute("gpg-key", "add", "gpg-key-text"); err == nil {
-		t.Fatal("expected error adding GPG key on 500 status")
+		t.Fatal("a failed add was reported as a success")
 	}
 	if _, err := execute("gpg-key", "remove", "keyid"); err == nil {
-		t.Fatal("expected error removing GPG key on 500 status")
+		t.Fatal("a failed remove was reported as a success")
 	}
 	if _, err := execute("gpg-key", "clear", "-y"); err == nil {
-		t.Fatal("expected error clearing GPG keys on 500 status")
+		t.Fatal("a failed clear was reported as a success")
 	}
 }
 

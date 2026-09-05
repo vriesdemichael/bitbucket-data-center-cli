@@ -404,6 +404,7 @@ func closeResponse(response *http.Response) {
 // The counts are the point: a POST answered with 503 must be issued exactly
 // once, because a response lost after the write landed is indistinguishable
 // from one that never arrived.
+// mock-inventory: transport-fault — 503 and 429 are served on demand to drive our own retry policy; no live instance can be asked to be unavailable, and the subject is which methods we replay.
 func TestRetriesDoNotReplayMutations(t *testing.T) {
 	for _, testCase := range []struct {
 		name       string

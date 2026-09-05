@@ -49,9 +49,7 @@ func TestTagServiceRefusesAnEmptyName(t *testing.T) {
 
 func TestTagServiceValidationAndMapStatusHelpers(t *testing.T) {
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
-	service := newTagTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
-	})
+	service := newTagTestService(t, testsupport.UnreachedHandler(t))
 
 	_, err := service.Create(context.Background(), repo, "name", "", "msg")
 	if err == nil {
