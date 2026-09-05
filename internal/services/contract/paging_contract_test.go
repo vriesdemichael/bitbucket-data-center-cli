@@ -65,7 +65,7 @@ func clientsFor(t *testing.T, baseURL string) clients {
 // to.
 type pagedListing struct {
 	name string
-	call func(ctx context.Context, c clients) error
+	call func(ctx context.Context, c clients, maxResults int) error
 }
 
 // listings is one paged call per package that owns one.
@@ -76,115 +76,154 @@ func listings() []pagedListing {
 	branchRepo := branchservice.RepositoryRef{ProjectKey: contractProject, Slug: contractSlug}
 
 	return []pagedListing{
-		{"branch", func(ctx context.Context, c clients) error {
-			_, err := branchservice.NewService(c.generated).List(ctx, branchRepo, branchservice.ListOptions{MaxResults: 25})
+		{"branch", func(ctx context.Context, c clients, maxResults int) error {
+			_, err := branchservice.NewService(c.generated).List(ctx, branchRepo, branchservice.ListOptions{MaxResults: maxResults})
 
 			return err
 		}},
-		{"browse", func(ctx context.Context, c clients) error {
+		{"browse", func(ctx context.Context, c clients, maxResults int) error {
 			_, err := browseservice.NewService(c.generated, c.http).Tree(ctx,
 				browseservice.RepositoryRef{ProjectKey: contractProject, Slug: contractSlug},
-				"docs", browseservice.TreeOptions{MaxResults: 25})
+				"docs", browseservice.TreeOptions{MaxResults: maxResults})
 
 			return err
 		}},
-		{"comment", func(ctx context.Context, c clients) error {
+		{"comment", func(ctx context.Context, c clients, maxResults int) error {
 			_, err := commentservice.NewService(c.generated).List(ctx, commentservice.Target{
 				Repository:    commentservice.RepositoryRef{ProjectKey: contractProject, Slug: contractSlug},
 				PullRequestID: "1",
-			}, "file.txt", 25)
+			}, "file.txt", maxResults)
 
 			return err
 		}},
-		{"commit", func(ctx context.Context, c clients) error {
+		{"commit", func(ctx context.Context, c clients, maxResults int) error {
 			_, err := commitservice.NewService(c.generated).List(ctx,
 				commitservice.RepositoryRef{ProjectKey: contractProject, Slug: contractSlug},
-				commitservice.ListOptions{MaxResults: 25})
+				commitservice.ListOptions{MaxResults: maxResults})
 
 			return err
 		}},
-		{"diff", func(ctx context.Context, c clients) error {
+		{"diff", func(ctx context.Context, c clients, maxResults int) error {
 			_, err := diffservice.NewService(c.generated).CompareChanges(ctx,
-				diffservice.RepositoryRef{ProjectKey: contractProject, Slug: contractSlug}, "main", "feature", 25)
+				diffservice.RepositoryRef{ProjectKey: contractProject, Slug: contractSlug}, "main", "feature", maxResults)
 
 			return err
 		}},
-		{"gpgkey", func(ctx context.Context, c clients) error {
-			_, err := gpgkeyservice.NewService(c.generated).ListGpgKeys(ctx, 25)
+		{"gpgkey", func(ctx context.Context, c clients, maxResults int) error {
+			_, err := gpgkeyservice.NewService(c.generated).ListGpgKeys(ctx, maxResults)
 
 			return err
 		}},
-		{"jira", func(ctx context.Context, c clients) error {
-			_, err := jiraservice.NewService(c.http).GetIssueCommits(ctx, "ISSUE-1", 25)
+		{"jira", func(ctx context.Context, c clients, maxResults int) error {
+			_, err := jiraservice.NewService(c.http).GetIssueCommits(ctx, "ISSUE-1", maxResults)
 
 			return err
 		}},
-		{"project", func(ctx context.Context, c clients) error {
-			_, err := projectservice.NewService(c.generated).List(ctx, projectservice.ListOptions{MaxResults: 25})
+		{"project", func(ctx context.Context, c clients, maxResults int) error {
+			_, err := projectservice.NewService(c.generated).List(ctx, projectservice.ListOptions{MaxResults: maxResults})
 
 			return err
 		}},
-		{"project restrictions", func(ctx context.Context, c clients) error {
+		{"project restrictions", func(ctx context.Context, c clients, maxResults int) error {
 			_, err := projectservice.NewService(c.generated).ListRestrictions(ctx, contractProject,
-				projectservice.RestrictionListOptions{MaxResults: 25})
+				projectservice.RestrictionListOptions{MaxResults: maxResults})
 
 			return err
 		}},
-		{"pullrequest", func(ctx context.Context, c clients) error {
+		{"pullrequest", func(ctx context.Context, c clients, maxResults int) error {
 			_, err := pullrequestservice.NewService(c.http).List(ctx,
 				pullrequestservice.RepositoryRef{ProjectKey: contractProject, Slug: contractSlug},
-				pullrequestservice.ListOptions{MaxResults: 25})
+				pullrequestservice.ListOptions{MaxResults: maxResults})
 
 			return err
 		}},
-		{"pullrequest commits", func(ctx context.Context, c clients) error {
+		{"pullrequest commits", func(ctx context.Context, c clients, maxResults int) error {
 			_, err := pullrequestservice.NewService(c.http).ListCommits(ctx,
 				pullrequestservice.RepositoryRef{ProjectKey: contractProject, Slug: contractSlug}, "1",
-				pullrequestservice.PageOptions{MaxResults: 25})
+				pullrequestservice.PageOptions{MaxResults: maxResults})
 
 			return err
 		}},
-		{"pullrequestactivity", func(ctx context.Context, c clients) error {
+		{"pullrequestactivity", func(ctx context.Context, c clients, maxResults int) error {
 			_, err := activityservice.NewService(c.generated).List(ctx,
 				activityservice.RepositoryRef{ProjectKey: contractProject, Slug: contractSlug}, "1",
-				activityservice.ListOptions{MaxResults: 25})
+				activityservice.ListOptions{MaxResults: maxResults})
 
 			return err
 		}},
-		{"quality", func(ctx context.Context, c clients) error {
-			_, err := qualityservice.NewService(c.generated).GetBuildStatuses(ctx, "abc", 25, "")
+		{"quality", func(ctx context.Context, c clients, maxResults int) error {
+			_, err := qualityservice.NewService(c.generated).GetBuildStatuses(ctx, "abc", maxResults, "")
 
 			return err
 		}},
-		{"reposettings", func(ctx context.Context, c clients) error {
+		{"reposettings", func(ctx context.Context, c clients, maxResults int) error {
 			_, err := reposettingsservice.NewService(c.generated).ListRepositoryPermissionUsers(ctx,
-				reposettingsservice.RepositoryRef{ProjectKey: contractProject, Slug: contractSlug}, 25)
+				reposettingsservice.RepositoryRef{ProjectKey: contractProject, Slug: contractSlug}, maxResults)
 
 			return err
 		}},
-		{"repository", func(ctx context.Context, c clients) error {
+		{"repository", func(ctx context.Context, c clients, maxResults int) error {
 			_, err := repositoryservice.NewService(c.http).ListByProject(ctx, contractProject,
-				repositoryservice.ListOptions{MaxResults: 25})
+				repositoryservice.ListOptions{MaxResults: maxResults})
 
 			return err
 		}},
-		{"sshkey", func(ctx context.Context, c clients) error {
-			_, err := sshkeyservice.NewService(c.generated).ListUserKeys(ctx, 25, 0)
+		{"sshkey", func(ctx context.Context, c clients, maxResults int) error {
+			_, err := sshkeyservice.NewService(c.generated).ListUserKeys(ctx, maxResults, 0)
 
 			return err
 		}},
-		{"tag", func(ctx context.Context, c clients) error {
+		{"tag", func(ctx context.Context, c clients, maxResults int) error {
 			_, err := tagservice.NewService(c.generated).List(ctx,
 				tagservice.RepositoryRef{ProjectKey: contractProject, Slug: contractSlug},
-				tagservice.ListOptions{MaxResults: 25})
+				tagservice.ListOptions{MaxResults: maxResults})
 
 			return err
 		}},
-		{"token", func(ctx context.Context, c clients) error {
-			_, err := tokenservice.NewService(c.generated).List(ctx, tokenservice.ScopeUser, "admin", 25)
+		{"token", func(ctx context.Context, c clients, maxResults int) error {
+			_, err := tokenservice.NewService(c.generated).List(ctx, tokenservice.ScopeUser, "admin", maxResults)
 
 			return err
 		}},
+	}
+}
+
+// TestZeroMeansTheServiceDefault covers the clause in ADR-074 that nothing
+// enforced.
+//
+// Zero is the service's default cap, not a request for nothing. Every one of
+// these packages carries the same two lines to say so, and a package that lost
+// them would not fail: openapi.PageThrough returns immediately for a cap of
+// zero, so the caller gets an empty listing, no error, and no way to tell that
+// from a repository with nothing in it. It is the same silent wrong answer as
+// every --limit that returned everything, at the other end of the range.
+//
+// The request count is the assertion rather than the results, because what the
+// server sends back differs per package and what is being checked does not: a
+// service that passed the zero through would send nothing at all.
+//
+// mock-inventory: canned-response — an empty page, generic across every service, standing in for a server rather than for Bitbucket; the subject is that a cap of zero still asks.
+func TestZeroMeansTheServiceDefault(t *testing.T) {
+	for _, listing := range listings() {
+		t.Run(listing.name, func(t *testing.T) {
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				requests++
+				w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+				_, _ = w.Write([]byte(`{"isLastPage":true,"values":[],"size":0,"start":0}`))
+			}))
+			defer server.Close()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+			defer cancel()
+
+			if err := listing.call(ctx, clientsFor(t, server.URL), 0); err != nil {
+				t.Fatalf("a cap of zero failed: %v", err)
+			}
+			if requests == 0 {
+				t.Fatal("a cap of zero asked for nothing, so an empty listing is what a caller gets whatever is there")
+			}
+		})
 	}
 }
 
@@ -216,7 +255,7 @@ func TestEveryPagedListingReportsALostConnection(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
 
-			err := listing.call(ctx, clientsFor(t, baseURL))
+			err := listing.call(ctx, clientsFor(t, baseURL), 25)
 			if err == nil {
 				t.Fatal("a listing against a closed server returned no error, so a caller cannot tell it from an empty repository")
 			}

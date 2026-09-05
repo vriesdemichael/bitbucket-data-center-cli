@@ -1,12 +1,12 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 267,
+    "mocked_servers": 268,
     "files": 88,
-    "functions": 251,
+    "functions": 252,
     "by_class": {
       "bitbucket-behaviour": 83,
-      "canned-response": 42,
+      "canned-response": 43,
       "external-service": 14,
       "harness-constructor": 18,
       "status-taxonomy": 15,
@@ -2061,7 +2061,22 @@
     },
     {
       "file": "internal/services/contract/paging_contract_test.go",
-      "line": 208,
+      "line": 210,
+      "function": "TestZeroMeansTheServiceDefault",
+      "class": "canned-response",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup",
+        "returns-bitbucket-entity",
+        "simulates-a-stalled-connection"
+      ],
+      "action": "remove",
+      "reason": "an empty page, generic across every service, standing in for a server rather than for Bitbucket; the subject is that a cap of zero still asks.",
+      "reviewed": true
+    },
+    {
+      "file": "internal/services/contract/paging_contract_test.go",
+      "line": 247,
       "function": "TestEveryPagedListingReportsALostConnection",
       "class": "transport-fault",
       "signals": [

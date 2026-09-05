@@ -7,7 +7,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | action | count | meaning |
 |---|---:|---|
 | `move-to-live` | 98 | write the live test, then delete the mock |
-| `remove` | 42 | delete; it asserts nothing a live test would not already give |
+| `remove` | 43 | delete; it asserts nothing a live test would not already give |
 | `keep` | 95 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
@@ -91,6 +91,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/token/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/cli/cmd/repo/repo_test.go` | 3 | 0 | 3 | 0 | 0 |
 | `internal/cli/permissionchecker/permission_checker_test.go` | 2 | 0 | 0 | 2 | 0 |
+| `internal/services/contract/paging_contract_test.go` | 2 | 0 | 1 | 1 | 0 |
 | `internal/services/jira/service_test.go` | 2 | 0 | 1 | 0 | 1 |
 | `internal/services/pullrequest/inspection_test.go` | 2 | 0 | 0 | 1 | 1 |
 | `internal/services/reviewer/service_coverage_test.go` | 2 | 0 | 0 | 2 | 0 |
@@ -102,5 +103,4 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/reviewer/condition_stdin_test.go` | 1 | 0 | 1 | 0 | 0 |
 | `internal/cli/new_commands_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/mcp/server_test.go` | 1 | 0 | 1 | 0 | 0 |
-| `internal/services/contract/paging_contract_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/services/repository/service_test.go` | 1 | 0 | 1 | 0 | 0 |
