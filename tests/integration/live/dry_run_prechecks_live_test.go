@@ -106,6 +106,8 @@ func TestLiveDryRunPrechecksRefuseBeforePlanning(t *testing.T) {
 		{"reviewer project delete", []string{"reviewer", "condition", "delete", "1", "--project", seeded.Key}},
 		{"pr merge", []string{"pr", "merge", pullRequestID}},
 		{"pr decline", []string{"pr", "decline", pullRequestID}},
+		{"pr auto-merge enable", []string{"pr", "auto-merge", "enable", pullRequestID}},
+		{"pr auto-merge disable", []string{"pr", "auto-merge", "disable", pullRequestID}},
 	}
 
 	for _, testCase := range cases {

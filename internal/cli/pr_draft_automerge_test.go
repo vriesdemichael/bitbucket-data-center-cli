@@ -322,72 +322,18 @@ func TestPRAutoMergeErrorPaths(t *testing.T) {
 	}
 }
 
-// TestPRAutoMergeDryRunPermissionFailure verifies the dry-run permission
-// precheck error branch: when the caller lacks REPO_WRITE the command fails
-// before any auto-merge prediction.
-func TestPRAutoMergeDryRunPermissionFailure(t *testing.T) {
-	// Server returns an empty permission-filtered repo list, so the precheck
-	// concludes the caller lacks the required permission.
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/repos" {
-			_, _ = w.Write([]byte(`{"values":[],"isLastPage":true}`))
-			return
-		}
-		http.NotFound(w, r)
-	}))
-	defer server.Close()
-	configureDryRunEnv(t, server.URL, "TEST", "demo")
-
-	if _, err := executeTestCLI(t, "--dry-run", "pr", "auto-merge", "enable", "30"); err == nil {
-		t.Fatal("expected permission precheck failure for auto-merge enable dry-run")
-	}
-	if _, err := executeTestCLI(t, "--dry-run", "pr", "auto-merge", "disable", "30"); err == nil {
-		t.Fatal("expected permission precheck failure for auto-merge disable dry-run")
-	}
-}
-
-// TestPRAutoMergeEnableReportsAnImmediateMerge covers the outcome that is easy
-// to misreport: a pull request whose checks already pass merges the moment
-// auto-merge is armed. Saying "enabled auto-merge" there would describe a
-// pending state that does not exist and will never fire, and would leave the
-// caller believing the merge had not happened yet.
-func TestPRAutoMergeEnableReportsAnImmediateMerge(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/pull-requests/50":
-			_, _ = w.Write([]byte(`{"id":50,"title":"Ready","state":"OPEN","open":true,"closed":false,"version":4}`))
-		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/pull-requests/50/merge"):
-			// Checks already passed, so the server merges rather than queueing.
-			_, _ = w.Write([]byte(`{"id":50,"title":"Ready","state":"MERGED","open":false,"closed":true,"version":5}`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-	configureDryRunEnv(t, server.URL, "TEST", "demo")
-
-	out, err := executeTestCLI(t, "pr", "auto-merge", "enable", "50")
-	if err != nil {
-		t.Fatalf("unexpected error: %v output=%s", err, out)
-	}
-	if !strings.Contains(out, "Merged pull request #50 immediately") {
-		t.Fatalf("expected the immediate merge to be reported, output=%s", out)
-	}
-	if strings.Contains(out, "Enabled auto-merge") {
-		t.Fatalf("must not claim a pending auto-merge after an immediate merge, output=%s", out)
-	}
-
-	// The machine payload has to agree with the human line.
-	jsonOut, err := executeTestCLI(t, "--json", "pr", "auto-merge", "enable", "50")
-	if err != nil {
-		t.Fatalf("unexpected error (json): %v output=%s", err, jsonOut)
-	}
-	if !strings.Contains(jsonOut, `"mergedImmediately": true`) {
-		t.Fatalf("expected mergedImmediately in the payload, got=%s", jsonOut)
-	}
-	if strings.Contains(jsonOut, `"enabled": true`) {
-		t.Fatalf("a merged pull request has no pending auto-merge, got=%s", jsonOut)
-	}
-}
+// Two auto-merge tests went live.
+//
+// The dry-run permission precheck answered an empty repository listing so the
+// check would conclude the caller lacks REPO_WRITE. That says the CLI believes
+// an empty listing means no permission -- which is our own inference, not
+// Bitbucket's answer. The two commands are rows in
+// TestLiveDryRunPrechecksRefuseBeforePlanning now, run as an account that
+// really does hold read and nothing more.
+//
+// The immediate merge is the outcome that is easy to misreport: a pull request
+// whose checks already pass merges the moment auto-merge is armed, and saying
+// "enabled auto-merge" there describes a pending state that will never fire.
+// Whether Bitbucket merges rather than queues is entirely the server's
+// decision, and the mock decided it. TestLivePullRequestAutoMergeMergesImmediately
+// arms a real one and reads back both the payload and the human line.

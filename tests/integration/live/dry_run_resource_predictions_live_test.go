@@ -132,5 +132,20 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 		mustLiveCLI(t, "tag", "create", "v1", "--repo", repoRef, "--start-point", "master")
 
 		predicts(t, "conflict", "tag", "create", "v1", "--repo", repoRef, "--start-point", "master")
+
+		// #470, against a repository with more tags than one page holds.
+		//
+		// The preview used to filter a capped listing, so a tag past the cap was
+		// predicted as a create and the create then failed. Enough tags to cross
+		// a page boundary is what tells a direct lookup from a scan; a
+		// repository with one tag cannot, because both find it.
+		const beyondAPage = 30
+		for index := range beyondAPage {
+			name := fmt.Sprintf("v2.0.%d", index)
+			mustLiveCLI(t, "tag", "create", name, "--repo", repoRef, "--start-point", "master")
+		}
+
+		predicts(t, "conflict", "tag", "create", fmt.Sprintf("v2.0.%d", beyondAPage-1),
+			"--repo", repoRef, "--start-point", "master")
 	})
 }

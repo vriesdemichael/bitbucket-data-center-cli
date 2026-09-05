@@ -143,4 +143,24 @@ func TestLivePullRequestAutoMergeMergesImmediately(t *testing.T) {
 	if state != "MERGED" {
 		t.Fatalf("state = %q, want MERGED", state)
 	}
+
+	// The human line has to say the same thing as the payload.
+	//
+	// A second pull request, because the first is merged and cannot be armed
+	// again. Telling a person auto-merge is enabled when the pull request has
+	// already merged describes a state that will never fire, and it is the
+	// rendering rather than the payload that most people read.
+	const second = "feature/auto-merge-immediate-human"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, second, "auto-merge-now-2.txt"); err != nil {
+		t.Fatalf("push the second branch failed: %v", err)
+	}
+	secondID := createLivePRForRegression(t, second, "Merges immediately too", "--no-default-reviewers", "--no-codeowners")
+
+	human := mustLiveHumanCLI(t, "pr", "auto-merge", "enable", secondID, "--repo", repoRef)
+	if !strings.Contains(human, "immediately") {
+		t.Errorf("the human output does not report the immediate merge:\n%s", human)
+	}
+	if strings.Contains(human, "Enabled auto-merge") {
+		t.Errorf("the human output claims a pending auto-merge after an immediate merge:\n%s", human)
+	}
 }

@@ -1,20 +1,20 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 268,
+    "mocked_servers": 265,
     "files": 88,
-    "functions": 252,
+    "functions": 249,
     "by_class": {
-      "bitbucket-behaviour": 83,
+      "bitbucket-behaviour": 79,
       "canned-response": 43,
       "external-service": 14,
       "harness-constructor": 18,
       "status-taxonomy": 15,
-      "transport-fault": 79,
+      "transport-fault": 80,
       "unreached-guard": 16
     },
     "behaviour_by_package": {
-      "internal/cli": 14,
+      "internal/cli": 12,
       "internal/cli/cmd/admin": 1,
       "internal/cli/cmd/auth": 2,
       "internal/cli/cmd/branch": 1,
@@ -31,7 +31,7 @@
       "internal/cli/cmd/reviewer": 1,
       "internal/cli/cmd/reviewergroup": 1,
       "internal/cli/cmd/sshkey": 1,
-      "internal/cli/cmd/tag": 3,
+      "internal/cli/cmd/tag": 1,
       "internal/cli/cmd/webhook": 2,
       "internal/mcp": 5,
       "internal/services/branch": 2,
@@ -1138,7 +1138,7 @@
     },
     {
       "file": "internal/cli/cmd/tag/tag_test.go",
-      "line": 30,
+      "line": 29,
       "function": "newMockTagServer",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1154,28 +1154,17 @@
     },
     {
       "file": "internal/cli/cmd/tag/tag_test.go",
-      "line": 341,
-      "function": "TestTagCreateDryRunSeesATagPastTheOldCap",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "returns-bitbucket-entity",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/tag/tag_test.go",
-      "line": 389,
+      "line": 351,
       "function": "TestTagCreateDryRunSurfacesANonNotFoundLookupFailure",
-      "class": "bitbucket-behaviour",
+      "class": "transport-fault",
       "signals": [
         "returns-a-status",
         "returns-bitbucket-entity",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a 500 on the tag lookup is injected, which no live instance can be asked for; the subject is that a failed question is not read as \"the tag is not there\".",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/webhook/webhook_test.go",
@@ -1351,35 +1340,6 @@
         "asserts-http-method",
         "returns-a-status",
         "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/pr_draft_automerge_test.go",
-      "line": 331,
-      "function": "TestPRAutoMergeDryRunPermissionFailure",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/pr_draft_automerge_test.go",
-      "line": 356,
-      "function": "TestPRAutoMergeEnableReportsAnImmediateMerge",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
