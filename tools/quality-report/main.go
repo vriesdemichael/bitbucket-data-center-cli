@@ -310,7 +310,15 @@ func parseCoverageProfile(path string, modulePath string) (coverageProfile, erro
 	}
 	defer func() { _ = file.Close() }()
 
-	profile := coverageProfile{byRelativePath: map[string][]coverageSegment{}}
+	// Segments are collected by range rather than appended, because one block
+	// appears once per test binary that could reach it.
+	//
+	// `go test -coverpkg=./...` gives every package's binary a profile for the
+	// whole module, so a file compiled into ninety binaries contributes ninety
+	// copies of each of its blocks. Summing them counted the same statement
+	// ninety times and reported a total in the millions. A block is covered if
+	// any binary reached it, which is what merging two profiles already does.
+	segments := map[segmentKey]coverageSegment{}
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
@@ -327,20 +335,33 @@ func parseCoverageProfile(path string, modulePath string) (coverageProfile, erro
 		relPath := strings.TrimPrefix(pathPart, modulePath+"/")
 		relPath = filepath.ToSlash(relPath)
 
-		segment := coverageSegment{startLine: rangePart.startLine, endLine: rangePart.endLine, numStmt: numStmt, covered: count > 0}
-		profile.byRelativePath[relPath] = append(profile.byRelativePath[relPath], segment)
-		profile.totalStatements += numStmt
-		if count > 0 {
-			profile.coveredStatements += numStmt
+		key := segmentKey{filePath: relPath, startLine: rangePart.startLine, endLine: rangePart.endLine, numStmt: numStmt}
+		existing, seen := segments[key]
+		segments[key] = coverageSegment{
+			startLine: rangePart.startLine,
+			endLine:   rangePart.endLine,
+			numStmt:   numStmt,
+			covered:   count > 0 || (seen && existing.covered),
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		return coverageProfile{}, err
 	}
+
+	profile := coverageProfile{byRelativePath: map[string][]coverageSegment{}}
+	for key, segment := range segments {
+		profile.byRelativePath[key.filePath] = append(profile.byRelativePath[key.filePath], segment)
+		profile.totalStatements += segment.numStmt
+		if segment.covered {
+			profile.coveredStatements += segment.numStmt
+		}
+	}
+
 	if profile.totalStatements == 0 {
 		return coverageProfile{}, errors.New("no statements found in coverage profile")
 	}
+
 	return profile, nil
 }
 
