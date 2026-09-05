@@ -31,116 +31,20 @@ func configureDryRunEnv(t *testing.T, serverURL, projectKey, repoSlug string) {
 // reviewer and ran the approve preview as them; a real Bitbucket answers
 // "Authors may not update their status" and refuses. So the no-op that test
 // asserted was read off a pull request that could not exist.
-
-func TestGovernanceAndRepoDryRunPredictionBranches(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/repos":
-			if request.URL.Query().Get("projectkey") == "PRJ" {
-				_, _ = writer.Write([]byte(`{"values":[{"slug":"demo","name":"project-repo","project":{"key":"PRJ"}}],"isLastPage":true}`))
-				return
-			}
-			_, _ = writer.Write([]byte(`{"values":[{"slug":"demo","name":"test-repo","project":{"key":"TEST"}}],"isLastPage":true}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/PRJ/permissions/users":
-			_, _ = writer.Write([]byte(`{"values":[{"user":{"name":"alice"}}],"isLastPage":true}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/default-reviewers/latest/projects/PRJ/conditions":
-			_, _ = writer.Write([]byte(`[{"id":1,"requiredApprovals":1,"reviewers":[{"name":"alice"}]}]`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/default-reviewers/latest/projects/PRJ/repos/demo/conditions":
-			_, _ = writer.Write([]byte(`[{"id":1,"requiredApprovals":1,"reviewers":[{"name":"alice"}]}]`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/PRJ/settings/hooks":
-			_, _ = writer.Write([]byte(`{"values":[],"isLastPage":true}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/permissions/users":
-			_, _ = writer.Write([]byte(`{"values":[{"user":{"name":"alice"},"permission":"REPO_WRITE"}],"isLastPage":true}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/permissions/groups":
-			_, _ = writer.Write([]byte(`{"values":[{"group":{"name":"devs"},"permission":"REPO_READ"}],"isLastPage":true}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/webhooks":
-			_, _ = writer.Write([]byte(`[{"id":42,"name":"ci","url":"http://h"}]`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/settings/pull-requests":
-			_, _ = writer.Write([]byte(`{"requiredAllTasksComplete":true,"requiredApprovers":{"enabled":true,"count":"2"},"mergeConfig":{"defaultStrategy":{"id":"squash"}}}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/comments/1":
-			_, _ = writer.Write([]byte(`{"id":1,"text":"same comment","version":1}`))
-		case request.Method == http.MethodGet && request.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/commits/abc/comments/2":
-			writer.WriteHeader(http.StatusNotFound)
-			_, _ = writer.Write([]byte(`{"errors":[{"message":"not found"}]}`))
-		default:
-			http.NotFound(writer, request)
-		}
-	}))
-	defer server.Close()
-
-	configureDryRunEnv(t, server.URL, "TEST", "demo")
-
-	out, err := executeTestCLI(t, "--json", "--dry-run", "reviewer", "condition", "delete", "2", "--project", "PRJ")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected reviewer delete no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "reviewer", "condition", "create", `{"requiredApprovals":1,"reviewers":[{"name":"alice"}]}`, "--project", "PRJ")
-	if err != nil || !strings.Contains(out, `"predictedAction": "conflict"`) {
-		t.Fatalf("expected reviewer create conflict prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "reviewer", "condition", "update", "2", `{"requiredApprovals":2}`, "--project", "PRJ")
-	if err != nil || !strings.Contains(out, `"predictedAction": "blocked"`) {
-		t.Fatalf("expected reviewer update blocked prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "users", "grant", "alice", "repo_write")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected repo users grant no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "users", "revoke", "nobody")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected repo users revoke no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "groups", "grant", "devs", "repo_read")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected repo groups grant no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "groups", "revoke", "devs")
-	if err != nil || !strings.Contains(out, `"predictedAction": "delete"`) {
-		t.Fatalf("expected repo groups revoke delete prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "settings", "workflow", "webhooks", "create", "ci", "http://h")
-	if err != nil || !strings.Contains(out, `"predictedAction": "conflict"`) {
-		t.Fatalf("expected webhook create conflict prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "settings", "workflow", "webhooks", "delete", "99")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected webhook delete no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=true")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected pull-request update no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "settings", "pull-requests", "update-approvers", "--count", "2")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected pull-request update-approvers no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "settings", "pull-requests", "set-strategy", "squash")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected pull-request set-strategy no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "comment", "update", "--commit", "abc", "--id", "1", "--text", "same comment")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected repo comment update no-op prediction, err=%v output=%s", err, out)
-	}
-
-	out, err = executeTestCLI(t, "--json", "--dry-run", "repo", "comment", "delete", "--commit", "abc", "--id", "2")
-	if err != nil || !strings.Contains(out, `"predictedAction": "no-op"`) {
-		t.Fatalf("expected repo comment delete no-op prediction, err=%v output=%s", err, out)
-	}
-}
+//
+// The reviewer conditions, repository permissions, workflow webhooks, pull
+// request settings and commit comments went the same way, into
+// TestLiveGovernanceDryRunPredictionsReadRealState. Two of those previews were
+// broken and the mock could not see it, because it supplied both sides of the
+// comparison they make:
+//
+//   - update-approvers read requiredApprovers as {"enabled", "count"}. Bitbucket
+//     sends a plain number, so the count was never known and the preview could
+//     not report a no-op at all.
+//   - reviewer condition create deep-compared the request against the listing.
+//     The server answers with full user objects and a matcher id of its own
+//     ("ANY_REF" is stored as "ANY_REF_MATCHER_ID"), so nothing ever matched and
+//     an existing condition was predicted as a create.
 
 func TestBranchProjectAdminTagDryRunPredictionBranches(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

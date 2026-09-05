@@ -542,8 +542,10 @@ func requiredBuildCheckID(payload map[string]any) (int64, bool) {
 // them: a loop that stops after the first page returns a short answer that
 // looks perfectly well formed.
 //
-// The page size is the lever. Asking for fewer per page than exist forces the
-// boundary without seeding hundreds of anything.
+// The lever is the seed count. openapi.PageThrough asks for a page at a time,
+// so seeding more than one page of anything forces the boundary -- and asking
+// for fewer than exist is the other half, because a cap that is not honoured
+// comes back long.
 func TestLiveQualityListingsPageToTheEnd(t *testing.T) {
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
@@ -559,7 +561,7 @@ func TestLiveQualityListingsPageToTheEnd(t *testing.T) {
 	repoRef := qualityservice.RepositoryRef{ProjectKey: seeded.Key, Slug: repo.Slug}
 	commitID := repo.CommitIDs[0]
 
-	const total = 5
+	const total = 30
 
 	t.Run("build statuses", func(t *testing.T) {
 		for index := range total {
@@ -574,13 +576,19 @@ func TestLiveQualityListingsPageToTheEnd(t *testing.T) {
 			}
 		}
 
-		// Two per page over five, so the loop has to come back three times.
-		statuses, err := service.GetBuildStatuses(ctx, commitID, 2, "NEWEST")
+		// More than one page, so the loop has to come back for the rest.
+		statuses, err := service.GetBuildStatuses(ctx, commitID, total+10, "NEWEST")
 		if err != nil {
 			t.Fatalf("get build statuses failed: %v", err)
 		}
 		if len(statuses) < total {
 			t.Fatalf("paging stopped early: got %d build statuses, want at least %d", len(statuses), total)
+		}
+
+		if capped, err := service.GetBuildStatuses(ctx, commitID, 5, "NEWEST"); err != nil {
+			t.Fatalf("get capped build statuses failed: %v", err)
+		} else if len(capped) != 5 {
+			t.Fatalf("a cap of 5 returned %d build statuses", len(capped))
 		}
 	})
 
@@ -594,12 +602,18 @@ func TestLiveQualityListingsPageToTheEnd(t *testing.T) {
 			}
 		}
 
-		reports, err := service.ListReports(ctx, repoRef, commitID, 2)
+		reports, err := service.ListReports(ctx, repoRef, commitID, total+10)
 		if err != nil {
 			t.Fatalf("list reports failed: %v", err)
 		}
 		if len(reports) < total {
 			t.Fatalf("paging stopped early: got %d reports, want at least %d", len(reports), total)
+		}
+
+		if capped, err := service.ListReports(ctx, repoRef, commitID, 5); err != nil {
+			t.Fatalf("list capped reports failed: %v", err)
+		} else if len(capped) != 5 {
+			t.Fatalf("a cap of 5 returned %d reports", len(capped))
 		}
 	})
 
@@ -619,12 +633,18 @@ func TestLiveQualityListingsPageToTheEnd(t *testing.T) {
 			}
 		}
 
-		checks, err := service.ListRequiredBuildChecks(ctx, repoRef, 2)
+		checks, err := service.ListRequiredBuildChecks(ctx, repoRef, total+10)
 		if err != nil {
 			t.Fatalf("list required build checks failed: %v", err)
 		}
 		if len(checks) < total {
 			t.Fatalf("paging stopped early: got %d checks, want at least %d", len(checks), total)
+		}
+
+		if capped, err := service.ListRequiredBuildChecks(ctx, repoRef, 5); err != nil {
+			t.Fatalf("list capped required build checks failed: %v", err)
+		} else if len(capped) != 5 {
+			t.Fatalf("a cap of 5 returned %d checks", len(capped))
 		}
 	})
 }

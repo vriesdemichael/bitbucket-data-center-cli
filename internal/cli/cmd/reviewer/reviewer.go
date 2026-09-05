@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
+
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
@@ -582,22 +584,128 @@ func reviewerConditionEquivalentExists(conditions []openapigenerated.RestPullReq
 	return false
 }
 
+// reviewerConditionEquivalent reports whether Bitbucket already holds the
+// condition being asked for.
+//
+// It compares the four things that identify one -- the two ref matchers, the
+// approval count, and who the reviewers are -- rather than the objects whole.
+//
+// Whole objects cannot match. A caller names a reviewer as {"id": 116} or
+// {"name": "alice"}; the server answers with the full user -- display name,
+// email address, avatar URL, active flag, links -- and enriches each matcher
+// with a displayId and a type name it derived itself. A deep comparison between
+// what was sent and what came back is therefore never equal, so the preview
+// predicted "create" for a condition that already existed and the create then
+// failed. The mocked test that covered this echoed the request back verbatim,
+// which is the one server shape that made the comparison work.
 func reviewerConditionEquivalent(existing openapigenerated.RestPullRequestCondition, desired openapigenerated.RestDefaultReviewersRequest) bool {
-	existingPayload := map[string]any{
-		"requiredApprovals": existing.RequiredApprovals,
-		"sourceMatcher":     existing.SourceRefMatcher,
-		"targetMatcher":     existing.TargetRefMatcher,
-		"reviewers":         existing.Reviewers,
+	if safederef.Int32(existing.RequiredApprovals) != safederef.Int32(desired.RequiredApprovals) {
+		return false
 	}
 
-	desiredPayload := map[string]any{
-		"requiredApprovals": desired.RequiredApprovals,
-		"sourceMatcher":     desired.SourceMatcher,
-		"targetMatcher":     desired.TargetMatcher,
-		"reviewers":         desired.Reviewers,
+	existingSourceType, existingSourceID := "", ""
+	if matcher := existing.SourceRefMatcher; matcher != nil {
+		existingSourceID = safederef.String(matcher.Id)
+		if matcher.Type != nil {
+			existingSourceType = string(matcher.Type.Id)
+		}
+	}
+	existingTargetType, existingTargetID := "", ""
+	if matcher := existing.TargetRefMatcher; matcher != nil {
+		existingTargetID = safederef.String(matcher.Id)
+		if matcher.Type != nil {
+			existingTargetType = string(matcher.Type.Id)
+		}
 	}
 
-	return reflect.DeepEqual(normalizeJSONShape(existingPayload), normalizeJSONShape(desiredPayload))
+	desiredSourceType, desiredSourceID := "", ""
+	if matcher := desired.SourceMatcher; matcher != nil {
+		desiredSourceID = safederef.String(matcher.Id)
+		if matcher.Type != nil {
+			desiredSourceType = string(matcher.Type.Id)
+		}
+	}
+	desiredTargetType, desiredTargetID := "", ""
+	if matcher := desired.TargetMatcher; matcher != nil {
+		desiredTargetID = safederef.String(matcher.Id)
+		if matcher.Type != nil {
+			desiredTargetType = string(matcher.Type.Id)
+		}
+	}
+
+	if !sameRefMatcher(existingSourceType, existingSourceID, desiredSourceType, desiredSourceID) {
+		return false
+	}
+	if !sameRefMatcher(existingTargetType, existingTargetID, desiredTargetType, desiredTargetID) {
+		return false
+	}
+
+	return sameReviewerSet(existing.Reviewers, desired.Reviewers)
+}
+
+// anyRefMatcherType is the matcher type that means "any branch".
+//
+// Its id is not the caller's. A condition created with
+// {"id": "ANY_REF", "type": {"id": "ANY_REF"}} comes back with
+// id "ANY_REF_MATCHER_ID", so for this type the id says nothing and comparing
+// it makes an existing condition look like a new one.
+const anyRefMatcherType = "ANY_REF"
+
+// sameRefMatcher reports whether two ref matchers select the same refs.
+func sameRefMatcher(existingType, existingID, desiredType, desiredID string) bool {
+	if !strings.EqualFold(existingType, desiredType) {
+		return false
+	}
+	if strings.EqualFold(existingType, anyRefMatcherType) {
+		return true
+	}
+
+	return existingID == desiredID
+}
+
+// sameReviewerSet compares two reviewer lists by whichever identifier both
+// sides carry, ignoring order.
+//
+// A caller may name a reviewer by id or by name and Bitbucket answers with
+// both, so a desired reviewer counts as present when either matches.
+func sameReviewerSet(existing *[]openapigenerated.RestReviewerGroup, desired *[]openapigenerated.RestApplicationUser) bool {
+	existingIDs, existingNames := map[int64]bool{}, map[string]bool{}
+	if existing != nil {
+		for _, reviewer := range *existing {
+			if reviewer.Id != nil {
+				existingIDs[*reviewer.Id] = true
+			}
+			if name := strings.TrimSpace(safederef.String(reviewer.Name)); name != "" {
+				existingNames[strings.ToLower(name)] = true
+			}
+		}
+	}
+
+	desiredCount := 0
+	if desired != nil {
+		desiredCount = len(*desired)
+	}
+	// A condition with a different number of reviewers is a different
+	// condition, whichever identifier each side happens to carry.
+	if desiredCount != len(existingIDs) && desiredCount != len(existingNames) {
+		return false
+	}
+	if desired == nil {
+		return true
+	}
+
+	for _, reviewer := range *desired {
+		if reviewer.Id != nil && existingIDs[int64(*reviewer.Id)] {
+			continue
+		}
+		if name := strings.TrimSpace(safederef.String(reviewer.Name)); name != "" && existingNames[strings.ToLower(name)] {
+			continue
+		}
+
+		return false
+	}
+
+	return true
 }
 
 func reviewerConditionUpdateEquivalent(existing openapigenerated.RestPullRequestCondition, desired any) bool {

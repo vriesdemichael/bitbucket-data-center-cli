@@ -476,22 +476,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				currentCount := -1
-				if section, ok := currentSettings["requiredApprovers"].(map[string]any); ok {
-					enabled, _ := section["enabled"].(bool)
-					if enabled {
-						switch count := section["count"].(type) {
-						case string:
-							if value, convErr := strconv.Atoi(strings.TrimSpace(count)); convErr == nil {
-								currentCount = value
-							}
-						case float64:
-							currentCount = int(count)
-						}
-					} else {
-						currentCount = 0
-					}
-				}
+				currentCount := requiredApproversIn(currentSettings)
 
 				predicted := "update"
 				reason := "required approvers setting will be updated"
@@ -916,6 +901,51 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 	autoDeclineCmd.AddCommand(setCmd)
 	autoDeclineCmd.AddCommand(deleteCmd)
 	return autoDeclineCmd
+}
+
+// requiredApproversIn reads the current required-approver count, or -1 when the
+// settings do not say.
+//
+// Bitbucket sends it as a plain number at the top level. The dry run used to
+// look for {"enabled": bool, "count": string} instead, which is a shape the
+// server does not produce: the type assertion failed on every real response, the
+// count stayed unknown, and `update-approvers --dry-run` predicted "update"
+// however many approvers the repository already required. It could not report a
+// no-op at all.
+//
+// The nested object is a garbled memory of a real key -- the bundled hook's
+// settings do carry {"enable": bool, "count": number}, spelled "enable" and
+// under a plugin-namespaced name -- so it is read here as a fallback rather
+// than dropped, but the top-level number is what a running Bitbucket answers
+// with.
+func requiredApproversIn(settings map[string]any) int {
+	switch count := settings["requiredApprovers"].(type) {
+	case float64:
+		return int(count)
+	case string:
+		if value, err := strconv.Atoi(strings.TrimSpace(count)); err == nil {
+			return value
+		}
+	case map[string]any:
+		enabled, _ := count["enabled"].(bool)
+		if enable, ok := count["enable"].(bool); ok {
+			enabled = enable
+		}
+		if !enabled {
+			return 0
+		}
+
+		switch nested := count["count"].(type) {
+		case float64:
+			return int(nested)
+		case string:
+			if value, err := strconv.Atoi(strings.TrimSpace(nested)); err == nil {
+				return value
+			}
+		}
+	}
+
+	return -1
 }
 
 // enabledStrategiesWith returns the merge strategies to send as enabled: the
