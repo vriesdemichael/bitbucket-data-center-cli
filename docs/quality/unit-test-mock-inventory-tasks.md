@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 123 | write the live test, then delete the mock |
+| `move-to-live` | 121 | write the live test, then delete the mock |
 | `remove` | 36 | delete; it asserts nothing a live test would not already give |
 | `keep` | 87 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
@@ -42,7 +42,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/repo/admin_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/comments_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/cli/cmd/webhook/webhook_test.go` | 2 | 2 | 0 | 0 | 0 |
-| `internal/cli/dryrun_stateful_commands_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/cli/governance_harden_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/mcp/tools_pr_review_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/mcp/tools_pr_test.go` | 2 | 2 | 0 | 0 | 0 |
