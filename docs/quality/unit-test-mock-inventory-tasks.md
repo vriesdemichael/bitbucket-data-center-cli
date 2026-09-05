@@ -6,9 +6,9 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 98 | write the live test, then delete the mock |
+| `move-to-live` | 94 | write the live test, then delete the mock |
 | `remove` | 43 | delete; it asserts nothing a live test would not already give |
-| `keep` | 95 | legitimate unit test under ADR-079 |
+| `keep` | 96 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
@@ -22,8 +22,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/repo/clone_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/misc_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/cli/cmd/repo/settings_test.go` | 3 | 3 | 0 | 0 | 0 |
-| `internal/cli/cmd/tag/tag_test.go` | 3 | 3 | 0 | 0 | 0 |
-| `internal/cli/pr_draft_automerge_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/workflows/bulk/runner_test.go` | 3 | 3 | 0 | 0 | 0 |
 | `internal/services/comment/service_test.go` | 11 | 2 | 0 | 8 | 1 |
 | `internal/services/branch/service_test.go` | 7 | 2 | 0 | 4 | 1 |
@@ -55,6 +53,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/insights/insights_internal_test.go` | 2 | 1 | 1 | 0 | 0 |
 | `internal/cli/cmd/pr/create_interactive_test.go` | 2 | 1 | 1 | 0 | 0 |
 | `internal/cli/cmd/reviewergroup/reviewer_group_test.go` | 2 | 1 | 1 | 0 | 0 |
+| `internal/cli/cmd/tag/tag_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/openapi/client_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/services/reviewer/service_test.go` | 2 | 1 | 0 | 1 | 0 |
 | `internal/cli/auth_token_test.go` | 1 | 1 | 0 | 0 | 0 |
@@ -78,6 +77,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/sshkey/ssh_key_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/pr_checkout_command_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/pr_checkout_failures_test.go` | 1 | 1 | 0 | 0 | 0 |
+| `internal/cli/pr_draft_automerge_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/ssh_key_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/mcp/client_compat_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/transport/httpclient/client_test.go` | 25 | 0 | 0 | 25 | 0 |
