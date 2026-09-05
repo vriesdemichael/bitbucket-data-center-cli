@@ -6,8 +6,8 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `move-to-live` | 30 | write the live test, then delete the mock |
-| `keep` | 119 | legitimate unit test under ADR-079 |
+| `move-to-live` | 28 | write the live test, then delete the mock |
+| `keep` | 120 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 14 | outside the Bitbucket policy; needs its own decision |
 
@@ -22,7 +22,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/pullrequest/review_test.go` | 2 | 2 | 0 | 0 | 0 |
 | `internal/services/reposettings/service_test.go` | 5 | 1 | 0 | 3 | 1 |
 | `internal/cli/cmd/reviewer/reviewer_test.go` | 3 | 1 | 0 | 2 | 0 |
-| `internal/cli/pr_inspection_test.go` | 3 | 1 | 0 | 2 | 0 |
 | `internal/cli/pr_status_command_test.go` | 3 | 1 | 0 | 2 | 0 |
 | `internal/cli/root_test.go` | 3 | 1 | 0 | 2 | 0 |
 | `internal/services/pullrequestactivity/service_test.go` | 3 | 1 | 0 | 1 | 1 |
@@ -36,7 +35,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/webhook/webhook_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/pr_checkout_command_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/cli/pr_checkout_failures_test.go` | 1 | 1 | 0 | 0 | 0 |
-| `internal/cli/pr_draft_automerge_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/mcp/client_compat_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/mcp/tools_pr_test.go` | 1 | 1 | 0 | 0 | 0 |
 | `internal/transport/httpclient/client_test.go` | 23 | 0 | 0 | 23 | 0 |
@@ -51,6 +49,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/diff/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/services/gpgkey/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/services/token/service_test.go` | 4 | 0 | 0 | 3 | 1 |
+| `internal/cli/pr_inspection_test.go` | 3 | 0 | 0 | 3 | 0 |
 | `internal/services/forksync/service_test.go` | 3 | 0 | 0 | 2 | 1 |
 | `internal/services/project/service_test.go` | 3 | 0 | 0 | 2 | 1 |
 | `internal/services/reviewer/regressions_test.go` | 3 | 0 | 0 | 3 | 0 |

@@ -699,12 +699,32 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				draftChanged := draft != nil && current.Draft != *draft
+				// Only the fields the caller named are compared, because only
+				// those travel: buildUpdatePayload drops an empty title and an
+				// empty description rather than sending them. Comparing them
+				// anyway made `pr update --draft=false` on a pull request that
+				// is already not a draft predict an update, because the title
+				// nobody passed did not match the one the pull request has --
+				// a preview promising a change the command would not make.
+				changed := false
+				if cmd.Flags().Changed("title") &&
+					!strings.EqualFold(strings.TrimSpace(current.Title), strings.TrimSpace(updateTitle)) {
+					changed = true
+				}
+				if cmd.Flags().Changed("description") &&
+					!strings.EqualFold(strings.TrimSpace(current.Description), strings.TrimSpace(updateDescription)) {
+					changed = true
+				}
+				if draft != nil && current.Draft != *draft {
+					changed = true
+				}
+				if cmd.Flags().Changed("reviewers") {
+					changed = true
+				}
+
 				predicted := "update"
 				reason := "pull request metadata will be updated"
-				if strings.EqualFold(strings.TrimSpace(current.Title), strings.TrimSpace(updateTitle)) &&
-					strings.EqualFold(strings.TrimSpace(current.Description), strings.TrimSpace(updateDescription)) &&
-					!draftChanged {
+				if !changed {
 					predicted = "no-op"
 					reason = "pull request already matches requested metadata"
 				}

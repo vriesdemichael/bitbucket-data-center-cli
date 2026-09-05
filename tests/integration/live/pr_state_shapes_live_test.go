@@ -194,6 +194,21 @@ func TestLivePullRequestDraftState(t *testing.T) {
 	if livePRIsDraft(t, id) {
 		t.Fatal("expected --draft=false to take the pull request out of draft")
 	}
+
+	// The previews, against the state the two calls above left. A unit test
+	// asked for these from a pull request whose draft field it had written, so
+	// the prediction it checked was the fixture's own flag read back.
+	version := currentLivePRVersion(t, id)
+
+	toDraft := mustLiveCLI(t, "--dry-run", "pr", "update", id, "--version", version, "--draft")
+	if !strings.Contains(toDraft, `"predictedAction": "update"`) {
+		t.Errorf("making a ready pull request a draft again was not predicted an update:\n%s", toDraft)
+	}
+
+	alreadyReady := mustLiveCLI(t, "--dry-run", "pr", "update", id, "--version", version, "--draft=false")
+	if !strings.Contains(alreadyReady, `"predictedAction": "no-op"`) {
+		t.Errorf("asking for the draft state it already holds was not predicted a no-op:\n%s", alreadyReady)
+	}
 }
 
 func livePRIsDraft(t *testing.T, prID string) bool {

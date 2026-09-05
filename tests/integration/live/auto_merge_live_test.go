@@ -87,6 +87,18 @@ func TestLivePullRequestAutoMergeEnable(t *testing.T) {
 	if disableOutput, err := executeLiveCLI(t, "pr", "auto-merge", "disable", pullRequestID, "--repo", repoRef); err != nil {
 		t.Fatalf("pr auto-merge disable failed: %v\noutput: %s", err, disableOutput)
 	}
+
+	// A selector that is neither a pull request id nor a branch with one.
+	//
+	// This is not local validation: bb takes anything that is not a number as
+	// a branch name and asks the server which pull request is open on it, so
+	// the refusal is Bitbucket answering that none is. A unit test held these
+	// against a listing it had written, which decides the answer.
+	for _, verb := range []string{"get", "enable", "disable"} {
+		if output, err := executeLiveCLI(t, "pr", "auto-merge", verb, "not-a-branch-or-an-id", "--repo", repoRef); err == nil {
+			t.Errorf("pr auto-merge %s accepted a selector that names nothing:\n%s", verb, output)
+		}
+	}
 }
 
 // TestLivePullRequestAutoMergeMergesImmediately covers the other outcome.

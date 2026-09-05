@@ -1,20 +1,20 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 181,
-    "files": 63,
-    "functions": 172,
+    "mocked_servers": 180,
+    "files": 62,
+    "functions": 171,
     "by_class": {
-      "bitbucket-behaviour": 30,
+      "bitbucket-behaviour": 28,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
       "unreachable-state": 13,
-      "unreached-guard": 25
+      "unreached-guard": 26
     },
     "behaviour_by_package": {
-      "internal/cli": 8,
+      "internal/cli": 6,
       "internal/cli/cmd/bulk": 2,
       "internal/cli/cmd/pr": 7,
       "internal/cli/cmd/repo": 4,
@@ -631,36 +631,8 @@
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
-      "file": "internal/cli/pr_draft_automerge_test.go",
-      "line": 20,
-      "function": "newDraftAutoMergeServer",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
       "file": "internal/cli/pr_inspection_test.go",
-      "line": 13,
-      "function": "newPRInspectionServer",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/pr_inspection_test.go",
-      "line": 123,
+      "line": 26,
       "function": "TestPRInspectionEmptyResults",
       "class": "unreachable-state",
       "signals": [
@@ -674,7 +646,7 @@
     },
     {
       "file": "internal/cli/pr_inspection_test.go",
-      "line": 149,
+      "line": 52,
       "function": "TestPRInspectionServiceErrors",
       "class": "transport-fault",
       "signals": [
@@ -685,6 +657,19 @@
       "action": "keep",
       "reason": "the failures are injected; the subject is that each command reports rather than rendering an empty result.",
       "reviewed": true
+    },
+    {
+      "file": "internal/cli/pr_inspection_test.go",
+      "line": 72,
+      "function": "TestPRInspectionRepositoryResolutionError",
+      "class": "unreached-guard",
+      "signals": [
+        "closes-on-cleanup",
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/cli/pr_status_command_test.go",
