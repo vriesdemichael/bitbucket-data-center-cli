@@ -1,11 +1,10 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 176,
-    "files": 61,
-    "functions": 167,
+    "mocked_servers": 174,
+    "files": 60,
+    "functions": 165,
     "by_class": {
-      "bitbucket-behaviour": 2,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
@@ -13,9 +12,7 @@
       "unreachable-state": 22,
       "unreached-guard": 39
     },
-    "behaviour_by_package": {
-      "internal/mcp": 2
-    }
+    "behaviour_by_package": {}
   },
   "entries": [
     {
@@ -704,20 +701,6 @@
       "reviewed": true
     },
     {
-      "file": "internal/mcp/client_compat_test.go",
-      "line": 56,
-      "function": "fixtureServer",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "returns-a-status",
-        "returns-bitbucket-entity",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
       "file": "internal/mcp/tools_pr_review_test.go",
       "line": 33,
       "function": "TestGetPullRequestFallsBackToBlockerCommentCounts",
@@ -745,20 +728,8 @@
     },
     {
       "file": "internal/mcp/tools_pr_test.go",
-      "line": 48,
-      "function": "newRecordingClients",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "answers-any-request",
-        "asserts-request-body"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/mcp/tools_pr_test.go",
-      "line": 157,
-      "function": "TestAddPRCommentRejectsAnUnknownLineType",
+      "line": 50,
+      "function": "newUnreachedClients",
       "class": "unreached-guard",
       "signals": [
         "handler-supplied-by-the-caller",

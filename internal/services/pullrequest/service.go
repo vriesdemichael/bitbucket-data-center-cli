@@ -33,7 +33,10 @@ type ListOptions struct {
 	Start        int    `json:"start"`
 	SourceBranch string `json:"source_branch,omitempty"`
 	TargetBranch string `json:"target_branch,omitempty"`
-	Role         string `json:"role,omitempty"`
+	// No Role. The repository listing has no role parameter -- Bitbucket
+	// declares none and drops the one we used to send, so the caller got every
+	// open pull request while believing it had asked for its own. Role belongs
+	// to DashboardListOptions, where the endpoint honours it.
 }
 
 type PullRequest struct {
@@ -261,9 +264,6 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, opti
 				"limit": strconv.Itoa(limit),
 				"start": strconv.Itoa(start),
 				"state": bitbucketState(normalizedState),
-			}
-			if options.Role != "" {
-				query["role"] = strings.ToUpper(options.Role)
 			}
 
 			var response pagedPullRequestResponse

@@ -81,7 +81,7 @@ type ListPullRequestsInput struct {
 	Project      string `json:"project,omitempty" jsonschema:"Bitbucket project key (omit for dashboard mode)"`
 	Repo         string `json:"repo,omitempty" jsonschema:"Repository slug (omit for dashboard mode)"`
 	State        string `json:"state,omitempty" jsonschema:"Filter by state: OPEN (default), MERGED, DECLINED, ALL"`
-	Role         string `json:"role,omitempty" jsonschema:"Filter by role: REVIEWER, AUTHOR, or PARTICIPANT (works in both repo and dashboard mode)"`
+	Role         string `json:"role,omitempty" jsonschema:"Filter by role: REVIEWER, AUTHOR, or PARTICIPANT (dashboard mode only; omit project and repo to use it)"`
 	SourceBranch string `json:"source_branch,omitempty" jsonschema:"Filter by source branch name (repo mode only)"`
 	TargetBranch string `json:"target_branch,omitempty" jsonschema:"Filter by target branch name (repo mode only)"`
 	Limit        int    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 25)"`
@@ -115,11 +115,18 @@ func specListPullRequests() Spec {
 
 			switch {
 			case in.Project != "" && in.Repo != "":
+				// Refused rather than dropped. The repository endpoint has no
+				// role parameter, so Bitbucket ignores one and answers with
+				// every open pull request -- an agent that asked for its own
+				// would act on all of them believing they were.
+				if in.Role != "" {
+					return nil, ListPullRequestsOutput{}, fmt.Errorf(
+						"list_pull_requests cannot filter a repository by role; omit project and repo to ask the dashboard, which can")
+				}
 				prs, err = svc.List(ctx,
 					pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 					pullrequestservice.ListOptions{
 						State:        state,
-						Role:         in.Role,
 						SourceBranch: in.SourceBranch,
 						TargetBranch: in.TargetBranch,
 						MaxResults:   limit,

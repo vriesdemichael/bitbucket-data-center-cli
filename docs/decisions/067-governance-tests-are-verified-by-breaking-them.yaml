@@ -22,8 +22,7 @@ decision: >
      - TestADRDoesNotNameToolsThatDoNotExist: a record does not name a removed tool.
      - TestGatedToolsAreTheOnesThatMergeOrGate: the --yolo set is exactly the tools that merge or gate.
      - TestReadOnlyToolsAreNotGated: a tool that writes nothing is not withheld.
-     - TestEveryToolHasCallArguments: every MCP tool is called by a test.
-     - TestEveryToolReturnsAClientCompatibleResult: a tool result is a JSON object with a text fallback.
+     - TestLiveMCPEveryToolReturnsAClientCompatibleResult: every MCP tool is called, and its result is a JSON object with a text fallback.
      - TestEveryHookRunnableGateRunsOnBothSides: every gate a git hook can run runs locally and in CI.
      - TestNoGateIsDefinedAndNeverRun: a task named like a check is reachable from something that runs it.
      - TestEveryADRCrossReferenceResolves: a record does not cite a record that does not exist.

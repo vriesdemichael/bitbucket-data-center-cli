@@ -447,3 +447,14 @@ func readAuditRecords(t *testing.T, path string) []AuditRecord {
 	}
 	return records
 }
+
+// contentText flattens a result's text content for failure messages.
+func contentText(result *mcp.CallToolResult) string {
+	var parts []string
+	for _, item := range result.Content {
+		if text, ok := item.(*mcp.TextContent); ok {
+			parts = append(parts, text.Text)
+		}
+	}
+	return strings.Join(parts, "\n")
+}
