@@ -1,20 +1,20 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 265,
+    "mocked_servers": 261,
     "files": 88,
-    "functions": 249,
+    "functions": 245,
     "by_class": {
-      "bitbucket-behaviour": 79,
+      "bitbucket-behaviour": 77,
       "canned-response": 43,
       "external-service": 14,
       "harness-constructor": 18,
-      "status-taxonomy": 15,
+      "status-taxonomy": 13,
       "transport-fault": 80,
       "unreached-guard": 16
     },
     "behaviour_by_package": {
-      "internal/cli": 12,
+      "internal/cli": 11,
       "internal/cli/cmd/admin": 1,
       "internal/cli/cmd/auth": 2,
       "internal/cli/cmd/branch": 1,
@@ -24,7 +24,7 @@
       "internal/cli/cmd/deployment": 1,
       "internal/cli/cmd/diff": 1,
       "internal/cli/cmd/insights": 2,
-      "internal/cli/cmd/pr": 9,
+      "internal/cli/cmd/pr": 8,
       "internal/cli/cmd/project": 4,
       "internal/cli/cmd/ref": 1,
       "internal/cli/cmd/repo": 16,
@@ -508,22 +508,6 @@
       "signals": [
         "asserts-http-method",
         "returns-a-status",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/pr/pr_test.go",
-      "line": 1727,
-      "function": "TestPRCreateFromAFork",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "asserts-request-body",
-        "closes-on-cleanup",
         "returns-bitbucket-entity",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
@@ -1475,48 +1459,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 649,
-      "function": "TestPRCommandsUseInferredRepositoryContext",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/root_test.go",
-      "line": 1125,
-      "function": "TestLoadConfigAndClientAndClientFactoryBranches",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/cli/root_test.go",
-      "line": 1168,
-      "function": "TestLoadQualityRepoAndServiceBranches",
-      "class": "status-taxonomy",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status"
-      ],
-      "action": "move-to-live",
-      "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
-    },
-    {
-      "file": "internal/cli/root_test.go",
-      "line": 1617,
+      "line": 1545,
       "function": "TestRepoSettingsPullRequestsUpdateDryRunStateful",
       "class": "bitbucket-behaviour",
       "signals": [

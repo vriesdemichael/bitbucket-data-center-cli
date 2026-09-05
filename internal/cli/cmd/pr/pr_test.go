@@ -1715,91 +1715,33 @@ func TestPRMergeDryRunReadsMergeability(t *testing.T) {
 	})
 }
 
-// TestPRCreateFromAFork is #506.
+// #506 is live now, in TestLivePRCreateFromAFork.
 //
 // pr create pre-flighted REPO_WRITE on the repository the pull request targets,
 // which a fork contributor does not hold upstream, and had no way to say the
 // source branch lives somewhere else -- so the standard contribution flow was
 // refused twice over.
-func TestPRCreateFromAFork(t *testing.T) {
-	var posted map[string]any
-
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-
-		if request.Method == http.MethodPost && strings.HasSuffix(request.URL.Path, "/pull-requests") {
-			_ = json.NewDecoder(request.Body).Decode(&posted)
-			_, _ = writer.Write([]byte(`{"id":7,"version":0,"title":"probe","state":"OPEN"}`))
-
-			return
-		}
-		_, _ = writer.Write([]byte(`{"values":[],"isLastPage":true}`))
-	}))
-	defer server.Close()
-
-	t.Run("the source repository reaches fromRef", func(t *testing.T) {
-		posted = nil
-
-		out, err := executePr(t, server.URL, "create", "--from-ref", "cog-renovate", "--to-ref", "main",
-			"--title", "probe", "--from-repo", "~VRIEM15/uploader", "--repo", "GHBS/uploader",
-			"--no-default-reviewers", "--no-codeowners")
-		if err != nil {
-			t.Fatalf("create: %v\n%s", err, out)
-		}
-
-		fromRef, _ := posted["fromRef"].(map[string]any)
-		repository, ok := fromRef["repository"].(map[string]any)
-		if !ok {
-			t.Fatalf("fromRef carries no repository, so the pull request is same-repository: %v", fromRef)
-		}
-		if repository["slug"] != "uploader" {
-			t.Errorf("fromRef.repository.slug = %v", repository["slug"])
-		}
-		project, _ := repository["project"].(map[string]any)
-		if project["key"] != "~VRIEM15" {
-			t.Errorf("fromRef.repository.project.key = %v, want the fork", project["key"])
-		}
-	})
-
-	t.Run("without --from-repo the payload is unchanged", func(t *testing.T) {
-		posted = nil
-
-		if _, err := executePr(t, server.URL, "create", "--from-ref", "feature/x", "--to-ref", "main",
-			"--title", "probe", "--repo", "GHBS/uploader",
-			"--no-default-reviewers", "--no-codeowners"); err != nil {
-			t.Fatalf("create: %v", err)
-		}
-
-		fromRef, _ := posted["fromRef"].(map[string]any)
-		if _, present := fromRef["repository"]; present {
-			t.Errorf("a same-repository pull request gained a fromRef.repository: %v", fromRef)
-		}
-	})
-
-	t.Run("--from-repo naming the target is the same-repository case", func(t *testing.T) {
-		posted = nil
-
-		if _, err := executePr(t, server.URL, "create", "--from-ref", "feature/x", "--to-ref", "main",
-			"--title", "probe", "--from-repo", "GHBS/uploader", "--repo", "GHBS/uploader",
-			"--no-default-reviewers", "--no-codeowners"); err != nil {
-			t.Fatalf("create: %v", err)
-		}
-
-		fromRef, _ := posted["fromRef"].(map[string]any)
-		if _, present := fromRef["repository"]; present {
-			t.Errorf("naming the target as the source still sent a repository: %v", fromRef)
-		}
-	})
-
-	t.Run("a malformed --from-repo is refused before any request", func(t *testing.T) {
-		_, err := executePr(t, server.URL, "create", "--from-ref", "feature/x", "--to-ref", "main",
-			"--title", "probe", "--from-repo", "no-slash", "--repo", "GHBS/uploader",
-			"--no-default-reviewers", "--no-codeowners")
-		if err == nil {
-			t.Fatal("a --from-repo without a project was accepted")
-		}
-		if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
-			t.Errorf("kind = %v, want validation", kind)
-		}
-	})
+//
+// Three of the four cases here read the POST body off a mock and checked what
+// fromRef carried. Two of them turned on a field being *absent*, which is the
+// weakest thing a payload assertion can watch: it passes if the field is
+// missing for any reason, including the request never being built the way the
+// server needs. The live test creates a real fork, opens the pull request from
+// it, and reads back which repository each side points at -- and does the same
+// for a pull request that is not from a fork, and for one that names its own
+// target as the source.
+//
+// What is left is the case that never reaches a server.
+func TestPRCreateFromAForkRefusesAMalformedRepository(t *testing.T) {
+	// A URL that does not resolve, so a command that got as far as a request
+	// would fail for a different reason and the kind would say so.
+	_, err := executePr(t, "http://bitbucket.invalid", "create", "--from-ref", "feature/x", "--to-ref", "main",
+		"--title", "probe", "--from-repo", "no-slash", "--repo", "GHBS/uploader",
+		"--no-default-reviewers", "--no-codeowners")
+	if err == nil {
+		t.Fatal("a --from-repo without a project was accepted")
+	}
+	if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
+		t.Errorf("kind = %v, want validation", kind)
+	}
 }
