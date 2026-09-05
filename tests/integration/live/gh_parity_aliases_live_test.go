@@ -192,4 +192,35 @@ func TestLivePullRequestStatus(t *testing.T) {
 			t.Fatalf("expected %q heading in pr status output, got: %s", heading, humanOutput)
 		}
 	}
+
+	// Every section empty, which is a real state rather than a written one: a
+	// user made a moment ago has authored nothing and been asked to review
+	// nothing, and the branch checked out here has no pull request in the
+	// project just seeded. The admin cannot show this -- the rest of the live
+	// suite fills their board.
+	t.Run("nothing anywhere", func(t *testing.T) {
+		newcomer, err := harness.createLicensedUser(ctx)
+		if err != nil {
+			t.Fatalf("create user failed: %v", err)
+		}
+		if err := harness.grantProjectPermission(ctx, seeded.Key, newcomer.Username, "PROJECT_READ"); err != nil {
+			t.Fatalf("grant project permission failed: %v", err)
+		}
+
+		configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, newcomer)
+
+		empty, err := executeLiveCLI(t, "pr", "status")
+		if err != nil {
+			t.Fatalf("pr status as a new user failed: %v\noutput: %s", err, empty)
+		}
+		for _, message := range []string{
+			"No pull request for the current branch",
+			"You have no open pull requests",
+			"You have no pull requests to review",
+		} {
+			if !strings.Contains(empty, message) {
+				t.Fatalf("an empty section printed nothing that says so, want %q:\n%s", message, empty)
+			}
+		}
+	})
 }

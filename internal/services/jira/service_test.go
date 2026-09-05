@@ -37,7 +37,7 @@ func newJiraTestService(t *testing.T, handler http.HandlerFunc) *Service {
 // openapi.PageThrough's rules now, and they are tested where the loop lives
 // instead of once per service that uses it.
 //
-// mock-inventory: canned-response — the shape cannot be produced without a linked Jira; the subject is that toCommit is unwrapped, not what Bitbucket sends.
+// mock-inventory: unreachable-state — a linked Jira, which this stack does not have; TestLiveJiraIssueCommitsAnswerEmpty covers what the endpoint answers without one.
 func TestGetIssueCommitsUnwrapsToCommit(t *testing.T) {
 	service := newJiraTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet || r.URL.Path != "/rest/jira/latest/issues/TEST-101/commits" {

@@ -9,6 +9,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func newForkSyncTestService(t *testing.T, handler http.HandlerFunc) *Service {
@@ -25,7 +26,7 @@ func newForkSyncTestService(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestForkSyncServiceValidation(t *testing.T) {
-	service := newForkSyncTestService(t, func(w http.ResponseWriter, r *http.Request) {})
+	service := newForkSyncTestService(t, testsupport.UnreachedHandler(t))
 	ctx := context.Background()
 
 	// Status validation error
@@ -109,7 +110,7 @@ func TestForkSyncServiceErrors(t *testing.T) {
 // The server answers a missing ref or a missing action with a 500 that names
 // nothing, so both are refused here instead, where the error can name the flag.
 func TestForkSyncSynchronizeRequiresRefAndAction(t *testing.T) {
-	service := newForkSyncTestService(t, func(w http.ResponseWriter, r *http.Request) {})
+	service := newForkSyncTestService(t, testsupport.UnreachedHandler(t))
 	ctx := context.Background()
 
 	if err := service.Synchronize(ctx, "PRJ", "repo", "  ", "MERGE"); err == nil || apperrors.ExitCode(err) != 2 {

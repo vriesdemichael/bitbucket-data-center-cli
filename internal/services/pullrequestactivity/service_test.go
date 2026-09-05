@@ -3,11 +3,12 @@ package pullrequestactivity
 import (
 	"context"
 	"encoding/json"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -81,7 +82,7 @@ func TestListValidation(t *testing.T) {
 	}
 }
 
-func TestListPaginationAndStatusBranches(t *testing.T) {
+func TestActivityExtractionAndStatusMapping(t *testing.T) {
 	// One comment can appear in the timeline more than once -- edited, replied
 	// to, resolved -- so extracting comments has to collapse them.
 	//
@@ -106,33 +107,30 @@ func TestListPaginationAndStatusBranches(t *testing.T) {
 		}
 	})
 
-	t.Run("status mapping and decode failures", func(t *testing.T) {
-		testCases := []struct {
-			name         string
-			status       int
-			body         string
-			expectedKind apperrors.Kind
+	// The status mapping, asked of the mapper rather than of a server.
+	//
+	// This used to run each case through a handler that answered the status
+	// under test, which put a claim in the way of the assertion: that
+	// Bitbucket answers 400 here, and 500 there. It does not need to. The
+	// mapping is a pure function of the status, so the status can just be
+	// passed to it -- and then the ones a stub never sent, 401 and 403, are
+	// reachable too.
+	t.Run("status mapping", func(t *testing.T) {
+		for _, testCase := range []struct {
+			name   string
+			status int
+			want   apperrors.Kind
 		}{
-			{name: "bad request", status: http.StatusBadRequest, body: `{"errors":[{"message":"bad request"}]}`, expectedKind: apperrors.KindValidation},
-			{name: "not found", status: http.StatusNotFound, body: `{"errors":[{"message":"missing"}]}`, expectedKind: apperrors.KindNotFound},
-			{name: "server error", status: http.StatusInternalServerError, body: `{"errors":[{"message":"boom"}]}`, expectedKind: apperrors.KindInternal},
-			{name: "invalid json", status: http.StatusOK, body: `{`, expectedKind: apperrors.KindTransient},
-		}
-
-		for _, testCase := range testCases {
+			{name: "bad request", status: http.StatusBadRequest, want: apperrors.KindValidation},
+			{name: "unauthenticated", status: http.StatusUnauthorized, want: apperrors.KindAuthentication},
+			{name: "forbidden", status: http.StatusForbidden, want: apperrors.KindAuthorization},
+			{name: "not found", status: http.StatusNotFound, want: apperrors.KindNotFound},
+			{name: "server error", status: http.StatusInternalServerError, want: apperrors.KindInternal},
+		} {
 			t.Run(testCase.name, func(t *testing.T) {
-				service := newActivityTestService(t, func(w http.ResponseWriter, r *http.Request) {
-					w.Header().Set("Content-Type", "application/json")
-					w.WriteHeader(testCase.status)
-					_, _ = w.Write([]byte(testCase.body))
-				})
-
-				_, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12", ListOptions{})
-				if err == nil {
-					t.Fatal("expected error")
-				}
-				if apperrors.KindOf(err) != testCase.expectedKind {
-					t.Fatalf("expected kind %s, got %s (err=%v)", testCase.expectedKind, apperrors.KindOf(err), err)
+				err := mapActivityStatusError(testCase.status, []byte(`{"errors":[{"message":"whatever"}]}`))
+				if apperrors.KindOf(err) != testCase.want {
+					t.Fatalf("status %d mapped to %s, want %s", testCase.status, apperrors.KindOf(err), testCase.want)
 				}
 			})
 		}
@@ -188,4 +186,25 @@ func stringPtr(value string) *string {
 func rawMessagePtr(value string) *json.RawMessage {
 	raw := json.RawMessage(value)
 	return &raw
+}
+
+// A body that stops halfway is transient, not internal.
+//
+// The distinction is what an agent does next: a truncated response is worth
+// retrying and a malformed one is not. This case used to sit in the status
+// table as "invalid json", where it was the odd one out -- the others go
+// through our mapper and this one never reaches it, because the generated
+// client fails to parse before we see a page at all.
+//
+// mock-inventory: transport-fault — a body cut short mid-object, which is what a connection dropped mid-response looks like and not something a server can be asked for.
+func TestListReportsATruncatedBodyAsTransient(t *testing.T) {
+	service := newActivityTestService(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"values":[{"id":1`))
+	})
+
+	_, err := service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "12", ListOptions{})
+	if apperrors.KindOf(err) != apperrors.KindTransient {
+		t.Fatalf("a truncated body was reported as %s, want transient (err=%v)", apperrors.KindOf(err), err)
+	}
 }

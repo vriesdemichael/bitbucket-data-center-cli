@@ -579,14 +579,11 @@ func TestReviewerConditionStdin(t *testing.T) {
 }
 
 func TestReviewerPermissionErrors(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`[{"id":101,"requiredApprovals":1}]`))
-	}))
-	t.Cleanup(server.Close)
+	// A URL, not a server: the permission checker refuses before a request is built, so a listener here could only hide the refusal not happening.
+	const serverURL = "http://bitbucket.invalid"
 
 	cfg := config.AppConfig{
-		BitbucketURL: server.URL,
+		BitbucketURL: serverURL,
 		ProjectKey:   "PRJ",
 	}
 

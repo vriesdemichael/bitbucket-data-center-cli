@@ -12,19 +12,21 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
 
-// testClients builds Clients pointing at an httptest server that returns HTTP 500
-// for every request. This gives every handler a real (non-nil) client so no
-// nil pointer dereferences occur, while ensuring every API call returns an error
-// so we can exercise the error-return branch without a live Bitbucket instance.
+// mock-inventory: transport-fault — the listener is closed before the first request, which is a fault below the API rather than an answer.
+// testClients builds Clients against a listener that has been closed, so every
+// request fails at the transport.
+//
+// The subject is our handlers: each one has a real, non-nil client and has to
+// return an error rather than panic. A server answering 500 to everything did
+// the same job and made a claim besides -- that Bitbucket answers 500 for each
+// of these routes -- which it does not, and which no assertion here needs.
 func testClients(t *testing.T) Clients {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(`{"errors":[{"message":"test server error"}]}`))
-	}))
-	t.Cleanup(srv.Close)
-	return clientsForURL(t, srv.URL)
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	closedURL := server.URL
+	server.Close()
+
+	return clientsForURL(t, closedURL)
 }
 
 // clientsForURL builds Clients against an arbitrary base URL.

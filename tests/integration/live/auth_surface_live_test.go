@@ -39,6 +39,18 @@ func TestLiveAuthIdentityAndTokenURL(t *testing.T) {
 	if !strings.Contains(tokenURLOutput, "localhost:7990") {
 		t.Fatalf("expected the configured host in the token url, got: %s", tokenURLOutput)
 	}
+
+	// Without --host the command has to find out who is asking, and the slug it
+	// puts in the path is the server's, not the name in our config. A unit test
+	// asserted this against a users endpoint it wrote itself, which agreed with
+	// the CLI by construction about both the field and the path.
+	ownTokenURL, err := executeLiveCLI(t, "auth", "token-url")
+	if err != nil {
+		t.Fatalf("auth token-url without a host failed: %v\noutput: %s", err, ownTokenURL)
+	}
+	if !strings.Contains(ownTokenURL, "/plugins/servlet/access-tokens/users/admin/manage") {
+		t.Fatalf("expected the per-user manage path for the authenticated user, got: %s", ownTokenURL)
+	}
 }
 
 // TestLiveAuthAliasLifecycle covers auth alias add, list, remove and discover.

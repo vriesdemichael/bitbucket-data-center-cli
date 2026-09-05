@@ -172,7 +172,7 @@ func isolateStoredConfig(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", configPath)
 }
 
-// mock-inventory: canned-response — the server is an identity beacon rather than a Bitbucket, answering only with which one it is; the subject is which host the request reached.
+// mock-inventory: routing-beacon — the server answers only with which one it is; the subject is which host the request reached.
 func TestApiHostFlagOverride(t *testing.T) {
 	isolateStoredConfig(t)
 
@@ -209,7 +209,7 @@ func TestApiHostFlagOverride(t *testing.T) {
 // Resolving stored credentials leniently returns the default server's entire
 // profile, URL included, so the command used to answer confidently from a
 // server the caller never named.
-// mock-inventory: canned-response — two identity beacons, neither pretending to be Bitbucket; the subject is that --host beats the stored default, which needs two hosts to tell apart.
+// mock-inventory: routing-beacon — two beacons, neither pretending to be Bitbucket; the subject is that --host beats the stored default, which needs two hosts to tell apart.
 func TestApiHostFlagDoesNotFallBackToDefaultHost(t *testing.T) {
 	var defaultHit, customHit bool
 
@@ -258,7 +258,7 @@ func TestApiHostFlagDoesNotFallBackToDefaultHost(t *testing.T) {
 // Steering a load by exporting BITBUCKET_URL works, but it outlives the call —
 // it retargets everything the process does afterwards and is inherited by any
 // subprocess bb spawns.
-// mock-inventory: canned-response — an identity beacon; the subject is that --host does not write BITBUCKET_URL into the process environment.
+// mock-inventory: routing-beacon — the subject is that --host does not write BITBUCKET_URL into the process environment.
 func TestApiHostFlagLeavesEnvironmentAlone(t *testing.T) {
 	isolateStoredConfig(t)
 	t.Setenv("BITBUCKET_URL", "https://original.example")

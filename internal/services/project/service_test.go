@@ -52,24 +52,6 @@ func TestProjectServiceValidation(t *testing.T) {
 
 }
 
-func TestProjectServicePagination(t *testing.T) {
-	calls := 0
-	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		calls++
-		if calls == 1 {
-			_, _ = w.Write([]byte(`{"isLastPage":false,"nextPageStart":1,"values":[{"key":"PRJ1"}]}`))
-			return
-		}
-		_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"key":"PRJ2"}]}`))
-	})
-
-	projects, err := service.List(context.Background(), ListOptions{MaxResults: 0})
-	if err != nil || len(projects) != 2 {
-		t.Fatalf("expected paginated list, len=%d err=%v", len(projects), err)
-	}
-}
-
 func TestProjectServiceTransientAndMapping(t *testing.T) {
 	transientService := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		hijacker, ok := w.(http.Hijacker)
@@ -174,3 +156,8 @@ func TestProjectServicePermissionsValidation(t *testing.T) {
 // The pagination edge case that was here is openapi.PageThrough's, for the same
 // reason it is gone from the branch service: an oversized page trimmed to the
 // cap is one of the loop's rules, tested where the loop lives.
+
+// TestProjectServicePagination is gone rather than moved. It walked two pages
+// and expected both, which is openapi.PageThrough's rule and not this
+// service's: every paged listing calls the same loop, and
+// TestPageThrough asserts it once instead of once per caller.

@@ -1,26 +1,27 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 236,
-    "files": 75,
-    "functions": 220,
+    "mocked_servers": 202,
+    "files": 65,
+    "functions": 190,
     "by_class": {
-      "bitbucket-behaviour": 52,
-      "canned-response": 43,
+      "bitbucket-behaviour": 50,
       "external-service": 14,
-      "harness-constructor": 18,
+      "harness-constructor": 20,
+      "routing-beacon": 5,
       "status-taxonomy": 13,
-      "transport-fault": 80,
-      "unreached-guard": 16
+      "transport-fault": 84,
+      "unreachable-state": 7,
+      "unreached-guard": 9
     },
     "behaviour_by_package": {
       "internal/cli": 8,
       "internal/cli/cmd/branch": 1,
-      "internal/cli/cmd/build": 2,
+      "internal/cli/cmd/build": 1,
       "internal/cli/cmd/bulk": 2,
       "internal/cli/cmd/commit": 1,
       "internal/cli/cmd/diff": 1,
-      "internal/cli/cmd/insights": 2,
+      "internal/cli/cmd/insights": 1,
       "internal/cli/cmd/pr": 8,
       "internal/cli/cmd/project": 1,
       "internal/cli/cmd/repo": 8,
@@ -37,19 +38,6 @@
     }
   },
   "entries": [
-    {
-      "file": "internal/cli/cmd/admin/admin_test.go",
-      "line": 15,
-      "function": "TestAdminHealthLimitedAuth",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "returns-a-status",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
     {
       "file": "internal/cli/cmd/api/api_test.go",
       "line": 139,
@@ -71,68 +59,55 @@
       "file": "internal/cli/cmd/api/api_test.go",
       "line": 180,
       "function": "TestApiHostFlagOverride",
-      "class": "canned-response",
+      "class": "routing-beacon",
       "signals": [
         "answers-any-request",
         "returns-a-status",
         "serves-bitbucket-routes"
       ],
-      "action": "remove",
-      "reason": "the server is an identity beacon rather than a Bitbucket, answering only with which one it is; the subject is which host the request reached.",
+      "action": "keep",
+      "reason": "the server answers only with which one it is; the subject is which host the request reached.",
       "reviewed": true
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
       "line": 216,
       "function": "TestApiHostFlagDoesNotFallBackToDefaultHost",
-      "class": "canned-response",
+      "class": "routing-beacon",
       "signals": [
         "answers-any-request",
         "serves-bitbucket-routes"
       ],
-      "action": "remove",
-      "reason": "two identity beacons, neither pretending to be Bitbucket; the subject is that --host beats the stored default, which needs two hosts to tell apart.",
+      "action": "keep",
+      "reason": "two beacons, neither pretending to be Bitbucket; the subject is that --host beats the stored default, which needs two hosts to tell apart.",
       "reviewed": true
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
       "line": 223,
       "function": "TestApiHostFlagDoesNotFallBackToDefaultHost",
-      "class": "canned-response",
+      "class": "routing-beacon",
       "signals": [
         "answers-any-request",
         "serves-bitbucket-routes"
       ],
-      "action": "remove",
-      "reason": "two identity beacons, neither pretending to be Bitbucket; the subject is that --host beats the stored default, which needs two hosts to tell apart.",
+      "action": "keep",
+      "reason": "two beacons, neither pretending to be Bitbucket; the subject is that --host beats the stored default, which needs two hosts to tell apart.",
       "reviewed": true
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
       "line": 266,
       "function": "TestApiHostFlagLeavesEnvironmentAlone",
-      "class": "canned-response",
+      "class": "routing-beacon",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "serves-bitbucket-routes"
       ],
-      "action": "remove",
-      "reason": "an identity beacon; the subject is that --host does not write BITBUCKET_URL into the process environment.",
+      "action": "keep",
+      "reason": "the subject is that --host does not write BITBUCKET_URL into the process environment.",
       "reviewed": true
-    },
-    {
-      "file": "internal/cli/cmd/auth/auth_test.go",
-      "line": 835,
-      "function": "TestTokenURLCommandWithUserSlug",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
     },
     {
       "file": "internal/cli/cmd/auth/gpg_test.go",
@@ -147,34 +122,6 @@
       "reason": "claims the server answers this status here; may return as a unit test once a live test proves it does"
     },
     {
-      "file": "internal/cli/cmd/auth/gpg_test.go",
-      "line": 87,
-      "function": "TestAuthGpgKeyCommandsAdditionalCoverage",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/cmd/auth/gpg_test.go",
-      "line": 140,
-      "function": "TestAuthGpgKeyCommandsAdditionalCoverage",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
       "file": "internal/cli/cmd/branch/branch_test.go",
       "line": 27,
       "function": "newMockBranchServer",
@@ -186,29 +133,6 @@
         "returns-bitbucket-entity",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/build/build_internal_test.go",
-      "line": 126,
-      "function": "TestBuildDryRunPermissionRejection",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/cmd/build/build_internal_test.go",
-      "line": 177,
-      "function": "TestBuildStatusSetExtendedFlags",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "returns-a-status"
       ],
       "action": "move-to-live",
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
@@ -261,44 +185,6 @@
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
-      "file": "internal/cli/cmd/bulk/bulk_test.go",
-      "line": 301,
-      "function": "TestBulkHumanOutput",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/cmd/bulk/bulk_test.go",
-      "line": 333,
-      "function": "TestBulkHumanOutput",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/cmd/commit/commit_internal_test.go",
-      "line": 53,
-      "function": "TestCommitListEmptyState",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
       "file": "internal/cli/cmd/commit/commit_test.go",
       "line": 18,
       "function": "newMockCommitServer",
@@ -323,29 +209,6 @@
         "asserts-query-parameters",
         "serves-bitbucket-routes",
         "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/insights/insights_internal_test.go",
-      "line": 102,
-      "function": "TestInsightsDryRunPermissionRejection",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/cmd/insights/insights_internal_test.go",
-      "line": 163,
-      "function": "TestInsightsReportDeleteInternal",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "returns-a-status"
       ],
       "action": "move-to-live",
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
@@ -381,20 +244,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/create_interactive_test.go",
-      "line": 18,
-      "function": "TestPrCreateNamesEveryMissingFlagAtOnce",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/cmd/pr/create_interactive_test.go",
-      "line": 76,
+      "line": 74,
       "function": "TestPrCreateDoesNotAskWhenItHasEverything",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -506,35 +356,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_helpers_test.go",
-      "line": 136,
-      "function": "TestResolveAuthorUsername",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/cmd/pr/reviewer_helpers_test.go",
-      "line": 151,
-      "function": "TestResolveAuthorUsername",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/cmd/pr/reviewer_helpers_test.go",
-      "line": 167,
+      "line": 125,
       "function": "TestAtGroupShorthandDoesNotMaskServerFailures",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -546,6 +368,18 @@
       ],
       "action": "move-to-live",
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+    },
+    {
+      "file": "internal/cli/cmd/pr/reviewer_helpers_test.go",
+      "line": 164,
+      "function": "TestResolveAuthorUsernameFallsBackWhenTheLookupFails",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request"
+      ],
+      "action": "keep",
+      "reason": "a closed listener, which is what \"the lookup did not answer\" is; the subject is that the configured username survives it rather than being replaced by the empty string.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/pr/status_test.go",
@@ -616,19 +450,6 @@
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
-      "file": "internal/cli/cmd/repo/edit_stdin_test.go",
-      "line": 18,
-      "function": "TestRepoEditRequiresContentToBeAskedFor",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
       "file": "internal/cli/cmd/repo/permission_contract_test.go",
       "line": 54,
       "function": "newPermissiveServer",
@@ -656,48 +477,6 @@
       ],
       "action": "move-to-live",
       "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
-    },
-    {
-      "file": "internal/cli/cmd/repo/repo_test.go",
-      "line": 58,
-      "function": "TestRepoList",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/cmd/repo/repo_test.go",
-      "line": 90,
-      "function": "TestRepoAdminCreateDryRun",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/cmd/repo/repo_test.go",
-      "line": 147,
-      "function": "TestRepoSettingsWebhooksList",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
     },
     {
       "file": "internal/cli/cmd/repo/settings_test.go",
@@ -756,17 +535,6 @@
       "reviewed": true
     },
     {
-      "file": "internal/cli/cmd/reviewer/condition_stdin_test.go",
-      "line": 19,
-      "function": "conditionDeps",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
       "file": "internal/cli/cmd/reviewer/reviewer_test.go",
       "line": 25,
       "function": "TestReviewerConditionCommands",
@@ -797,18 +565,7 @@
     },
     {
       "file": "internal/cli/cmd/reviewer/reviewer_test.go",
-      "line": 582,
-      "function": "TestReviewerPermissionErrors",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/cli/cmd/reviewer/reviewer_test.go",
-      "line": 675,
+      "line": 672,
       "function": "TestConditionJSONIsValidatedNotReportedAsADefect",
       "class": "transport-fault",
       "signals": [
@@ -818,17 +575,6 @@
       ],
       "action": "keep",
       "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
-    },
-    {
-      "file": "internal/cli/cmd/reviewergroup/reviewer_group_test.go",
-      "line": 57,
-      "function": "TestReviewerGroupPermissionRejections",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
     },
     {
       "file": "internal/cli/cmd/tag/tag_test.go",
@@ -860,21 +606,6 @@
     {
       "file": "internal/cli/commit_test.go",
       "line": 32,
-      "function": "TestCommitListJira",
-      "class": "canned-response",
-      "signals": [
-        "asserts-http-method",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "remove",
-      "reason": "a linked Jira is what produces a non-empty answer and the live stack has none, so the payload is written here; the subject is that both renderings show the commit. TestLiveJiraIssueCommitsAnswerEmpty covers the empty answer a real instance gives.",
-      "reviewed": true
-    },
-    {
-      "file": "internal/cli/commit_test.go",
-      "line": 78,
       "function": "TestCommitListJiraError",
       "class": "transport-fault",
       "signals": [
@@ -1011,14 +742,14 @@
       "file": "internal/cli/pr_inspection_test.go",
       "line": 123,
       "function": "TestPRInspectionEmptyResults",
-      "class": "canned-response",
+      "class": "unreachable-state",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "returns-bitbucket-entity"
       ],
-      "action": "remove",
-      "reason": "an instance with nothing to show; the subject is that each listing says so rather than printing nothing.",
+      "action": "keep",
+      "reason": "a pull request with no commits and no changes, which Bitbucket will not create; the subject is that each listing says it found nothing rather than printing nothing.",
       "reviewed": true
     },
     {
@@ -1051,20 +782,7 @@
     },
     {
       "file": "internal/cli/pr_status_command_test.go",
-      "line": 287,
-      "function": "TestPullRequestStatusReportsEmptySections",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "an instance with nothing on the board; the subject is that each section says so.",
-      "reviewed": true
-    },
-    {
-      "file": "internal/cli/pr_status_command_test.go",
-      "line": 323,
+      "line": 300,
       "function": "TestPullRequestStatusFailsWhenTheDashboardFails",
       "class": "transport-fault",
       "signals": [
@@ -1080,7 +798,7 @@
     },
     {
       "file": "internal/cli/pr_status_command_test.go",
-      "line": 354,
+      "line": 331,
       "function": "TestPullRequestStatusNotesABranchListingFailure",
       "class": "transport-fault",
       "signals": [
@@ -1152,16 +870,15 @@
     },
     {
       "file": "internal/mcp/server_test.go",
-      "line": 21,
+      "line": 25,
       "function": "testClients",
-      "class": "canned-response",
+      "class": "transport-fault",
       "signals": [
-        "answers-any-request",
-        "returns-a-status",
-        "returns-bitbucket-entity"
+        "answers-any-request"
       ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
+      "action": "keep",
+      "reason": "the listener is closed before the first request, which is a fault below the API rather than an answer.",
+      "reviewed": true
     },
     {
       "file": "internal/mcp/tools_pr_review_test.go",
@@ -1330,7 +1047,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 19,
+      "line": 20,
       "function": "newBrowseTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1341,7 +1058,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 38,
+      "line": 39,
       "function": "TestBrowseServiceValidation",
       "class": "unreached-guard",
       "signals": [
@@ -1355,7 +1072,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 58,
+      "line": 59,
       "function": "TestBrowseServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -1371,7 +1088,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 115,
+      "line": 116,
       "function": "TestBrowseServiceEdit",
       "class": "transport-fault",
       "signals": [
@@ -1387,34 +1104,8 @@
       "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
-      "file": "internal/services/browse/service_test.go",
-      "line": 215,
-      "function": "TestBrowseServiceRejectsTraversal",
-      "class": "unreached-guard",
-      "signals": [
-        "fails-if-the-server-is-reached",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path"
-      ],
-      "action": "keep",
-      "reason": "asserts that no request is made, which needs no server to be true"
-    },
-    {
-      "file": "internal/services/browse/service_test.go",
-      "line": 283,
-      "function": "TestBrowseServiceTreeRejectsTraversal",
-      "class": "unreached-guard",
-      "signals": [
-        "fails-if-the-server-is-reached",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path"
-      ],
-      "action": "keep",
-      "reason": "asserts that no request is made, which needs no server to be true"
-    },
-    {
       "file": "internal/services/comment/service_test.go",
-      "line": 16,
+      "line": 17,
       "function": "newCommentTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1425,7 +1116,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 39,
+      "line": 40,
       "function": "TestServiceValidationAndStatusMapping",
       "class": "status-taxonomy",
       "signals": [
@@ -1438,7 +1129,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 60,
+      "line": 61,
       "function": "TestServiceCreateExplainsAnchorRejection",
       "class": "transport-fault",
       "signals": [
@@ -1453,7 +1144,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 104,
+      "line": 105,
       "function": "TestCountTasksValidatesTarget",
       "class": "unreached-guard",
       "signals": [
@@ -1466,20 +1157,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 115,
-      "function": "TestSetStateValidation",
-      "class": "unreached-guard",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper"
-      ],
-      "action": "keep",
-      "reason": "every case is refused before a request is built; the handler is never reached.",
-      "reviewed": true
-    },
-    {
-      "file": "internal/services/comment/service_test.go",
-      "line": 133,
+      "line": 134,
       "function": "TestListSurfacesAMalformedPage",
       "class": "transport-fault",
       "signals": [
@@ -1494,7 +1172,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 161,
+      "line": 162,
       "function": "TestCreateRefusesABlockerOnACommit",
       "class": "unreached-guard",
       "signals": [
@@ -1506,7 +1184,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 193,
+      "line": 194,
       "function": "TestAnUnreadableVersionLookupStopsTheWrite",
       "class": "transport-fault",
       "signals": [
@@ -1519,7 +1197,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 247,
+      "line": 248,
       "function": "TestEveryEmptyReadIsRefused",
       "class": "transport-fault",
       "signals": [
@@ -1532,7 +1210,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 292,
+      "line": 293,
       "function": "TestAStationaryPageEndsTheListing",
       "class": "transport-fault",
       "signals": [
@@ -1546,7 +1224,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 325,
+      "line": 326,
       "function": "TestEveryEmptyWriteFallsBackToWhatWasSent",
       "class": "status-taxonomy",
       "signals": [
@@ -1601,15 +1279,15 @@
       "file": "internal/services/contract/paging_contract_test.go",
       "line": 210,
       "function": "TestZeroMeansTheServiceDefault",
-      "class": "canned-response",
+      "class": "routing-beacon",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "returns-bitbucket-entity",
         "simulates-a-stalled-connection"
       ],
-      "action": "remove",
-      "reason": "an empty page, generic across every service, standing in for a server rather than for Bitbucket; the subject is that a cap of zero still asks.",
+      "action": "keep",
+      "reason": "an empty page, generic across every service; the subject is that a cap of zero still asks, which is about the request and not the reply.",
       "reviewed": true
     },
     {
@@ -1665,21 +1343,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 239,
-      "function": "TestFormatRestDiff",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-a-status",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/services/diff/service_test.go",
-      "line": 523,
+      "line": 486,
       "function": "TestStatRunsSurfaceAnUndecodableSummary",
       "class": "transport-fault",
       "signals": [
@@ -1691,8 +1355,22 @@
       "reviewed": true
     },
     {
+      "file": "internal/services/diff/service_test.go",
+      "line": 535,
+      "function": "TestCompareDiffRefusesABodylessSuccess",
+      "class": "unreachable-state",
+      "signals": [
+        "answers-any-request",
+        "handler-passed-to-a-helper",
+        "returns-a-status"
+      ],
+      "action": "keep",
+      "reason": "a 200 with no body at all, which this endpoint does not send; the subject is that an absent diff is refused rather than read as no differences.",
+      "reviewed": true
+    },
+    {
       "file": "internal/services/forksync/service_test.go",
-      "line": 16,
+      "line": 17,
       "function": "newForkSyncTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1703,19 +1381,7 @@
     },
     {
       "file": "internal/services/forksync/service_test.go",
-      "line": 27,
-      "function": "TestForkSyncServiceValidation",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/services/forksync/service_test.go",
-      "line": 51,
+      "line": 52,
       "function": "TestForkSyncServiceErrors",
       "class": "transport-fault",
       "signals": [
@@ -1729,19 +1395,7 @@
     },
     {
       "file": "internal/services/forksync/service_test.go",
-      "line": 111,
-      "function": "TestForkSyncSynchronizeRequiresRefAndAction",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/services/forksync/service_test.go",
-      "line": 125,
+      "line": 126,
       "function": "TestForkSyncSynchronizeDefaultsToMerge",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -1755,7 +1409,7 @@
     },
     {
       "file": "internal/services/gpgkey/service_test.go",
-      "line": 15,
+      "line": 16,
       "function": "newGpgKeyTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1766,20 +1420,7 @@
     },
     {
       "file": "internal/services/gpgkey/service_test.go",
-      "line": 27,
-      "function": "TestGpgKeyServiceValidation",
-      "class": "unreached-guard",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper"
-      ],
-      "action": "keep",
-      "reason": "input handling and an empty listing; nothing about the server is assumed beyond an empty page.",
-      "reviewed": true
-    },
-    {
-      "file": "internal/services/gpgkey/service_test.go",
-      "line": 45,
+      "line": 46,
       "function": "TestGpgKeyServicePagination",
       "class": "transport-fault",
       "signals": [
@@ -1794,7 +1435,7 @@
     },
     {
       "file": "internal/services/gpgkey/service_test.go",
-      "line": 69,
+      "line": 70,
       "function": "TestGpgKeyServiceErrors",
       "class": "transport-fault",
       "signals": [
@@ -1808,7 +1449,7 @@
     },
     {
       "file": "internal/services/gpgkey/service_test.go",
-      "line": 131,
+      "line": 132,
       "function": "TestGpgKeyServiceLimitAndEmpty",
       "class": "unreached-guard",
       "signals": [
@@ -1836,7 +1477,7 @@
       "file": "internal/services/jira/service_test.go",
       "line": 41,
       "function": "TestGetIssueCommitsUnwrapsToCommit",
-      "class": "canned-response",
+      "class": "unreachable-state",
       "signals": [
         "asserts-http-method",
         "handler-passed-to-a-helper",
@@ -1844,8 +1485,8 @@
         "returns-bitbucket-entity",
         "serves-bitbucket-routes"
       ],
-      "action": "remove",
-      "reason": "the shape cannot be produced without a linked Jira; the subject is that toCommit is unwrapped, not what Bitbucket sends.",
+      "action": "keep",
+      "reason": "a linked Jira, which this stack does not have; TestLiveJiraIssueCommitsAnswerEmpty covers what the endpoint answers without one.",
       "reviewed": true
     },
     {
@@ -1876,19 +1517,6 @@
     {
       "file": "internal/services/project/service_test.go",
       "line": 55,
-      "function": "TestProjectServicePagination",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "handler-passed-to-a-helper",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/services/project/service_test.go",
-      "line": 73,
       "function": "TestProjectServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -1958,33 +1586,31 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 19,
-      "function": "TestListPullRequestsValidationAndAuthError",
-      "class": "canned-response",
+      "line": 24,
+      "function": "TestListPullRequestsValidation",
+      "class": "harness-constructor",
       "signals": [
-        "answers-any-request",
         "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity"
+        "handler-supplied-by-the-caller"
       ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
+      "action": "follows-callers",
+      "reason": "opens a listener around a handler it was handed; it assumes nothing itself"
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
       "line": 94,
       "function": "TestGetPRBuildStatusesValidation",
-      "class": "canned-response",
+      "class": "harness-constructor",
       "signals": [
-        "answers-any-request",
-        "closes-on-cleanup"
+        "closes-on-cleanup",
+        "handler-supplied-by-the-caller"
       ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
+      "action": "follows-callers",
+      "reason": "opens a listener around a handler it was handed; it assumes nothing itself"
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 123,
+      "line": 121,
       "function": "TestGetBuildStatusesPaginationStuck",
       "class": "transport-fault",
       "signals": [
@@ -1999,21 +1625,19 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 400,
+      "line": 402,
       "function": "TestWatchUnwatchRebaseAPIErrors",
-      "class": "canned-response",
+      "class": "transport-fault",
       "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity"
+        "answers-any-request"
       ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
+      "action": "keep",
+      "reason": "the listener is closed before the first request; the subject is that each of these returns the failure rather than reporting success.",
+      "reviewed": true
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 488,
+      "line": 487,
       "function": "newCommentTestService",
       "class": "harness-constructor",
       "signals": [
@@ -2024,59 +1648,21 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 502,
-      "function": "TestNeedsWorkValidation",
-      "class": "unreached-guard",
-      "signals": [
-        "fails-if-the-server-is-reached",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path"
-      ],
-      "action": "keep",
-      "reason": "asserts that no request is made, which needs no server to be true"
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 515,
+      "line": 513,
       "function": "TestNeedsWorkPropagatesUserLookupFailure",
-      "class": "canned-response",
+      "class": "unreachable-state",
       "signals": [
         "answers-any-request",
         "handler-passed-to-a-helper",
         "returns-bitbucket-entity"
       ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 527,
-      "function": "TestAddCommentValidation",
-      "class": "unreached-guard",
-      "signals": [
-        "fails-if-the-server-is-reached",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path"
-      ],
       "action": "keep",
-      "reason": "asserts that no request is made, which needs no server to be true"
+      "reason": "an authenticated response with no X-AUSERNAME header, which Bitbucket does not send; the subject is that an unresolvable caller is reported rather than treated as nobody.",
+      "reviewed": true
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 545,
-      "function": "TestAddInlineCommentValidation",
-      "class": "unreached-guard",
-      "signals": [
-        "fails-if-the-server-is-reached",
-        "handler-passed-to-a-helper",
-        "inspects-the-request-path"
-      ],
-      "action": "keep",
-      "reason": "asserts that no request is made, which needs no server to be true"
-    },
-    {
-      "file": "internal/services/pullrequest/service_test.go",
-      "line": 675,
+      "line": 669,
       "function": "TestRebaseRejectsOutOfRangeVersion",
       "class": "status-taxonomy",
       "signals": [
@@ -2089,7 +1675,7 @@
     },
     {
       "file": "internal/services/pullrequestactivity/service_test.go",
-      "line": 18,
+      "line": 19,
       "function": "newActivityTestService",
       "class": "harness-constructor",
       "signals": [
@@ -2100,7 +1686,7 @@
     },
     {
       "file": "internal/services/pullrequestactivity/service_test.go",
-      "line": 29,
+      "line": 30,
       "function": "TestListAndExtractComments",
       "class": "bitbucket-behaviour",
       "signals": [
@@ -2115,7 +1701,7 @@
     },
     {
       "file": "internal/services/pullrequestactivity/service_test.go",
-      "line": 65,
+      "line": 66,
       "function": "TestListValidation",
       "class": "status-taxonomy",
       "signals": [
@@ -2128,21 +1714,21 @@
     },
     {
       "file": "internal/services/pullrequestactivity/service_test.go",
-      "line": 84,
-      "function": "TestListPaginationAndStatusBranches",
-      "class": "canned-response",
+      "line": 200,
+      "function": "TestListReportsATruncatedBodyAsTransient",
+      "class": "transport-fault",
       "signals": [
         "answers-any-request",
         "handler-passed-to-a-helper",
-        "returns-a-status",
         "returns-bitbucket-entity"
       ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
+      "action": "keep",
+      "reason": "a body cut short mid-object, which is what a connection dropped mid-response looks like and not something a server can be asked for.",
+      "reviewed": true
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 16,
+      "line": 17,
       "function": "newQualityTestService",
       "class": "harness-constructor",
       "signals": [
@@ -2153,7 +1739,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 27,
+      "line": 28,
       "function": "TestQualityServiceValidationGuards",
       "class": "unreached-guard",
       "signals": [
@@ -2167,7 +1753,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 96,
+      "line": 97,
       "function": "TestSetBuildStatusValidationAndOptionalFields",
       "class": "status-taxonomy",
       "signals": [
@@ -2180,9 +1766,9 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 142,
+      "line": 143,
       "function": "TestQualityReportAndAnnotationFallbackBranches",
-      "class": "canned-response",
+      "class": "unreachable-state",
       "signals": [
         "asserts-http-method",
         "handler-passed-to-a-helper",
@@ -2190,13 +1776,13 @@
         "returns-a-status",
         "serves-bitbucket-routes"
       ],
-      "action": "remove",
-      "reason": "a 204 with no body, which the probed endpoints never return; the subject is the fallback branch, not what Bitbucket sends.",
+      "action": "keep",
+      "reason": "a 204 with no body, which these endpoints never return (probed; TestLiveQualityEmptyAnswers pins what they do return); the subject is the fallback branch, not what Bitbucket sends.",
       "reviewed": true
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 207,
+      "line": 208,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "transport-fault",
       "signals": [
@@ -2212,7 +1798,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 244,
+      "line": 245,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "transport-fault",
       "signals": [
@@ -2228,7 +1814,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 266,
+      "line": 267,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "transport-fault",
       "signals": [
@@ -2244,7 +1830,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 457,
+      "line": 458,
       "function": "TestQualityServiceScopedAndDeploymentsErrorPaths",
       "class": "transport-fault",
       "signals": [
@@ -2259,7 +1845,7 @@
       "file": "internal/services/reposettings/service_test.go",
       "line": 32,
       "function": "TestUpdateRepositoryPullRequestRequiredApproversCount",
-      "class": "canned-response",
+      "class": "unreachable-state",
       "signals": [
         "answers-any-request",
         "asserts-request-body",
@@ -2268,8 +1854,8 @@
         "returns-bitbucket-entity",
         "varies-by-attempt-count"
       ],
-      "action": "remove",
-      "reason": "two servers that disagree about a payload shape, which is what a version fallback is for and what one instance cannot be; the subject is the order of the attempts.",
+      "action": "keep",
+      "reason": "an instance that wants the object shape, which is the older Bitbucket this fallback exists for and not the one we can run; the subject is the order of the attempts.",
       "reviewed": true
     },
     {
@@ -2396,20 +1982,6 @@
       "reason": "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
     },
     {
-      "file": "internal/services/repository/service_test.go",
-      "line": 16,
-      "function": "TestListRepositoriesAuthError",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-a-status",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
       "file": "internal/services/reviewer/regressions_test.go",
       "line": 40,
       "function": "TestResolveReviewerGroupUsersSurfacesMembershipFailure",
@@ -2443,29 +2015,17 @@
     },
     {
       "file": "internal/services/reviewer/regressions_test.go",
-      "line": 106,
-      "function": "TestRepositoryID",
-      "class": "canned-response",
+      "line": 167,
+      "function": "TestRepositoryIDErrorsWhenTheResponseCarriesNoID",
+      "class": "unreachable-state",
       "signals": [
         "answers-any-request",
         "closes-on-cleanup",
         "returns-bitbucket-entity"
       ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
-    },
-    {
-      "file": "internal/services/reviewer/regressions_test.go",
-      "line": 124,
-      "function": "TestRepositoryID",
-      "class": "canned-response",
-      "signals": [
-        "answers-any-request",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity"
-      ],
-      "action": "remove",
-      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
+      "action": "keep",
+      "reason": "a repository Bitbucket describes without an id, which it does not do; the subject is that a missing id is an error rather than a nil dereference or the string \"0\".",
+      "reviewed": true
     },
     {
       "file": "internal/services/reviewer/service_coverage_test.go",

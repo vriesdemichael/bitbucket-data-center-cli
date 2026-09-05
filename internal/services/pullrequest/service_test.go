@@ -12,14 +12,16 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
-func TestListPullRequestsValidationAndAuthError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
-		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = fmt.Fprint(w, `{"errors":[{"message":"Authentication required"}]}`)
-	}))
+// The auth half of this test is live now, in
+// TestLiveErrorTaxonomyRejectedCredentials, where a token that is not a token
+// is refused by a real instance. What is left refuses before it asks, so the
+// server is here to fail the test if anything reaches it.
+func TestListPullRequestsValidation(t *testing.T) {
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer server.Close()
 
 	t.Setenv("BITBUCKET_URL", server.URL)
@@ -47,10 +49,6 @@ func TestListPullRequestsValidationAndAuthError(t *testing.T) {
 		t.Fatalf("expected start validation error exit code 2, got: %v", err)
 	}
 
-	_, err = service.List(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, ListOptions{State: "open", MaxResults: 5})
-	if err == nil || apperrors.ExitCode(err) != 3 {
-		t.Fatalf("expected auth error exit code 3, got: %v", err)
-	}
 }
 
 func TestPullRequestHelperBranches(t *testing.T) {
@@ -90,10 +88,10 @@ func intPtr(value int) *int {
 	return &value
 }
 
+// Every case here is refused before a request is built, so the server fails
+// the test if one arrives.
 func TestGetPRBuildStatusesValidation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.NotFound(w, r)
-	}))
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer server.Close()
 
 	t.Setenv("BITBUCKET_URL", server.URL)
@@ -396,15 +394,16 @@ func TestWatchUnwatchRebaseValidation(t *testing.T) {
 	}
 }
 
+// Watch, unwatch and rebase all answer nothing useful on success, so an
+// operation that dropped its error would look exactly like one that worked.
+//
+// mock-inventory: transport-fault — the listener is closed before the first request; the subject is that each of these returns the failure rather than reporting success.
 func TestWatchUnwatchRebaseAPIErrors(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = fmt.Fprint(w, `{"errors":[{"message":"internal error"}]}`)
-	}))
-	defer server.Close()
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	closedURL := server.URL
+	server.Close()
 
-	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	client, err := openapigenerated.NewClientWithResponses(closedURL + "/rest")
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
@@ -500,9 +499,7 @@ func newCommentTestService(t *testing.T, handler func(w http.ResponseWriter, req
 }
 
 func TestNeedsWorkValidation(t *testing.T) {
-	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
-		t.Errorf("server must not be reached, got %s", request.URL.Path)
-	})
+	service := newCommentTestService(t, testsupport.UnreachedHandler(t))
 
 	if _, err := service.NeedsWork(context.Background(), RepositoryRef{}, "42"); err == nil {
 		t.Fatal("expected repository validation error")
@@ -512,6 +509,7 @@ func TestNeedsWorkValidation(t *testing.T) {
 	}
 }
 
+// mock-inventory: unreachable-state — an authenticated response with no X-AUSERNAME header, which Bitbucket does not send; the subject is that an unresolvable caller is reported rather than treated as nobody.
 func TestNeedsWorkPropagatesUserLookupFailure(t *testing.T) {
 	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
 		// No X-AUSERNAME header: the slug cannot be resolved.
@@ -525,9 +523,7 @@ func TestNeedsWorkPropagatesUserLookupFailure(t *testing.T) {
 }
 
 func TestAddCommentValidation(t *testing.T) {
-	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
-		t.Errorf("server must not be reached, got %s", request.URL.Path)
-	})
+	service := newCommentTestService(t, testsupport.UnreachedHandler(t))
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
@@ -543,9 +539,7 @@ func TestAddCommentValidation(t *testing.T) {
 }
 
 func TestAddInlineCommentValidation(t *testing.T) {
-	service := newCommentTestService(t, func(w http.ResponseWriter, request *http.Request) {
-		t.Errorf("server must not be reached, got %s", request.URL.Path)
-	})
+	service := newCommentTestService(t, testsupport.UnreachedHandler(t))
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 	valid := InlineCommentAnchor{Line: 1, Path: "a.go"}

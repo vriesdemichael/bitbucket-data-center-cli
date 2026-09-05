@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	repocmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/repo"
@@ -54,70 +52,6 @@ func testDeps(serverURL string) repocmd.Dependencies {
 	}
 }
 
-func TestRepoList(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{
-			"values": [
-				{"slug": "repo1", "name": "Repo 1", "project": {"key": "PROJ"}},
-				{"slug": "repo2", "name": "Repo 2", "project": {"key": "PROJ"}}
-			],
-			"size": 2,
-			"isLastPage": true
-		}`))
-	}))
-	defer server.Close()
-
-	deps := testDeps(server.URL)
-	cmd := repocmd.New(deps)
-	buf := new(bytes.Buffer)
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"list"})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	out := buf.String()
-	if out == "" {
-		t.Fatal("expected output, got empty")
-	}
-}
-
-func TestRepoAdminCreateDryRun(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"values": [], "size": 0, "isLastPage": true}`))
-	}))
-	defer server.Close()
-
-	deps := testDeps(server.URL)
-	deps.DryRunEnabled = func() bool { return true }
-	deps.JSONEnabled = func() bool { return true }
-
-	cmd := repocmd.New(deps)
-	buf := new(bytes.Buffer)
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"admin", "create", "--project", "PROJ", "--name", "new-repo"})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	var envelope map[string]any
-	if err := json.Unmarshal(buf.Bytes(), &envelope); err != nil {
-		t.Fatalf("invalid json: %v", err)
-	}
-	data, ok := envelope["data"].(map[string]any)
-	if !ok || data["dryRun"] != true {
-		t.Fatalf("expected dryRun=true, got %v", envelope)
-	}
-}
-
 func TestRepoAdminDeleteDryRun(t *testing.T) {
 	deps := testDeps("http://dummy")
 	deps.DryRunEnabled = func() bool { return true }
@@ -143,32 +77,6 @@ func TestRepoAdminDeleteDryRun(t *testing.T) {
 	}
 }
 
-func TestRepoSettingsWebhooksList(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{
-			"values": [
-				{"id": 1, "name": "Hook 1", "url": "https://ci.example.com/hook"}
-			],
-			"size": 1,
-			"isLastPage": true
-		}`))
-	}))
-	defer server.Close()
-
-	deps := testDeps(server.URL)
-	cmd := repocmd.New(deps)
-	buf := new(bytes.Buffer)
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"settings", "workflow", "webhooks", "list", "--repo", "PROJ/my-repo"})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
 func TestRepoPermissionsShow(t *testing.T) {
 	deps := testDeps("http://dummy")
 	cmd := repocmd.New(deps)
@@ -181,3 +89,16 @@ func TestRepoPermissionsShow(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+// Three suites went live rather than moved.
+//
+// TestRepoList asserted the output was not empty, against two repositories it
+// wrote. TestRepoSettingsWebhooksList asserted the command returned no error
+// against one hook it wrote. Both are covered against real repositories and
+// real hooks in TestLiveRepoCLICoverage, in both output modes.
+//
+// TestRepoAdminCreateDryRun asserted dryRun=true in the envelope, from a
+// preview whose only input was an empty page. What a preview is worth is
+// whether it predicts the right thing, which needs a server that already has
+// the repository: TestLiveResourceDryRunPredictionsReadRealState asks for one
+// that exists and requires "conflict".

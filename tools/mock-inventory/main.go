@@ -52,6 +52,27 @@ const (
 	// line count claims the path is guarded.
 	ClassCannedResponse Class = "canned-response"
 
+	// ClassRoutingBeacon: the same shape as a canned response, and the opposite
+	// subject. The handler answers everything identically on purpose -- what it
+	// says is never read as Bitbucket's. It exists to record that it was
+	// reached at all, or which of two listeners it reached. Whether a request
+	// happened, and where it went, is not something a server can be asked.
+	//
+	// Nothing tells it from a canned response by inspection, so it is only ever
+	// reached by a directive: somebody has to say the subject is the request
+	// rather than the reply.
+	ClassRoutingBeacon Class = "routing-beacon"
+
+	// ClassUnreachableState: the mock stands for a state the live instance
+	// cannot be put into -- a linked Jira, a mirror, a licence tier we do not
+	// have. ADR-079 still says what it says; what makes these keepable is that
+	// the alternative is no assertion at all, so each one has to name the thing
+	// that is missing and point at the live test covering what the instance
+	// does answer.
+	//
+	// Directive-only, and the name of the missing state is the reason.
+	ClassUnreachableState Class = "unreachable-state"
+
 	// ClassUnclear: nothing decisive was found. Reported rather than cleared,
 	// because a mock that looks harmless is exactly the failure mode.
 	// ClassHarnessConstructor: opens a listener around a handler it was handed.
@@ -127,6 +148,10 @@ func disposition(class Class) (Action, string) {
 		return ActionKeep, "injects a fault below the API; the subject is our client and a real server will not produce it on demand"
 	case ClassUnreachedGuard:
 		return ActionKeep, "asserts that no request is made, which needs no server to be true"
+	case ClassRoutingBeacon:
+		return ActionKeep, "records which URL was reached; the body is never read as Bitbucket's, so there is nothing about the server to confirm"
+	case ClassUnreachableState:
+		return ActionKeep, "stands for a state the live instance cannot be put into; the reason names what is missing"
 	case ClassHarnessConstructor:
 		return ActionFollowsCallers, "opens a listener around a handler it was handed; it assumes nothing itself"
 	case ClassExternalService:
@@ -220,7 +245,7 @@ func buildReport(entries []entry) report {
 func printSummary(current report) {
 	fmt.Printf("mocked servers: %d across %d files and %d functions\n",
 		current.Summary.Servers, current.Summary.Files, current.Summary.Functions)
-	for _, class := range []Class{ClassBehaviour, ClassCannedResponse, ClassStatusTaxonomy, ClassTransportFault, ClassUnreachedGuard, ClassHarnessConstructor, ClassExternalService, ClassUnclear} {
+	for _, class := range []Class{ClassBehaviour, ClassCannedResponse, ClassStatusTaxonomy, ClassTransportFault, ClassUnreachedGuard, ClassHarnessConstructor, ClassRoutingBeacon, ClassUnreachableState, ClassExternalService, ClassUnclear} {
 		if count := current.Summary.ByClass[class]; count > 0 {
 			fmt.Printf("  %-20s %d\n", class, count)
 		}

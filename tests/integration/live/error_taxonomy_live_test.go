@@ -276,3 +276,48 @@ func TestLiveJiraIssuesOnARealPullRequest(t *testing.T) {
 		t.Fatalf("expected the empty message, got:\n%s", output)
 	}
 }
+
+// TestLiveErrorTaxonomyRejectedCredentials pins the other end of the taxonomy:
+// a request Bitbucket refuses to authenticate is exit 3, not 10.
+//
+// The difference decides what an agent does next. A transient code says retry,
+// and retrying a bad token is a loop that ends when the account locks.
+//
+// A unit test asserted this by answering 401 to everything, which is a claim
+// about Bitbucket in a test that could not check it. A token that is not a
+// token is a refusal any instance will really give.
+func TestLiveErrorTaxonomyRejectedCredentials(t *testing.T) {
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	t.Setenv("BITBUCKET_USERNAME", "")
+	t.Setenv("BITBUCKET_PASSWORD", "")
+	t.Setenv("BITBUCKET_TOKEN", "not-a-token")
+
+	for _, testCase := range []struct {
+		name string
+		args []string
+	}{
+		{name: "repo list", args: []string{"--json", "repo", "list"}},
+		{name: "project list", args: []string{"--json", "project", "list"}},
+		{name: "pr list", args: []string{"--json", "pr", "list"}},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			output, err := executeLiveCLI(t, testCase.args...)
+			if err == nil {
+				t.Fatalf("a rejected token listed successfully:\n%s", output)
+			}
+			if code := apperrors.ExitCode(err); code != 3 {
+				t.Fatalf("exit code = %d, want 3 (authorization): %v", code, err)
+			}
+		})
+	}
+}

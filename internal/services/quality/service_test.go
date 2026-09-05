@@ -9,6 +9,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func newQualityTestService(t *testing.T, handler http.HandlerFunc) *Service {
@@ -138,7 +139,7 @@ func TestSetBuildStatusValidationAndOptionalFields(t *testing.T) {
 // grounds that an unreadable body is not an empty one. These have not moved yet,
 // so this records the current answer rather than endorsing it.
 //
-// mock-inventory: canned-response — a 204 with no body, which the probed endpoints never return; the subject is the fallback branch, not what Bitbucket sends.
+// mock-inventory: unreachable-state — a 204 with no body, which these endpoints never return (probed; TestLiveQualityEmptyAnswers pins what they do return); the subject is the fallback branch, not what Bitbucket sends.
 func TestQualityReportAndAnnotationFallbackBranches(t *testing.T) {
 	service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		switch {
@@ -454,7 +455,7 @@ func TestQualityServiceScopedAndDeploymentsErrorPaths(t *testing.T) {
 
 	// 3. Transient transport failures
 	t.Run("transient transport failures", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		server := httptest.NewServer(testsupport.UnreachedHandler(t))
 		baseURL := server.URL
 		server.Close()
 

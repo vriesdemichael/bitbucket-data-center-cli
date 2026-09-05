@@ -8,6 +8,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func newGpgKeyTestService(t *testing.T, handler http.HandlerFunc) *Service {
@@ -25,7 +26,7 @@ func newGpgKeyTestService(t *testing.T, handler http.HandlerFunc) *Service {
 
 // mock-inventory: unreached-guard — input handling and an empty listing; nothing about the server is assumed beyond an empty page.
 func TestGpgKeyServiceValidation(t *testing.T) {
-	service := newGpgKeyTestService(t, func(w http.ResponseWriter, r *http.Request) {})
+	service := newGpgKeyTestService(t, testsupport.UnreachedHandler(t))
 	ctx := context.Background()
 
 	// Add validation error

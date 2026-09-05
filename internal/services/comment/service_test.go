@@ -9,6 +9,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func newCommentTestService(t *testing.T, handler http.HandlerFunc) *Service {
@@ -113,7 +114,7 @@ func TestCountTasksValidatesTarget(t *testing.T) {
 
 // mock-inventory: unreached-guard — every case is refused before a request is built; the handler is never reached.
 func TestSetStateValidation(t *testing.T) {
-	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {})
+	service := newCommentTestService(t, testsupport.UnreachedHandler(t))
 	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
 
 	if _, err := service.SetState(context.Background(), target, "  ", CommentStateResolved, nil); err == nil {

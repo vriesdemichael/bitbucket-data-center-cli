@@ -96,6 +96,17 @@ func TestLiveGPGKeyLifecycle(t *testing.T) {
 	if strings.Contains(afterClear, "fingerprint") {
 		t.Fatalf("expected no keys left after clear, got: %s", afterClear)
 	}
+
+	// The human rendering of an empty list, against a list that is empty
+	// because clear emptied it. A unit test held this against a handwritten
+	// empty page, which cannot tell "no keys" from "the shape changed".
+	humanAfterClear, err := executeLiveCLI(t, "auth", "gpg-key", "list", "--all")
+	if err != nil {
+		t.Fatalf("auth gpg-key list (human) after clear failed: %v\noutput: %s", err, humanAfterClear)
+	}
+	if !strings.Contains(humanAfterClear, "No GPG keys found") {
+		t.Fatalf("expected the empty-list message, got: %s", humanAfterClear)
+	}
 }
 
 // gpgFingerprintFrom pulls the first fingerprint out of a gpg-key list payload.

@@ -202,7 +202,7 @@ func listings() []pagedListing {
 // server sends back differs per package and what is being checked does not: a
 // service that passed the zero through would send nothing at all.
 //
-// mock-inventory: canned-response — an empty page, generic across every service, standing in for a server rather than for Bitbucket; the subject is that a cap of zero still asks.
+// mock-inventory: routing-beacon — an empty page, generic across every service; the subject is that a cap of zero still asks, which is about the request and not the reply.
 func TestZeroMeansTheServiceDefault(t *testing.T) {
 	for _, listing := range listings() {
 		t.Run(listing.name, func(t *testing.T) {

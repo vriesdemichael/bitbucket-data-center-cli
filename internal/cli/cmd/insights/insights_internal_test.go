@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
@@ -99,13 +97,10 @@ func (m *mockInsightsPermChecker) CheckProjectAdmin(ctx context.Context, project
 }
 
 func TestInsightsDryRunPermissionRejection(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{}`))
-	}))
-	t.Cleanup(server.Close)
+	// A URL, not a server: the permission checker refuses before a request is built, so a listener here could only hide the refusal not happening.
+	const serverURL = "http://bitbucket.invalid"
 
-	cfg := config.AppConfig{BitbucketURL: server.URL, ProjectKey: "PRJ"}
+	cfg := config.AppConfig{BitbucketURL: serverURL, ProjectKey: "PRJ"}
 	deps := Dependencies{
 		DryRunEnabled: func() bool { return true },
 		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },
@@ -159,35 +154,7 @@ func TestInsightsDryRunPermissionRejection(t *testing.T) {
 	}
 }
 
-func TestInsightsReportDeleteInternal(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodDelete {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		http.NotFound(w, r)
-	}))
-	t.Cleanup(server.Close)
-
-	cfg := config.AppConfig{BitbucketURL: server.URL, ProjectKey: "PRJ"}
-	deps := Dependencies{
-		LoadConfig: func() (config.AppConfig, error) { return cfg, nil },
-		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
-			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
-			return cfg, client, err
-		},
-	}
-
-	cmd := New(deps)
-	buf := new(bytes.Buffer)
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"report", "delete", "commit1", "report1", "--repo", "PRJ/demo"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error deleting report: %v", err)
-	}
-	if !strings.Contains(buf.String(), "Deleted report report1 for commit commit1") {
-		t.Fatalf("expected Deleted report in output: %s", buf.String())
-	}
-}
+// TestInsightsReportDeleteInternal is live now, in
+// TestLiveCLICommandCoverage, in both output modes. The unit version deleted
+// a report from a handler that answered 204 to every DELETE, which is true of
+// a report that was never there.

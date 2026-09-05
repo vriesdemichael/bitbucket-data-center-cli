@@ -15,11 +15,9 @@ import (
 // non-interactive contract: with nobody to ask, the command still refuses, and
 // it names every absent flag in one message rather than one per round trip.
 func TestPrCreateNamesEveryMissingFlagAtOnce(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"isLastPage":true,"size":0,"values":[]}`))
-	}))
-	defer server.Close()
+	// A URL, not a server: every case here is refused for missing flags before a
+	// request exists, so a listener could only hide the refusal not happening.
+	const serverURL = "http://bitbucket.invalid"
 
 	cases := []struct {
 		name     string
@@ -48,7 +46,7 @@ func TestPrCreateNamesEveryMissingFlagAtOnce(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := executePr(t, server.URL, testCase.args...)
+			_, err := executePr(t, serverURL, testCase.args...)
 			if err == nil {
 				t.Fatal("the pull request was created with required values missing")
 			}

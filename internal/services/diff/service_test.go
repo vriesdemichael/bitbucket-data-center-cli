@@ -349,52 +349,15 @@ func TestFormatRestDiff(t *testing.T) {
 		}
 	})
 
-	t.Run("compare and format edge cases", func(t *testing.T) {
-		repo := RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}
-		service := newDiffServiceWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[]}`))
-		})
-
-		// CompareChanges limit <= 0
-		_, err := service.CompareChanges(context.Background(), repo, "main", "feat", 0)
-		if err != nil {
-			t.Fatalf("expected compare success with limit <= 0, got %v", err)
-		}
-
-		// CompareChanges status error
-		errService := newDiffServiceWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNotFound)
-		})
-		_, err = errService.CompareChanges(context.Background(), repo, "main", "feat", 10)
-		if err == nil || apperrors.ExitCode(err) != 4 {
-			t.Fatalf("expected not found error, got %v", err)
-		}
-
-		// CompareChanges empty body
-		emptyBodyService := newDiffServiceWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{}`))
-		})
-		res, err := emptyBodyService.CompareChanges(context.Background(), repo, "main", "feat", 10)
-		if err != nil || len(res) != 0 {
-			t.Fatalf("expected empty response, got %v, err %v", res, err)
-		}
-
-		// CompareDiff status error
-		_, err = errService.CompareDiff(context.Background(), repo, "main", "feat")
-		if err == nil || apperrors.ExitCode(err) != 4 {
-			t.Fatalf("expected not found error, got %v", err)
-		}
-
-		// CompareDiff empty body
-		nilBodyDiffService := newDiffServiceWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-		_, err = nilBodyDiffService.CompareDiff(context.Background(), repo, "main", "feat")
-		if err == nil || !strings.Contains(err.Error(), "empty diff response") {
-			t.Fatalf("expected empty response error, got %v", err)
-		}
+	// What was here besides the formatter is elsewhere now.
+	//
+	// A cap of zero reaching the wire is ADR-074's clause, asserted for every
+	// paged listing at once in internal/services/contract. A 404 mapping to
+	// exit 4 is TestLiveErrorTaxonomyMissingResources, against a pull request
+	// that really is not there. An empty comparison is a commit compared with
+	// itself in TestLiveRepoContentCommands, which is an empty answer Bitbucket
+	// gives rather than one written here.
+	t.Run("format edge cases", func(t *testing.T) {
 
 		// FormatRestDiff nil paths and structures
 		diff := &openapigenerated.RestDiff{}
@@ -562,5 +525,20 @@ func TestStatRunsSurfaceAnUndecodableSummary(t *testing.T) {
 				}
 			})
 		})
+	}
+}
+
+// CompareDiff answers a diff or it answers an error; a 200 carrying nothing is
+// neither, and reporting it as an empty diff would say the two refs match.
+//
+// mock-inventory: unreachable-state — a 200 with no body at all, which this endpoint does not send; the subject is that an absent diff is refused rather than read as no differences.
+func TestCompareDiffRefusesABodylessSuccess(t *testing.T) {
+	service := newDiffServiceWithHandler(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := service.CompareDiff(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, "main", "feat")
+	if err == nil || !strings.Contains(err.Error(), "empty diff response") {
+		t.Fatalf("a bodyless 200 was read as a diff, got %v", err)
 	}
 }

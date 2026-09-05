@@ -1,8 +1,6 @@
 package repocmd
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -15,13 +13,10 @@ import (
 // returned nothing and committed an empty file over a real one. ADR-073 now
 // requires the caller to ask, with --content -.
 func TestRepoEditRequiresContentToBeAskedFor(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"abc","displayId":"abc"}`))
-	}))
-	defer server.Close()
-
-	t.Setenv("BITBUCKET_URL", server.URL)
+	// A URL, not a server. Both cases are decided before a reply matters: one
+	// refuses without asking, and the other only has to get past the same
+	// refusal, so a failed request is a pass.
+	t.Setenv("BITBUCKET_URL", "http://bitbucket.invalid")
 	t.Setenv("BITBUCKET_TOKEN", "token")
 
 	t.Run("no content given", func(t *testing.T) {

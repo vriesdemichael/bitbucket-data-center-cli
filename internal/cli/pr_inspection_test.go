@@ -118,7 +118,7 @@ func TestPRCommitsAndMergeBaseJSON(t *testing.T) {
 	}
 }
 
-// mock-inventory: canned-response — an instance with nothing to show; the subject is that each listing says so rather than printing nothing.
+// mock-inventory: unreachable-state — a pull request with no commits and no changes, which Bitbucket will not create; the subject is that each listing says it found nothing rather than printing nothing.
 func TestPRInspectionEmptyResults(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -286,107 +286,6 @@ func TestBulkCommandErrorPaths(t *testing.T) {
 	})
 }
 
-func TestBulkHumanOutput(t *testing.T) {
-	tempDir := t.TempDir()
-	t.Setenv("BB_BULK_STATUS_DIR", tempDir)
-
-	deps := Dependencies{
-		JSONEnabled: func() bool { return false },
-		LoadConfig: func() (config.AppConfig, error) {
-			return config.AppConfig{BitbucketURL: "http://loc", ProjectKey: "P"}, nil
-		},
-	}
-
-	t.Run("plan human", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"isLastPage":true,"values":[{"slug":"s","project":{"key":"P"}}]}`))
-		}))
-		defer server.Close()
-		deps.LoadConfig = func() (config.AppConfig, error) {
-			return config.AppConfig{BitbucketURL: server.URL, ProjectKey: "P"}, nil
-		}
-
-		policyPath := filepath.Join(tempDir, "p.yaml")
-		_ = os.WriteFile(policyPath, []byte(`
-apiVersion: bb.io/v1alpha1
-selector:
-  projectKey: P
-operations:
-  - type: repo.pull-request-settings.required-all-tasks-complete
-    requiredAllTasksComplete: true
-`), 0o600)
-
-		cmd := New(deps)
-		buf := &bytes.Buffer{}
-		cmd.SetOut(buf)
-		cmd.SetArgs([]string{"plan", "-f", policyPath})
-		if err := cmd.Execute(); err != nil {
-			t.Fatalf("failed: %v", err)
-		}
-		if !strings.Contains(buf.String(), "Bulk plan ready") {
-			t.Fatalf("expected human plan output, got: %s", buf.String())
-		}
-	})
-
-	t.Run("apply and status human", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"requiredAllTasksComplete":true}`))
-		}))
-		defer server.Close()
-		deps.LoadConfig = func() (config.AppConfig, error) {
-			return config.AppConfig{BitbucketURL: server.URL, ProjectKey: "P"}, nil
-		}
-
-		plan := bulkworkflow.Plan{
-			APIVersion: bulkworkflow.APIVersion, Kind: bulkworkflow.PlanKind,
-			Policy: bulkworkflow.Policy{
-				APIVersion: bulkworkflow.APIVersion, Selector: bulkworkflow.Selector{ProjectKey: "P"},
-				Operations: []bulkworkflow.OperationSpec{{Type: bulkworkflow.OperationRepoPullRequestRequiredAllTasksComplete, RequiredAllTasksComplete: boolPointer(true)}},
-			},
-			Validation: bulkworkflow.ValidationResult{Valid: true, Errors: []string{}},
-			Summary:    bulkworkflow.PlanSummary{TargetCount: 1, OperationCount: 1},
-			Targets: []bulkworkflow.TargetPlan{{
-				Repository: bulkworkflow.RepositoryTarget{ProjectKey: "P", Slug: "s"},
-				Validation: bulkworkflow.ValidationResult{Valid: true, Errors: []string{}},
-				Operations: []bulkworkflow.OperationSpec{{Type: bulkworkflow.OperationRepoPullRequestRequiredAllTasksComplete, RequiredAllTasksComplete: boolPointer(true)}},
-			}},
-		}
-		hash, _ := bulkworkflow.ComputePlanHash(plan)
-		plan.PlanHash = hash
-
-		planPath := filepath.Join(tempDir, "plan.json")
-		encoded, _ := json.Marshal(plan)
-		_ = os.WriteFile(planPath, encoded, 0o600)
-
-		cmd := New(deps)
-		buf := &bytes.Buffer{}
-		cmd.SetOut(buf)
-		cmd.SetArgs([]string{"apply", "--from-plan", planPath})
-		if err := cmd.Execute(); err != nil {
-			t.Fatalf("failed: %v", err)
-		}
-		if !strings.Contains(buf.String(), "Bulk apply") {
-			t.Fatalf("expected human apply output, got: %s", buf.String())
-		}
-
-		// Extract operation id from output
-		lines := strings.Split(buf.String(), "\n")
-		parts := strings.Fields(lines[0])
-		opID := strings.TrimSuffix(parts[2], ":")
-
-		buf.Reset()
-		cmd.SetArgs([]string{"status", opID})
-		if err := cmd.Execute(); err != nil {
-			t.Fatalf("status failed: %v", err)
-		}
-		if !strings.Contains(buf.String(), opID) {
-			t.Fatalf("expected status output for %s, got: %s", opID, buf.String())
-		}
-	})
-}
-
 func TestParseErrorKindCoverage(t *testing.T) {
 	kinds := []string{
 		"authentication", "authorization", "validation", "not_found",
@@ -689,3 +588,9 @@ func TestTheHumanSummaryOmitsCancelledWhenThereIsNone(t *testing.T) {
 		t.Errorf("an uninterrupted run mentions cancellation:\n%s", buffer.String())
 	}
 }
+
+// TestBulkHumanOutput is live now, in TestLiveBulkPolicyPlanApplyStatus: the
+// same plan and status commands in human mode, against the two repositories
+// the harness seeds. The unit version rendered a plan whose targets came from
+// a repository listing it wrote, so "1 target" was the fixture's number and
+// not the selector's.
