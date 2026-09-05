@@ -108,6 +108,18 @@ func TestLiveDryRunPrechecksRefuseBeforePlanning(t *testing.T) {
 		{"pr decline", []string{"pr", "decline", pullRequestID}},
 		{"pr auto-merge enable", []string{"pr", "auto-merge", "enable", pullRequestID}},
 		{"pr auto-merge disable", []string{"pr", "auto-merge", "disable", pullRequestID}},
+
+		// The tiers a unit contract test used to assert by reading the enum
+		// passed to an injected checker. What matters to a caller is where the
+		// line falls, so it is drawn here instead: refused for a reader below,
+		// permitted for a reader in the subtest that follows.
+		{"repo label add", []string{"repo", "label", "add", "refused-label"}},
+		{"repo label remove", []string{"repo", "label", "remove", "refused-label"}},
+		{"repo default-task add", []string{"repo", "default-task", "add", "refused task"}},
+		{"repo default-task update", []string{"repo", "default-task", "update", "1", "--description", "refused"}},
+		{"repo default-task delete", []string{"repo", "default-task", "delete", "1"}},
+		{"repo sync enable", []string{"repo", "sync", "enable"}},
+		{"repo sync disable", []string{"repo", "sync", "disable"}},
 	}
 
 	for _, testCase := range cases {
@@ -139,6 +151,11 @@ func TestLiveDryRunPrechecksRefuseBeforePlanning(t *testing.T) {
 		permitted := [][]string{
 			{"repo", "comment", "create", "--commit", commit, "--text", "a reader may comment"},
 			{"repo", "admin", "fork", "--repo", repoRef, "--name", "a-reader-may-fork"},
+			// Watching is a preference on your own account, not a change to
+			// the repository, so read is the right tier and refusing it would
+			// close something Bitbucket leaves open.
+			{"repo", "watch"},
+			{"repo", "unwatch"},
 		}
 
 		for _, args := range permitted {

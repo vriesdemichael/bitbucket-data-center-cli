@@ -1,22 +1,21 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 181,
-    "files": 63,
-    "functions": 172,
+    "mocked_servers": 179,
+    "files": 62,
+    "functions": 170,
     "by_class": {
-      "bitbucket-behaviour": 14,
+      "bitbucket-behaviour": 11,
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
-      "unreachable-state": 16,
+      "unreachable-state": 17,
       "unreached-guard": 38
     },
     "behaviour_by_package": {
       "internal/cli": 3,
-      "internal/cli/cmd/pr": 6,
-      "internal/cli/cmd/repo": 1,
+      "internal/cli/cmd/pr": 4,
       "internal/mcp": 3,
       "internal/services/reposettings": 1
     }
@@ -216,7 +215,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/create_interactive_test.go",
-      "line": 22,
+      "line": 21,
       "function": "TestPrCreateNamesEveryMissingFlagAtOnce",
       "class": "unreached-guard",
       "signals": [
@@ -225,19 +224,6 @@
       ],
       "action": "keep",
       "reason": "asserts that no request is made, which needs no server to be true"
-    },
-    {
-      "file": "internal/cli/cmd/pr/create_interactive_test.go",
-      "line": 78,
-      "function": "TestPrCreateDoesNotAskWhenItHasEverything",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "closes-on-cleanup",
-        "returns-bitbucket-entity"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
       "file": "internal/cli/cmd/pr/permission_contract_test.go",
@@ -373,9 +359,9 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_helpers_test.go",
-      "line": 126,
+      "line": 128,
       "function": "TestAtGroupShorthandDoesNotMaskServerFailures",
-      "class": "bitbucket-behaviour",
+      "class": "unreachable-state",
       "signals": [
         "closes-on-cleanup",
         "returns-a-status",
@@ -383,8 +369,9 @@
         "serves-bitbucket-routes",
         "inspects-the-request-path"
       ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+      "action": "keep",
+      "reason": "a reviewer-groups endpoint that fails while the rest of the instance answers. A missing plugin gives 404, which is the \"no such group\" case this exists to tell apart, and a closed listener would fail the pull request lookup too, so the error would arrive for the wrong reason.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/pr/status_test.go",
@@ -424,20 +411,6 @@
       ],
       "action": "keep",
       "reason": "asserts that no request is made, which needs no server to be true"
-    },
-    {
-      "file": "internal/cli/cmd/repo/permission_contract_test.go",
-      "line": 54,
-      "function": "newPermissiveServer",
-      "class": "bitbucket-behaviour",
-      "signals": [
-        "asserts-http-method",
-        "returns-bitbucket-entity",
-        "serves-bitbucket-routes",
-        "inspects-the-request-path"
-      ],
-      "action": "move-to-live",
-      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
     },
     {
       "file": "internal/cli/cmd/repo/permissions_test.go",
