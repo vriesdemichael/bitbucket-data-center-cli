@@ -122,6 +122,8 @@ func TestIsMissingResource(t *testing.T) {
 
 // A group name that cannot be read because the server failed is not a licence to
 // treat the name as a username; only a genuine "no such group" is.
+//
+// mock-inventory: unreachable-state — a reviewer-groups endpoint that fails while the rest of the instance answers. A missing plugin gives 404, which is the "no such group" case this exists to tell apart, and a closed listener would fail the pull request lookup too, so the error would arrive for the wrong reason.
 func TestAtGroupShorthandDoesNotMaskServerFailures(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -1,7 +1,6 @@
 package prcmd
 
 import (
-	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -72,25 +71,8 @@ func TestPrCreateNamesEveryMissingFlagAtOnce(t *testing.T) {
 	}
 }
 
-// TestPrCreateDoesNotAskWhenItHasEverything guards against the prompt firing on
-// a complete invocation, which would hang every scripted caller.
-func TestPrCreateDoesNotAskWhenItHasEverything(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodPost {
-			_, _ = w.Write([]byte(`{"id":1,"version":0,"title":"x","state":"OPEN"}`))
-			return
-		}
-		_, _ = w.Write([]byte(`{"isLastPage":true,"size":0,"values":[]}`))
-	}))
-	defer server.Close()
-
-	_, err := executePr(t, server.URL,
-		"create", "--repo", "PRJ/repo", "--from-ref", "feature", "--to-ref", "main", "--title", "x")
-	// Asserting only that the error is not about missing flags would let any
-	// unrelated failure pass while looking like a guard. A complete invocation
-	// against this stub succeeds, so that is what is asserted.
-	if err != nil {
-		t.Fatalf("a complete invocation failed: %v", err)
-	}
-}
+// TestPrCreateDoesNotAskWhenItHasEverything is live now, and not as its own
+// test: every `pr create` in the live suite is a complete invocation, run
+// without a terminal, and a prompt firing there would hang or refuse rather
+// than return a pull request. The version here proved the same thing against
+// a stub that accepted any POST.
