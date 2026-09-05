@@ -57,6 +57,8 @@ func TestPullRequestCheckoutSurfacesBackendFailures(t *testing.T) {
 
 // newIncompletePullRequestServer returns a pull request payload missing one of
 // the two refs a checkout depends on.
+//
+// mock-inventory: unreachable-state — a pull request Bitbucket describes without both refs, which it does not do; the subject is that bb refuses rather than guessing a repository to fetch from.
 func newIncompletePullRequestServer(t *testing.T, body string) *httptest.Server {
 	t.Helper()
 

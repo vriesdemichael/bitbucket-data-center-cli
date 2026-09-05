@@ -106,6 +106,7 @@ func TestUpdateRepositoryPullRequestRequiredApproversCount(t *testing.T) {
 	})
 }
 
+// mock-inventory: unreachable-state — an instance that wants the object shape for required approvers, which is the older Bitbucket this fallback exists for and not the one we can run; TestLiveRepositorySettings covers what a running instance accepts.
 // settingsServiceOn wires a service to a handler for the pull-request settings
 // endpoint, and refuses anything else.
 func settingsServiceOn(t *testing.T, handler http.HandlerFunc) (*Service, func()) {
