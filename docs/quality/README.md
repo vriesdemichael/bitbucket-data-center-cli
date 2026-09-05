@@ -14,6 +14,7 @@ exists.
 |---|---|---|---|
 | `command-reach.json` | which CLI commands the live suite proves work against a real Bitbucket | `task quality:command-reach:update` | `task quality:command-reach:verify` |
 | `spec-coverage.json` | which `(method, path)` operations from the Bitbucket spec the CLI reaches | `task quality:spec-coverage:update` | `task quality:spec-coverage:verify` |
+| `unit-test-mock-inventory.json` | every mocked Bitbucket server left in the unit suite, and what each one assumes | `go run ./tools/mock-inventory -write` | `go run ./tools/mock-inventory` |
 
 Both verify commands are static analysis: they read the Cobra command tree, the live test sources,
 the OpenAPI spec and the services source. Neither starts Bitbucket, so both run in the fast CI job
@@ -82,3 +83,39 @@ generated-client-only metric would report them as uncovered even though they are
 
 Print current coverage with `task quality:spec-coverage`. The `gaps` array lists unimplemented
 operations (method, path, tag, summary) and is a useful source when scoping new commands.
+
+## mocked servers (`unit-test-mock-inventory.json`)
+
+Indexes every `httptest` server left in the unit suite and classifies what each one assumes, which
+is what ADR-079 turns into work. `unit-test-mock-inventory-tasks.md` is the same data as a task
+list; both are regenerated together and committed, so a mock arriving in a class that should be
+empty shows up in the diff rather than in a later sweep.
+
+A mock whose class the scanner reads wrongly is corrected in place with a directive above it:
+
+```go
+// mock-inventory: routing-beacon — the reply is never read as Bitbucket's; the subject is which
+// of the two listeners the request reached.
+```
+
+The reason is required. A class asserted without one is how the classification stops meaning
+anything.
+
+### Read the total, do not infer it
+
+The tool prints the total on its first line and the per-class counts under it:
+
+```
+mocked servers: 174 across 60 files and 165 functions
+  transport-fault      76
+  ...
+```
+
+Three commit messages in the v4 migration (`24791a53`, `67e8e9f6`, `bf34feb7`) quote totals that
+were filled in from the direction of travel rather than read off that line, because the output was
+being tailed past it. The per-class figures in them are right; the totals beside them are not, and
+one of the three explains a rise that did not happen — the commit cut five suites and moved no
+mocks, because all five hung off shared constructors that are still there.
+
+Nothing verifies a number in a commit message, which is the whole reason to read it rather than
+work it out.
