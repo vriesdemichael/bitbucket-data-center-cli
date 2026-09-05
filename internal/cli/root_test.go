@@ -651,6 +651,74 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 // third, `pr review approve`, would need a second account, because Bitbucket
 // refuses an author their own approval and the harness user is the author.
 
+// TestMCPServeOptsOutOfAmbientRepositoryInference resolves the real
+// ai mcp serve command and checks it carries the annotation
+// applyInferredRepositoryContext honours. The command sets the annotation with
+// a string literal because its package cannot import this one; this test is
+// what keeps that literal and the constant from drifting apart.
+//
+// Without the annotation, inference fills serve's --repo from the git remote
+// of the working directory, and the server is silently confined to that
+// repository: every call naming a sibling is refused, and the build-status
+// tools vanish from the catalogue. ADR-062's default is the opposite — scope
+// is opt-in.
+func TestMCPServeOptsOutOfAmbientRepositoryInference(t *testing.T) {
+	originalFactory := gitBackendFactory
+	t.Cleanup(func() {
+		gitBackendFactory = originalFactory
+	})
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	t.Setenv("BITBUCKET_URL", "http://bitbucket.local:7990")
+	t.Setenv("BITBUCKET_PROJECT_KEY", "ENV")
+	t.Setenv("BITBUCKET_REPO_SLUG", "env-repo")
+
+	root := NewRootCommand()
+	serve, _, err := root.Find([]string{"ai", "mcp", "serve"})
+	if err != nil {
+		t.Fatalf("resolve ai mcp serve: %v", err)
+	}
+	if serve.Flags().Lookup("repo") == nil {
+		t.Fatal("ai mcp serve must register --repo for this test to mean anything")
+	}
+
+	if serve.Annotations[annotationNoAmbientRepoInference] != "true" {
+		t.Fatalf("ai mcp serve must opt out of ambient repository inference so its --repo stays a deliberate confinement decision")
+	}
+
+	// The annotation must be the whole story: with a backend that would infer,
+	// the resolved command comes through the pre-run untouched.
+	gitBackendFactory = func() git.Backend {
+		return inferenceGitBackendStub{
+			repoRoot: "/tmp/repo",
+			remotes:  []git.Remote{{Name: "origin", URL: "https://bitbucket.local:7990/scm/PRJ/demo.git"}},
+		}
+	}
+
+	errBuffer := &bytes.Buffer{}
+	serve.SetErr(errBuffer)
+
+	// A method on rootOptions here rather than the free function it was written
+	// against: this branch carries the global flags as values (ADR from the v4
+	// milestone) instead of publishing them to the environment.
+	if err := (&rootOptions{}).applyInferredRepositoryContext(serve, false); err != nil {
+		t.Fatalf("apply inferred repository context failed: %v", err)
+	}
+
+	if got := serve.Flags().Lookup("repo").Value.String(); got != "" {
+		t.Fatalf("expected serve --repo to stay unset, got %q", got)
+	}
+	if got := os.Getenv("BITBUCKET_PROJECT_KEY"); got != "ENV" {
+		t.Fatalf("expected project key unchanged, got %q", got)
+	}
+	if got := os.Getenv("BITBUCKET_REPO_SLUG"); got != "env-repo" {
+		t.Fatalf("expected repo slug unchanged, got %q", got)
+	}
+	if errBuffer.Len() != 0 {
+		t.Fatalf("expected no inference banner, got %q", errBuffer.String())
+	}
+}
+
 func TestInferenceHelperFunctions(t *testing.T) {
 	originalFactory := gitBackendFactory
 	t.Cleanup(func() {

@@ -253,6 +253,8 @@ Use --project or --repo to confine the server to one project or repository. Any
 tool call aimed elsewhere is refused. Tools that address a resource Bitbucket
 does not scope to a project — build statuses, which hang off a commit SHA — are
 withheld entirely while a scope is set, because there is no argument to bound.
+Confinement applies only when the flags are passed explicitly: the server is
+never scoped by the repository of the directory it starts in.
 
 Use --audit-file to record every tool call as JSON Lines for SIEM collection.
 Pass a path, or 'stderr' for a containerised deployment whose log collector
