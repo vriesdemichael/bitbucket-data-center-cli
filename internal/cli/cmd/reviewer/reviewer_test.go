@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
@@ -524,8 +525,11 @@ func TestReviewerDefaultsAndHelpers(t *testing.T) {
 }
 
 func TestReviewerPermissionErrors(t *testing.T) {
-	// A URL, not a server: the permission checker refuses before a request is built, so a listener here could only hide the refusal not happening.
-	const serverURL = "http://bitbucket.invalid"
+	// A listener that fails the test if it is reached, which is the
+	// assertion: every case here is refused before a request exists.
+	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(guard.Close)
+	serverURL := guard.URL
 
 	cfg := config.AppConfig{
 		BitbucketURL: serverURL,

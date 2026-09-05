@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net/http/httptest"
 	"testing"
 
 	deploymentcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/deployment"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // errPermissionRefused stands in for the error a real checker returns when the
@@ -68,9 +70,11 @@ func executeRefusing(t *testing.T, serverURL string, args ...string) ([]openapi.
 // Recording or removing a deployment mutates repository state, so each command
 // has to establish the caller may write before planning and stop when told no.
 func TestDeploymentCommandsHonourRefusedPermission(t *testing.T) {
-	// A URL, not a server: every case here is refused by the permission check
-	// before a request is built, so reaching a listener would be the failure.
-	const serverURL = "http://bitbucket.invalid"
+	// A listener that fails the test if it is reached, which is the
+	// assertion: every case here is refused before a request exists.
+	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(guard.Close)
+	serverURL := guard.URL
 
 	tests := []struct {
 		name string

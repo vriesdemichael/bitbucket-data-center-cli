@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 type mockReviewerGroupPermChecker struct {
@@ -53,9 +55,12 @@ func TestReviewerGroupDefaults(t *testing.T) {
 }
 
 func TestReviewerGroupPermissionRejections(t *testing.T) {
-	// A URL, not a server: the permission checker refuses before a request is
-	// built, so a listener here could only hide the refusal not happening.
-	cfg := config.AppConfig{BitbucketURL: "http://bitbucket.invalid", ProjectKey: "PRJ"}
+	// A listener that fails the test if it is reached, which is the assertion:
+	// the permission checker refuses before a request exists.
+	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(guard.Close)
+
+	cfg := config.AppConfig{BitbucketURL: guard.URL, ProjectKey: "PRJ"}
 	deps := Dependencies{
 		DryRunEnabled: func() bool { return true },
 		LoadConfig:    func() (config.AppConfig, error) { return cfg, nil },

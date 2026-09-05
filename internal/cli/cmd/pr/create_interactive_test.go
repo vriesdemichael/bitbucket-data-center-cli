@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestPrCreateNamesEveryMissingFlagAtOnce is the half of ADR-073 that is easy
@@ -15,9 +17,11 @@ import (
 // non-interactive contract: with nobody to ask, the command still refuses, and
 // it names every absent flag in one message rather than one per round trip.
 func TestPrCreateNamesEveryMissingFlagAtOnce(t *testing.T) {
-	// A URL, not a server: every case here is refused for missing flags before a
-	// request exists, so a listener could only hide the refusal not happening.
-	const serverURL = "http://bitbucket.invalid"
+	// A listener that fails the test if it is reached, which is the
+	// assertion: every case here is refused before a request exists.
+	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(guard.Close)
+	serverURL := guard.URL
 
 	cases := []struct {
 		name     string
