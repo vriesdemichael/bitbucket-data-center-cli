@@ -9,17 +9,8 @@ import (
 	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
-
-const mcpReviewActivities = `{"isLastPage":true,"values":[
-  {"id":1,"action":"COMMENTED","comment":{"id":10,"text":"handle nil","version":2,"state":"OPEN","createdDate":100,
-    "author":{"name":"alice","displayName":"Alice A"},
-    "anchor":{"line":42,"lineType":"ADDED","path":{"parent":"internal/cli","name":"root.go"},
-      "pullRequest":{"id":7,"title":"the entire pull request payload"}},
-    "comments":[{"id":11,"text":"fixed","createdDate":120,"author":{"name":"bob"}}]}},
-  {"id":2,"action":"COMMENTED","comment":{"id":20,"text":"nit","version":1,"state":"RESOLVED","createdDate":200,"author":{"name":"carol"}}},
-  {"id":3,"action":"COMMENTED","comment":{"id":30,"text":"add a test","version":1,"state":"OPEN","severity":"BLOCKER","createdDate":300,"author":{"name":"dave"}}}
-]}`
 
 // newReviewClients serves the endpoints the review-visibility tools touch, so
 // the handlers can be exercised end to end.
@@ -62,35 +53,10 @@ func decodeToolJSON(t *testing.T, text string) map[string]any {
 	return payload
 }
 
-func TestGetPullRequestIncludesReviewSummary(t *testing.T) {
-	clients := newReviewClients(t, map[string]string{
-		"/pull-requests/7/activities": mcpReviewActivities,
-		"/pull-requests/7":            `{"id":7,"title":"Feature","state":"OPEN","open":true,"fromRef":{"displayId":"a"},"toRef":{"displayId":"b"},"reviewers":[{"user":{"name":"carol"},"role":"REVIEWER","status":"NEEDS_WORK"}]}`,
-	})
-
-	result := callTool(t, specGetPullRequest(), clients, map[string]any{"project": "TEST", "repo": "demo", "id": "7"})
-	if result.IsError {
-		t.Fatalf("unexpected error result: %s", resultText(result))
-	}
-
-	payload := decodeToolJSON(t, resultText(result))
-	summary, ok := payload["review_summary"].(map[string]any)
-	if !ok {
-		t.Fatalf("expected review_summary, got: %s", resultText(result))
-	}
-	if summary["action_required"] != true {
-		t.Fatalf("expected action_required, got: %#v", summary)
-	}
-	if summary["unresolved_threads"] != float64(2) || summary["open_tasks"] != float64(1) {
-		t.Fatalf("unexpected counts: %#v", summary)
-	}
-	if _, ok := payload["pull_request"]; !ok {
-		t.Fatalf("expected the pull request alongside the summary, got: %s", resultText(result))
-	}
-}
-
 // With the timeline unavailable the handler must still answer, falling back to
 // the blocker-comment tally rather than reporting nothing outstanding.
+//
+// mock-inventory: unreachable-state — an instance whose activity timeline is not there while the pull request is, which cannot be arranged; the subject is that the fallback counts rather than reporting nothing outstanding.
 func TestGetPullRequestFallsBackToBlockerCommentCounts(t *testing.T) {
 	clients := newReviewClients(t, map[string]string{
 		"/pull-requests/7/blocker-comments": `{"OPEN":2,"RESOLVED":1}`,
@@ -111,107 +77,21 @@ func TestGetPullRequestFallsBackToBlockerCommentCounts(t *testing.T) {
 	}
 }
 
-func TestGetPullRequestSkipReviewSummary(t *testing.T) {
-	activityRequests := 0
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		if strings.HasSuffix(r.URL.Path, "/activities") {
-			activityRequests++
-		}
-		_, _ = w.Write([]byte(`{"id":7,"title":"Feature","state":"OPEN","open":true,"fromRef":{"displayId":"a"},"toRef":{"displayId":"b"}}`))
-	}))
-	defer server.Close()
+// The state is checked before anything is fetched, so the clients point at a
+// listener that fails the test if it is reached.
+func TestListPRCommentsRejectsUnknownState(t *testing.T) {
+	server := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(server.Close)
 
-	clients, err := ClientsFromConfig(config.AppConfig{BitbucketURL: server.URL, RequestTimeout: 5 * time.Second, RetryBackoff: time.Millisecond})
+	clients, err := ClientsFromConfig(config.AppConfig{
+		BitbucketURL:   server.URL,
+		RequestTimeout: 5 * time.Second,
+		RetryCount:     0,
+		RetryBackoff:   time.Millisecond,
+	})
 	if err != nil {
 		t.Fatalf("ClientsFromConfig failed: %v", err)
 	}
-
-	result := callTool(t, specGetPullRequest(), clients, map[string]any{"project": "TEST", "repo": "demo", "id": "7", "skip_review_summary": true})
-	if result.IsError {
-		t.Fatalf("unexpected error result: %s", resultText(result))
-	}
-	if activityRequests != 0 {
-		t.Fatalf("expected no activity request, got %d", activityRequests)
-	}
-
-	summary := decodeToolJSON(t, resultText(result))["review_summary"].(map[string]any)
-	if summary["counts_source"] != "none" {
-		t.Fatalf("expected no counts, got: %#v", summary["counts_source"])
-	}
-}
-
-func TestListPRCommentsReturnsThreads(t *testing.T) {
-	clients := newReviewClients(t, map[string]string{"/pull-requests/7/activities": mcpReviewActivities})
-
-	result := callTool(t, specListPRComments(), clients, map[string]any{"project": "TEST", "repo": "demo", "pr_id": "7"})
-	if result.IsError {
-		t.Fatalf("unexpected error result: %s", resultText(result))
-	}
-
-	text := resultText(result)
-	if strings.Contains(text, "the entire pull request payload") {
-		t.Fatalf("expected the nested pull request payload to be dropped, got: %s", text)
-	}
-
-	payload := decodeToolJSON(t, text)
-	summary, ok := payload["summary"].(map[string]any)
-	if !ok || summary["unresolved"] != float64(2) || summary["open_tasks"] != float64(1) {
-		t.Fatalf("unexpected summary: %s", text)
-	}
-	threads, ok := payload["threads"].([]any)
-	if !ok || len(threads) != 3 {
-		t.Fatalf("expected 3 threads, got: %s", text)
-	}
-	first := threads[0].(map[string]any)
-	if first["id"] != float64(10) || first["resolved"] != false {
-		t.Fatalf("expected the unresolved thread first, got: %#v", first)
-	}
-	if first["url"] == "" || first["url"] == nil {
-		t.Fatalf("expected a browser link built from the client base url, got: %#v", first["url"])
-	}
-}
-
-func TestListPRCommentsFilters(t *testing.T) {
-	clients := newReviewClients(t, map[string]string{"/pull-requests/7/activities": mcpReviewActivities})
-
-	cases := []struct {
-		name    string
-		args    map[string]any
-		wantIDs []float64
-	}{
-		{name: "open", args: map[string]any{"state": "open"}, wantIDs: []float64{10, 30}},
-		{name: "resolved", args: map[string]any{"state": "resolved"}, wantIDs: []float64{20}},
-		{name: "tasks only", args: map[string]any{"tasks_only": true}, wantIDs: []float64{30}},
-	}
-
-	for _, testCase := range cases {
-		t.Run(testCase.name, func(t *testing.T) {
-			args := map[string]any{"project": "TEST", "repo": "demo", "pr_id": "7"}
-			for key, value := range testCase.args {
-				args[key] = value
-			}
-
-			result := callTool(t, specListPRComments(), clients, args)
-			if result.IsError {
-				t.Fatalf("unexpected error result: %s", resultText(result))
-			}
-
-			threads := decodeToolJSON(t, resultText(result))["threads"].([]any)
-			if len(threads) != len(testCase.wantIDs) {
-				t.Fatalf("expected %d threads, got: %s", len(testCase.wantIDs), resultText(result))
-			}
-			for index, want := range testCase.wantIDs {
-				if got := threads[index].(map[string]any)["id"]; got != want {
-					t.Fatalf("thread %d: got %#v, want %v", index, got, want)
-				}
-			}
-		})
-	}
-}
-
-func TestListPRCommentsRejectsUnknownState(t *testing.T) {
-	clients := newReviewClients(t, map[string]string{"/pull-requests/7/activities": mcpReviewActivities})
 
 	result := callTool(t, specListPRComments(), clients, map[string]any{"project": "TEST", "repo": "demo", "pr_id": "7", "state": "nonsense"})
 	if !result.IsError {
@@ -219,18 +99,23 @@ func TestListPRCommentsRejectsUnknownState(t *testing.T) {
 	}
 }
 
-func TestListPRCommentsWithPathUsesCommentEndpoint(t *testing.T) {
-	clients := newReviewClients(t, map[string]string{
-		"/pull-requests/7/comments": `{"isLastPage":true,"values":[{"id":50,"text":"path comment","version":1,"state":"OPEN","author":{"name":"alice"},"anchor":{"line":3,"path":{"name":"main.go"}}}]}`,
-	})
+// TestGetPullRequestSkipReviewSummary is live now, in
+// TestLiveMCPReadOnlyToolsAgreeWithCLI.
+//
+// It counted requests to a handler it had written. Counting is not something
+// a caller can do and a server does not report it; counts_source is what the
+// contract offers, and the live version asks for the pull request both ways
+// and requires the field to differ.
 
-	result := callTool(t, specListPRComments(), clients, map[string]any{"project": "TEST", "repo": "demo", "pr_id": "7", "path": "main.go"})
-	if result.IsError {
-		t.Fatalf("unexpected error result: %s", resultText(result))
-	}
-
-	threads := decodeToolJSON(t, resultText(result))["threads"].([]any)
-	if len(threads) != 1 || threads[0].(map[string]any)["id"] != float64(50) {
-		t.Fatalf("expected the path-scoped comment, got: %s", resultText(result))
-	}
-}
+// Four suites went live with mcpReviewActivities, the timeline they all read.
+//
+// It carried three comments this file had marked OPEN, RESOLVED and BLOCKER,
+// and each suite then required the counts, the ordering and the filters to
+// agree with those marks -- a tally of a fixture, checked against the fixture.
+//
+// TestLiveMCPReadOnlyToolsAgreeWithCLI now calls list_pr_comments against a
+// pull request with a real comment on it, an inline one posted to a real path,
+// and a thread that is resolved because `pr comment resolve` resolved it. The
+// nested-payload guard went with them and is asserted there too: the activity
+// timeline repeats the whole pull request inside every entry, and forwarding
+// that to an agent spends its context on the same object over and over.
