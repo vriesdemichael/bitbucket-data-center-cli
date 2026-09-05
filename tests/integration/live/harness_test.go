@@ -935,7 +935,12 @@ func (h *liveHarness) sendLiveJSON(ctx context.Context, authorize func(*http.Req
 // member is only recognised by numeric id: {"name": ...} and {"slug": ...} are
 // both accepted and both silently yield "Reviewer groups must contain 1 or more
 // reviewer(s)".
-func (h *liveHarness) createReviewerGroup(ctx context.Context, projectKey, repositorySlug, groupName, username string) error {
+// createReviewerGroup makes a reviewer group holding the named users.
+//
+// Members are variadic because a group of one cannot show what a selection
+// strategy does: random(1) and least_busy(1) both pick the only member, so a
+// test of either needs at least two to choose between.
+func (h *liveHarness) createReviewerGroup(ctx context.Context, projectKey, repositorySlug, groupName string, usernames ...string) error {
 	repository, err := h.liveJSON(ctx, http.MethodGet,
 		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s", projectKey, repositorySlug), nil)
 	if err != nil {
@@ -946,13 +951,17 @@ func (h *liveHarness) createReviewerGroup(ctx context.Context, projectKey, repos
 		return fmt.Errorf("repository %s/%s has no numeric id", projectKey, repositorySlug)
 	}
 
-	user, err := h.liveJSON(ctx, http.MethodGet, "/rest/api/latest/users/"+username, nil)
-	if err != nil {
-		return fmt.Errorf("look up user id: %w", err)
-	}
-	userID, ok := user["id"].(float64)
-	if !ok {
-		return fmt.Errorf("user %s has no numeric id", username)
+	members := make([]map[string]any, 0, len(usernames))
+	for _, username := range usernames {
+		user, err := h.liveJSON(ctx, http.MethodGet, "/rest/api/latest/users/"+username, nil)
+		if err != nil {
+			return fmt.Errorf("look up user id: %w", err)
+		}
+		userID, ok := user["id"].(float64)
+		if !ok {
+			return fmt.Errorf("user %s has no numeric id", username)
+		}
+		members = append(members, map[string]any{"id": int64(userID)})
 	}
 
 	_, err = h.liveJSON(ctx, http.MethodPost,
@@ -960,7 +969,7 @@ func (h *liveHarness) createReviewerGroup(ctx context.Context, projectKey, repos
 		map[string]any{
 			"name":  groupName,
 			"scope": map[string]any{"resourceId": int64(repositoryID), "type": "REPOSITORY"},
-			"users": []map[string]any{{"id": int64(userID)}},
+			"users": members,
 		})
 	if err != nil {
 		return fmt.Errorf("create reviewer group %s: %w", groupName, err)
