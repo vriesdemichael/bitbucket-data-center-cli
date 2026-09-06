@@ -844,6 +844,11 @@ func SelectMembers(
 	case "random":
 		shuffled := make([]string, len(eligible))
 		copy(shuffled, eligible)
+		// math/rand, not crypto/rand: this picks which reviewers to ask, and
+		// nobody gains by predicting the draw -- Bitbucket enforces what each
+		// of them may actually do. A cryptographic source here would cost
+		// more and promise a property nothing relies on.
+		//nolint:gosec // G404: reviewer selection is not a security decision
 		rand.Shuffle(len(shuffled), func(i, j int) {
 			shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
 		})

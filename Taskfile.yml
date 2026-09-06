@@ -4,7 +4,7 @@ version: '3'
 # .github/coverage-thresholds.env, and in ADR-005's prose, so a local run and a
 # CI run could disagree about what the gate was -- and the failure mode is a
 # developer who believes a gate passed. The workflow sources this same file.
-dotenv: ['.github/coverage-thresholds.env']
+dotenv: ['.github/coverage-thresholds.env', '.github/tool-versions.env']
 
 vars:
   OAPI_CODEGEN_VERSION: v2.4.1
@@ -210,9 +210,41 @@ tasks:
 
   quality:lint:
     desc: Run golangci-lint over the maintained Go tree
-    # Pinned like task itself: a linter release must not turn CI red on an
-    # unrelated pull request.
-    cmd: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.2 run ./cmd/... ./internal/... ./tools/... ./tests/...
+    # A binary if one at the pinned version is on PATH, and `go run` otherwise.
+    #
+    # `go run pkg@version` builds the linter from source. Locally that is paid
+    # once and the build cache answers in about three seconds afterwards. In CI
+    # it was paid every single run -- two minutes and fourteen seconds of the
+    # four-and-a-half minute unit job, for three seconds of actual analysis --
+    # because setup-go's cache is keyed on go.sum, hits, and is therefore never
+    # re-saved, so the linter's build output never entered it.
+    #
+    # The version is checked rather than assumed. A binary left on PATH by
+    # something else is the one way this could silently lint with different
+    # rules than the pin says, which is exactly the disagreement ADR-065 is
+    # about.
+    cmd: |
+      packages="./cmd/... ./internal/... ./tools/... ./tests/..."
+      pinned="${GOLANGCI_LINT_VERSION#v}"
+      if command -v golangci-lint >/dev/null 2>&1 && golangci-lint version 2>&1 | grep -qF "$pinned"; then
+        exec golangci-lint run $packages
+      fi
+      exec go run "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}" run $packages
+
+  tools:golangci-lint:
+    desc: Build the pinned golangci-lint once, so linting does not rebuild it every time
+    # Built from source rather than downloaded. golangci-lint refuses to run
+    # when the Go it was built with is older than the Go a module targets, and
+    # the published v2.6.2 binaries are built with go1.25 against this module's
+    # go1.26 -- "the Go language version used to build golangci-lint is lower
+    # than the targeted Go version". Building it here uses the toolchain the
+    # project already pins, which is what `go run` was doing implicitly.
+    #
+    # status makes this a no-op once the right version is in place, so CI can
+    # call it unconditionally and pay the build only on a version bump.
+    status:
+      - command -v golangci-lint >/dev/null 2>&1 && golangci-lint version 2>&1 | grep -qF "${GOLANGCI_LINT_VERSION#v}"
+    cmd: go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
 
   quality:vulncheck:
     desc: Report known vulnerabilities in this module and its dependencies
@@ -223,14 +255,18 @@ tasks:
 
   quality:format:verify:
     desc: Verify the Go tree is gofmt-clean
+    # ./tests included: it was the one tree the formatting gate did not cover,
+    # and it is the tree the linter does cover through run.build-tags. Since
+    # this is now the only gofmt gate -- golangci-lint's own formatter is off,
+    # see .golangci.yml -- the two scopes have to match.
     cmds:
       - |
-        unformatted=$(gofmt -l ./cmd ./internal ./tools)
+        unformatted=$(gofmt -l ./cmd ./internal ./tools ./tests)
         if [ -n "$unformatted" ]; then
           echo "Not gofmt-clean:" >&2
           echo "$unformatted" >&2
           echo "" >&2
-          echo "Fix with: gofmt -w ./cmd ./internal ./tools" >&2
+          echo "Fix with: gofmt -w ./cmd ./internal ./tools ./tests" >&2
           exit 1
         fi
 
