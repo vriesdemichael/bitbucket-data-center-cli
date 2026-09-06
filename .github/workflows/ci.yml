@@ -247,8 +247,21 @@ jobs:
       - name: Bootstrap Bitbucket (enable basic auth for admin API calls)
         run: bash scripts/bootstrap-bitbucket.sh "$BITBUCKET_URL" "$ADMIN_USER" "$ADMIN_PASSWORD"
 
+      # LIVE_PARALLEL is passed on the command line rather than set in env:
+      # above, because a Taskfile vars: entry is overridden by the CLI form and
+      # not by the environment -- an env: entry here would have been ignored
+      # while reading as though it applied.
+      #
+      # Four rather than the Taskfile default of twelve, because this runner is
+      # not the machine that default was chosen for. Measured on this workflow:
+      # 217s at four and 208s at twelve, so the concurrency bought nothing, and
+      # the run at twelve drew a 500 from Bitbucket -- "A database error has
+      # occurred" -- on a label write. Four cores here host Bitbucket and the
+      # tests together, so the limit is what the server can do rather than how
+      # many tests are waiting on it. Locally, where each request costs far
+      # more and Bitbucket has room, the same suite goes 966s to 256s.
       - name: Run live integration tests with coverage
-        run: task test:live:coverage
+        run: task test:live:coverage LIVE_PARALLEL=4
 
       # The handoff to the coverage gates. Uploaded on failure too: when the
       # suite fails it is still worth seeing what it covered.
