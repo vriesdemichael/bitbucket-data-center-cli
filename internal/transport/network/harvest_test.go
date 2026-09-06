@@ -2,6 +2,7 @@ package network
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -185,3 +186,100 @@ func TestWithHarvestIsInertUnlessAsked(t *testing.T) {
 		t.Errorf("with %s set the transport was not wrapped", HarvestEnvVar)
 	}
 }
+
+// failingTransport and unreadableBody stand for the two ways a request can go
+// wrong underneath the recorder.
+type failingTransport struct{ err error }
+
+func (t failingTransport) RoundTrip(*http.Request) (*http.Response, error) { return nil, t.err }
+
+type unreadableBody struct{}
+
+func (unreadableBody) Read([]byte) (int, error) { return 0, errors.New("connection reset") }
+func (unreadableBody) Close() error             { return nil }
+
+// TestHarvestStaysOutOfTheWayWhenTheRequestFails covers the paths where there
+// is nothing to record.
+//
+// A recorder is only acceptable in the transport every run builds if it cannot
+// turn a working command into a broken one. Each of these is a way that could
+// happen: swallowing the transport's error, or failing on a body it could not
+// read. The caller has to get back exactly what it would have got without the
+// recorder in the way.
+func TestHarvestStaysOutOfTheWayWhenTheRequestFails(t *testing.T) {
+	t.Run("a transport error passes through untouched", func(t *testing.T) {
+		want := errors.New("dial tcp: connection refused")
+		path := filepath.Join(t.TempDir(), "harvest.jsonl")
+		transport := &harvestTransport{base: failingTransport{err: want}, path: path}
+
+		request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://bitbucket.example/rest", nil)
+		if err != nil {
+			t.Fatalf("build request: %v", err)
+		}
+
+		response, err := transport.RoundTrip(request) //nolint:bodyclose // there is no response to close
+		if !errors.Is(err, want) {
+			t.Errorf("err = %v, want the transport's own error", err)
+		}
+		if response != nil {
+			t.Error("a failed round trip produced a response")
+		}
+		if records := readRecords(t, path); len(records) != 0 {
+			t.Errorf("recorded %d responses for a request that never completed", len(records))
+		}
+	})
+
+	t.Run("a body that cannot be read is still handed back", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "harvest.jsonl")
+		transport := &harvestTransport{
+			base: stubTransport{status: http.StatusNotFound},
+			path: path,
+		}
+
+		request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://bitbucket.example/rest", nil)
+		if err != nil {
+			t.Fatalf("build request: %v", err)
+		}
+		response, err := transport.base.RoundTrip(request) //nolint:bodyclose // replaced below
+		if err != nil {
+			t.Fatalf("stub round trip: %v", err)
+		}
+		response.Body = unreadableBody{}
+
+		recorded := &harvestTransport{base: fixedTransport{response: response}, path: path}
+		got, err := recorded.RoundTrip(request) //nolint:bodyclose // closed below
+		if err != nil {
+			t.Fatalf("the recorder turned an unreadable body into an error: %v", err)
+		}
+		_ = got.Body.Close()
+
+		if records := readRecords(t, path); len(records) != 0 {
+			t.Errorf("recorded %d responses from a body it could not read", len(records))
+		}
+	})
+
+	t.Run("a path that cannot be written is not fatal", func(t *testing.T) {
+		// The directory itself, which no platform will open for writing. A
+		// harvest that cannot be saved must not take the command down with it.
+		directory := t.TempDir()
+		path, served := harvestTo(t, stubTransport{status: http.StatusNotFound, body: `{"errors":[]}`})
+		_ = path
+
+		transport := &harvestTransport{base: stubTransport{status: http.StatusNotFound, body: served}, path: directory}
+		request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://bitbucket.example/rest", nil)
+		if err != nil {
+			t.Fatalf("build request: %v", err)
+		}
+
+		response, err := transport.RoundTrip(request) //nolint:bodyclose // closed below
+		if err != nil {
+			t.Fatalf("an unwritable harvest path failed the request: %v", err)
+		}
+		_ = response.Body.Close()
+	})
+}
+
+// fixedTransport answers with a response prepared by the caller.
+type fixedTransport struct{ response *http.Response }
+
+func (t fixedTransport) RoundTrip(*http.Request) (*http.Response, error) { return t.response, nil }
