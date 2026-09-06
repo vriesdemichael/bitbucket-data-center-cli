@@ -79,7 +79,7 @@ jobs:
       # golangci-lint for three seconds of analysis. This caches the built
       # binary instead, keyed on the things that decide what it is.
       - name: Resolve the pinned linter version
-        run: cat .github/tool-versions.env >> "$GITHUB_ENV"
+        run: grep -E "^[A-Za-z_][A-Za-z0-9_]*=" .github/tool-versions.env >> "$GITHUB_ENV"
 
       - name: Cache golangci-lint
         uses: actions/cache@v4
