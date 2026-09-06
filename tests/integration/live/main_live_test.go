@@ -18,11 +18,6 @@ func TestMain(m *testing.M) {
 	before := gittest.SnapshotAmbientConfig()
 	code := m.Run()
 
-	// Before the ambient-config check reports, because this is cleanup of the
-	// server and that check is about this machine; neither should hide the
-	// other's failure.
-	removeSharedProject()
-
 	if differences := gittest.Diff(before, gittest.SnapshotAmbientConfig()); len(differences) > 0 {
 		fmt.Fprint(os.Stderr, gittest.FailureMessage(differences))
 		if code == 0 {
