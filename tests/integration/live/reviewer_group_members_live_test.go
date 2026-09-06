@@ -136,6 +136,27 @@ func TestLiveReviewerGroupMembership(t *testing.T) {
 		}
 	})
 
+	t.Run("update refuses an unknown member and changes nothing", func(t *testing.T) {
+		// The resolution happens before the request, so a name that resolves to
+		// nobody must leave the group as it was rather than half-applying.
+		output := mustLiveCLI(t, "reviewer-group", "create", "qa-intact",
+			"--repo", repoRef, "--users", first.Username)
+		groupID := fmt.Sprintf("%d", int64(decodeJSONMap(t, output)["id"].(float64)))
+
+		refused, err := executeLiveCLI(t, "--json", "reviewer-group", "update", groupID,
+			"--repo", repoRef, "--users", "nobody-by-that-name")
+		if err == nil {
+			t.Fatalf("an unknown member was accepted on update:\n%s", refused)
+		}
+		if !strings.Contains(err.Error(), "nobody-by-that-name") {
+			t.Errorf("the refusal does not name the user: %v", err)
+		}
+
+		if got := membersOf(t, groupID); len(got) != 1 || !containsFold(got, first.Username) {
+			t.Errorf("a refused update changed the members to %v, want just %s", got, first.Username)
+		}
+	})
+
 	t.Run("the project scope takes members too", func(t *testing.T) {
 		if err := harness.grantProjectPermission(ctx, seeded.Key, first.Username, "PROJECT_READ"); err != nil {
 			t.Fatalf("grant project read failed: %v", err)
@@ -150,6 +171,34 @@ func TestLiveReviewerGroupMembership(t *testing.T) {
 		}
 		if users, _ := group["users"].([]any); len(users) != 1 {
 			t.Errorf("project group returned %d members, want 1:\n%s", len(users), output)
+		}
+	})
+
+	t.Run("the project scope replaces and refuses like the repository one", func(t *testing.T) {
+		// The project paths are a second copy of the repository ones, so they
+		// are a second place for the members to go missing.
+		if err := harness.grantProjectPermission(ctx, seeded.Key, second.Username, "PROJECT_READ"); err != nil {
+			t.Fatalf("grant project read failed: %v", err)
+		}
+
+		output := mustLiveCLI(t, "reviewer-group", "create", "qa-project-2",
+			"--project", seeded.Key, "--users", first.Username)
+		groupID := fmt.Sprintf("%d", int64(decodeJSONMap(t, output)["id"].(float64)))
+
+		updated := mustLiveCLI(t, "reviewer-group", "update", groupID,
+			"--project", seeded.Key, "--users", second.Username)
+
+		users, _ := decodeJSONMap(t, updated)["users"].([]any)
+		if len(users) != 1 {
+			t.Fatalf("the project update returned %d members, want 1:\n%s", len(users), updated)
+		}
+		if name, _ := users[0].(map[string]any)["name"].(string); !strings.EqualFold(name, second.Username) {
+			t.Errorf("member = %q, want %s", name, second.Username)
+		}
+
+		if _, err := executeLiveCLI(t, "--json", "reviewer-group", "create", "qa-project-unknown",
+			"--project", seeded.Key, "--users", "nobody-by-that-name"); err == nil {
+			t.Error("an unknown member was accepted on a project create")
 		}
 	})
 }
