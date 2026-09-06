@@ -47,6 +47,8 @@ func executeForUsageError(t *testing.T, configure func(root *cobra.Command), arg
 // them depends on their wording. If a Cobra upgrade rewords one, this fails
 // rather than silently reclassifying malformed invocations back to internal.
 func TestClassifyUsageErrorMatchesCobrasRealMessages(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name      string
 		configure func(root *cobra.Command)
@@ -161,6 +163,8 @@ func TestClassifyUsageErrorMatchesCobrasRealMessages(t *testing.T) {
 }
 
 func TestClassifyUsageErrorLeavesClassifiedErrorsAlone(t *testing.T) {
+	t.Parallel()
+
 	for _, kind := range apperrors.Kinds() {
 		t.Run(string(kind), func(t *testing.T) {
 			original := apperrors.New(kind, "already classified", nil)
@@ -177,6 +181,8 @@ func TestClassifyUsageErrorLeavesClassifiedErrorsAlone(t *testing.T) {
 }
 
 func TestClassifyUsageErrorLeavesGenuineFailuresAlone(t *testing.T) {
+	t.Parallel()
+
 	// A transport or server failure must keep falling through to internal.
 	// Reclassifying it as validation would tell a caller to fix its invocation
 	// when the right response is to retry or escalate.
@@ -200,6 +206,8 @@ func TestClassifyUsageErrorLeavesGenuineFailuresAlone(t *testing.T) {
 }
 
 func TestClassifyUsageErrorIgnoresNil(t *testing.T) {
+	t.Parallel()
+
 	if err := ClassifyUsageError(nil); err != nil {
 		t.Fatalf("expected nil, got %v", err)
 	}

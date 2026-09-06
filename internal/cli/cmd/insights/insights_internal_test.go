@@ -16,6 +16,8 @@ import (
 )
 
 func TestInsightsSafeHelpers(t *testing.T) {
+	t.Parallel()
+
 	if safederef.String(nil) != "" {
 		t.Fatal("expected empty for safederef.String(nil)")
 	}
@@ -63,6 +65,8 @@ func TestInsightsDefaults(t *testing.T) {
 }
 
 func TestResolveQualityRepoServiceAndClientErrors(t *testing.T) {
+	t.Parallel()
+
 	// Error loading config
 	badDeps := Dependencies{
 		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
@@ -99,6 +103,8 @@ func (m *mockInsightsPermChecker) CheckProjectAdmin(ctx context.Context, project
 }
 
 func TestInsightsDryRunPermissionRejection(t *testing.T) {
+	t.Parallel()
+
 	// A listener that fails the test if it is reached, which is the
 	// assertion: every case here is refused before a request exists.
 	guard := httptest.NewServer(testsupport.UnreachedHandler(t))

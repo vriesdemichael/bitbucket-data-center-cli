@@ -8,6 +8,8 @@ import (
 )
 
 func TestExportCommandReferenceWritesMarkdown(t *testing.T) {
+	t.Parallel()
+
 	outputPath := filepath.Join(t.TempDir(), "commands.md")
 
 	if err := exportCommandReference(outputPath); err != nil {
@@ -38,6 +40,8 @@ func TestExportCommandReferenceWritesMarkdown(t *testing.T) {
 }
 
 func TestExportCommandReferenceReturnsErrorForInvalidPath(t *testing.T) {
+	t.Parallel()
+
 	base := t.TempDir()
 	filePath := filepath.Join(base, "not-a-directory")
 	if err := os.WriteFile(filePath, []byte("x"), 0o600); err != nil {

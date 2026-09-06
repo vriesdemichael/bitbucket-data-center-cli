@@ -23,6 +23,8 @@ import (
 // The helper now lives at internal/safederef, which both layers may use. This
 // test is what stops the next one landing in internal/cli instead.
 func TestTheServiceLayerDoesNotImportTheCLI(t *testing.T) {
+	t.Parallel()
+
 	const (
 		serviceRoot = "../services"
 		forbidden   = "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"

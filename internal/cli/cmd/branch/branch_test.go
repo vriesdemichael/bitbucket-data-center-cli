@@ -59,6 +59,8 @@ func newTestDependencies(t *testing.T, serverURL string, jsonMode bool, dryRun b
 }
 
 func TestBranchRestrictionMatching(t *testing.T) {
+	t.Parallel()
+
 	var restriction openapigenerated.RestRefRestriction
 	_ = json.Unmarshal([]byte(`{"type":"read-only","matcher":{"id":"refs/heads/main","displayId":"main","type":{"id":"BRANCH"}}}`), &restriction)
 
@@ -109,6 +111,8 @@ func TestBranchRestrictionMatching(t *testing.T) {
 }
 
 func TestBranchNormalize(t *testing.T) {
+	t.Parallel()
+
 	if branchcmd.NormalizeBranchName("main") != "refs/heads/main" {
 		t.Fatalf("expected refs/heads/main, got: %s", branchcmd.NormalizeBranchName("main"))
 	}

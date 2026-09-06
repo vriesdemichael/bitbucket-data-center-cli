@@ -7,6 +7,8 @@ import (
 )
 
 func TestCalculatePatchCoverageRequiresAllOverlappingSegmentsCovered(t *testing.T) {
+	t.Parallel()
+
 	changed := map[string]map[int]struct{}{
 		"internal/example.go": {
 			10: {},
@@ -32,6 +34,8 @@ func TestCalculatePatchCoverageRequiresAllOverlappingSegmentsCovered(t *testing.
 }
 
 func TestCalculatePatchCoverageCountsFullyCoveredOverlaps(t *testing.T) {
+	t.Parallel()
+
 	changed := map[string]map[int]struct{}{
 		"internal/example.go": {
 			10: {},
@@ -57,6 +61,8 @@ func TestCalculatePatchCoverageCountsFullyCoveredOverlaps(t *testing.T) {
 }
 
 func TestCalculatePatchCoverageRecordsUncoveredLines(t *testing.T) {
+	t.Parallel()
+
 	changed := map[string]map[int]struct{}{
 		"internal/b.go": {12: {}, 13: {}, 14: {}, 20: {}},
 		"internal/a.go": {5: {}},
@@ -93,6 +99,8 @@ func TestCalculatePatchCoverageRecordsUncoveredLines(t *testing.T) {
 }
 
 func TestReportUncoveredPatchLinesCollapsesRanges(t *testing.T) {
+	t.Parallel()
+
 	patch := patchCoverage{
 		uncovered: []uncoveredLine{
 			{file: "internal/a.go", line: 5},
@@ -119,6 +127,8 @@ func TestReportUncoveredPatchLinesCollapsesRanges(t *testing.T) {
 }
 
 func TestReportUncoveredPatchLinesWithNothingUncovered(t *testing.T) {
+	t.Parallel()
+
 	var buffer bytes.Buffer
 	reportUncoveredPatchLines(&buffer, patchCoverage{})
 

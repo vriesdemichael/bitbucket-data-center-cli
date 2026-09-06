@@ -41,6 +41,8 @@ var prosePermitted = map[string]bool{
 // The fix was to stop enumerating. This keeps it that way: any snake_case name
 // in the MCP decision records must be a tool the server actually implements.
 func TestADRDoesNotNameToolsThatDoNotExist(t *testing.T) {
+	t.Parallel()
+
 	implemented := map[string]bool{}
 	for _, spec := range AllSpecs() {
 		implemented[spec.Tool.Name] = true

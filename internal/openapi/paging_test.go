@@ -61,6 +61,8 @@ func items(count int) []int {
 
 // The rules the eight hand-written copies each had their own reading of.
 func TestPageThrough(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name       string
 		source     *pagedSource
@@ -154,6 +156,8 @@ func TestPageThrough(t *testing.T) {
 // Asking for more than is left would let a server return past the cap, which
 // the old copies handled by trimming afterwards -- some of them.
 func TestPageThroughNeverAsksForMoreThanItStillNeeds(t *testing.T) {
+	t.Parallel()
+
 	source := &pagedSource{items: items(10), pageSize: 4}
 
 	if _, err := openapi.PageThrough(context.Background(), 0, 6, source.fetch); err != nil {
@@ -177,6 +181,8 @@ func TestPageThroughNeverAsksForMoreThanItStillNeeds(t *testing.T) {
 // Bitbucket reduced it to 1000 without saying so -- which meant the walk ran
 // once for any listing a test could seed, and the paging was never exercised.
 func TestPageThroughAsksForAPageAtATime(t *testing.T) {
+	t.Parallel()
+
 	source := &pagedSource{items: items(60), pageSize: 100}
 
 	got, err := openapi.PageThrough(context.Background(), 0, 1_000_000, source.fetch)
@@ -201,6 +207,8 @@ func TestPageThroughAsksForAPageAtATime(t *testing.T) {
 
 // A server that overshoots the limit must not overshoot the caller.
 func TestPageThroughTrimsAnOversizedPage(t *testing.T) {
+	t.Parallel()
+
 	generous := func(_ context.Context, _, _ int) (openapi.Page[int], error) {
 		last := true
 
@@ -217,6 +225,8 @@ func TestPageThroughTrimsAnOversizedPage(t *testing.T) {
 }
 
 func TestPageThroughSurfacesTheFetchError(t *testing.T) {
+	t.Parallel()
+
 	wanted := errors.New("the page could not be read")
 
 	_, err := openapi.PageThrough(context.Background(), 0, 10,
@@ -237,6 +247,8 @@ func TestPageThroughSurfacesTheFetchError(t *testing.T) {
 // a listing that has plenty, and the caller cannot tell that from "there is
 // nothing", which is the worst kind of wrong answer.
 func TestPageThroughLooksPastAnEmptyPage(t *testing.T) {
+	t.Parallel()
+
 	served := 0
 	fetch := func(_ context.Context, start, _ int) (openapi.Page[int], error) {
 		served++
@@ -273,6 +285,8 @@ func TestPageThroughLooksPastAnEmptyPage(t *testing.T) {
 // The other half: an empty page with nothing behind it still ends the listing,
 // or a server that answers empty forever would be followed forever.
 func TestPageThroughStopsAtAnEmptyLastPage(t *testing.T) {
+	t.Parallel()
+
 	served := 0
 	fetch := func(_ context.Context, _, _ int) (openapi.Page[int], error) {
 		served++
@@ -301,6 +315,8 @@ func TestPageThroughStopsAtAnEmptyLastPage(t *testing.T) {
 // zero would say the next page starts at the beginning, which PageThrough reads
 // as a server repeating itself -- the same answer by luck, and the wrong reason.
 func TestOffset(t *testing.T) {
+	t.Parallel()
+
 	if got := openapi.Offset(nil); got != nil {
 		t.Errorf("Offset(nil) = %v, want nil", got)
 	}

@@ -21,6 +21,8 @@ func TestPRDefaults(t *testing.T) {
 }
 
 func TestPRFormatSafeHelpers(t *testing.T) {
+	t.Parallel()
+
 	// The pointer helpers moved to internal/safederef and are tested
 	// there. safeUsers is this package's own and stays.
 	s := "test"
@@ -34,6 +36,8 @@ func TestPRFormatSafeHelpers(t *testing.T) {
 }
 
 func TestFormatPullRequestCountsAndActivity(t *testing.T) {
+	t.Parallel()
+
 	tasks := 3
 	comments := 5
 	pr := result.PullRequest{
@@ -74,6 +78,8 @@ func TestFormatPullRequestCountsAndActivity(t *testing.T) {
 }
 
 func TestNormalizeEmoticon(t *testing.T) {
+	t.Parallel()
+
 	if normalizeEmoticon(":smile:") != "smile" {
 		t.Fatalf("unexpected normalizeEmoticon: %s", normalizeEmoticon(":smile:"))
 	}
@@ -83,6 +89,8 @@ func TestNormalizeEmoticon(t *testing.T) {
 }
 
 func TestCheckRepoPermission(t *testing.T) {
+	t.Parallel()
+
 	checker := nopPermissionChecker{}
 	if err := checker.CheckRepoPermission(context.Background(), "PRJ", "repo1", openapi.RepoRead); err != nil {
 		t.Fatalf("unexpected error from nopPermissionChecker: %v", err)

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"testing"
+	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/gittest"
 )
@@ -21,3 +22,12 @@ import (
 // The guard was already installed on internal/cli and internal/git/execgit but
 // not here, so nothing caught it.
 func TestMain(m *testing.M) { gittest.Guard(m) }
+
+// unreachableTimeout is what a test gives a host that does not exist.
+//
+// These tests point at names like example.local to assert on what bb does when
+// a host cannot be reached. Resolving one costs 2.8 seconds on a machine whose
+// resolver waits, and two subtests of TestAuthCommandAdditionalBranches spent
+// 5.6 seconds of the package's 14 doing nothing but that. The assertion is
+// about the failure, not about how long the failure takes.
+const unreachableTimeout = 50 * time.Millisecond

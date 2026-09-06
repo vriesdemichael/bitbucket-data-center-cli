@@ -43,6 +43,8 @@ func (runner *fakeRunner) Run(_ context.Context, repo RepositoryTarget, operatio
 }
 
 func TestPlannerResolvesSelectorModesDeterministically(t *testing.T) {
+	t.Parallel()
+
 	catalog := fakeCatalog{repos: map[string][]repository.Repository{
 		"PRJ": {
 			{ProjectKey: "PRJ", Slug: "repo-a", Name: "Repo A"},
@@ -121,6 +123,8 @@ func TestPlannerResolvesSelectorModesDeterministically(t *testing.T) {
 }
 
 func TestLoadPlanJSONRejectsTamperedPlan(t *testing.T) {
+	t.Parallel()
+
 	planner := NewPlanner(fakeCatalog{repos: map[string][]repository.Repository{
 		"PRJ": {{ProjectKey: "PRJ", Slug: "repo-a", Name: "Repo A"}},
 	}})
@@ -160,6 +164,8 @@ func TestLoadPlanJSONRejectsTamperedPlan(t *testing.T) {
 }
 
 func TestExecutorPersistsStatusAndSkipsRemainingOperationsOnTargetFailure(t *testing.T) {
+	t.Parallel()
+
 	store := NewStatusStore(filepath.Join(t.TempDir(), "bulk-status"))
 	runner := &fakeRunner{results: map[string]fakeRunResult{
 		"PRJ/repo-a/" + OperationRepoPermissionUserGrant: {
@@ -236,6 +242,8 @@ func TestExecutorPersistsStatusAndSkipsRemainingOperationsOnTargetFailure(t *tes
 }
 
 func TestStatusStoreNotFound(t *testing.T) {
+	t.Parallel()
+
 	store := NewStatusStore(filepath.Join(t.TempDir(), "bulk-status"))
 	_, err := store.Load("missing-operation")
 	if err == nil {
@@ -247,6 +255,8 @@ func TestStatusStoreNotFound(t *testing.T) {
 }
 
 func TestNormalizePolicyAndOperations(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name        string
 		policy      Policy
@@ -525,6 +535,8 @@ func stringPtr(v string) *string {
 }
 
 func TestResolveTargetsErrors(t *testing.T) {
+	t.Parallel()
+
 	catalog := fakeCatalog{repos: map[string][]repository.Repository{
 		"PRJ": {{ProjectKey: "PRJ", Slug: "repo-a"}},
 	}}
@@ -568,6 +580,8 @@ func TestResolveTargetsErrors(t *testing.T) {
 }
 
 func TestVerifyPlanValidatesContent(t *testing.T) {
+	t.Parallel()
+
 	validPlan := Plan{
 		APIVersion: APIVersion,
 		Kind:       PlanKind,
@@ -627,6 +641,8 @@ func TestVerifyPlanValidatesContent(t *testing.T) {
 }
 
 func TestDescribeOperation(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		op     OperationSpec
 		expect string
@@ -708,6 +724,8 @@ func TestDescribeOperation(t *testing.T) {
 }
 
 func TestParsePolicyYAMLAndLoadPlanJSON(t *testing.T) {
+	t.Parallel()
+
 	t.Run("valid policy", func(t *testing.T) {
 		raw := []byte(`
 apiVersion: bb.io/v1alpha1
@@ -779,6 +797,8 @@ operations:
 }
 
 func TestNormalizePayload(t *testing.T) {
+	t.Parallel()
+
 	t.Run("valid payload", func(t *testing.T) {
 		op := OperationSpec{
 			Type: OperationBuildRequiredCreate,
@@ -812,6 +832,8 @@ func TestNormalizePayload(t *testing.T) {
 }
 
 func TestStatusStoreErrors(t *testing.T) {
+	t.Parallel()
+
 	t.Run("load invalid operation id", func(t *testing.T) {
 		store := NewStatusStore(t.TempDir())
 		_, err := store.Load("../forbidden")
@@ -844,6 +866,8 @@ func TestStatusStoreErrors(t *testing.T) {
 }
 
 func TestHasFailures(t *testing.T) {
+	t.Parallel()
+
 	if (ApplyStatus{}).HasFailures() {
 		t.Fatal("expected false")
 	}
@@ -856,6 +880,8 @@ func TestHasFailures(t *testing.T) {
 }
 
 func TestCloneHelpers(t *testing.T) {
+	t.Parallel()
+
 	m := map[string]any{
 		"a": 1,
 		"b": []any{"foo", map[string]any{"c": 3}},
@@ -868,6 +894,8 @@ func TestCloneHelpers(t *testing.T) {
 }
 
 func TestNormalizeValueComplex(t *testing.T) {
+	t.Parallel()
+
 	input := map[string]any{
 		"a": []any{1, "2", map[any]any{"b": 3}},
 	}
@@ -891,6 +919,8 @@ func TestNormalizeValueComplex(t *testing.T) {
 }
 
 func TestSaveStoreError(t *testing.T) {
+	t.Parallel()
+
 	// Use a path that is a file to trigger error in MkdirAll
 	dir := filepath.Join(t.TempDir(), "file")
 	_ = os.WriteFile(dir, []byte("iamfile"), 0o600)
@@ -902,6 +932,8 @@ func TestSaveStoreError(t *testing.T) {
 }
 
 func TestLoadPlanJSONErrors(t *testing.T) {
+	t.Parallel()
+
 	t.Run("empty payload", func(t *testing.T) {
 		_, err := LoadPlanJSON([]byte(""))
 		if err == nil || !strings.Contains(err.Error(), "is empty") {
@@ -918,6 +950,8 @@ func TestLoadPlanJSONErrors(t *testing.T) {
 }
 
 func TestStatusStoreSaveValidation(t *testing.T) {
+	t.Parallel()
+
 	t.Run("missing base dir", func(t *testing.T) {
 		store := NewStatusStore("")
 		err := store.Save(ApplyStatus{OperationID: "op-1"})
@@ -936,6 +970,8 @@ func TestStatusStoreSaveValidation(t *testing.T) {
 }
 
 func TestResolveRepositoryEntry(t *testing.T) {
+	t.Parallel()
+
 	t.Run("empty entry", func(t *testing.T) {
 		_, err := resolveRepositoryEntry("PRJ", "")
 		if err == nil {
@@ -969,6 +1005,8 @@ func TestResolveRepositoryEntry(t *testing.T) {
 }
 
 func TestCopyOperationsDeepClone(t *testing.T) {
+	t.Parallel()
+
 	count := 2
 	active := true
 	required := true
@@ -1044,6 +1082,8 @@ func TestCopyOperationsDeepClone(t *testing.T) {
 }
 
 func TestValidateIdentifier(t *testing.T) {
+	t.Parallel()
+
 	t.Run("missing", func(t *testing.T) {
 		if err := validateIdentifier(""); err == nil {
 			t.Fatal("expected error")
@@ -1099,6 +1139,8 @@ func (runner *cancellingRunner) Run(ctx context.Context, _ RepositoryTarget, _ O
 // artifact exists for: afterwards nobody can tell what was applied, what
 // genuinely failed, and what was never touched.
 func TestApplyStopsOnCancellationRatherThanFailingTheRest(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -1149,6 +1191,8 @@ func TestApplyStopsOnCancellationRatherThanFailingTheRest(t *testing.T) {
 // confined to one repository -- and multi-operation targets are the ordinary
 // shape of a bulk policy, not an unusual one.
 func TestApplyDoesNotFailTheRestOfAnInterruptedTarget(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -1208,6 +1252,8 @@ func TestApplyDoesNotFailTheRestOfAnInterruptedTarget(t *testing.T) {
 // TestApplyRunsEveryTargetWhenNotCancelled guards the other direction: the
 // context check must not stop a healthy run.
 func TestApplyRunsEveryTargetWhenNotCancelled(t *testing.T) {
+	t.Parallel()
+
 	plan := planWithTargets(t, 4)
 	runner := &cancellingRunner{cancel: func() {}, afterCalls: 1 << 30}
 
@@ -1287,6 +1333,8 @@ func planWithMultiOperationTargets(t *testing.T, n, operationsPerTarget int) Pla
 // bulk-apply-status.schema.json -- the document consumers are told to validate
 // against.
 func TestAnInterruptedRunWritesAnArtifactThatMatchesItsPublishedSchema(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -1376,6 +1424,8 @@ func (catalog cappingCatalog) ListByProject(_ context.Context, projectKey string
 // a complete success -- and a repository named explicitly past the cap was
 // reported not-found. Every artifact said it worked.
 func TestPlanCoversEveryRepositoryPastTheFirstHundred(t *testing.T) {
+	t.Parallel()
+
 	const total = 250
 
 	repos := make([]repository.Repository, 0, total)

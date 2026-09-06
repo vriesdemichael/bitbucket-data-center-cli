@@ -267,6 +267,8 @@ func TestConfigureGitCredentialHelperIsIdempotent(t *testing.T) {
 // project's own configuration and broke every worktree.
 
 func TestConfigureGitCredentialHelperLocalScopeRequiresARepository(t *testing.T) {
+	t.Parallel()
+
 	err := configureGitCredentialHelperIn(
 		context.Background(),
 		t.TempDir(),
@@ -284,6 +286,8 @@ func TestConfigureGitCredentialHelperLocalScopeRequiresARepository(t *testing.T)
 }
 
 func TestConfigureGitCredentialHelperWritesLocalConfig(t *testing.T) {
+	t.Parallel()
+
 	repository := t.TempDir()
 	if err := gitCommand("-C", repository, "init").Run(); err != nil {
 		t.Fatalf("git init: %v", err)
@@ -368,6 +372,8 @@ func TestResolveGitCredentialWithHostButNoSecret(t *testing.T) {
 // setup-git reports what it configured in machine mode so automation can assert
 // the scope it landed on.
 func TestSetupGitEmitsJSONWhenMachineModeIsOn(t *testing.T) {
+	t.Parallel()
+
 	var payload *GitCredentialSetup
 
 	cmd := newSetupGitCommand(Dependencies{

@@ -14,6 +14,8 @@ import (
 )
 
 func TestParseCommaList(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name  string
 		input string
@@ -86,6 +88,8 @@ func callTool(t *testing.T, spec Spec, clients Clients, args map[string]any) *mc
 }
 
 func TestAddPRCommentRejectsPartialAnchors(t *testing.T) {
+	t.Parallel()
+
 	clients := newUnreachedClients(t)
 
 	base := map[string]any{"project": "TEST", "repo": "demo", "pr_id": "30", "text": "hi"}
@@ -147,6 +151,8 @@ func TestAddPRCommentRejectsPartialAnchors(t *testing.T) {
 //
 // What is left is the refusal, which never reaches a request.
 func TestAddPRCommentRejectsAnUnknownLineType(t *testing.T) {
+	t.Parallel()
+
 	clients := newUnreachedClients(t)
 
 	result := callTool(t, specAddPRComment(), clients, map[string]any{
@@ -167,6 +173,8 @@ func TestAddPRCommentRejectsAnUnknownLineType(t *testing.T) {
 // Naming one half of a repository reaches no endpoint at all, so the recorder
 // here is a guard: a request would mean the check did not run.
 func TestListPullRequestsRejectsHalfARepository(t *testing.T) {
+	t.Parallel()
+
 	clients := newUnreachedClients(t)
 
 	for _, args := range []map[string]any{
@@ -184,6 +192,8 @@ func TestListPullRequestsRejectsHalfARepository(t *testing.T) {
 }
 
 func TestSubmitPRReviewRejectsUnknownAction(t *testing.T) {
+	t.Parallel()
+
 	clients := newUnreachedClients(t)
 
 	result := callTool(t, specSubmitPRReview(), clients, map[string]any{
@@ -195,6 +205,8 @@ func TestSubmitPRReviewRejectsUnknownAction(t *testing.T) {
 }
 
 func TestGetFileContentRejectsTraversal(t *testing.T) {
+	t.Parallel()
+
 	clients := newUnreachedClients(t)
 
 	result := callTool(t, specGetFileContent(), clients, map[string]any{
@@ -217,6 +229,8 @@ func resultText(result *mcp.CallToolResult) string {
 }
 
 func TestAddPRCommentRejectsLineTypeWithoutAnchor(t *testing.T) {
+	t.Parallel()
+
 	clients := newUnreachedClients(t)
 
 	result := callTool(t, specAddPRComment(), clients, map[string]any{

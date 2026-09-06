@@ -26,6 +26,8 @@ func newQualityTestService(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestQualityServiceValidationGuards(t *testing.T) {
+	t.Parallel()
+
 	// Every case here is refused before a request is built, so the handler is
 	// an assertion rather than a stand-in: reaching it means a guard let
 	// something through (ADR-079).
@@ -95,6 +97,8 @@ func TestQualityServiceValidationGuards(t *testing.T) {
 }
 
 func TestSetBuildStatusValidationAndOptionalFields(t *testing.T) {
+	t.Parallel()
+
 	t.Run("validation", func(t *testing.T) {
 		service := newQualityTestService(t, testsupport.UnreachedHandler(t))
 
@@ -139,6 +143,8 @@ func TestSetBuildStatusValidationAndOptionalFields(t *testing.T) {
 //
 // mock-inventory: unreachable-state — a 204 with no body, which these endpoints never return (probed; TestLiveQualityEmptyAnswers pins what they do return); the subject is the fallback branch, not what Bitbucket sends.
 func TestQualityReportAndAnnotationFallbackBranches(t *testing.T) {
+	t.Parallel()
+
 	service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPut && r.URL.Path == "/rest/insights/latest/projects/TEST/repos/demo/commits/abc/reports/lint":
@@ -183,6 +189,8 @@ func TestQualityReportAndAnnotationFallbackBranches(t *testing.T) {
 
 // mock-inventory: transport-fault — a conflict and three closed connections are injected, none of which a live instance can be asked for; the subject is that each build-status call classifies them rather than reporting success.
 func TestBuildStatusFocusedErrorAndFallbackBranches(t *testing.T) {
+	t.Parallel()
+
 	t.Run("set build status maps conflict", func(t *testing.T) {
 		service := newQualityTestService(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodPost && r.URL.Path == "/rest/build-status/latest/commits/abc" {
@@ -273,6 +281,8 @@ func TestBuildStatusFocusedErrorAndFallbackBranches(t *testing.T) {
 }
 
 func TestQualityServiceScopedAndDeploymentsErrorPaths(t *testing.T) {
+	t.Parallel()
+
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 	emptyRepo := RepositoryRef{}
 

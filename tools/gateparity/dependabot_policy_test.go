@@ -54,6 +54,8 @@ type dependabotConfig struct {
 // vendored reference and the image tag part ways. This guards the policy; the
 // gate guards the outcome.
 func TestBitbucketImageIsProposedButNotAutoMerged(t *testing.T) {
+	t.Parallel()
+
 	root := repositoryRoot(t)
 
 	t.Run("dependabot proposes every bitbucket release", func(t *testing.T) {

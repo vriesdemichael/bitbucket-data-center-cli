@@ -25,6 +25,8 @@ func newAdminTestService(t *testing.T, handler http.HandlerFunc) *AdminService {
 }
 
 func TestAdminServiceValidation(t *testing.T) {
+	t.Parallel()
+
 	service := newAdminTestService(t, testsupport.UnreachedHandler(t))
 
 	if _, err := service.Create(context.Background(), "", CreateInput{Name: "repo"}); err == nil {
@@ -53,6 +55,8 @@ func TestAdminServiceValidation(t *testing.T) {
 }
 
 func TestAdminServiceTransientAndMapping(t *testing.T) {
+	t.Parallel()
+
 	transientService := newAdminTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		hijacker, ok := w.(http.Hijacker)
 		if !ok {

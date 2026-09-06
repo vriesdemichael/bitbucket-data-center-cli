@@ -30,6 +30,8 @@ import (
 //
 // mock-inventory: unreachable-state — an instance that wants the object shape, which is the older Bitbucket this fallback exists for and not the one we can run; the subject is the order of the attempts.
 func TestUpdateRepositoryPullRequestRequiredApproversCount(t *testing.T) {
+	t.Parallel()
+
 	t.Run("the number is enough, and is all that is sent", func(t *testing.T) {
 		calls := 0
 		service, close := settingsServiceOn(t, func(writer http.ResponseWriter, request *http.Request) {
@@ -131,6 +133,8 @@ func settingsServiceOn(t *testing.T, handler http.HandlerFunc) (*Service, func()
 }
 
 func TestRepositorySettingsHelperCoverage(t *testing.T) {
+	t.Parallel()
+
 	permission, err := normalizeRepositoryPermission(" repo_read ")
 	if err != nil || permission != "REPO_READ" {
 		t.Fatalf("expected REPO_READ normalization, got permission=%q err=%v", permission, err)
@@ -145,6 +149,8 @@ func TestRepositorySettingsHelperCoverage(t *testing.T) {
 
 // mock-inventory: unreachable-state — a bare array where an object belongs and non-JSON bodies on a 200, neither of which Bitbucket sends; the subject is what the service does with a reply it cannot read.
 func TestRepositorySettingsJSONFallbackAndValidationBranches(t *testing.T) {
+	t.Parallel()
+
 	service := newServiceWithBaseURL(t, func(writer http.ResponseWriter, request *http.Request) {
 		switch {
 		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks":
@@ -234,6 +240,8 @@ func newServiceWithBaseURL(t *testing.T, handler http.HandlerFunc) *Service {
 
 // mock-inventory: unreachable-state — "not-json" and a bare array where a settings object belongs, alongside a closed listener; the subject is that an unreadable reply is an error rather than an empty result.
 func TestRepositorySettingsAdditionalBranches(t *testing.T) {
+	t.Parallel()
+
 	// The pagination half of this used to live here: two hand-written pages and
 	// an assertion that the second request carried the limit the first one had.
 	// Both halves were the author's, so they agreed by construction, and the
@@ -313,6 +321,8 @@ func TestRepositorySettingsAdditionalBranches(t *testing.T) {
 }
 
 func TestRepositoryServicePermissionsValidationAdditional(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 	repo := RepositoryRef{ProjectKey: "P", Slug: "S"}
 	if err := service.GrantRepositoryGroupPermission(context.Background(), RepositoryRef{}, "g", "p"); err == nil {
@@ -339,6 +349,8 @@ func TestRepositoryServicePermissionsValidationAdditional(t *testing.T) {
 }
 
 func TestNewRepositoryServiceValidationErrors(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 	repo := RepositoryRef{ProjectKey: "P", Slug: "S"}
 	emptyRepo := RepositoryRef{}

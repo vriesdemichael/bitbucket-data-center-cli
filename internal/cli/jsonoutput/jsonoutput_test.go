@@ -13,6 +13,8 @@ import (
 )
 
 func TestWriteSuccess(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 
 	err := Write(buffer, map[string]any{"status": "ok"})
@@ -36,6 +38,8 @@ func TestWriteSuccess(t *testing.T) {
 }
 
 func TestWriteMarshalFailure(t *testing.T) {
+	t.Parallel()
+
 	err := Write(&bytes.Buffer{}, map[string]any{"invalid": func() {}})
 	if err == nil {
 		t.Fatal("expected marshal failure")
@@ -49,6 +53,8 @@ func TestWriteMarshalFailure(t *testing.T) {
 }
 
 func TestWriteWriterFailure(t *testing.T) {
+	t.Parallel()
+
 	err := Write(failingWriter{}, map[string]any{"status": "ok"})
 	if err == nil {
 		t.Fatal("expected write failure")
@@ -68,6 +74,8 @@ func (failingWriter) Write(_ []byte) (int, error) {
 }
 
 func TestEnvelopeSchemaFor(t *testing.T) {
+	t.Parallel()
+
 	dataSchema := map[string]any{"type": "string"}
 	schema := EnvelopeSchemaFor("test.schema.json", "Test Title", "Test description", dataSchema)
 
@@ -108,6 +116,8 @@ func TestEnvelopeSchemaFor(t *testing.T) {
 }
 
 func TestWriteErrorEmitsClassifiedEnvelope(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	if err := WriteError(buffer, apperrors.New(apperrors.KindConflict, "branch already exists", errors.New("409"))); err != nil {
 		t.Fatalf("WriteError returned %v", err)
@@ -134,6 +144,8 @@ func TestWriteErrorEmitsClassifiedEnvelope(t *testing.T) {
 }
 
 func TestWriteErrorClassifiesPlainErrorsAsInternal(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	if err := WriteError(buffer, errors.New("something broke")); err != nil {
 		t.Fatalf("WriteError returned %v", err)
@@ -152,6 +164,8 @@ func TestWriteErrorClassifiesPlainErrorsAsInternal(t *testing.T) {
 }
 
 func TestWriteErrorIgnoresNil(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	if err := WriteError(buffer, nil); err != nil {
 		t.Fatalf("WriteError returned %v", err)
@@ -162,6 +176,8 @@ func TestWriteErrorIgnoresNil(t *testing.T) {
 }
 
 func TestEnvelopesDoNotEscapeHTMLCharacters(t *testing.T) {
+	t.Parallel()
+
 	errorBuffer := &bytes.Buffer{}
 	if err := WriteError(errorBuffer, apperrors.New(apperrors.KindValidation, "run 'bb auth login <host>'", nil)); err != nil {
 		t.Fatalf("WriteError returned %v", err)
@@ -183,6 +199,8 @@ func TestEnvelopesDoNotEscapeHTMLCharacters(t *testing.T) {
 }
 
 func TestErrorEnvelopeSchemaMatchesTheTaxonomy(t *testing.T) {
+	t.Parallel()
+
 	schema := ErrorEnvelopeSchema("output.error.schema.json")
 
 	properties := schema["properties"].(map[string]any)
@@ -220,6 +238,8 @@ func TestErrorEnvelopeSchemaMatchesTheTaxonomy(t *testing.T) {
 }
 
 func TestWriteErrorWriterFailure(t *testing.T) {
+	t.Parallel()
+
 	err := WriteError(failingWriter{}, apperrors.New(apperrors.KindTransient, "upstream unavailable", nil))
 	if err == nil {
 		t.Fatal("expected write failure")
@@ -233,6 +253,8 @@ func TestWriteErrorWriterFailure(t *testing.T) {
 }
 
 func TestWriteListCarriesLimitReached(t *testing.T) {
+	t.Parallel()
+
 	for _, reached := range []bool{true, false} {
 		buffer := &bytes.Buffer{}
 		if err := WriteList(buffer, []string{"a"}, reached); err != nil {
@@ -263,6 +285,8 @@ func TestWriteListCarriesLimitReached(t *testing.T) {
 // TestWriteOmitsLimitReached keeps the field meaningful: its presence is the
 // signal that a result set is bounded, so a non-list command must not carry it.
 func TestWriteOmitsLimitReached(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	if err := Write(buffer, map[string]string{"a": "b"}); err != nil {
 		t.Fatalf("Write returned %v", err)
@@ -274,6 +298,8 @@ func TestWriteOmitsLimitReached(t *testing.T) {
 }
 
 func TestWriteListMarshalFailure(t *testing.T) {
+	t.Parallel()
+
 	err := WriteList(&bytes.Buffer{}, map[string]any{"invalid": func() {}}, false)
 	if err == nil {
 		t.Fatal("expected marshal failure")
@@ -284,6 +310,8 @@ func TestWriteListMarshalFailure(t *testing.T) {
 }
 
 func TestWriteListWriterFailure(t *testing.T) {
+	t.Parallel()
+
 	err := WriteList(failingWriter{}, []string{"a"}, true)
 	if err == nil {
 		t.Fatal("expected write failure")
@@ -446,6 +474,8 @@ func TestAListEnvelopeValidatesAgainstItsOwnSchema(t *testing.T) {
 // rides the release major, and meta.bbVersion reports which binary wrote the
 // document — provenance, not a switch.
 func TestTheEnvelopeCarriesTheBinaryVersionAndNoContractVersion(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	if err := Write(buffer, map[string]any{"ok": true}); err != nil {
 		t.Fatalf("writing failed: %v", err)

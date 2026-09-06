@@ -10,6 +10,8 @@ import "testing"
 // check consumes, so an agent able to submit it participates in the control it
 // is meant to be subject to — the same reason set_build_status is withheld.
 func TestGatedToolsAreTheOnesThatMergeOrGate(t *testing.T) {
+	t.Parallel()
+
 	expectedGated := map[string]string{
 		"merge_pull_request": "irreversible: changes the target branch",
 		"enable_auto_merge":  "irreversible: causes a merge once checks pass",

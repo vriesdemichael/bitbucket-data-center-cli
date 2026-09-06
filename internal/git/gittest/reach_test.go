@@ -23,6 +23,8 @@ import (
 // This runs inside a guarded package, so the ceiling is already in place. It
 // asserts what a careless test would actually hit.
 func TestTheAmbientRepositoryIsOutOfReach(t *testing.T) {
+	t.Parallel()
+
 	if _, set := os.LookupEnv("GIT_CEILING_DIRECTORIES"); !set {
 		t.Fatal("Guard did not place a ceiling; every test in this package can reach the repository it runs in")
 	}
@@ -47,6 +49,8 @@ func TestTheAmbientRepositoryIsOutOfReach(t *testing.T) {
 // the tests above cannot -- and if that ever stopped being true the guard would
 // silently compare nothing at all and pass forever.
 func TestTheGuardStillReadsTheRepositoryItProtects(t *testing.T) {
+	t.Parallel()
+
 	if snapshot := gittestSnapshot(); !snapshot {
 		t.Fatal("the snapshot found no repository; with the ceiling in place the guard is comparing nothing and can no longer fail")
 	}
@@ -59,6 +63,8 @@ func TestTheGuardStillReadsTheRepositoryItProtects(t *testing.T) {
 // creates and addresses directly is untouched. If that were not so, every
 // fixture in this package would break.
 func TestAFixtureRepositoryIsUnaffected(t *testing.T) {
+	t.Parallel()
+
 	directory := t.TempDir()
 
 	for _, arguments := range [][]string{

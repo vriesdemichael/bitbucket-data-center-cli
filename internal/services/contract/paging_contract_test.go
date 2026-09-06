@@ -205,6 +205,8 @@ func listings() []pagedListing {
 //
 // mock-inventory: routing-beacon — an empty page, generic across every service; the subject is that a cap of zero still asks, which is about the request and not the reply.
 func TestZeroMeansTheServiceDefault(t *testing.T) {
+	t.Parallel()
+
 	for _, listing := range listings() {
 		t.Run(listing.name, func(t *testing.T) {
 			requests := 0
@@ -245,6 +247,8 @@ func TestZeroMeansTheServiceDefault(t *testing.T) {
 //
 // mock-inventory: transport-fault — the listener is closed before the call, which no live instance can be asked to do; the subject is that every paged service classifies a dead connection rather than returning a short answer.
 func TestEveryPagedListingReportsALostConnection(t *testing.T) {
+	t.Parallel()
+
 	baseURL := testsupport.ClosedListenerURL(t)
 
 	for _, listing := range listings() {

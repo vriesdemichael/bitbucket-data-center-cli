@@ -19,6 +19,8 @@ import (
 // server and TestLivePullRequestMergeability asks it. What is pinned here is
 // that every shape produces a line, because the defect was an empty bullet.
 func TestMergeBlockerLines(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name     string
 		blockers []pullrequestservice.MergeBlocker

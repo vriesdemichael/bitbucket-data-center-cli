@@ -28,6 +28,8 @@ func newInspectionService(t *testing.T, handler http.HandlerFunc) *Service {
 var inspectionRepo = RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
 func TestInspectionValidatesInput(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 
 	if _, err := service.ListCommits(context.Background(), RepositoryRef{}, "7", PageOptions{}); err == nil {

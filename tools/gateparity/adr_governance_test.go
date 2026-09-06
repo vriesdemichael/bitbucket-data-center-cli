@@ -23,6 +23,8 @@ const governanceRecord = "docs/decisions/067-governance-tests-are-verified-by-br
 // the repository as text, like the gate parity tests beside it, and belongs
 // with them rather than with any package it happens to name.
 func TestGovernanceTestsNamedInThisRecordExist(t *testing.T) {
+	t.Parallel()
+
 	root := repositoryRoot(t)
 
 	named := governanceTestsNamedIn(t, filepath.Join(root, governanceRecord))

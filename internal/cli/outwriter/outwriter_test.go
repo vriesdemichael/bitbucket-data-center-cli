@@ -18,6 +18,8 @@ func (w failingWriter) Write(payload []byte) (int, error) {
 }
 
 func TestRecorderPassesWritesThrough(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	recorder := New(buffer)
 
@@ -36,6 +38,8 @@ func TestRecorderPassesWritesThrough(t *testing.T) {
 // carries on writing, and the failure has to survive until someone can act on
 // it.
 func TestRecorderKeepsTheFirstFailure(t *testing.T) {
+	t.Parallel()
+
 	first := errors.New("no space left on device")
 	recorder := New(failingWriter{err: first})
 
@@ -51,6 +55,8 @@ func TestRecorderKeepsTheFirstFailure(t *testing.T) {
 // reader closing early is ordinary shell usage rather than a failure. Treating
 // it as one would make every piped invocation look broken.
 func TestRecorderIgnoresAClosedPipe(t *testing.T) {
+	t.Parallel()
+
 	for name, err := range map[string]error{
 		"EPIPE":         syscall.EPIPE,
 		"ErrClosedPipe": io.ErrClosedPipe,
@@ -78,6 +84,8 @@ func TestRecorderIgnoresAClosedPipe(t *testing.T) {
 }
 
 func TestRecorderToleratesNilWriter(t *testing.T) {
+	t.Parallel()
+
 	recorder := New(nil)
 	written, err := io.WriteString(recorder, "discarded")
 	if err != nil || written != len("discarded") {
@@ -97,6 +105,8 @@ func TestRecorderToleratesNilWriter(t *testing.T) {
 }
 
 func TestRecorderErrorNamesTheFailure(t *testing.T) {
+	t.Parallel()
+
 	recorder := New(failingWriter{err: errors.New("disk quota exceeded")})
 	_, _ = io.WriteString(recorder, "payload")
 

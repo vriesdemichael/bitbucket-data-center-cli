@@ -9,6 +9,8 @@ import (
 )
 
 func TestProjectSafeHelpers(t *testing.T) {
+	t.Parallel()
+
 	// The pointer helpers moved to internal/safederef and are tested
 	// there. safeUsers is this package's own and stays.
 	s := "test"
@@ -51,6 +53,8 @@ func TestProjectDefaults(t *testing.T) {
 }
 
 func TestNormalizeAccessKeyIDs(t *testing.T) {
+	t.Parallel()
+
 	got, err := normalizeAccessKeyIDs(nil)
 	if err != nil || got != nil {
 		t.Fatalf("expected (nil, nil) for normalizeAccessKeyIDs(nil), got (%v, %v)", got, err)
@@ -77,6 +81,8 @@ func TestNormalizeAccessKeyIDs(t *testing.T) {
 }
 
 func TestMatchesProjectRestrictionSignature(t *testing.T) {
+	t.Parallel()
+
 	matcherType := openapigenerated.RestRefRestrictionMatcherTypeIdBRANCH
 	matcherID := "refs/heads/main"
 	resType := "read-only"

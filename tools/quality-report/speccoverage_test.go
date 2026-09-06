@@ -7,6 +7,8 @@ import (
 )
 
 func TestNormalizeAPIPath(t *testing.T) {
+	t.Parallel()
+
 	cases := map[string]string{
 		"/rest/api/latest/projects/%s/repos/%s/pull-requests":      "/api/latest/projects/{}/repos/{}/pull-requests",
 		"/api/latest/projects/{projectKey}/repos/{repositorySlug}": "/api/latest/projects/{}/repos/{}",
@@ -21,6 +23,8 @@ func TestNormalizeAPIPath(t *testing.T) {
 }
 
 func TestSubstituteVerbs(t *testing.T) {
+	t.Parallel()
+
 	got := substituteVerbs("%s/%s/%s", []string{"/rest/api/latest/projects/{}/repos/{}/pull-requests", "{}", "merge"})
 	want := "/rest/api/latest/projects/{}/repos/{}/pull-requests/{}/merge"
 	if got != want {
@@ -33,6 +37,8 @@ func TestSubstituteVerbs(t *testing.T) {
 }
 
 func TestCartesian(t *testing.T) {
+	t.Parallel()
+
 	combos := cartesian([][]string{{"a"}, {"x", "y"}})
 	if len(combos) != 2 {
 		t.Fatalf("expected 2 combos, got %d", len(combos))
@@ -42,6 +48,8 @@ func TestCartesian(t *testing.T) {
 // TestCollectRawHTTPPaths exercises helper resolution, fmt.Sprintf assembly,
 // local path variables, and parameter-literal substitution end to end.
 func TestCollectRawHTTPPaths(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	src := `package svc
 
@@ -103,6 +111,8 @@ func (s *Service) assign(ctx context.Context, r Repo, id string) {
 }
 
 func TestParseGeneratedOperationPaths(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	src := `package openapigenerated
 
@@ -142,6 +152,8 @@ func NewCreateCommentRequestWithBody(server string, contentType string, body any
 }
 
 func TestUsedOperationToName(t *testing.T) {
+	t.Parallel()
+
 	cases := map[string]string{
 		"GetCommitWithResponse":              "GetCommit",
 		"SetSettingsWithBodyWithResponse":    "SetSettings",

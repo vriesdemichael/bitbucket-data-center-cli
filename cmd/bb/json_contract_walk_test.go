@@ -150,6 +150,8 @@ func exemptCommands(t *testing.T) map[string]bool {
 // the ADR-039 failure with a different filename. This is the cmd/bb half; the
 // internal/cli half additionally requires each entry to carry a reason.
 func TestEveryExemptionIsAReachableLeaf(t *testing.T) {
+	t.Parallel()
+
 	for path := range exemptCommands(t) {
 		leaf := findLeaf(t, path)
 		if leaf == nil {
@@ -168,6 +170,8 @@ func TestEveryExemptionIsAReachableLeaf(t *testing.T) {
 // quietly shrink what the contract covers. Five is not a meaningful ceiling in
 // itself; it is low enough that crossing it is a conversation.
 func TestTheExemptionListStaysSmallEnoughToReview(t *testing.T) {
+	t.Parallel()
+
 	exempt := exemptCommands(t)
 
 	for _, path := range []string{"ai skill show", "api"} {

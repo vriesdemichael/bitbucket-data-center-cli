@@ -34,6 +34,8 @@ func newTagTestService(t *testing.T, handler http.HandlerFunc) *Service {
 // wired to the taxonomy at all is asked against a server that really refuses, in
 // TestLiveEveryServiceMapsItsFailures.
 func TestTagServiceRefusesAnEmptyName(t *testing.T) {
+	t.Parallel()
+
 	// Refused before a request is built, so reaching the handler is the failure.
 	service := newTagTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		t.Errorf("validation let a request through: %s %s", r.Method, r.URL.Path)
@@ -48,6 +50,8 @@ func TestTagServiceRefusesAnEmptyName(t *testing.T) {
 }
 
 func TestTagServiceValidationAndMapStatusHelpers(t *testing.T) {
+	t.Parallel()
+
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 	service := newTagTestService(t, testsupport.UnreachedHandler(t))
 
@@ -69,6 +73,8 @@ func TestTagServiceValidationAndMapStatusHelpers(t *testing.T) {
 
 // mock-inventory: transport-fault — the server is closed before the call, which no live instance can be asked to do; the subject is that every tag operation classifies a dead connection as transient.
 func TestTagServiceTransportAndValidationBranches(t *testing.T) {
+	t.Parallel()
+
 	t.Run("repository validation branches", func(t *testing.T) {
 		service := newTagTestService(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)

@@ -40,6 +40,8 @@ func TestRepoDefaults(t *testing.T) {
 }
 
 func TestRepoHelpers(t *testing.T) {
+	t.Parallel()
+
 	if safederef.String(nil) != "" {
 		t.Fatal("expected empty string for safederef.String(nil)")
 	}
@@ -91,6 +93,8 @@ func TestRepoHelpers(t *testing.T) {
 }
 
 func TestRepoCloneHelpers(t *testing.T) {
+	t.Parallel()
+
 	if !isExplicitHTTPCloneURL("https://bitbucket.example.com/scm/PRJ/repo.git") {
 		t.Fatal("expected isExplicitHTTPCloneURL to be true for https URL")
 	}

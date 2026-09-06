@@ -38,6 +38,8 @@ func conditionDeps(t *testing.T) Dependencies {
 // unconditional read of stdin. On a CI runner that blocked forever. The help
 // already documented "or stdin (-)"; the code now requires it.
 func TestConditionRequiresStdinToBeAskedFor(t *testing.T) {
+	t.Parallel()
+
 	deps := conditionDeps(t)
 
 	cases := []struct {

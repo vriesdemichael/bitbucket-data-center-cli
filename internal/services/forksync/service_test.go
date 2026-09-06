@@ -26,6 +26,8 @@ func newForkSyncTestService(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestForkSyncServiceValidation(t *testing.T) {
+	t.Parallel()
+
 	service := newForkSyncTestService(t, testsupport.UnreachedHandler(t))
 	ctx := context.Background()
 
@@ -50,6 +52,8 @@ func TestForkSyncServiceValidation(t *testing.T) {
 
 // mock-inventory: transport-fault — the failures are injected below the API: a broken client, not a server's answer.
 func TestForkSyncServiceErrors(t *testing.T) {
+	t.Parallel()
+
 	// 1. Client transport errors
 	badClient, _ := openapigenerated.NewClientWithResponses("http://127.0.0.1:0/rest")
 	badService := NewService(badClient)
@@ -110,6 +114,8 @@ func TestForkSyncServiceErrors(t *testing.T) {
 // The server answers a missing ref or a missing action with a 500 that names
 // nothing, so both are refused here instead, where the error can name the flag.
 func TestForkSyncSynchronizeRequiresRefAndAction(t *testing.T) {
+	t.Parallel()
+
 	service := newForkSyncTestService(t, testsupport.UnreachedHandler(t))
 	ctx := context.Background()
 
@@ -126,6 +132,8 @@ func TestForkSyncSynchronizeRequiresRefAndAction(t *testing.T) {
 //
 // mock-inventory: unreachable-state — a caller that omits the action, which no command does: `repo sync` defaults the flag to MERGE, so this defence is only reachable from here. TestLiveRepositoryForkSync covers the wire form the CLI actually sends, with and without the flag.
 func TestForkSyncSynchronizeDefaultsToMerge(t *testing.T) {
+	t.Parallel()
+
 	var captured map[string]any
 	service := newForkSyncTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&captured)

@@ -26,6 +26,8 @@ func newTestRepo(t *testing.T) string {
 }
 
 func TestGetConfigReturnsEmptyForUnsetKey(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	directory := newTestRepo(t)
 
@@ -45,6 +47,8 @@ func TestGetConfigReturnsEmptyForUnsetKey(t *testing.T) {
 }
 
 func TestSetGetUnsetConfigRoundTrip(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	directory := newTestRepo(t)
 	ctx := context.Background()
@@ -82,6 +86,8 @@ func TestSetGetUnsetConfigRoundTrip(t *testing.T) {
 }
 
 func TestUnsetConfigIsIdempotent(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	directory := newTestRepo(t)
 
@@ -98,6 +104,8 @@ func TestUnsetConfigIsIdempotent(t *testing.T) {
 }
 
 func TestConfigRejectsLocalScopeWithoutDirectory(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 
 	// Without a directory git would operate on the ambient repository, which is
@@ -115,6 +123,8 @@ func TestConfigRejectsLocalScopeWithoutDirectory(t *testing.T) {
 }
 
 func TestConfigRejectsEmptyKey(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 
 	if err := backend.SetConfig(context.Background(), git.ConfigOptions{
@@ -127,6 +137,8 @@ func TestConfigRejectsEmptyKey(t *testing.T) {
 }
 
 func TestConfigRejectsAnUnsupportedScope(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 
 	// An unrecognised scope must fail rather than silently defaulting, since

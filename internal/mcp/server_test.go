@@ -95,6 +95,8 @@ func listToolNames(t *testing.T, session *mcp.ClientSession) []string {
 
 // TestAllSpecsReturnsExpectedCount ensures the catalog has exactly the expected number of tools.
 func TestAllSpecsReturnsExpectedCount(t *testing.T) {
+	t.Parallel()
+
 	const wantCount = 24
 	specs := AllSpecs()
 	if len(specs) != wantCount {
@@ -104,6 +106,8 @@ func TestAllSpecsReturnsExpectedCount(t *testing.T) {
 
 // TestAllSpecsHaveNonEmptyNames ensures every spec has a non-empty tool name.
 func TestAllSpecsHaveNonEmptyNames(t *testing.T) {
+	t.Parallel()
+
 	for i, spec := range AllSpecs() {
 		if strings.TrimSpace(spec.Tool.Name) == "" {
 			t.Errorf("spec[%d] has empty tool name", i)
@@ -113,6 +117,8 @@ func TestAllSpecsHaveNonEmptyNames(t *testing.T) {
 
 // TestAllSpecsHaveNonEmptyDescriptions ensures every spec has a non-empty description.
 func TestAllSpecsHaveNonEmptyDescriptions(t *testing.T) {
+	t.Parallel()
+
 	for _, spec := range AllSpecs() {
 		if strings.TrimSpace(spec.Tool.Description) == "" {
 			t.Errorf("tool %q has empty description", spec.Tool.Name)
@@ -122,6 +128,8 @@ func TestAllSpecsHaveNonEmptyDescriptions(t *testing.T) {
 
 // TestAllSpecsHaveRegistrars ensures every spec can register itself.
 func TestAllSpecsHaveRegistrars(t *testing.T) {
+	t.Parallel()
+
 	for _, spec := range AllSpecs() {
 		if spec.Register == nil {
 			t.Errorf("tool %q has nil Register", spec.Tool.Name)
@@ -134,6 +142,8 @@ func TestAllSpecsHaveRegistrars(t *testing.T) {
 // much ceremony a call deserves, so a missing annotation degrades to the
 // pessimistic default and makes read-only tools look dangerous.
 func TestAllSpecsHaveAnnotations(t *testing.T) {
+	t.Parallel()
+
 	for _, spec := range AllSpecs() {
 		if spec.Tool.Annotations == nil {
 			t.Errorf("tool %q has no annotations", spec.Tool.Name)
@@ -153,6 +163,8 @@ func TestAllSpecsHaveAnnotations(t *testing.T) {
 // or wrongly gated. That comparison is between two facts nobody derived from
 // each other, which is what makes it worth asserting.
 func TestReadOnlyToolsAreNotGated(t *testing.T) {
+	t.Parallel()
+
 	for _, spec := range AllSpecs() {
 		annotations := spec.Tool.Annotations
 		if annotations == nil || !annotations.ReadOnlyHint {
@@ -170,6 +182,8 @@ func TestReadOnlyToolsAreNotGated(t *testing.T) {
 
 // TestAllSpecsHaveUniqueNames ensures no two tools share the same name.
 func TestAllSpecsHaveUniqueNames(t *testing.T) {
+	t.Parallel()
+
 	seen := map[string]int{}
 	for i, spec := range AllSpecs() {
 		if prev, ok := seen[spec.Tool.Name]; ok {
@@ -183,6 +197,8 @@ func TestAllSpecsHaveUniqueNames(t *testing.T) {
 // TestNewServerExposesSafeToolsByDefault verifies the default filter through a
 // real tools/list rather than by trusting NewServer not to panic.
 func TestNewServerExposesSafeToolsByDefault(t *testing.T) {
+	t.Parallel()
+
 	session := connect(t, Clients{}, nil, nil, false)
 	got := listToolNames(t, session)
 
@@ -202,6 +218,8 @@ func TestNewServerExposesSafeToolsByDefault(t *testing.T) {
 
 // TestNewServerYoloExposesEveryTool verifies --yolo lifts the safety filter.
 func TestNewServerYoloExposesEveryTool(t *testing.T) {
+	t.Parallel()
+
 	session := connect(t, Clients{}, nil, nil, true)
 	if got, want := len(listToolNames(t, session)), len(AllSpecs()); got != want {
 		t.Errorf("tools/list with yolo returned %d tools, want %d", got, want)
@@ -211,6 +229,8 @@ func TestNewServerYoloExposesEveryTool(t *testing.T) {
 // TestNewServerAllowListOverridesSafetyFilter verifies an explicit allowlist can
 // name an unsafe tool without --yolo, and suppresses everything else.
 func TestNewServerAllowListOverridesSafetyFilter(t *testing.T) {
+	t.Parallel()
+
 	session := connect(t, Clients{}, []string{"merge_pull_request"}, nil, false)
 	got := listToolNames(t, session)
 	if len(got) != 1 || got[0] != "merge_pull_request" {
@@ -220,6 +240,8 @@ func TestNewServerAllowListOverridesSafetyFilter(t *testing.T) {
 
 // TestNewServerExcludeAppliesAfterAllowList verifies exclude wins in every mode.
 func TestNewServerExcludeAppliesAfterAllowList(t *testing.T) {
+	t.Parallel()
+
 	session := connect(t, Clients{}, []string{"merge_pull_request"}, []string{"merge_pull_request"}, false)
 	if got := listToolNames(t, session); len(got) != 0 {
 		t.Errorf("tools/list = %v, want no tools", got)
@@ -228,6 +250,8 @@ func TestNewServerExcludeAppliesAfterAllowList(t *testing.T) {
 
 // TestSafeSpecsSubsetOfAllSpecs verifies SafeSpecs is a strict subset of AllSpecs.
 func TestSafeSpecsSubsetOfAllSpecs(t *testing.T) {
+	t.Parallel()
+
 	all := AllSpecs()
 	safe := SafeSpecs()
 	if len(safe) >= len(all) {
@@ -250,6 +274,8 @@ func TestSafeSpecsSubsetOfAllSpecs(t *testing.T) {
 // TestGatedToolsAreWithheld verifies the tools that influence merge gating are
 // not exposed without --yolo.
 func TestGatedToolsAreWithheld(t *testing.T) {
+	t.Parallel()
+
 	gated := []string{"merge_pull_request", "set_build_status", "submit_pr_review", "enable_auto_merge"}
 	safeByName := make(map[string]bool)
 	for _, s := range SafeSpecs() {
@@ -272,6 +298,8 @@ func TestGatedToolsAreWithheld(t *testing.T) {
 
 // TestToSet covers empty input, normal input, and whitespace trimming.
 func TestToSet(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		input []string
 		check string
@@ -294,6 +322,8 @@ func TestToSet(t *testing.T) {
 
 // TestLimitOrDefault pins the substitution an omitted limit relies on.
 func TestLimitOrDefault(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct{ in, want int }{
 		{0, defaultLimit},
 		{-1, defaultLimit},
@@ -309,6 +339,8 @@ func TestLimitOrDefault(t *testing.T) {
 
 // TestToolNamesMatchExpected verifies the catalog contains exactly the documented tool set.
 func TestToolNamesMatchExpected(t *testing.T) {
+	t.Parallel()
+
 	want := []string{
 		"get_pull_request",
 		"list_pull_requests",
@@ -351,6 +383,8 @@ func TestToolNamesMatchExpected(t *testing.T) {
 // handler discarded the error from RequireString and carried on with an empty
 // string, so a missing project reached the API as a request for project "".
 func TestMissingRequiredArgumentIsRejected(t *testing.T) {
+	t.Parallel()
+
 	session := connect(t, testClients(t), nil, nil, false)
 
 	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
@@ -367,6 +401,8 @@ func TestMissingRequiredArgumentIsRejected(t *testing.T) {
 
 // TestClientFromConfig verifies that ClientsFromConfig populates all three Clients fields.
 func TestClientFromConfig(t *testing.T) {
+	t.Parallel()
+
 	clients := testClients(t)
 	if clients.HTTP == nil {
 		t.Error("HTTP client is nil")
@@ -384,6 +420,8 @@ func TestClientFromConfig(t *testing.T) {
 
 // TestBuildCloneURLs exercises the URL construction helper.
 func TestBuildCloneURLs(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name      string
 		baseURL   string
@@ -448,6 +486,8 @@ func TestBuildCloneURLs(t *testing.T) {
 // package initialises, which is a worse failure than a filled-in default and
 // happens before any test can report it usefully.
 func TestToolSpecFillsInMissingAnnotations(t *testing.T) {
+	t.Parallel()
+
 	type in struct{}
 	type out struct {
 		Value string `json:"value"`

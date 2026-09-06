@@ -28,6 +28,8 @@ func decodeToolJSON(t *testing.T, text string) map[string]any {
 //
 // mock-inventory: unreachable-state — an instance whose activity timeline is not there while the pull request is, which cannot be arranged; the subject is that the fallback counts rather than reporting nothing outstanding.
 func TestGetPullRequestFallsBackToBlockerCommentCounts(t *testing.T) {
+	t.Parallel()
+
 	// The timeline is deliberately unrouted, so asking for it 404s: that is the
 	// state under test, and it is the only reason a server is here.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -70,6 +72,8 @@ func TestGetPullRequestFallsBackToBlockerCommentCounts(t *testing.T) {
 // The state is checked before anything is fetched, so the clients point at a
 // listener that fails the test if it is reached.
 func TestListPRCommentsRejectsUnknownState(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(server.Close)
 

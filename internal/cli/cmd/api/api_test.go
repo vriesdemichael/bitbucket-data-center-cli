@@ -34,6 +34,8 @@ func newTestDependencies(serverURL string, jsonMode bool, dryRun bool) Dependenc
 }
 
 func TestApiInvalidArguments(t *testing.T) {
+	t.Parallel()
+
 	deps := newTestDependencies("http://example.local", false, false)
 
 	// Missing argument
@@ -83,6 +85,8 @@ func TestApiInvalidArguments(t *testing.T) {
 }
 
 func TestApiDefaults(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(Dependencies{})
 	if cmd == nil {
 		t.Fatal("expected non-nil command from default dependencies")
@@ -90,6 +94,8 @@ func TestApiDefaults(t *testing.T) {
 }
 
 func TestApiLoadConfigError(t *testing.T) {
+	t.Parallel()
+
 	deps := Dependencies{
 		LoadConfig: func(config.Overrides) (config.AppConfig, error) {
 			return config.AppConfig{}, apperrors.New(apperrors.KindValidation, "forced config error", nil)
@@ -107,6 +113,8 @@ func TestApiLoadConfigError(t *testing.T) {
 }
 
 func TestApiEmptyPath(t *testing.T) {
+	t.Parallel()
+
 	deps := newTestDependencies("http://example.local", false, false)
 	cmd := New(deps)
 	cmd.SetArgs([]string{"   "})
@@ -120,6 +128,8 @@ func TestApiEmptyPath(t *testing.T) {
 }
 
 func TestApiEmptyFieldKey(t *testing.T) {
+	t.Parallel()
+
 	deps := newTestDependencies("http://example.local", false, false)
 	cmd := New(deps)
 	cmd.SetArgs([]string{"/rest/api/1.0/test", "-f", "=value"})
@@ -134,6 +144,8 @@ func TestApiEmptyFieldKey(t *testing.T) {
 
 // mock-inventory: transport-fault — the second page is made to fail, which no live instance can be asked for; the subject is that a walk interrupted halfway reports rather than returning the pages it got.
 func TestApiPaginatedErrors(t *testing.T) {
+	t.Parallel()
+
 	// 1. Pagination server error on page 2
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -183,6 +183,8 @@ func TestSaveLoginRejectsRequireKeyringWithMalformedPolicy(t *testing.T) {
 }
 
 func TestCredentialStorage(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name     string
 		config   AppConfig
@@ -220,6 +222,8 @@ func TestCredentialStorage(t *testing.T) {
 }
 
 func TestKeyringUnavailableErrorIsPermanentAndActionable(t *testing.T) {
+	t.Parallel()
+
 	err := keyringUnavailableError(os.ErrPermission)
 
 	if apperrors.KindOf(err) != apperrors.KindPermanent {

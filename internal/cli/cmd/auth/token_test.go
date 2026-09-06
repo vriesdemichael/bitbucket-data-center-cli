@@ -63,6 +63,8 @@ func (m *mockUsersClient) GetUserWithResponse(ctx context.Context, userSlug stri
 }
 
 func TestAuthTokenCommandsErrors(t *testing.T) {
+	t.Parallel()
+
 	// 1. LoadConfig error
 	depsErrConfig := Dependencies{
 		LoadConfig: func() (config.AppConfig, error) {

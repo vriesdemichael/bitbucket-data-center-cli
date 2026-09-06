@@ -21,6 +21,8 @@ func (w *errWriter) Write(p []byte) (n int, err error) {
 }
 
 func TestWriteText(t *testing.T) {
+	t.Parallel()
+
 	preview := Preview{
 		DryRun:       true,
 		PlanningMode: PlanningModeStateful,
@@ -65,6 +67,8 @@ func TestWriteText(t *testing.T) {
 }
 
 func TestWriteErrors(t *testing.T) {
+	t.Parallel()
+
 	preview := Preview{
 		DryRun:       true,
 		PlanningMode: PlanningModeStateful,
@@ -89,6 +93,8 @@ func TestWriteErrors(t *testing.T) {
 }
 
 func TestWriteJSON(t *testing.T) {
+	t.Parallel()
+
 	preview := Preview{
 		DryRun:       true,
 		PlanningMode: PlanningModeStateful,

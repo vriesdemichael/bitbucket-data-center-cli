@@ -22,6 +22,8 @@ import (
 // A path mangled by MSYS2 has to be recovered, because the shell rewrites the
 // argument before bb ever sees it and the user did nothing wrong.
 func TestSanitizeMangledPath(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name      string
 		input     string
@@ -83,6 +85,8 @@ func TestSanitizeMangledPath(t *testing.T) {
 // and the case arises when something in front of it does not. What is being
 // pinned is that bb reads the situation correctly when it happens.
 func TestHTMLResponseError(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name        string
 		path        string

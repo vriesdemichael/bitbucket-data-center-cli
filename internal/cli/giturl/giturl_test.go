@@ -6,6 +6,8 @@ import (
 )
 
 func TestParseBitbucketRemote(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		url      string
 		wantHost string
@@ -43,6 +45,8 @@ func TestParseBitbucketRemote(t *testing.T) {
 }
 
 func TestParseBitbucketPR(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		url      string
 		wantHost string
@@ -85,6 +89,8 @@ func TestParseBitbucketPR(t *testing.T) {
 }
 
 func TestBuildBitbucketCloneURL(t *testing.T) {
+	t.Parallel()
+
 	url, err := BuildBitbucketCloneURL("https://bitbucket.example.com", "PROJ", "my-repo")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -109,6 +115,8 @@ func TestBuildBitbucketCloneURL(t *testing.T) {
 }
 
 func TestNormalizeHTTPCloneHost(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		input string
 		want  string
@@ -128,6 +136,8 @@ func TestNormalizeHTTPCloneHost(t *testing.T) {
 }
 
 func TestIsNonRepositoryError(t *testing.T) {
+	t.Parallel()
+
 	if !IsNonRepositoryError(errors.New("fatal: not a git repository (or any of the parent directories): .git")) {
 		t.Fatalf("expected true for not a git repository")
 	}

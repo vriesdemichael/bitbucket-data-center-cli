@@ -30,6 +30,8 @@ func (writer *failAfterWriter) Write(value []byte) (int, error) {
 }
 
 func TestIsServerMutatingPath(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		path string
 		want bool
@@ -50,6 +52,8 @@ func TestIsServerMutatingPath(t *testing.T) {
 }
 
 func TestRegisterGlobalDryRunInterceptorsBulkApplyRejected(t *testing.T) {
+	t.Parallel()
+
 	options := &rootOptions{DryRun: true, JSON: true}
 	root := &cobra.Command{Use: "bb", SilenceErrors: true, SilenceUsage: true}
 	root.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "")
@@ -90,6 +94,8 @@ func TestRegisterGlobalDryRunInterceptorsBulkApplyRejected(t *testing.T) {
 }
 
 func TestRegisterGlobalDryRunInterceptorsProfilePassthroughWhenDisabled(t *testing.T) {
+	t.Parallel()
+
 	options := &rootOptions{DryRun: false}
 	root := &cobra.Command{Use: "bb", SilenceErrors: true, SilenceUsage: true}
 	root.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "")
@@ -118,6 +124,8 @@ func TestRegisterGlobalDryRunInterceptorsProfilePassthroughWhenDisabled(t *testi
 }
 
 func TestRegisterGlobalDryRunInterceptorsNonMutatingPassthrough(t *testing.T) {
+	t.Parallel()
+
 	options := &rootOptions{DryRun: true}
 	root := &cobra.Command{Use: "bb", SilenceErrors: true, SilenceUsage: true}
 	root.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "")
@@ -146,11 +154,15 @@ func TestRegisterGlobalDryRunInterceptorsNonMutatingPassthrough(t *testing.T) {
 }
 
 func TestRegisterGlobalDryRunInterceptorsNilSafety(t *testing.T) {
+	t.Parallel()
+
 	registerGlobalDryRunInterceptors(nil, &rootOptions{})
 	registerGlobalDryRunInterceptors(&cobra.Command{Use: "bb"}, nil)
 }
 
 func TestRegisterGlobalDryRunInterceptorsPassthroughPath(t *testing.T) {
+	t.Parallel()
+
 	options := &rootOptions{DryRun: true}
 	root := &cobra.Command{Use: "bb", SilenceErrors: true, SilenceUsage: true}
 	root.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "")
@@ -179,6 +191,8 @@ func TestRegisterGlobalDryRunInterceptorsPassthroughPath(t *testing.T) {
 }
 
 func TestNewDryRunPreviewSummaries(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		action string
 		check  func(dryRunSummary) bool
@@ -202,6 +216,8 @@ func TestNewDryRunPreviewSummaries(t *testing.T) {
 }
 
 func TestNewDryRunPreviewIncludesRepositoryAndArgs(t *testing.T) {
+	t.Parallel()
+
 	cmd := &cobra.Command{Use: "create"}
 	cmd.Flags().String("repo", "", "")
 	if err := cmd.Flags().Set("repo", "PRJ/demo"); err != nil {
@@ -223,6 +239,8 @@ func TestNewDryRunPreviewIncludesRepositoryAndArgs(t *testing.T) {
 }
 
 func TestNewDryRunPreviewIncludesInheritedRepositoryFlag(t *testing.T) {
+	t.Parallel()
+
 	root := &cobra.Command{Use: "bb"}
 	root.PersistentFlags().String("repo", "", "")
 	if err := root.PersistentFlags().Set("repo", "PRJ/inherited"); err != nil {
@@ -245,6 +263,8 @@ func TestNewDryRunPreviewIncludesInheritedRepositoryFlag(t *testing.T) {
 }
 
 func TestWriteDryRunPreviewHumanOutput(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	preview := dryRunPreview{
 		DryRun:       true,
@@ -285,6 +305,8 @@ func TestWriteDryRunPreviewHumanOutput(t *testing.T) {
 }
 
 func TestWriteDryRunPreviewHumanOutputWithoutOptionalFields(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	preview := dryRunPreview{
 		DryRun:       true,
@@ -310,6 +332,8 @@ func TestWriteDryRunPreviewHumanOutputWithoutOptionalFields(t *testing.T) {
 }
 
 func TestWriteDryRunPreviewJSONOutput(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	preview := dryRunPreview{
 		DryRun:       true,
@@ -332,6 +356,8 @@ func TestWriteDryRunPreviewJSONOutput(t *testing.T) {
 }
 
 func TestWriteDryRunPreviewWriterErrors(t *testing.T) {
+	t.Parallel()
+
 	preview := dryRunPreview{
 		DryRun:       true,
 		PlanningMode: planningModeStatic,
@@ -374,6 +400,8 @@ func TestWriteDryRunPreviewWriterErrors(t *testing.T) {
 }
 
 func TestDryRunPassthroughPathCoverage(t *testing.T) {
+	t.Parallel()
+
 	// Every previously-passthrough path must now be a stateful entry in dryRunProfiles.
 	paths := []string{
 		"branch delete",
@@ -444,6 +472,8 @@ func TestDryRunPassthroughPathCoverage(t *testing.T) {
 }
 
 func TestDryRunCommandPath(t *testing.T) {
+	t.Parallel()
+
 	if dryRunCommandPath(nil) != "" {
 		t.Fatal("expected empty path for nil command")
 	}
@@ -463,6 +493,8 @@ func TestDryRunCommandPath(t *testing.T) {
 }
 
 func TestRegisterGlobalDryRunInterceptorsNotImplemented(t *testing.T) {
+	t.Parallel()
+
 	options := &rootOptions{DryRun: true}
 	root := &cobra.Command{Use: "bb"}
 	root.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "")
@@ -498,6 +530,8 @@ func TestRegisterGlobalDryRunInterceptorsNotImplemented(t *testing.T) {
 }
 
 func TestAllCommandsExhaustivelyClassifiedForDryRun(t *testing.T) {
+	t.Parallel()
+
 	root := NewRootCommand()
 	var visit func(*cobra.Command)
 	visitedCount := 0
@@ -605,6 +639,8 @@ var verbClassificationExemptions = map[string]string{
 // one: it is chosen by whoever adds the command, and it is not derived from the
 // classification, so the two can disagree.
 func TestCommandVerbsAgreeWithTheirDryRunClassification(t *testing.T) {
+	t.Parallel()
+
 	root := NewRootCommand()
 	checked := 0
 
@@ -663,6 +699,8 @@ func TestCommandVerbsAgreeWithTheirDryRunClassification(t *testing.T) {
 // missing one: it holds the slot and reports success. This drives the same
 // comparison with a command deliberately placed in the wrong set.
 func TestCommandVerbClassificationDetectsAMisplacedCommand(t *testing.T) {
+	t.Parallel()
+
 	misclassified := map[string]struct{}{"repo delete": {}}
 
 	verb := "delete"
@@ -684,6 +722,8 @@ func TestCommandVerbClassificationDetectsAMisplacedCommand(t *testing.T) {
 }
 
 func TestAuthGpgKeyClearDryRun(t *testing.T) {
+	t.Parallel()
+
 	root := NewRootCommand()
 	buffer := &bytes.Buffer{}
 	root.SetOut(buffer)
@@ -715,6 +755,8 @@ func TestAuthGpgKeyClearDryRun(t *testing.T) {
 // The reason string is checked too. An exemption with no reason is the same
 // hole with the explanation removed.
 func TestVerbClassificationExemptionsNameRealCommands(t *testing.T) {
+	t.Parallel()
+
 	runnable := map[string]struct{}{}
 
 	var visit func(*cobra.Command)

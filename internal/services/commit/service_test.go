@@ -26,6 +26,8 @@ func newCommitTestService(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestCommitServiceValidationAndHelpers(t *testing.T) {
+	t.Parallel()
+
 	service := newCommitTestService(t, testsupport.UnreachedHandler(t))
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
@@ -54,6 +56,8 @@ func TestCommitServiceValidationAndHelpers(t *testing.T) {
 }
 
 func TestCommitServiceTransientAndMapping(t *testing.T) {
+	t.Parallel()
+
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
 	transientService := newCommitTestService(t, func(w http.ResponseWriter, r *http.Request) {

@@ -37,6 +37,8 @@ func TestTagDefaults(t *testing.T) {
 }
 
 func TestTagHelpers(t *testing.T) {
+	t.Parallel()
+
 	if safederef.String(nil) != "" {
 		t.Fatal("expected empty string for safederef.String(nil)")
 	}

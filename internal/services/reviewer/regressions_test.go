@@ -12,6 +12,8 @@ import (
 )
 
 func TestNormalizeRefID(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		in   string
 		want string
@@ -36,6 +38,8 @@ func TestNormalizeRefID(t *testing.T) {
 // empty made the caller quietly assign nobody.
 // mock-inventory: transport-fault — the membership lookup is made to fail; the subject is that the failure reaches the caller rather than becoming an empty group.
 func TestResolveReviewerGroupUsersSurfacesMembershipFailure(t *testing.T) {
+	t.Parallel()
+
 	t.Run("repository group", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -90,6 +94,8 @@ func TestResolveReviewerGroupUsersSurfacesMembershipFailure(t *testing.T) {
 }
 
 func TestRepositoryIDValidation(t *testing.T) {
+	t.Parallel()
+
 	client, _ := openapigenerated.NewClientWithResponses("http://example.invalid/rest")
 	service := NewService(client)
 
@@ -102,6 +108,8 @@ func TestRepositoryIDValidation(t *testing.T) {
 }
 
 func TestSelectMembers(t *testing.T) {
+	t.Parallel()
+
 	members := []string{"alice", "bob", "carol", "dave"}
 	busy := map[string]int{"alice": 5, "bob": 0, "carol": 3, "dave": 1}
 
@@ -164,6 +172,8 @@ func TestSelectMembers(t *testing.T) {
 //
 // mock-inventory: unreachable-state — a repository Bitbucket describes without an id, which it does not do; the subject is that a missing id is an error rather than a nil dereference or the string "0".
 func TestRepositoryIDErrorsWhenTheResponseCarriesNoID(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"slug":"demo"}`))

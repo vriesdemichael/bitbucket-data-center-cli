@@ -49,6 +49,8 @@ const threadFixture = `{"isLastPage":true,"values":[
 ]}`
 
 func TestExtractThreadsMapsActionableFields(t *testing.T) {
+	t.Parallel()
+
 	activities := activitiesFromJSON(t, threadFixture)
 
 	threads, summary := ExtractThreads(activities, ThreadOptions{
@@ -137,6 +139,8 @@ func TestExtractThreadsMapsActionableFields(t *testing.T) {
 }
 
 func TestExtractThreadsOrdersUnresolvedFirst(t *testing.T) {
+	t.Parallel()
+
 	threads, _ := ExtractThreads(activitiesFromJSON(t, threadFixture), ThreadOptions{})
 
 	seenResolved := false
@@ -152,6 +156,8 @@ func TestExtractThreadsOrdersUnresolvedFirst(t *testing.T) {
 }
 
 func TestExtractThreadsFilters(t *testing.T) {
+	t.Parallel()
+
 	activities := activitiesFromJSON(t, threadFixture)
 
 	openThreads, summary := ExtractThreads(activities, ThreadOptions{State: "open"})
@@ -186,6 +192,8 @@ func TestExtractThreadsFilters(t *testing.T) {
 }
 
 func TestExtractThreadsWithReplies(t *testing.T) {
+	t.Parallel()
+
 	threads, _ := ExtractThreads(activitiesFromJSON(t, threadFixture), ThreadOptions{WithReplies: true})
 
 	inline, ok := findThread(threads, 10)
@@ -200,6 +208,8 @@ func TestExtractThreadsWithReplies(t *testing.T) {
 // A missing state field means the server did not report one, so the thread flags
 // decide. This keeps older Bitbucket responses from reading as unresolved.
 func TestThreadResolutionFallsBackToThreadFlags(t *testing.T) {
+	t.Parallel()
+
 	body := `{"isLastPage":true,"values":[
       {"id":1,"action":"COMMENTED","comment":{"id":10,"text":"a","threadResolved":true}},
       {"id":2,"action":"COMMENTED","comment":{"id":20,"text":"b","resolvedDate":1700}},
@@ -217,6 +227,8 @@ func TestThreadResolutionFallsBackToThreadFlags(t *testing.T) {
 }
 
 func TestThreadSuggestionDetection(t *testing.T) {
+	t.Parallel()
+
 	body := "{\"isLastPage\":true,\"values\":[" +
 		"{\"id\":1,\"action\":\"COMMENTED\",\"comment\":{\"id\":10,\"text\":\"try\\n```suggestion\\nx := 1\\n```\"}}," +
 		"{\"id\":2,\"action\":\"COMMENTED\",\"comment\":{\"id\":20,\"text\":\"just prose about ```suggestion``` inline\"}}" +
@@ -235,6 +247,8 @@ func TestThreadSuggestionDetection(t *testing.T) {
 }
 
 func TestThreadURLOmittedWithoutContext(t *testing.T) {
+	t.Parallel()
+
 	threads, _ := ExtractThreads(activitiesFromJSON(t, threadFixture), ThreadOptions{ProjectKey: "TEST"})
 
 	for _, thread := range threads {
@@ -247,6 +261,8 @@ func TestThreadURLOmittedWithoutContext(t *testing.T) {
 // The whole point of the thread view is that it does not drag the pull request
 // payload along with every comment.
 func TestThreadJSONDropsNestedPullRequest(t *testing.T) {
+	t.Parallel()
+
 	body := `{"isLastPage":true,"values":[{"id":1,"action":"COMMENTED","comment":{"id":10,"text":"x",
       "anchor":{"line":1,"path":{"name":"a.go"},"pullRequest":{"id":12,"title":"a pull request"}}}}]}`
 
@@ -262,6 +278,8 @@ func TestThreadJSONDropsNestedPullRequest(t *testing.T) {
 }
 
 func TestNormalizeThreadState(t *testing.T) {
+	t.Parallel()
+
 	for input, want := range map[string]string{
 		"":           "all",
 		"all":        "all",
@@ -285,6 +303,8 @@ func TestNormalizeThreadState(t *testing.T) {
 }
 
 func TestThreadsFromComments(t *testing.T) {
+	t.Parallel()
+
 	activities := activitiesFromJSON(t, threadFixture)
 	comments := ExtractComments(activities)
 
@@ -306,6 +326,8 @@ func TestThreadsFromComments(t *testing.T) {
 // activity timeline, while the generated model expects the object form used
 // elsewhere. A single inline comment used to make the whole page fail to decode.
 func TestExtractThreadsHandlesStringAnchorPaths(t *testing.T) {
+	t.Parallel()
+
 	body := `{"isLastPage":true,"values":[
       {"id":1,"action":"COMMENTED","comment":{"id":10,"text":"needs a guard","state":"OPEN",
         "anchor":{"line":7,"lineType":"ADDED","path":"internal/cli/root.go","srcPath":"internal/cli/old.go"},
@@ -341,6 +363,8 @@ func TestExtractThreadsHandlesStringAnchorPaths(t *testing.T) {
 }
 
 func TestPathObjectFromString(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		input      string
 		name       string
@@ -392,6 +416,8 @@ func TestPathObjectFromString(t *testing.T) {
 // not assumed here -- TestLiveRouteMissingClassification pins both against a
 // genuinely retired Bitbucket endpoint.
 func TestTimelineUnavailableSeparatesDegradeFromReport(t *testing.T) {
+	t.Parallel()
+
 	const containerStatusDocument = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
 		`<status><status-code>404</status-code><message>HTTP 404 Not Found</message></status>`
 	const missingPullRequest = `{"errors":[{"message":"Pull request 12 does not exist in TEST/demo.",` +
@@ -428,6 +454,8 @@ func TestTimelineUnavailableSeparatesDegradeFromReport(t *testing.T) {
 }
 
 func TestTrySummarizeReportsCancellation(t *testing.T) {
+	t.Parallel()
+
 	service := newActivityTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
@@ -441,6 +469,8 @@ func TestTrySummarizeReportsCancellation(t *testing.T) {
 }
 
 func TestTrySummarizeReturnsCountsOnSuccess(t *testing.T) {
+	t.Parallel()
+
 	service := newActivityTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(threadFixture))

@@ -9,6 +9,8 @@ import (
 )
 
 func TestParseLevelAndFormat(t *testing.T) {
+	t.Parallel()
+
 	if _, err := ParseLevel("debug"); err != nil {
 		t.Fatalf("expected debug level to parse: %v", err)
 	}
@@ -25,6 +27,8 @@ func TestParseLevelAndFormat(t *testing.T) {
 }
 
 func TestRedactFields(t *testing.T) {
+	t.Parallel()
+
 	fields := map[string]any{
 		"authorization": "Bearer test-token",
 		"endpoint":      "https://user:pass@example.test/rest?access_token=abc&ok=true",
@@ -51,6 +55,8 @@ func TestRedactFields(t *testing.T) {
 }
 
 func TestLoggerJSONLAndLevelFiltering(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	logger := NewLogger(Config{Level: LevelWarn, Format: FormatJSONL}, buffer)
 
@@ -79,6 +85,8 @@ func TestLoggerJSONLAndLevelFiltering(t *testing.T) {
 }
 
 func TestOutputWriterSetterGetter(t *testing.T) {
+	t.Parallel()
+
 	SetOutputWriter(nil)
 	if writer := OutputWriter(); writer != io.Discard {
 		t.Fatalf("expected discard writer when setting nil, got %T", writer)
@@ -92,6 +100,8 @@ func TestOutputWriterSetterGetter(t *testing.T) {
 }
 
 func TestEnabledWriter(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 
 	if writer := EnabledWriter(true, buffer); writer != buffer {

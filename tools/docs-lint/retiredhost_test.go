@@ -23,6 +23,8 @@ func writeFile(t *testing.T, root, relative, contents string) {
 // the retired host actually took: a documentation link, a Go constant, and the
 // $id of a published schema.
 func TestLintRetiredHostReportsEveryFileTypeItReached(t *testing.T) {
+	t.Parallel()
+
 	root := t.TempDir()
 
 	writeFile(t, root, "docs/site/llms.txt", "- [Docs home]("+retiredPagesHost+"/latest/)\n")
@@ -62,6 +64,8 @@ func TestLintRetiredHostReportsEveryFileTypeItReached(t *testing.T) {
 }
 
 func TestLintRetiredHostPassesOnTheCurrentHost(t *testing.T) {
+	t.Parallel()
+
 	root := t.TempDir()
 
 	writeFile(t, root, "docs/site/llms.txt",
@@ -80,6 +84,8 @@ func TestLintRetiredHostPassesOnTheCurrentHost(t *testing.T) {
 // GitHub redirects a renamed repository. Only the Pages host is dead, and a
 // rule that fired on both would block the module path until it is renamed too.
 func TestLintRetiredHostIgnoresTheRedirectedRepositoryHost(t *testing.T) {
+	t.Parallel()
+
 	root := t.TempDir()
 
 	writeFile(t, root, "go.mod", "module github.com/vriesdemichael/bitbucket-data-center-cli\n")
@@ -94,6 +100,8 @@ func TestLintRetiredHostIgnoresTheRedirectedRepositoryHost(t *testing.T) {
 }
 
 func TestLintRetiredHostSkipsItsOwnDefinition(t *testing.T) {
+	t.Parallel()
+
 	root := t.TempDir()
 
 	writeFile(t, root, "tools/docs-lint/retiredhost.go",
@@ -109,6 +117,8 @@ func TestLintRetiredHostSkipsItsOwnDefinition(t *testing.T) {
 }
 
 func TestLintRetiredHostSkipsFileTypesItDoesNotRead(t *testing.T) {
+	t.Parallel()
+
 	root := t.TempDir()
 
 	writeFile(t, root, "assets/logo.svg", retiredPagesHost+"\n")
@@ -125,6 +135,8 @@ func TestLintRetiredHostSkipsFileTypesItDoesNotRead(t *testing.T) {
 // The published schemas are one long line each; the default scanner buffer
 // would stop partway through and report nothing rather than fail.
 func TestLintRetiredHostReadsLinesLongerThanTheDefaultBuffer(t *testing.T) {
+	t.Parallel()
+
 	root := t.TempDir()
 
 	padding := strings.Repeat("x", 128*1024)
@@ -147,6 +159,8 @@ func TestLintRetiredHostReadsLinesLongerThanTheDefaultBuffer(t *testing.T) {
 // module path, a test fixture. Each of those is where a link to the dead host
 // gets written next.
 func TestLintRetiredHostReportsTheBareSlug(t *testing.T) {
+	t.Parallel()
+
 	root := t.TempDir()
 
 	writeFile(t, root, "AGENTS.md", "# Agent Instructions — "+retiredSlug+"\n")
@@ -175,6 +189,8 @@ func TestLintRetiredHostReportsTheBareSlug(t *testing.T) {
 // reporting both would tell a reader to fix two things where there is one. The
 // host wins, because it is the more specific finding and its remedy is exact.
 func TestLintRetiredHostNamesOneMistakeOnce(t *testing.T) {
+	t.Parallel()
+
 	root := t.TempDir()
 
 	writeFile(t, root, "docs/site/index.md", "[Docs]("+retiredPagesHost+"/latest/)\n")
@@ -200,6 +216,8 @@ func TestLintRetiredHostNamesOneMistakeOnce(t *testing.T) {
 // the absolute path of whatever directory the checkout sits in. A lint that
 // fails on those is a lint that gets turned off.
 func TestLintRetiredHostSkipsIgnoredBuildOutput(t *testing.T) {
+	t.Parallel()
+
 	root := t.TempDir()
 
 	writeFile(t, root, ".tmp/coverage.out", "github.com/vriesdemichael/"+retiredSlug+"/internal/cli/root.go:1.1,2.2 1 1\n")

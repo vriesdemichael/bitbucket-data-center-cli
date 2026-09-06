@@ -13,6 +13,8 @@ import (
 )
 
 func TestReviewerServiceValidation(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 	if _, err := service.ListProjectConditions(context.Background(), ""); err == nil {
 		t.Fatal("expected validation error")
@@ -32,6 +34,8 @@ func TestReviewerServiceValidation(t *testing.T) {
 }
 
 func TestReviewerServiceUpdateValidation(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 	if _, err := service.UpdateProjectCondition(context.Background(), "", "1", openapigenerated.UpdatePullRequestConditionJSONRequestBody{}); err == nil {
 		t.Fatal("expected error")
@@ -60,6 +64,8 @@ func TestReviewerServiceUpdateValidation(t *testing.T) {
 }
 
 func TestReviewerGroupsAndDefaultReviewersServiceValidation(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 	ctx := context.Background()
 
@@ -104,6 +110,8 @@ func TestReviewerGroupsAndDefaultReviewersServiceValidation(t *testing.T) {
 
 // mock-inventory: transport-fault — a cancelled context is the caller's doing; no server produces it.
 func TestReviewerGroupsAndDefaultReviewersServiceContextCanceled(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -155,6 +163,8 @@ func TestReviewerGroupsAndDefaultReviewersServiceContextCanceled(t *testing.T) {
 
 // mock-inventory: unreachable-state — an object with no values key where a page belongs, which Bitbucket does not send; the subject is that a listing missing its values reads as empty rather than as a nil dereference.
 func TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -206,6 +216,8 @@ func TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks(t *testing.T)
 // A live Bitbucket cannot be asked to drop a connection on cue, so the listener
 // is closed before the request is made.
 func TestResolveGroupMembersReportsATransportFailure(t *testing.T) {
+	t.Parallel()
+
 	client, err := openapigenerated.NewClientWithResponses(testsupport.ClosedListenerURL(t))
 	if err != nil {
 		t.Fatalf("build client: %v", err)
@@ -230,6 +242,8 @@ func TestResolveGroupMembersReportsATransportFailure(t *testing.T) {
 // that are not names. They are dropped rather than looked up, because a lookup
 // of "" is a request that cannot succeed and an error the caller cannot act on.
 func TestResolveGroupMembersSkipsBlanks(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 
 	members, err := service.resolveGroupMembers(context.Background(), []string{"", "   ", "\t"})

@@ -150,6 +150,8 @@ func colorRenderer() *lipgloss.Renderer {
 }
 
 func TestSuccessStyleEmitsGreenBold(t *testing.T) {
+	t.Parallel()
+
 	r := colorRenderer()
 	s := r.NewStyle().Bold(true).Foreground(lipgloss.Color("2"))
 	rendered := s.Render("Created thing")
@@ -162,6 +164,8 @@ func TestSuccessStyleEmitsGreenBold(t *testing.T) {
 }
 
 func TestDeletedStyleEmitsRed(t *testing.T) {
+	t.Parallel()
+
 	r := colorRenderer()
 	s := r.NewStyle().Foreground(lipgloss.Color("1"))
 	rendered := s.Render("Deleted thing")
@@ -220,6 +224,8 @@ func TestNoColorFlagDisablesColorViaInit(t *testing.T) {
 }
 
 func TestInitWithRendererPanicsOnNil(t *testing.T) {
+	t.Parallel()
+
 	defer func() {
 		if r := recover(); r == nil {
 			t.Fatal("expected panic when passing nil renderer to InitWithRenderer")

@@ -21,6 +21,8 @@ import (
 )
 
 func TestVerifierVerifyEntity(t *testing.T) {
+	t.Parallel()
+
 	virtualSigstore, err := ca.NewVirtualSigstore()
 	if err != nil {
 		t.Fatalf("NewVirtualSigstore returned error: %v", err)
@@ -62,6 +64,8 @@ func TestVerifierVerifyEntity(t *testing.T) {
 }
 
 func TestVerifierVerifyBlobLegacyBundle(t *testing.T) {
+	t.Parallel()
+
 	artifact, virtualSigstore, _, _, _, legacyJSON := mustLegacyFixture(t)
 	verifier := NewVerifier(Options{
 		ExpectedIssuer: "http://oidc.local:8080",
@@ -94,6 +98,8 @@ func TestVerifierVerifyBlobLegacyBundle(t *testing.T) {
 }
 
 func TestLegacyVerificationMaterial(t *testing.T) {
+	t.Parallel()
+
 	_, _, _, certificate, _, _ := mustLegacyFixture(t)
 	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate.Raw})
 
@@ -132,6 +138,8 @@ func TestLegacyVerificationMaterial(t *testing.T) {
 }
 
 func TestLegacyBodyBytes(t *testing.T) {
+	t.Parallel()
+
 	t.Run("base64 string", func(t *testing.T) {
 		body, err := legacyBodyBytes(base64.StdEncoding.EncodeToString([]byte("hello")))
 		if err != nil {
@@ -182,6 +190,8 @@ func TestLegacyBodyBytes(t *testing.T) {
 }
 
 func TestLegacyKindVersion(t *testing.T) {
+	t.Parallel()
+
 	_, _, _, _, body, _ := mustLegacyFixture(t)
 
 	kindVersion, err := legacyKindVersion(body)
@@ -198,6 +208,8 @@ func TestLegacyKindVersion(t *testing.T) {
 }
 
 func TestParseLegacyBundleErrors(t *testing.T) {
+	t.Parallel()
+
 	artifact, _, _, _, _, legacyJSON := mustLegacyFixture(t)
 	var legacy map[string]any
 	if err := json.Unmarshal(legacyJSON, &legacy); err != nil {
@@ -285,6 +297,8 @@ func TestParseLegacyBundleErrors(t *testing.T) {
 }
 
 func TestNewVerifierDefaults(t *testing.T) {
+	t.Parallel()
+
 	verifier := NewVerifier(Options{ExpectedIssuer: " https://issuer.example ", ExpectedSAN: " https://san.example "})
 	if verifier == nil {
 		t.Fatal("expected verifier")
@@ -439,6 +453,8 @@ func cloneLegacyMap(t *testing.T, payload map[string]any) map[string]any {
 }
 
 func TestNewVerifierUsesExplicitProviderAndOptions(t *testing.T) {
+	t.Parallel()
+
 	providerCalls := 0
 	provider := func(context.Context) (sigroot.TrustedMaterial, error) {
 		providerCalls++
@@ -471,6 +487,8 @@ func TestNewVerifierUsesExplicitProviderAndOptions(t *testing.T) {
 }
 
 func TestNewGitHubReleaseVerifier(t *testing.T) {
+	t.Parallel()
+
 	verifier := NewGitHubReleaseVerifier(" vriesdemichael ", " bitbucket-data-center-cli ")
 	if verifier == nil {
 		t.Fatal("expected verifier")
@@ -485,6 +503,8 @@ func TestNewGitHubReleaseVerifier(t *testing.T) {
 }
 
 func TestVerifierVerifyBlobErrors(t *testing.T) {
+	t.Parallel()
+
 	t.Run("nil verifier", func(t *testing.T) {
 		var verifier *Verifier
 		_, err := verifier.VerifyBlob(context.Background(), []byte("artifact"), []byte("bundle"))

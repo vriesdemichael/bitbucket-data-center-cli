@@ -16,6 +16,8 @@ import (
 )
 
 func TestBuildSafeHelpers(t *testing.T) {
+	t.Parallel()
+
 	if safederef.String(nil) != "" {
 		t.Fatal("expected empty for safederef.String(nil)")
 	}
@@ -87,6 +89,8 @@ func TestBuildDefaults(t *testing.T) {
 }
 
 func TestResolveQualityRepoServiceAndClientErrors(t *testing.T) {
+	t.Parallel()
+
 	// Error loading config
 	badDeps := Dependencies{
 		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
@@ -123,6 +127,8 @@ func (m *mockBuildPermChecker) CheckProjectAdmin(ctx context.Context, projectKey
 }
 
 func TestBuildDryRunPermissionRejection(t *testing.T) {
+	t.Parallel()
+
 	// A listener that fails the test if it is reached, which is the
 	// assertion: every case here is refused before a request exists.
 	guard := httptest.NewServer(testsupport.UnreachedHandler(t))

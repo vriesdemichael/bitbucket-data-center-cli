@@ -44,6 +44,8 @@ import (
 // integration assumption in the unit suite or moves a legitimate unit test out
 // of it.
 func TestClassification(t *testing.T) {
+	t.Parallel()
+
 	for _, testCase := range []struct {
 		name string
 		body string
@@ -152,6 +154,8 @@ func TestClassification(t *testing.T) {
 // cleared eight behaviour mocks in one file while the inventory was being
 // built.
 func TestAServingHandlerIsNotAGuard(t *testing.T) {
+	t.Parallel()
+
 	source := preamble + `func TestX(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -173,6 +177,8 @@ func TestAServingHandlerIsNotAGuard(t *testing.T) {
 // decided about, and the whole point of the inventory is that there is no such
 // pile.
 func TestTheRepositoryHasNoUnclassifiedMocks(t *testing.T) {
+	t.Parallel()
+
 	entries, err := scan("../../internal")
 	if err != nil {
 		t.Fatalf("scan: %v", err)
@@ -197,6 +203,8 @@ func TestTheRepositoryHasNoUnclassifiedMocks(t *testing.T) {
 // Counting alone is not enough. A paging mock counts calls too, and Bitbucket's
 // paging convention is a claim about Bitbucket.
 func TestFaultInjectionIsToldApartFromPaging(t *testing.T) {
+	t.Parallel()
+
 	retry := preamble + `func TestRetries(t *testing.T) {
 	attempts := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -240,6 +248,8 @@ func TestFaultInjectionIsToldApartFromPaging(t *testing.T) {
 // live suite that cannot express them: no real server can be asked to fail
 // twice and then succeed.
 func TestAnAtomicCounterCountsAttemptsToo(t *testing.T) {
+	t.Parallel()
+
 	source := preamble + `func TestRetries(t *testing.T) {
 	var attempts atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -266,6 +276,8 @@ func TestAnAtomicCounterCountsAttemptsToo(t *testing.T) {
 // only if it cannot be used to quietly silence an entry -- so an override
 // without a stated reason is ignored.
 func TestAReviewedDirectiveOverridesTheClassifier(t *testing.T) {
+	t.Parallel()
+
 	const behaviourMock = preamble + `
 func TestSomething(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -321,6 +333,8 @@ func TestSomething(t *testing.T) {
 // The override's reason replaces the generated one, so the task list says what
 // the person said rather than what the classifier would have.
 func TestAReviewedDirectiveCarriesItsReason(t *testing.T) {
+	t.Parallel()
+
 	const reason = "the failure is injected below the API"
 	source := insertDirective(preamble+`
 func TestSomething(t *testing.T) {
@@ -363,6 +377,8 @@ func insertDirective(source, directive string) string {
 // eleven hand-written guards onto it was that they say the same thing --
 // including to this tool.
 func TestTheSharedGuardIsRecognised(t *testing.T) {
+	t.Parallel()
+
 	source := preamble + `func TestX(t *testing.T) {
 	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer server.Close()
@@ -377,6 +393,8 @@ func TestTheSharedGuardIsRecognised(t *testing.T) {
 // same rule handlerFailsTheTest applies to literals has to hold for the shared
 // helper, or a serving mock beside a guarded one would be waved through.
 func TestOneSharedGuardDoesNotCoverAServingMock(t *testing.T) {
+	t.Parallel()
+
 	source := preamble + `func TestX(t *testing.T) {
 	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer guard.Close()

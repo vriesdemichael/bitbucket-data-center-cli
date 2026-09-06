@@ -143,6 +143,8 @@ func TestPRCommandsCheckRepositoryPermission(t *testing.T) {
 // The permission constants are aliases for generated values whose names change
 // between spec versions. Their meaning is the wire string, which must not.
 func TestRepositoryPermissionValues(t *testing.T) {
+	t.Parallel()
+
 	tests := map[openapi.RepositoryPermission]string{
 		openapi.RepoRead:  "REPO_READ",
 		openapi.RepoWrite: "REPO_WRITE",

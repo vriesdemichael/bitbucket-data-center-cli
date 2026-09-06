@@ -53,6 +53,8 @@ func testDeps(serverURL string) repocmd.Dependencies {
 }
 
 func TestRepoAdminDeleteDryRun(t *testing.T) {
+	t.Parallel()
+
 	deps := testDeps("http://dummy")
 	deps.DryRunEnabled = func() bool { return true }
 	deps.JSONEnabled = func() bool { return true }
@@ -78,6 +80,8 @@ func TestRepoAdminDeleteDryRun(t *testing.T) {
 }
 
 func TestRepoPermissionsShow(t *testing.T) {
+	t.Parallel()
+
 	deps := testDeps("http://dummy")
 	cmd := repocmd.New(deps)
 	buf := new(bytes.Buffer)

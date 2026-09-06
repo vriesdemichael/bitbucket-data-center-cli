@@ -19,6 +19,8 @@ func countPointer(value int) *int {
 }
 
 func TestFormatThreadCounts(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name    string
 		summary pullrequestactivityservice.Summary
@@ -52,6 +54,8 @@ func TestFormatThreadCounts(t *testing.T) {
 }
 
 func TestFormatThread(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name        string
 		thread      pullrequestactivityservice.Thread
@@ -150,6 +154,8 @@ func TestFormatThread(t *testing.T) {
 }
 
 func TestFormatReviewSummaryLines(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name    string
 		summary pullrequestservice.ReviewSummary
@@ -211,6 +217,8 @@ func TestFormatReviewSummaryLines(t *testing.T) {
 }
 
 func TestFormatPullRequestCounts(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name        string
 		pullRequest result.PullRequest
@@ -244,6 +252,8 @@ func TestFormatPullRequestCounts(t *testing.T) {
 }
 
 func TestFormatReviewStatusIndicator(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name    string
 		summary pullrequestservice.ReviewSummary
@@ -272,6 +282,8 @@ func TestFormatReviewStatusIndicator(t *testing.T) {
 }
 
 func TestSingleLineTruncatesLongText(t *testing.T) {
+	t.Parallel()
+
 	if got := singleLine("  a   b\nc  "); got != "a b c" {
 		t.Fatalf("expected whitespace to collapse, got %q", got)
 	}
@@ -284,6 +296,8 @@ func TestSingleLineTruncatesLongText(t *testing.T) {
 }
 
 func TestPluralize(t *testing.T) {
+	t.Parallel()
+
 	cases := map[string]string{
 		"1 reply":   pluralize(1, "reply"),
 		"2 replies": pluralize(2, "reply"),
@@ -299,6 +313,8 @@ func TestPluralize(t *testing.T) {
 }
 
 func TestFormatPullRequestActivitySummary(t *testing.T) {
+	t.Parallel()
+
 	text := "comment body"
 	comment := openapigenerated.RestComment{Text: &text}
 	activity := pullrequestactivityservice.Activity{ID: 77, Comment: &comment}
@@ -312,6 +328,8 @@ func TestFormatPullRequestActivitySummary(t *testing.T) {
 }
 
 func TestFormatHelpers(t *testing.T) {
+	t.Parallel()
+
 	// The pointer helpers moved to internal/safederef and are tested
 	// there. safeUsers is this package's own and stays.
 	s := "hello"
@@ -408,6 +426,8 @@ func TestFormatHelpers(t *testing.T) {
 }
 
 func TestPrintDefaultReviewersEmpty(t *testing.T) {
+	t.Parallel()
+
 	buf := &bytes.Buffer{}
 	cmd := &cobra.Command{}
 	cmd.SetOut(buf)

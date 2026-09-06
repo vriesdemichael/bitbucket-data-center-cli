@@ -34,6 +34,8 @@ var terminalCheckAllowed = map[string]string{
 // Adding a file here is allowed and is the point. It forces the decision to be
 // made once, in review, rather than in a handler.
 func TestOnlyTheSharedHelperDecidesInteractivity(t *testing.T) {
+	t.Parallel()
+
 	root := repositoryRoot(t)
 
 	found := terminalCheckCallers(t, root)
@@ -64,6 +66,8 @@ func TestOnlyTheSharedHelperDecidesInteractivity(t *testing.T) {
 // part at risk: the scan is where a guard goes blind, and a scan that stopped
 // matching would have passed it.
 func TestTheTerminalScannerFindsARealCheck(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name   string
 		source string

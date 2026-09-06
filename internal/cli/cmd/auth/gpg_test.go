@@ -22,6 +22,8 @@ import (
 //
 // mock-inventory: transport-fault — nothing is listening; the subject is that each command surfaces the failure instead of rendering an empty result.
 func TestAuthGpgKeyCommandsErrors(t *testing.T) {
+	t.Parallel()
+
 	unreachable := testsupport.ClosedListenerURL(t)
 
 	deps := Dependencies{
@@ -57,6 +59,8 @@ func TestAuthGpgKeyCommandsErrors(t *testing.T) {
 }
 
 func TestAuthGpgKeyCommandsAdditionalCoverage(t *testing.T) {
+	t.Parallel()
+
 	// 1. deps.LoadConfig returns error
 	{
 		deps := Dependencies{

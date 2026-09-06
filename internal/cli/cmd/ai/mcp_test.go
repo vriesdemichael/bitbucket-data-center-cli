@@ -30,6 +30,8 @@ func testMCPDeps() Dependencies {
 
 // TestSplitCSV covers all branches of the CSV splitter.
 func TestSplitCSV(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		input string
 		want  []string
@@ -57,6 +59,8 @@ func TestSplitCSV(t *testing.T) {
 
 // TestToolDescription tests that toolDescription returns the tool's Description field.
 func TestToolDescription(t *testing.T) {
+	t.Parallel()
+
 	specs := bbmcp.AllSpecs()
 	if len(specs) == 0 {
 		t.Fatal("AllSpecs returned no tools")
@@ -71,6 +75,8 @@ func TestToolDescription(t *testing.T) {
 
 // TestMCPToolsTextOutput verifies that `bb ai mcp tools` lists all tools in text mode.
 func TestMCPToolsTextOutput(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(testMCPDeps())
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
@@ -91,6 +97,8 @@ func TestMCPToolsTextOutput(t *testing.T) {
 
 // TestMCPToolsJSONOutput verifies that `bb ai mcp tools` with --json returns valid JSON.
 func TestMCPToolsJSONOutput(t *testing.T) {
+	t.Parallel()
+
 	// Wire a root command that has the --json persistent flag, just like root.go does.
 	cmd := New(testMCPDeps())
 	// Attach a mock --json flag to the root command (normally added by root.go).
@@ -120,6 +128,8 @@ func TestMCPToolsJSONOutput(t *testing.T) {
 
 // TestMCPServeRejectsLoadConfigError tests that serve propagates a LoadConfig error.
 func TestMCPServeRejectsLoadConfigError(t *testing.T) {
+	t.Parallel()
+
 	sentinel := errors.New("config load failed")
 	deps := Dependencies{
 		Version: func() string { return "test" },
@@ -190,6 +200,8 @@ func TestMCPServeHostOverrideAndTokenFromEnvironment(t *testing.T) {
 
 // TestMCPServeClientFromConfigFails tests the ClientsFromConfig error path.
 func TestMCPServeClientFromConfigFails(t *testing.T) {
+	t.Parallel()
+
 	// Provide a config with an invalid URL to make openapi client construction fail.
 	deps := Dependencies{
 		Version: func() string { return "test" },
@@ -214,6 +226,8 @@ func TestMCPServeClientFromConfigFails(t *testing.T) {
 
 // TestMCPToolsCountMatchesAllSpecs ensures the tools listing covers all specs.
 func TestMCPToolsCountMatchesAllSpecs(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(testMCPDeps())
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
@@ -250,6 +264,8 @@ var gatedToolNames = []string{
 }
 
 func TestToolExposureMatchesTheServerClassification(t *testing.T) {
+	t.Parallel()
+
 	gated := map[string]bool{}
 	for _, name := range gatedToolNames {
 		gated[name] = true
@@ -283,6 +299,8 @@ func TestToolExposureMatchesTheServerClassification(t *testing.T) {
 // documented as the source for building allowlists, so a tool that is withheld
 // by default has to say so.
 func TestMCPToolsMarksGatedTools(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(testMCPDeps())
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
@@ -321,6 +339,8 @@ func TestMCPToolsMarksGatedTools(t *testing.T) {
 }
 
 func TestMCPToolsSafeOnlyOmitsGatedTools(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(testMCPDeps())
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
@@ -348,6 +368,8 @@ func TestMCPToolsSafeOnlyOmitsGatedTools(t *testing.T) {
 }
 
 func TestMCPToolsJSONCarriesExposure(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(testMCPDeps())
 	cmd.PersistentFlags().Bool("json", true, "")
 

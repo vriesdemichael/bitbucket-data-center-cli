@@ -317,6 +317,8 @@ func TestYesSkipsTheQuestionEntirely(t *testing.T) {
 
 // TestRequestForReadsTheNoInputFlag pins the wiring that was missing.
 func TestRequestForReadsTheNoInputFlag(t *testing.T) {
+	t.Parallel()
+
 	command := &cobra.Command{Use: "x"}
 	command.Flags().Bool(noInputFlag, false, "")
 
@@ -338,6 +340,8 @@ func TestRequestForReadsTheNoInputFlag(t *testing.T) {
 
 // TestACommandWithoutTheFlagStillWorks covers the GetBool error path.
 func TestACommandWithoutTheFlagStillWorks(t *testing.T) {
+	t.Parallel()
+
 	request := RequestFor(&cobra.Command{Use: "x"}, false)
 	if request.Disabled {
 		t.Error("Disabled was set for a command that has no --no-input flag")
@@ -434,6 +438,8 @@ func TestFillMissingRefusesAnEmptyAnswer(t *testing.T) {
 
 // TestFillMissingWithNothingAbsentAsksNothing covers the early return.
 func TestFillMissingWithNothingAbsentAsksNothing(t *testing.T) {
+	t.Parallel()
+
 	value := "given"
 	out := &bytes.Buffer{}
 

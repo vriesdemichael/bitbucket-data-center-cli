@@ -426,6 +426,8 @@ func TestAdminHealthPropagatesHardFailure(t *testing.T) {
 }
 
 func TestBulkCommandAvailableFromRoot(t *testing.T) {
+	t.Parallel()
+
 	command := NewRootCommand()
 	buffer := &bytes.Buffer{}
 	command.SetOut(buffer)
@@ -1186,6 +1188,8 @@ func TestLoadQualityRepoAndServiceBranches(t *testing.T) {
 }
 
 func TestResolveDiffOutputModeAndWriters(t *testing.T) {
+	t.Parallel()
+
 	_, err := resolveDiffOutputMode(true, true, false)
 	if err == nil {
 		t.Fatal("expected validation error for multiple output modes")
@@ -1251,6 +1255,8 @@ func TestResolveDiffOutputModeAndWriters(t *testing.T) {
 }
 
 func TestCommentHelpersAndSafeHelpers(t *testing.T) {
+	t.Parallel()
+
 	comment := openapigenerated.RestComment{}
 	if commentIDString(comment) != "unknown" {
 		t.Fatalf("expected unknown id")
@@ -1361,6 +1367,8 @@ func TestCommentHelpersAndSafeHelpers(t *testing.T) {
 }
 
 func TestWriteJSONMarshalError(t *testing.T) {
+	t.Parallel()
+
 	err := writeJSON(&bytes.Buffer{}, map[string]any{"bad": func() {}})
 	if err == nil {
 		t.Fatal("expected marshal error")
@@ -1368,6 +1376,8 @@ func TestWriteJSONMarshalError(t *testing.T) {
 }
 
 func TestSafeUsersHelper(t *testing.T) {
+	t.Parallel()
+
 	if len(safeUsers(nil)) != 0 {
 		t.Fatal("expected safeUsers(nil) to return empty slice")
 	}
@@ -1750,6 +1760,8 @@ func TestAFlagLeftAloneDoesNotDisplaceTheEnvironment(t *testing.T) {
 // that ran `pr list` against a mocked Bitbucket and read "#22" back out of its
 // own fixture is live in TestLivePullRequestHumanOutput.
 func TestIssueCommandIsNotOffered(t *testing.T) {
+	t.Parallel()
+
 	command := NewRootCommand()
 	output := &bytes.Buffer{}
 	command.SetOut(output)

@@ -57,6 +57,8 @@ func newTestDependencies(serverURL string, jsonMode bool, dryRun bool) buildcmd.
 }
 
 func TestBuildValidationErrors(t *testing.T) {
+	t.Parallel()
+
 	server := newMockBuildServer(t)
 	deps := newTestDependencies(server.URL, false, false)
 

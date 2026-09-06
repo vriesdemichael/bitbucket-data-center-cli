@@ -6,6 +6,8 @@ import (
 )
 
 func TestWebhookHelperFunctions(t *testing.T) {
+	t.Parallel()
+
 	payload := map[string]any{"values": []any{map[string]any{"id": float64(42), "name": "ci", "url": "http://example.invalid/hook"}}}
 
 	entries := webhookEntries(payload)

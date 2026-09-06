@@ -17,6 +17,8 @@ import (
 // 468 operations out of date on a clean main, and the artifact was regenerated
 // wrongly on the strength of it.
 func TestSkipDirectoryExcludesForeignCheckouts(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		path string
 		name string
@@ -60,6 +62,8 @@ func TestSkipDirectoryExcludesForeignCheckouts(t *testing.T) {
 // matching the name alone also records this project's own service methods,
 // putting operations in the report that nothing calls.
 func TestBareClientCallsAreRecordedWithoutFalsePositives(t *testing.T) {
+	t.Parallel()
+
 	root := t.TempDir()
 	source := `package example
 

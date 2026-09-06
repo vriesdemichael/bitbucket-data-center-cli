@@ -94,6 +94,8 @@ func readRecords(t *testing.T, path string) []harvestRecord {
 // response for as long as the recorder was on, and the harvest would have
 // broken the runs it exists to observe.
 func TestHarvestRecordsARefusalAndLeavesItReadable(t *testing.T) {
+	t.Parallel()
+
 	const body = `{"errors":[{"message":"Repository does not exist.","exceptionName":"com.atlassian.bitbucket.repository.NoSuchRepositoryException"}]}`
 
 	path, served := harvestTo(t, stubTransport{status: http.StatusNotFound, body: body, contentType: "application/json"})
@@ -131,6 +133,8 @@ func TestHarvestRecordsARefusalAndLeavesItReadable(t *testing.T) {
 // answers one is what tells a deliberate no-op from a payload that failed to
 // decode. A 200 carrying a body is the ordinary case and would bury that.
 func TestHarvestRecordsA204AndIgnoresASuccessWithABody(t *testing.T) {
+	t.Parallel()
+
 	t.Run("204 is recorded", func(t *testing.T) {
 		path, _ := harvestTo(t, stubTransport{status: http.StatusNoContent})
 
@@ -156,6 +160,8 @@ func TestHarvestRecordsA204AndIgnoresASuccessWithABody(t *testing.T) {
 // order to tell "the server said nothing" from "the server said something the
 // client could not read".
 func TestHarvestRecordsABodyThatIsNotJSON(t *testing.T) {
+	t.Parallel()
+
 	path, _ := harvestTo(t, stubTransport{status: http.StatusBadGateway, body: "<html>gateway</html>"})
 
 	records := readRecords(t, path)
@@ -207,6 +213,8 @@ func (unreadableBody) Close() error             { return nil }
 // read. The caller has to get back exactly what it would have got without the
 // recorder in the way.
 func TestHarvestStaysOutOfTheWayWhenTheRequestFails(t *testing.T) {
+	t.Parallel()
+
 	t.Run("a transport error passes through untouched", func(t *testing.T) {
 		want := errors.New("dial tcp: connection refused")
 		path := filepath.Join(t.TempDir(), "harvest.jsonl")

@@ -44,6 +44,8 @@ const decisionsDirectory = "docs/decisions"
 // becomes common, an exemption keyed by file and number is the pattern this
 // repository already uses elsewhere.
 func TestEveryADRCrossReferenceResolves(t *testing.T) {
+	t.Parallel()
+
 	records := filepath.Join(repositoryRoot(t), decisionsDirectory)
 
 	existing := recordNumbersIn(t, records)
@@ -68,6 +70,8 @@ func TestEveryADRCrossReferenceResolves(t *testing.T) {
 // fixed, so nothing would notice if the check stopped checking. This holds a
 // citation of a record that was never written and asserts it is still caught.
 func TestCrossReferenceCheckDetectsAMissingRecord(t *testing.T) {
+	t.Parallel()
+
 	directory := t.TempDir()
 	write := func(name, body string) {
 		t.Helper()

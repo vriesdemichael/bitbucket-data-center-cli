@@ -43,6 +43,8 @@ var (
 // listed three when there were four. So this computes the set instead: any
 // package whose tests start a git process must install the guard.
 func TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit(t *testing.T) {
+	t.Parallel()
+
 	root := filepath.Join("..", "..", "..")
 
 	shellsOutToGit := map[string]bool{}

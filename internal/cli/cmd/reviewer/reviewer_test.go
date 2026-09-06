@@ -21,6 +21,8 @@ import (
 )
 
 func TestReviewerConditionCommands(t *testing.T) {
+	t.Parallel()
+
 	emptyRepoConditions := false
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -525,6 +527,8 @@ func TestReviewerDefaultsAndHelpers(t *testing.T) {
 }
 
 func TestReviewerPermissionErrors(t *testing.T) {
+	t.Parallel()
+
 	// A listener that fails the test if it is reached, which is the
 	// assertion: every case here is refused before a request exists.
 	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
@@ -618,6 +622,8 @@ func TestReviewerPermissionErrors(t *testing.T) {
 // These returned a bare fmt.Errorf, so KindOf fell through to internal and a
 // caller was told bb had a bug when their JSON was malformed (#475).
 func TestConditionJSONIsValidatedNotReportedAsADefect(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")
 		_, _ = writer.Write([]byte(`[]`))
@@ -666,6 +672,8 @@ func TestConditionJSONIsValidatedNotReportedAsADefect(t *testing.T) {
 // TestAMissingProjectKeyIsValidation covers the eight sites that reported a
 // missing --project or --repo as a defect in bb.
 func TestAMissingProjectKeyIsValidation(t *testing.T) {
+	t.Parallel()
+
 	cfg := config.AppConfig{BitbucketURL: "http://127.0.0.1:1"}
 	deps := Dependencies{
 		JSONEnabled:   func() bool { return false },
@@ -711,6 +719,8 @@ func (failingReader) Read([]byte) (int, error) { return 0, errors.New("pipe brok
 // the create and update commands, which reported a caller-side problem as a
 // defect in bb before #475's sweep.
 func TestUnreadableConditionInputIsValidation(t *testing.T) {
+	t.Parallel()
+
 	cfg := config.AppConfig{BitbucketURL: "http://127.0.0.1:1", ProjectKey: "PRJ", RepoSlug: "repo1"}
 	deps := Dependencies{
 		JSONEnabled:   func() bool { return false },

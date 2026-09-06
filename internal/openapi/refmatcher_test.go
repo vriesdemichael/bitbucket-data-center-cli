@@ -5,6 +5,8 @@ import "testing"
 func stringPointer(value string) *string { return &value }
 
 func TestNewDefaultTaskSourceMatcherInfersTypeFromRef(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name     string
 		ref      *string
@@ -43,6 +45,8 @@ func TestNewDefaultTaskSourceMatcherInfersTypeFromRef(t *testing.T) {
 // The target matcher is a separate generated type with its own enum, so it needs
 // its own check that the type id is spelled the same way.
 func TestNewDefaultTaskTargetMatcherInfersTypeFromRef(t *testing.T) {
+	t.Parallel()
+
 	if matcher := NewDefaultTaskTargetMatcher(nil); string(matcher.Type.Id) != "ANY_REF" {
 		t.Fatalf("nil ref: type id = %q, want ANY_REF", matcher.Type.Id)
 	}
@@ -58,6 +62,8 @@ func TestNewDefaultTaskTargetMatcherInfersTypeFromRef(t *testing.T) {
 // "Unable to get ref matcher for type ANY_REF_MATCHER". It is not in the schema
 // enum; it is the shape of the *id* Bitbucket echoes back, not a type.
 func TestDefaultTaskMatcherNeverSendsTheRejectedType(t *testing.T) {
+	t.Parallel()
+
 	refs := []*string{nil, stringPointer(""), stringPointer("refs/heads/master"), stringPointer("refs/heads/feature/*")}
 	for _, ref := range refs {
 		if got := string(NewDefaultTaskSourceMatcher(ref).Type.Id); got == "ANY_REF_MATCHER" {

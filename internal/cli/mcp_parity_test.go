@@ -63,6 +63,8 @@ var mcpOnly = map[string]string{
 // TestEveryMCPToolIsAccountedFor fails when a tool is added without deciding
 // whether it mirrors a CLI command.
 func TestEveryMCPToolIsAccountedFor(t *testing.T) {
+	t.Parallel()
+
 	var unaccounted []string
 
 	implemented := map[string]bool{}
@@ -107,6 +109,8 @@ func TestEveryMCPToolIsAccountedFor(t *testing.T) {
 // command tree, so a CLI rename fails here rather than silently leaving the MCP
 // tool as the only way to reach an operation.
 func TestEveryMappedCLICommandExists(t *testing.T) {
+	t.Parallel()
+
 	root := NewRootCommand()
 
 	names := make([]string, 0, len(mcpToCLI))

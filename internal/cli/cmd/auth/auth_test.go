@@ -72,7 +72,7 @@ func TestStatusJSONUsesHostOverride(t *testing.T) {
 	cmd := New(Dependencies{
 		JSONEnabled: func() bool { return true },
 		LoadConfig: func() (config.AppConfig, error) {
-			return config.AppConfig{BitbucketURL: "http://initial.example"}, nil
+			return config.AppConfig{BitbucketURL: "http://initial.example", RequestTimeout: unreachableTimeout}, nil
 		},
 		LoadConfigWithOverrides: func(overrides config.Overrides) (config.AppConfig, error) {
 			seenHost = overrides.Host
@@ -149,6 +149,8 @@ func decodeJSONEnvelopeData(raw []byte, target any) error {
 }
 
 func TestStatusMissingDependenciesReturnError(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(Dependencies{})
 	buffer := &bytes.Buffer{}
 	cmd.SetOut(buffer)
@@ -170,7 +172,7 @@ func TestAuthCommandAdditionalBranches(t *testing.T) {
 		cmd := New(Dependencies{
 			JSONEnabled: func() bool { return false },
 			LoadConfig: func() (config.AppConfig, error) {
-				return config.AppConfig{BitbucketURL: "http://resolved.local:7990"}, nil
+				return config.AppConfig{BitbucketURL: "http://resolved.local:7990", RequestTimeout: unreachableTimeout}, nil
 			},
 			WriteJSON: func(writer io.Writer, payload any) error {
 				return jsonoutput.Write(writer, payload)
@@ -181,7 +183,7 @@ func TestAuthCommandAdditionalBranches(t *testing.T) {
 		cmd.SetOut(out)
 		cmd.SetErr(out)
 		cmd.SetIn(strings.NewReader("abc"))
-		cmd.SetArgs([]string{"login", "http://resolved.local:7990", "--token-stdin", "--set-default=true"})
+		cmd.SetArgs([]string{"login", "http://resolved.local:7990", "--token-stdin", "--set-default=true", "--discover-aliases=false"})
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("login failed: %v", err)
 		}
@@ -194,7 +196,7 @@ func TestAuthCommandAdditionalBranches(t *testing.T) {
 		cmd := New(Dependencies{
 			JSONEnabled: func() bool { return false },
 			LoadConfig: func() (config.AppConfig, error) {
-				return config.AppConfig{BitbucketURL: "http://mtls.local:7990"}, nil
+				return config.AppConfig{BitbucketURL: "http://mtls.local:7990", RequestTimeout: unreachableTimeout}, nil
 			},
 			WriteJSON: func(writer io.Writer, payload any) error {
 				return jsonoutput.Write(writer, payload)
@@ -266,7 +268,7 @@ func TestAuthCommandAdditionalBranches(t *testing.T) {
 		}
 
 		cmd = New(Dependencies{JSONEnabled: func() bool { return true }, LoadConfig: func() (config.AppConfig, error) {
-			return config.AppConfig{BitbucketURL: "http://x.local:7990"}, nil
+			return config.AppConfig{BitbucketURL: "http://x.local:7990", RequestTimeout: unreachableTimeout}, nil
 		}})
 		cmd.SetOut(&bytes.Buffer{})
 		cmd.SetErr(&bytes.Buffer{})
@@ -514,6 +516,8 @@ func TestServerListIncludesUsernameForBasicAuth(t *testing.T) {
 }
 
 func TestTokenURLCommand(t *testing.T) {
+	t.Parallel()
+
 	t.Run("human output with explicit host", func(t *testing.T) {
 		cmd := New(Dependencies{
 			JSONEnabled: func() bool { return false },
@@ -541,7 +545,7 @@ func TestTokenURLCommand(t *testing.T) {
 		cmd := New(Dependencies{
 			JSONEnabled: func() bool { return true },
 			LoadConfig: func() (config.AppConfig, error) {
-				return config.AppConfig{BitbucketURL: "http://localhost:7990"}, nil
+				return config.AppConfig{BitbucketURL: "http://localhost:7990", RequestTimeout: unreachableTimeout}, nil
 			},
 			WriteJSON: func(writer io.Writer, payload any) error {
 				return jsonoutput.Write(writer, payload)
@@ -581,6 +585,8 @@ func TestTokenURLCommand(t *testing.T) {
 }
 
 func TestIdentityCommand(t *testing.T) {
+	t.Parallel()
+
 	t.Run("human output", func(t *testing.T) {
 		displayName := "Automation User"
 		email := "automation@example.local"
@@ -593,7 +599,7 @@ func TestIdentityCommand(t *testing.T) {
 		cmd := New(Dependencies{
 			JSONEnabled: func() bool { return false },
 			LoadConfig: func() (config.AppConfig, error) {
-				return config.AppConfig{BitbucketURL: "http://example.local:7990"}, nil
+				return config.AppConfig{BitbucketURL: "http://example.local:7990", RequestTimeout: unreachableTimeout}, nil
 			},
 			WriteJSON: func(writer io.Writer, payload any) error {
 				return jsonoutput.Write(writer, payload)
@@ -634,7 +640,7 @@ func TestIdentityCommand(t *testing.T) {
 		cmd := New(Dependencies{
 			JSONEnabled: func() bool { return true },
 			LoadConfig: func() (config.AppConfig, error) {
-				return config.AppConfig{BitbucketURL: "http://example.local:7990"}, nil
+				return config.AppConfig{BitbucketURL: "http://example.local:7990", RequestTimeout: unreachableTimeout}, nil
 			},
 			WriteJSON: func(writer io.Writer, payload any) error {
 				return jsonoutput.Write(writer, payload)
@@ -663,7 +669,7 @@ func TestIdentityCommand(t *testing.T) {
 		cmd := New(Dependencies{
 			JSONEnabled: func() bool { return false },
 			LoadConfig: func() (config.AppConfig, error) {
-				return config.AppConfig{BitbucketURL: "http://example.local:7990"}, nil
+				return config.AppConfig{BitbucketURL: "http://example.local:7990", RequestTimeout: unreachableTimeout}, nil
 			},
 			WriteJSON: func(writer io.Writer, payload any) error {
 				return jsonoutput.Write(writer, payload)
@@ -685,7 +691,7 @@ func TestIdentityCommand(t *testing.T) {
 		cmd := New(Dependencies{
 			JSONEnabled: func() bool { return false },
 			LoadConfig: func() (config.AppConfig, error) {
-				return config.AppConfig{BitbucketURL: "http://example.local:7990"}, nil
+				return config.AppConfig{BitbucketURL: "http://example.local:7990", RequestTimeout: unreachableTimeout}, nil
 			},
 			WriteJSON: func(writer io.Writer, payload any) error {
 				return jsonoutput.Write(writer, payload)
@@ -707,7 +713,7 @@ func TestIdentityCommand(t *testing.T) {
 		cmd := New(Dependencies{
 			JSONEnabled: func() bool { return false },
 			LoadConfig: func() (config.AppConfig, error) {
-				return config.AppConfig{BitbucketURL: "http://example.local:7990"}, nil
+				return config.AppConfig{BitbucketURL: "http://example.local:7990", RequestTimeout: unreachableTimeout}, nil
 			},
 			WriteJSON: func(writer io.Writer, payload any) error {
 				return jsonoutput.Write(writer, payload)
@@ -750,7 +756,7 @@ func TestIdentityCommand(t *testing.T) {
 		cmd := New(Dependencies{
 			JSONEnabled: func() bool { return false },
 			LoadConfig: func() (config.AppConfig, error) {
-				return config.AppConfig{BitbucketURL: "http://example.local:7990"}, nil
+				return config.AppConfig{BitbucketURL: "http://example.local:7990", RequestTimeout: unreachableTimeout}, nil
 			},
 			WriteJSON: func(writer io.Writer, payload any) error {
 				return jsonoutput.Write(writer, payload)
@@ -795,6 +801,8 @@ func TestIdentityCommand(t *testing.T) {
 	})
 }
 func TestPersonalAccessTokenURL(t *testing.T) {
+	t.Parallel()
+
 	t.Run("generic URL without user slug", func(t *testing.T) {
 		got, err := personalAccessTokenURL("https://bitbucket.corp", "")
 		if err != nil {
@@ -839,6 +847,7 @@ func TestAuthNonJSONHumanOutputPaths(t *testing.T) {
 					BitbucketVersionTarget: "9.4",
 					BitbucketToken:         "tok",
 					AuthSource:             "env/default",
+					RequestTimeout:         unreachableTimeout,
 				}, nil
 			},
 			WriteJSON: func(writer io.Writer, payload any) error {
@@ -861,7 +870,7 @@ func TestAuthNonJSONHumanOutputPaths(t *testing.T) {
 		cmd := New(Dependencies{
 			JSONEnabled: func() bool { return true },
 			LoadConfig: func() (config.AppConfig, error) {
-				return config.AppConfig{BitbucketURL: "http://login-json.local:7990"}, nil
+				return config.AppConfig{BitbucketURL: "http://login-json.local:7990", RequestTimeout: unreachableTimeout}, nil
 			},
 			WriteJSON: func(writer io.Writer, payload any) error {
 				return jsonoutput.Write(writer, payload)
@@ -871,7 +880,7 @@ func TestAuthNonJSONHumanOutputPaths(t *testing.T) {
 		cmd.SetOut(out)
 		cmd.SetErr(out)
 		cmd.SetIn(strings.NewReader("my-token"))
-		cmd.SetArgs([]string{"login", "http://login-json.local:7990", "--token-stdin"})
+		cmd.SetArgs([]string{"login", "http://login-json.local:7990", "--token-stdin", "--discover-aliases=false"})
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("auth login (JSON) failed: %v", err)
 		}
@@ -910,6 +919,8 @@ func TestAuthNonJSONHumanOutputPaths(t *testing.T) {
 // TestIdentityHumanSummaryNameAndSlugBranches covers the name-only and slug-only branches
 // of identityHumanSummary (both skipped when DisplayName is set).
 func TestIdentityHumanSummaryNameAndSlugBranches(t *testing.T) {
+	t.Parallel()
+
 	t.Run("name branch when display name empty", func(t *testing.T) {
 		got := identityHumanSummary(result.User{Name: "alice"})
 		if !strings.Contains(got, "alice") {
@@ -1225,6 +1236,8 @@ func TestAuthJSONOutputsUseEmptyAliasArrays(t *testing.T) {
 }
 
 func TestDiscoverAliasesEdgeCases(t *testing.T) {
+	t.Parallel()
+
 	t.Run("deduplicates duplicate clone aliases", func(t *testing.T) {
 		cloneLinks := map[string]interface{}{
 			"clone": []any{
@@ -1349,6 +1362,8 @@ func TestDiscoverAliasesEdgeCases(t *testing.T) {
 }
 
 func TestAuthAliasHelperBranches(t *testing.T) {
+	t.Parallel()
+
 	t.Run("extract repository clone aliases skips invalid entries", func(t *testing.T) {
 		cloneLinks := map[string]interface{}{
 			"clone": []any{
@@ -1663,6 +1678,8 @@ func recentResponseToAll(response *openapigenerated.GetRepositoriesRecentlyAcces
 // not claim a supported Bitbucket version, so status must not report one
 // unless the operator pinned it (ADR 042).
 func TestStatusHumanOmitsVersionWhenUnpinned(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(Dependencies{
 		JSONEnabled: func() bool { return false },
 		LoadConfig: func() (config.AppConfig, error) {
@@ -1694,6 +1711,8 @@ func TestStatusHumanOmitsVersionWhenUnpinned(t *testing.T) {
 // TestStatusHumanReportsPinnedVersion covers the opposite: an operator who set
 // BITBUCKET_VERSION_TARGET still sees it.
 func TestStatusHumanReportsPinnedVersion(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(Dependencies{
 		JSONEnabled: func() bool { return false },
 		LoadConfig: func() (config.AppConfig, error) {
@@ -1809,6 +1828,8 @@ func TestAliasDiscoverPreservesManualAliases(t *testing.T) {
 // silently stopped, with the subcommand's own --client-cert still working --
 // which is the kind of partial breakage nobody reports.
 func TestLoginUsesTheGlobalClientCertificate(t *testing.T) {
+	t.Parallel()
+
 	deps := Dependencies{
 		JSONEnabled: func() bool { return false },
 		LoadConfig:  func() (config.AppConfig, error) { return config.AppConfig{}, nil },

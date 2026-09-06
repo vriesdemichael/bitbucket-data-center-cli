@@ -118,6 +118,8 @@ func visitFlags(t *testing.T, visit func(cmd *cobra.Command, flag *pflag.Flag)) 
 // pattern: a flag that names its values must refuse everything else, before the
 // request rather than after it (ADR-054).
 func TestEveryAdvertisedEnumIsEnforced(t *testing.T) {
+	t.Parallel()
+
 	checked := 0
 
 	visitFlags(t, func(cmd *cobra.Command, flag *pflag.Flag) {
@@ -164,6 +166,8 @@ func TestEveryAdvertisedEnumIsEnforced(t *testing.T) {
 // set. Each needs a reason; a new entry without one should not get through
 // review.
 func TestNoFlagEnumeratesValuesWithoutEnforcingThem(t *testing.T) {
+	t.Parallel()
+
 	exempt := map[string]string{
 		// These two carry an empty value that means "unset BB_LOG_LEVEL"
 		// rather than "not given" -- the same rule every override flag on

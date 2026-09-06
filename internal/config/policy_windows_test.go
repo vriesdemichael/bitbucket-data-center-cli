@@ -35,6 +35,8 @@ func (m *mockRegistryReader) GetStringsValue(name string) ([]string, uint32, err
 }
 
 func TestParseRegistryPolicy(t *testing.T) {
+	t.Parallel()
+
 	readerInt := &mockRegistryReader{
 		integers: map[string]uint64{
 			"RequireKeyring":          1,
@@ -96,6 +98,8 @@ func TestParseRegistryPolicy(t *testing.T) {
 }
 
 func TestParseRegistryPolicyUpdateTrust(t *testing.T) {
+	t.Parallel()
+
 	reader := &mockRegistryReader{
 		integers: map[string]uint64{
 			"AllowUnverifiedUpdate": 1,

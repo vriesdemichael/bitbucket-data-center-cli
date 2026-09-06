@@ -29,6 +29,8 @@ func newActivityTestService(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestListValidation(t *testing.T) {
+	t.Parallel()
+
 	service := newActivityTestService(t, testsupport.UnreachedHandler(t))
 
 	if _, err := service.List(context.Background(), RepositoryRef{}, "12", ListOptions{}); err == nil {
@@ -46,6 +48,8 @@ func TestListValidation(t *testing.T) {
 }
 
 func TestActivityExtractionAndStatusMapping(t *testing.T) {
+	t.Parallel()
+
 	// One comment can appear in the timeline more than once -- edited, replied
 	// to, resolved -- so extracting comments has to collapse them.
 	//
@@ -101,6 +105,8 @@ func TestActivityExtractionAndStatusMapping(t *testing.T) {
 }
 
 func TestRawActivityHelpers(t *testing.T) {
+	t.Parallel()
+
 	comments := ExtractComments([]Activity{{Comment: &openapigenerated.RestComment{Text: stringPtr("no id")}}, {Comment: &openapigenerated.RestComment{Text: stringPtr("no id")}}})
 	if len(comments) != 2 {
 		t.Fatalf("expected comments without ids to be preserved, got %d", len(comments))
@@ -161,6 +167,8 @@ func rawMessagePtr(value string) *json.RawMessage {
 //
 // mock-inventory: transport-fault — a body cut short mid-object, which is what a connection dropped mid-response looks like and not something a server can be asked for.
 func TestListReportsATruncatedBodyAsTransient(t *testing.T) {
+	t.Parallel()
+
 	service := newActivityTestService(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"values":[{"id":1`))

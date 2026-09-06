@@ -63,6 +63,8 @@ const anyRefAsRequested = `{
 // does answer in the shape above -- is
 // TestLiveGovernanceDryRunPredictionsReadRealState.
 func TestReviewerConditionEquivalent(t *testing.T) {
+	t.Parallel()
+
 	t.Run("a condition matches itself across the two shapes", func(t *testing.T) {
 		if !reviewerConditionEquivalent(
 			serverCondition(t, anyRefFromTheServer),

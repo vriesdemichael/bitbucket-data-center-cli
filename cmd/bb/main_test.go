@@ -336,6 +336,8 @@ func TestExecuteRootCommandEmitsEnvelopeWhenFlagParsingFails(t *testing.T) {
 }
 
 func TestArgsRequestJSON(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name     string
 		args     []string

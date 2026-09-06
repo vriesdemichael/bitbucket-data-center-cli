@@ -9,6 +9,8 @@ import (
 )
 
 func TestSchemasExposeExpectedArtifacts(t *testing.T) {
+	t.Parallel()
+
 	schemas := Schemas()
 	expected := []string{
 		"bulk-policy.schema.json",
@@ -31,6 +33,8 @@ func TestSchemasExposeExpectedArtifacts(t *testing.T) {
 }
 
 func TestPolicySchemaReferencesSupportedOperationTypes(t *testing.T) {
+	t.Parallel()
+
 	schema := PolicyJSONSchema()
 	defs, ok := schema["$defs"].(map[string]any)
 	if !ok {
@@ -47,6 +51,8 @@ func TestPolicySchemaReferencesSupportedOperationTypes(t *testing.T) {
 }
 
 func TestSchemasForIdentifiesBulkSchemasAgainstTheGivenSiteVersion(t *testing.T) {
+	t.Parallel()
+
 	schemas := SchemasFor("v4.0.0")
 	if len(schemas) == 0 {
 		t.Fatal("SchemasFor returned no schemas")

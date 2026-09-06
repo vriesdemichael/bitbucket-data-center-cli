@@ -21,6 +21,8 @@ import (
 // the derivation cannot: a change to the envelope struct or to how a kind is
 // rendered that leaves the CLI emitting a document failing its own contract.
 func TestErrorEnvelopeMatchesPublishedSchema(t *testing.T) {
+	t.Parallel()
+
 	for _, kind := range apperrors.Kinds() {
 		t.Run(string(kind), func(t *testing.T) {
 			buffer := &bytes.Buffer{}
@@ -37,6 +39,8 @@ func TestErrorEnvelopeMatchesPublishedSchema(t *testing.T) {
 // TestErrorEnvelopeMatchesPublishedSchemaForPlainErrors covers the fallback
 // path, where an unclassified error still has to produce a valid document.
 func TestErrorEnvelopeMatchesPublishedSchemaForPlainErrors(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	if err := jsonoutput.WriteError(buffer, errUnclassified); err != nil {
 		t.Fatalf("WriteError returned %v", err)

@@ -54,6 +54,8 @@ func TestClientDownloadMapsNotFound(t *testing.T) {
 }
 
 func TestClientLatestValidationAndErrorPaths(t *testing.T) {
+	t.Parallel()
+
 	t.Run("nil client", func(t *testing.T) {
 		var client *Client
 		_, err := client.Latest(context.Background(), "vriesdemichael", "bitbucket-data-center-cli")
@@ -119,6 +121,8 @@ func TestClientLatestValidationAndErrorPaths(t *testing.T) {
 }
 
 func TestClientDownloadValidationAndBodyErrors(t *testing.T) {
+	t.Parallel()
+
 	t.Run("nil client", func(t *testing.T) {
 		var client *Client
 		_, err := client.Download(context.Background(), "http://example.test")
@@ -157,6 +161,8 @@ func TestClientDownloadValidationAndBodyErrors(t *testing.T) {
 }
 
 func TestDecodeJSONAndMapHTTPError(t *testing.T) {
+	t.Parallel()
+
 	if err := decodeJSON([]byte(`{"tag_name":"v1.2.3"}`), &Release{}); err != nil {
 		t.Fatalf("expected valid json decode, got %v", err)
 	}
@@ -200,6 +206,8 @@ func (errReadCloser) Close() error {
 }
 
 func TestClientMirrorFallback(t *testing.T) {
+	t.Parallel()
+
 	// Server responds 404 to /repos/o/r/releases/latest, but 200 to /releases/latest
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -224,6 +232,8 @@ func TestClientMirrorFallback(t *testing.T) {
 }
 
 func TestClientDownloadRelativeAndMirrorFallback(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/assets/bb_linux_amd64.tar.gz":
@@ -260,6 +270,8 @@ func TestClientDownloadRelativeAndMirrorFallback(t *testing.T) {
 }
 
 func TestClientDownloadPrefersMirrorOverManifestURL(t *testing.T) {
+	t.Parallel()
+
 	externalRequests := 0
 	external := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		externalRequests++
@@ -291,6 +303,8 @@ func TestClientDownloadPrefersMirrorOverManifestURL(t *testing.T) {
 }
 
 func TestClientDownloadReportsBothAddressesWhenMirrorAndManifestFail(t *testing.T) {
+	t.Parallel()
+
 	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}))
@@ -313,6 +327,8 @@ func TestClientDownloadReportsBothAddressesWhenMirrorAndManifestFail(t *testing.
 }
 
 func TestClientLatestFallsBackOnNonNotFoundMirrorErrors(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/repos/owner/repo/releases/latest":

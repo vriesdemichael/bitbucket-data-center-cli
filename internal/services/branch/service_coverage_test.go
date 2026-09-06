@@ -6,6 +6,8 @@ import (
 )
 
 func TestMapRestrictionInput(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		input   RestrictionUpsertInput
@@ -62,6 +64,8 @@ func TestMapRestrictionInput(t *testing.T) {
 }
 
 func TestBranchServiceValidationErrorsAdditional(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 	repo := RepositoryRef{ProjectKey: " ", Slug: " "}
 
@@ -92,6 +96,8 @@ func TestBranchServiceValidationErrorsAdditional(t *testing.T) {
 }
 
 func TestParseRestrictionID(t *testing.T) {
+	t.Parallel()
+
 	if _, err := parseRestrictionID("abc"); err == nil {
 		t.Error("expected error for non-numeric id")
 	}

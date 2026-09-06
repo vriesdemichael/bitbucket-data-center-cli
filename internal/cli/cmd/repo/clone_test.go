@@ -521,6 +521,8 @@ func TestRepoCloneCommandSupportsURLSelectors(t *testing.T) {
 }
 
 func TestResolveHTTPCloneURLNormalizesSSHCloneHost(t *testing.T) {
+	t.Parallel()
+
 	httpCloneURL, err := resolveHTTPCloneURL("ssh://git@bitbucket.example.com/scm/PRJ/demo.git", true, "ssh://git@bitbucket.example.com", repositorySelector{ProjectKey: "PRJ", Slug: "demo"})
 	if err != nil {
 		t.Fatalf("expected HTTP clone URL resolution to succeed, got: %v", err)
@@ -531,6 +533,8 @@ func TestResolveHTTPCloneURLNormalizesSSHCloneHost(t *testing.T) {
 }
 
 func TestBuildBitbucketCloneURL(t *testing.T) {
+	t.Parallel()
+
 	cloneURL, err := buildBitbucketCloneURL("https://bitbucket.example.com/context", "PRJ", "demo")
 	if err != nil {
 		t.Fatalf("expected valid clone url, got: %v", err)
@@ -554,6 +558,8 @@ func TestBuildBitbucketCloneURL(t *testing.T) {
 }
 
 func TestResolveRepositoryCloneInputParsesSelectors(t *testing.T) {
+	t.Parallel()
+
 	cfg := config.AppConfig{BitbucketURL: "https://bitbucket.example.com", ProjectKey: "PRJ"}
 
 	repo, host, usedURL, err := resolveRepositoryCloneInput("PRJ/repo", cfg)
@@ -582,6 +588,8 @@ func TestResolveRepositoryCloneInputParsesSelectors(t *testing.T) {
 }
 
 func TestCloneHelpersAndValidation(t *testing.T) {
+	t.Parallel()
+
 	dir, extra := splitCloneDirectoryAndExtraArgs("repo", []string{"target", "--", "--depth=1"})
 	if dir != "target" || len(extra) != 2 {
 		t.Fatalf("unexpected split result: dir=%q extra=%#v", dir, extra)
@@ -652,6 +660,8 @@ func TestRepoCloneCommandConfigAndFactoryValidation(t *testing.T) {
 }
 
 func TestResolveRepositoryCloneInputValidationBranches(t *testing.T) {
+	t.Parallel()
+
 	_, _, _, err := resolveRepositoryCloneInput("", config.AppConfig{BitbucketURL: "https://bitbucket.example.com", ProjectKey: "PRJ"})
 	if err == nil {
 		t.Fatal("expected empty repository validation error")
@@ -669,6 +679,8 @@ func TestResolveRepositoryCloneInputValidationBranches(t *testing.T) {
 }
 
 func TestNormalizeCloneHostFallback(t *testing.T) {
+	t.Parallel()
+
 	host := normalizeCloneHost("git@bb.example.local:OPS/tooling.git", "bb.example.local")
 	if host != "https://bb.example.local" {
 		t.Fatalf("unexpected normalized host: %s", host)
@@ -681,6 +693,8 @@ func TestNormalizeCloneHostFallback(t *testing.T) {
 }
 
 func TestBuildBitbucketCloneURLEmptySelectorValidation(t *testing.T) {
+	t.Parallel()
+
 	_, err := buildBitbucketCloneURL("https://bitbucket.example.com", "", "demo")
 	if err == nil {
 		t.Fatal("expected empty project validation error")
@@ -790,6 +804,8 @@ func TestRepoCloneCommandEmptyTokenPrompt(t *testing.T) {
 }
 
 func TestNewCloneLoginRequiredError(t *testing.T) {
+	t.Parallel()
+
 	cause := errors.New("connect failed")
 	err := newCloneLoginRequiredError("https://bitbucket.example.com", cause, true)
 	if err == nil {
@@ -810,6 +826,8 @@ func TestNewCloneLoginRequiredError(t *testing.T) {
 }
 
 func TestSameCloneHostEdgeCasesAdditional(t *testing.T) {
+	t.Parallel()
+
 	// Missing scheme defaults to https and 443.
 	if !sameCloneHost("bitbucket.example.com", "https://bitbucket.example.com") {
 		t.Fatal("expected true when bare host normalizes to default https endpoint")
@@ -827,6 +845,8 @@ func TestSameCloneHostEdgeCasesAdditional(t *testing.T) {
 }
 
 func TestNormalizeHTTPCloneBaseURL(t *testing.T) {
+	t.Parallel()
+
 	if got := normalizeHTTPCloneBaseURL("ssh://git@bitbucket.example.com/context?x=1#frag"); got != "https://bitbucket.example.com/context" {
 		t.Fatalf("unexpected normalized base url: %s", got)
 	}
@@ -836,6 +856,8 @@ func TestNormalizeHTTPCloneBaseURL(t *testing.T) {
 }
 
 func TestBuildBitbucketSSHCloneURLValidationCases(t *testing.T) {
+	t.Parallel()
+
 	// Invalid base URL (no scheme, empty host)
 	_, err := buildBitbucketSSHCloneURL("no-scheme-here", "PRJ", "demo")
 	if err == nil {
@@ -997,6 +1019,8 @@ func TestRepoCloneCommandBackendFailsAfterTokenPrompt(t *testing.T) {
 }
 
 func TestReadCloneTokenErrorPath(t *testing.T) {
+	t.Parallel()
+
 	// A reader that always returns an error (not io.EOF) triggers the error path in readCloneToken
 	errReader := &errorReader{err: errors.New("read error")}
 	_, err := readCloneToken(errReader, &bytes.Buffer{})
@@ -1006,6 +1030,8 @@ func TestReadCloneTokenErrorPath(t *testing.T) {
 }
 
 func TestReadCloneTokenSuccessPath(t *testing.T) {
+	t.Parallel()
+
 	// Non-terminal reader: readCloneToken falls back to bufio line reading
 	got, err := readCloneToken(strings.NewReader("my-token\n"), &bytes.Buffer{})
 	if err != nil {
@@ -1161,6 +1187,8 @@ func TestCloneRepositoryWithAuthFallbackPromptPathSuccess(t *testing.T) {
 // rules refuse. The point of the assertion is that clone asks them at all
 // rather than keeping a check of its own.
 func TestCanPromptForCloneLoginDefersToTheSharedDecision(t *testing.T) {
+	t.Parallel()
+
 	if canPromptForCloneLogin(os.Stdin, os.Stdout) {
 		t.Fatal("prompting was permitted with no terminal attached")
 	}

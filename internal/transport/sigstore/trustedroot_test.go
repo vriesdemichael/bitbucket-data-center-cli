@@ -26,6 +26,8 @@ func writeTrustedRoot(t *testing.T, content string) string {
 }
 
 func TestTrustedRootFromFile(t *testing.T) {
+	t.Parallel()
+
 	t.Run("loads trust material without touching the network", func(t *testing.T) {
 		provider := TrustedRootFromFile(writeTrustedRoot(t, minimalTrustedRoot))
 		material, err := provider(context.Background())
@@ -53,6 +55,8 @@ func TestTrustedRootFromFile(t *testing.T) {
 }
 
 func TestTrustedRootFromTUFUsesSuppliedClient(t *testing.T) {
+	t.Parallel()
+
 	var requested []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requested = append(requested, r.URL.Path)
@@ -74,6 +78,8 @@ func TestTrustedRootFromTUFUsesSuppliedClient(t *testing.T) {
 }
 
 func TestHTTPFetcherDownloadFile(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/ok":
@@ -106,6 +112,8 @@ func TestHTTPFetcherDownloadFile(t *testing.T) {
 }
 
 func TestNewReleaseVerifierIdentityResolution(t *testing.T) {
+	t.Parallel()
+
 	t.Run("defaults to the bb release workflow", func(t *testing.T) {
 		verifier := NewReleaseVerifier(ReleaseVerifierOptions{Owner: "vriesdemichael", Repo: "bitbucket-data-center-cli"})
 		if verifier.expectedIssuer != GitHubActionsIssuer {

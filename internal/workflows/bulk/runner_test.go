@@ -15,6 +15,8 @@ import (
 )
 
 func TestServiceRunnerUnconfigured(t *testing.T) {
+	t.Parallel()
+
 	t.Run("nil runner", func(t *testing.T) {
 		var runner *ServiceRunner
 		_, err := runner.Run(context.Background(), RepositoryTarget{}, OperationSpec{Type: OperationRepoPermissionUserGrant})
@@ -55,6 +57,8 @@ func TestServiceRunnerUnconfigured(t *testing.T) {
 // from one it did not. TestLiveBulkEveryOperationType creates that hook and
 // then finds it in `webhook list`.
 func TestServiceRunnerValidationBranches(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer server.Close()
 
@@ -112,6 +116,8 @@ func TestServiceRunnerValidationBranches(t *testing.T) {
 // wrapped rather than being rejected, so a policy could silently configure the
 // opposite of what it said.
 func TestAutoDeclineRejectsOutOfRangeInactivityWeeks(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer server.Close()
 

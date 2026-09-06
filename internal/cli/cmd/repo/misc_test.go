@@ -10,6 +10,8 @@ import (
 )
 
 func TestReadPublicKeyAndScope(t *testing.T) {
+	t.Parallel()
+
 	// Direct text
 	textKey := "ssh-rsa AAAA..."
 	readKey, err := readPublicKey(textKey)
@@ -62,6 +64,8 @@ func TestReadPublicKeyAndScope(t *testing.T) {
 // archive. Closing an already-closed file is the portable way to make Close
 // fail.
 func TestFinishArchiveFile(t *testing.T) {
+	t.Parallel()
+
 	t.Run("nil file is not an error", func(t *testing.T) {
 		if err := finishArchiveFile(nil, "unused"); err != nil {
 			t.Fatalf("expected nil, got %v", err)

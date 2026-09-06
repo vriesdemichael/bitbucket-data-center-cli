@@ -29,6 +29,8 @@ import (
 // the question that actually matters, which is whether the kind it produces is
 // right for a bare 400 or 5xx.
 func TestTheStatusMappingIsOnlyTestedWhereItLives(t *testing.T) {
+	t.Parallel()
+
 	root := filepath.Join("..", "..", "internal")
 
 	offenders := make([]string, 0)

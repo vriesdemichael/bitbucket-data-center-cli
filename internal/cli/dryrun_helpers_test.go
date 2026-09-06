@@ -9,6 +9,8 @@ import (
 )
 
 func TestBranchRestrictionDryRunHelpers(t *testing.T) {
+	t.Parallel()
+
 	readOnly := "read-only"
 	matcherID := "refs/heads/main"
 	matcherType := openapigenerated.RestRefRestrictionMatcherTypeId("BRANCH")
@@ -76,6 +78,8 @@ func TestBranchRestrictionDryRunHelpers(t *testing.T) {
 // other command's, so it is worth a check of its own now that the hook commands
 // that first needed it are gone.
 func TestNormalizeJSONShape(t *testing.T) {
+	t.Parallel()
+
 	normalized := normalizeJSONShape(struct {
 		Enabled bool `json:"enabled"`
 	}{Enabled: true})
@@ -86,6 +90,8 @@ func TestNormalizeJSONShape(t *testing.T) {
 }
 
 func TestPRDryRunHelpers(t *testing.T) {
+	t.Parallel()
+
 	reviewers := []pullrequestservice.Reviewer{{Name: "alice", Status: "APPROVED"}, {Name: "bob", Approved: false}}
 	if !hasApprovedReviewer(reviewers) {
 		t.Fatal("expected approved reviewer to be detected")

@@ -17,6 +17,8 @@ import (
 )
 
 func TestReadSecretFromStdin(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name     string
 		input    string
@@ -42,6 +44,8 @@ func TestReadSecretFromStdin(t *testing.T) {
 }
 
 func TestReadSecretFromStdinRejections(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name    string
 		input   string
@@ -74,6 +78,8 @@ func TestReadSecretFromStdinRejections(t *testing.T) {
 }
 
 func TestReadSecretFromStdinRejectsOversizedInput(t *testing.T) {
+	t.Parallel()
+
 	_, err := readSecretFromStdin(strings.NewReader(strings.Repeat("a", maxSecretLength+1)), "--token-stdin")
 	if err == nil {
 		t.Fatal("expected oversized input to be rejected")
@@ -84,6 +90,8 @@ func TestReadSecretFromStdinRejectsOversizedInput(t *testing.T) {
 }
 
 func TestReadSecretFromStdinAcceptsInputAtTheLimit(t *testing.T) {
+	t.Parallel()
+
 	secret, err := readSecretFromStdin(strings.NewReader(strings.Repeat("a", maxSecretLength)), "--token-stdin")
 	if err != nil {
 		t.Fatalf("expected input at the limit to be accepted, got %v", err)
@@ -94,6 +102,8 @@ func TestReadSecretFromStdinAcceptsInputAtTheLimit(t *testing.T) {
 }
 
 func TestReadSecretFromStdinWithoutAReader(t *testing.T) {
+	t.Parallel()
+
 	if _, err := readSecretFromStdin(nil, "--token-stdin"); err == nil {
 		t.Fatal("expected an error when stdin is unavailable")
 	}
@@ -106,6 +116,8 @@ func (failingReader) Read([]byte) (int, error) {
 }
 
 func TestReadSecretFromStdinReportsReadFailure(t *testing.T) {
+	t.Parallel()
+
 	_, err := readSecretFromStdin(failingReader{}, "--token-stdin")
 	if err == nil {
 		t.Fatal("expected a read failure to be reported")
@@ -206,6 +218,8 @@ func TestLoginReadsThePasswordFromStdin(t *testing.T) {
 }
 
 func TestReportInsecureStorageNamesTheFile(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	reportInsecureStorage(buffer, "https://host.example.invalid")
 
@@ -223,6 +237,8 @@ func TestReportInsecureStorageNamesTheFile(t *testing.T) {
 }
 
 func TestDescribeCredentialStorage(t *testing.T) {
+	t.Parallel()
+
 	t.Run("keyring reports the bare kind", func(t *testing.T) {
 		got := describeCredentialStorage(config.AppConfig{BitbucketToken: "tok", AuthSource: "stored"})
 		if got != "keyring" {
@@ -239,6 +255,8 @@ func TestDescribeCredentialStorage(t *testing.T) {
 }
 
 func TestStoredConfigLocationAlwaysReturnsSomething(t *testing.T) {
+	t.Parallel()
+
 	if got := storedConfigLocation(); strings.TrimSpace(got) == "" {
 		t.Fatal("expected a non-empty location for the warning message")
 	}
@@ -325,6 +343,8 @@ func clearAuthEnvironment(t *testing.T) {
 }
 
 func TestResolveLoginSecret(t *testing.T) {
+	t.Parallel()
+
 	t.Run("stdin is read when requested", func(t *testing.T) {
 		secret, err := resolveLoginSecret(true, strings.NewReader("piped\n"), "--token-stdin")
 		if err != nil {
@@ -353,6 +373,8 @@ func TestResolveLoginSecret(t *testing.T) {
 // be accepted anywhere the operating system would expose it: a flag value lands
 // in /proc/<pid>/cmdline, which is world-readable, and in shell history.
 func TestTheValueFormsAreGone(t *testing.T) {
+	t.Parallel()
+
 	command := New(Dependencies{})
 
 	var login *cobra.Command
