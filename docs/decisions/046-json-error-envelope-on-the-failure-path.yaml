@@ -3,7 +3,7 @@ title: Emit a JSON error envelope on the failure path
 category: architecture
 status: accepted
 decision: >
-  When --json is set and a command fails, write a bb.machine v2 envelope to stdout carrying an
+  When --json is set and a command fails, write the machine envelope to stdout carrying an
   error object in place of data, with kind, message and exitCode drawn from the ADR-011 taxonomy.
   The human-readable line continues to go to stderr unchanged, and exit codes are unaffected.
   A consumer decides success or failure by which key is present: data on success, error on failure.

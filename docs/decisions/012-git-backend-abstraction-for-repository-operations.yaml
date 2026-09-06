@@ -2,6 +2,7 @@ number: 12
 title: Git backend abstraction for repository operations
 category: architecture
 status: accepted
+amended_by: 20
 decision: >
   Define a Git backend interface for repository operations and keep the implementation pluggable
   so the project can support both programmatic Go-native backends and shell-based git backends.

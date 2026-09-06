@@ -2,6 +2,7 @@ number: 78
 title: Dry-run confidence is derived from a tier, not written by the author
 category: development
 status: accepted
+supersedes: 35
 decision: >
   Every dry-run preview item states how its prediction was reached, and the published confidence
   is computed from that. Three tiers: server-validated, where Bitbucket answered the exact question

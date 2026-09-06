@@ -24,6 +24,8 @@ type decisionRecord struct {
 	Status               string                `yaml:"status,omitempty"`
 	SupersededBy         *int                  `yaml:"superseded_by,omitempty"`
 	Supersedes           any                   `yaml:"supersedes,omitempty"`
+	AmendedBy            *int                  `yaml:"amended_by,omitempty"`
+	Amends               any                   `yaml:"amends,omitempty"`
 	Decision             string                `yaml:"decision"`
 	AgentInstructions    string                `yaml:"agent_instructions"`
 	Rationale            string                `yaml:"rationale"`

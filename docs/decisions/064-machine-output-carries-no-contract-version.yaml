@@ -2,6 +2,7 @@ number: 64
 title: Machine output carries no contract version; breaking payload changes ride the release major
 category: architecture
 status: accepted
+supersedes: 14
 decision: >
   The machine envelope carries no constant fields. The contract version is removed, and so is
   meta.contract, which named the format and never varied. meta.bbVersion is added, reporting the

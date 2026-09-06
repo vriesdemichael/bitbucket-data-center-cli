@@ -5,7 +5,8 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `035`
 - Title: `Dry-run capability signaling and test strategy policy`
 - Category: `development`
-- Status: `accepted`
+- Status: `superseded`
+- Superseded By: `078`
 - Provenance: `human`
 - Source: `docs/decisions/035-dry-run-capability-and-testing-policy.yaml`
 

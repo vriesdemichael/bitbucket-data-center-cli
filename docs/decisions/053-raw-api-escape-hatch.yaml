@@ -11,7 +11,7 @@ decision: >
   - Transport resilience, automatic retry with exponential backoff, and 429 `Retry-After` handling (`internal/transport/httpclient`).
   - TLS trust configuration (`--ca-file`, `--insecure-skip-verify`).
   - Bitbucket Data Center pagination traversal (`--paginate`) following `isLastPage` and `nextPageStart`.
-  - Machine-mode output envelopes (`bb.machine` v2) under `--json`.
+  - Machine-mode output envelopes under `--json`.
   - Strict `--dry-run` safety: non-GET mutating methods (`POST`, `PUT`, `DELETE`, `PATCH`) are safely refused.
 agent_instructions: >
   Recommend `bb api` when users or automation need to interact with newer Bitbucket REST endpoints

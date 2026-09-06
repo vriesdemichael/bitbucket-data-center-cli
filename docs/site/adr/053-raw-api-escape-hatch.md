@@ -12,7 +12,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 ## Decision
 
 Introduce a top-level `bb api <path>` command that acts as a direct REST passthrough escape hatch to Bitbucket Data Center instances, modeled after the UX of `gh api`.
-`bb api` reuses core CLI capabilities: - Configuration, credential resolution (keyring, tokens, basic auth), and host aliasing (`internal/config`). - Transport resilience, automatic retry with exponential backoff, and 429 `Retry-After` handling (`internal/transport/httpclient`). - TLS trust configuration (`--ca-file`, `--insecure-skip-verify`). - Bitbucket Data Center pagination traversal (`--paginate`) following `isLastPage` and `nextPageStart`. - Machine-mode output envelopes (`bb.machine` v2) under `--json`. - Strict `--dry-run` safety: non-GET mutating methods (`POST`, `PUT`, `DELETE`, `PATCH`) are safely refused.
+`bb api` reuses core CLI capabilities: - Configuration, credential resolution (keyring, tokens, basic auth), and host aliasing (`internal/config`). - Transport resilience, automatic retry with exponential backoff, and 429 `Retry-After` handling (`internal/transport/httpclient`). - TLS trust configuration (`--ca-file`, `--insecure-skip-verify`). - Bitbucket Data Center pagination traversal (`--paginate`) following `isLastPage` and `nextPageStart`. - Machine-mode output envelopes under `--json`. - Strict `--dry-run` safety: non-GET mutating methods (`POST`, `PUT`, `DELETE`, `PATCH`) are safely refused.
 
 ## Agent Instructions
 

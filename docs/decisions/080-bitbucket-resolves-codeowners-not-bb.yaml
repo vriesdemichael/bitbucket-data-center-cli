@@ -2,7 +2,7 @@ number: 80
 title: Bitbucket resolves CODEOWNERS, not bb
 category: architecture
 status: accepted
-supersedes: 56
+amends: 56
 decision: >
   Ask Bitbucket who owns a change:
   `GET /rest/ui/latest/projects/{key}/repos/{slug}/code-owners?sourceRefId=&targetRefId=[&sourceRepo=]`.

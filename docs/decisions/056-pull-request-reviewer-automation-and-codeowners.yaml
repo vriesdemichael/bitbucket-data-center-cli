@@ -2,6 +2,7 @@ number: 56
 title: Pull request reviewer automation, default reviewers, and CODEOWNERS
 category: architecture
 status: accepted
+amended_by: 80
 decision: >
   `bb pr create` and `bb pr review reviewer add` automate pull request reviewer assignment to achieve
   full behavioral parity with the Bitbucket Data Center web interface:

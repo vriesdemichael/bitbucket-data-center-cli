@@ -6,6 +6,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Dry-run confidence is derived from a tier, not written by the author`
 - Category: `development`
 - Status: `accepted`
+- Supersedes: `035`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/078-dry-run-confidence-is-derived-from-a-tier.yaml`
 
