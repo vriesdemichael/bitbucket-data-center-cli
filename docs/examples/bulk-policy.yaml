@@ -11,6 +11,16 @@ operations:
     permission: REPO_WRITE
   - type: repo.pull-request-settings.required-all-tasks-complete
     requiredAllTasksComplete: true
+  - type: repo.webhook.create
+    name: ci
+    url: https://ci.example.com/hooks/bitbucket
+    events:
+      - repo:refs_changed
+    sslVerificationRequired: true
+    # The name of the variable holding the shared secret, never the secret. A
+    # plan is a file that gets committed and reviewed; bb reads the variable
+    # when the plan is applied, and refuses if it is not set.
+    secretEnv: BB_WEBHOOK_SECRET
   - type: build.required.create
     payload:
       buildParentKeys:

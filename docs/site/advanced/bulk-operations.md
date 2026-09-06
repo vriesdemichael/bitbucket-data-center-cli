@@ -30,6 +30,16 @@ bb bulk status <operation-id>
 - `bulk apply` persists status artifacts under local config directory (override with `BB_BULK_STATUS_DIR`).
 - JSON mode is available for plan/apply/status commands using global `--json`.
 
+## Secrets in a policy
+
+A policy never holds a credential. `repo.webhook.create` takes `secretEnv` and
+`credentialsPasswordEnv`, which name an environment variable that `bb bulk apply`
+reads at apply time — so the plan artifact stays committable, and the same plan
+applies against different environments unedited. An apply whose named variable is
+unset is refused rather than run without the secret.
+
+See [Webhook Secrets](webhook-secrets.md) for the full rules.
+
 ## Schema and IDE integration
 
 - Schemas are published under [JSON Schemas](../reference/schemas.md).

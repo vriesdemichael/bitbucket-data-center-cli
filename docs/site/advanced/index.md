@@ -11,5 +11,6 @@ This section covers safety, enterprise governance, and automation topics beyond 
 - [Networks, Proxies and TLS](networks-proxies-and-tls.md): outbound proxies, internal certificate authorities, and diagnosing a connection
 - [Machine Mode and Diagnostics](machine-mode-diagnostics.md): JSON contract and supportability patterns
 - [Server-Side Hooks](server-side-hooks.md): why `bb` does not manage plugin hooks or hook scripts, and what to use instead
+- [Webhook Secrets](webhook-secrets.md): the shared secret and endpoint credentials — where `bb` reads them, what it refuses to print, and how a bulk plan names one without holding it
 
 These guides are aligned with accepted ADRs and generated reference artifacts.
