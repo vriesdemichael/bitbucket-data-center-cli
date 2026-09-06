@@ -592,6 +592,53 @@ func TestLiveBulkWebhookSecretTravelsAsAVariableName(t *testing.T) {
 		}
 	})
 
+	t.Run("two webhooks in one plan can name two different variables", func(t *testing.T) {
+		// The limit is one secret per *operation*, not one per plan: a plan
+		// can create several webhooks each reading its own variable. What it
+		// cannot do is vary the secret across the repositories one operation
+		// matches, because the operation names a single variable and the
+		// selector applies it to all of them. That distinction is documented,
+		// so it is worth holding still.
+		writePolicy(t, strings.Join([]string{
+			"apiVersion: bb.io/v1alpha1",
+			"selector:",
+			"  projectKey: " + seeded.Key,
+			"  repositories:",
+			"    - " + repo.Slug,
+			"operations:",
+			"  - type: repo.webhook.create",
+			"    name: hook-one",
+			"    url: http://localhost:7990/status",
+			"    secretEnv: BB_WEBHOOK_SECRET",
+			"  - type: repo.webhook.create",
+			"    name: hook-two",
+			"    url: http://localhost:7990/status",
+			"    secretEnv: BB_WEBHOOK_SECRET_TWO",
+		}, "\n"))
+
+		twoPlanPath := filepath.Join(tempDir, "two.json")
+		if output, err := executeLiveCLI(t, "--json", "bulk", "plan", "-f", policyPath, "-o", twoPlanPath); err != nil {
+			t.Fatalf("bulk plan with two webhooks failed: %v\noutput: %s", err, output)
+		}
+
+		t.Setenv("BB_WEBHOOK_SECRET", secretCanary)
+		t.Setenv("BB_WEBHOOK_SECRET_TWO", secretCanary+"-second")
+		output, err := executeLiveCLI(t, "--json", "bulk", "apply", "--from-plan", twoPlanPath)
+		if err != nil {
+			t.Fatalf("bulk apply with two webhooks failed: %v\noutput: %s", err, output)
+		}
+
+		listing := mustLiveCLI(t, "--json", "webhook", "list", "--limit", "50")
+		for _, name := range []string{"hook-one", "hook-two"} {
+			if !strings.Contains(listing, name) {
+				t.Errorf("%s was not created:\n%s", name, listing)
+			}
+		}
+		if strings.Contains(listing, secretCanary) {
+			t.Errorf("a secret reached the listing:\n%s", listing)
+		}
+	})
+
 	t.Run("an apply with the variable set configures the secret", func(t *testing.T) {
 		t.Setenv("BB_WEBHOOK_SECRET", secretCanary)
 		output, err := executeLiveCLI(t, "--json", "bulk", "apply", "--from-plan", planPath)

@@ -38,6 +38,10 @@ reads at apply time — so the plan artifact stays committable, and the same pla
 applies against different environments unedited. An apply whose named variable is
 unset is refused rather than run without the secret.
 
+A `secretEnv` belongs to an operation, so every repository the selector matches
+gets the same secret for that operation; per-repository secrets need one plan
+per repository.
+
 See [Webhook Secrets](webhook-secrets.md) for the full rules.
 
 ## Schema and IDE integration

@@ -221,6 +221,44 @@ $ bb bulk status op-4f2c… --json | grep BB_WEBHOOK_SECRET
   reports `secretConfigured` and `credentialsUsername` for the webhook it
   created, never the credentials themselves.
 
+### Limitation: one secret per operation
+
+A `secretEnv` belongs to an **operation**, and the selector applies every
+operation to every repository it matches. So a plan can create several webhooks
+each reading its own variable:
+
+```yaml
+operations:
+  - type: repo.webhook.create
+    name: ci
+    url: https://ci.example.com/hooks/bitbucket
+    secretEnv: BB_WEBHOOK_SECRET_CI
+  - type: repo.webhook.create
+    name: audit
+    url: https://audit.example.com/hooks/bitbucket
+    secretEnv: BB_WEBHOOK_SECRET_AUDIT
+```
+
+— but every repository the selector matches gets the **same** secret for a given
+operation. There is no way to say "this variable for `service-a`, that one for
+`service-b`" inside one plan.
+
+If each repository needs its own secret, that is one plan per repository (or per
+group of repositories sharing a secret), each applied with its own variable
+exported:
+
+```bash
+for repo in service-a service-b; do
+  BB_WEBHOOK_SECRET="$(vault read -field=value "secret/bitbucket/$repo")" \
+    bb bulk apply --from-plan "plans/$repo.json"
+done
+```
+
+This is a real limitation of the plan model rather than a temporary gap: the
+selector exists precisely so that one operation describes many repositories, and
+per-repository values would make a plan stop being the reviewable artifact it is
+for. A plan whose effect differs per target cannot be read once and understood.
+
 ## Where the fields can be set
 
 The same flags are registered wherever a webhook is configured, so the answer to
