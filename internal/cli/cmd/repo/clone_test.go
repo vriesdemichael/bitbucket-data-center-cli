@@ -98,17 +98,12 @@ func (stub *cloneBackendStub) UnsetConfig(context.Context, git.ConfigOptions) er
 }
 
 func TestRepoCloneCommandClonesWithDefaults(t *testing.T) {
-	originalFactory := gitBackendFactory
+	t.Parallel()
+
 	stub := &cloneBackendStub{}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	output, err := executeTestCLI(t, "repo", "clone", "PRJ/demo")
+	output, err := executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo")
 	if err != nil {
 		t.Fatalf("repo clone failed: %v", err)
 	}
@@ -134,17 +129,12 @@ func TestRepoCloneCommandClonesWithDefaults(t *testing.T) {
 }
 
 func TestTopLevelCloneCommandClonesWithDefaults(t *testing.T) {
-	originalFactory := gitBackendFactory
+	t.Parallel()
+
 	stub := &cloneBackendStub{}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	output, err := executeTestCLI(t, "clone", "PRJ/demo")
+	output, err := executeTestCLIWith(t, setup, "clone", "PRJ/demo")
 	if err != nil {
 		t.Fatalf("top-level clone failed: %v", err)
 	}
@@ -166,17 +156,12 @@ func TestTopLevelCloneCommandClonesWithDefaults(t *testing.T) {
 }
 
 func TestRepoCloneCommandHonorsDirectoryAndGitFlags(t *testing.T) {
-	originalFactory := gitBackendFactory
+	t.Parallel()
+
 	stub := &cloneBackendStub{}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
+	setup := testSetup{Host: "https://bitbucket.example.com/bitbucket", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com/bitbucket")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	output, err := executeTestCLI(t, "--json", "repo", "clone", "PRJ/demo", "target-dir", "--", "--depth=7", "--branch=main")
+	output, err := executeTestCLIWith(t, setup, "--json", "repo", "clone", "PRJ/demo", "target-dir", "--", "--depth=7", "--branch=main")
 	if err != nil {
 		t.Fatalf("repo clone json failed: %v", err)
 	}
@@ -205,15 +190,8 @@ func TestRepoCloneCommandHonorsDirectoryAndGitFlags(t *testing.T) {
 }
 
 func TestRepoCloneCommandFallsBackToStoredHTTPToken(t *testing.T) {
-	originalFactory := gitBackendFactory
 	stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh failed"), nil}}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 	t.Setenv("BITBUCKET_TOKEN", "test-token")
 	t.Setenv("BITBUCKET_USERNAME", "")
 	t.Setenv("BITBUCKET_USER", "")
@@ -221,7 +199,7 @@ func TestRepoCloneCommandFallsBackToStoredHTTPToken(t *testing.T) {
 	t.Setenv("ADMIN_USER", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 
-	output, err := executeTestCLI(t, "repo", "clone", "PRJ/demo")
+	output, err := executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo")
 	if err != nil {
 		t.Fatalf("repo clone failed: %v", err)
 	}
@@ -410,15 +388,8 @@ func TestCloneRepositoryWithAuthFallbackRebuildsHTTPSRetryWhenContextPathDiffers
 }
 
 func TestRepoCloneCommandHTTPSFlagSkipsSSHAndUsesTokenUsername(t *testing.T) {
-	originalFactory := gitBackendFactory
 	stub := &cloneBackendStub{}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 	t.Setenv("BITBUCKET_TOKEN", "test-token")
 	t.Setenv("BITBUCKET_USERNAME", "admin")
 	t.Setenv("BITBUCKET_USER", "")
@@ -426,7 +397,7 @@ func TestRepoCloneCommandHTTPSFlagSkipsSSHAndUsesTokenUsername(t *testing.T) {
 	t.Setenv("ADMIN_USER", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 
-	_, err := executeTestCLI(t, "repo", "clone", "--https", "PRJ/demo")
+	_, err := executeTestCLIWith(t, setup, "repo", "clone", "--https", "PRJ/demo")
 	if err != nil {
 		t.Fatalf("repo clone with --https failed: %v", err)
 	}
@@ -496,32 +467,27 @@ func TestRepoCloneCommandPromptsForTokenAfterSSHFailure(t *testing.T) {
 }
 
 func TestRepoCloneCommandValidationAndBackendFailure(t *testing.T) {
-	originalFactory := gitBackendFactory
+	t.Parallel()
+
 	stub := &cloneBackendStub{cloneErr: errors.New("clone failed")}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	_, err := executeTestCLI(t, "repo", "clone", "badformat")
+	_, err := executeTestCLIWith(t, setup, "repo", "clone", "badformat")
 	if err == nil {
 		t.Fatal("expected invalid selector error")
 	}
 
-	_, err = executeTestCLI(t, "repo", "clone", "PRJ/demo", "")
+	_, err = executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo", "")
 	if err == nil {
 		t.Fatal("expected empty directory validation error")
 	}
 
-	_, err = executeTestCLI(t, "repo", "clone", "PRJ/demo", "target-dir", "--", "depth=1")
+	_, err = executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo", "target-dir", "--", "depth=1")
 	if err == nil {
 		t.Fatal("expected invalid extra git args error")
 	}
 
-	_, err = executeTestCLI(t, "repo", "clone", "PRJ/demo")
+	_, err = executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo")
 	if err == nil {
 		t.Fatal("expected backend clone failure")
 	}
@@ -531,17 +497,12 @@ func TestRepoCloneCommandValidationAndBackendFailure(t *testing.T) {
 }
 
 func TestRepoCloneCommandSupportsURLSelectors(t *testing.T) {
-	originalFactory := gitBackendFactory
+	t.Parallel()
+
 	stub := &cloneBackendStub{}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	_, err := executeTestCLI(t, "repo", "clone", "https://bitbucket.other.example/scm/OPS/tooling.git")
+	_, err := executeTestCLIWith(t, setup, "repo", "clone", "https://bitbucket.other.example/scm/OPS/tooling.git")
 	if err != nil {
 		t.Fatalf("repo clone with URL selector failed: %v", err)
 	}
@@ -774,15 +735,8 @@ func TestRepoCloneCommandUsesStoredConfigForOtherHost(t *testing.T) {
 }
 
 func TestRepoCloneCommandJSONFailsWithNoAuth(t *testing.T) {
-	originalFactory := gitBackendFactory
 	stub := &cloneBackendStub{cloneErr: errors.New("ssh: connection refused")}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 	t.Setenv("BITBUCKET_TOKEN", "")
 	t.Setenv("BITBUCKET_USERNAME", "")
 	t.Setenv("BITBUCKET_PASSWORD", "")
@@ -790,7 +744,7 @@ func TestRepoCloneCommandJSONFailsWithNoAuth(t *testing.T) {
 	t.Setenv("ADMIN_USER", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 
-	_, err := executeTestCLI(t, "--json", "repo", "clone", "PRJ/demo")
+	_, err := executeTestCLIWith(t, setup, "--json", "repo", "clone", "PRJ/demo")
 	if err == nil {
 		t.Fatal("expected auth error in JSON mode with no credentials")
 	}
@@ -932,18 +886,13 @@ func TestCloneRepositoryWithAuthFallbackEdgeCases(t *testing.T) {
 }
 
 func TestRepoCloneCommandSSHExplicitURL(t *testing.T) {
-	originalFactory := gitBackendFactory
-	stub := &cloneBackendStub{}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
+	t.Parallel()
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	stub := &cloneBackendStub{}
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 
 	// Clone using an explicit "git@..." URL - exercises lines 372-373 in resolveSSHCloneURL
-	_, err := executeTestCLI(t, "repo", "clone", "git@bitbucket.example.com:scm/PRJ/demo.git")
+	_, err := executeTestCLIWith(t, setup, "repo", "clone", "git@bitbucket.example.com:scm/PRJ/demo.git")
 	if err != nil {
 		t.Fatalf("clone with explicit git@ URL failed: %v", err)
 	}
@@ -956,15 +905,8 @@ func TestRepoCloneCommandSSHExplicitURL(t *testing.T) {
 }
 
 func TestRepoCloneCommandExplicitSSHURLFallsBackToHTTPS(t *testing.T) {
-	originalFactory := gitBackendFactory
 	stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh failed"), nil}}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 	t.Setenv("BITBUCKET_TOKEN", "stored-token")
 	t.Setenv("BITBUCKET_USERNAME", "admin")
 	t.Setenv("BITBUCKET_USER", "")
@@ -972,7 +914,7 @@ func TestRepoCloneCommandExplicitSSHURLFallsBackToHTTPS(t *testing.T) {
 	t.Setenv("ADMIN_USER", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 
-	_, err := executeTestCLI(t, "repo", "clone", "git@bitbucket.example.com:scm/PRJ/demo.git")
+	_, err := executeTestCLIWith(t, setup, "repo", "clone", "git@bitbucket.example.com:scm/PRJ/demo.git")
 	if err != nil {
 		t.Fatalf("expected fallback clone to succeed, got: %v", err)
 	}
@@ -988,15 +930,8 @@ func TestRepoCloneCommandExplicitSSHURLFallsBackToHTTPS(t *testing.T) {
 }
 
 func TestRepoCloneCommandExplicitSSHSchemeURLFallsBackToHTTPS(t *testing.T) {
-	originalFactory := gitBackendFactory
 	stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh failed"), nil}}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 	t.Setenv("BITBUCKET_TOKEN", "stored-token")
 	t.Setenv("BITBUCKET_USERNAME", "admin")
 	t.Setenv("BITBUCKET_USER", "")
@@ -1004,7 +939,7 @@ func TestRepoCloneCommandExplicitSSHSchemeURLFallsBackToHTTPS(t *testing.T) {
 	t.Setenv("ADMIN_USER", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 
-	_, err := executeTestCLI(t, "repo", "clone", "ssh://git@bitbucket.example.com/scm/PRJ/demo.git")
+	_, err := executeTestCLIWith(t, setup, "repo", "clone", "ssh://git@bitbucket.example.com/scm/PRJ/demo.git")
 	if err != nil {
 		t.Fatalf("expected ssh:// fallback clone to succeed, got: %v", err)
 	}
@@ -1134,18 +1069,11 @@ func TestPromptForCloneLoginDirect(t *testing.T) {
 // AND the HTTP clone (using stored token credentials) also fails.  This covers the
 // "hasStoredHTTPAuth=true, HTTP clone fails" else-branch in cloneRepositoryWithAuthFallback.
 func TestRepoCloneCommandHTTPFallbackFailsBothSSHAndHTTP(t *testing.T) {
-	originalFactory := gitBackendFactory
 	stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh failed"), errors.New("http 401 unauthorized")}}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 	t.Setenv("BITBUCKET_TOKEN", "stored-token")
 
-	_, err := executeTestCLI(t, "repo", "clone", "PRJ/demo")
+	_, err := executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo")
 	if err == nil {
 		t.Fatal("expected error when both SSH and HTTP clone fail")
 	}
@@ -1247,18 +1175,13 @@ func (r *errorReader) Read(p []byte) (n int, err error) {
 }
 
 func TestRepoCloneCommandUserNamespace(t *testing.T) {
-	originalFactory := gitBackendFactory
-	stub := &cloneBackendStub{}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
+	t.Parallel()
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "")
-	t.Setenv("BITBUCKET_REPO_SLUG", "")
+	stub := &cloneBackendStub{}
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "", RepoSlug: "", Backend: stub}
 
 	// 1. Test cloning using tilde username format
-	output, err := executeTestCLI(t, "repo", "clone", "~userid/somerepo")
+	output, err := executeTestCLIWith(t, setup, "repo", "clone", "~userid/somerepo")
 	if err != nil {
 		t.Fatalf("repo clone with user namespace failed: %v", err)
 	}
@@ -1281,7 +1204,7 @@ func TestRepoCloneCommandUserNamespace(t *testing.T) {
 
 	// 2. Test cloning using full URL with unescaped tilde
 	stub.cloneCalls = nil
-	_, err = executeTestCLI(t, "repo", "clone", "https://bitbucket.example.com/scm/~userid/somerepo.git")
+	_, err = executeTestCLIWith(t, setup, "repo", "clone", "https://bitbucket.example.com/scm/~userid/somerepo.git")
 	if err != nil {
 		t.Fatalf("repo clone with full URL containing tilde failed: %v", err)
 	}
@@ -1294,7 +1217,7 @@ func TestRepoCloneCommandUserNamespace(t *testing.T) {
 
 	// 3. Test cloning using full URL with escaped tilde (%7E)
 	stub.cloneCalls = nil
-	_, err = executeTestCLI(t, "repo", "clone", "https://bitbucket.example.com/scm/%7Euserid/somerepo.git")
+	_, err = executeTestCLIWith(t, setup, "repo", "clone", "https://bitbucket.example.com/scm/%7Euserid/somerepo.git")
 	if err != nil {
 		t.Fatalf("repo clone with full URL containing escaped tilde failed: %v", err)
 	}
@@ -1307,7 +1230,7 @@ func TestRepoCloneCommandUserNamespace(t *testing.T) {
 
 	// 4. Test cloning using SSH URL with escaped tilde (%7E)
 	stub.cloneCalls = nil
-	_, err = executeTestCLI(t, "repo", "clone", "git@bitbucket.example.com:scm/%7Euserid/somerepo.git")
+	_, err = executeTestCLIWith(t, setup, "repo", "clone", "git@bitbucket.example.com:scm/%7Euserid/somerepo.git")
 	if err != nil {
 		t.Fatalf("repo clone with SSH URL containing escaped tilde failed: %v", err)
 	}
