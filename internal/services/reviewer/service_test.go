@@ -63,13 +63,13 @@ func TestReviewerGroupsAndDefaultReviewersServiceValidation(t *testing.T) {
 	if _, err := service.ListRepositoryReviewerGroups(ctx, "", "S"); err == nil {
 		t.Fatal("expected validation error")
 	}
-	if _, err := service.CreateRepositoryReviewerGroup(ctx, "P", "", "n", ""); err == nil {
+	if _, err := service.CreateRepositoryReviewerGroup(ctx, "P", "", "n", "", nil); err == nil {
 		t.Fatal("expected validation error")
 	}
 	if _, err := service.GetRepositoryReviewerGroup(ctx, "P", "S", ""); err == nil {
 		t.Fatal("expected validation error")
 	}
-	if _, err := service.UpdateRepositoryReviewerGroup(ctx, "", "S", "1", "n", ""); err == nil {
+	if _, err := service.UpdateRepositoryReviewerGroup(ctx, "", "S", "1", "n", "", nil); err == nil {
 		t.Fatal("expected validation error")
 	}
 	if err := service.DeleteRepositoryReviewerGroup(ctx, "P", "", "1"); err == nil {
@@ -82,13 +82,13 @@ func TestReviewerGroupsAndDefaultReviewersServiceValidation(t *testing.T) {
 	if _, err := service.ListProjectReviewerGroups(ctx, ""); err == nil {
 		t.Fatal("expected validation error")
 	}
-	if _, err := service.CreateProjectReviewerGroup(ctx, "", "n", ""); err == nil {
+	if _, err := service.CreateProjectReviewerGroup(ctx, "", "n", "", nil); err == nil {
 		t.Fatal("expected validation error")
 	}
 	if _, err := service.GetProjectReviewerGroup(ctx, "P", ""); err == nil {
 		t.Fatal("expected validation error")
 	}
-	if _, err := service.UpdateProjectReviewerGroup(ctx, "", "1", "n", ""); err == nil {
+	if _, err := service.UpdateProjectReviewerGroup(ctx, "", "1", "n", "", nil); err == nil {
 		t.Fatal("expected validation error")
 	}
 	if err := service.DeleteProjectReviewerGroup(ctx, "P", ""); err == nil {
@@ -115,13 +115,13 @@ func TestReviewerGroupsAndDefaultReviewersServiceContextCanceled(t *testing.T) {
 	if _, err := service.ListRepositoryReviewerGroups(ctx, "P", "S"); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.CreateRepositoryReviewerGroup(ctx, "P", "S", "n", ""); err == nil {
+	if _, err := service.CreateRepositoryReviewerGroup(ctx, "P", "S", "n", "", nil); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := service.GetRepositoryReviewerGroup(ctx, "P", "S", "1"); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.UpdateRepositoryReviewerGroup(ctx, "P", "S", "1", "n", ""); err == nil {
+	if _, err := service.UpdateRepositoryReviewerGroup(ctx, "P", "S", "1", "n", "", nil); err == nil {
 		t.Fatal("expected error")
 	}
 	if err := service.DeleteRepositoryReviewerGroup(ctx, "P", "S", "1"); err == nil {
@@ -133,13 +133,13 @@ func TestReviewerGroupsAndDefaultReviewersServiceContextCanceled(t *testing.T) {
 	if _, err := service.ListProjectReviewerGroups(ctx, "P"); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.CreateProjectReviewerGroup(ctx, "P", "n", ""); err == nil {
+	if _, err := service.CreateProjectReviewerGroup(ctx, "P", "n", "", nil); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := service.GetProjectReviewerGroup(ctx, "P", "1"); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.UpdateProjectReviewerGroup(ctx, "P", "1", "n", ""); err == nil {
+	if _, err := service.UpdateProjectReviewerGroup(ctx, "P", "1", "n", "", nil); err == nil {
 		t.Fatal("expected error")
 	}
 	if err := service.DeleteProjectReviewerGroup(ctx, "P", "1"); err == nil {
@@ -174,7 +174,7 @@ func TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks(t *testing.T)
 		t.Fatalf("expected empty groups, got %v: %v", groups, err)
 	}
 
-	_, _ = service.CreateRepositoryReviewerGroup(ctx, "PRJ", "demo", "group", "")
+	_, _ = service.CreateRepositoryReviewerGroup(ctx, "PRJ", "demo", "group", "", nil)
 
 	users, err := service.ListRepositoryReviewerGroupUsers(ctx, "PRJ", "demo", "1")
 	if err != nil || len(users) != 0 {
@@ -186,5 +186,5 @@ func TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks(t *testing.T)
 		t.Fatalf("expected empty projGroups, got %v: %v", projGroups, err)
 	}
 
-	_, _ = service.CreateProjectReviewerGroup(ctx, "PRJ", "group", "")
+	_, _ = service.CreateProjectReviewerGroup(ctx, "PRJ", "group", "", nil)
 }

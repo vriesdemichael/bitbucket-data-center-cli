@@ -127,37 +127,20 @@ func TestLiveReviewerGroupsLifecycle(t *testing.T) {
 	groupName := fmt.Sprintf("team-gov-%d", time.Now().UnixNano()%10000)
 
 	// 1. Create reviewer group on repository
+	//
+	// The member is not decoration: Bitbucket refuses a group with none, so
+	// before --users existed this call failed on every run. The test carried on
+	// with t.Logf and a bare return, so steps 2 to 4 never executed and the
+	// suite stayed green while asserting nothing (#533).
 	createOutput, err := executeLiveCLI(t, "--json", "reviewer-group", "create", groupName, "--repo", seeded.Key+"/"+repo.Slug, "--users", username)
 	if err != nil {
-		t.Logf("reviewer group create attempt output: %s (err: %v)", createOutput, err)
-		return
+		t.Fatalf("reviewer group create failed: %v\noutput: %s", err, createOutput)
 	}
 
-	var groupEnvelope struct {
-		Version string         `json:"version"`
-		Data    map[string]any `json:"data"`
-	}
-	_ = json.Unmarshal([]byte(createOutput), &groupEnvelope)
-
-	var groupID string
-	if id, ok := groupEnvelope.Data["id"]; ok {
-		groupID = fmt.Sprintf("%v", id)
-	} else if strings.Contains(createOutput, `"id":`) {
-		parts := strings.Split(createOutput, `"id":`)
-		if len(parts) > 1 {
-			idStr := strings.TrimSpace(strings.Split(parts[1], ",")[0])
-			idStr = strings.TrimSpace(strings.Split(idStr, "}")[0])
-			groupID = idStr
-		}
-	}
-
-	targetRef := groupID
-	if targetRef == "" {
-		targetRef = groupName
-	}
+	groupID := fmt.Sprintf("%d", int64(decodeJSONMap(t, createOutput)["id"].(float64)))
 
 	defer func() {
-		_, _ = executeLiveCLI(t, "reviewer-group", "delete", targetRef, "--repo", seeded.Key+"/"+repo.Slug)
+		_, _ = executeLiveCLI(t, "reviewer-group", "delete", groupID, "--repo", seeded.Key+"/"+repo.Slug)
 	}()
 
 	// 2. List reviewer groups on repository
@@ -169,24 +152,23 @@ func TestLiveReviewerGroupsLifecycle(t *testing.T) {
 		t.Fatalf("expected group name %s in list output: %s", groupName, listOutput)
 	}
 
-	// 3. Inspect reviewer group users if numeric ID is available
-	if groupID != "" {
-		usersOutput, err := executeLiveCLI(t, "--json", "reviewer-group", "users", groupID, "--repo", seeded.Key+"/"+repo.Slug)
-		if err != nil {
-			t.Logf("reviewer group users query notice: %v\noutput: %s", err, usersOutput)
-		} else if !strings.Contains(usersOutput, username) {
-			t.Logf("expected user %s in reviewer group users output: %s", username, usersOutput)
-		}
+	// 3. The member is really in the group, which is what makes it usable
+	usersOutput, err := executeLiveCLI(t, "--json", "reviewer-group", "users", groupID, "--repo", seeded.Key+"/"+repo.Slug)
+	if err != nil {
+		t.Fatalf("reviewer group users failed: %v\noutput: %s", err, usersOutput)
+	}
+	if !strings.Contains(usersOutput, username) {
+		t.Fatalf("expected user %s in reviewer group users output: %s", username, usersOutput)
 	}
 
 	// 4. Delete reviewer group with dry-run
-	dryRunOutput, err := executeLiveCLI(t, "--dry-run", "reviewer-group", "delete", targetRef, "--repo", seeded.Key+"/"+repo.Slug)
+	dryRunOutput, err := executeLiveCLI(t, "--dry-run", "reviewer-group", "delete", groupID, "--repo", seeded.Key+"/"+repo.Slug)
 	if err != nil {
 		t.Fatalf("reviewer group delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
 
 	// 5. Delete reviewer group for real
-	deleteOutput, err := executeLiveCLI(t, "--json", "reviewer-group", "delete", targetRef, "--repo", seeded.Key+"/"+repo.Slug)
+	deleteOutput, err := executeLiveCLI(t, "--json", "reviewer-group", "delete", groupID, "--repo", seeded.Key+"/"+repo.Slug)
 	if err != nil {
 		t.Fatalf("reviewer group delete failed: %v\noutput: %s", err, deleteOutput)
 	}

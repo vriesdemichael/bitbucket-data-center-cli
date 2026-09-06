@@ -75,6 +75,7 @@ func New(deps Dependencies) *cobra.Command {
 	var repositorySelector string
 	var nameFlag string
 	var descriptionFlag string
+	var usersFlag []string
 
 	reviewerGroupCmd := &cobra.Command{
 		Use:   "reviewer-group",
@@ -144,6 +145,17 @@ func New(deps Dependencies) *cobra.Command {
 				return apperrors.New(apperrors.KindValidation, "cannot specify both --project and --repo", nil)
 			}
 
+			// Refused here rather than by the server. Bitbucket answers an
+			// empty group with "Reviewer groups must contain 1 or more
+			// reviewer(s)", which is true and says nothing about how to fix it
+			// -- and before --users existed there was no way to. Ahead of the
+			// dry-run branch on purpose: a preview that predicts a create the
+			// command cannot perform is the thing #479 was about.
+			if len(usersFlag) == 0 {
+				return apperrors.New(apperrors.KindValidation,
+					"a reviewer group needs at least one member: name them with --users, because Bitbucket refuses to create an empty group", nil)
+			}
+
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -191,7 +203,7 @@ func New(deps Dependencies) *cobra.Command {
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
 
-				group, err := service.CreateRepositoryReviewerGroup(cmd.Context(), pk, slug, name, descriptionFlag)
+				group, err := service.CreateRepositoryReviewerGroup(cmd.Context(), pk, slug, name, descriptionFlag, usersFlag)
 				if err != nil {
 					return err
 				}
@@ -242,7 +254,7 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
-			group, err := service.CreateProjectReviewerGroup(cmd.Context(), projectKey, name, descriptionFlag)
+			group, err := service.CreateProjectReviewerGroup(cmd.Context(), projectKey, name, descriptionFlag, usersFlag)
 			if err != nil {
 				return err
 			}
@@ -254,6 +266,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	createCmd.Flags().StringVar(&descriptionFlag, "description", "", "Description of the reviewer group")
+	createCmd.Flags().StringSliceVar(&usersFlag, "users", nil, "Members by username (repeatable or comma-separated); required, because Bitbucket refuses a reviewer group with no members")
 	reviewerGroupCmd.AddCommand(createCmd)
 
 	updateCmd := &cobra.Command{
@@ -331,7 +344,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				group, err := service.UpdateRepositoryReviewerGroup(cmd.Context(), pk, slug, resolvedID, nameFlag, descriptionFlag)
+				group, err := service.UpdateRepositoryReviewerGroup(cmd.Context(), pk, slug, resolvedID, nameFlag, descriptionFlag, usersFlag)
 				if err != nil {
 					return err
 				}
@@ -397,7 +410,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			group, err := service.UpdateProjectReviewerGroup(cmd.Context(), projectKey, resolvedProjectID, nameFlag, descriptionFlag)
+			group, err := service.UpdateProjectReviewerGroup(cmd.Context(), projectKey, resolvedProjectID, nameFlag, descriptionFlag, usersFlag)
 			if err != nil {
 				return err
 			}
@@ -410,6 +423,7 @@ func New(deps Dependencies) *cobra.Command {
 	}
 	updateCmd.Flags().StringVar(&nameFlag, "name", "", "New name of the reviewer group")
 	updateCmd.Flags().StringVar(&descriptionFlag, "description", "", "New description of the reviewer group")
+	updateCmd.Flags().StringSliceVar(&usersFlag, "users", nil, "Replace the members with these usernames (repeatable or comma-separated); omit to keep the current members")
 	reviewerGroupCmd.AddCommand(updateCmd)
 
 	deleteCmd := &cobra.Command{

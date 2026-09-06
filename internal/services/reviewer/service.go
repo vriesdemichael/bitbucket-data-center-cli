@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -207,7 +208,7 @@ func (service *Service) ListRepositoryReviewerGroups(ctx context.Context, projec
 	return []openapigenerated.RestReviewerGroup{}, nil
 }
 
-func (service *Service) CreateRepositoryReviewerGroup(ctx context.Context, projectKey, repositorySlug string, name, description string) (openapigenerated.RestReviewerGroup, error) {
+func (service *Service) CreateRepositoryReviewerGroup(ctx context.Context, projectKey, repositorySlug string, name, description string, members []string) (openapigenerated.RestReviewerGroup, error) {
 	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repositorySlug) == "" || strings.TrimSpace(name) == "" {
 		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindValidation, "project key, repository slug, and name are required", nil)
 	}
@@ -217,6 +218,14 @@ func (service *Service) CreateRepositoryReviewerGroup(ctx context.Context, proje
 	}
 	if description != "" {
 		body.Description = &description
+	}
+
+	resolved, err := service.resolveGroupMembers(ctx, members)
+	if err != nil {
+		return openapigenerated.RestReviewerGroup{}, err
+	}
+	if len(resolved) > 0 {
+		body.Users = &resolved
 	}
 
 	response, err := service.client.Create2WithResponse(ctx, projectKey, repositorySlug, body)
@@ -261,7 +270,7 @@ func (service *Service) GetRepositoryReviewerGroup(ctx context.Context, projectK
 	return openapigenerated.RestReviewerGroup{}, nil
 }
 
-func (service *Service) UpdateRepositoryReviewerGroup(ctx context.Context, projectKey, repositorySlug string, id string, name, description string) (openapigenerated.RestReviewerGroup, error) {
+func (service *Service) UpdateRepositoryReviewerGroup(ctx context.Context, projectKey, repositorySlug string, id string, name, description string, members []string) (openapigenerated.RestReviewerGroup, error) {
 	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repositorySlug) == "" || strings.TrimSpace(id) == "" {
 		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindValidation, "project key, repository slug, and ID are required", nil)
 	}
@@ -272,6 +281,16 @@ func (service *Service) UpdateRepositoryReviewerGroup(ctx context.Context, proje
 	}
 	if description != "" {
 		body.Description = &description
+	}
+
+	// Nil members leave the membership alone, which is what the server does
+	// with an absent users array on this endpoint. Naming any replaces the set.
+	resolved, err := service.resolveGroupMembers(ctx, members)
+	if err != nil {
+		return openapigenerated.RestReviewerGroup{}, err
+	}
+	if len(resolved) > 0 {
+		body.Users = &resolved
 	}
 
 	response, err := service.client.Update2WithResponse(ctx, projectKey, repositorySlug, id, body)
@@ -343,7 +362,7 @@ func (service *Service) ListProjectReviewerGroups(ctx context.Context, projectKe
 	return []openapigenerated.RestReviewerGroup{}, nil
 }
 
-func (service *Service) CreateProjectReviewerGroup(ctx context.Context, projectKey string, name, description string) (openapigenerated.RestReviewerGroup, error) {
+func (service *Service) CreateProjectReviewerGroup(ctx context.Context, projectKey string, name, description string, members []string) (openapigenerated.RestReviewerGroup, error) {
 	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(name) == "" {
 		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindValidation, "project key and name are required", nil)
 	}
@@ -353,6 +372,14 @@ func (service *Service) CreateProjectReviewerGroup(ctx context.Context, projectK
 	}
 	if description != "" {
 		body.Description = &description
+	}
+
+	resolved, err := service.resolveGroupMembers(ctx, members)
+	if err != nil {
+		return openapigenerated.RestReviewerGroup{}, err
+	}
+	if len(resolved) > 0 {
+		body.Users = &resolved
 	}
 
 	response, err := service.client.Create1WithResponse(ctx, projectKey, body)
@@ -397,7 +424,7 @@ func (service *Service) GetProjectReviewerGroup(ctx context.Context, projectKey 
 	return openapigenerated.RestReviewerGroup{}, nil
 }
 
-func (service *Service) UpdateProjectReviewerGroup(ctx context.Context, projectKey string, id string, name, description string) (openapigenerated.RestReviewerGroup, error) {
+func (service *Service) UpdateProjectReviewerGroup(ctx context.Context, projectKey string, id string, name, description string, members []string) (openapigenerated.RestReviewerGroup, error) {
 	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(id) == "" {
 		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindValidation, "project key and ID are required", nil)
 	}
@@ -408,6 +435,16 @@ func (service *Service) UpdateProjectReviewerGroup(ctx context.Context, projectK
 	}
 	if description != "" {
 		body.Description = &description
+	}
+
+	// Nil members leave the membership alone, which is what the server does
+	// with an absent users array on this endpoint. Naming any replaces the set.
+	resolved, err := service.resolveGroupMembers(ctx, members)
+	if err != nil {
+		return openapigenerated.RestReviewerGroup{}, err
+	}
+	if len(resolved) > 0 {
+		body.Users = &resolved
 	}
 
 	response, err := service.client.Update1WithResponse(ctx, projectKey, id, body)
@@ -827,4 +864,50 @@ func SelectMembers(
 	default:
 		return eligible
 	}
+}
+
+// resolveGroupMembers turns usernames into the members Bitbucket accepts.
+//
+// A reviewer group's members are recognised by numeric id and nothing else. A
+// member given as {"name": "alice"} or {"slug": "alice"} is dropped without
+// comment and the request then fails as though nobody had been named at all --
+// "Reviewer groups must contain 1 or more reviewer(s)" -- which sends the
+// caller looking at the wrong thing. The username is what a person has, so the
+// lookup belongs here rather than at the call site.
+func (service *Service) resolveGroupMembers(ctx context.Context, usernames []string) ([]openapigenerated.ApplicationUser, error) {
+	members := make([]openapigenerated.ApplicationUser, 0, len(usernames))
+
+	for _, username := range usernames {
+		trimmed := strings.TrimSpace(username)
+		if trimmed == "" {
+			continue
+		}
+
+		response, err := service.client.GetUserWithResponse(ctx, trimmed)
+		if err != nil {
+			return nil, apperrors.New(apperrors.KindTransient, fmt.Sprintf("failed to look up user %q", trimmed), err)
+		}
+		if response.StatusCode() == http.StatusNotFound {
+			// Validation rather than not_found: the group is what the caller
+			// asked for, and the thing that does not exist is a value they
+			// typed. Naming it is the whole point -- the server's own refusal
+			// never mentions the user at all.
+			return nil, apperrors.New(apperrors.KindValidation,
+				fmt.Sprintf("no user named %q", trimmed), nil)
+		}
+		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+			return nil, err
+		}
+
+		user := response.ApplicationjsonCharsetUTF8200
+		if user == nil || user.Id == nil {
+			return nil, apperrors.New(apperrors.KindPermanent,
+				fmt.Sprintf("user %q came back without an id, so it cannot be added to a reviewer group", trimmed), nil)
+		}
+
+		id := *user.Id
+		members = append(members, openapigenerated.ApplicationUser{Id: &id})
+	}
+
+	return members, nil
 }
