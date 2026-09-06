@@ -131,7 +131,11 @@ func (h *liveHarness) sharedProject(ctx context.Context) (string, error) {
 		return sharedProjectKey, nil
 	}
 
-	key, err := h.createProject(ctx, "LS")
+	// Named unlike the per-test projects on purpose. They are called "Live
+	// Test <clock>", and `bb project list --name "Live Test"` is a real
+	// assertion in project_live_test.go: a shared project answering to the same
+	// filter pushed the test's own project off the page.
+	key, err := h.createProject(ctx, "LS", "Live Suite Shared")
 	if err != nil {
 		return "", err
 	}
@@ -210,8 +214,12 @@ func (seed repoSeed) counts() (repos int, commits int) {
 // needs any of that wants seedIsolatedProject, and the two names are different
 // so that the choice is made rather than inherited.
 //
-// Creating the project is 419ms of the 830ms a seed used to cost, and every one
-// of 267 tests was paying it to get a repository.
+// It is barely faster: 476ms against 536ms, measured warm over eight rounds
+// each. The point is not the 60ms, it is that the isolation each test needs is
+// now written down -- which is what has to be known before any of these can run
+// at the same time. That the difference is so small is itself useful: moving a
+// test back to its own project when sharing turns out to bother it costs
+// almost nothing.
 func (h *liveHarness) seedRepo(ctx context.Context, seed repoSeed) (seededProject, error) {
 	projectKey, err := h.sharedProject(ctx)
 	if err != nil {
@@ -240,7 +248,7 @@ func (h *liveHarness) seedIsolatedProjectWith(ctx context.Context, repositoryCou
 		return seededProject{}, fmt.Errorf("commits per repository must be >= 1")
 	}
 
-	projectKey, err := h.createProject(ctx, "LT")
+	projectKey, err := h.createProject(ctx, "LT", "Live Test")
 	if err != nil {
 		return seededProject{}, err
 	}
@@ -263,7 +271,7 @@ func (h *liveHarness) seedIsolatedProjectWith(ctx context.Context, repositoryCou
 // so the key outlives the delete call. A collision is answered with 409 and is
 // not a fault in the test being run, so it retries with a fresh key rather than
 // failing an unrelated assertion.
-func (h *liveHarness) createProject(ctx context.Context, prefix string) (string, error) {
+func (h *liveHarness) createProject(ctx context.Context, prefix string, namePrefix string) (string, error) {
 	const seedAttempts = 5
 
 	var projectKey string
@@ -272,7 +280,7 @@ func (h *liveHarness) createProject(ctx context.Context, prefix string) (string,
 	for attempt := 0; attempt < seedAttempts; attempt++ {
 		suffix := strconv.FormatInt(time.Now().UnixNano(), 10)
 		projectKey = strings.ToUpper(prefix + suffix[len(suffix)-6:])
-		projectName := "Live Test " + suffix
+		projectName := namePrefix + " " + suffix
 
 		createProjectBody := openapigenerated.CreateProjectJSONRequestBody{Key: &projectKey, Name: &projectName}
 		createProjectResponse, err := h.client.CreateProjectWithResponse(ctx, createProjectBody)
