@@ -20,8 +20,8 @@ agent_instructions: >
 rationale: >
   Three things were true of this suite and none of them were intended. The environment decided what
   a test saw: config.LoadWithOverrides loads .env itself, walking up from the working directory, so
-  `go test ./...` in a checkout with a configured live stack ran different tests than the same
-  command on a clean machine. Tests defended against that one at a time, six t.Setenv(key, "") calls
+  `go test ./...` in a checkout with a configured live stack ran the same tests against different
+  inputs than the same command on a clean machine. Tests defended against that one at a time, six t.Setenv(key, "") calls
   at the top of each, which is the call that stops a test declaring itself parallel -- so the
   defence against the first problem caused the second. And a value that could only arrive through
   the environment marked a place where the code had no way to be told, which is the same gap that

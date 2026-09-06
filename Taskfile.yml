@@ -386,7 +386,7 @@ tasks:
     desc: Run live integration tests with coverage profile output over hand-written packages
     cmds:
       - mkdir -p .tmp
-      - go test -tags=live -timeout 20m -parallel {{.LIVE_PARALLEL}} -covermode=atomic -coverpkg=./cmd/...,./internal/...,./tools/... -coverprofile=.tmp/coverage.live.out ./tests/integration/live
+      - go test -tags=live -count=1 -timeout 20m -parallel {{.LIVE_PARALLEL}} -covermode=atomic -coverpkg=./cmd/...,./internal/...,./tools/... -coverprofile=.tmp/coverage.live.out ./tests/integration/live
       - go tool cover -func=.tmp/coverage.live.out | tail -n 1
 
   test:live:compile:
@@ -409,7 +409,14 @@ tasks:
 
   test:live:
     desc: Run live integration tests against local Bitbucket stack
-    cmd: go test -tags=live -timeout 20m -parallel {{.LIVE_PARALLEL}} ./tests/integration/live
+    # -count=1 because the build cache cannot see Bitbucket.
+    #
+    # A cached result means "the code and the environment are unchanged", which
+    # for a suite whose subject is a server says nothing: the instance can have
+    # been reset, upgraded or left in a different state since, and the run
+    # reports ok (cached) either way. Caught while measuring, when a
+    # deliberately different run answered instantly with the previous result.
+    cmd: go test -tags=live -count=1 -timeout 20m -parallel {{.LIVE_PARALLEL}} ./tests/integration/live
 
   stack:up:
     desc: Start local SDK-licensed Bitbucket stack (no licence key required)
