@@ -455,6 +455,27 @@ jobs:
               compare_url = f"{repository_url}/compare/{previous_tag}...{version}"
 
           lines = [f"## {version}", ""]
+
+          # A release may carry a written introduction, and a large one should.
+          # The generated part below is a ledger: accurate, complete, and no
+          # help at all in answering "what does this mean for me" across two
+          # hundred commits.
+          #
+          # It has to be here rather than added afterwards. The body is rendered
+          # into the versioned docs snapshot in this same run, and a mike
+          # snapshot is immutable in practice -- no later commit reaches the
+          # /vX.Y.Z/ page (#542). Prose that is not in the file when the release
+          # is created never appears there at all.
+          #
+          # Absent for an ordinary release, which is why nothing changes for one.
+          preamble_path = os.path.join("docs", "release-notes", f"{version}.md")
+          if os.path.exists(preamble_path):
+              with open(preamble_path, encoding="utf-8") as preamble_file:
+                  preamble = preamble_file.read().strip()
+              if preamble:
+                  lines.append(preamble)
+                  lines.append("")
+
           if previous_tag:
               lines.append(f"Changes since {previous_tag}.")
               lines.append("")
@@ -471,6 +492,18 @@ jobs:
                   lines.append(f"- {item['description']} ([{item['shortSha']}]({item['url']})){breaking_note}")
               lines.append("")
 
+          # Breaking changes stay in the open however many there are: they are
+          # the part a reader has to act on. The rest of the ledger folds away
+          # once it is long enough to bury everything above it, which for a
+          # milestone release means several hundred bullets between the reader
+          # and anything that tells them what changed.
+          COLLAPSE_LEDGER_ABOVE = 40
+          collapse = len(all_entries) > COLLAPSE_LEDGER_ABOVE
+          if collapse:
+              lines.append("<details>")
+              lines.append(f"<summary>All {len(all_entries)} changes</summary>")
+              lines.append("")
+
           for section in ordered_sections:
               entries = grouped[section]
               if not entries:
@@ -479,6 +512,10 @@ jobs:
               for item in entries:
                   scoped_description = f"{item['scope']}: {item['description']}" if item.get("scope") else item["description"]
                   lines.append(f"- {scoped_description} ([{item['shortSha']}]({item['url']}))")
+              lines.append("")
+
+          if collapse:
+              lines.append("</details>")
               lines.append("")
 
           with open("RELEASE_NOTES.md", "w", encoding="utf-8") as markdown_file:
