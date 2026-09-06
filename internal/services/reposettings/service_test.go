@@ -393,7 +393,7 @@ func TestNewRepositoryServiceValidationErrors(t *testing.T) {
 	if _, err := service.GetWebhook(ctx, emptyRepo, "1"); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.UpdateWebhook(ctx, emptyRepo, "1", "name", "url", nil, nil); err == nil {
+	if _, err := service.UpdateWebhook(ctx, emptyRepo, "1", WebhookUpdateInput{Name: "name", URL: "url"}); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := service.TestWebhook(ctx, emptyRepo, "1", ""); err == nil {
@@ -428,7 +428,7 @@ func TestNewRepositoryServiceValidationErrors(t *testing.T) {
 	if _, err := service.GetWebhook(ctx, repo, ""); err == nil {
 		t.Fatal("expected error")
 	}
-	if _, err := service.UpdateWebhook(ctx, repo, "", "name", "url", nil, nil); err == nil {
+	if _, err := service.UpdateWebhook(ctx, repo, "", WebhookUpdateInput{Name: "name", URL: "url"}); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := service.TestWebhook(ctx, repo, "", ""); err == nil {

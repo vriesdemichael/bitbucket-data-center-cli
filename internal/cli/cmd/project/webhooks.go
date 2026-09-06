@@ -13,6 +13,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/webhookflags"
 	projectservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/project"
 )
 
@@ -45,8 +46,12 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 			// every webhook, so the two answered differently to the same flags.
 			webhooks := result.PageOfWebhooks(result.WebhooksFrom(payload), start, listPaging.ServiceLimit())
 
+			// WriteJSONList, not WriteJSON: --limit truncates the listing here,
+			// and an envelope without meta.limitReached tells a caller nothing
+			// was left behind when something was.
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), Webhooks{Project: args[0], Webhooks: webhooks})
+				return deps.WriteJSONList(cmd.OutOrStdout(), Webhooks{Project: args[0], Webhooks: webhooks},
+					paging.LimitReached(listPaging, len(webhooks)))
 			}
 
 			if len(webhooks) == 0 {
@@ -74,6 +79,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 
 	var createEvents []string
 	var createActive bool
+	var createFields webhookflags.Fields
 	createCmd := &cobra.Command{
 		Use:   "create <project-key> <name> <url>",
 		Short: "Create a new project-level webhook",
@@ -84,15 +90,25 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// Before the dry-run branch, so a preview cannot promise a create
+			// that the real run would refuse for the secret it was handed.
+			input, err := createFields.CreateInput(cmd)
+			if err != nil {
+				return err
+			}
+			input.Name, input.URL, input.Events, input.Active = args[1], args[2], createEvents, createActive
+
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
 				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
 					return err
 				}
 
+				target := map[string]any{"project": args[0], "name": args[1], "url": args[2], "events": createEvents, "active": createActive}
+				webhookflags.DescribeCreate(target, input, createFields.Origins())
 				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
 					Intent:          "project.webhook.create",
-					Target:          map[string]any{"project": args[0], "name": args[1], "url": args[2], "events": createEvents, "active": createActive},
+					Target:          target,
 					Action:          "create",
 					PredictedAction: "create",
 					Supported:       true,
@@ -101,7 +117,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			created, err := service.CreateProjectWebhook(cmd.Context(), args[0], args[1], args[2], createEvents, createActive)
+			created, err := service.CreateProjectWebhook(cmd.Context(), args[0], input)
 			if err != nil {
 				return err
 			}
@@ -117,12 +133,14 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	}
 	createCmd.Flags().StringSliceVar(&createEvents, "event", []string{"repo:refs_changed"}, "Webhook events to subscribe to")
 	createCmd.Flags().BoolVar(&createActive, "active", true, "Whether the webhook is active")
+	createFields.RegisterCreate(createCmd)
 	webhookCmd.AddCommand(createCmd)
 
 	var updateName string
 	var updateURL string
 	var updateEvents []string
 	var updateActiveVal string
+	var updateFields webhookflags.Fields
 	updateCmd := &cobra.Command{
 		Use:   "update <project-key> <webhook-id>",
 		Short: "Update a project webhook",
@@ -140,15 +158,25 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 				active = boolPtr(updateActiveVal == "true")
 			}
 
+			// Before the dry-run branch: a refusal that only fires on the real
+			// run makes the preview predict something the command cannot do.
+			input, err := updateFields.UpdateInput(cmd)
+			if err != nil {
+				return err
+			}
+			input.Name, input.URL, input.Events, input.Active = updateName, updateURL, updateEvents, active
+
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
 				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
 					return err
 				}
 
+				target := map[string]any{"project": args[0], "webhookId": args[1], "name": updateName, "url": updateURL, "events": updateEvents, "active": active}
+				webhookflags.Describe(target, input, updateFields.Origins())
 				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
 					Intent:          "project.webhook.update",
-					Target:          map[string]any{"project": args[0], "webhookId": args[1], "name": updateName, "url": updateURL, "events": updateEvents, "active": active},
+					Target:          target,
 					Action:          "update",
 					PredictedAction: "update",
 					Supported:       true,
@@ -157,7 +185,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			updated, err := service.UpdateProjectWebhook(cmd.Context(), args[0], args[1], updateName, updateURL, updateEvents, active)
+			updated, err := service.UpdateProjectWebhook(cmd.Context(), args[0], args[1], input)
 			if err != nil {
 				return err
 			}
@@ -176,6 +204,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	// Strict: an empty --active used to be an error here, and taking it as
 	// "leave it alone" would silently disable a webhook.
 	enumflag.RegisterStrict(updateCmd.Flags(), &updateActiveVal, "active", "", []string{"true", "false"}, "Active status")
+	updateFields.RegisterUpdate(updateCmd)
 	webhookCmd.AddCommand(updateCmd)
 
 	deleteCmd := &cobra.Command{
@@ -220,6 +249,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	webhookCmd.AddCommand(deleteCmd)
 
 	var projectWebhookTestURL string
+	var testRevealSecret bool
 	testCmd := &cobra.Command{
 		Use:   "test <project-key> <webhook-id>",
 		Short: "Trigger a connection test ping",
@@ -252,6 +282,14 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// The delivery record carries the request headers Bitbucket sent,
+			// and the endpoint's basic-auth credentials are one of them.
+			if testRevealSecret {
+				webhookflags.WarnRevealed(cmd.ErrOrStderr(), "the endpoint credentials in the delivery record")
+			} else {
+				res = result.RedactedDelivery(res)
+			}
+
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), res)
 			}
@@ -266,6 +304,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 		},
 	}
 	testCmd.Flags().StringVar(&projectWebhookTestURL, "url", "", "Test this URL instead of the webhook's configured one")
+	webhookflags.RegisterReveal(testCmd, &testRevealSecret, "the endpoint credentials Bitbucket sent")
 	webhookCmd.AddCommand(testCmd)
 
 	var summary bool

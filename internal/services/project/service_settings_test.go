@@ -46,7 +46,7 @@ func TestProjectWebhookService(t *testing.T) {
 			http.NotFound(w, r)
 		})
 
-		res, err := service.CreateProjectWebhook(context.Background(), "PRJ", "wh", "http://url", []string{"repo:refs_changed"}, true)
+		res, err := service.CreateProjectWebhook(context.Background(), "PRJ", WebhookCreateInput{Name: "wh", URL: "http://url", Events: []string{"repo:refs_changed"}, Active: true})
 		if err != nil {
 			t.Fatalf("unexpected create error: %v", err)
 		}
@@ -55,13 +55,13 @@ func TestProjectWebhookService(t *testing.T) {
 		}
 
 		// Validation error
-		if _, err := service.CreateProjectWebhook(context.Background(), "", "wh", "http://url", nil, true); err == nil {
+		if _, err := service.CreateProjectWebhook(context.Background(), "", WebhookCreateInput{Name: "wh", URL: "http://url", Active: true}); err == nil {
 			t.Fatal("expected validation error for empty project key")
 		}
-		if _, err := service.CreateProjectWebhook(context.Background(), "PRJ", "", "http://url", nil, true); err == nil {
+		if _, err := service.CreateProjectWebhook(context.Background(), "PRJ", WebhookCreateInput{URL: "http://url", Active: true}); err == nil {
 			t.Fatal("expected validation error for empty name")
 		}
-		if _, err := service.CreateProjectWebhook(context.Background(), "PRJ", "wh", "", nil, true); err == nil {
+		if _, err := service.CreateProjectWebhook(context.Background(), "PRJ", WebhookCreateInput{Name: "wh", Active: true}); err == nil {
 			t.Fatal("expected validation error for empty url")
 		}
 	})
@@ -112,7 +112,7 @@ func TestProjectWebhookService(t *testing.T) {
 		})
 
 		active := false
-		res, err := service.UpdateProjectWebhook(context.Background(), "PRJ", "123", "wh-new", "http://url-new", []string{"repo:refs_changed"}, &active)
+		res, err := service.UpdateProjectWebhook(context.Background(), "PRJ", "123", WebhookUpdateInput{Name: "wh-new", URL: "http://url-new", Events: []string{"repo:refs_changed"}, Active: &active})
 		if err != nil {
 			t.Fatalf("unexpected update error: %v", err)
 		}
@@ -126,10 +126,10 @@ func TestProjectWebhookService(t *testing.T) {
 		}
 
 		// Validation error
-		if _, err := service.UpdateProjectWebhook(context.Background(), "", "123", "", "", nil, nil); err == nil {
+		if _, err := service.UpdateProjectWebhook(context.Background(), "", "123", WebhookUpdateInput{}); err == nil {
 			t.Fatal("expected validation error for empty project key")
 		}
-		if _, err := service.UpdateProjectWebhook(context.Background(), "PRJ", "", "", "", nil, nil); err == nil {
+		if _, err := service.UpdateProjectWebhook(context.Background(), "PRJ", "", WebhookUpdateInput{}); err == nil {
 			t.Fatal("expected validation error for empty id")
 		}
 	})
@@ -559,14 +559,14 @@ func TestProjectSettingsServiceAPIErrors(t *testing.T) {
 	if _, err := service.ListProjectWebhooks(ctx, "PRJ"); err == nil {
 		t.Fatal("expected error on ListProjectWebhooks")
 	}
-	if _, err := service.CreateProjectWebhook(ctx, "PRJ", "wh", "http://url", nil, true); err == nil {
+	if _, err := service.CreateProjectWebhook(ctx, "PRJ", WebhookCreateInput{Name: "wh", URL: "http://url", Active: true}); err == nil {
 		t.Fatal("expected error on CreateProjectWebhook")
 	}
 	if _, err := service.GetProjectWebhook(ctx, "PRJ", "123"); err == nil {
 		t.Fatal("expected error on GetProjectWebhook")
 	}
 	active := true
-	if _, err := service.UpdateProjectWebhook(ctx, "PRJ", "123", "wh", "http://url", nil, &active); err == nil {
+	if _, err := service.UpdateProjectWebhook(ctx, "PRJ", "123", WebhookUpdateInput{Name: "wh", URL: "http://url", Active: &active}); err == nil {
 		t.Fatal("expected error on UpdateProjectWebhook")
 	}
 	if err := service.DeleteProjectWebhook(ctx, "PRJ", "123"); err == nil {
@@ -782,7 +782,7 @@ func TestProjectSettingsServiceEmptyAndInvalidJSON(t *testing.T) {
 			_, _ = w.Write([]byte("{invalid-json"))
 		})
 		active := true
-		_, err := service.UpdateProjectWebhook(context.Background(), "PRJ", "123", "wh", "http://url", nil, &active)
+		_, err := service.UpdateProjectWebhook(context.Background(), "PRJ", "123", WebhookUpdateInput{Name: "wh", URL: "http://url", Active: &active})
 		if err == nil || !strings.Contains(err.Error(), "failed to decode project webhook payload") {
 			t.Fatalf("expected json decode error, got: %v", err)
 		}
@@ -795,7 +795,7 @@ func TestProjectSettingsServiceEmptyAndInvalidJSON(t *testing.T) {
 			w.Header().Set("Content-Type", "text/plain")
 			_, _ = w.Write([]byte("{invalid-json"))
 		})
-		_, err := service.UpdateProjectWebhook(context.Background(), "PRJ", "123", "wh", "", nil, nil)
+		_, err := service.UpdateProjectWebhook(context.Background(), "PRJ", "123", WebhookUpdateInput{Name: "wh"})
 		if err == nil || !strings.Contains(err.Error(), "failed to decode the project webhook being updated") {
 			t.Fatalf("expected the read to be named in the error, got: %v", err)
 		}
@@ -814,14 +814,14 @@ func TestProjectSettingsServiceTransientErrors(t *testing.T) {
 	if _, err := service.ListProjectWebhooks(ctx, "PRJ"); err == nil {
 		t.Fatal("expected transient error")
 	}
-	if _, err := service.CreateProjectWebhook(ctx, "PRJ", "wh", "http://url", nil, true); err == nil {
+	if _, err := service.CreateProjectWebhook(ctx, "PRJ", WebhookCreateInput{Name: "wh", URL: "http://url", Active: true}); err == nil {
 		t.Fatal("expected transient error")
 	}
 	if _, err := service.GetProjectWebhook(ctx, "PRJ", "123"); err == nil {
 		t.Fatal("expected transient error")
 	}
 	active := true
-	if _, err := service.UpdateProjectWebhook(ctx, "PRJ", "123", "wh", "http://url", nil, &active); err == nil {
+	if _, err := service.UpdateProjectWebhook(ctx, "PRJ", "123", WebhookUpdateInput{Name: "wh", URL: "http://url", Active: &active}); err == nil {
 		t.Fatal("expected transient error")
 	}
 	if err := service.DeleteProjectWebhook(ctx, "PRJ", "123"); err == nil {

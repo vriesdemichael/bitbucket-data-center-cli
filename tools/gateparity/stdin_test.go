@@ -31,6 +31,7 @@ var stdinUseAllowed = map[string]string{
 	filepath.Join("internal", "cli", "cmd", "ai", "mcp.go"):             "the MCP stdio transport, where stdin is the protocol channel",
 	filepath.Join("internal", "cli", "cmd", "auth", "auth.go"):          "--token-stdin and --password-stdin",
 	filepath.Join("internal", "cli", "cmd", "auth", "gitcredential.go"): "the git credential protocol, which writes its request on stdin",
+	filepath.Join("internal", "cli", "webhookflags", "webhookflags.go"): "--secret-stdin and --credentials-password-stdin",
 }
 
 // TestEveryUseOfStandardInputIsAccountedFor fails when a new site names

@@ -6042,8 +6042,12 @@ Usage:
   bb project webhook create <project-key> <name> <url> [flags]
 
 Flags:
-      --active          Whether the webhook is active (default true)
-      --event strings   Webhook events to subscribe to (default [repo:refs_changed])
+      --active                        Whether the webhook is active (default true)
+      --credentials-password-stdin    Read the endpoint password from stdin (or set BB_WEBHOOK_PASSWORD)
+      --credentials-username string   Username Bitbucket authenticates to the endpoint with
+      --event strings                 Webhook events to subscribe to (default [repo:refs_changed])
+      --secret-stdin                  Read the shared secret from stdin (or set BB_WEBHOOK_SECRET)
+      --ssl-verification string       Whether Bitbucket verifies the endpoint's TLS certificate, left as the server has it when omitted (one of: true, false)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -6162,7 +6166,8 @@ Usage:
   bb project webhook test <project-key> <webhook-id> [flags]
 
 Flags:
-      --url string   Test this URL instead of the webhook's configured one
+      --reveal-secret   Print the endpoint credentials Bitbucket sent instead of redacting it
+      --url string      Test this URL instead of the webhook's configured one
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -6192,10 +6197,16 @@ Usage:
   bb project webhook update <project-key> <webhook-id> [flags]
 
 Flags:
-      --active string   Active status (one of: true, false)
-      --event strings   New list of webhook events
-      --name string     New name
-      --url string      New URL
+      --active string                 Active status (one of: true, false)
+      --credentials-password-stdin    Read the endpoint password from stdin (or set BB_WEBHOOK_PASSWORD)
+      --credentials-username string   Username Bitbucket authenticates to the endpoint with
+      --event strings                 New list of webhook events
+      --name string                   New name
+      --no-credentials                Remove the endpoint credentials from the webhook
+      --no-secret                     Remove the shared secret from the webhook
+      --secret-stdin                  Read the shared secret from stdin (or set BB_WEBHOOK_SECRET)
+      --ssl-verification string       Whether Bitbucket verifies the endpoint's TLS certificate, left as the server has it when omitted (one of: true, false)
+      --url string                    New URL
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -8576,8 +8587,12 @@ Usage:
   bb repo settings workflow webhooks create <name> <url> [flags]
 
 Flags:
-      --active          Whether the webhook is active (default true)
-      --event strings   Webhook event(s) to subscribe to (default [repo:refs_changed])
+      --active                        Whether the webhook is active (default true)
+      --credentials-password-stdin    Read the endpoint password from stdin (or set BB_WEBHOOK_PASSWORD)
+      --credentials-username string   Username Bitbucket authenticates to the endpoint with
+      --event strings                 Webhook event(s) to subscribe to (default [repo:refs_changed])
+      --secret-stdin                  Read the shared secret from stdin (or set BB_WEBHOOK_SECRET)
+      --ssl-verification string       Whether Bitbucket verifies the endpoint's TLS certificate, left as the server has it when omitted (one of: true, false)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -9872,8 +9887,12 @@ Usage:
   bb webhook create <name> <url> [flags]
 
 Flags:
-      --active          Whether the new webhook is active (default true)
-      --event strings   Webhook event(s) to subscribe to (default [repo:refs_changed])
+      --active                        Whether the new webhook is active (default true)
+      --credentials-password-stdin    Read the endpoint password from stdin (or set BB_WEBHOOK_PASSWORD)
+      --credentials-username string   Username Bitbucket authenticates to the endpoint with
+      --event strings                 Webhook event(s) to subscribe to (default [repo:refs_changed])
+      --secret-stdin                  Read the shared secret from stdin (or set BB_WEBHOOK_SECRET)
+      --ssl-verification string       Whether Bitbucket verifies the endpoint's TLS certificate, left as the server has it when omitted (one of: true, false)
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -9930,6 +9949,9 @@ Get a repository webhook by ID
 
 Usage:
   bb webhook get <id> [flags]
+
+Flags:
+      --reveal-secret   Print the webhook's shared secret instead of redacting it
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -10024,7 +10046,8 @@ Usage:
   bb webhook test <id> [flags]
 
 Flags:
-      --url string   Test this URL instead of the webhook's configured one
+      --reveal-secret   Print the endpoint credentials Bitbucket sent instead of redacting it
+      --url string      Test this URL instead of the webhook's configured one
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -10055,10 +10078,16 @@ Usage:
   bb webhook update <id> [flags]
 
 Flags:
-      --active string   Active status, unchanged when omitted (one of: true, false)
-      --event strings   New list of webhook events to subscribe to
-      --name string     New name of the webhook
-      --url string      New URL of the webhook
+      --active string                 Active status, unchanged when omitted (one of: true, false)
+      --credentials-password-stdin    Read the endpoint password from stdin (or set BB_WEBHOOK_PASSWORD)
+      --credentials-username string   Username Bitbucket authenticates to the endpoint with
+      --event strings                 New list of webhook events to subscribe to
+      --name string                   New name of the webhook
+      --no-credentials                Remove the endpoint credentials from the webhook
+      --no-secret                     Remove the shared secret from the webhook
+      --secret-stdin                  Read the shared secret from stdin (or set BB_WEBHOOK_SECRET)
+      --ssl-verification string       Whether Bitbucket verifies the endpoint's TLS certificate, left as the server has it when omitted (one of: true, false)
+      --url string                    New URL of the webhook
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust

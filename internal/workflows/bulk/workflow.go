@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -87,6 +88,20 @@ type OperationSpec struct {
 	Description              *string        `yaml:"description,omitempty" json:"description,omitempty"`
 	SourceRef                *string        `yaml:"sourceRef,omitempty" json:"sourceRef,omitempty"`
 	TargetRef                *string        `yaml:"targetRef,omitempty" json:"targetRef,omitempty"`
+	SSLVerificationRequired  *bool          `yaml:"sslVerificationRequired,omitempty" json:"sslVerificationRequired,omitempty"`
+	// SecretEnv and CredentialsPasswordEnv hold the *name* of an environment
+	// variable, never a credential.
+	//
+	// A plan is a file: it is written to disk, committed to a repository,
+	// attached to a change request and read back by whoever reviews it. A
+	// literal secret in it is a secret in version control, and ADR-047's rule
+	// against a secret on the command line exists for the same reason. So the
+	// plan says which variable holds the secret and the runner reads it at
+	// apply time, which also means the same plan can be applied against
+	// different environments without being edited.
+	SecretEnv              string `yaml:"secretEnv,omitempty" json:"secretEnv,omitempty"`
+	CredentialsUsername    string `yaml:"credentialsUsername,omitempty" json:"credentialsUsername,omitempty"`
+	CredentialsPasswordEnv string `yaml:"credentialsPasswordEnv,omitempty" json:"credentialsPasswordEnv,omitempty"`
 }
 
 type RepositoryTarget struct {
@@ -580,6 +595,28 @@ func (store *StatusStore) Load(operationID string) (ApplyStatus, error) {
 	return status, nil
 }
 
+// envNamePattern is what a POSIX environment variable name looks like.
+var envNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+// validateEnvName refuses anything that is not a variable name.
+//
+// The mistake this catches is the one that matters: a caller who reads
+// "secretEnv" as "the secret" and pastes the credential into the plan. Almost
+// no real secret is a valid variable name -- they carry punctuation, or
+// base64's = and /, or spaces -- so the check that keeps the plan honest is
+// simply that the value looks like a name and nothing else.
+func validateEnvName(name string) error {
+	if name == "" {
+		return nil
+	}
+	if !envNamePattern.MatchString(name) {
+		return fmt.Errorf("must be the name of an environment variable, not a value; " +
+			"the plan names the variable and bb reads it when the plan is applied")
+	}
+
+	return nil
+}
+
 func DescribeOperation(operation OperationSpec) string {
 	switch operation.Type {
 	case OperationRepoPermissionUserGrant:
@@ -587,7 +624,18 @@ func DescribeOperation(operation OperationSpec) string {
 	case OperationRepoPermissionGroupGrant:
 		return fmt.Sprintf("grant group %s %s", operation.Group, operation.Permission)
 	case OperationRepoWebhookCreate:
-		return fmt.Sprintf("create webhook %s", operation.Name)
+		// Naming the variable, not reading it: the description is what a plan
+		// prints, and what it has to answer is which variable the apply will
+		// read -- the mistake a plan makes is naming the wrong one.
+		described := fmt.Sprintf("create webhook %s", operation.Name)
+		if operation.SecretEnv != "" {
+			described += fmt.Sprintf(" with the shared secret from $%s", operation.SecretEnv)
+		}
+		if operation.CredentialsPasswordEnv != "" {
+			described += fmt.Sprintf(" and the endpoint password from $%s", operation.CredentialsPasswordEnv)
+		}
+
+		return described
 	case OperationRepoPullRequestRequiredAllTasksComplete:
 		if operation.RequiredAllTasksComplete == nil {
 			return "set requiredAllTasksComplete"
@@ -723,6 +771,15 @@ func normalizeOperation(operation OperationSpec) (OperationSpec, []string) {
 			normalized.Active = boolPtr(true)
 		} else {
 			normalized.Active = boolPtr(*operation.Active)
+		}
+		normalized.CredentialsUsername = strings.TrimSpace(operation.CredentialsUsername)
+		normalized.SecretEnv = strings.TrimSpace(operation.SecretEnv)
+		normalized.CredentialsPasswordEnv = strings.TrimSpace(operation.CredentialsPasswordEnv)
+		if err := validateEnvName(normalized.SecretEnv); err != nil {
+			validationErrors = append(validationErrors, fmt.Sprintf("secretEnv %v", err))
+		}
+		if err := validateEnvName(normalized.CredentialsPasswordEnv); err != nil {
+			validationErrors = append(validationErrors, fmt.Sprintf("credentialsPasswordEnv %v", err))
 		}
 	case OperationRepoPullRequestRequiredAllTasksComplete:
 		if operation.RequiredAllTasksComplete == nil {

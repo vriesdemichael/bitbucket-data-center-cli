@@ -9,6 +9,7 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/webhookfields"
 )
 
 func (service *Service) ListProjectWebhooks(ctx context.Context, projectKey string) (any, error) {
@@ -37,36 +38,22 @@ func (service *Service) ListProjectWebhooks(ctx context.Context, projectKey stri
 	return payload, nil
 }
 
-func (service *Service) CreateProjectWebhook(ctx context.Context, projectKey string, name string, url string, events []string, active bool) (any, error) {
+// WebhookCreateInput and WebhookUpdateInput are the shared shapes: a project
+// webhook and a repository webhook are one object behind two routes.
+type (
+	WebhookCreateInput = webhookfields.CreateInput
+	WebhookUpdateInput = webhookfields.UpdateInput
+)
+
+func (service *Service) CreateProjectWebhook(ctx context.Context, projectKey string, input WebhookCreateInput) (any, error) {
 	trimmedProject := strings.TrimSpace(projectKey)
 	if trimmedProject == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
 
-	trimmedName := strings.TrimSpace(name)
-	trimmedURL := strings.TrimSpace(url)
-	if trimmedName == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "webhook name is required", nil)
-	}
-	if trimmedURL == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "webhook url is required", nil)
-	}
-
-	cleanedEvents := make([]string, 0, len(events))
-	for _, event := range events {
-		if trimmedEvent := strings.TrimSpace(event); trimmedEvent != "" {
-			cleanedEvents = append(cleanedEvents, trimmedEvent)
-		}
-	}
-	if len(cleanedEvents) == 0 {
-		cleanedEvents = []string{"repo:refs_changed"}
-	}
-
-	body := openapigenerated.CreateWebhookJSONRequestBody{
-		Name:   &trimmedName,
-		Url:    &trimmedURL,
-		Events: &cleanedEvents,
-		Active: &active,
+	body, err := webhookfields.NewCreateBody(input)
+	if err != nil {
+		return nil, err
 	}
 
 	response, err := service.client.CreateWebhookWithResponse(ctx, trimmedProject, body)
@@ -141,7 +128,7 @@ func (service *Service) projectWebhookForUpdate(ctx context.Context, projectKey 
 	return current, nil
 }
 
-func (service *Service) UpdateProjectWebhook(ctx context.Context, projectKey string, id string, name string, url string, events []string, active *bool) (any, error) {
+func (service *Service) UpdateProjectWebhook(ctx context.Context, projectKey string, id string, input WebhookUpdateInput) (any, error) {
 	trimmedProject := strings.TrimSpace(projectKey)
 	if trimmedProject == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
@@ -156,29 +143,7 @@ func (service *Service) UpdateProjectWebhook(ctx context.Context, projectKey str
 	if err != nil {
 		return nil, err
 	}
-
-	if strings.TrimSpace(name) != "" {
-		n := strings.TrimSpace(name)
-		body.Name = &n
-	}
-	if strings.TrimSpace(url) != "" {
-		u := strings.TrimSpace(url)
-		body.Url = &u
-	}
-	if len(events) > 0 {
-		cleanedEvents := make([]string, 0, len(events))
-		for _, event := range events {
-			if trimmedEvent := strings.TrimSpace(event); trimmedEvent != "" {
-				cleanedEvents = append(cleanedEvents, trimmedEvent)
-			}
-		}
-		if len(cleanedEvents) > 0 {
-			body.Events = &cleanedEvents
-		}
-	}
-	if active != nil {
-		body.Active = active
-	}
+	webhookfields.ApplyUpdate(&body, input)
 
 	response, err := service.client.UpdateWebhookWithResponse(ctx, trimmedProject, trimmedID, body)
 	if err != nil {

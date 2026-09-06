@@ -281,6 +281,7 @@ your behalf using the link above.`,
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
+		WriteJSONList:       writeJSONList,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) webhookcmd.PermissionChecker {
 			return options.permissionCheckerFor(client)
 		},
