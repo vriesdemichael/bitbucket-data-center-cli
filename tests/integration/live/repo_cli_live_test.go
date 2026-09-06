@@ -341,11 +341,15 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 		t.Fatalf("expected non-empty human permissions output")
 	}
 
+	// The seeded repository has no webhooks, so the listing says so rather
+	// than counting to zero. It used to answer "Webhooks configured: 0" and
+	// nothing else, which is why the id `webhooks delete` takes could not be
+	// obtained from the command that lists them (#522).
 	humanWebhooksListOutput, err := executeLiveCLI(t, "repo", "settings", "workflow", "webhooks", "list")
 	if err != nil {
 		t.Fatalf("repo settings webhooks list (human) failed: %v\noutput: %s", err, humanWebhooksListOutput)
 	}
-	if !strings.Contains(humanWebhooksListOutput, "Webhooks configured:") {
+	if !strings.Contains(humanWebhooksListOutput, "No webhooks found") {
 		t.Fatalf("expected human webhooks output, got: %s", humanWebhooksListOutput)
 	}
 
