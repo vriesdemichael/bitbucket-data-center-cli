@@ -17,10 +17,12 @@ A staged fix is marked rather than closed: the label staged-on-next, and one com
 The closing keyword goes in the commit body, not only in the pull request description. main takes rebase merges, so the commit message is what arrives on the default branch.
 Remaining work is the query is:open milestone:vN.0.0 -label:staged-on-next. The milestone progress bar reads zero until the major lands, and the tracking issue holds the ordering.
 The release workflow closes what the keywords missed: on publish it closes the milestone's open issues with a link to the release, then closes the milestone.
+This takes effect after v4.0.0. That major was worked the other way throughout -- its issues were closed as their fixes merged to next -- and switching for the last few would leave one board holding both conventions while the reason for the record, a reporter who can tell shipped from merged, is already lost for that release.
+Two things have to exist before it can be followed: the staged-on-next label, and the closing step in the release workflow. Neither does yet.
 
 ## Agent Instructions
 
-Do not close an issue because its fix merged to next. Apply staged-on-next and leave it open; the release closes it.
+From v5.0.0 on, do not close an issue because its fix merged to next. Apply staged-on-next and leave it open; the release closes it. For v4.0.0 keep closing on merge, which is how the rest of that milestone was worked.
 Put the Closes footer in the commit body of the change itself. A keyword that lives only in a pull request description does not survive into main's history.
 Do not add a label per release, and do not mirror a milestone as sub-issues of its tracking issue. Both put the same work in two places, and the copy is the one that goes stale.
 
