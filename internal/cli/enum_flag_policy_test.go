@@ -179,6 +179,8 @@ func TestNoFlagEnumeratesValuesWithoutEnforcingThem(t *testing.T) {
 		// of teaching it is worse than two entries here.
 		"bb pr create --reviewer-group":              "describes repetition, not a value set; group names are open",
 		"bb pr review reviewer add --reviewer-group": "describes repetition, not a value set; group names are open",
+		"bb reviewer-group create --users":           "describes repetition, not a value set; usernames are open",
+		"bb reviewer-group update --users":           "describes repetition, not a value set; usernames are open",
 	}
 
 	visitFlags(t, func(cmd *cobra.Command, flag *pflag.Flag) {
