@@ -22,9 +22,18 @@ decision: >
 
   The release workflow closes what the keywords missed: on publish it closes the milestone's
   open issues with a link to the release, then closes the milestone.
+
+  This takes effect after v4.0.0. That major was worked the other way throughout -- its issues
+  were closed as their fixes merged to next -- and switching for the last few would leave one
+  board holding both conventions while the reason for the record, a reporter who can tell
+  shipped from merged, is already lost for that release.
+
+  Two things have to exist before it can be followed: the staged-on-next label, and the closing
+  step in the release workflow. Neither does yet.
 agent_instructions: >
-  Do not close an issue because its fix merged to next. Apply staged-on-next and leave it open;
-  the release closes it.
+  From v5.0.0 on, do not close an issue because its fix merged to next. Apply staged-on-next and
+  leave it open; the release closes it. For v4.0.0 keep closing on merge, which is how the rest
+  of that milestone was worked.
 
   Put the Closes footer in the commit body of the change itself. A keyword that lives only in a
   pull request description does not survive into main's history.
