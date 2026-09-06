@@ -39,7 +39,7 @@ type TLSOptions struct {
 func NewSafeTransport(options TLSOptions) (http.RoundTripper, error) {
 	base, ok := http.DefaultTransport.(*http.Transport)
 	if !ok {
-		return &SafeTransport{}, nil
+		return withHarvest(&SafeTransport{}), nil
 	}
 
 	transport := base.Clone()
@@ -82,5 +82,5 @@ func NewSafeTransport(options TLSOptions) (http.RoundTripper, error) {
 	}
 
 	transport.TLSClientConfig = tlsConfig
-	return &SafeTransport{Base: transport}, nil
+	return withHarvest(&SafeTransport{Base: transport}), nil
 }
