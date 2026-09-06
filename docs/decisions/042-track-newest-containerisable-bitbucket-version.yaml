@@ -109,7 +109,7 @@ rejected_alternatives:
       the upper bound is whatever still runs in the container rather than a version chosen up front.
   - alternative: Remove the bitbucket_version_target field from machine output
     reason: >
-      It is a required field of the bb.machine envelope, so removing it breaks consumers. Leaving it
+      It is a required field of the machine envelope, so removing it breaks consumers. Leaving it
       settable lets operators record a version for their own environment without the project
       asserting one.
 provenance: guided-ai

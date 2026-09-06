@@ -5,7 +5,7 @@ Published Architecture and Development Decision Records for this project.
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
 - Total ADRs: `80`
-- Accepted ADRs: `71`
+- Accepted ADRs: `70`
 
 ## ADR List
 
@@ -43,7 +43,7 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 032: Refactor CLI root into command packages](032-cli-root-modularization-into-command-packages.md) (`architecture`, `accepted`)
 - [ADR 033: Automated Conventional Commit release on main](033-automated-conventional-commit-release-on-main.md) (`development`, `accepted`)
 - [ADR 034: Unified dry-run planning engine for server mutating commands](034-unified-dry-run-planning-engine.md) (`architecture`, `accepted`)
-- [ADR 035: Dry-run capability signaling and test strategy policy](035-dry-run-capability-and-testing-policy.md) (`development`, `accepted`)
+- [ADR 035: Dry-run capability signaling and test strategy policy](035-dry-run-capability-and-testing-policy.md) (`development`, `superseded`)
 - [ADR 036: CLI identity bb and BB namespace](036-cli-identity-bb-and-bb-namespace.md) (`architecture`, `accepted`)
 - [ADR 037: Versioned docs via MkDocs Material and mike](037-versioned-docs-via-mkdocs-material-and-mike.md) (`development`, `accepted`)
 - [ADR 038: bb ai subcommand as AI-first tooling namespace](038-bb-ai-subcommand-as-ai-first-tooling-namespace.md) (`architecture`, `accepted`)

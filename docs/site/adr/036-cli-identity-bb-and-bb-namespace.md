@@ -15,7 +15,7 @@ Standardize the public CLI identity on `bb` before first broad release. This inc
 
 ## Agent Instructions
 
-Use `bb` for command examples and command path assumptions. Use `BB_*` for CLI/runtime environment variables. Keep defaults under `~/.config/bb/` and use keyring service name `bb`. Emit machine envelopes with contract `bb.machine` on version `v2`. Use `bb.io/v1alpha1` for bulk workflow apiVersion constants and schema examples.
+Use `bb` for command examples and command path assumptions. Use `BB_*` for CLI/runtime environment variables. Keep defaults under `~/.config/bb/` and use keyring service name `bb`. Emit the machine envelope under --json; it carries no contract name or version (ADR-064). Use `bb.io/v1alpha1` for bulk workflow apiVersion constants and schema examples.
 
 ## Rationale
 

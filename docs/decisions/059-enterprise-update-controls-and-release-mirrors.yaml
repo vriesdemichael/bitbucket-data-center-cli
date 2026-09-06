@@ -48,4 +48,11 @@ rejected_alternatives:
     reason: >
       Fleet administrators need system-wide configuration files to set company-wide mirrors without expecting individual
       developers to configure shell profiles.
+  - alternative: Gate major-version self-updates behind an extra confirmation
+    reason: >
+      Investigated as a release blocker and rejected (#465). Comparable CLIs do not gate majors, package
+      managers cross them without asking, and bb has no background updater that could apply one unattended --
+      every update is a command somebody ran. A gate would have added a prompt to the one path that is already
+      explicit while doing nothing about the paths that are not, and the enterprise control that matters is
+      disabling update altogether, which this record already provides.
 provenance: guided-ai

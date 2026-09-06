@@ -6,7 +6,6 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Bitbucket resolves CODEOWNERS, not bb`
 - Category: `architecture`
 - Status: `accepted`
-- Supersedes: `056`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/080-bitbucket-resolves-codeowners-not-bb.yaml`
 
