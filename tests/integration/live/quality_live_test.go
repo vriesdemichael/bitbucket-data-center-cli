@@ -14,6 +14,8 @@ import (
 )
 
 func TestLiveBuildStatusSetAndGet(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
 
@@ -58,6 +60,8 @@ func TestLiveBuildStatusSetAndGet(t *testing.T) {
 }
 
 func TestLiveCodeInsightsReportSetAndGet(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
 
@@ -118,6 +122,8 @@ func TestLiveCodeInsightsReportSetAndGet(t *testing.T) {
 }
 
 func TestLiveRequiredBuildCheckLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
 
@@ -168,6 +174,8 @@ func TestLiveRequiredBuildCheckLifecycle(t *testing.T) {
 }
 
 func TestLiveCodeInsightsAnnotationsLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
 
@@ -223,6 +231,8 @@ func TestLiveCodeInsightsAnnotationsLifecycle(t *testing.T) {
 }
 
 func TestLiveCLIInsightsReportSetDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -264,6 +274,8 @@ func TestLiveCLIInsightsReportSetDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBuildStatusSetDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -304,6 +316,8 @@ func TestLiveCLIBuildStatusSetDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIInsightsReportDeleteDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -352,6 +366,8 @@ func TestLiveCLIInsightsReportDeleteDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIInsightsAnnotationAddDeleteDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -429,6 +445,8 @@ func TestLiveCLIInsightsAnnotationAddDeleteDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBuildRequiredCreateUpdateDeleteDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -547,6 +565,8 @@ func requiredBuildCheckID(payload map[string]any) (int64, bool) {
 // for fewer than exist is the other half, because a cap that is not honoured
 // comes back long.
 func TestLiveQualityListingsPageToTheEnd(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
 
@@ -658,6 +678,8 @@ func TestLiveQualityListingsPageToTheEnd(t *testing.T) {
 // which endpoints send one is the server's decision, not ours. A commit nobody
 // has reported on answers the question without anyone deciding what it says.
 func TestLiveQualityEmptyAnswers(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
 

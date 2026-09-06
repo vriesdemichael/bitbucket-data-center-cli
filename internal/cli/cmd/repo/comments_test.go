@@ -71,8 +71,9 @@ func TestCommentHelpers(t *testing.T) {
 // ADR-032 modularization. The copy had no callers; this one has four, and had
 // no test of its own.
 func TestResolveCommentTargetRequiresExactlyOneContext(t *testing.T) {
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	cfg := config.AppConfig{ProjectKey: "TEST"}
+	t.Parallel()
+
+	cfg := config.AppConfig{ProjectKey: "TEST", RepoSlug: "demo"}
 
 	if _, err := resolveCommentTarget("", "", "", cfg); err == nil {
 		t.Fatal("expected validation error for missing commit/pr")

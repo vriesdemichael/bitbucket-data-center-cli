@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -271,7 +270,7 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 		}
 		if retrypolicy.RetriableStatus(method, response.StatusCode) {
 			lastErr = mappedErr
-			retryDelay := retryDelayFromResponse(response.Header, attempt, client.backoff)
+			retryDelay := retrypolicy.Delay(response.Header, attempt, client.backoff)
 			fields["retry_delay"] = retryDelay.String()
 			if attempt < client.retries {
 				client.logger.Warn("http request returned error status", fields)
@@ -402,7 +401,7 @@ func (client *Client) Health(ctx context.Context) (HealthStatus, error) {
 				"duration_ms": time.Since(started).Milliseconds(),
 			}
 			lastErr = openapi.MapStatusError(response.StatusCode, nil)
-			retryDelay := retryDelayFromResponse(response.Header, attempt, client.backoff)
+			retryDelay := retrypolicy.Delay(response.Header, attempt, client.backoff)
 			fields["retry_delay"] = retryDelay.String()
 			if attempt < client.retries {
 				client.logger.Warn("health probe returned retriable status", fields)
@@ -434,34 +433,6 @@ func (client *Client) applyAuth(request *http.Request) {
 	if client.username != "" && client.password != "" {
 		request.SetBasicAuth(client.username, client.password)
 	}
-}
-
-func retryDelayFromResponse(headers http.Header, attempt int, fallbackBase time.Duration) time.Duration {
-	if fallbackBase <= 0 {
-		fallbackBase = 250 * time.Millisecond
-	}
-
-	if headers != nil {
-		retryAfter := strings.TrimSpace(headers.Get("Retry-After"))
-		if retryAfter != "" {
-			if seconds, err := strconv.Atoi(retryAfter); err == nil {
-				if seconds < 0 {
-					seconds = 0
-				}
-				return time.Duration(seconds) * time.Second
-			}
-
-			if retryAt, err := http.ParseTime(retryAfter); err == nil {
-				delay := time.Until(retryAt)
-				if delay < 0 {
-					return 0
-				}
-				return delay
-			}
-		}
-	}
-
-	return time.Duration(attempt+1) * fallbackBase
 }
 
 func sleepWithContext(ctx context.Context, delay time.Duration) error {

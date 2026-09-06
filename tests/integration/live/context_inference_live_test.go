@@ -22,7 +22,7 @@ func TestLiveCLIInferRepoContextFromGitRemote(t *testing.T) {
 	}
 
 	repo := seeded.Repos[0]
-	configureLiveCLIEnv(t, harness, "WRONG", "wrong")
+	configureLiveCLIEnvVars(t, "WRONG", "wrong")
 
 	pushURL, err := repositoryPushURL(harness.config, seeded.Key, repo.Slug)
 	if err != nil {
@@ -106,7 +106,7 @@ func TestLiveCLIInferRepoContextAmbiguity(t *testing.T) {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
 
-	configureLiveCLIEnv(t, harness, "WRONG", "wrong")
+	configureLiveCLIEnvVars(t, "WRONG", "wrong")
 
 	originURL, err := repositoryPushURL(harness.config, seeded.Key, seeded.Repos[0].Slug)
 	if err != nil {
@@ -160,7 +160,7 @@ func TestLiveCLIInferRepoContextJSONHasNoBannerNoise(t *testing.T) {
 	}
 
 	repo := seeded.Repos[0]
-	configureLiveCLIEnv(t, harness, "WRONG", "wrong")
+	configureLiveCLIEnvVars(t, "WRONG", "wrong")
 
 	pushURL, err := repositoryPushURL(harness.config, seeded.Key, repo.Slug)
 	if err != nil {
@@ -211,7 +211,7 @@ func TestLiveCLIExplicitRepoOverridesAmbiguousInference(t *testing.T) {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
 
-	configureLiveCLIEnv(t, harness, "WRONG", "wrong")
+	configureLiveCLIEnvVars(t, "WRONG", "wrong")
 
 	originURL, err := repositoryPushURL(harness.config, seeded.Key, seeded.Repos[0].Slug)
 	if err != nil {

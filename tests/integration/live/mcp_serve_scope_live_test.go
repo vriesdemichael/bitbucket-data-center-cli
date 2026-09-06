@@ -107,6 +107,8 @@ func TestLiveMCPServeIsNotScopedByTheDirectoryItStartsIn(t *testing.T) {
 // narrows where the scope may come from, not whether it exists. Without this,
 // the annotation could be read as "serve ignores --repo".
 func TestLiveMCPServeStillHonoursAnExplicitScope(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)

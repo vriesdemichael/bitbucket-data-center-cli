@@ -14,6 +14,8 @@ import (
 )
 
 func TestLiveTagLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := tagservice.NewService(harness.client)
 

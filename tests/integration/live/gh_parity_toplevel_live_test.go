@@ -18,6 +18,8 @@ import (
 // the invocation out so the command is visibly covered, and asserts the URL
 // rather than merely a clean exit.
 func TestLiveTopLevelBrowse(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -58,6 +60,8 @@ func TestLiveTopLevelBrowse(t *testing.T) {
 // tree, and the short one is the one people reach for first, so a break in it is
 // a break in the spelling most users see.
 func TestLiveTopLevelClone(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)

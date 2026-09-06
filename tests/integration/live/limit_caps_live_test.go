@@ -30,6 +30,8 @@ import (
 // more, and a walk that stops early returns fewer, so both failures are visible
 // in the same count.
 func TestLiveLimitActuallyCaps(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -153,6 +155,8 @@ func TestLiveLimitActuallyCaps(t *testing.T) {
 // caller iterating the refs a commit is on -- is built on a listing that does
 // not exist.
 func TestLiveBranchModelInspectAnswersWithOneRef(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()

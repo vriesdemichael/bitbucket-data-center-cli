@@ -12,6 +12,8 @@ import (
 )
 
 func TestLiveHarnessSeedsMultipleReposWithCommits(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)

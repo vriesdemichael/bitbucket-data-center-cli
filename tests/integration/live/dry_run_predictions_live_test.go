@@ -184,6 +184,8 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 // this setting is already the value being set. The mocked version supplied both
 // sides of each comparison, so it could only ever agree with itself.
 func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()

@@ -16,6 +16,8 @@ import (
 // endpoint moved between API versions, so the thing worth proving here is that
 // what bb writes is what bb reads back.
 func TestLiveBuildStatusLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -89,6 +91,8 @@ func TestLiveBuildStatusLifecycle(t *testing.T) {
 // TestLiveInsightsAnnotationSet covers bb insights annotation set, which needs a
 // code-insights report to attach to.
 func TestLiveInsightsAnnotationSet(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -134,6 +138,8 @@ func TestLiveInsightsAnnotationSet(t *testing.T) {
 // TestLiveBranchModelInspect covers bb branch model inspect, which classifies a
 // commit against the repository's branching model.
 func TestLiveBranchModelInspect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)

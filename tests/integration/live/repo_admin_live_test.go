@@ -11,6 +11,8 @@ import (
 )
 
 func TestLiveCLIRepoAdminLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -57,6 +59,8 @@ func TestLiveCLIRepoAdminLifecycle(t *testing.T) {
 }
 
 func TestLiveCLIRepoAdminCreateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -72,10 +76,7 @@ func TestLiveCLIRepoAdminCreateDryRunNoSideEffect(t *testing.T) {
 
 	name := fmt.Sprintf("dryrun-repo-%d", time.Now().UnixNano()%100000)
 
-	listBeforeOutput, err := executeLiveCLI(t, "--json", "repo", "list")
-	if err != nil {
-		t.Fatalf("repo list before failed: %v\noutput: %s", err, listBeforeOutput)
-	}
+	listBefore := projectRepositoryListing(t, seeded.Key)
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "admin", "create", "--project", seeded.Key, "--name", name)
 	if err != nil {
@@ -88,17 +89,14 @@ func TestLiveCLIRepoAdminCreateDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected repo.admin.create intent, got: %s", dryRunOutput)
 	}
 
-	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "list")
-	if err != nil {
-		t.Fatalf("repo list after failed: %v\noutput: %s", err, listAfterOutput)
-	}
-
-	if listBeforeOutput != listAfterOutput {
-		t.Fatalf("expected no repository side-effect from admin create dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	if listAfter := projectRepositoryListing(t, seeded.Key); listAfter != listBefore {
+		t.Fatalf("expected no repository side-effect from admin create dry-run\nbefore: %s\nafter: %s", listBefore, listAfter)
 	}
 }
 
 func TestLiveCLIRepoAdminUpdateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -117,10 +115,7 @@ func TestLiveCLIRepoAdminUpdateDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("repo create fixture failed: %v\noutput: %s", err, createOutput)
 	}
 
-	listBeforeOutput, err := executeLiveCLI(t, "--json", "repo", "list")
-	if err != nil {
-		t.Fatalf("repo list before failed: %v\noutput: %s", err, listBeforeOutput)
-	}
+	listBefore := projectRepositoryListing(t, seeded.Key)
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "admin", "update", "--name", repoName+"-renamed")
 	if err != nil {
@@ -130,19 +125,16 @@ func TestLiveCLIRepoAdminUpdateDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected repo.admin.update intent, got: %s", dryRunOutput)
 	}
 
-	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "list")
-	if err != nil {
-		t.Fatalf("repo list after failed: %v\noutput: %s", err, listAfterOutput)
-	}
-
-	if listBeforeOutput != listAfterOutput {
-		t.Fatalf("expected no repository side-effect from admin update dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	if listAfter := projectRepositoryListing(t, seeded.Key); listAfter != listBefore {
+		t.Fatalf("expected no repository side-effect from admin update dry-run\nbefore: %s\nafter: %s", listBefore, listAfter)
 	}
 
 	_, _ = executeLiveCLI(t, "--json", "repo", "admin", "delete", seeded.Key+"/"+repoName, "--yes")
 }
 
 func TestLiveCLIRepoAdminDeleteDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -161,10 +153,7 @@ func TestLiveCLIRepoAdminDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("repo create fixture failed: %v\noutput: %s", err, createOutput)
 	}
 
-	listBeforeOutput, err := executeLiveCLI(t, "--json", "repo", "list")
-	if err != nil {
-		t.Fatalf("repo list before failed: %v\noutput: %s", err, listBeforeOutput)
-	}
+	listBefore := projectRepositoryListing(t, seeded.Key)
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "admin", "delete")
 	if err != nil {
@@ -174,19 +163,16 @@ func TestLiveCLIRepoAdminDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected repo.admin.delete intent, got: %s", dryRunOutput)
 	}
 
-	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "list")
-	if err != nil {
-		t.Fatalf("repo list after failed: %v\noutput: %s", err, listAfterOutput)
-	}
-
-	if listBeforeOutput != listAfterOutput {
-		t.Fatalf("expected no repository side-effect from admin delete dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	if listAfter := projectRepositoryListing(t, seeded.Key); listAfter != listBefore {
+		t.Fatalf("expected no repository side-effect from admin delete dry-run\nbefore: %s\nafter: %s", listBefore, listAfter)
 	}
 
 	_, _ = executeLiveCLI(t, "--json", "repo", "admin", "delete", seeded.Key+"/"+repoName, "--yes")
 }
 
 func TestLiveCLIRepoAdminForkDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -200,10 +186,7 @@ func TestLiveCLIRepoAdminForkDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	listBeforeOutput, err := executeLiveCLI(t, "--json", "repo", "list", "--limit", "200")
-	if err != nil {
-		t.Fatalf("repo list before failed: %v\noutput: %s", err, listBeforeOutput)
-	}
+	listBefore := projectRepositoryListing(t, seeded.Key)
 
 	forkName := fmt.Sprintf("dryrun-fork-%d", time.Now().UnixNano()%100000)
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "admin", "fork", "--repo", seeded.Key+"/"+repo.Slug, "--name", forkName)
@@ -214,17 +197,16 @@ func TestLiveCLIRepoAdminForkDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected repo.admin.fork intent, got: %s", dryRunOutput)
 	}
 
-	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "list", "--limit", "200")
-	if err != nil {
-		t.Fatalf("repo list after failed: %v\noutput: %s", err, listAfterOutput)
-	}
-
-	if listBeforeOutput != listAfterOutput {
-		t.Fatalf("expected no repository side-effect from admin fork dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	// The fork lands in the same project, so the project's own listing is where
+	// it would show up.
+	if listAfter := projectRepositoryListing(t, seeded.Key); listAfter != listBefore {
+		t.Fatalf("expected no repository side-effect from admin fork dry-run\nbefore: %s\nafter: %s", listBefore, listAfter)
 	}
 }
 
 func TestLiveCLIRepoLifecyclePromotedCanonical(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)

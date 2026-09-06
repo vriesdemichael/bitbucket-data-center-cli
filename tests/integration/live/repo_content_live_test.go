@@ -17,6 +17,8 @@ import (
 // repo edit is the one worth the seeding: it commits through the API rather
 // than through git, so nothing else in the suite exercises that path.
 func TestLiveRepoContentCommands(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -105,6 +107,8 @@ func TestLiveRepoContentCommands(t *testing.T) {
 // These are the default-tasks endpoints, which are unrelated to the removed
 // pull request task API — see #386. They exist and work.
 func TestLiveRepoDefaultTaskLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)

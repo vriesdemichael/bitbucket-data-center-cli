@@ -181,8 +181,8 @@ func TestResolveBrowseRepositoryReference(t *testing.T) {
 	cfg := config.AppConfig{
 		BitbucketURL: "https://bitbucket.example.com",
 		ProjectKey:   "PRJ",
+		RepoSlug:     "repo",
 	}
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
 
 	repo, host, err := resolveBrowseRepositoryReference("bb.company.local/OPS/tooling", cfg)
 	if err != nil {
@@ -214,10 +214,12 @@ func TestResolveBrowseRepositoryReference(t *testing.T) {
 		t.Fatalf("unexpected explicit selector result: %+v host=%s", repo, host)
 	}
 
-	t.Setenv("BITBUCKET_REPO_SLUG", "")
-	_, _, err = resolveBrowseRepositoryReference("", cfg)
+	unslugged := cfg
+	unslugged.RepoSlug = ""
+
+	_, _, err = resolveBrowseRepositoryReference("", unslugged)
 	if err == nil {
-		t.Fatal("expected fallback resolve error when repo env is absent")
+		t.Fatal("expected fallback resolve error when no repository is configured")
 	}
 
 	_, _, err = resolveBrowseRepositoryReference("bad", cfg)

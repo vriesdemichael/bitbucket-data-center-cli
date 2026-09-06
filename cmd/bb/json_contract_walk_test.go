@@ -45,7 +45,14 @@ func TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope(t *testing.T) {
 		}
 
 		t.Run(path, func(t *testing.T) {
-			sealEnvironment(t)
+			// Sealed once by the parent rather than again here. The seal is
+			// process-wide either way -- there is one working directory and one
+			// environment -- so doing it per subtest bought nothing and cost
+			// every subtest its ability to run alongside the others: t.Setenv
+			// and t.Chdir refuse to be called from a test that has declared
+			// itself parallel. The parent's seal outlives them, because a
+			// parent's cleanups do not run until its parallel children finish.
+			t.Parallel()
 
 			stdout := &bytes.Buffer{}
 			stderr := &bytes.Buffer{}

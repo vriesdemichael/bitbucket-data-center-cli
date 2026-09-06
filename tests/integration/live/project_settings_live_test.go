@@ -14,6 +14,8 @@ import (
 // that built the same request body from separate copies of the same code, and
 // both copies were wrong in the same way.
 func TestLiveProjectDefaultTaskLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -84,6 +86,8 @@ func TestLiveProjectDefaultTaskLifecycle(t *testing.T) {
 // built independently again, so the same class of mistake is possible; here the
 // live server is the only thing that says whether the matcher was understood.
 func TestLiveProjectBranchRestrictionLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)

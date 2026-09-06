@@ -19,6 +19,8 @@ import (
 // real commit and reading them back through the pull request settles the same
 // questions without either claim.
 func TestLivePullRequestBuildStatuses(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()

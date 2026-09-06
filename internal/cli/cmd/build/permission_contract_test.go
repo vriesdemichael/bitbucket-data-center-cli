@@ -31,8 +31,7 @@ func (c refusingChecker) CheckRepoPermission(ctx context.Context, projectKey, re
 func executeRefusing(t *testing.T, serverURL string, args ...string) ([]openapi.RepositoryPermission, error) {
 	t.Helper()
 
-	cfg := config.AppConfig{BitbucketURL: serverURL, ProjectKey: "PRJ"}
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	cfg := config.AppConfig{BitbucketURL: serverURL, ProjectKey: "PRJ", RepoSlug: "demo"}
 
 	var recorded []openapi.RepositoryPermission
 

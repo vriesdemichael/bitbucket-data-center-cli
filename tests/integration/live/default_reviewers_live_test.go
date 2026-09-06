@@ -28,6 +28,8 @@ import (
 // the wrong refs would either match nothing or match everything, and one of the
 // two subtests catches each.
 func TestLiveDefaultReviewersResolveAgainstTheCondition(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
@@ -113,6 +115,8 @@ func TestLiveDefaultReviewersResolveAgainstTheCondition(t *testing.T) {
 // ids differ in the request; what matters is that the server still matches the
 // condition, which it can only do if both are right.
 func TestLiveDefaultReviewersFromAFork(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
@@ -182,6 +186,8 @@ func TestLiveDefaultReviewersFromAFork(t *testing.T) {
 // server cannot be in and agreeing with it proved nothing. The refusal is
 // recorded here instead.
 func TestLiveReviewerGroupResolutionShapes(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -242,6 +248,8 @@ func TestLiveReviewerGroupResolutionShapes(t *testing.T) {
 // have passed. The proof here is that the condition exists afterwards and says
 // what the file said.
 func TestLiveReviewerConditionInputRoutes(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -325,6 +333,8 @@ func TestLiveReviewerConditionInputRoutes(t *testing.T) {
 // each name expands to its members at all, which is what #503 broke for the
 // "@reviewer-group/" spelling.
 func TestLiveReviewerGroupFlagsExpandAndAccumulate(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

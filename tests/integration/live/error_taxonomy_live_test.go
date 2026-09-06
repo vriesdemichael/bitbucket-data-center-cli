@@ -13,6 +13,8 @@ import (
 )
 
 func TestLiveErrorTaxonomy404NotFound(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -56,6 +58,8 @@ func TestLiveErrorTaxonomy404NotFound(t *testing.T) {
 }
 
 func TestLiveErrorTaxonomy409Conflict(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -106,6 +110,8 @@ func TestLiveErrorTaxonomy409Conflict(t *testing.T) {
 // agent branches on. Here the resources are genuinely absent and the codes are
 // checked.
 func TestLiveGovernanceCommandsMapTheirFailures(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
@@ -199,6 +205,8 @@ func TestLiveGovernanceCommandsMapTheirFailures(t *testing.T) {
 // A package missing from this table has no live proof that its failures carry
 // the right kind. Adding a service means adding a row.
 func TestLiveEveryServiceMapsItsFailures(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
@@ -259,6 +267,8 @@ func TestLiveEveryServiceMapsItsFailures(t *testing.T) {
 // none, rather than being turned into an error by the existence check that
 // empty answer now triggers.
 func TestLiveJiraIssuesOnARealPullRequest(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()

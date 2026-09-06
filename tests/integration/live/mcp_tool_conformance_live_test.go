@@ -39,6 +39,8 @@ import (
 // diff with real hunks, or a build status Bitbucket actually stored was never
 // reached. Every argument below names something the harness created.
 func TestLiveMCPEveryToolReturnsAClientCompatibleResult(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)

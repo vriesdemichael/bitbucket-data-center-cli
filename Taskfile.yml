@@ -13,6 +13,17 @@ vars:
   # than pinned separately, so the two cannot drift apart.
   BITBUCKET_OPENAPI_SPEC: docs/reference/atlassian/bitbucket-openapi.json
   BITBUCKET_OPENAPI_SANITIZED_TMP: .tmp/bitbucket-openapi.sanitized.json
+  # How many live tests run at once.
+  #
+  # Stated rather than left to Go's default of GOMAXPROCS, which is the right
+  # shape for a suite bound by the machine and the wrong one for this suite: it
+  # spends its time waiting on Bitbucket. The default ran four live tests at a
+  # time on a GitHub runner and twenty on a developer machine, so the same
+  # command meant a different thing in each place -- a difference in how long it
+  # takes rather than in what it proves. A number here makes the two agree.
+  # Override LIVE_PARALLEL when pointing the suite at an instance that cannot
+  # take it, or raise it for a machine and a Bitbucket that can.
+  LIVE_PARALLEL: '12'
   DOCS_PROJECT_DIR: docs
   COVERAGE_BASE_REF: origin/main
 
@@ -343,6 +354,21 @@ tasks:
     desc: Run Go unit tests
     cmd: go test ./cmd/... ./internal/... ./tools/...
 
+  test:unit:race:
+    desc: Run Go unit tests under the race detector (needs cgo and a C toolchain)
+    # Worth its own target now that the suite is parallel.
+    #
+    # Before, most packages ran their tests one at a time, so a shared variable
+    # two of them wrote was never written concurrently and the detector had
+    # nothing to find. Making them parallel is what turns those into races that
+    # can happen -- one had already been there, a package-level writer in
+    # internal/config that every test reassigned -- so the detector is now
+    # checking something it previously could not.
+    #
+    # It needs cgo, which a Go toolchain on Windows without a C compiler does
+    # not have; CI runs it on Linux.
+    cmd: go test -race ./cmd/... ./internal/... ./tools/...
+
   test:unit:coverage:
     desc: Run Go unit tests with coverage profile output
     # -coverpkg for the same reason test:live:coverage has it: without it, Go
@@ -353,14 +379,14 @@ tasks:
     # same way. The measurement was wrong, not the tests.
     cmds:
       - mkdir -p .tmp
-      - go test -covermode=count -coverpkg=./cmd/...,./internal/...,./tools/... -coverprofile=.tmp/coverage.unit.out ./cmd/... ./internal/... ./tools/...
+      - go test -covermode=atomic -coverpkg=./cmd/...,./internal/...,./tools/... -coverprofile=.tmp/coverage.unit.out ./cmd/... ./internal/... ./tools/...
       - go tool cover -func=.tmp/coverage.unit.out | tail -n 1
 
   test:live:coverage:
     desc: Run live integration tests with coverage profile output over hand-written packages
     cmds:
       - mkdir -p .tmp
-      - go test -tags=live -timeout 20m -covermode=count -coverpkg=./cmd/...,./internal/...,./tools/... -coverprofile=.tmp/coverage.live.out ./tests/integration/live
+      - go test -tags=live -timeout 20m -parallel {{.LIVE_PARALLEL}} -covermode=atomic -coverpkg=./cmd/...,./internal/...,./tools/... -coverprofile=.tmp/coverage.live.out ./tests/integration/live
       - go tool cover -func=.tmp/coverage.live.out | tail -n 1
 
   test:live:compile:
@@ -383,7 +409,7 @@ tasks:
 
   test:live:
     desc: Run live integration tests against local Bitbucket stack
-    cmd: go test -tags=live -timeout 20m ./tests/integration/live
+    cmd: go test -tags=live -timeout 20m -parallel {{.LIVE_PARALLEL}} ./tests/integration/live
 
   stack:up:
     desc: Start local SDK-licensed Bitbucket stack (no licence key required)
@@ -412,6 +438,10 @@ tasks:
   stack:down:
     desc: Stop local Bitbucket stack
     cmd: docker compose -f docker/compose.yml down
+
+  stack:purge-fixtures:
+    desc: Remove the LT* projects the live suite left behind (needs the stack up)
+    cmd: bash scripts/purge-live-fixtures.sh
 
   stack:reset:
     desc: Tear down stack and delete all data volumes (full clean restart)

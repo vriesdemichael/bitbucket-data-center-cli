@@ -28,7 +28,7 @@ func executeLiveCLIWithStdin(t *testing.T, stdin string, args ...string) (string
 	command.SetOut(output)
 	command.SetErr(output)
 	command.SetIn(strings.NewReader(stdin))
-	command.SetArgs(args)
+	command.SetArgs(withLiveRepoContext(t, command, args))
 
 	err := command.Execute()
 	return output.String(), err
@@ -186,6 +186,8 @@ func TestLiveGitCredentialHelperAuthenticatesClone(t *testing.T) {
 // TestLiveRepoCloneLeavesNoCredentialBehind covers the same property for
 // `bb repo clone`, which supplies credentials to git itself.
 func TestLiveRepoCloneLeavesNoCredentialBehind(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

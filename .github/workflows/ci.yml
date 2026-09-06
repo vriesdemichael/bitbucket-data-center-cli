@@ -107,6 +107,16 @@ jobs:
       - name: Run Go tests with coverage (targeted non-live package scope)
         run: task test:unit:coverage
 
+      # The race detector, on the job that has a C toolchain.
+      #
+      # It is a separate run rather than a flag on the one above because the
+      # coverage profile that step uploads is the input to the coverage gates,
+      # and -race changes how long the suite takes without changing what it
+      # covers. It earns its place now that the tests run in parallel: a shared
+      # variable is only a race once two tests can reach it at the same time.
+      - name: Run Go tests under the race detector
+        run: task test:unit:race
+
       - name: Upload unit coverage profile
         if: always()
         uses: actions/upload-artifact@v7

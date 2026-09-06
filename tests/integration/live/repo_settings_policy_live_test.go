@@ -16,6 +16,8 @@ import (
 // and does not persist is indistinguishable from one that works, and only the
 // server can tell the two apart.
 func TestLiveRepoSettingsAutoDeclineLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -64,6 +66,8 @@ func TestLiveRepoSettingsAutoDeclineLifecycle(t *testing.T) {
 // the repository auto-merge setting. set is exercised by the auto-merge pull
 // request test, which needs it enabled to arm anything.
 func TestLiveRepoSettingsAutoMergeLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)

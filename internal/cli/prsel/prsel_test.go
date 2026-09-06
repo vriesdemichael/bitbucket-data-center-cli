@@ -56,9 +56,15 @@ func TestResolve(t *testing.T) {
 		}
 	})
 
-	t.Run("numeric target without repo selector uses default", func(t *testing.T) {
-		t.Setenv("BITBUCKET_REPO_SLUG", "env-repo")
-		target, err := Resolve(ctx, "42", "", cfg, nil)
+	t.Run("numeric target without repo selector uses the configured one", func(t *testing.T) {
+		// The slug comes from the configuration alongside the project key. It
+		// used to be read straight from BITBUCKET_REPO_SLUG a layer down, which
+		// meant one half of a repository reference bypassed the layer that
+		// resolves the other half.
+		withRepo := cfg
+		withRepo.RepoSlug = "env-repo"
+
+		target, err := Resolve(ctx, "42", "", withRepo, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

@@ -22,6 +22,8 @@ import (
 // Each case here reads the state back afterwards. A preview that is right about
 // what would happen and wrong about doing it is the failure that matters.
 func TestLiveDryRunPreviewsAndLeaveNoTrace(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
@@ -144,6 +146,8 @@ func TestLiveAuthIdentity(t *testing.T) {
 
 // TestLiveReviewerConditionCreateDryRun completes the dry-run set.
 func TestLiveReviewerConditionCreateDryRun(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()

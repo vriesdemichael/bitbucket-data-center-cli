@@ -10,6 +10,8 @@ import (
 )
 
 func TestLiveCLIBranchLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -104,6 +106,8 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 }
 
 func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -199,6 +203,8 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 }
 
 func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -246,6 +252,8 @@ func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBranchCreateDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -288,6 +296,8 @@ func TestLiveCLIBranchCreateDryRunHasNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBranchDefaultSetDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -327,6 +337,8 @@ func TestLiveCLIBranchDefaultSetDryRunHasNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBranchRestrictionCreateDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -364,6 +376,8 @@ func TestLiveCLIBranchRestrictionCreateDryRunHasNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBranchRestrictionDeleteDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -416,6 +430,8 @@ func TestLiveCLIBranchRestrictionDeleteDryRunHasNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBranchModelUpdateDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -455,6 +471,8 @@ func TestLiveCLIBranchModelUpdateDryRunHasNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBranchRestrictionUpdateDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)

@@ -1,7 +1,6 @@
 package reposel
 
 import (
-	"os"
 	"strings"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/giturl"
@@ -38,12 +37,19 @@ func Parse(selector string) (projectKey, slug string, err error) {
 	)
 }
 
-// Resolve resolves the project key and repo slug from the explicit selector if provided,
-// or falls back to environment variables and configuration.
+// Resolve resolves the project key and repo slug from the explicit selector if
+// provided, or falls back to the configuration.
+//
+// The slug comes from cfg, like the project key beside it. It used to be read
+// from BITBUCKET_REPO_SLUG here, which meant one half of a repository reference
+// was resolved by the configuration layer and the other half by this function
+// reaching past it (ADR-065). The layer already reads that variable, and reads
+// it after config.Overrides.RepoSlug -- so a repository resolved from a git
+// remote and passed as an override reached the project key and not the slug.
 func Resolve(selector string, cfg config.AppConfig) (projectKey, slug string, err error) {
 	trimmed := strings.TrimSpace(selector)
 	if trimmed == "" {
-		repoSlug := strings.TrimSpace(os.Getenv("BITBUCKET_REPO_SLUG"))
+		repoSlug := strings.TrimSpace(cfg.RepoSlug)
 		if strings.TrimSpace(cfg.ProjectKey) == "" || repoSlug == "" {
 			return "", "", apperrors.New(
 				apperrors.KindValidation,

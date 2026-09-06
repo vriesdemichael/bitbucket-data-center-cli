@@ -19,6 +19,8 @@ import (
 // fabricated payloads. What a caller actually reads -- the JSON envelope, the
 // human line, the exit code -- was never produced by a real server.
 func TestLiveTagCLISurface(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
@@ -84,6 +86,8 @@ func TestLiveTagCLISurface(t *testing.T) {
 // A fresh repository and an untouched commit are genuinely empty, so the same
 // assertion holds without anyone deciding what empty looks like.
 func TestLiveEmptyListingsSaySo(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()

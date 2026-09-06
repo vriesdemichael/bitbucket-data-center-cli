@@ -19,6 +19,8 @@ import (
 // configured for two CI systems. The assertion that matters is therefore the
 // last one — the webhook is gone from the list, not merely disabled.
 func TestLiveWebhookCreateAndDelete(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)

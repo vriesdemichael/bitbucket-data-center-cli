@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -138,7 +137,7 @@ func (transport *retryTransport) RoundTrip(request *http.Request) (*http.Respons
 
 		if retrypolicy.RetriableStatus(request.Method, response.StatusCode) {
 			lastResponse = response
-			retryDelay := retryDelayFromResponse(response.Header, attempt, transport.baseBackoff)
+			retryDelay := retrypolicy.Delay(response.Header, attempt, transport.baseBackoff)
 			fields := map[string]any{
 				"method":      request.Method,
 				"endpoint":    request.URL.Path,
@@ -168,34 +167,6 @@ func (transport *retryTransport) RoundTrip(request *http.Request) (*http.Respons
 	}
 
 	return nil, lastError
-}
-
-func retryDelayFromResponse(headers http.Header, attempt int, fallbackBase time.Duration) time.Duration {
-	if fallbackBase <= 0 {
-		fallbackBase = 250 * time.Millisecond
-	}
-
-	if headers != nil {
-		retryAfter := strings.TrimSpace(headers.Get("Retry-After"))
-		if retryAfter != "" {
-			if seconds, err := strconv.Atoi(retryAfter); err == nil {
-				if seconds < 0 {
-					seconds = 0
-				}
-				return time.Duration(seconds) * time.Second
-			}
-
-			if retryAt, err := http.ParseTime(retryAfter); err == nil {
-				delay := time.Until(retryAt)
-				if delay < 0 {
-					return 0
-				}
-				return delay
-			}
-		}
-	}
-
-	return time.Duration(attempt+1) * fallbackBase
 }
 
 func sleepWithContext(ctx context.Context, delay time.Duration) error {

@@ -594,6 +594,8 @@ func TestLivePermissionRepoCreateDryRunDeniedWithProjectReadOnly(t *testing.T) {
 // REPO_READ=true, REPO_WRITE=true, and REPO_ADMIN=true on their own repository,
 // and that both JSON and human output contain the expected fields.
 func TestLiveRepoPermissionsShowAsAdmin(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -648,6 +650,8 @@ func TestLiveRepoPermissionsShowAsAdmin(t *testing.T) {
 // all three project permission levels as true, and that both JSON and human output
 // contain the expected fields.
 func TestLiveProjectPermissionsShowAsAdmin(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -726,6 +730,8 @@ func grantedPermissions(t *testing.T, payload map[string]any, output string) map
 // Here the entries are ones the command itself created a moment earlier, and
 // the no-op, update, create and delete predictions are read against them.
 func TestLivePermissionAliasSubjects(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -846,6 +852,8 @@ func TestLivePermissionAliasSubjects(t *testing.T) {
 // field rather than in the key is what lets `--describe` state one shape for
 // one command, and a consumer needs two code paths the moment they diverge.
 func TestLivePermissionAliasSubjectsForProjects(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)

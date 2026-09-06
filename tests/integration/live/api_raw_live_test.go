@@ -9,6 +9,8 @@ import (
 )
 
 func TestLiveApiRawPassthrough(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)

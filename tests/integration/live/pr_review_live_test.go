@@ -64,6 +64,8 @@ func postLiveJSON(t *testing.T, path string, payload any) map[string]any {
 // commands cannot be tested apart: discard has nothing to discard and complete
 // has nothing to publish unless a pending comment was added first.
 func TestLivePullRequestPendingReview(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
@@ -149,6 +151,8 @@ func TestLivePullRequestPendingReview(t *testing.T) {
 // about is the pull request in front of it, and the half worth checking is that
 // nothing happened -- which needs something that would have happened.
 func TestLivePullRequestReviewDryRuns(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
@@ -221,6 +225,8 @@ func TestLivePullRequestReviewDryRuns(t *testing.T) {
 // TestLivePullRequestCommentReaction covers bb pr comment react in both
 // directions.
 func TestLivePullRequestCommentReaction(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
@@ -384,6 +390,8 @@ func TestLivePullRequestCommentReaction(t *testing.T) {
 // is the applying, and the proof is the file content on the source branch
 // afterwards rather than the response body.
 func TestLivePullRequestApplySuggestion(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
@@ -449,6 +457,8 @@ func TestLivePullRequestApplySuggestion(t *testing.T) {
 // a blocker severity. bb could already create one and list them but not close
 // one, so the workflow the removed commands served had no ending.
 func TestLivePullRequestCommentResolveReopen(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
@@ -548,6 +558,8 @@ func TestLivePullRequestCommentResolveReopen(t *testing.T) {
 // `--blocker --path --line` had never run against a server at all -- and an
 // inline blocker is the single most useful thing an automated reviewer emits.
 func TestLivePullRequestBlockerReviewLoop(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)

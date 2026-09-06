@@ -31,6 +31,8 @@ import (
 // AllResults returns everything -- while the boundary itself is covered by the
 // tags here and by branches in TestLiveListingsPageToTheEnd.
 func TestLiveServiceListingsPageToTheEnd(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
