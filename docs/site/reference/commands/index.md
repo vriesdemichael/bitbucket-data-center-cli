@@ -9219,6 +9219,7 @@ Usage:
 
 Flags:
       --description string   Description of the reviewer group
+      --users strings        Members by username (repeatable or comma-separated); required, because Bitbucket refuses a reviewer group with no members
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
@@ -9310,6 +9311,7 @@ Usage:
 Flags:
       --description string   New description of the reviewer group
       --name string          New name of the reviewer group
+      --users strings        Replace the members with these usernames (repeatable or comma-separated); omit to keep the current members
 
 Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust

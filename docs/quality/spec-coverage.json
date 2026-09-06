@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-openapi.json",
-  "covered": 208,
+  "covered": 209,
   "total": 572,
-  "coverage_percent": 36.36363636363637,
+  "coverage_percent": 36.53846153846153,
   "by_tag": [
     {
       "tag": "",
@@ -97,7 +97,7 @@
     },
     {
       "tag": "System Maintenance",
-      "covered": 0,
+      "covered": 1,
       "total": 81
     }
   ],
@@ -1571,12 +1571,6 @@
       "path": "/api/latest/users/credentials",
       "tag": "System Maintenance",
       "summary": "Set password"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/users/{userSlug}",
-      "tag": "System Maintenance",
-      "summary": "Get user"
     },
     {
       "method": "DELETE",
