@@ -68,6 +68,12 @@ var exemptFromParity = map[string]string{
 	// it because the coverage gates consume it.
 	"test:unit":          "the pre-commit form of test:unit:coverage, without the profile",
 	"test:unit:coverage": "the CI form of test:unit, which also writes the profile the gates read",
+	// Not a gate: it builds the linter, and quality:lint -- which is the gate,
+	// and does run on both sides -- falls back to `go run` when the binary is
+	// absent. So a developer is never blocked by its absence, and running it
+	// locally would replace a three-second warm `go run` with a two-minute
+	// build of a tool they already have cached.
+	"tools:golangci-lint": "installs the linter CI would otherwise rebuild every run; quality:lint works without it",
 }
 
 func TestEveryHookRunnableGateRunsOnBothSides(t *testing.T) {

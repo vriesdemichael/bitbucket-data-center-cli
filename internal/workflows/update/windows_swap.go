@@ -177,7 +177,9 @@ func encodePowerShellCommand(script string) string {
 	utf16Words := utf16.Encode([]rune(script))
 	bytes := make([]byte, 0, len(utf16Words)*2)
 	for _, word := range utf16Words {
-		bytes = append(bytes, byte(word), byte(word>>8))
+		// Masked rather than truncated by accident: this is a little-endian
+		// UTF-16 split, so losing the high bits of the low byte is the point.
+		bytes = append(bytes, byte(word&0xFF), byte(word>>8))
 	}
 	return base64.StdEncoding.EncodeToString(bytes)
 }

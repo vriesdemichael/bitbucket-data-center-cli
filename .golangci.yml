@@ -115,6 +115,18 @@ linters:
         linters:
           - gosec
         text: "(G301|G306)"
+      # Build tooling walks the repository it is run inside and shells out to
+      # git. G703 and G122 read a path that came from a directory walk as
+      # attacker-controlled taint, and G204 reads a git ref that came from the
+      # workflow as an injection vector. Both describe a real shape and the
+      # wrong threat model: the input is the checkout these tools were pointed
+      # at, and anyone who can plant a symlink in it or set the base ref can
+      # already run whatever they like in the same job. Kept on for cmd/ and
+      # internal/, where the input is a user's shell and the answer differs.
+      - path: ^tools/
+        linters:
+          - gosec
+        text: "(G703|G122|G204)"
       # Test files legitimately ignore errors on setup teardown and construct
       # subprocesses and temp paths that gosec cannot distinguish from the real
       # thing.
@@ -125,8 +137,17 @@ linters:
           - unparam
 
 formatters:
-  enable:
-    - gofmt
+  # Deliberately empty. Formatting has one gate, `task quality:format:verify`,
+  # which runs the toolchain's own gofmt over the tree.
+  #
+  # golangci-lint's gofmt formatter is a second implementation of the same
+  # policy, and from v2.13.2 the two disagree: it reports
+  # internal/mcp/tools_pr.go as unformatted where the go1.26.6 gofmt binary
+  # reports the tree clean, and `golangci-lint fmt` cannot fix its own
+  # complaint. A check that cannot be satisfied and contradicts the tool it
+  # imitates is not a gate, and two homes for one policy is what ADR-065 exists
+  # to prevent.
+  enable: []
 
 issues:
   # Report everything. The defaults cap output at 3 issues per linter and 3 of

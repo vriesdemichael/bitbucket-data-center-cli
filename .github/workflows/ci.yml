@@ -54,6 +54,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Go
+        id: setup-go
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -70,6 +71,24 @@ jobs:
 
       - name: Verify line endings
         run: task quality:line-endings:verify
+
+      # The linter is built from source, and setup-go's cache cannot keep it:
+      # that cache is keyed on go.sum, so it hits and is therefore never
+      # re-saved, and the linter's build output never enters it. The result was
+      # two minutes and fourteen seconds of every unit job spent rebuilding
+      # golangci-lint for three seconds of analysis. This caches the built
+      # binary instead, keyed on the things that decide what it is.
+      - name: Resolve the pinned linter version
+        run: cat .github/tool-versions.env >> "$GITHUB_ENV"
+
+      - name: Cache golangci-lint
+        uses: actions/cache@v4
+        with:
+          path: ~/go/bin/golangci-lint
+          key: golangci-lint-${{ runner.os }}-${{ env.GOLANGCI_LINT_VERSION }}-go${{ steps.setup-go.outputs.go-version }}
+
+      - name: Build the pinned linter if the cache did not have it
+        run: task tools:golangci-lint
 
       - name: Lint
         run: task quality:lint
