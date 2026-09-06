@@ -19,11 +19,13 @@ import (
 // the same error as counting a --dry-run invocation. Each of these now changes
 // something and reads it back.
 func TestLiveReviewerConditionUpdateAndDelete(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -91,11 +93,13 @@ func conditionIDFrom(t *testing.T, output string) string {
 // TestLiveReviewerGroupUpdate covers the rename, whose only coverage discarded
 // its result.
 func TestLiveReviewerGroupUpdate(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -176,11 +180,13 @@ func TestLiveReviewerGroupUpdate(t *testing.T) {
 // TestLiveGroupPermissionGrants covers the two group grants whose only
 // coverage discarded the result.
 func TestLiveGroupPermissionGrants(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

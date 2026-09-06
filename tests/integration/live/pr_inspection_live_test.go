@@ -17,12 +17,14 @@ import (
 // an error, so the assertion is that the *seeded* content comes back — not
 // merely that the call succeeded.
 func TestLivePullRequestInspection(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -94,11 +96,13 @@ func TestLivePullRequestInspection(t *testing.T) {
 // way, and whether git even detects one here, is what decides if the branch is
 // ever taken.
 func TestLivePullRequestFilesReportsARename(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -142,11 +146,13 @@ func TestLivePullRequestFilesReportsARename(t *testing.T) {
 // empty listing rather than failing, because failing would tell a caller their
 // issue key was wrong when the truth is that Bitbucket has no Jira to ask.
 func TestLiveJiraIssueCommitsAnswerEmpty(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

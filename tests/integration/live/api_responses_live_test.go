@@ -20,11 +20,13 @@ import (
 // an error body has a shape, a 204 carries nothing to decode. Those were mocks
 // describing what the author believed, and they are what moves here.
 func TestLiveApiResponseHandling(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 3)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 3)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -108,11 +110,13 @@ func TestLiveApiResponseHandling(t *testing.T) {
 // given. Here the server accepting the request, and the change showing up
 // afterwards, is the assertion.
 func TestLiveApiRequestConstruction(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

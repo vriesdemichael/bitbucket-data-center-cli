@@ -102,6 +102,8 @@ func TestResolveAuditFileHonoursTopLevelPolicyKey(t *testing.T) {
 // TestParseAuditFailure pins the flag vocabulary, including the fail-closed
 // default an omitted flag must produce.
 func TestParseAuditFailure(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		input   string
 		want    bbmcp.AuditFailureMode

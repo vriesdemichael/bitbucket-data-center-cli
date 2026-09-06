@@ -22,11 +22,13 @@ import (
 // Each case here reads the state back afterwards. A preview that is right about
 // what would happen and wrong about doing it is the failure that matters.
 func TestLiveDryRunPreviewsAndLeaveNoTrace(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -144,11 +146,13 @@ func TestLiveAuthIdentity(t *testing.T) {
 
 // TestLiveReviewerConditionCreateDryRun completes the dry-run set.
 func TestLiveReviewerConditionCreateDryRun(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

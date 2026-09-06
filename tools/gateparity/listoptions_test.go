@@ -50,6 +50,8 @@ func bannedName(name string) string {
 // outside is a cap. With page size gone from the surface, a cap can no longer
 // land on one. ADR-074 records it.
 func TestNoServiceOptionIsCalledLimit(t *testing.T) {
+	t.Parallel()
+
 	root := repositoryRoot(t)
 
 	fields := limitNamedFields(t, filepath.Join(root, servicesDirectory))
@@ -68,6 +70,8 @@ func TestNoServiceOptionIsCalledLimit(t *testing.T) {
 // TestTheLimitScannerFindsAField is the sabotage, and it runs the scanner over
 // source rather than checking a list.
 func TestTheLimitScannerFindsAField(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name   string
 		source string

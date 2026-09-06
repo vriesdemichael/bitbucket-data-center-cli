@@ -39,6 +39,8 @@ import (
 // diff with real hunks, or a build status Bitbucket actually stored was never
 // reached. Every argument below names something the harness created.
 func TestLiveMCPEveryToolReturnsAClientCompatibleResult(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -131,7 +133,7 @@ func TestLiveMCPEveryToolReturnsAClientCompatibleResult(t *testing.T) {
 func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarness) map[string]map[string]any {
 	t.Helper()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 2, 2)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Repos: 2, Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

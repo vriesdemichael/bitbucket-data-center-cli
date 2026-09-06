@@ -25,6 +25,8 @@ func newBranchTestService(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestBranchServiceValidationAndHelpers(t *testing.T) {
+	t.Parallel()
+
 	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		// Every case here is refused before a request is built, so the handler
 		// is an assertion rather than a stand-in: reaching it means a guard
@@ -63,6 +65,8 @@ func TestBranchServiceValidationAndHelpers(t *testing.T) {
 
 // mock-inventory: unreachable-state — a JSON body served as text/plain, which Bitbucket does not do; the subject is that the decode falls back on the content type rather than giving up.
 func TestBranchServiceCreateFallbackBodyDecode(t *testing.T) {
+	t.Parallel()
+
 	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost && r.URL.Path == "/rest/branch-utils/latest/projects/TEST/repos/demo/branches" {
 			w.Header().Set("Content-Type", "text/plain")
@@ -84,6 +88,7 @@ func TestBranchServiceCreateFallbackBodyDecode(t *testing.T) {
 }
 
 func TestBranchServiceStatusMappingAndNormalizers(t *testing.T) {
+	t.Parallel()
 
 	if _, err := normalizeBranchOrderBy("MODIFICATION"); err != nil {
 		t.Fatalf("expected MODIFICATION order-by to validate, got %v", err)
@@ -137,6 +142,8 @@ func TestBranchServiceStatusMappingAndNormalizers(t *testing.T) {
 }
 
 func TestBranchServiceEmptyResponsesAndTransientErrors(t *testing.T) {
+	t.Parallel()
+
 	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/TEST/repos/demo/default-branch":
@@ -215,6 +222,8 @@ func TestBranchServiceEmptyResponsesAndTransientErrors(t *testing.T) {
 }
 
 func TestBranchServiceAdditionalValidationAndFallbackPaths(t *testing.T) {
+	t.Parallel()
+
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
 	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
@@ -302,6 +311,8 @@ func TestBranchServiceAdditionalValidationAndFallbackPaths(t *testing.T) {
 }
 
 func TestBranchServiceTransientAcrossOperations(t *testing.T) {
+	t.Parallel()
+
 	service := newBranchTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		hijacker, ok := w.(http.Hijacker)
 		if !ok {

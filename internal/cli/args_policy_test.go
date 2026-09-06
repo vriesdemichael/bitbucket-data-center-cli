@@ -9,6 +9,8 @@ import (
 )
 
 func TestAllRunnableCommandsDeclareArgsPolicy(t *testing.T) {
+	t.Parallel()
+
 	root := NewRootCommand()
 	var visit func(*cobra.Command)
 
@@ -29,6 +31,8 @@ func TestAllRunnableCommandsDeclareArgsPolicy(t *testing.T) {
 }
 
 func TestZeroArgCommandsRejectPositionalArguments(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name string
 		args []string
@@ -75,6 +79,8 @@ func TestZeroArgCommandsRejectPositionalArguments(t *testing.T) {
 }
 
 func TestHasPositionalPlaceholder(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		use      string
 		expected bool
@@ -95,6 +101,8 @@ func TestHasPositionalPlaceholder(t *testing.T) {
 }
 
 func TestEnforceNoArgsDefaults(t *testing.T) {
+	t.Parallel()
+
 	cmdWithPos := &cobra.Command{
 		Use: "foo <bar>",
 		Run: func(*cobra.Command, []string) {},

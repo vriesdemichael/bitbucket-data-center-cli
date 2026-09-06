@@ -9,6 +9,8 @@ import (
 )
 
 func TestRefInternalHelpers(t *testing.T) {
+	t.Parallel()
+
 	if safederef.String(nil) != "" {
 		t.Fatal("expected safederef.String(nil) to be empty")
 	}
@@ -45,10 +47,13 @@ func TestRefInternalWithDefaults(t *testing.T) {
 }
 
 func TestResolveRefRepositoryReference(t *testing.T) {
+	// The slug travels in the configuration beside the project key. It used to
+	// be read from BITBUCKET_REPO_SLUG one layer down, past the layer that
+	// resolves everything else.
 	cfg := config.AppConfig{
 		ProjectKey: "PRJ",
+		RepoSlug:   "repo1",
 	}
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo1")
 
 	// Inferred
 	ref, err := resolveRefRepositoryReference("", cfg)

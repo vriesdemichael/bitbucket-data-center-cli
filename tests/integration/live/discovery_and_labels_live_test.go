@@ -18,12 +18,14 @@ import (
 // yields an empty list rather than an error, which is the failure a stub
 // cannot see.
 func TestLiveSearchCommands(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 2)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -115,12 +117,14 @@ func TestLiveSearchCommands(t *testing.T) {
 // TestLiveRepoLabelAndWatchLifecycle covers repo label add, list and remove
 // plus repo watch and unwatch.
 func TestLiveRepoLabelAndWatchLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

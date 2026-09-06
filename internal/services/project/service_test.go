@@ -24,6 +24,8 @@ func newProjectTestService(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestProjectServiceValidation(t *testing.T) {
+	t.Parallel()
+
 	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		// Every case here is refused before a request is built, so the handler
 		// is an assertion rather than a stand-in: reaching it means a guard
@@ -53,6 +55,8 @@ func TestProjectServiceValidation(t *testing.T) {
 }
 
 func TestProjectServiceTransientAndMapping(t *testing.T) {
+	t.Parallel()
+
 	transientService := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		hijacker, ok := w.(http.Hijacker)
 		if !ok {
@@ -123,6 +127,8 @@ func TestProjectServiceTransientAndMapping(t *testing.T) {
 }
 
 func TestProjectServicePermissionsValidation(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 	if err := service.GrantProjectUserPermission(context.Background(), "", "u", "p"); err == nil {
 		t.Fatal("expected error")

@@ -20,11 +20,13 @@ import (
 // the comment where it was meant to go is the question, and only the server
 // answers it.
 func TestLivePRCommentAnchors(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -104,11 +106,13 @@ func assertLiveCommentAnchoredTo(t *testing.T, output, path string) {
 // TestLivePRWatchAndUnwatch runs the two commands for real. Their only live
 // coverage was a dry run, which by definition subscribes to nothing.
 func TestLivePRWatchAndUnwatch(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

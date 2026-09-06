@@ -16,12 +16,14 @@ import (
 // #378 turned out to be: a real endpoint with a real payload, exercised only by
 // stubs that agreed with bb about what the API looks like.
 func TestLiveDeploymentLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

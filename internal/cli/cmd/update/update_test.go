@@ -369,6 +369,8 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 }
 
 func TestUpdateCommandDisabledInBuild(t *testing.T) {
+	t.Parallel()
+
 	if !BuildDisablesSelfUpdate {
 		t.Skip("skipping test meant for no_self_update tag")
 	}
@@ -553,6 +555,8 @@ func TestUpdateCommandPolicyError(t *testing.T) {
 }
 
 func TestLoadUpdateCommandHTTPConfigInvalidBaseURL(t *testing.T) {
+	t.Parallel()
+
 	_, err := LoadUpdateCommandHTTPConfig(config.Overrides{}, ":\x7finvalid-url")
 	if err == nil {
 		t.Fatal("expected error for control characters in base URL")
@@ -664,6 +668,8 @@ func TestLoadUpdateCommandHTTPConfigResolvesUpdateTrust(t *testing.T) {
 }
 
 func TestTrustSourceDescription(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name     string
 		trust    config.UpdateTrust
@@ -758,6 +764,8 @@ func TestUpdateCommandWarnsWhenSignatureVerificationIsSkipped(t *testing.T) {
 // into those variables. Once they became values, --ca-file,
 // --insecure-skip-verify and --request-timeout stopped reaching it silently.
 func TestUpdateHonoursTheGlobalFlags(t *testing.T) {
+	t.Parallel()
+
 	caFile := "/tmp/corp-ca.pem"
 	skip := true
 	timeout := "60s"
@@ -784,6 +792,8 @@ func TestUpdateHonoursTheGlobalFlags(t *testing.T) {
 
 // TestUpdateBlamesTheFlagItWasGiven keeps the message honest on this path too.
 func TestUpdateBlamesTheFlagItWasGiven(t *testing.T) {
+	t.Parallel()
+
 	bad := "0s"
 
 	_, err := LoadUpdateCommandHTTPConfig(config.Overrides{RequestTimeout: &bad})

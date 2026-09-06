@@ -25,11 +25,13 @@ import (
 // rather than zero. actionRequired was the exception, and it is the field a
 // caller branches on.
 func TestLiveReviewSummaryNeverOverclaims(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

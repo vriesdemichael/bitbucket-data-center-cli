@@ -16,12 +16,14 @@ import (
 )
 
 func TestLiveCLIDiffOutputModes(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -64,12 +66,14 @@ func TestLiveCLIDiffOutputModes(t *testing.T) {
 }
 
 func TestLiveCLIDiffPRAndCommitHumanOutput(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -119,12 +123,14 @@ func TestLiveCLIDiffPRAndCommitHumanOutput(t *testing.T) {
 }
 
 func TestLiveCLIInsightsLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -188,12 +194,14 @@ func TestLiveCLIInsightsLifecycle(t *testing.T) {
 }
 
 func TestLiveCLIBuildAndTagLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -281,12 +289,14 @@ func TestLiveCLIBuildAndTagLifecycle(t *testing.T) {
 }
 
 func TestLiveCLIBuildRequiredAndInsightsHumanOutput(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -447,12 +457,14 @@ func TestLiveCLIAuthStoredConfigFlow(t *testing.T) {
 }
 
 func TestLiveCLIPRListAndIssueCommandUnavailable(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -529,12 +541,14 @@ func TestLiveCLIAdminHealthOutputs(t *testing.T) {
 }
 
 func TestLiveCLITagCreateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -570,12 +584,14 @@ func TestLiveCLITagCreateDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLITagDeleteDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -642,16 +658,22 @@ func createRequiredBuildCheckWithRetry(t *testing.T, body string) (string, bool)
 	return "", false
 }
 
+// configureLiveCLIEnv points a test's CLI calls at the repository it seeded.
+//
+// It used to set six environment variables. Four of them -- the URL and the
+// three credentials -- are identical for every test in the run and are set once
+// in TestMain, where being process-wide is harmless because nothing changes
+// them. The two that vary are carried per test instead, and travel to the
+// command as --repo.
+//
+// That is the whole reason no live test could be parallel: t.Setenv refuses to
+// run in a parallel test, and even if it did not, a second test setting
+// BITBUCKET_PROJECT_KEY would be visible to the first.
 func configureLiveCLIEnv(t *testing.T, harness *liveHarness, projectKey, repositorySlug string) {
 	t.Helper()
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", harness.config.BitbucketURL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", projectKey)
-	t.Setenv("BITBUCKET_REPO_SLUG", repositorySlug)
-	t.Setenv("BITBUCKET_USERNAME", harness.config.BitbucketUsername)
-	t.Setenv("BITBUCKET_PASSWORD", harness.config.BitbucketPassword)
-	t.Setenv("BITBUCKET_TOKEN", harness.config.BitbucketToken)
+	_ = harness
+	setLiveRepoContext(t, projectKey, repositorySlug)
 }
 
 func executeLiveCLI(t *testing.T, args ...string) (string, error) {
@@ -661,9 +683,32 @@ func executeLiveCLI(t *testing.T, args ...string) (string, error) {
 	output := &bytes.Buffer{}
 	command.SetOut(output)
 	command.SetErr(output)
+	command.SetArgs(withLiveRepoContext(t, command, args))
+
+	err := command.Execute()
+	return output.String(), err
+}
+
+// executeLiveCLIUnscoped runs a command with no repository context injected.
+//
+// For the calls whose subject is being unscoped. `bb search prs --role author`
+// reports what Bitbucket answers on the dashboard and refuses a --repo,
+// because a role has no meaning inside one repository; `bb auth token create
+// --user admin` is scoped by the user it names. Both would fail with an
+// injected --repo, and both are asking for exactly what the injection exists
+// to supply by default -- so they say so here rather than the helper carrying
+// a list of commands it must not help.
+func executeLiveCLIUnscoped(t *testing.T, args ...string) (string, error) {
+	t.Helper()
+
+	command := cli.NewRootCommand()
+	output := &bytes.Buffer{}
+	command.SetOut(output)
+	command.SetErr(output)
 	command.SetArgs(args)
 
 	err := command.Execute()
+
 	return output.String(), err
 }
 
@@ -807,4 +852,16 @@ func nestedJSONMap(t *testing.T, output string, key string) map[string]any {
 	}
 
 	return nested
+}
+
+// mustLiveCLIUnscoped is mustLiveCLI without an injected repository context.
+func mustLiveCLIUnscoped(t *testing.T, args ...string) string {
+	t.Helper()
+
+	output, err := executeLiveCLIUnscoped(t, append([]string{"--json"}, args...)...)
+	if err != nil {
+		t.Fatalf("%s failed: %v\noutput: %s", strings.Join(args, " "), err, output)
+	}
+
+	return output
 }

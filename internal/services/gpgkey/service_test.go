@@ -26,6 +26,8 @@ func newGpgKeyTestService(t *testing.T, handler http.HandlerFunc) *Service {
 
 // mock-inventory: unreached-guard — input handling and an empty listing; nothing about the server is assumed beyond an empty page.
 func TestGpgKeyServiceValidation(t *testing.T) {
+	t.Parallel()
+
 	service := newGpgKeyTestService(t, testsupport.UnreachedHandler(t))
 	ctx := context.Background()
 
@@ -44,6 +46,8 @@ func TestGpgKeyServiceValidation(t *testing.T) {
 
 // mock-inventory: transport-fault — the subject is this loop's arithmetic -- that start advances and the limit narrows to what is left. Bitbucket's side of the convention is pinned live by branches and tags; seeding thirty keys to re-prove it here would buy nothing.
 func TestGpgKeyServicePagination(t *testing.T) {
+	t.Parallel()
+
 	callCount := 0
 	service := newGpgKeyTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -68,6 +72,8 @@ func TestGpgKeyServicePagination(t *testing.T) {
 
 // mock-inventory: transport-fault — the failure is injected below the API; no live server refuses on request.
 func TestGpgKeyServiceErrors(t *testing.T) {
+	t.Parallel()
+
 	// 1. Client transport errors (e.g. invalid URL)
 	badClient, _ := openapigenerated.NewClientWithResponses("http://127.0.0.1:0/rest")
 	badService := NewService(badClient)
@@ -130,6 +136,8 @@ func TestGpgKeyServiceErrors(t *testing.T) {
 
 // mock-inventory: unreached-guard — input handling and an empty listing; nothing about the server is assumed beyond an empty page.
 func TestGpgKeyServiceLimitAndEmpty(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 
 	// 1. Limit <= 0 and list truncation

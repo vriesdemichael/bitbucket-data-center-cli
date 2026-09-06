@@ -45,7 +45,14 @@ func TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope(t *testing.T) {
 		}
 
 		t.Run(path, func(t *testing.T) {
-			sealEnvironment(t)
+			// Sealed once by the parent rather than again here. The seal is
+			// process-wide either way -- there is one working directory and one
+			// environment -- so doing it per subtest bought nothing and cost
+			// every subtest its ability to run alongside the others: t.Setenv
+			// and t.Chdir refuse to be called from a test that has declared
+			// itself parallel. The parent's seal outlives them, because a
+			// parent's cleanups do not run until its parallel children finish.
+			t.Parallel()
 
 			stdout := &bytes.Buffer{}
 			stderr := &bytes.Buffer{}
@@ -150,6 +157,8 @@ func exemptCommands(t *testing.T) map[string]bool {
 // the ADR-039 failure with a different filename. This is the cmd/bb half; the
 // internal/cli half additionally requires each entry to carry a reason.
 func TestEveryExemptionIsAReachableLeaf(t *testing.T) {
+	t.Parallel()
+
 	for path := range exemptCommands(t) {
 		leaf := findLeaf(t, path)
 		if leaf == nil {
@@ -168,6 +177,8 @@ func TestEveryExemptionIsAReachableLeaf(t *testing.T) {
 // quietly shrink what the contract covers. Five is not a meaningful ceiling in
 // itself; it is low enough that crossing it is a conversation.
 func TestTheExemptionListStaysSmallEnoughToReview(t *testing.T) {
+	t.Parallel()
+
 	exempt := exemptCommands(t)
 
 	for _, path := range []string{"ai skill show", "api"} {

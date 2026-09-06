@@ -66,7 +66,7 @@ func TestLivePermissionRepoReadDeniedWithoutAccess(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestLivePermissionRepoReadDryRunDeniedWithoutAccess(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestLivePermissionRepoWriteDeniedWithRepoReadOnly(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -159,7 +159,7 @@ func TestLivePermissionRepoWriteDryRunDeniedWithRepoReadOnly(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -193,7 +193,7 @@ func TestLivePermissionRepoAdminDeniedWithRepoWriteOnly(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -224,7 +224,7 @@ func TestLivePermissionPullRequestSettingsDryRunDeniedWithRepoWriteOnly(t *testi
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -256,7 +256,7 @@ func TestLivePermissionProjectDeleteDeniedWithProjectWriteOnly(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -285,7 +285,7 @@ func TestLivePermissionProjectDeleteDryRunDeniedWithProjectWriteOnly(t *testing.
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -317,7 +317,7 @@ func TestLivePermissionProjectPermissionGrantDeniedWithProjectWriteOnly(t *testi
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -346,7 +346,7 @@ func TestLivePermissionProjectPermissionGrantDryRunDeniedWithProjectWriteOnly(t 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -376,7 +376,7 @@ func TestLivePermissionProjectCreateDryRunDeniedWithProjectAdminOnly(t *testing.
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -406,7 +406,7 @@ func TestLivePermissionPRApproveDryRunDeniedWithoutRepoRead(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 2)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -442,7 +442,7 @@ func TestLivePermissionCommentUpdateDryRunDeniedWithoutRepoRead(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 2)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -497,7 +497,7 @@ func TestLivePermissionPullRequestSettingsDeniedWithRepoWriteOnly(t *testing.T) 
 	defer cancel()
 
 	// We only need a seeded project so we have something to grant.
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -531,7 +531,7 @@ func TestLivePermissionRepoCreateDeniedWithProjectReadOnly(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -560,7 +560,7 @@ func TestLivePermissionRepoCreateDryRunDeniedWithProjectReadOnly(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -594,12 +594,14 @@ func TestLivePermissionRepoCreateDryRunDeniedWithProjectReadOnly(t *testing.T) {
 // REPO_READ=true, REPO_WRITE=true, and REPO_ADMIN=true on their own repository,
 // and that both JSON and human output contain the expected fields.
 func TestLiveRepoPermissionsShowAsAdmin(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -648,12 +650,14 @@ func TestLiveRepoPermissionsShowAsAdmin(t *testing.T) {
 // all three project permission levels as true, and that both JSON and human output
 // contain the expected fields.
 func TestLiveProjectPermissionsShowAsAdmin(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -726,12 +730,14 @@ func grantedPermissions(t *testing.T, payload map[string]any, output string) map
 // Here the entries are ones the command itself created a moment earlier, and
 // the no-op, update, create and delete predictions are read against them.
 func TestLivePermissionAliasSubjects(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -846,12 +852,14 @@ func TestLivePermissionAliasSubjects(t *testing.T) {
 // field rather than in the key is what lets `--describe` state one shape for
 // one command, and a consumer needs two code paths the moment they diverge.
 func TestLivePermissionAliasSubjectsForProjects(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

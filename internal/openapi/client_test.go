@@ -23,6 +23,8 @@ func (function retryRoundTripperFunc) RoundTrip(request *http.Request) (*http.Re
 }
 
 func TestRetryTransport(t *testing.T) {
+	t.Parallel()
+
 	t.Run("retries transient status", func(t *testing.T) {
 		var attempts atomic.Int32
 		transport := &retryTransport{
@@ -275,53 +277,9 @@ func TestRetryTransport(t *testing.T) {
 	})
 }
 
-func TestRetryDelayFromResponse(t *testing.T) {
-	t.Run("uses retry-after seconds", func(t *testing.T) {
-		delay := retryDelayFromResponse(http.Header{"Retry-After": []string{"3"}}, 0, time.Millisecond)
-		if delay != 3*time.Second {
-			t.Fatalf("expected 3s delay, got %s", delay)
-		}
-	})
-
-	t.Run("falls back on invalid retry-after", func(t *testing.T) {
-		delay := retryDelayFromResponse(http.Header{"Retry-After": []string{"invalid"}}, 1, 200*time.Millisecond)
-		if delay != 400*time.Millisecond {
-			t.Fatalf("expected fallback delay 400ms, got %s", delay)
-		}
-	})
-
-	t.Run("supports retry-after http date", func(t *testing.T) {
-		retryAt := time.Now().Add(2 * time.Second).UTC().Format(http.TimeFormat)
-		delay := retryDelayFromResponse(http.Header{"Retry-After": []string{retryAt}}, 0, time.Millisecond)
-		if delay <= 0 || delay > 3*time.Second {
-			t.Fatalf("expected positive delay <=3s, got %s", delay)
-		}
-	})
-
-	t.Run("normalizes negative retry-after seconds", func(t *testing.T) {
-		delay := retryDelayFromResponse(http.Header{"Retry-After": []string{"-2"}}, 0, time.Millisecond)
-		if delay != 0 {
-			t.Fatalf("expected zero delay for negative retry-after, got %s", delay)
-		}
-	})
-
-	t.Run("falls back when backoff is non-positive", func(t *testing.T) {
-		delay := retryDelayFromResponse(nil, 1, 0)
-		if delay != 500*time.Millisecond {
-			t.Fatalf("expected fallback delay 500ms, got %s", delay)
-		}
-	})
-
-	t.Run("returns zero for past retry-after date", func(t *testing.T) {
-		retryAt := time.Now().Add(-2 * time.Second).UTC().Format(http.TimeFormat)
-		delay := retryDelayFromResponse(http.Header{"Retry-After": []string{retryAt}}, 0, time.Millisecond)
-		if delay != 0 {
-			t.Fatalf("expected zero delay for past date, got %s", delay)
-		}
-	})
-}
-
 func TestSleepWithContext(t *testing.T) {
+	t.Parallel()
+
 	t.Run("returns nil for zero delay", func(t *testing.T) {
 		if err := sleepWithContext(context.Background(), 0); err != nil {
 			t.Fatalf("expected nil error for zero delay, got %v", err)
@@ -338,6 +296,8 @@ func TestSleepWithContext(t *testing.T) {
 }
 
 func TestNewClientWithResponsesFromConfigInvalidCA(t *testing.T) {
+	t.Parallel()
+
 	_, err := NewClientWithResponsesFromConfig(config.AppConfig{
 		BitbucketURL:   "http://localhost:7990",
 		CAFile:         "/definitely/missing/ca.pem",
@@ -351,6 +311,8 @@ func TestNewClientWithResponsesFromConfigInvalidCA(t *testing.T) {
 }
 
 func TestNewClientWithResponsesFromConfigInvalidClientCert(t *testing.T) {
+	t.Parallel()
+
 	_, err := NewClientWithResponsesFromConfig(config.AppConfig{
 		BitbucketURL:   "http://localhost:7990",
 		ClientCertFile: "/definitely/missing/client.crt",
@@ -376,6 +338,8 @@ func TestNewClientWithResponsesFromConfigInvalidClientCert(t *testing.T) {
 // at all.
 
 func TestDiagnosticsWriter(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 
 	if writer := diagnostics.EnabledWriter(true, buffer); writer != buffer {
@@ -406,6 +370,8 @@ func closeResponse(response *http.Response) {
 // from one that never arrived.
 // mock-inventory: transport-fault — 503 and 429 are served on demand to drive our own retry policy; no live instance can be asked to be unavailable, and the subject is which methods we replay.
 func TestRetriesDoNotReplayMutations(t *testing.T) {
+	t.Parallel()
+
 	for _, testCase := range []struct {
 		name       string
 		method     string

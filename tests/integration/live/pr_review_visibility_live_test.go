@@ -36,12 +36,14 @@ import (
 // If Bitbucket ever stops doing any of these, this fails loudly instead of the
 // CLI quietly reporting nothing outstanding.
 func TestLivePullRequestReviewVisibility(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -290,12 +292,14 @@ func resolveBlockerComment(ctx context.Context, harness *liveHarness, projectKey
 // Bitbucket changes either 404 format, this fails here rather than silently
 // reclassifying every removed endpoint as a missing resource.
 func TestLiveRouteMissingClassification(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

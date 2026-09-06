@@ -19,6 +19,8 @@ import (
 // identity resolution would silently turn the status check into a check of
 // nothing.
 func TestLiveAuthIdentityAndTokenURL(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	_ = harness
 

@@ -263,6 +263,8 @@ func TestDescribeDoesNotRelaxValidationForOrdinaryInvocations(t *testing.T) {
 // TestEveryRunnableCommandAnswersDescribe walks the tree, because a command
 // added later must answer too.
 func TestEveryRunnableCommandAnswersDescribe(t *testing.T) {
+	t.Parallel()
+
 	root := NewRootCommand()
 
 	missing := []string{}

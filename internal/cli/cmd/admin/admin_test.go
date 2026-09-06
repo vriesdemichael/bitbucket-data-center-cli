@@ -9,6 +9,8 @@ import (
 )
 
 func TestAdminHealthErrors(t *testing.T) {
+	t.Parallel()
+
 	// Error on LoadConfig
 	badDeps := Dependencies{
 		LoadConfig: func() (config.AppConfig, error) {

@@ -23,12 +23,14 @@ import (
 // nothing about whether either endpoint answers that way -- and the difference
 // between them is entirely in what Bitbucket returns.
 func TestLiveMCPListPullRequestsModeSelection(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 2, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 2, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -79,11 +81,23 @@ func TestLiveMCPListPullRequestsModeSelection(t *testing.T) {
 	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
 		callCtx := context.Background()
 
+		// Ids are reported only for this test's project.
+		//
+		// A pull request id is unique within a repository and nowhere else, so
+		// on the dashboard -- which spans the instance -- a bare "2" matches
+		// whichever other repository happens to have a second pull request.
+		// Against a Bitbucket the rest of the live suite is writing to in
+		// parallel, that is most of them, and the assertion below read those as
+		// this test's own.
 		listed := func(t *testing.T, args map[string]any) []string {
 			t.Helper()
 			var payload struct {
 				PullRequests []struct {
-					ID int64 `json:"id"`
+					ID         int64 `json:"id"`
+					Repository *struct {
+						ProjectKey string `json:"project_key"`
+						Slug       string `json:"slug"`
+					} `json:"repository"`
 				} `json:"pull_requests"`
 			}
 			raw := callAndDecode(t, session, callCtx, "list_pull_requests", args, &payload)
@@ -92,6 +106,9 @@ func TestLiveMCPListPullRequestsModeSelection(t *testing.T) {
 			}
 			ids := make([]string, 0, len(payload.PullRequests))
 			for _, pullRequest := range payload.PullRequests {
+				if pullRequest.Repository != nil && pullRequest.Repository.ProjectKey != seeded.Key {
+					continue
+				}
 				ids = append(ids, fmt.Sprintf("%d", pullRequest.ID))
 			}
 			return ids
@@ -110,7 +127,9 @@ func TestLiveMCPListPullRequestsModeSelection(t *testing.T) {
 			// two repositories, one answer. role=author because the default is
 			// REVIEWER and the caller wrote these rather than being asked to
 			// review them.
-			ids := listed(t, map[string]any{"role": "author"})
+			// An explicit limit because the default is 25 rows of an
+			// instance-wide listing, which the rest of the suite fills.
+			ids := listed(t, map[string]any{"role": "author", "limit": dashboardPage})
 			if !containsFold(ids, mine) || !containsFold(ids, elsewhere) {
 				t.Errorf("the dashboard reported %v, want both %s and %s", ids, mine, elsewhere)
 			}
@@ -151,12 +170,14 @@ func TestLiveMCPListPullRequestsModeSelection(t *testing.T) {
 // path bb requested against the path it expected and read back the same string
 // its own handler had written, so neither half of that was Bitbucket's.
 func TestLiveMCPGetFileContentReturnsTheFileAsText(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

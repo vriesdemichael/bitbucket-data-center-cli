@@ -17,11 +17,13 @@ import (
 // then formatted, so the assertion was about the formatter and the fixture
 // agreeing, never about the shape Bitbucket actually sends.
 func TestLiveDiffCLIOutput(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -70,11 +72,13 @@ func TestLiveDiffCLIOutput(t *testing.T) {
 // TestLiveCommentCLIOutput covers what the comment commands print, including
 // the two shapes of a delete: one that resolved a version and one that had it.
 func TestLiveCommentCLIOutput(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -120,11 +124,13 @@ func TestLiveCommentCLIOutput(t *testing.T) {
 // TestLiveQualityCLIOutput covers the build status and code insights commands
 // through the CLI rather than the service.
 func TestLiveQualityCLIOutput(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

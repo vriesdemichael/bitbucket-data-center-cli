@@ -18,11 +18,13 @@ import (
 // that matters, and the part a mock cannot answer. An anchor the server rejects
 // or quietly drops looks identical to one it honours.
 func TestLiveInlineCommentAnchoring(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -175,11 +177,13 @@ func liveCommentResolved(t *testing.T, prID, commentID string) bool {
 // the guard is the point of the version, and a resolution that silently
 // overwrote it would look like success.
 func TestLiveCommentVersionHandling(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

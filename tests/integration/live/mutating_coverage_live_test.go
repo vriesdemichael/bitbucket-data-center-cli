@@ -34,7 +34,7 @@ func TestLivePRReviewApprovalCycle(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -108,11 +108,13 @@ func assertLiveReviewerApproval(t *testing.T, prID, username string, wantApprove
 // TestLivePRReviewerAddAndRemove covers `pr review reviewer add` and
 // `pr review reviewer remove`.
 func TestLivePRReviewerAddAndRemove(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -181,11 +183,13 @@ func TestLivePRReviewerAddAndRemove(t *testing.T) {
 
 // TestLiveBranchDefaultSet covers `branch default set`.
 func TestLiveBranchDefaultSet(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -249,11 +253,13 @@ func currentLiveDefaultBranch(t *testing.T) string {
 // TestLiveBranchModelUpdate covers `branch model update`, which sets the
 // default branch the branch model is built around.
 func TestLiveBranchModelUpdate(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -283,11 +289,13 @@ func TestLiveBranchModelUpdate(t *testing.T) {
 // TestLiveRepoAdminFork covers `repo admin fork`, whose live coverage was a
 // dry run that by definition creates no fork.
 func TestLiveRepoAdminFork(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -329,11 +337,13 @@ func TestLiveRepoAdminFork(t *testing.T) {
 // four had only dry-run coverage, and a dry run of a revoke leaves the grant
 // exactly where it was, so nothing was ever shown to be removed.
 func TestLiveProjectPermissionsGrantAndRevoke(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -376,11 +386,13 @@ func TestLiveProjectPermissionsGrantAndRevoke(t *testing.T) {
 // `repo permissions revoke`, and the two `repo settings security permissions`
 // revokes that address the same grants.
 func TestLiveRepoPermissionsGrantAndRevoke(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -493,11 +505,13 @@ func assertLivePermissionEntry(t *testing.T, output, name string, want bool) {
 // same shape as #505: the version is an optimistic lock the caller has no
 // reason to know, and omitting it there turned out to be rejected outright.
 func TestLivePRRebase(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -574,11 +588,13 @@ func waitForLivePRSourceCommit(t *testing.T, prID, want string) {
 // body" at exit 1 -- for a pull request already exactly where it was asked to
 // be (OPENAPI-028).
 func TestLivePRRebaseWithNothingToDo(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -643,11 +659,13 @@ func currentLivePRSourceCommit(t *testing.T, prID string) string {
 // both matchers and the checklist started applying to every pull request. The
 // output said nothing.
 func TestLiveDefaultTaskUpdateKeepsItsMatchers(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -746,11 +764,13 @@ func taskPayload(t *testing.T, data map[string]any, wrapper string) map[string]a
 // own UI only ever offers real branches, so a typo was silent and the default
 // branch stayed broken until somebody noticed.
 func TestLiveDefaultBranchMustExist(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -796,11 +816,13 @@ func TestLiveDefaultBranchMustExist(t *testing.T) {
 // retry advice for something that could never work, on a group the caller had
 // named correctly.
 func TestLiveReviewerGroupDeleteAcceptsAName(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -856,11 +878,13 @@ func TestLiveReviewerGroupDeleteAcceptsAName(t *testing.T) {
 // work that should succeed, where the typo this guard catches only lets through
 // work that should not.
 func TestLiveDefaultBranchFoundPastTheFirstPage(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

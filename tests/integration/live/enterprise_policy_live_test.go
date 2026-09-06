@@ -29,7 +29,7 @@ func TestLiveEnterprisePolicyAllowedHosts(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestLiveEnterprisePolicyInsecureSkipVerifyRefusal(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestLiveWorkspaceConfigResolution(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -287,7 +287,7 @@ func TestLiveEnterprisePolicyRawAPIEscapeHatch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -304,7 +304,12 @@ func TestLiveEnterprisePolicyRawAPIEscapeHatch(t *testing.T) {
 		t.Fatalf("write policy: %v", err)
 	}
 
-	output, err := executeLiveCLI(t, "api", "/rest/api/latest/projects")
+	// This project rather than the collection: /projects answers with a page,
+	// and the page is filled by whatever the rest of the suite seeded. What is
+	// being checked is that the policy let the call reach Bitbucket at all, and
+	// a project addressed by key says that without depending on how many other
+	// projects exist.
+	output, err := executeLiveCLI(t, "api", "/rest/api/latest/projects/"+seeded.Key)
 	if err != nil {
 		t.Fatalf("expected bb api to succeed with allowed host policy: %v\noutput: %s", err, output)
 	}

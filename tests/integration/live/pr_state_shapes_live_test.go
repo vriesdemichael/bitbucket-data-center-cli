@@ -20,11 +20,13 @@ import (
 // request is reported as conflicted, and only a conflicted pull request can
 // settle that.
 func TestLivePullRequestMergeability(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -165,11 +167,13 @@ func livePRMergeability(t *testing.T, prID string) (mergeable bool, outcome stri
 // asserted the payload each builds. Whether Bitbucket then treats the pull
 // request as a draft is the part that matters and the part they could not see.
 func TestLivePullRequestDraftState(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -222,11 +226,13 @@ func livePRIsDraft(t *testing.T, prID string) bool {
 // TestLivePullRequestHumanOutput covers what the pull request commands print
 // for a person, which the mocks asserted against pull requests they invented.
 func TestLivePullRequestHumanOutput(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -295,11 +301,13 @@ func mustLiveHumanCLI(t *testing.T, args ...string) string {
 // filters are checked by the pull requests they include and exclude rather
 // than by the parameters that carried them.
 func TestLivePullRequestListingFilters(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

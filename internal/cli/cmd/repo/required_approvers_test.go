@@ -15,6 +15,8 @@ import (
 // instance, and TestLiveGovernanceDryRunPredictionsReadRealState drives the
 // preview against one.
 func TestRequiredApproversIn(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name     string
 		settings string

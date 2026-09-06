@@ -7,6 +7,8 @@ import (
 )
 
 func TestCommitSafeHelpers(t *testing.T) {
+	t.Parallel()
+
 	if safederef.String(nil) != "" {
 		t.Fatal("expected empty string for safederef.String(nil)")
 	}

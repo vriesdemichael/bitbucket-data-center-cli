@@ -18,6 +18,9 @@ package outputschemas
 // installs them before the --describe walk so they answer it like every other
 // command: a caller asking one of them for a schema used to get a page of help
 // text on stdout and exit 0, which is a success it cannot parse.
+// "git-credential" in a key is what trips the heuristic.
+//
+//nolint:gosec // G101: command names and prose, not credentials; the word
 var CommandsWithoutDataContract = map[string]string{
 	"ai skill show":       "prints a SKILL.md document; wrapping markdown in a data string helps nobody",
 	"api":                 "streams the upstream response body verbatim, which is the point of the escape hatch",

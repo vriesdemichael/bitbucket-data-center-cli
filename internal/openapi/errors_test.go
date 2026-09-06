@@ -10,6 +10,8 @@ import (
 )
 
 func TestMapStatusError(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		status   int
@@ -111,6 +113,8 @@ func TestMapStatusError(t *testing.T) {
 // changes either format, this fails rather than silently reclassifying every
 // removed endpoint as a missing resource.
 func TestIsRouteMissingClassification(t *testing.T) {
+	t.Parallel()
+
 	const containerStatusDocument = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
 		`<status><status-code>404</status-code><message>HTTP 404 Not Found</message></status>`
 	const missingPullRequest = `{"errors":[{"context":null,` +
@@ -153,6 +157,8 @@ func TestIsRouteMissingClassification(t *testing.T) {
 // Only 404 can mean "this route does not exist"; other statuses reached the
 // application, so their bodies must never be classified that way.
 func TestIsRouteMissingOnlyAppliesToNotFound(t *testing.T) {
+	t.Parallel()
+
 	const containerStatusDocument = `<status><status-code>500</status-code><message>HTTP 500</message></status>`
 
 	for _, status := range []int{
@@ -170,6 +176,8 @@ func TestIsRouteMissingOnlyAppliesToNotFound(t *testing.T) {
 }
 
 func TestIsRouteMissingIgnoresUnrelatedErrors(t *testing.T) {
+	t.Parallel()
+
 	if IsRouteMissing(nil) {
 		t.Fatal("nil must not be classified as a missing route")
 	}
@@ -189,6 +197,8 @@ func TestIsRouteMissingIgnoresUnrelatedErrors(t *testing.T) {
 // faults and which sent readers to the wrong repository when a no-op rebase
 // reported one (OPENAPI-028).
 func TestMissingPayloadTellsAnEmptyAnswerFromAnUnreadableOne(t *testing.T) {
+	t.Parallel()
+
 	t.Run("nothing at all", func(t *testing.T) {
 		err := MissingPayload(200, nil, "reading a commit")
 		if err == nil {
@@ -231,6 +241,8 @@ func TestMissingPayloadTellsAnEmptyAnswerFromAnUnreadableOne(t *testing.T) {
 // TestMapStatusErrorReadsTheExceptionOnA400 pins the one correction the error
 // registry justified, and the fallthrough that keeps it from breaking anything.
 func TestMapStatusErrorReadsTheExceptionOnA400(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name string
 		body string

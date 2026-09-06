@@ -16,14 +16,14 @@ import (
 // TestRepoPermissionAliasRejectsBadInvocations covers the error branches the
 // shared constructors added.
 func TestRepoPermissionAliasRejectsBadInvocations(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "")
-	t.Setenv("BITBUCKET_REPO_SLUG", "")
+	t.Parallel()
+
 	// A listener that fails the test if reached: every invocation here is
 	// refused for its arguments before a request exists.
 	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(server.Close)
-	t.Setenv("BITBUCKET_URL", server.URL)
+
+	setup := testSetup{Host: server.URL}
 
 	cases := [][]string{
 		{"--json", "repo", "permissions", "list", "--repo", "not-a-selector"},
@@ -34,13 +34,9 @@ func TestRepoPermissionAliasRejectsBadInvocations(t *testing.T) {
 	}
 
 	for _, args := range cases {
-		command := NewRootCommand()
-		buffer := &bytes.Buffer{}
-		command.SetOut(buffer)
-		command.SetErr(buffer)
-		command.SetArgs(args)
-		if err := command.Execute(); err == nil {
-			t.Fatalf("expected %v to fail, got output: %s", args, buffer.String())
+		output, err := executeTestCLIWith(t, setup, args...)
+		if err == nil {
+			t.Fatalf("expected %v to fail, got output: %s", args, output)
 		}
 	}
 }
@@ -52,14 +48,13 @@ func TestRepoPermissionAliasRejectsBadInvocations(t *testing.T) {
 // internal by falling through, which is the difference between a
 // classification and an accident (#475).
 func TestPermissionsShowRequiresAWiredChecker(t *testing.T) {
+	t.Parallel()
+
 	// A listener that fails the test if it is reached: an unwired checker is
 	// caught before a request exists, and a request arriving would mean the
 	// guard was skipped rather than that it held.
 	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(guard.Close)
-
-	t.Setenv("BITBUCKET_URL", guard.URL)
-	t.Setenv("BITBUCKET_TOKEN", "token")
 
 	root := &cobra.Command{Use: "bb"}
 	root.PersistentFlags().Bool("json", false, "")

@@ -31,6 +31,8 @@ import (
 // AllResults returns everything -- while the boundary itself is covered by the
 // tags here and by branches in TestLiveListingsPageToTheEnd.
 func TestLiveServiceListingsPageToTheEnd(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -38,7 +40,7 @@ func TestLiveServiceListingsPageToTheEnd(t *testing.T) {
 	const seededRepos = 3
 	const seededCommits = 4
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, seededRepos, seededCommits)
+	seeded, err := harness.seedIsolatedProject(ctx, seededRepos, seededCommits)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

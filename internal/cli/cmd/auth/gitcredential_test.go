@@ -10,6 +10,8 @@ import (
 )
 
 func TestParseCredentialRequest(t *testing.T) {
+	t.Parallel()
+
 	input := "protocol=https\nhost=bitbucket.example.com\npath=scm/PROJ/repo.git\nusername=alice\n\n"
 
 	request, err := parseCredentialRequest(strings.NewReader(input))
@@ -28,6 +30,8 @@ func TestParseCredentialRequest(t *testing.T) {
 // git adds new keys over time (wwwauth[], capability[]). A helper that rejects
 // what it does not recognise breaks on the next git release.
 func TestParseCredentialRequestIgnoresUnknownKeys(t *testing.T) {
+	t.Parallel()
+
 	input := "protocol=https\nhost=bitbucket.example.com\nwwwauth[]=Basic realm=\"x\"\ncapability[]=authtype\n\n"
 
 	request, err := parseCredentialRequest(strings.NewReader(input))
@@ -42,6 +46,8 @@ func TestParseCredentialRequestIgnoresUnknownKeys(t *testing.T) {
 // A blank line terminates the request. Anything after it belongs to the next
 // exchange and must not leak into this one.
 func TestParseCredentialRequestStopsAtBlankLine(t *testing.T) {
+	t.Parallel()
+
 	input := "protocol=https\nhost=bitbucket.example.com\n\nhost=evil.example.org\n"
 
 	request, err := parseCredentialRequest(strings.NewReader(input))
@@ -54,6 +60,8 @@ func TestParseCredentialRequestStopsAtBlankLine(t *testing.T) {
 }
 
 func TestCredentialRequestURL(t *testing.T) {
+	t.Parallel()
+
 	cases := map[credentialRequest]string{
 		{Protocol: "https", Host: "bitbucket.example.com"}:      "https://bitbucket.example.com",
 		{Protocol: "http", Host: "localhost:7990"}:              "http://localhost:7990",
@@ -73,6 +81,8 @@ func TestCredentialRequestURL(t *testing.T) {
 // verbs are accepted and ignored rather than rejected — rejecting them would
 // make git treat the exchange as failed.
 func TestGitCredentialStoreAndEraseAreAcceptedAndIgnored(t *testing.T) {
+	t.Parallel()
+
 	for _, operation := range []string{"store", "erase"} {
 		cmd := newGitCredentialCommand()
 		var out bytes.Buffer
@@ -91,6 +101,8 @@ func TestGitCredentialStoreAndEraseAreAcceptedAndIgnored(t *testing.T) {
 }
 
 func TestGitCredentialRejectsUnknownOperation(t *testing.T) {
+	t.Parallel()
+
 	cmd := newGitCredentialCommand()
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
@@ -105,6 +117,8 @@ func TestGitCredentialRejectsUnknownOperation(t *testing.T) {
 // A request with no host is not answerable. Silence lets git move on; an error
 // would abort the whole credential lookup.
 func TestGitCredentialWithoutHostStaysSilent(t *testing.T) {
+	t.Parallel()
+
 	cmd := newGitCredentialCommand()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
@@ -145,6 +159,8 @@ func TestGitCredentialDoesNotAnswerForUnconfiguredHosts(t *testing.T) {
 }
 
 func TestSetupGitRequiresAHost(t *testing.T) {
+	t.Parallel()
+
 	cmd := newSetupGitCommand(Dependencies{
 		LoadConfig: func() (config.AppConfig, error) { return config.AppConfig{}, nil },
 		ConfigureGitCredentialHelper: func(context.Context, string, string, bool, bool) error {
@@ -162,6 +178,8 @@ func TestSetupGitRequiresAHost(t *testing.T) {
 }
 
 func TestSetupGitRejectsAMalformedHost(t *testing.T) {
+	t.Parallel()
+
 	cmd := newSetupGitCommand(Dependencies{
 		LoadConfig: func() (config.AppConfig, error) { return config.AppConfig{}, nil },
 		ConfigureGitCredentialHelper: func(context.Context, string, string, bool, bool) error {
@@ -182,6 +200,8 @@ func TestSetupGitRejectsAMalformedHost(t *testing.T) {
 // consulted for every remote git talks to, which would offer bb — and therefore
 // Bitbucket credentials — to unrelated hosts.
 func TestSetupGitScopesTheHelperToTheHost(t *testing.T) {
+	t.Parallel()
+
 	var capturedKey, capturedValue string
 
 	cmd := newSetupGitCommand(Dependencies{
@@ -214,6 +234,8 @@ func TestSetupGitScopesTheHelperToTheHost(t *testing.T) {
 }
 
 func TestSetupGitPassesScopeAndForceThrough(t *testing.T) {
+	t.Parallel()
+
 	var gotGlobal, gotForce bool
 
 	cmd := newSetupGitCommand(Dependencies{
@@ -241,6 +263,8 @@ func TestSetupGitPassesScopeAndForceThrough(t *testing.T) {
 // Matching `gh auth setup-git`, the default writes to the global config so a
 // single setup covers every clone of that host.
 func TestSetupGitDefaultsToGlobalScope(t *testing.T) {
+	t.Parallel()
+
 	var gotGlobal bool
 
 	cmd := newSetupGitCommand(Dependencies{

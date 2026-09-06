@@ -61,6 +61,8 @@ type normativeRecord struct {
 // Superseded records are exempt. Their text is a historical statement of what
 // was decided, and the status is what tells a reader not to act on it.
 func TestAcceptedRecordsDoNotNameABitbucketVersion(t *testing.T) {
+	t.Parallel()
+
 	root := repositoryRoot(t)
 
 	harness := harnessVersions(t, filepath.Join(root, harnessDockerfile))
@@ -95,6 +97,8 @@ func TestAcceptedRecordsDoNotNameABitbucketVersion(t *testing.T) {
 // "no record names a version" from "the scan stopped matching". These cases
 // exercise both the rule and each of its deliberate exemptions.
 func TestBitbucketVersionScanDetectsAStaleRecord(t *testing.T) {
+	t.Parallel()
+
 	harness := []string{"10.4", "10.4.2"}
 
 	cases := []struct {

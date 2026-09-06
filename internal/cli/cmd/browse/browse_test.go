@@ -50,6 +50,8 @@ func TestBrowseCommand(t *testing.T) {
 }
 
 func TestBuildBitbucketBrowseURL(t *testing.T) {
+	t.Parallel()
+
 	target := browseTarget{kind: browseTargetPath, path: "src/main.go", branch: "main"}
 	browseURL, err := buildBitbucketBrowseURL("https://bitbucket.example.com/context", "PRJ", "repo", target)
 	if err != nil {
@@ -66,6 +68,8 @@ func TestBuildBitbucketBrowseURL(t *testing.T) {
 }
 
 func TestResolveBrowseTargetValidation(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		args []string
@@ -111,6 +115,8 @@ func TestBrowseCommandValidationBranches(t *testing.T) {
 }
 
 func TestResolveBrowseTargetModes(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name       string
 		args       []string
@@ -138,6 +144,8 @@ func TestResolveBrowseTargetModes(t *testing.T) {
 }
 
 func TestSplitPathAndLineAndEncoding(t *testing.T) {
+	t.Parallel()
+
 	path, line := splitPathAndLine("")
 	if path != "" || line != 0 {
 		t.Fatalf("unexpected split result for empty input: %q %d", path, line)
@@ -173,8 +181,8 @@ func TestResolveBrowseRepositoryReference(t *testing.T) {
 	cfg := config.AppConfig{
 		BitbucketURL: "https://bitbucket.example.com",
 		ProjectKey:   "PRJ",
+		RepoSlug:     "repo",
 	}
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
 
 	repo, host, err := resolveBrowseRepositoryReference("bb.company.local/OPS/tooling", cfg)
 	if err != nil {
@@ -206,10 +214,12 @@ func TestResolveBrowseRepositoryReference(t *testing.T) {
 		t.Fatalf("unexpected explicit selector result: %+v host=%s", repo, host)
 	}
 
-	t.Setenv("BITBUCKET_REPO_SLUG", "")
-	_, _, err = resolveBrowseRepositoryReference("", cfg)
+	unslugged := cfg
+	unslugged.RepoSlug = ""
+
+	_, _, err = resolveBrowseRepositoryReference("", unslugged)
 	if err == nil {
-		t.Fatal("expected fallback resolve error when repo env is absent")
+		t.Fatal("expected fallback resolve error when no repository is configured")
 	}
 
 	_, _, err = resolveBrowseRepositoryReference("bad", cfg)
@@ -219,6 +229,8 @@ func TestResolveBrowseRepositoryReference(t *testing.T) {
 }
 
 func TestBuildBitbucketBrowseURLVariants(t *testing.T) {
+	t.Parallel()
+
 	base := "https://bitbucket.example.com"
 
 	variants := []browseTarget{
@@ -252,6 +264,8 @@ func TestBuildBitbucketBrowseURLVariants(t *testing.T) {
 }
 
 func TestParseHostQualifiedRepositorySelector(t *testing.T) {
+	t.Parallel()
+
 	host, repo, ok := parseHostQualifiedRepositorySelector("bb.company.local/OPS/tooling")
 	if !ok {
 		t.Fatal("expected host-qualified selector to parse")
@@ -269,6 +283,8 @@ func TestParseHostQualifiedRepositorySelector(t *testing.T) {
 }
 
 func TestBrowserCommand(t *testing.T) {
+	t.Parallel()
+
 	cmd, args := browserCommand("darwin", "https://example.com")
 	if cmd != "open" || len(args) != 1 || args[0] != "https://example.com" {
 		t.Fatalf("unexpected darwin command: %s %v", cmd, args)

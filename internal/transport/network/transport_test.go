@@ -90,6 +90,8 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func TestNewSafeTransport(t *testing.T) {
+	t.Parallel()
+
 	t.Run("insecure mode enabled", func(t *testing.T) {
 		roundTripper, err := NewSafeTransport(TLSOptions{InsecureSkipVerify: true})
 		if err != nil {

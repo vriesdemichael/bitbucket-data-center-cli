@@ -18,6 +18,8 @@ import (
 
 // mock-inventory: transport-fault — a server failing every request is injected; the subject is how the checker classifies it.
 func TestPermissionCheckerInspect500Error(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte(`{"errors":[{"message":"Internal Server Error"}]}`))

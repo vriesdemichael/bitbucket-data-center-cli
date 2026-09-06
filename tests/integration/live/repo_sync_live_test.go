@@ -18,12 +18,14 @@ import (
 // and against a standalone repository the endpoints answer without saying
 // anything about whether bb asked the right question.
 func TestLiveRepositoryForkSync(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

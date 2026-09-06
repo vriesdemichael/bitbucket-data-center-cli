@@ -17,12 +17,14 @@ import (
 // Creation is already covered elsewhere; this starts from a webhook it creates
 // so the identifiers are real, then drives every uncovered verb against it.
 func TestLiveRepositoryWebhookLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -108,12 +110,14 @@ func TestLiveRepositoryWebhookLifecycle(t *testing.T) {
 // TestLiveProjectWebhookLifecycle is the project-level twin: create, list, get
 // via update, test, stats and delete.
 func TestLiveProjectWebhookLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

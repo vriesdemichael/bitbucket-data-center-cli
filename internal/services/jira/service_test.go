@@ -39,6 +39,8 @@ func newJiraTestService(t *testing.T, handler http.HandlerFunc) *Service {
 //
 // mock-inventory: unreachable-state — a linked Jira, which this stack does not have; TestLiveJiraIssueCommitsAnswerEmpty covers what the endpoint answers without one.
 func TestGetIssueCommitsUnwrapsToCommit(t *testing.T) {
+	t.Parallel()
+
 	service := newJiraTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet || r.URL.Path != "/rest/jira/latest/issues/TEST-101/commits" {
 			http.NotFound(w, r)

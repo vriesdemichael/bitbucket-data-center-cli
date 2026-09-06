@@ -18,12 +18,14 @@ import (
 // the invocation out so the command is visibly covered, and asserts the URL
 // rather than merely a clean exit.
 func TestLiveTopLevelBrowse(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -58,12 +60,14 @@ func TestLiveTopLevelBrowse(t *testing.T) {
 // tree, and the short one is the one people reach for first, so a break in it is
 // a break in the spelling most users see.
 func TestLiveTopLevelClone(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -103,7 +107,7 @@ func TestLiveAISkillLifecycle(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

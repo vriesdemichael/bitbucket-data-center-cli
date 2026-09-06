@@ -17,12 +17,14 @@ import (
 // tests stubbed the endpoint bb believed in. A stub can confirm bb called what
 // bb thought it should call; only a real server can say that belief was wrong.
 func TestLivePullRequestAutoMergeEnable(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -113,11 +115,13 @@ func TestLivePullRequestAutoMergeEnable(t *testing.T) {
 // reports an immediate merge this way, and whether the pull request really is
 // merged, are the parts that matter.
 func TestLivePullRequestAutoMergeMergesImmediately(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

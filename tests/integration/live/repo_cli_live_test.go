@@ -13,12 +13,14 @@ import (
 )
 
 func TestLiveCLIRepoListAndComments(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 2)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -26,12 +28,19 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// Unscoped repo list is instance-wide, and an instance has as many
+	// repositories as it has. Asking whether this test's own repository is in
+	// the answer was a question about how big the instance is: at 50 rows the
+	// rest of the parallel suite filled it, and at 1000 the fixtures a leaking
+	// cleanup had left behind did. What the unscoped form owes is that it
+	// answers with repositories at all; that this repository is among them is
+	// the project-scoped question below.
 	repoListOutput, err := executeLiveCLI(t, "--json", "repo", "list", "--limit", "50")
 	if err != nil {
 		t.Fatalf("repo list failed: %v\noutput: %s", err, repoListOutput)
 	}
-	if !jsonArrayContainsSlug(t, repoListOutput, repo.Slug) {
-		t.Fatalf("expected repo slug %s in repo list output: %s", repo.Slug, repoListOutput)
+	if !jsonArrayHasEntries(t, repoListOutput) {
+		t.Fatalf("the instance-wide repo list came back empty: %s", repoListOutput)
 	}
 
 	projectRepoListOutput, err := executeLiveCLI(t, "--json", "repo", "list", "--project", seeded.Key, "--limit", "50")
@@ -244,12 +253,14 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 }
 
 func TestLiveCLIRepoSettingsSurface(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -379,12 +390,14 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 }
 
 func TestLiveCLIRepoPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -421,12 +434,14 @@ func TestLiveCLIRepoPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIRepoPermissionsGroupGrantDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -459,12 +474,14 @@ func TestLiveCLIRepoPermissionsGroupGrantDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIRepoPermissionsUserRevokeDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -496,12 +513,14 @@ func TestLiveCLIRepoPermissionsUserRevokeDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIRepoPermissionsGroupRevokeDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -533,12 +552,14 @@ func TestLiveCLIRepoPermissionsGroupRevokeDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIRepoWebhookCreateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -574,12 +595,14 @@ func TestLiveCLIRepoWebhookCreateDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIRepoPullRequestSettingsUpdateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -614,12 +637,14 @@ func TestLiveCLIRepoPullRequestSettingsUpdateDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIRepoPullRequestSettingsUpdateApproversDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -654,12 +679,14 @@ func TestLiveCLIRepoPullRequestSettingsUpdateApproversDryRunNoSideEffect(t *test
 }
 
 func TestLiveCLIRepoPullRequestSettingsSetStrategyDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -691,12 +718,14 @@ func TestLiveCLIRepoPullRequestSettingsSetStrategyDryRunNoSideEffect(t *testing.
 }
 
 func TestLiveCLIRepoWebhookDeleteDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -740,12 +769,14 @@ func TestLiveCLIRepoWebhookDeleteDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIPRCreateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 2)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -785,6 +816,8 @@ func TestLiveCLIPRCreateDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIPRUpdateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -813,6 +846,8 @@ func TestLiveCLIPRUpdateDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIPRGetIncludesMergeability(t *testing.T) {
+	t.Parallel()
+
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -836,6 +871,8 @@ func TestLiveCLIPRGetIncludesMergeability(t *testing.T) {
 }
 
 func TestLiveCLIPRMergeDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -864,6 +901,8 @@ func TestLiveCLIPRMergeDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIPRReviewerAddDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -894,6 +933,8 @@ func TestLiveCLIPRReviewerAddDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIPRReviewerRemoveDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -924,6 +965,8 @@ func TestLiveCLIPRReviewerRemoveDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIPRDeclineDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -952,6 +995,8 @@ func TestLiveCLIPRDeclineDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIPRReopenDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -985,6 +1030,8 @@ func TestLiveCLIPRReopenDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIPRApproveDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -1013,6 +1060,8 @@ func TestLiveCLIPRApproveDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIPRUnapproveDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -1041,6 +1090,8 @@ func TestLiveCLIPRUnapproveDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIPRWatchUnwatchRebase(t *testing.T) {
+	t.Parallel()
+
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -1085,6 +1136,8 @@ func TestLiveCLIPRWatchUnwatchRebase(t *testing.T) {
 }
 
 func TestLiveCommitPRsAndParticipants(t *testing.T) {
+	t.Parallel()
+
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -1131,12 +1184,14 @@ func TestLiveCommitPRsAndParticipants(t *testing.T) {
 }
 
 func TestLiveCLIRepoCommentCreateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 2)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -1178,12 +1233,14 @@ func TestLiveCLIRepoCommentCreateDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIRepoCommentUpdateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 2)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -1236,12 +1293,14 @@ func TestLiveCLIRepoCommentUpdateDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIRepoCommentDeleteDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 2)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -1301,7 +1360,7 @@ func prepareOpenPRDryRunFixture(t *testing.T) (*liveHarness, seededProject, seed
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 2)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -1360,6 +1419,22 @@ func jsonArrayContainsSlug(t *testing.T, output string, slug string) bool {
 	}
 
 	return false
+}
+
+// jsonArrayHasEntries reports whether a listing came back with anything in it.
+//
+// For the instance-wide listings, where naming a row would be a claim about
+// how many repositories the whole Bitbucket holds rather than about the
+// command.
+func jsonArrayHasEntries(t *testing.T, output string) bool {
+	t.Helper()
+
+	items := make([]map[string]any, 0)
+	if err := unmarshalJSONArray(output, &items); err != nil {
+		t.Fatalf("expected json array output, got parse error %v for: %s", err, output)
+	}
+
+	return len(items) > 0
 }
 
 func jsonObjectHasCommentsArray(t *testing.T, output string) bool {

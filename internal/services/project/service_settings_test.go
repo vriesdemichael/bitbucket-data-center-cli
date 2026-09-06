@@ -11,6 +11,8 @@ import (
 )
 
 func TestProjectWebhookService(t *testing.T) {
+	t.Parallel()
+
 	t.Run("ListWebhooks", func(t *testing.T) {
 		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -237,6 +239,8 @@ func TestProjectWebhookService(t *testing.T) {
 }
 
 func TestProjectRestrictionService(t *testing.T) {
+	t.Parallel()
+
 	t.Run("ListRestrictions", func(t *testing.T) {
 		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -393,6 +397,8 @@ func TestProjectRestrictionService(t *testing.T) {
 }
 
 func TestProjectDefaultTaskService(t *testing.T) {
+	t.Parallel()
+
 	t.Run("ListDefaultTasks", func(t *testing.T) {
 		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -509,6 +515,8 @@ func TestProjectDefaultTaskService(t *testing.T) {
 }
 
 func TestRestrictionNormalizationHelpers(t *testing.T) {
+	t.Parallel()
+
 	// normalizeProjectRestrictionType
 	for _, val := range []string{"read-only", "no-deletes", "fast-forward-only", "pull-request-only", "no-creates"} {
 		res, err := normalizeProjectRestrictionType(val)
@@ -548,6 +556,8 @@ func TestRestrictionNormalizationHelpers(t *testing.T) {
 }
 
 func TestProjectSettingsServiceAPIErrors(t *testing.T) {
+	t.Parallel()
+
 	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"errors":[{"message":"not found"}]}`))
@@ -615,6 +625,8 @@ func TestProjectSettingsServiceAPIErrors(t *testing.T) {
 }
 
 func TestProjectSettingsServiceEmptyAndInvalidJSON(t *testing.T) {
+	t.Parallel()
+
 	// Webhooks
 	t.Run("ListWebhooksEmptyAndInvalidJSON", func(t *testing.T) {
 		serviceEmpty := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
@@ -803,6 +815,8 @@ func TestProjectSettingsServiceEmptyAndInvalidJSON(t *testing.T) {
 }
 
 func TestProjectSettingsServiceTransientErrors(t *testing.T) {
+	t.Parallel()
+
 	service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
@@ -877,6 +891,8 @@ func TestProjectSettingsServiceTransientErrors(t *testing.T) {
 // the description reset a task scoped to release/* -> main so it applied to
 // every pull request in the project.
 func TestUpdateDefaultTaskCarriesForwardUnnamedMatchers(t *testing.T) {
+	t.Parallel()
+
 	capture := func(t *testing.T, existing string) map[string]any {
 		t.Helper()
 

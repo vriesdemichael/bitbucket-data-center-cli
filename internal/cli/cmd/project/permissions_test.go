@@ -46,6 +46,8 @@ func TestProjectPermissionAliasRejectsBadInvocations(t *testing.T) {
 // reader who lands on the canonical one — which is where the docs send them —
 // needs to be told the shorter spelling exists.
 func TestCanonicalPermissionCommandsPointAtTheirAlias(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		args     []string
 		expected string

@@ -34,6 +34,8 @@ func commandWith(t *testing.T, stdin string, args ...string) (*cobra.Command, *F
 }
 
 func TestSSLVerificationIsThreeStated(t *testing.T) {
+	t.Parallel()
+
 	// bb does not know Bitbucket's default and must not invent one, so a
 	// command that says nothing about TLS sends nothing.
 	command, fields := commandWith(t, "")
@@ -61,6 +63,8 @@ func TestSSLVerificationIsThreeStated(t *testing.T) {
 }
 
 func TestTwoSecretsCannotShareOneStdin(t *testing.T) {
+	t.Parallel()
+
 	command, fields := commandWith(t, "s3cr3t", "--secret-stdin", "--credentials-password-stdin")
 
 	_, err := fields.UpdateInput(command)
@@ -99,6 +103,8 @@ func TestAFlagOutranksTheEnvironment(t *testing.T) {
 }
 
 func TestRemovingAndSettingTheSameThingIsRefused(t *testing.T) {
+	t.Parallel()
+
 	// Said out loud twice, in two directions: one of the two has to win and
 	// neither should.
 	command, fields := commandWith(t, "s3cr3t", "--no-secret", "--secret-stdin")
@@ -138,6 +144,8 @@ func TestCreateInputCarriesTheSecretAndItsOrigin(t *testing.T) {
 }
 
 func TestABadPipeIsReportedRatherThanIgnored(t *testing.T) {
+	t.Parallel()
+
 	// Both entry points have to refuse it. A create that swallowed the error
 	// and carried on would configure a webhook with no secret, which is the
 	// failure that only shows up at the receiving endpoint.

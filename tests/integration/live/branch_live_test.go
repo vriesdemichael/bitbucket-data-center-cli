@@ -10,12 +10,14 @@ import (
 )
 
 func TestLiveCLIBranchLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -104,12 +106,14 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 }
 
 func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -199,12 +203,14 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 }
 
 func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -246,12 +252,14 @@ func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBranchCreateDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -288,12 +296,14 @@ func TestLiveCLIBranchCreateDryRunHasNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBranchDefaultSetDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -327,12 +337,14 @@ func TestLiveCLIBranchDefaultSetDryRunHasNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBranchRestrictionCreateDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -364,12 +376,14 @@ func TestLiveCLIBranchRestrictionCreateDryRunHasNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBranchRestrictionDeleteDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -416,12 +430,14 @@ func TestLiveCLIBranchRestrictionDeleteDryRunHasNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBranchModelUpdateDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -455,12 +471,14 @@ func TestLiveCLIBranchModelUpdateDryRunHasNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBranchRestrictionUpdateDryRunHasNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

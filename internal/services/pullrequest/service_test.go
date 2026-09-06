@@ -52,6 +52,8 @@ func TestListPullRequestsValidation(t *testing.T) {
 }
 
 func TestPullRequestHelperBranches(t *testing.T) {
+	t.Parallel()
+
 	if normalized, err := normalizeState(""); err != nil || normalized != "open" {
 		t.Fatalf("expected empty state to normalize to open, got=%q err=%v", normalized, err)
 	}
@@ -75,6 +77,8 @@ func TestPullRequestHelperBranches(t *testing.T) {
 }
 
 func TestPullRequestUpdateValidation(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(httpclient.NewFromConfig(config.AppConfig{BitbucketURL: "http://localhost:7990"}))
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
@@ -147,6 +151,8 @@ func TestGetBuildStatusesPaginationStuck(t *testing.T) {
 }
 
 func TestMapMergeabilityBranches(t *testing.T) {
+	t.Parallel()
+
 	mapped := mapMergeability(mergeabilityValue{
 		Outcome:    "UNKNOWN",
 		Conflicted: false,
@@ -171,6 +177,8 @@ func TestMapMergeabilityBranches(t *testing.T) {
 }
 
 func TestBuildCreatePayloadWithReviewers(t *testing.T) {
+	t.Parallel()
+
 	payload, err := buildCreatePayload(CreateInput{
 		FromRef:   "feature/my-work",
 		ToRef:     "main",
@@ -208,6 +216,8 @@ func TestBuildCreatePayloadWithReviewers(t *testing.T) {
 }
 
 func TestBuildCreatePayloadWithoutReviewers(t *testing.T) {
+	t.Parallel()
+
 	payload, err := buildCreatePayload(CreateInput{
 		FromRef: "feature/my-work",
 		ToRef:   "main",
@@ -223,6 +233,8 @@ func TestBuildCreatePayloadWithoutReviewers(t *testing.T) {
 }
 
 func TestBuildCreatePayloadWithBlankReviewers(t *testing.T) {
+	t.Parallel()
+
 	payload, err := buildCreatePayload(CreateInput{
 		FromRef:   "feature/my-work",
 		ToRef:     "main",
@@ -240,6 +252,8 @@ func TestBuildCreatePayloadWithBlankReviewers(t *testing.T) {
 }
 
 func TestBuildCreatePayloadWithDraft(t *testing.T) {
+	t.Parallel()
+
 	payload, err := buildCreatePayload(CreateInput{
 		FromRef: "feature/my-work",
 		ToRef:   "main",
@@ -257,6 +271,8 @@ func TestBuildCreatePayloadWithDraft(t *testing.T) {
 }
 
 func TestBuildCreatePayloadNoDraftByDefault(t *testing.T) {
+	t.Parallel()
+
 	payload, err := buildCreatePayload(CreateInput{
 		FromRef: "feature/my-work",
 		ToRef:   "main",
@@ -272,6 +288,8 @@ func TestBuildCreatePayloadNoDraftByDefault(t *testing.T) {
 }
 
 func TestBuildUpdatePayloadWithDraft(t *testing.T) {
+	t.Parallel()
+
 	trueVal := true
 	payload, err := buildUpdatePayload(UpdateInput{
 		Title:   "Updated title",
@@ -288,6 +306,8 @@ func TestBuildUpdatePayloadWithDraft(t *testing.T) {
 }
 
 func TestBuildUpdatePayloadDraftOnlyRequiresVersion(t *testing.T) {
+	t.Parallel()
+
 	falseVal := false
 	payload, err := buildUpdatePayload(UpdateInput{
 		Version: 2,
@@ -306,6 +326,8 @@ func TestBuildUpdatePayloadDraftOnlyRequiresVersion(t *testing.T) {
 }
 
 func TestBuildUpdatePayloadValidationRequiresField(t *testing.T) {
+	t.Parallel()
+
 	_, err := buildUpdatePayload(UpdateInput{Version: 1})
 	if err == nil || apperrors.ExitCode(err) != 2 {
 		t.Fatalf("expected validation error exit code 2 when no fields set, got: %v", err)
@@ -313,6 +335,8 @@ func TestBuildUpdatePayloadValidationRequiresField(t *testing.T) {
 }
 
 func TestAutoMergeValidation(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(httpclient.NewFromConfig(config.AppConfig{BitbucketURL: "http://localhost:7990"}))
 
 	_, err := service.GetAutoMerge(context.Background(), RepositoryRef{}, "1")
@@ -332,6 +356,8 @@ func TestAutoMergeValidation(t *testing.T) {
 }
 
 func TestWatchUnwatchRebaseValidation(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
@@ -399,6 +425,8 @@ func TestWatchUnwatchRebaseValidation(t *testing.T) {
 //
 // mock-inventory: transport-fault — the listener is closed before the first request; the subject is that each of these returns the failure rather than reporting success.
 func TestWatchUnwatchRebaseAPIErrors(t *testing.T) {
+	t.Parallel()
+
 	closedURL := testsupport.ClosedListenerURL(t)
 
 	client, err := openapigenerated.NewClientWithResponses(closedURL + "/rest")
@@ -435,6 +463,8 @@ func TestWatchUnwatchRebaseAPIErrors(t *testing.T) {
 }
 
 func TestListPullRequestsContainingCommitAndSearchParticipantsValidation(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
@@ -572,6 +602,8 @@ func TestAddInlineCommentValidation(t *testing.T) {
 }
 
 func TestNormalizeLineType(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		input   string
 		want    string
@@ -607,6 +639,8 @@ func TestNormalizeLineType(t *testing.T) {
 // "reviewers" instead, but servers that do populate "participants" must keep
 // working from that field.
 func TestMapReviewersPrefersParticipants(t *testing.T) {
+	t.Parallel()
+
 	participant := pullRequestParticipant{
 		Role:     "REVIEWER",
 		Status:   "APPROVED",
@@ -664,6 +698,8 @@ func TestMapReviewersPrefersParticipants(t *testing.T) {
 // would have rebased against a different version than the caller named — the
 // one case where silently using the wrong number is worse than refusing.
 func TestRebaseRejectsOutOfRangeVersion(t *testing.T) {
+	t.Parallel()
+
 	// The bound is checked before a request is built, so the listener fails the
 	// test if one arrives -- which is the whole assertion: an out-of-range
 	// version must not reach the wire wrapped.
@@ -693,6 +729,8 @@ func TestRebaseRejectsOutOfRangeVersion(t *testing.T) {
 // and without it there would be no way to change the list through update at
 // all.
 func TestUpdateRequiresAFieldTheCallerNamed(t *testing.T) {
+	t.Parallel()
+
 	t.Run("version alone is not a change", func(t *testing.T) {
 		_, err := buildUpdatePayload(UpdateInput{Version: 3})
 		if err == nil {

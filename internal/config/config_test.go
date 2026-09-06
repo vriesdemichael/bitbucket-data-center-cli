@@ -640,6 +640,8 @@ func TestResolveStoredCredentialsAndLoadFromStoredHost(t *testing.T) {
 }
 
 func TestSaveLoginValidationBranches(t *testing.T) {
+	t.Parallel()
+
 	if _, err := SaveLogin(LoginInput{}); err == nil {
 		t.Fatal("expected validation error for missing host")
 	}
@@ -767,6 +769,8 @@ func TestLoadStoredConfigInvalidYAML(t *testing.T) {
 }
 
 func TestValidateAndHostKeyBranches(t *testing.T) {
+	t.Parallel()
+
 	if err := (AppConfig{BitbucketURL: "http://localhost:7990", ProjectKey: "TEST", RequestTimeout: time.Second, RetryCount: 0, RetryBackoff: time.Second}).Validate(); err != nil {
 		t.Fatalf("expected empty log level/format to validate with defaults, got: %v", err)
 	}
@@ -934,6 +938,8 @@ func TestLoadFromEnvUsesStoredTokenBranch(t *testing.T) {
 // under https://host are found when the runtime URL uses http://host and vice
 // versa (issue #92).
 func TestResolveStoredCredentialsCrossScheme(t *testing.T) {
+	t.Parallel()
+
 	t.Run("https stored, http runtime", func(t *testing.T) {
 		stored := StoredConfig{
 			Hosts: map[string]StoredProfile{
@@ -995,6 +1001,8 @@ func TestResolveStoredCredentialsCrossScheme(t *testing.T) {
 }
 
 func TestHostKeyAltScheme(t *testing.T) {
+	t.Parallel()
+
 	if got := hostKeyAltScheme("http://bitbucket.corp"); got != "https://bitbucket.corp" {
 		t.Fatalf("expected https alt, got %q", got)
 	}
@@ -1383,6 +1391,8 @@ func containsAlias(aliases []string, want string) bool {
 }
 
 func TestMergeAliasesDeduplicatesAndPreservesOrder(t *testing.T) {
+	t.Parallel()
+
 	merged := mergeAliases([]string{"a", "b"}, []string{"b", "c"})
 	if len(merged) != 3 || merged[0] != "a" || merged[1] != "b" || merged[2] != "c" {
 		t.Fatalf("merged = %v, want [a b c]", merged)
@@ -1792,6 +1802,8 @@ func TestIsUpdateDisabled(t *testing.T) {
 }
 
 func TestIsHostAllowed(t *testing.T) {
+	t.Parallel()
+
 	allowed := []string{
 		"https://bb.corp.internal",
 		"staging.internal:8443",
@@ -1854,6 +1866,8 @@ func TestSystemPolicyRequireKeyringWarningWhenDisabledInEnv(t *testing.T) {
 }
 
 func TestConfigJSONSchemaAndValidation(t *testing.T) {
+	t.Parallel()
+
 	schema := ConfigJSONSchema()
 	if schema["$schema"] != "https://json-schema.org/draft/2020-12/schema" {
 		t.Fatalf("unexpected schema version: %v", schema["$schema"])
@@ -2154,6 +2168,8 @@ func TestWorkspaceConfigPathDiscovery(t *testing.T) {
 }
 
 func TestMergePolicyAllFields(t *testing.T) {
+	t.Parallel()
+
 	tr := true
 	fl := false
 	p1 := PolicyConfig{}
@@ -2188,6 +2204,8 @@ func TestMergePolicyAllFields(t *testing.T) {
 }
 
 func TestIsHostAllowedEdgeCases(t *testing.T) {
+	t.Parallel()
+
 	if !IsHostAllowed("https://bb.local", nil) {
 		t.Error("nil allowed hosts should allow all")
 	}
@@ -2237,6 +2255,8 @@ func TestResolveUpdateBaseURLPoliciesVariants(t *testing.T) {
 }
 
 func TestValidateConfigYAMLCommentsOnly(t *testing.T) {
+	t.Parallel()
+
 	err := ValidateConfigYAML([]byte("# just a comment\n# another comment\n"))
 	if err != nil {
 		t.Fatalf("comments-only YAML should be valid, got: %v", err)
@@ -2422,6 +2442,8 @@ func TestResolveUpdateTrustFromSystemPolicy(t *testing.T) {
 }
 
 func TestSystemConfigPathIgnoresEnvironmentOutsideTests(t *testing.T) {
+	t.Parallel()
+
 	attackerPath := filepath.Join(t.TempDir(), "attacker-policy.yaml")
 
 	// Under `go test`, the override is honoured: every policy test in this
@@ -2472,6 +2494,8 @@ func TestMachineConfigPathIsNotEnvironmentDerived(t *testing.T) {
 // update killswitch message, including the Windows registry branch that is
 // unreachable on other platforms when resolved in place.
 func TestPolicyOriginDescription(t *testing.T) {
+	t.Parallel()
+
 	enabled := true
 	disabled := false
 

@@ -80,6 +80,8 @@ func sanitizeToMapping(t *testing.T, input string, output string) map[string]str
 // operationId-to-endpoint mapping on every run. That silently decided which
 // endpoint a generated method such as Get3WithResponse actually called.
 func TestSanitizeIsDeterministic(t *testing.T) {
+	t.Parallel()
+
 	input := collidingSpec(t)
 	dir := t.TempDir()
 
@@ -104,6 +106,8 @@ func TestSanitizeIsDeterministic(t *testing.T) {
 // Every operation must end up with a distinct operationId, including when the
 // spec already uses the suffix the sanitizer would hand out.
 func TestSanitizeProducesUniqueOperationIDs(t *testing.T) {
+	t.Parallel()
+
 	input := collidingSpec(t)
 	output := filepath.Join(t.TempDir(), "out.json")
 
@@ -144,6 +148,8 @@ func TestSanitizeProducesUniqueOperationIDs(t *testing.T) {
 }
 
 func TestUniqueOperationIDSkipsClaimedSuffixes(t *testing.T) {
+	t.Parallel()
+
 	seen := map[string]int{
 		canonicalOperationID("get"):   1,
 		canonicalOperationID("get_2"): 1,
@@ -158,6 +164,8 @@ func TestUniqueOperationIDSkipsClaimedSuffixes(t *testing.T) {
 // Path parameters present in the URL template but missing from the operation
 // are what OPENAPI-001 exists to repair.
 func TestSanitizeInjectsMissingPathParameters(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	input := filepath.Join(dir, "in.json")
 	spec := map[string]any{
@@ -208,6 +216,8 @@ func TestSanitizeInjectsMissingPathParameters(t *testing.T) {
 }
 
 func TestFixEpochMillisFieldsRewritesNestedAndArrayShapes(t *testing.T) {
+	t.Parallel()
+
 	// createdDate appears inline inside request and response bodies as well as
 	// in named schemas, so the walk has to reach through nested objects and
 	// arrays. Missing one occurrence leaves otherwise-identical anonymous
@@ -240,6 +250,8 @@ func TestFixEpochMillisFieldsRewritesNestedAndArrayShapes(t *testing.T) {
 }
 
 func TestFixEpochMillisFieldsLeavesCorrectDeclarationsAlone(t *testing.T) {
+	t.Parallel()
+
 	// The rewrite is guarded on the broken shape so an upstream correction is
 	// respected rather than forced back to the workaround.
 	spec := map[string]any{
@@ -262,6 +274,8 @@ func TestFixEpochMillisFieldsLeavesCorrectDeclarationsAlone(t *testing.T) {
 }
 
 func TestFixContentEncodedPathParamsRewritesToSchema(t *testing.T) {
+	t.Parallel()
+
 	spec := map[string]any{
 		"paths": map[string]any{
 			"/branches/info/{commitId}": map[string]any{
@@ -302,6 +316,8 @@ func TestFixContentEncodedPathParamsRewritesToSchema(t *testing.T) {
 // Parameters that already declare a schema, and parameters outside the path, are
 // left exactly as they are: the rewrite is only sound for a path segment.
 func TestFixContentEncodedPathParamsLeavesOtherParamsAlone(t *testing.T) {
+	t.Parallel()
+
 	spec := map[string]any{
 		"paths": map[string]any{
 			"/thing/{id}": map[string]any{
@@ -339,6 +355,8 @@ func TestFixContentEncodedPathParamsLeavesOtherParamsAlone(t *testing.T) {
 }
 
 func TestFixArrayTypedPropertiesWrapsObjectInArray(t *testing.T) {
+	t.Parallel()
+
 	spec := map[string]any{
 		"components": map[string]any{
 			"schemas": map[string]any{
@@ -383,6 +401,8 @@ func TestFixArrayTypedPropertiesWrapsObjectInArray(t *testing.T) {
 }
 
 func TestFixArrayTypedResponsesWrapsSchemaInArray(t *testing.T) {
+	t.Parallel()
+
 	spec := map[string]any{
 		"paths": map[string]any{
 			"/gpg/latest/keys": map[string]any{

@@ -15,6 +15,8 @@ import (
 )
 
 func TestCloneValidation(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = time.Second
 
@@ -30,6 +32,8 @@ func TestCloneValidation(t *testing.T) {
 }
 
 func TestVersion(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 5 * time.Second
 
@@ -101,6 +105,8 @@ func TestClonePlacesOptionsBeforeRepositoryAndDirectory(t *testing.T) {
 }
 
 func TestFetchAndCheckoutValidation(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = time.Second
 
@@ -136,6 +142,8 @@ func TestFetchAndCheckoutValidation(t *testing.T) {
 }
 
 func TestRunValidationAndFailure(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = time.Second
 
@@ -165,6 +173,8 @@ func TestRunValidationAndFailure(t *testing.T) {
 }
 
 func TestCloneAndCheckoutAgainstLocalRepo(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 5 * time.Second
 
@@ -253,6 +263,8 @@ func TestCloneAndCheckoutAgainstLocalRepo(t *testing.T) {
 }
 
 func TestListRemotesValidation(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = time.Second
 
@@ -262,6 +274,8 @@ func TestListRemotesValidation(t *testing.T) {
 }
 
 func TestListRemotesOrderAndDeduplication(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 5 * time.Second
 
@@ -294,6 +308,8 @@ func TestListRemotesOrderAndDeduplication(t *testing.T) {
 }
 
 func TestRepositoryRootNonRepositoryError(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = time.Second
 
@@ -303,6 +319,8 @@ func TestRepositoryRootNonRepositoryError(t *testing.T) {
 }
 
 func TestListRemotesNonRepositoryError(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = time.Second
 
@@ -312,6 +330,8 @@ func TestListRemotesNonRepositoryError(t *testing.T) {
 }
 
 func TestListRemotesMultiURLOriginOrdering(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 5 * time.Second
 
@@ -343,6 +363,8 @@ func TestListRemotesMultiURLOriginOrdering(t *testing.T) {
 }
 
 func TestRedact(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		input    string
 		expected string
@@ -386,6 +408,8 @@ func TestRedact(t *testing.T) {
 // They now assert the credential is absent, which is the property that matters.
 
 func TestCloneDoesNotPersistTokenIntoRepositoryConfig(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 5 * time.Second
 
@@ -420,6 +444,8 @@ func TestCloneDoesNotPersistTokenIntoRepositoryConfig(t *testing.T) {
 }
 
 func TestCloneDoesNotPersistBasicCredentialsIntoRepositoryConfig(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 5 * time.Second
 
@@ -458,6 +484,8 @@ func TestCloneDoesNotPersistBasicCredentialsIntoRepositoryConfig(t *testing.T) {
 // The header supplied for the duration of the clone must be scoped to the host
 // being cloned from, so it is never offered to a redirect target.
 func TestCloneScopesAuthHeaderToTheRemoteHost(t *testing.T) {
+	t.Parallel()
+
 	scope := httpConfigScope("https://bitbucket.example.com/scm/PROJ/repo.git")
 	if scope != "https://bitbucket.example.com/" {
 		t.Fatalf("expected host-scoped config prefix, got %q", scope)
@@ -475,6 +503,8 @@ func TestCloneScopesAuthHeaderToTheRemoteHost(t *testing.T) {
 }
 
 func TestCloneFailureRedactsCredentials(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 5 * time.Second
 
@@ -496,6 +526,8 @@ func TestCloneFailureRedactsCredentials(t *testing.T) {
 }
 
 func TestCloneFailureRedactsURLCredentials(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 5 * time.Second
 
@@ -516,6 +548,8 @@ func TestCloneFailureRedactsURLCredentials(t *testing.T) {
 }
 
 func TestCurrentBranchRequiresDirectory(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = time.Second
 
@@ -525,6 +559,8 @@ func TestCurrentBranchRequiresDirectory(t *testing.T) {
 }
 
 func TestCurrentBranchNonRepositoryError(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 5 * time.Second
 
@@ -537,6 +573,8 @@ func TestCurrentBranchNonRepositoryError(t *testing.T) {
 // first assertion runs against a repository with no commits, where rev-parse
 // cannot resolve HEAD and the first version of this method failed outright.
 func TestCurrentBranchReportsCheckedOutBranch(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 10 * time.Second
 
@@ -570,6 +608,8 @@ func TestCurrentBranchReportsCheckedOutBranch(t *testing.T) {
 // string exists: rev-parse answers "HEAD" when detached, and passing that
 // through would send callers looking for a branch by that name.
 func TestCurrentBranchReportsDetachedHeadAsNoBranch(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 15 * time.Second
 

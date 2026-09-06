@@ -11,12 +11,14 @@ import (
 )
 
 func TestLiveGovernanceCLI(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -153,12 +155,14 @@ func TestLiveGovernanceCLI(t *testing.T) {
 }
 
 func TestLiveCLIProjectPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -194,12 +198,14 @@ func TestLiveCLIProjectPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIProjectPermissionsGroupGrantDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -231,12 +237,14 @@ func TestLiveCLIProjectPermissionsGroupGrantDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIProjectPermissionsUserRevokeDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -267,12 +275,14 @@ func TestLiveCLIProjectPermissionsUserRevokeDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIProjectPermissionsGroupRevokeDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -303,12 +313,14 @@ func TestLiveCLIProjectPermissionsGroupRevokeDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIReviewerConditionCreateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -342,12 +354,14 @@ func TestLiveCLIReviewerConditionCreateDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIReviewerConditionUpdateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -378,12 +392,14 @@ func TestLiveCLIReviewerConditionUpdateDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIReviewerConditionDeleteDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -414,24 +430,29 @@ func TestLiveCLIReviewerConditionDeleteDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIProjectCreateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
 
 	configureLiveCLIEnv(t, harness, seeded.Key, seeded.Repos[0].Slug)
 
-	listBeforeOutput, err := executeLiveCLI(t, "--json", "project", "list", "--limit", "200")
-	if err != nil {
-		t.Fatalf("project list before failed: %v\noutput: %s", err, listBeforeOutput)
-	}
-
-	newKey := fmt.Sprintf("DRY%03d", time.Now().UnixNano()%1000)
+	// A key nothing else will pick, so asking whether it exists afterwards is a
+	// question about this dry run and not about the instance.
+	//
+	// The check used to be a byte comparison of `bb project list` before and
+	// after. Instance-wide, that is a claim about every project on the server:
+	// with the suite running in parallel, another test seeding one between the
+	// two calls made the listings differ for a reason that had nothing to do
+	// with the dry run.
+	newKey := "DRY" + uniqueSuffix()
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "project", "create", newKey, "--name", "Dry Run Project")
 	if err != nil {
 		t.Fatalf("project create dry-run failed: %v\noutput: %s", err, dryRunOutput)
@@ -443,23 +464,20 @@ func TestLiveCLIProjectCreateDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected project.create intent, got: %s", dryRunOutput)
 	}
 
-	listAfterOutput, err := executeLiveCLI(t, "--json", "project", "list", "--limit", "200")
-	if err != nil {
-		t.Fatalf("project list after failed: %v\noutput: %s", err, listAfterOutput)
-	}
-
-	if listBeforeOutput != listAfterOutput {
-		t.Fatalf("expected no project side-effect from create dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	if getOutput, getErr := executeLiveCLI(t, "--json", "project", "get", newKey); getErr == nil {
+		t.Fatalf("the create dry-run made project %s: %s", newKey, getOutput)
 	}
 }
 
 func TestLiveReviewerGroupsAndDefaultReviewersCLI(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

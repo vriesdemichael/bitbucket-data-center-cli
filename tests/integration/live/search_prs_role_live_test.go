@@ -27,11 +27,13 @@ import (
 // nothing to say so. The dashboard is where role works, and it is what the
 // refusal points at.
 func TestLiveSearchPullRequestsRole(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -71,14 +73,37 @@ func TestLiveSearchPullRequestsRole(t *testing.T) {
 	}
 	theirs := fmt.Sprintf("%d", int64(authored["id"].(float64)))
 
+	// Ids are collected only for this repository, and only after the answer has
+	// been checked for having room to hold it.
+	//
+	// A pull request id is unique inside a repository and nowhere else, so on
+	// the dashboard -- which spans the instance -- a bare "2" matches whatever
+	// other repository happens to have a second pull request. Against a
+	// Bitbucket the whole live suite is writing to, that is most of them.
 	listedIDs := func(t *testing.T, output string) []string {
 		t.Helper()
-		ids := make([]string, 0, 2)
-		for _, entry := range collectionFromCLI(t, output, "pullRequests") {
-			if pullRequest, ok := entry.(map[string]any); ok {
-				ids = append(ids, asString(pullRequest["id"]))
-			}
+
+		entries := collectionFromCLI(t, output, "pullRequests")
+		if len(entries) >= dashboardPage {
+			t.Fatalf("the answer filled the %d-row page, so a missing pull request means the page ran out rather than the filter excluded it", dashboardPage)
 		}
+
+		ids := make([]string, 0, 2)
+		for _, entry := range entries {
+			pullRequest, ok := entry.(map[string]any)
+			if !ok {
+				continue
+			}
+			repository, _ := pullRequest["repository"].(map[string]any)
+			if repository == nil {
+				continue
+			}
+			if asString(repository["projectKey"])+"/"+asString(repository["slug"]) != repoRef {
+				continue
+			}
+			ids = append(ids, asString(pullRequest["id"]))
+		}
+
 		return ids
 	}
 
@@ -97,7 +122,7 @@ func TestLiveSearchPullRequestsRole(t *testing.T) {
 
 	t.Run("a repository search without a role still works", func(t *testing.T) {
 		// The refusal is about the combination, not about --repo.
-		got := listedIDs(t, mustLiveCLI(t, "search", "prs", "--repo", repoRef, "--limit", "25"))
+		got := listedIDs(t, mustLiveCLI(t, "search", "prs", "--repo", repoRef, "--limit", dashboardPageArg))
 		if !containsFold(got, mine) || !containsFold(got, theirs) {
 			t.Errorf("the repository search returned %v, want both %s and %s", got, mine, theirs)
 		}
@@ -105,7 +130,10 @@ func TestLiveSearchPullRequestsRole(t *testing.T) {
 
 	t.Run("the dashboard is where role applies", func(t *testing.T) {
 		// Which is what the refusal points the caller at, so it has to be true.
-		got := listedIDs(t, mustLiveCLI(t, "search", "prs", "--role", "author", "--limit", "25"))
+		// Run without the repository context the harness would otherwise
+		// supply: a --repo is what this command refuses alongside --role, and
+		// being unscoped is the subject.
+		got := listedIDs(t, mustLiveCLIUnscoped(t, "search", "prs", "--role", "author", "--limit", dashboardPageArg))
 		if !containsFold(got, mine) {
 			t.Errorf("role=author dropped %s, which the caller wrote: %v", mine, got)
 		}

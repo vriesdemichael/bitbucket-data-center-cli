@@ -87,12 +87,14 @@ func executeLiveMCPServer(t *testing.T, drive func(*mcp.ClientSession), args ...
 // drives a process through startup, so a broken serve command would be
 // discovered by an agent at runtime.
 func TestLiveMCPServerStartsAndListsTools(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -121,12 +123,14 @@ func TestLiveMCPServerStartsAndListsTools(t *testing.T) {
 // actually receives. A spec registered without a working handler, or a
 // registration that panics, fails here rather than in an agent's session.
 func TestLiveMCPServerExposesEverySpec(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -154,12 +158,14 @@ func TestLiveMCPServerExposesEverySpec(t *testing.T) {
 // a prompt-injected agent and an irreversible merge. A gate that does not gate
 // is worse than no gate, because the threat model claims it holds.
 func TestLiveMCPSafetyGateWithholdsUnsafeTools(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -203,12 +209,14 @@ func TestLiveMCPSafetyGateWithholdsUnsafeTools(t *testing.T) {
 // TestLiveMCPToolFilteringAdmitsAndExcludes covers --tools and --exclude,
 // including the precedence between them and the safety filter.
 func TestLiveMCPToolFilteringAdmitsAndExcludes(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -257,12 +265,14 @@ func TestLiveMCPToolFilteringAdmitsAndExcludes(t *testing.T) {
 // nothing until now asserted the two return the same facts about the same
 // repository.
 func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 2)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -544,6 +554,8 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 // TestLiveMCPToolsCommandListsCatalogue covers `bb ai mcp tools`, the companion
 // command an operator uses to build an allowlist.
 func TestLiveMCPToolsCommandListsCatalogue(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	configureLiveCLIEnv(t, harness, "", "")
 
@@ -669,16 +681,18 @@ func collectionFromCLI(t *testing.T, output, key string) []any {
 // correctly. Here the out-of-scope repository is one the token can really read,
 // so a call that gets through returns data — and the test fails.
 func TestLiveMCPScopeBoundaryHolds(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	inScope, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	inScope, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed in-scope project failed: %v", err)
 	}
-	outOfScope, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	outOfScope, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed out-of-scope project failed: %v", err)
 	}
@@ -762,12 +776,14 @@ func TestLiveMCPScopeBoundaryHolds(t *testing.T) {
 // real server run, with the denial record that Bitbucket's own audit log cannot
 // contain — a refused call never reaches it.
 func TestLiveMCPAuditTrailRecordsInvocations(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -858,7 +874,7 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -1001,12 +1017,14 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 // file and line it named, and the reply has to come back inside the thread it
 // answered rather than as a comment of its own.
 func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

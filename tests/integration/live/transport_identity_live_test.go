@@ -20,6 +20,8 @@ import (
 // mocks in that package standing in for Bitbucket rather than for a broken
 // connection.
 func TestLiveTransportIdentityAndHealth(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()

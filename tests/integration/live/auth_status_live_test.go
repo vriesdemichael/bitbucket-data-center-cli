@@ -16,12 +16,14 @@ import (
 // Only a real Bitbucket can establish that the probe actually probes. A stub
 // can show the plumbing carries a result; it cannot show the result is true.
 func TestLiveAuthStatusVerifiesRatherThanReports(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -89,7 +91,7 @@ func TestLiveAuthStatusFailsOnABadCredential(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -126,12 +128,14 @@ func TestLiveAuthStatusFailsOnABadCredential(t *testing.T) {
 // every agent that only calls the API, which is the exact failure mode this
 // command exists to remove.
 func TestLiveAuthStatusTreatsTheGitHelperAsAdvisory(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

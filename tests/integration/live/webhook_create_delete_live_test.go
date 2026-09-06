@@ -19,12 +19,14 @@ import (
 // configured for two CI systems. The assertion that matters is therefore the
 // last one — the webhook is gone from the list, not merely disabled.
 func TestLiveWebhookCreateAndDelete(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

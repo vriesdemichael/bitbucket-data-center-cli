@@ -43,6 +43,8 @@ var stdinUseAllowed = map[string]string{
 // under an agent -- so bb repo browse edit committed an empty file over a real
 // one.
 func TestEveryUseOfStandardInputIsAccountedFor(t *testing.T) {
+	t.Parallel()
+
 	root := repositoryRoot(t)
 
 	found := standardInputUsers(t, root)
@@ -72,6 +74,8 @@ func TestEveryUseOfStandardInputIsAccountedFor(t *testing.T) {
 // membership test could not have caught that; only running the scanner over
 // source that contains the shape can.
 func TestTheStdinScannerFindsARealRead(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name   string
 		source string

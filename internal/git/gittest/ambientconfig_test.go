@@ -14,6 +14,8 @@ func snapshot(entries map[string]string) ConfigSnapshot {
 }
 
 func TestDiffDetectsEveryKindOfChange(t *testing.T) {
+	t.Parallel()
+
 	before := snapshot(map[string]string{
 		"--local remote.origin.url": "https://github.com/owner/repo.git",
 		"--local user.email":        "dev@example.com",
@@ -46,6 +48,8 @@ func TestDiffDetectsEveryKindOfChange(t *testing.T) {
 // compares before against after, so pre-existing configuration is invisible to
 // it no matter how unusual it looks.
 func TestDiffIgnoresPreExistingConfiguration(t *testing.T) {
+	t.Parallel()
+
 	entries := map[string]string{
 		"--local user.email":        "personal@example.com",
 		"--local http.extraheader":  "Authorization: Bearer already-here",
@@ -60,6 +64,8 @@ func TestDiffIgnoresPreExistingConfiguration(t *testing.T) {
 // Without git, or outside a repository, the guard must stay silent rather than
 // failing a suite for a reason that has nothing to do with the tests.
 func TestDiffIsInertWhenSnapshotsAreUnavailable(t *testing.T) {
+	t.Parallel()
+
 	populated := snapshot(map[string]string{"--local user.email": "dev@example.com"})
 	unavailable := ConfigSnapshot{Available: false}
 
@@ -72,6 +78,8 @@ func TestDiffIsInertWhenSnapshotsAreUnavailable(t *testing.T) {
 }
 
 func TestDiffIsStable(t *testing.T) {
+	t.Parallel()
+
 	before := snapshot(map[string]string{})
 	after := snapshot(map[string]string{
 		"--local z.key": "1",
@@ -88,6 +96,8 @@ func TestDiffIsStable(t *testing.T) {
 }
 
 func TestFailureMessageIsActionable(t *testing.T) {
+	t.Parallel()
+
 	message := FailureMessage([]string{"added --local http.extraheader = Authorization: Basic dummy"})
 
 	for _, expected := range []string{
@@ -103,6 +113,8 @@ func TestFailureMessageIsActionable(t *testing.T) {
 
 // The guard is only useful if it can actually read the repository it runs in.
 func TestSnapshotAmbientConfigReadsTheRepository(t *testing.T) {
+	t.Parallel()
+
 	current := SnapshotAmbientConfig()
 	if !current.Available {
 		t.Skip("not running inside a git repository")
@@ -123,6 +135,8 @@ func TestSnapshotAmbientConfigReadsTheRepository(t *testing.T) {
 // are running, and before this was excluded the comparison blamed the tests --
 // in every guarded package at once, with no --- FAIL line to explain it.
 func TestDiffIgnoresConfigAnotherWorktreeWrote(t *testing.T) {
+	t.Parallel()
+
 	before := snapshot(map[string]string{
 		"--local core.bare":           "false",
 		"--local branch.gone.remote":  "origin",
@@ -150,6 +164,8 @@ func TestDiffIgnoresConfigAnotherWorktreeWrote(t *testing.T) {
 // The exclusion buys nothing if it also hides the damage the guard exists for.
 // These are the keys from both incidents recorded in the package documentation.
 func TestDiffStillReportsEveryKeyFromBothIncidents(t *testing.T) {
+	t.Parallel()
+
 	before := snapshot(map[string]string{"--local core.bare": "false"})
 	after := snapshot(map[string]string{
 		"--local core.bare":           "true",
@@ -181,6 +197,8 @@ func TestDiffStillReportsEveryKeyFromBothIncidents(t *testing.T) {
 // The worktree scope is $GIT_DIR/config.worktree, which no sibling can reach,
 // so the exclusion must not apply to it.
 func TestDiffReportsBookkeepingKeysInTheWorktreeScope(t *testing.T) {
+	t.Parallel()
+
 	before := snapshot(map[string]string{})
 	after := snapshot(map[string]string{
 		"--worktree branch.local.remote": "origin",
@@ -196,6 +214,8 @@ func TestDiffReportsBookkeepingKeysInTheWorktreeScope(t *testing.T) {
 // A remote's URL is not bookkeeping. remote.upstream.url is one of the four
 // keys the first incident wrote, and only the refspec beside it is excluded.
 func TestDiffSeparatesARemotesURLFromItsRefspec(t *testing.T) {
+	t.Parallel()
+
 	before := snapshot(map[string]string{})
 	after := snapshot(map[string]string{
 		"--local remote.upstream.url":   "https://example.local/scm/PRJ/upstream.git",
@@ -251,6 +271,8 @@ func TestPlaceRepositoryOutOfReachKeepsAnExistingCeiling(t *testing.T) {
 
 // TestExitCodeFailsARunThatChangedTheRepository is the reporting half.
 func TestExitCodeFailsARunThatChangedTheRepository(t *testing.T) {
+	t.Parallel()
+
 	unchanged := SnapshotAmbientConfig()
 
 	cases := []struct {
@@ -299,6 +321,8 @@ func TestExitCodeFailsARunThatChangedTheRepository(t *testing.T) {
 // the guard must degrade to a no-op rather than fail: a checkout without git,
 // or a package vendored elsewhere, should still run its tests.
 func TestNothingIsPlacedOutsideARepository(t *testing.T) {
+	t.Parallel()
+
 	outside := t.TempDir()
 
 	if _, err := repositoryRoot(outside); err == nil {

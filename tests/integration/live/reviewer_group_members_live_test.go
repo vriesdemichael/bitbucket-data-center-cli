@@ -24,11 +24,13 @@ import (
 // is why the resolution happens in the service rather than being left to the
 // caller: the username is the only thing a person has.
 func TestLiveReviewerGroupMembership(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -162,7 +164,9 @@ func TestLiveReviewerGroupMembership(t *testing.T) {
 			t.Fatalf("grant project read failed: %v", err)
 		}
 
-		output := mustLiveCLI(t, "reviewer-group", "create", "qa-project",
+		// Unscoped: a project-scoped reviewer group is named by --project, which
+		// the command refuses alongside the --repo the harness would supply.
+		output := mustLiveCLIUnscoped(t, "reviewer-group", "create", "qa-project",
 			"--project", seeded.Key, "--users", first.Username)
 
 		group := decodeJSONMap(t, output)
@@ -181,11 +185,11 @@ func TestLiveReviewerGroupMembership(t *testing.T) {
 			t.Fatalf("grant project read failed: %v", err)
 		}
 
-		output := mustLiveCLI(t, "reviewer-group", "create", "qa-project-2",
+		output := mustLiveCLIUnscoped(t, "reviewer-group", "create", "qa-project-2",
 			"--project", seeded.Key, "--users", first.Username)
 		groupID := fmt.Sprintf("%d", int64(decodeJSONMap(t, output)["id"].(float64)))
 
-		updated := mustLiveCLI(t, "reviewer-group", "update", groupID,
+		updated := mustLiveCLIUnscoped(t, "reviewer-group", "update", groupID,
 			"--project", seeded.Key, "--users", second.Username)
 
 		users, _ := decodeJSONMap(t, updated)["users"].([]any)
@@ -196,9 +200,15 @@ func TestLiveReviewerGroupMembership(t *testing.T) {
 			t.Errorf("member = %q, want %s", name, second.Username)
 		}
 
-		if _, err := executeLiveCLI(t, "--json", "reviewer-group", "create", "qa-project-unknown",
-			"--project", seeded.Key, "--users", "nobody-by-that-name"); err == nil {
+		// Unscoped like the calls above, and for a second reason: with a --repo
+		// injected this refusal would be about the two scope flags rather than
+		// the member, so the test would pass without checking anything.
+		_, err := executeLiveCLIUnscoped(t, "--json", "reviewer-group", "create", "qa-project-unknown",
+			"--project", seeded.Key, "--users", "nobody-by-that-name")
+		if err == nil {
 			t.Error("an unknown member was accepted on a project create")
+		} else if strings.Contains(err.Error(), "--repo") {
+			t.Errorf("the refusal was about the flags rather than the member: %v", err)
 		}
 	})
 }

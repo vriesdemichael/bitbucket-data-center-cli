@@ -14,13 +14,15 @@ import (
 )
 
 func TestLiveBuildStatusSetAndGet(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -58,13 +60,15 @@ func TestLiveBuildStatusSetAndGet(t *testing.T) {
 }
 
 func TestLiveCodeInsightsReportSetAndGet(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -118,13 +122,15 @@ func TestLiveCodeInsightsReportSetAndGet(t *testing.T) {
 }
 
 func TestLiveRequiredBuildCheckLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -168,13 +174,15 @@ func TestLiveRequiredBuildCheckLifecycle(t *testing.T) {
 }
 
 func TestLiveCodeInsightsAnnotationsLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -223,12 +231,14 @@ func TestLiveCodeInsightsAnnotationsLifecycle(t *testing.T) {
 }
 
 func TestLiveCLIInsightsReportSetDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -264,12 +274,14 @@ func TestLiveCLIInsightsReportSetDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBuildStatusSetDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -304,12 +316,14 @@ func TestLiveCLIBuildStatusSetDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIInsightsReportDeleteDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -352,12 +366,14 @@ func TestLiveCLIInsightsReportDeleteDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIInsightsAnnotationAddDeleteDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -429,12 +445,14 @@ func TestLiveCLIInsightsAnnotationAddDeleteDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIBuildRequiredCreateUpdateDeleteDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -547,13 +565,15 @@ func requiredBuildCheckID(payload map[string]any) (int64, bool) {
 // for fewer than exist is the other half, because a cap that is not honoured
 // comes back long.
 func TestLiveQualityListingsPageToTheEnd(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -658,13 +678,15 @@ func TestLiveQualityListingsPageToTheEnd(t *testing.T) {
 // which endpoints send one is the server's decision, not ours. A commit nobody
 // has reported on answers the question without anyone deciding what it says.
 func TestLiveQualityEmptyAnswers(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := qualityservice.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

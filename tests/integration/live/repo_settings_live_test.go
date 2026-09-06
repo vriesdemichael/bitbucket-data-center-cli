@@ -15,13 +15,15 @@ import (
 )
 
 func TestLiveRepoSettingsSecurityPermissionsUsers(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -36,13 +38,15 @@ func TestLiveRepoSettingsSecurityPermissionsUsers(t *testing.T) {
 }
 
 func TestLiveRepoSettingsWorkflowWebhooks(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -57,13 +61,15 @@ func TestLiveRepoSettingsWorkflowWebhooks(t *testing.T) {
 }
 
 func TestLiveRepoSettingsPullRequestSettings(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -78,13 +84,15 @@ func TestLiveRepoSettingsPullRequestSettings(t *testing.T) {
 }
 
 func TestLiveRepoSettingsGrantUserPermission(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -97,13 +105,15 @@ func TestLiveRepoSettingsGrantUserPermission(t *testing.T) {
 }
 
 func TestLiveRepoSettingsCreateWebhook(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -121,13 +131,15 @@ func TestLiveRepoSettingsCreateWebhook(t *testing.T) {
 }
 
 func TestLiveRepoSettingsUpdatePullRequestRequiredAllTasks(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -152,13 +164,15 @@ func TestLiveRepoSettingsUpdatePullRequestRequiredAllTasks(t *testing.T) {
 }
 
 func TestLiveRepoSettingsDeleteWebhook(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -184,13 +198,15 @@ func TestLiveRepoSettingsDeleteWebhook(t *testing.T) {
 }
 
 func TestLiveRepoSettingsUpdatePullRequestRequiredApprovers(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

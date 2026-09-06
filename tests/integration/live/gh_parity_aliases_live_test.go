@@ -23,12 +23,14 @@ import (
 // stop being the same command, this fails rather than the two quietly drifting
 // the way hand-maintained duplicates do.
 func TestLiveRepoPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -91,12 +93,14 @@ func TestLiveRepoPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 // TestLiveProjectPermissionShallowAliasesMatchDeepPaths is the project-tree
 // twin of the test above.
 func TestLiveProjectPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -165,7 +169,7 @@ func TestLivePullRequestStatus(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

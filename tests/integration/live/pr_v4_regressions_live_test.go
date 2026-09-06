@@ -26,11 +26,13 @@ import (
 // The issue reported this for decline. merge and reopen share the same helper
 // and were equally unusable, so all three are covered.
 func TestLivePRTransitionsWithoutAnExplicitVersion(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -156,11 +158,13 @@ func decodeLivePRReviewers(t *testing.T, data map[string]any) []string {
 // also work"; the first subtest here is what proves it does not, against the
 // server, and is why the fix echoes the current list back.
 func TestLivePRUpdateKeepsReviewers(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -244,11 +248,13 @@ func currentLivePRVersion(t *testing.T, prID string) string {
 // of #503: the same prefix reaches the same lookup from --reviewers and from
 // --reviewer-group, and carried the same defect.
 func TestLiveReviewerFlagsAcceptTheReviewerGroupPrefix(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -329,11 +335,13 @@ func containsFold(values []string, want string) bool {
 // permission check is the server's, and the "branch not found" is the server's
 // reading of a payload that a mock would have accepted.
 func TestLivePRCreateFromAFork(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
