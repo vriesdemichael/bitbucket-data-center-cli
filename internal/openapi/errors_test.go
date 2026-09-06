@@ -3,6 +3,7 @@ package openapi
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -177,5 +178,92 @@ func TestIsRouteMissingIgnoresUnrelatedErrors(t *testing.T) {
 	}
 	if IsRouteMissing(errors.New("boom")) {
 		t.Fatal("an unrelated error must not be classified as a missing route")
+	}
+}
+
+// TestMissingPayloadTellsAnEmptyAnswerFromAnUnreadableOne covers the two shapes
+// the helper exists to distinguish.
+//
+// Both are permanent, because the identical request returns the identical
+// answer, and neither is internal -- which is the word bb reserves for its own
+// faults and which sent readers to the wrong repository when a no-op rebase
+// reported one (OPENAPI-028).
+func TestMissingPayloadTellsAnEmptyAnswerFromAnUnreadableOne(t *testing.T) {
+	t.Run("nothing at all", func(t *testing.T) {
+		err := MissingPayload(200, nil, "reading a commit")
+		if err == nil {
+			t.Fatal("an empty payload was accepted")
+		}
+		if kind := apperrors.KindOf(err); kind != apperrors.KindPermanent {
+			t.Errorf("kind = %v, want permanent", kind)
+		}
+		if !strings.Contains(err.Error(), "empty body") || !strings.Contains(err.Error(), "reading a commit") {
+			t.Errorf("message does not say what came back empty: %v", err)
+		}
+	})
+
+	t.Run("something the client could not read", func(t *testing.T) {
+		err := MissingPayload(200, []byte(`{"unexpected":"shape"}`), "reading the diff")
+		if err == nil {
+			t.Fatal("an unreadable payload was accepted")
+		}
+		if kind := apperrors.KindOf(err); kind != apperrors.KindPermanent {
+			t.Errorf("kind = %v, want permanent", kind)
+		}
+		// The body is the evidence for the OPENAPI-* entry somebody has to
+		// write, so it belongs in the message rather than being swallowed.
+		if !strings.Contains(err.Error(), `{"unexpected":"shape"}`) {
+			t.Errorf("the body is missing from the message: %v", err)
+		}
+		if !strings.Contains(err.Error(), "disagree") {
+			t.Errorf("the message does not say the spec and the server disagree: %v", err)
+		}
+	})
+
+	t.Run("whitespace is nothing at all", func(t *testing.T) {
+		err := MissingPayload(200, []byte("  \n\t "), "reading a commit")
+		if err == nil || !strings.Contains(err.Error(), "empty body") {
+			t.Errorf("a whitespace body was not read as empty: %v", err)
+		}
+	})
+}
+
+// TestMapStatusErrorReadsTheExceptionOnA400 pins the one correction the error
+// registry justified, and the fallthrough that keeps it from breaking anything.
+func TestMapStatusErrorReadsTheExceptionOnA400(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+		want apperrors.Kind
+	}{
+		{
+			name: "a duplicate ref is a conflict, not bad input",
+			body: `{"errors":[{"message":"Branch 'x' already exists","exceptionName":"com.atlassian.bitbucket.repository.DuplicateRefException"}]}`,
+			want: apperrors.KindConflict,
+		},
+		{
+			name: "an exception with no entry keeps the status answer",
+			body: `{"errors":[{"exceptionName":"com.atlassian.bitbucket.validation.ArgumentValidationException"}]}`,
+			want: apperrors.KindValidation,
+		},
+		{
+			name: "a 400 with no exceptionName keeps the status answer",
+			body: `{"errors":[{"message":"The project key must be specified."}]}`,
+			want: apperrors.KindValidation,
+		},
+		{name: "a body that is not JSON keeps the status answer", body: "<html>bad request</html>", want: apperrors.KindValidation},
+		{name: "no body at all keeps the status answer", body: "", want: apperrors.KindValidation},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := MapStatusError(400, []byte(testCase.body))
+			if err == nil {
+				t.Fatal("a 400 produced no error")
+			}
+			if kind := apperrors.KindOf(err); kind != testCase.want {
+				t.Errorf("kind = %v, want %v", kind, testCase.want)
+			}
+		})
 	}
 }
