@@ -75,7 +75,7 @@ func (s *Service) AddUserKey(ctx context.Context, label string, publicKeyText st
 		return *resp.ApplicationjsonCharsetUTF8201, nil
 	}
 
-	return openapigenerated.RestSshKey{}, apperrors.New(apperrors.KindInternal, "unexpected empty response adding user SSH key", nil)
+	return openapigenerated.RestSshKey{}, openapi.MissingPayload(resp.StatusCode(), resp.Body, "adding a user SSH key")
 }
 
 func (s *Service) RemoveUserKey(ctx context.Context, keyId string) error {
@@ -176,7 +176,7 @@ func (s *Service) AddProjectKey(ctx context.Context, projectKey string, label st
 		return *resp.ApplicationjsonCharsetUTF8201, nil
 	}
 
-	return openapigenerated.RestSshAccessKey{}, apperrors.New(apperrors.KindInternal, "unexpected empty response adding project SSH key", nil)
+	return openapigenerated.RestSshAccessKey{}, openapi.MissingPayload(resp.StatusCode(), resp.Body, "adding a project SSH key")
 }
 
 func (s *Service) RemoveProjectKey(ctx context.Context, projectKey string, keyId string) error {
@@ -286,7 +286,7 @@ func (s *Service) AddRepoKey(ctx context.Context, projectKey string, repoSlug st
 		return *resp.ApplicationjsonCharsetUTF8201, nil
 	}
 
-	return openapigenerated.RestSshAccessKey{}, apperrors.New(apperrors.KindInternal, "unexpected empty response adding repository SSH key", nil)
+	return openapigenerated.RestSshAccessKey{}, openapi.MissingPayload(resp.StatusCode(), resp.Body, "adding a repository SSH key")
 }
 
 func (s *Service) RemoveRepoKey(ctx context.Context, projectKey string, repoSlug string, keyId string) error {

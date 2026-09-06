@@ -75,13 +75,20 @@ func TestLiveErrorTaxonomy409Conflict(t *testing.T) {
 		t.Fatalf("initial branch create failed: %v\noutput: %s", createErr, createOutput)
 	}
 
-	// Attempt duplicate branch creation -> Bitbucket DC returns 400 (validation/DuplicateRefException) or 409 Conflict
+	// A second create is a conflict, and exit 5 is the only right answer.
+	//
+	// This used to accept 2 or 5, because Bitbucket answers 400 and 400 is
+	// validation everywhere else -- so the test allowed both rather than decide.
+	// The error registry settles it: the body carries
+	// com.atlassian.bitbucket.repository.DuplicateRefException, which says the
+	// request was well formed and the branch already exists. Exit 2 sends the
+	// caller to check what they typed; exit 5 describes the repository.
 	dupOutput, dupErr := executeLiveCLI(t, "--json", "branch", "create", branchName, "--start-point", "refs/heads/master")
 	if dupErr == nil {
-		t.Fatalf("expected conflict/validation error on duplicate branch create, got success:\n%s", dupOutput)
+		t.Fatalf("expected a conflict on duplicate branch create, got success:\n%s", dupOutput)
 	}
-	if apperrors.ExitCode(dupErr) != 2 && apperrors.ExitCode(dupErr) != 5 {
-		t.Fatalf("expected exit code 2 (validation) or 5 (conflict) on duplicate branch, got exit code %d (err: %v)", apperrors.ExitCode(dupErr), dupErr)
+	if code := apperrors.ExitCode(dupErr); code != 5 {
+		t.Fatalf("exit code %d on a duplicate branch, want 5 (conflict): %v", code, dupErr)
 	}
 	if !strings.Contains(strings.ToLower(dupOutput+dupErr.Error()), "already exists") && !strings.Contains(strings.ToLower(dupOutput+dupErr.Error()), "conflict") {
 		t.Fatalf("expected error message to mention existing branch or conflict, got: %s", dupOutput)

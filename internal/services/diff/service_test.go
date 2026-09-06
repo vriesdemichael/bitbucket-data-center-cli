@@ -562,7 +562,10 @@ func TestCompareDiffRefusesABodylessSuccess(t *testing.T) {
 	})
 
 	_, err := service.CompareDiff(context.Background(), RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}, "main", "feat")
-	if err == nil || !strings.Contains(err.Error(), "empty diff response") {
+	if err == nil || !strings.Contains(err.Error(), "empty body where the specification documents a payload") {
 		t.Fatalf("a bodyless 200 was read as a diff, got %v", err)
+	}
+	if kind := apperrors.KindOf(err); kind != apperrors.KindPermanent {
+		t.Errorf("kind = %v, want permanent", kind)
 	}
 }

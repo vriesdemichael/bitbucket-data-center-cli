@@ -1388,7 +1388,7 @@ func (service *Service) CanRebase(ctx context.Context, repository RepositoryRef,
 		return nil, err
 	}
 	if response.ApplicationjsonCharsetUTF8200 == nil {
-		return nil, apperrors.New(apperrors.KindInternal, "unexpected empty rebaseability response body", nil)
+		return nil, openapi.MissingPayload(response.StatusCode(), response.Body, "reading rebaseability")
 	}
 	return response.ApplicationjsonCharsetUTF8200, nil
 }
@@ -1466,7 +1466,7 @@ func (service *Service) Rebase(ctx context.Context, repository RepositoryRef, pu
 	}
 
 	if response.ApplicationjsonCharsetUTF8200 == nil {
-		return nil, apperrors.New(apperrors.KindInternal, "unexpected empty rebase response body", nil)
+		return nil, openapi.MissingPayload(response.StatusCode(), response.Body, "rebasing the pull request")
 	}
 
 	return response.ApplicationjsonCharsetUTF8200, nil

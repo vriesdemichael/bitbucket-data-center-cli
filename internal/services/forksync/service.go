@@ -39,7 +39,7 @@ func (s *Service) GetSyncStatus(ctx context.Context, projectKey, repoSlug string
 		return resp.ApplicationjsonCharsetUTF8200, nil
 	}
 
-	return nil, apperrors.New(apperrors.KindInternal, "unexpected empty response getting synchronization status", nil)
+	return nil, openapi.MissingPayload(resp.StatusCode(), resp.Body, "reading the synchronization status")
 }
 
 func (s *Service) SetEnabled(ctx context.Context, projectKey, repoSlug string, enabled bool) (*openapigenerated.RestRefSyncStatus, error) {
@@ -64,7 +64,7 @@ func (s *Service) SetEnabled(ctx context.Context, projectKey, repoSlug string, e
 		return resp.ApplicationjsonCharsetUTF8200, nil
 	}
 
-	return nil, apperrors.New(apperrors.KindInternal, "unexpected empty response setting synchronization status", nil)
+	return nil, openapi.MissingPayload(resp.StatusCode(), resp.Body, "setting the synchronization status")
 }
 
 // Synchronize triggers a manual synchronization of one ref.

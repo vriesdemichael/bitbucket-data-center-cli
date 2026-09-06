@@ -75,7 +75,7 @@ func (s *Service) AddGpgKey(ctx context.Context, keyText string) ([]openapigener
 		return *resp.JSON200, nil
 	}
 
-	return nil, apperrors.New(apperrors.KindInternal, "unexpected empty response adding GPG key", nil)
+	return nil, openapi.MissingPayload(resp.StatusCode(), resp.Body, "adding a GPG key")
 }
 
 func (s *Service) RemoveGpgKey(ctx context.Context, fingerprintOrId string) error {
