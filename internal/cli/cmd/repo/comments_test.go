@@ -9,6 +9,8 @@ import (
 )
 
 func TestCommentOwnedByUser(t *testing.T) {
+	t.Parallel()
+
 	username := "alice"
 	commentWithName := openapigenerated.RestComment{Author: &struct {
 		Active       *bool                                  `json:"active,omitempty"`
@@ -53,6 +55,8 @@ func TestCommentOwnedByUser(t *testing.T) {
 }
 
 func TestCommentHelpers(t *testing.T) {
+	t.Parallel()
+
 	if commentIDString(openapigenerated.RestComment{}) != "?" {
 		t.Fatal("expected ? for comment with nil ID")
 	}

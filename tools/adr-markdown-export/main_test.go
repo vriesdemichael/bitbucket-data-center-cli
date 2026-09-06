@@ -8,6 +8,8 @@ import (
 )
 
 func TestExportADRMarkdownGeneratesIndexAndRecords(t *testing.T) {
+	t.Parallel()
+
 	inputDir := filepath.Join(t.TempDir(), "decisions")
 	outputDir := filepath.Join(t.TempDir(), "site", "adr")
 
@@ -79,6 +81,8 @@ provenance: guided-ai
 }
 
 func TestExportADRMarkdownErrorsForInvalidRecord(t *testing.T) {
+	t.Parallel()
+
 	inputDir := filepath.Join(t.TempDir(), "decisions")
 	outputDir := filepath.Join(t.TempDir(), "site", "adr")
 	if err := os.MkdirAll(inputDir, 0o755); err != nil {

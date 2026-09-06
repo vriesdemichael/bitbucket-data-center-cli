@@ -22,6 +22,8 @@ func writeLiveTestFile(t *testing.T, source string) string {
 }
 
 func TestDiscoverLiveInvocationsSplitsAssertedFromMasked(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func TestAsserted(t *testing.T) {
@@ -77,6 +79,8 @@ func TestEnvironmentSkipIsNotMasking(t *testing.T) {
 // A command asserted by one test and skipped by another is genuinely covered:
 // the asserting test still fails when it breaks.
 func TestAssertedElsewhereWins(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func TestSkips(t *testing.T) {
@@ -106,6 +110,8 @@ func TestAsserts(t *testing.T) {
 }
 
 func TestCommandPathIgnoresFlagsAndStopsAtVariables(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func TestFlags(t *testing.T) {
@@ -133,6 +139,8 @@ func TestFlags(t *testing.T) {
 }
 
 func TestBuildReportClassifies(t *testing.T) {
+	t.Parallel()
+
 	runnable := []string{"pr get", "pr task list", "repo list", "tag list"}
 	invoked := invocations{
 		asserted: map[string]struct{}{"pr get": {}, "tag list": {}},
@@ -162,6 +170,8 @@ func TestBuildReportClassifies(t *testing.T) {
 // longest known command that prefixes it — never to an ancestor group and never
 // to a partial word.
 func TestResolveInvocationsPicksTheLongestMatch(t *testing.T) {
+	t.Parallel()
+
 	runnable := []string{"pr", "pr get", "tag view", "repo list"}
 	invoked := map[string]struct{}{
 		"pr get 42":         {},
@@ -191,6 +201,8 @@ func TestResolveInvocationsPicksTheLongestMatch(t *testing.T) {
 // A command that is itself runnable and also has subcommands is only covered by
 // an invocation of the command itself.
 func TestResolveInvocationsCreditsRunnableParentOnDirectInvocation(t *testing.T) {
+	t.Parallel()
+
 	runnable := []string{"pr", "pr get"}
 
 	resolved := resolveInvocations(runnable, map[string]struct{}{"pr": {}})
@@ -204,6 +216,8 @@ func TestResolveInvocationsCreditsRunnableParentOnDirectInvocation(t *testing.T)
 }
 
 func TestCompareReportsFlagsRegressions(t *testing.T) {
+	t.Parallel()
+
 	committed := report{
 		Covered:        []string{"pr get", "tag list"},
 		KnownMasked:    []string{"pr task list"},
@@ -263,6 +277,8 @@ func TestCompareReportsFlagsRegressions(t *testing.T) {
 // The real command tree must produce sane paths; a regression here would make
 // every command look uncovered.
 func TestCollectRunnableCommandsUsesRootRelativePaths(t *testing.T) {
+	t.Parallel()
+
 	paths := collectRunnableCommands(newRootForTest())
 
 	if len(paths) == 0 {
@@ -303,6 +319,8 @@ func testValueFlags() map[string]bool {
 // the flag was skipped but its value was then read as the first command word,
 // so the whole invocation resolved to nothing and the command looked uncovered.
 func TestCommandPathSkipsGlobalFlagValues(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func TestValueFlags(t *testing.T) {
@@ -339,6 +357,8 @@ func TestValueFlags(t *testing.T) {
 
 // Boolean globals take no value, so the argument after them is the command.
 func TestGlobalValueFlagsExcludesBooleans(t *testing.T) {
+	t.Parallel()
+
 	flags := testValueFlags()
 
 	for _, boolean := range []string{"--json", "--dry-run", "--no-color", "--insecure-skip-verify"} {
@@ -360,6 +380,8 @@ func TestGlobalValueFlagsExcludesBooleans(t *testing.T) {
 // read 100% while 16 mutating commands had never once run against a server,
 // which is how #503, #505, #506 and #511 all shipped green.
 func TestDryRunInvocationsAreNotCoverage(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func TestDryRunBeforeTheCommand(t *testing.T) {
@@ -421,6 +443,8 @@ func TestRealInvocation(t *testing.T) {
 
 // A command run both ways is covered: the dry run is extra, not a downgrade.
 func TestARealInvocationBeatsADryRun(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func TestPreviewFirst(t *testing.T) {
@@ -453,6 +477,8 @@ func TestThenForReal(t *testing.T) {
 // the literal arguments reported `repo comment update` as never invoked for
 // real, and the mistake was invisible while a --dry-run call covered for it.
 func TestCommandWordsInASliceVariableAreFound(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func TestSpreadSlice(t *testing.T) {
@@ -496,6 +522,8 @@ func keysOf(set map[string]struct{}) []string {
 // commands stayed listed as dry-run-only while a test was mutating them for
 // real -- the same silent loss of coverage #532 exists to stop.
 func TestCommandsReachedThroughAWrapperCount(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func mustLiveCLI(t *testing.T, args ...string) string {
@@ -534,6 +562,8 @@ func TestGrant(t *testing.T) {
 // callers look like real invocations while nothing is ever mutated. That is the
 // original defect wearing a different hat, so it is closed explicitly.
 func TestAWrapperThatSuppliesDryRunIsStillADryRun(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func previewOnly(t *testing.T, args ...string) string {
@@ -569,6 +599,8 @@ func TestPreview(t *testing.T) {
 // without saying so is the failure this tool exists to prevent, so an
 // unreadable call is now reported.
 func TestAnUnreadableCallIsReportedRatherThanSkipped(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func TestBuiltUpAcrossStatements(t *testing.T) {
@@ -597,6 +629,8 @@ func TestBuiltUpAcrossStatements(t *testing.T) {
 // all three appear in the live suite. Each was found by the report above rather
 // than by anyone noticing a command had gone missing.
 func TestTheShapesTheScannerCanRead(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func TestInlineAppend(t *testing.T) {
@@ -658,6 +692,8 @@ func TestTableOfSlices(t *testing.T) {
 // Four commands were counted as covered on exactly that basis, alongside a test
 // that logged its failure and returned.
 func TestAnInvocationThatChecksNothingIsMasked(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func TestDiscarded(t *testing.T) {
@@ -705,6 +741,8 @@ func TestActuallyChecked(t *testing.T) {
 // which resolves to a literal that yields no command path and is skipped
 // silently. A helper that forwards args bare made it visible.
 func TestAWrapperForwardingItsOwnArgsIsNotUnreadable(t *testing.T) {
+	t.Parallel()
+
 	dir := writeLiveTestFile(t, `package live_test
 
 func mustLiveHumanCLI(t *testing.T, args ...string) string {

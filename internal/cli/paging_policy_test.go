@@ -25,6 +25,8 @@ import (
 // the flags without reading them. The second says no command may inherit them,
 // which is the symptom a caller sees, since help prints inherited flags.
 func TestOnlyPagingCommandsAdvertisePagingFlags(t *testing.T) {
+	t.Parallel()
+
 	t.Run("a registration sits on a command that reads the flags", func(t *testing.T) {
 		registrations := 0
 

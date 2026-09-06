@@ -12,6 +12,8 @@ import (
 )
 
 func TestExitCodeByKind(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		err      error
@@ -35,6 +37,8 @@ func TestExitCodeByKind(t *testing.T) {
 }
 
 func TestErrorFormattingAndUnwrap(t *testing.T) {
+	t.Parallel()
+
 	withoutCause := New(KindValidation, "bad input", nil)
 	if !strings.Contains(withoutCause.Error(), "validation: bad input") {
 		t.Fatalf("unexpected error string without cause: %q", withoutCause.Error())
@@ -51,6 +55,8 @@ func TestErrorFormattingAndUnwrap(t *testing.T) {
 }
 
 func TestExitCodeDefaults(t *testing.T) {
+	t.Parallel()
+
 	if ExitCode(nil) != 0 {
 		t.Fatal("expected nil error exit code 0")
 	}
@@ -71,6 +77,8 @@ func TestExitCodeDefaults(t *testing.T) {
 }
 
 func TestKindOf(t *testing.T) {
+	t.Parallel()
+
 	if got := KindOf(nil); got != "" {
 		t.Fatalf("expected empty kind for nil error, got %q", got)
 	}
@@ -85,6 +93,8 @@ func TestKindOf(t *testing.T) {
 }
 
 func TestKindsCoversEveryDeclaredKind(t *testing.T) {
+	t.Parallel()
+
 	kinds := Kinds()
 
 	seen := map[Kind]bool{}
@@ -168,6 +178,8 @@ func declaredKindsFromSource(t *testing.T) []Kind {
 // errors.go, so a change to how kinds are declared must fail here rather than
 // quietly reducing the guard to nothing.
 func TestTheKindScannerSeesEveryKind(t *testing.T) {
+	t.Parallel()
+
 	found := make(map[Kind]bool)
 	for _, kind := range declaredKindsFromSource(t) {
 		found[kind] = true
@@ -187,6 +199,8 @@ func TestTheKindScannerSeesEveryKind(t *testing.T) {
 }
 
 func TestMessageOf(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name     string
 		err      error

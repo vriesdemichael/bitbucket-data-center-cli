@@ -9,6 +9,8 @@ import (
 )
 
 func TestServiceLimit(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name     string
 		options  Options
@@ -38,6 +40,8 @@ func TestServiceLimit(t *testing.T) {
 // client carries page limits as float32, so a value that cannot round-trip
 // through float32 would be silently altered on the wire.
 func TestUnlimitedLimitStaysWithinFloat32(t *testing.T) {
+	t.Parallel()
+
 	if int(float32(unlimitedLimit)) != unlimitedLimit {
 		t.Fatalf("unlimitedLimit %d does not survive a float32 round trip", unlimitedLimit)
 	}
@@ -62,6 +66,8 @@ func newListCommand(t *testing.T, register func(*Options, *cobra.Command)) (*cob
 }
 
 func TestRegisterPersistentAppliesToSubcommands(t *testing.T) {
+	t.Parallel()
+
 	root, options := newListCommand(t, func(options *Options, parent *cobra.Command) {
 		options.RegisterPersistent(parent, 0)
 	})
@@ -77,6 +83,8 @@ func TestRegisterPersistentAppliesToSubcommands(t *testing.T) {
 }
 
 func TestRegisterUsesTheSuppliedDefault(t *testing.T) {
+	t.Parallel()
+
 	// Listings that deliberately start higher — file trees, permission lists —
 	// keep their default while gaining the shared wording.
 	root, options := newListCommand(t, func(options *Options, parent *cobra.Command) {
@@ -94,6 +102,8 @@ func TestRegisterUsesTheSuppliedDefault(t *testing.T) {
 }
 
 func TestRegisterFallsBackToDefaultLimit(t *testing.T) {
+	t.Parallel()
+
 	root, options := newListCommand(t, func(options *Options, parent *cobra.Command) {
 		options.Register(parent, 0)
 	})
@@ -109,6 +119,8 @@ func TestRegisterFallsBackToDefaultLimit(t *testing.T) {
 }
 
 func TestAllRemovesTheCap(t *testing.T) {
+	t.Parallel()
+
 	root, options := newListCommand(t, func(options *Options, parent *cobra.Command) {
 		options.RegisterPersistent(parent, 0)
 	})
@@ -127,6 +139,8 @@ func TestAllRemovesTheCap(t *testing.T) {
 // helper: declared once, it applies to every list command without a check
 // repeated in 32 RunE bodies.
 func TestLimitAndAllAreMutuallyExclusive(t *testing.T) {
+	t.Parallel()
+
 	root, _ := newListCommand(t, func(options *Options, parent *cobra.Command) {
 		options.RegisterPersistent(parent, 0)
 	})
@@ -143,6 +157,8 @@ func TestLimitAndAllAreMutuallyExclusive(t *testing.T) {
 }
 
 func TestRegisteredFlagWording(t *testing.T) {
+	t.Parallel()
+
 	// The wording is the point of the package: before it, 32 registrations
 	// described --limit 21 different ways.
 	root, _ := newListCommand(t, func(options *Options, parent *cobra.Command) {
@@ -172,6 +188,8 @@ func TestRegisteredFlagWording(t *testing.T) {
 }
 
 func TestLimitReached(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name     string
 		options  Options

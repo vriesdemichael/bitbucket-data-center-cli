@@ -30,6 +30,8 @@ func TestSSHKeyWithDefaults(t *testing.T) {
 }
 
 func TestReadPublicKey(t *testing.T) {
+	t.Parallel()
+
 	raw := "ssh-rsa AAAA..."
 	key, err := readPublicKey(raw)
 	if err != nil || key != raw {

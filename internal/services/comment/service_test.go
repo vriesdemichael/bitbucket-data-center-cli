@@ -26,6 +26,8 @@ func newCommentTestService(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestTargetContext(t *testing.T) {
+	t.Parallel()
+
 	ctx := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}.Context()
 	if ctx.Type != "commit" || ctx.CommitID != "abc" {
 		t.Fatalf("unexpected commit context: %+v", ctx)
@@ -42,6 +44,8 @@ func TestTargetContext(t *testing.T) {
 // asserts it once with no server -- and TestLiveErrorTaxonomyRejectedCredentials
 // asks a real instance what a rejected token gets.
 func TestServiceValidationAndStatusMapping(t *testing.T) {
+	t.Parallel()
+
 	service := newCommentTestService(t, testsupport.UnreachedHandler(t))
 
 	_, err := service.List(context.Background(), Target{}, "", 25)
@@ -55,6 +59,8 @@ func TestServiceValidationAndStatusMapping(t *testing.T) {
 // about the line, the path, or the rule.
 // mock-inventory: transport-fault — the rejection is injected to check the message bb builds around it; TestLiveInlineCommentAnchoring proves the real one.
 func TestServiceCreateExplainsAnchorRejection(t *testing.T) {
+	t.Parallel()
+
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
 		w.WriteHeader(http.StatusBadRequest)
@@ -99,6 +105,8 @@ func TestServiceCreateExplainsAnchorRejection(t *testing.T) {
 
 // mock-inventory: unreached-guard — every case is refused before a request is built; the handler is never reached.
 func TestCountTasksValidatesTarget(t *testing.T) {
+	t.Parallel()
+
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	})
@@ -110,6 +118,8 @@ func TestCountTasksValidatesTarget(t *testing.T) {
 
 // mock-inventory: unreached-guard — every case is refused before a request is built; the handler is never reached.
 func TestSetStateValidation(t *testing.T) {
+	t.Parallel()
+
 	service := newCommentTestService(t, testsupport.UnreachedHandler(t))
 	target := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
 
@@ -128,6 +138,8 @@ func TestSetStateValidation(t *testing.T) {
 // and unparseable means something is wrong, and reporting it as an empty
 // listing would tell a caller the file has no review feedback on it.
 func TestListSurfacesAMalformedPage(t *testing.T) {
+	t.Parallel()
+
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"values":[ this is not json`))
@@ -156,6 +168,8 @@ func TestListSurfacesAMalformedPage(t *testing.T) {
 // endpoint and they are what a merge gate counts. A commit has no such thing,
 // and saying so here is more use than a 404 from the server.
 func TestCreateRefusesABlockerOnACommit(t *testing.T) {
+	t.Parallel()
+
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		t.Errorf("a request was made for a target that should have been refused: %s", r.URL)
 	})
@@ -188,6 +202,8 @@ func TestCreateRefusesABlockerOnACommit(t *testing.T) {
 // version of its own.
 // mock-inventory: transport-fault — the version read is made to fail on purpose; the subject is that the write is abandoned, not what Bitbucket answers.
 func TestAnUnreadableVersionLookupStopsTheWrite(t *testing.T) {
+	t.Parallel()
+
 	writes := 0
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -242,6 +258,8 @@ func TestAnUnreadableVersionLookupStopsTheWrite(t *testing.T) {
 // is what let that stand.
 // mock-inventory: transport-fault — an empty body is injected; the subject is that the service refuses rather than inventing a comment.
 func TestEveryEmptyReadIsRefused(t *testing.T) {
+	t.Parallel()
+
 	for _, shape := range []struct {
 		what string
 		body string
@@ -287,6 +305,8 @@ func TestEveryEmptyReadIsRefused(t *testing.T) {
 // The browse service already guards this the same way.
 // mock-inventory: transport-fault — a page whose start never advances is a guard against a server that misbehaves, not a claim that one does.
 func TestAStationaryPageEndsTheListing(t *testing.T) {
+	t.Parallel()
+
 	requests := 0
 	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		requests++
@@ -321,6 +341,8 @@ func TestAStationaryPageEndsTheListing(t *testing.T) {
 // happened on a failed read, and something did on a failed write.
 // mock-inventory: unreachable-state — a 201 carrying nothing, a null, or an empty object, none of which Bitbucket sends for a comment it created; the subject is what we answer when the response cannot be read.
 func TestEveryEmptyWriteFallsBackToWhatWasSent(t *testing.T) {
+	t.Parallel()
+
 	for _, shape := range []struct {
 		what string
 		body string

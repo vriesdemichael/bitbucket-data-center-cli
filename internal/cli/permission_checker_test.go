@@ -10,6 +10,8 @@ import (
 )
 
 func TestReviewerApprovedByUser(t *testing.T) {
+	t.Parallel()
+
 	reviewers := []pullrequestservice.Reviewer{
 		{Name: "alice", Status: "UNAPPROVED", Approved: false},
 		{Name: "bob", Status: "APPROVED", Approved: false},
@@ -31,6 +33,8 @@ func TestReviewerApprovedByUser(t *testing.T) {
 }
 
 func TestRootOptionsPermissionCheckerFor(t *testing.T) {
+	t.Parallel()
+
 	clientA := &openapigenerated.ClientWithResponses{}
 	clientB := &openapigenerated.ClientWithResponses{}
 

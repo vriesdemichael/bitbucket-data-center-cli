@@ -21,6 +21,8 @@ import (
 // different fixes, and ADR-011 already draws that line. Re-deriving it from
 // wording would get it wrong the first time a message changed.
 func TestRemedyForAuthFailureUsesTheErrorKind(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name     string
 		err      error
@@ -105,6 +107,8 @@ func (stub *gitConfigStub) UnsetConfig(context.Context, git.ConfigOptions) error
 // TestGitCredentialHelperState covers the check that explains the most common
 // confusion there is: bb works, and then git prompts for a password anyway.
 func TestGitCredentialHelperState(t *testing.T) {
+	t.Parallel()
+
 	t.Run("configured", func(t *testing.T) {
 		stub := &gitConfigStub{value: `!"/usr/local/bin/bb" auth git-credential`}
 		check := gitCredentialHelperState(context.Background(), stub, "https://bitbucket.example.com/context")
@@ -161,6 +165,8 @@ func TestGitCredentialHelperState(t *testing.T) {
 // only calls the API, so its absence must not report a broken setup to the CI
 // pipelines and agents that never run git at all.
 func TestGitCredentialHelperCheckIsAdvisory(t *testing.T) {
+	t.Parallel()
+
 	for _, testCase := range []struct {
 		name  string
 		value string
@@ -200,7 +206,7 @@ func TestStatusCommandUsesTheInjectedGitBackend(t *testing.T) {
 	cmd := New(Dependencies{
 		JSONEnabled: func() bool { return true },
 		LoadConfig: func() (config.AppConfig, error) {
-			return config.AppConfig{BitbucketURL: "https://bitbucket.example.com"}, nil
+			return config.AppConfig{BitbucketURL: "https://bitbucket.example.com", RequestTimeout: unreachableTimeout}, nil
 		},
 		WriteJSON: func(writer io.Writer, payload any) error {
 			return jsonoutput.Write(writer, payload)

@@ -11,6 +11,8 @@ import (
 )
 
 func TestValidateRules(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name    string
 		options Options
@@ -92,6 +94,8 @@ func TestValidateRules(t *testing.T) {
 }
 
 func TestValidateAccepts(t *testing.T) {
+	t.Parallel()
+
 	for _, options := range []Options{
 		{},                      // plain pull-request comment
 		{ParentID: 7},           // reply
@@ -107,6 +111,8 @@ func TestValidateAccepts(t *testing.T) {
 }
 
 func TestPayloadShape(t *testing.T) {
+	t.Parallel()
+
 	// anchor.path must be a plain string. The generated model describes the
 	// object Bitbucket returns, and building the request from that shape leaves
 	// the comment unanchored.
@@ -165,6 +171,8 @@ func TestPayloadShape(t *testing.T) {
 }
 
 func TestNormalizeLineType(t *testing.T) {
+	t.Parallel()
+
 	for input, want := range map[string]string{
 		"":          "ADDED",
 		"  ":        "ADDED",
@@ -188,6 +196,8 @@ func TestNormalizeLineType(t *testing.T) {
 }
 
 func TestExplainRejection(t *testing.T) {
+	t.Parallel()
+
 	anchored := Options{Path: "pkg/foo/bar.go", Line: 157}
 	serverErr := apperrors.New(apperrors.KindValidation, "bitbucket API returned 400: anchor invalid", nil)
 
@@ -231,6 +241,8 @@ func TestExplainRejection(t *testing.T) {
 }
 
 func TestNormalizeResponsePaths(t *testing.T) {
+	t.Parallel()
+
 	raw := json.RawMessage(`{
 		"id": 1,
 		"anchor": {"line": 4, "path": "pkg/foo/bar.go", "srcPath": "pkg/foo/old.go"},
@@ -277,6 +289,8 @@ func TestNormalizeResponsePaths(t *testing.T) {
 }
 
 func TestPathObjectFromString(t *testing.T) {
+	t.Parallel()
+
 	object := PathObjectFromString("a/b/c.go")
 	if object["name"] != "c.go" || object["parent"] != "a/b" || object["extension"] != "go" {
 		t.Fatalf("unexpected object: %#v", object)

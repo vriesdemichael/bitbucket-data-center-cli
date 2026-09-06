@@ -7,6 +7,8 @@ import (
 )
 
 func TestLintMarkdownAcceptsValidInvocations(t *testing.T) {
+	t.Parallel()
+
 	document := "# Title\n\n" +
 		"```bash\n" +
 		"bb auth status\n" +
@@ -26,6 +28,8 @@ func TestLintMarkdownAcceptsValidInvocations(t *testing.T) {
 }
 
 func TestLintMarkdownCatchesTheRealDefects(t *testing.T) {
+	t.Parallel()
+
 	// The exact forms found by hand during the external review.
 	testCases := []struct {
 		name    string
@@ -58,6 +62,8 @@ func TestLintMarkdownCatchesTheRealDefects(t *testing.T) {
 }
 
 func TestLintMarkdownReportsUsableLineNumbers(t *testing.T) {
+	t.Parallel()
+
 	document := "line one\nline two\n\n```bash\nbb auth status\nbb repo view --repo A/b\n```\n"
 
 	findings, _ := lintMarkdown("doc.md", document)
@@ -73,6 +79,8 @@ func TestLintMarkdownReportsUsableLineNumbers(t *testing.T) {
 }
 
 func TestLintMarkdownIgnoresNonShellBlocks(t *testing.T) {
+	t.Parallel()
+
 	// The generated command reference is text-fenced Cobra help; parsing it
 	// would report failures for documentation that is correct by construction.
 	document := "```text\nUsage:\n  bb repo view [flags]\n```\n\n```json\n{\"cmd\": \"bb repo view\"}\n```\n"
@@ -88,6 +96,8 @@ func TestLintMarkdownIgnoresNonShellBlocks(t *testing.T) {
 }
 
 func TestLintMarkdownHonoursTheExpectInvalidDirective(t *testing.T) {
+	t.Parallel()
+
 	document := "<!-- docs-lint: expect-invalid -->\n```bash\nbb --json repo list --nonexistent-flag\n```\n"
 
 	findings, checked := lintMarkdown("doc.md", document)
@@ -103,6 +113,8 @@ func TestLintMarkdownHonoursTheExpectInvalidDirective(t *testing.T) {
 // TestExpectInvalidFailsWhenTheCommandBecomesValid is the reason the directive
 // asserts rather than merely skips: an exemption that cannot rot.
 func TestExpectInvalidFailsWhenTheCommandBecomesValid(t *testing.T) {
+	t.Parallel()
+
 	document := "<!-- docs-lint: expect-invalid -->\n```bash\nbb auth status\n```\n"
 
 	findings, _ := lintMarkdown("doc.md", document)
@@ -116,6 +128,8 @@ func TestExpectInvalidFailsWhenTheCommandBecomesValid(t *testing.T) {
 }
 
 func TestExpectInvalidDirectiveDoesNotCarryAcrossProse(t *testing.T) {
+	t.Parallel()
+
 	document := "<!-- docs-lint: expect-invalid -->\n```bash\nbb repo view --repo A/b\n```\n\nSome prose.\n\n```bash\nbb auth status\n```\n"
 
 	findings, _ := lintMarkdown("doc.md", document)
@@ -128,6 +142,8 @@ func TestExpectInvalidDirectiveDoesNotCarryAcrossProse(t *testing.T) {
 }
 
 func TestLintMarkdownToleratesCRLF(t *testing.T) {
+	t.Parallel()
+
 	// Guards the trap that made the first run of this tool report a dozen false
 	// positives on a Windows checkout: a trailing \r reaches pflag as part of
 	// the token and is reported as an unknown flag.
@@ -145,6 +161,8 @@ func TestLintMarkdownToleratesCRLF(t *testing.T) {
 }
 
 func TestLintMarkdownAcceptsHelpAndVersionFlags(t *testing.T) {
+	t.Parallel()
+
 	// Cobra registers these lazily during Execute, which this tool never calls.
 	document := "```bash\nbb --help\nbb repo settings security --help\nbb --version\n```\n"
 
@@ -159,6 +177,8 @@ func TestLintMarkdownAcceptsHelpAndVersionFlags(t *testing.T) {
 }
 
 func TestLintMarkdownHandlesContinuationsAndEnvironmentPrefixes(t *testing.T) {
+	t.Parallel()
+
 	document := "```bash\n" +
 		"BITBUCKET_URL=https://example.com bb auth status\n" +
 		"bb pr create --repo A/b \\\n  --from-ref feature \\\n  --to-ref main --title \"x\"\n" +
@@ -177,6 +197,8 @@ func TestLintMarkdownHandlesContinuationsAndEnvironmentPrefixes(t *testing.T) {
 }
 
 func TestSplitShellSegmentsIgnoresOperatorsInsideQuotes(t *testing.T) {
+	t.Parallel()
+
 	segments := splitShellSegments(`bb pr comment add 42 --text "a | b && c"`)
 
 	if len(segments) != 1 {
@@ -185,6 +207,8 @@ func TestSplitShellSegmentsIgnoresOperatorsInsideQuotes(t *testing.T) {
 }
 
 func TestSplitShellSegmentsTrailingComments(t *testing.T) {
+	t.Parallel()
+
 	segments := splitShellSegments(`bb ai skill install bulk # comment here`)
 
 	if len(segments) != 1 || strings.TrimSpace(segments[0]) != "bb ai skill install bulk" {
@@ -203,12 +227,16 @@ func TestSplitShellSegmentsTrailingComments(t *testing.T) {
 }
 
 func TestSplitFieldsRejectsUnterminatedQuotes(t *testing.T) {
+	t.Parallel()
+
 	if _, ok := splitFields(`bb pr create --title "unterminated`); ok {
 		t.Fatal("expected an unterminated quote to be reported rather than guessed at")
 	}
 }
 
 func TestParseBBSegmentSkipsNonBBCommands(t *testing.T) {
+	t.Parallel()
+
 	for _, segment := range []string{"jq .data", "git status", "echo bb", "curl https://example.com"} {
 		if _, ok := parseBBSegment(segment); ok {
 			t.Fatalf("expected %q not to be treated as a bb invocation", segment)
@@ -217,6 +245,8 @@ func TestParseBBSegmentSkipsNonBBCommands(t *testing.T) {
 }
 
 func TestReportExitCodes(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	if code := report(buffer, nil, 12); code != 0 {
 		t.Fatalf("expected exit 0 with no findings, got %d", code)
@@ -238,6 +268,8 @@ func TestReportExitCodes(t *testing.T) {
 }
 
 func TestLintMarkdownDialectChecks(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name    string
 		content string
@@ -290,6 +322,8 @@ func TestLintMarkdownDialectChecks(t *testing.T) {
 }
 
 func TestLintMarkdownMCPToolsValidation(t *testing.T) {
+	t.Parallel()
+
 	docInvalid := "```bash\nbb ai mcp serve --tools non_existent_tool\n```\n"
 	findings, _ := lintMarkdown("test.md", docInvalid)
 	if len(findings) != 1 || !strings.Contains(findings[0].Problem, `unknown MCP tool "non_existent_tool" in --tools`) {
@@ -304,6 +338,8 @@ func TestLintMarkdownMCPToolsValidation(t *testing.T) {
 }
 
 func TestLintConfigMCPToolsValidation(t *testing.T) {
+	t.Parallel()
+
 	docInvalidJSON := "```json\n{\n  \"args\": [\"ai\", \"mcp\", \"serve\", \"--tools\", \"invalid_tool_mcp\"]\n}\n```\n"
 	findings, _ := lintMarkdown("test.md", docInvalidJSON)
 	if len(findings) != 1 || !strings.Contains(findings[0].Problem, `unknown MCP tool "invalid_tool_mcp" in --tools`) {
@@ -330,6 +366,8 @@ func TestLintConfigMCPToolsValidation(t *testing.T) {
 }
 
 func TestLintMermaidValidation(t *testing.T) {
+	t.Parallel()
+
 	docMermaid := "```mermaid\nflowchart TD\n  A --> B\n```\n"
 	findings, _ := lintMarkdown("test.md", docMermaid)
 	if len(findings) != 0 {
@@ -338,6 +376,8 @@ func TestLintMermaidValidation(t *testing.T) {
 }
 
 func TestLintMarkdownPositionalArityOnZeroArgCommands(t *testing.T) {
+	t.Parallel()
+
 	doc := "```bash\nbb auth logout https://wrong-host.example.com\n```\n"
 	findings, _ := lintMarkdown("test.md", doc)
 	if len(findings) != 1 || (!strings.Contains(findings[0].Problem, "unknown command") && !strings.Contains(findings[0].Problem, "accepts 0 arg(s)")) {
@@ -346,6 +386,8 @@ func TestLintMarkdownPositionalArityOnZeroArgCommands(t *testing.T) {
 }
 
 func TestShellRedirectionAndPlaceholders(t *testing.T) {
+	t.Parallel()
+
 	args, ok := parseBBSegment("bb repo archive --repo MYPROJ/payments --format tar.gz -o - > archive.tar.gz")
 	if !ok {
 		t.Fatal("expected successful parse")
@@ -377,6 +419,8 @@ func TestShellRedirectionAndPlaceholders(t *testing.T) {
 // TestRepositoryDocumentationIsValid runs the linter over the real tree, so the
 // check is enforced by `go test` as well as by the task and CI.
 func TestRepositoryDocumentationIsValid(t *testing.T) {
+	t.Parallel()
+
 	findings, checked, err := lintPaths([]string{
 		"../../README.md",
 		"../../AGENTS.md",
@@ -400,6 +444,8 @@ func TestRepositoryDocumentationIsValid(t *testing.T) {
 }
 
 func TestLintMarkdownCatchesStaleReleaseVersions(t *testing.T) {
+	t.Parallel()
+
 	targetVersion := "2.11.0"
 
 	testCases := []struct {
@@ -486,6 +532,8 @@ func TestLintMarkdownCatchesStaleReleaseVersions(t *testing.T) {
 }
 
 func TestUpdateContentVersions(t *testing.T) {
+	t.Parallel()
+
 	input := `# Install Guide
 
 Set the target version (e.g. ` + "`" + `2.10.0` + "`" + `):

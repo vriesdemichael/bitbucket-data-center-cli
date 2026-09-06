@@ -74,6 +74,8 @@ func repositoryWithTwoWorktrees(t *testing.T) (observer string, sibling string, 
 // asserts the bleed is real rather than assumed: a branch operation in one
 // worktree is visible in the other's snapshot.
 func TestLocalScopeIsSharedBetweenWorktrees(t *testing.T) {
+	t.Parallel()
+
 	observer, sibling, upstream := repositoryWithTwoWorktrees(t)
 
 	before := snapshotAmbientConfigIn(observer)
@@ -93,6 +95,8 @@ func TestLocalScopeIsSharedBetweenWorktrees(t *testing.T) {
 // The failure this fixes: a sibling worktree gives a branch an upstream while
 // the tests are running, and the guard blames the tests.
 func TestSiblingWorktreeBranchOperationDoesNotFailTheGuard(t *testing.T) {
+	t.Parallel()
+
 	observer, sibling, upstream := repositoryWithTwoWorktrees(t)
 
 	before := snapshotAmbientConfigIn(observer)
@@ -110,6 +114,8 @@ func TestSiblingWorktreeBranchOperationDoesNotFailTheGuard(t *testing.T) {
 // And the guard still catches the thing it exists for, written through real git
 // from the worktree the tests would be running in.
 func TestConfigWrittenFromTheObservedWorktreeStillFailsTheGuard(t *testing.T) {
+	t.Parallel()
+
 	observer, _, _ := repositoryWithTwoWorktrees(t)
 
 	before := snapshotAmbientConfigIn(observer)

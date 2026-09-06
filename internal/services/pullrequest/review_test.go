@@ -7,6 +7,8 @@ import (
 )
 
 func TestBuildReviewSummaryFromThreads(t *testing.T) {
+	t.Parallel()
+
 	pullRequest := PullRequest{
 		Reviewers: []Reviewer{
 			{Name: "alice", Approved: true, Status: "APPROVED"},
@@ -50,6 +52,8 @@ func TestBuildReviewSummaryFromThreads(t *testing.T) {
 // Bitbucket 10.x drops the task counters from the single pull request payload,
 // so the blocker-comment tally is the fallback that keeps `pr get` informative.
 func TestBuildReviewSummaryFallsBackToTaskCounts(t *testing.T) {
+	t.Parallel()
+
 	pullRequest := PullRequest{Reviewers: []Reviewer{{Name: "alice", Approved: true, Status: "APPROVED"}}}
 
 	summary := BuildReviewSummary(pullRequest, ReviewCounts{Tasks: &TaskCounts{Open: 2, Resolved: 5}})
@@ -67,6 +71,8 @@ func TestBuildReviewSummaryFallsBackToTaskCounts(t *testing.T) {
 
 // The property counters still apply on listings, where Bitbucket does send them.
 func TestBuildReviewSummaryFallsBackToProperties(t *testing.T) {
+	t.Parallel()
+
 	pullRequest := PullRequest{
 		Reviewers:         []Reviewer{{Name: "alice", Approved: true, Status: "APPROVED"}},
 		OpenTaskCount:     intPtr(2),
@@ -90,6 +96,8 @@ func TestBuildReviewSummaryFallsBackToProperties(t *testing.T) {
 // mistaken for a pull request with nothing outstanding: the counts have to come
 // back absent, not zero.
 func TestBuildReviewSummaryWithoutAnyCounts(t *testing.T) {
+	t.Parallel()
+
 	summary := BuildReviewSummary(PullRequest{Reviewers: []Reviewer{{Name: "alice", Approved: true}}}, ReviewCounts{})
 
 	if summary.CountsSource != CountsSourceNone {
@@ -118,6 +126,8 @@ func assertCount(t *testing.T, name string, got *int, want int) {
 }
 
 func TestBuildReviewSummaryActionRequiredTriggers(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name    string
 		threads pullrequestactivity.Summary
@@ -142,6 +152,8 @@ func TestBuildReviewSummaryActionRequiredTriggers(t *testing.T) {
 }
 
 func TestBuildReviewSummaryNeedsWorkFallsBackToDisplayName(t *testing.T) {
+	t.Parallel()
+
 	summary := BuildReviewSummary(PullRequest{
 		Reviewers: []Reviewer{{DisplayName: "Bob B", Status: "NEEDS_WORK"}},
 	}, ReviewCounts{})

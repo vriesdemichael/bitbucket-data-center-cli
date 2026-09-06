@@ -25,6 +25,8 @@ func (m *mockPermChecker) CheckRepoPermission(ctx context.Context, projectKey, r
 }
 
 func TestWebhookHelperFunctions(t *testing.T) {
+	t.Parallel()
+
 	b := boolPtr(true)
 	if b == nil || !*b {
 		t.Fatal("expected boolPtr(true) to be non-nil and true")
@@ -69,6 +71,8 @@ func TestWebhookWithDefaults(t *testing.T) {
 //
 // mock-inventory: unreachable-state — Bitbucket answers this endpoint with a page; the array is a shape it does not send, and the subject is that the listing reads either.
 func TestWebhookListAcceptsABareArray(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodGet && r.URL.Path == "/rest/api/latest/projects/PRJ/repos/repo1/webhooks" {
@@ -107,6 +111,8 @@ func TestWebhookListAcceptsABareArray(t *testing.T) {
 // and stops when told no. The listener fails the test if anything reaches it,
 // because nothing should: the refusal comes first.
 func TestWebhookCommandsHonourRefusedPermission(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(server.Close)
 

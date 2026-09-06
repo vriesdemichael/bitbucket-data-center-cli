@@ -15,6 +15,8 @@ import (
 // for invalid UTF-8, so without this a binary file came back corrupted with
 // nothing saying so.
 func TestRepoCatBase64EncodesBytesThatAreNotText(t *testing.T) {
+	t.Parallel()
+
 	binary := []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0xff, 0xfe}
 
 	converted := rawFileFrom(result.Repository{ProjectKey: "PRJ", Slug: "demo"}, "logo.png", "", binary)

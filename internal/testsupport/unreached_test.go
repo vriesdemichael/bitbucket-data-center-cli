@@ -34,6 +34,8 @@ func (r *recordingReporter) Errorf(format string, args ...any) {
 //
 // The only way to tell them apart is to reach it on purpose.
 func TestUnreachedHandlerFailsWhenItIsReached(t *testing.T) {
+	t.Parallel()
+
 	reporter := &recordingReporter{}
 
 	server := httptest.NewServer(testsupport.UnreachedHandler(reporter))

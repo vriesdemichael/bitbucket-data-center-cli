@@ -37,6 +37,8 @@ func newBrowseTestService(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestBrowseServiceValidation(t *testing.T) {
+	t.Parallel()
+
 	service := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		// Every case here is refused before a request is built, so the handler
 		// is an assertion rather than a stand-in: reaching it means a guard
@@ -57,6 +59,8 @@ func TestBrowseServiceValidation(t *testing.T) {
 }
 
 func TestBrowseServiceTransientAndMapping(t *testing.T) {
+	t.Parallel()
+
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
 	transientService := newBrowseTestService(t, func(w http.ResponseWriter, r *http.Request) {
@@ -114,6 +118,8 @@ func TestBrowseServiceTransientAndMapping(t *testing.T) {
 }
 
 func TestBrowseServiceEdit(t *testing.T) {
+	t.Parallel()
+
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
 	t.Run("success", func(t *testing.T) {
@@ -219,6 +225,8 @@ func TestBrowseServiceEdit(t *testing.T) {
 }
 
 func TestBrowseServiceRejectsTraversal(t *testing.T) {
+	t.Parallel()
+
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
 	service := newBrowseTestService(t, testsupport.UnreachedHandler(t))
@@ -237,6 +245,8 @@ func TestBrowseServiceRejectsTraversal(t *testing.T) {
 }
 
 func TestEncodeFilePath(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name    string
 		input   string
@@ -277,6 +287,8 @@ func TestEncodeFilePath(t *testing.T) {
 }
 
 func TestRepositoryAPIPathEscapesRepositoryRef(t *testing.T) {
+	t.Parallel()
+
 	got := repositoryAPIPath(RepositoryRef{ProjectKey: "a b", Slug: "c/d"}, "raw", "file.txt")
 	want := "/rest/api/latest/projects/a%20b/repos/c%2Fd/raw/file.txt"
 	if got != want {
@@ -285,6 +297,8 @@ func TestRepositoryAPIPathEscapesRepositoryRef(t *testing.T) {
 }
 
 func TestBrowseServiceTreeRejectsTraversal(t *testing.T) {
+	t.Parallel()
+
 	service := newBrowseTestService(t, testsupport.UnreachedHandler(t))
 
 	_, err := service.Tree(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "../secrets", TreeOptions{})

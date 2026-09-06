@@ -35,6 +35,8 @@ func newCommittedRepository(t *testing.T, backend *Backend) string {
 }
 
 func TestWorkingTreeStateReportsTrackedChangesOnly(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 20 * time.Second
 
@@ -90,6 +92,8 @@ func TestWorkingTreeStateReportsTrackedChangesOnly(t *testing.T) {
 }
 
 func TestWorkingTreeStateRejectsBadInput(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 10 * time.Second
 
@@ -102,6 +106,8 @@ func TestWorkingTreeStateRejectsBadInput(t *testing.T) {
 }
 
 func TestBranchExists(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 20 * time.Second
 
@@ -133,6 +139,8 @@ func TestBranchExists(t *testing.T) {
 }
 
 func TestCheckoutCreatesBranchesAndDetaches(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 30 * time.Second
 
@@ -213,6 +221,8 @@ func TestCheckoutCreatesBranchesAndDetaches(t *testing.T) {
 }
 
 func TestFastForwardRefusesToDiverge(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 30 * time.Second
 
@@ -255,6 +265,8 @@ func TestFastForwardRefusesToDiverge(t *testing.T) {
 }
 
 func TestFetchPassesRefspecs(t *testing.T) {
+	t.Parallel()
+
 	backend := New()
 	backend.Timeout = 45 * time.Second
 
@@ -299,6 +311,8 @@ func TestFetchPassesRefspecs(t *testing.T) {
 // unscoped Bitbucket token would be handed to whatever else that repository
 // talks to. Where there is no host to scope to, nothing is sent at all.
 func TestCredentialArgsScopesToTheHost(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name        string
 		credentials *git.Credentials

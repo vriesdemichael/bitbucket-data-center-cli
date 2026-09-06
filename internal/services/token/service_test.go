@@ -26,6 +26,8 @@ func newTokenTestService(t *testing.T, handler http.HandlerFunc) *Service {
 }
 
 func TestTokenServiceValidation(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 	ctx := context.Background()
 
@@ -114,6 +116,8 @@ func TestTokenServiceValidation(t *testing.T) {
 
 // mock-inventory: transport-fault — the subject is this loop's arithmetic -- that start advances and the limit narrows to what is left. Bitbucket's side of the convention is pinned live by branches and tags; seeding thirty keys to re-prove it here would buy nothing.
 func TestTokenServicePagination(t *testing.T) {
+	t.Parallel()
+
 	calls := 0
 	service := newTokenTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -133,6 +137,8 @@ func TestTokenServicePagination(t *testing.T) {
 
 // mock-inventory: transport-fault — the failure is injected below the API; no live server refuses on request.
 func TestTokenServiceTransientErrors(t *testing.T) {
+	t.Parallel()
+
 	service := newTokenTestService(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte(`{"errors":[{"message":"Forbidden"}]}`))
@@ -194,6 +200,8 @@ func TestTokenServiceTransientErrors(t *testing.T) {
 
 // mock-inventory: transport-fault — the failure is injected below the API; no live server refuses on request.
 func TestTokenServiceNetworkErrors(t *testing.T) {
+	t.Parallel()
+
 	// A closed loopback port rather than an unresolvable hostname. This test
 	// makes fifteen calls, and each one against a bogus host waits out a DNS
 	// lookup — 40 seconds for the test, most of the package's runtime. It was
@@ -274,6 +282,8 @@ func TestTokenServiceNetworkErrors(t *testing.T) {
 // before this check the value silently wrapped: --expiry-days 2147483648
 // reached the server as a negative expiry.
 func TestTokenCreateRejectsOutOfRangeExpiry(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 
 	_, err := service.Create(context.Background(), ScopeUser, "alice", "ci", nil, math.MaxInt32+1)

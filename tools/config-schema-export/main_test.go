@@ -8,6 +8,8 @@ import (
 )
 
 func TestExportSchema(t *testing.T) {
+	t.Parallel()
+
 	tempDir := t.TempDir()
 	outDir := filepath.Join(tempDir, "schemas")
 

@@ -12,6 +12,8 @@ import (
 )
 
 func TestExportSchemasWritesAllExpectedFiles(t *testing.T) {
+	t.Parallel()
+
 	outputDir := t.TempDir()
 
 	if err := exportSchemas(outputDir, docsite.LatestVersion); err != nil {
@@ -48,6 +50,8 @@ func TestExportSchemasWritesAllExpectedFiles(t *testing.T) {
 }
 
 func TestExportSchemasReturnsErrorForInvalidOutputPath(t *testing.T) {
+	t.Parallel()
+
 	base := t.TempDir()
 	filePath := filepath.Join(base, "not-a-dir")
 	if err := os.WriteFile(filePath, []byte("x"), 0o600); err != nil {
@@ -64,6 +68,8 @@ func TestExportSchemasReturnsErrorForInvalidOutputPath(t *testing.T) {
 }
 
 func TestExportSchemasWritesTheRequestedSiteVersionIntoID(t *testing.T) {
+	t.Parallel()
+
 	outputDir := t.TempDir()
 
 	if err := exportSchemas(outputDir, "v4.0.0"); err != nil {

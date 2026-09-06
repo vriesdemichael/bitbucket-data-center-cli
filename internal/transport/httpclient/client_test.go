@@ -26,6 +26,8 @@ func init() {
 }
 
 func TestNewFromConfigTransportOptions(t *testing.T) {
+	t.Parallel()
+
 	client := NewFromConfig(config.AppConfig{
 		BitbucketURL:   "http://example.local",
 		RequestTimeout: 42 * time.Second,
@@ -46,6 +48,8 @@ func TestNewFromConfigTransportOptions(t *testing.T) {
 
 // mock-inventory: transport-fault — a server that answers 503 to everything is injected; a live Bitbucket does not fail on request.
 func TestHealthServerError(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusServiceUnavailable)
 	}))
@@ -64,6 +68,8 @@ func TestHealthServerError(t *testing.T) {
 
 // mock-inventory: transport-fault — the subject is the Authorization header this client attaches.
 func TestGetJSONSuccessWithTokenAuth(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path != "/rest/api/latest/test" {
 			http.NotFound(writer, request)
@@ -96,6 +102,8 @@ func TestGetJSONSuccessWithTokenAuth(t *testing.T) {
 }
 
 func TestGetJSONRetriesAndSucceeds(t *testing.T) {
+	t.Parallel()
+
 	var attempts atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		attempt := attempts.Add(1)
@@ -124,6 +132,8 @@ func TestGetJSONRetriesAndSucceeds(t *testing.T) {
 
 // mock-inventory: transport-fault — a body that is not JSON is injected; no live Bitbucket sends one on request.
 func TestGetJSONDecodeFailure(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
 		_, _ = writer.Write([]byte("not-json"))
@@ -144,6 +154,8 @@ func TestGetJSONDecodeFailure(t *testing.T) {
 }
 
 func TestApplyAuthUsesBasicCredentials(t *testing.T) {
+	t.Parallel()
+
 	client := NewFromConfig(config.AppConfig{BitbucketURL: "http://example.local", BitbucketUsername: "alice", BitbucketPassword: "secret"})
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://example.local/test", nil)
 	if err != nil {
@@ -163,6 +175,8 @@ func TestApplyAuthUsesBasicCredentials(t *testing.T) {
 
 // mock-inventory: transport-fault — a redirect in front of the REST API comes from a proxy or SSO, not from Bitbucket.
 func TestHealthRedirectConsideredReachable(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Location", "/login")
 		writer.WriteHeader(http.StatusFound)
@@ -187,6 +201,8 @@ func TestHealthRedirectConsideredReachable(t *testing.T) {
 }
 
 func TestGetJSONInvalidBaseURL(t *testing.T) {
+	t.Parallel()
+
 	client := NewFromConfig(config.AppConfig{BitbucketURL: "%"})
 	var payload map[string]any
 	err := client.GetJSON(context.Background(), "/rest/api/latest/test", nil, &payload)
@@ -200,6 +216,8 @@ func TestGetJSONInvalidBaseURL(t *testing.T) {
 
 // mock-inventory: transport-fault — decoding into the caller's target is ours; the payload is a fixture because its shape is irrelevant.
 func TestGetJSONOutputTargetType(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte(`{"value":"x"}`))
 	}))
@@ -225,6 +243,8 @@ func TestGetJSONOutputTargetType(t *testing.T) {
 
 // mock-inventory: transport-fault — the subject is which verb this client sends for each helper, not what Bitbucket does with it.
 func TestWriteJSONMethods(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodPost && request.Method != http.MethodPut && request.Method != http.MethodDelete {
 			writer.WriteHeader(http.StatusMethodNotAllowed)
@@ -253,6 +273,8 @@ func TestWriteJSONMethods(t *testing.T) {
 // mock-inventory: transport-fault — a refused connection and an exhausted retry
 // budget are conditions of the network, not answers from Bitbucket.
 func TestGetJSONTransportAndRetryExhaustion(t *testing.T) {
+	t.Parallel()
+
 	baseURL := testsupport.ClosedListenerURL(t)
 
 	client := NewFromConfig(config.AppConfig{BitbucketURL: baseURL})
@@ -269,6 +291,8 @@ func TestGetJSONTransportAndRetryExhaustion(t *testing.T) {
 }
 
 func TestGetJSONTooManyRequestsRetryExhaustion(t *testing.T) {
+	t.Parallel()
+
 	var attempts atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		attempts.Add(1)
@@ -294,6 +318,8 @@ func TestGetJSONTooManyRequestsRetryExhaustion(t *testing.T) {
 }
 
 func TestGetJSONTooManyRequestsUsesRetryAfter(t *testing.T) {
+	t.Parallel()
+
 	var attempts atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		attempt := attempts.Add(1)
@@ -326,6 +352,8 @@ func TestGetJSONTooManyRequestsUsesRetryAfter(t *testing.T) {
 }
 
 func TestGetJSONRetryCanceledDuringBackoff(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusServiceUnavailable)
 		_, _ = writer.Write([]byte("temporary"))
@@ -350,6 +378,8 @@ func TestGetJSONRetryCanceledDuringBackoff(t *testing.T) {
 }
 
 func TestHealthTransportAndPermanentErrorBranches(t *testing.T) {
+	t.Parallel()
+
 	t.Run("transport failure", func(t *testing.T) {
 		baseURL := testsupport.ClosedListenerURL(t)
 
@@ -464,6 +494,8 @@ func TestHealthTransportAndPermanentErrorBranches(t *testing.T) {
 }
 
 func TestRetryDelayFromResponse(t *testing.T) {
+	t.Parallel()
+
 	t.Run("uses retry-after seconds", func(t *testing.T) {
 		delay := retryDelayFromResponse(http.Header{"Retry-After": []string{"2"}}, 0, time.Millisecond)
 		if delay != 2*time.Second {
@@ -496,6 +528,8 @@ func TestRetryDelayFromResponse(t *testing.T) {
 }
 
 func TestSleepWithContext(t *testing.T) {
+	t.Parallel()
+
 	t.Run("returns nil for zero delay", func(t *testing.T) {
 		if err := sleepWithContext(context.Background(), 0); err != nil {
 			t.Fatalf("expected nil error for zero delay, got %v", err)
@@ -512,6 +546,8 @@ func TestSleepWithContext(t *testing.T) {
 }
 
 func TestApplyAuthPrefersTokenOverBasic(t *testing.T) {
+	t.Parallel()
+
 	client := NewFromConfig(config.AppConfig{BitbucketURL: "http://example.local", BitbucketToken: "tok", BitbucketUsername: "alice", BitbucketPassword: "secret"})
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://example.local/test", nil)
 	if err != nil {
@@ -525,6 +561,8 @@ func TestApplyAuthPrefersTokenOverBasic(t *testing.T) {
 }
 
 func TestClientInitErrorFromInvalidCA(t *testing.T) {
+	t.Parallel()
+
 	client := NewFromConfig(config.AppConfig{
 		BitbucketURL:   "http://localhost:7990",
 		CAFile:         "/definitely/missing/ca.pem",
@@ -543,6 +581,8 @@ func TestClientInitErrorFromInvalidCA(t *testing.T) {
 }
 
 func TestClientInitErrorFromInvalidClientCert(t *testing.T) {
+	t.Parallel()
+
 	client := NewFromConfig(config.AppConfig{
 		BitbucketURL:   "http://localhost:7990",
 		ClientCertFile: "/definitely/missing/client.crt",
@@ -562,6 +602,8 @@ func TestClientInitErrorFromInvalidClientCert(t *testing.T) {
 }
 
 func TestDiagnosticsWriter(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 
 	if writer := diagnostics.EnabledWriter(true, buffer); writer != buffer {
@@ -575,6 +617,8 @@ func TestDiagnosticsWriter(t *testing.T) {
 
 // mock-inventory: transport-fault — returning the bytes unaltered is the client's contract, and the bytes are arbitrary by design.
 func TestGetRawReturnsBodyVerbatim(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path != "/rest/api/latest/projects/TEST/repos/demo/raw/dir/file.txt" {
 			http.NotFound(writer, request)
@@ -612,6 +656,8 @@ func TestGetRawReturnsBodyVerbatim(t *testing.T) {
 // mock-inventory: transport-fault — the retry is the subject, and the statuses
 // that drive it are injected rather than claimed of any endpoint.
 func TestGetRawRetriesServerErrors(t *testing.T) {
+	t.Parallel()
+
 	var calls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if calls.Add(1) == 1 {
@@ -641,6 +687,8 @@ func TestGetRawRetriesServerErrors(t *testing.T) {
 }
 
 func TestGetRawTransientNetworkFailure(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		hijacker, ok := writer.(http.Hijacker)
 		if !ok {
@@ -663,6 +711,8 @@ func TestGetRawTransientNetworkFailure(t *testing.T) {
 
 // mock-inventory: transport-fault — a response without the header is injected; the subject is what the client does when it is absent.
 func TestCurrentUserSlugMissingHeader(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")
 		_, _ = writer.Write([]byte(`{"values":[]}`))
@@ -685,6 +735,8 @@ func TestCurrentUserSlugMissingHeader(t *testing.T) {
 
 // mock-inventory: transport-fault — the subject is the request this client builds and the response it decodes, not what Bitbucket puts on the wire.
 func TestDoRequestSuccess(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", request.Method)
@@ -745,6 +797,8 @@ func TestDoRequestSuccess(t *testing.T) {
 
 // mock-inventory: transport-fault — an absolute URL bypasses the configured base; the subject is our URL handling.
 func TestDoRequestFullURL(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
 		_, _ = writer.Write([]byte(`"full-url-ok"`))
@@ -766,6 +820,8 @@ func TestDoRequestFullURL(t *testing.T) {
 }
 
 func TestDoRequestInitError(t *testing.T) {
+	t.Parallel()
+
 	client := &Client{
 		initErr: apperrors.New(apperrors.KindValidation, "forced init error", nil),
 	}
@@ -779,6 +835,8 @@ func TestDoRequestInitError(t *testing.T) {
 }
 
 func TestDoRequestInvalidURL(t *testing.T) {
+	t.Parallel()
+
 	client := NewFromConfig(config.AppConfig{BitbucketURL: "http://example.local"})
 	_, err := client.DoRequest(context.Background(), RequestOptions{
 		Method: "GET",
@@ -790,6 +848,8 @@ func TestDoRequestInvalidURL(t *testing.T) {
 }
 
 func TestDoRequestRetriesAndStatusErrors(t *testing.T) {
+	t.Parallel()
+
 	attempts := 0
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		attempts++
@@ -828,6 +888,8 @@ func TestDoRequestRetriesAndStatusErrors(t *testing.T) {
 // mock-inventory: transport-fault — exhausting the retry budget needs a server
 // that keeps failing, which is injected rather than asked of Bitbucket.
 func TestDoRequestRetryExhaustion(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusInternalServerError)
 		_, _ = writer.Write([]byte(`{"errors":[{"message":"fatal"}]}`))
@@ -856,6 +918,8 @@ func TestDoRequestRetryExhaustion(t *testing.T) {
 // mock-inventory: transport-fault — a server that fails and then succeeds is the
 // subject; no live Bitbucket produces one on request.
 func TestRetriesDoNotReplayMutations(t *testing.T) {
+	t.Parallel()
+
 	for _, testCase := range []struct {
 		name       string
 		method     string

@@ -13,6 +13,8 @@ import (
 )
 
 func TestDiffRefsPatchWithPathRejected(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 	_, err := service.DiffRefs(context.Background(), DiffRefsInput{
 		Repository: RepositoryRef{ProjectKey: "PRJ", Slug: "demo"},
@@ -30,6 +32,8 @@ func TestDiffRefsPatchWithPathRejected(t *testing.T) {
 }
 
 func TestDiffValidationBranches(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 
 	_, err := service.DiffRefs(context.Background(), DiffRefsInput{
@@ -64,6 +68,8 @@ func TestDiffValidationBranches(t *testing.T) {
 }
 
 func TestDiffHelpers(t *testing.T) {
+	t.Parallel()
+
 	if pathOrDot("") != "." {
 		t.Fatal("expected empty path to map to dot")
 	}
@@ -120,6 +126,8 @@ func TestDiffHelpers(t *testing.T) {
 
 // mock-inventory: transport-fault — the connection is broken on purpose; no live server refuses on request.
 func TestDiffRefsTransportFailure(t *testing.T) {
+	t.Parallel()
+
 	baseURL := testsupport.ClosedListenerURL(t)
 
 	client, err := openapigenerated.NewClientWithResponses(baseURL)
@@ -143,6 +151,8 @@ func TestDiffRefsTransportFailure(t *testing.T) {
 }
 
 func TestDiffValidationAndHelperEdgeBranches(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 
 	_, err := service.DiffRefs(context.Background(), DiffRefsInput{Repository: RepositoryRef{}, From: "main", To: "feature"})
@@ -174,6 +184,8 @@ func TestDiffValidationAndHelperEdgeBranches(t *testing.T) {
 
 // mock-inventory: transport-fault — the failures are injected below the API; the subject is how each branch classifies them.
 func TestDiffTransportFailureBranches(t *testing.T) {
+	t.Parallel()
+
 	closedService := func(t *testing.T) *Service {
 		t.Helper()
 		baseURL := testsupport.ClosedListenerURL(t)
@@ -261,6 +273,8 @@ func newDiffServiceWithHandler(t *testing.T, handler http.HandlerFunc) *Service 
 }
 
 func TestFormatRestDiff(t *testing.T) {
+	t.Parallel()
+
 	t.Run("nil diff", func(t *testing.T) {
 		if FormatRestDiff(nil) != "" {
 			t.Fatal("expected empty string for nil input")
@@ -557,6 +571,8 @@ func TestStatRunsSurfaceAnUndecodableSummary(t *testing.T) {
 //
 // mock-inventory: unreachable-state — a 200 with no body at all, which this endpoint does not send; the subject is that an absent diff is refused rather than read as no differences.
 func TestCompareDiffRefusesABodylessSuccess(t *testing.T) {
+	t.Parallel()
+
 	service := newDiffServiceWithHandler(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})

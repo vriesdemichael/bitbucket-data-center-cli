@@ -23,6 +23,8 @@ func (function retryRoundTripperFunc) RoundTrip(request *http.Request) (*http.Re
 }
 
 func TestRetryTransport(t *testing.T) {
+	t.Parallel()
+
 	t.Run("retries transient status", func(t *testing.T) {
 		var attempts atomic.Int32
 		transport := &retryTransport{
@@ -276,6 +278,8 @@ func TestRetryTransport(t *testing.T) {
 }
 
 func TestRetryDelayFromResponse(t *testing.T) {
+	t.Parallel()
+
 	t.Run("uses retry-after seconds", func(t *testing.T) {
 		delay := retryDelayFromResponse(http.Header{"Retry-After": []string{"3"}}, 0, time.Millisecond)
 		if delay != 3*time.Second {
@@ -322,6 +326,8 @@ func TestRetryDelayFromResponse(t *testing.T) {
 }
 
 func TestSleepWithContext(t *testing.T) {
+	t.Parallel()
+
 	t.Run("returns nil for zero delay", func(t *testing.T) {
 		if err := sleepWithContext(context.Background(), 0); err != nil {
 			t.Fatalf("expected nil error for zero delay, got %v", err)
@@ -338,6 +344,8 @@ func TestSleepWithContext(t *testing.T) {
 }
 
 func TestNewClientWithResponsesFromConfigInvalidCA(t *testing.T) {
+	t.Parallel()
+
 	_, err := NewClientWithResponsesFromConfig(config.AppConfig{
 		BitbucketURL:   "http://localhost:7990",
 		CAFile:         "/definitely/missing/ca.pem",
@@ -351,6 +359,8 @@ func TestNewClientWithResponsesFromConfigInvalidCA(t *testing.T) {
 }
 
 func TestNewClientWithResponsesFromConfigInvalidClientCert(t *testing.T) {
+	t.Parallel()
+
 	_, err := NewClientWithResponsesFromConfig(config.AppConfig{
 		BitbucketURL:   "http://localhost:7990",
 		ClientCertFile: "/definitely/missing/client.crt",
@@ -376,6 +386,8 @@ func TestNewClientWithResponsesFromConfigInvalidClientCert(t *testing.T) {
 // at all.
 
 func TestDiagnosticsWriter(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 
 	if writer := diagnostics.EnabledWriter(true, buffer); writer != buffer {
@@ -406,6 +418,8 @@ func closeResponse(response *http.Response) {
 // from one that never arrived.
 // mock-inventory: transport-fault — 503 and 429 are served on demand to drive our own retry policy; no live instance can be asked to be unavailable, and the subject is which methods we replay.
 func TestRetriesDoNotReplayMutations(t *testing.T) {
+	t.Parallel()
+
 	for _, testCase := range []struct {
 		name       string
 		method     string

@@ -10,6 +10,8 @@ import (
 )
 
 func TestReviewerServiceCoverageAdditional(t *testing.T) {
+	t.Parallel()
+
 	service := NewService(nil)
 
 	if _, err := service.ListProjectConditions(context.Background(), ""); err == nil {
@@ -33,6 +35,8 @@ func TestReviewerServiceCoverageAdditional(t *testing.T) {
 }
 
 func TestCreateRepositoryConditionUnmarshalError(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -50,6 +54,8 @@ func TestCreateRepositoryConditionUnmarshalError(t *testing.T) {
 }
 
 func TestCreateProjectConditionUnmarshalError(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)

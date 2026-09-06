@@ -94,6 +94,8 @@ func downloadsWithSignatureBundle(downloads map[string][]byte) map[string][]byte
 }
 
 func TestRunnerDryRunPlansUpdateWithoutWritingBinary(t *testing.T) {
+	t.Parallel()
+
 	archive := buildTarGzArchive(t, "bb", []byte("new-binary"))
 	checksum := fmt.Sprintf("%s  %s\n", sha256Hex(archive), "bb_1.2.0_linux_amd64.tar.gz")
 
@@ -144,6 +146,8 @@ func TestRunnerDryRunPlansUpdateWithoutWritingBinary(t *testing.T) {
 }
 
 func TestRunnerAppliesReleaseUpdate(t *testing.T) {
+	t.Parallel()
+
 	targetDir := t.TempDir()
 	targetPath := filepath.Join(targetDir, "bb")
 	if err := os.WriteFile(targetPath, []byte("old-binary"), 0o755); err != nil {
@@ -197,6 +201,8 @@ func TestRunnerAppliesReleaseUpdate(t *testing.T) {
 }
 
 func TestNewRunnerDefaultsAndSignatureMetadata(t *testing.T) {
+	t.Parallel()
+
 	runner := NewRunner(Dependencies{
 		Releases:        &stubReleaseClient{},
 		RepositoryOwner: " vriesdemichael ",
@@ -222,6 +228,8 @@ func TestNewRunnerDefaultsAndSignatureMetadata(t *testing.T) {
 }
 
 func TestRunnerDryRunCapturesSignatureMetadata(t *testing.T) {
+	t.Parallel()
+
 	archive := buildTarGzArchive(t, "bb", []byte("new-binary"))
 	checksum := fmt.Sprintf("%s  %s\n", sha256Hex(archive), "bb_1.2.0_linux_amd64.tar.gz")
 	verifier := &stubSignatureVerifier{verification: updatesigstore.Verification{
@@ -271,6 +279,8 @@ func TestRunnerDryRunCapturesSignatureMetadata(t *testing.T) {
 }
 
 func TestRunnerReturnsUpToDateWithoutDownloads(t *testing.T) {
+	t.Parallel()
+
 	client := &stubReleaseClient{
 		release:   githubrelease.Release{TagName: "v1.2.0", HTMLURL: "https://example.test/releases/v1.2.0"},
 		downloads: map[string][]byte{},
@@ -352,6 +362,8 @@ func buildZipArchiveWithMode(t *testing.T, fileName string, contents []byte, mod
 }
 
 func TestRunnerValidationAndErrorPaths(t *testing.T) {
+	t.Parallel()
+
 	t.Run("runner not configured", func(t *testing.T) {
 		var runner *Runner
 		_, err := runner.Run(context.Background(), Options{})
@@ -436,6 +448,8 @@ func TestRunnerValidationAndErrorPaths(t *testing.T) {
 }
 
 func TestRunnerUpdateErrorCases(t *testing.T) {
+	t.Parallel()
+
 	baseRelease := releaseWithSignatureBundle(githubrelease.Release{
 		TagName: "v1.2.0",
 		Assets:  []githubrelease.Asset{{Name: "bb_1.2.0_linux_amd64.tar.gz", BrowserDownloadURL: "archive"}, {Name: "sha256sums.txt", BrowserDownloadURL: "checksums"}},
@@ -564,6 +578,8 @@ func TestRunnerUpdateErrorCases(t *testing.T) {
 }
 
 func TestRunnerWindowsAndVersionComparisonPaths(t *testing.T) {
+	t.Parallel()
+
 	t.Run("windows zip update", func(t *testing.T) {
 		archive := buildZipArchive(t, "bb.exe", []byte("windows-binary"))
 		checksum := fmt.Sprintf("%s  %s\n", sha256Hex(archive), "bb_1.2.0_windows_amd64.zip")
@@ -661,6 +677,8 @@ func TestRunnerWindowsAndVersionComparisonPaths(t *testing.T) {
 }
 
 func TestUpdateHelpers(t *testing.T) {
+	t.Parallel()
+
 	if got := archiveName("v1.2.3", "linux", "amd64"); got != "bb_1.2.3_linux_amd64.tar.gz" {
 		t.Fatalf("unexpected archive name: %s", got)
 	}
@@ -787,6 +805,8 @@ func TestUpdateHelpers(t *testing.T) {
 }
 
 func TestReplaceBinary(t *testing.T) {
+	t.Parallel()
+
 	t.Run("validation", func(t *testing.T) {
 		if err := replaceBinary("", []byte("payload"), 0o755); !apperrors.IsKind(err, apperrors.KindValidation) {
 			t.Fatalf("expected validation error, got %v", err)
@@ -844,6 +864,8 @@ func TestReplaceBinary(t *testing.T) {
 }
 
 func TestStageWindowsBinary(t *testing.T) {
+	t.Parallel()
+
 	t.Run("validation", func(t *testing.T) {
 		if _, err := stageWindowsBinary("", []byte("payload"), 0o755); !apperrors.IsKind(err, apperrors.KindValidation) {
 			t.Fatalf("expected validation error, got %v", err)
@@ -1362,6 +1384,8 @@ func wordsToRunes(words []uint16) []rune {
 }
 
 func TestRunnerSkipsSignatureVerificationUnderPolicy(t *testing.T) {
+	t.Parallel()
+
 	archive := buildTarGzArchive(t, "bb", []byte("new-binary"))
 	checksum := fmt.Sprintf("%s  %s\n", sha256Hex(archive), "bb_1.2.0_linux_amd64.tar.gz")
 
@@ -1422,6 +1446,8 @@ func TestRunnerSkipsSignatureVerificationUnderPolicy(t *testing.T) {
 }
 
 func TestRunnerStillRequiresChecksumsWhenSignatureIsSkipped(t *testing.T) {
+	t.Parallel()
+
 	client := &stubReleaseClient{
 		release: githubrelease.Release{
 			TagName: "v1.2.0",
@@ -1448,6 +1474,8 @@ func TestRunnerStillRequiresChecksumsWhenSignatureIsSkipped(t *testing.T) {
 }
 
 func TestRunnerReportsUnavailableTrustMaterialDistinctly(t *testing.T) {
+	t.Parallel()
+
 	archive := buildTarGzArchive(t, "bb", []byte("new-binary"))
 	checksum := fmt.Sprintf("%s  %s\n", sha256Hex(archive), "bb_1.2.0_linux_amd64.tar.gz")
 

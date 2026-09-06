@@ -9,6 +9,8 @@ import (
 )
 
 func TestRefInternalHelpers(t *testing.T) {
+	t.Parallel()
+
 	if safederef.String(nil) != "" {
 		t.Fatal("expected safederef.String(nil) to be empty")
 	}

@@ -55,6 +55,8 @@ func TestReviewerGroupDefaults(t *testing.T) {
 }
 
 func TestReviewerGroupPermissionRejections(t *testing.T) {
+	t.Parallel()
+
 	// A listener that fails the test if it is reached, which is the assertion:
 	// the permission checker refuses before a request exists.
 	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
@@ -142,6 +144,8 @@ func TestReviewerGroupPermissionRejections(t *testing.T) {
 // The name is evidence; a string of digits is a guess, so the name wins and the
 // numeric reading is the fallback.
 func TestResolveReviewerGroupIDPrefersANameOverANumericGuess(t *testing.T) {
+	t.Parallel()
+
 	name42 := "42"
 	other := "qa-leads"
 	var idNine int64 = 9

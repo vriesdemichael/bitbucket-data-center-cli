@@ -23,6 +23,8 @@ import (
 // running, which is otherwise invisible -- the call would succeed against a
 // real server and answer about the wrong thing, or about nothing.
 func TestOwnersRefusesBeforeItAsks(t *testing.T) {
+	t.Parallel()
+
 	repository := codeowners.RepositoryRef{ProjectKey: "PRJ", Slug: "demo"}
 
 	cases := []struct {

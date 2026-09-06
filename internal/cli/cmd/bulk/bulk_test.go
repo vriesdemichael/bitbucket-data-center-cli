@@ -75,6 +75,8 @@ func TestBulkCommandErrorPaths(t *testing.T) {
 }
 
 func TestParseErrorKindCoverage(t *testing.T) {
+	t.Parallel()
+
 	kinds := []string{
 		"authentication", "authorization", "validation", "not_found",
 		"conflict", "transient", "permanent", "not_implemented", "internal",
@@ -103,6 +105,8 @@ func TestStatusStoreDirEnv(t *testing.T) {
 }
 
 func TestWriteJSONFileErrors(t *testing.T) {
+	t.Parallel()
+
 	// Use a path that is a file to trigger error in MkdirAll
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "iamfile")
@@ -115,6 +119,8 @@ func TestWriteJSONFileErrors(t *testing.T) {
 }
 
 func TestReadFileEmpty(t *testing.T) {
+	t.Parallel()
+
 	_, err := readFile("", "label")
 	if err == nil {
 		t.Fatal("expected error")
@@ -122,6 +128,8 @@ func TestReadFileEmpty(t *testing.T) {
 }
 
 func TestApplyFailureErrorHandling(t *testing.T) {
+	t.Parallel()
+
 	status := bulkworkflow.ApplyStatus{
 		Status:  "failed",
 		Summary: bulkworkflow.ApplySummary{FailedOperations: 1},
@@ -141,6 +149,8 @@ func TestApplyFailureErrorHandling(t *testing.T) {
 }
 
 func TestNewCommandDefaults(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(Dependencies{})
 	if cmd.Use != "bulk" {
 		t.Fatal("expected bulk command")
@@ -148,6 +158,8 @@ func TestNewCommandDefaults(t *testing.T) {
 }
 
 func TestWriteJSONFileWriteError(t *testing.T) {
+	t.Parallel()
+
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "readonly")
 	_ = os.WriteFile(filePath, []byte("iamfile"), 0o400)
@@ -325,6 +337,8 @@ func TestBulkApplyReportsCancellationWithoutLosingTheArtifact(t *testing.T) {
 // rather than only for that one. A field added to ApplySummary and left out of
 // writeStatusHuman fails here.
 func TestEveryNonZeroSummaryCounterReachesTheHumanOutput(t *testing.T) {
+	t.Parallel()
+
 	summary := bulkworkflow.ApplySummary{}
 
 	// Distinct values, so a counter rendered in the wrong place is still
@@ -361,6 +375,8 @@ func TestEveryNonZeroSummaryCounterReachesTheHumanOutput(t *testing.T) {
 // TestTheHumanSummaryOmitsCancelledWhenThereIsNone keeps the other direction:
 // `cancelled=0` on every successful apply is noise, and the JSON omits it too.
 func TestTheHumanSummaryOmitsCancelledWhenThereIsNone(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	writeStatusHuman(buffer, bulkworkflow.ApplyStatus{
 		OperationID: "op-1",

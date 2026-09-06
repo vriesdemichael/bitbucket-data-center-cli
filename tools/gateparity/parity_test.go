@@ -77,6 +77,8 @@ var exemptFromParity = map[string]string{
 }
 
 func TestEveryHookRunnableGateRunsOnBothSides(t *testing.T) {
+	t.Parallel()
+
 	root := repositoryRoot(t)
 	references := taskReferences(t, filepath.Join(root, taskfilePath))
 
@@ -126,6 +128,8 @@ func TestEveryHookRunnableGateRunsOnBothSides(t *testing.T) {
 // missing one, because it occupies the slot and reports success. This drives
 // the comparison with lists that are deliberately wrong and asserts it objects.
 func TestParityComparisonDetectsDrift(t *testing.T) {
+	t.Parallel()
+
 	references := map[string][]string{
 		"quality:verify": {"quality:format:verify", "docs:lint"},
 	}
@@ -336,6 +340,8 @@ var gateNamePattern = regexp.MustCompile(`(verify|lint|vulncheck|ensure)`)
 // here and the only one that produces no signal at all -- the task exists, it
 // passes when run by hand, and nothing ever runs it.
 func TestNoGateIsDefinedAndNeverRun(t *testing.T) {
+	t.Parallel()
+
 	root := repositoryRoot(t)
 
 	defined := gateShapedTasks(t, filepath.Join(root, taskfilePath))

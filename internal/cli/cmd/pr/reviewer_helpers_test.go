@@ -15,6 +15,8 @@ import (
 )
 
 func TestReviewerFlagAliasNormalization(t *testing.T) {
+	t.Parallel()
+
 	t.Run("reviewer add", func(t *testing.T) {
 		tests := map[string]string{
 			"user":              "user",
@@ -69,6 +71,8 @@ func TestReviewerFlagAliasNormalization(t *testing.T) {
 }
 
 func TestIsAuthor(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		author         string
@@ -95,6 +99,8 @@ func TestIsAuthor(t *testing.T) {
 }
 
 func TestFormatReviewerList(t *testing.T) {
+	t.Parallel()
+
 	if got := formatReviewerList([]string{"alice"}); got != "reviewer alice" {
 		t.Fatalf("got %q, want %q", got, "reviewer alice")
 	}
@@ -104,6 +110,8 @@ func TestFormatReviewerList(t *testing.T) {
 }
 
 func TestWriteWarning(t *testing.T) {
+	t.Parallel()
+
 	buffer := &bytes.Buffer{}
 	writeWarning(buffer, "something degraded")
 	if got := buffer.String(); got != "warning: something degraded\n" {
@@ -115,6 +123,8 @@ func TestWriteWarning(t *testing.T) {
 }
 
 func TestIsMissingResource(t *testing.T) {
+	t.Parallel()
+
 	if isMissingResource(nil) {
 		t.Fatal("a nil error is not a missing resource")
 	}
@@ -164,6 +174,8 @@ func TestAtGroupShorthandDoesNotMaskServerFailures(t *testing.T) {
 //
 // mock-inventory: transport-fault — a closed listener, which is what "the lookup did not answer" is; the subject is that the configured username survives it rather than being replaced by the empty string.
 func TestResolveAuthorUsernameFallsBackWhenTheLookupFails(t *testing.T) {
+	t.Parallel()
+
 	closedURL := testsupport.ClosedListenerURL(t)
 
 	cfg := config.AppConfig{

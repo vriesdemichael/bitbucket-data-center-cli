@@ -8,6 +8,8 @@ import (
 )
 
 func TestSchemasReturnNonEmpty(t *testing.T) {
+	t.Parallel()
+
 	schemas := outputschemas.Schemas()
 
 	if len(schemas) == 0 {
@@ -68,6 +70,8 @@ func TestSchemasReturnNonEmpty(t *testing.T) {
 // makes three distinct documents claim one canonical identity, which is what a
 // validator resolves $ref against and caches by.
 func TestSchemasForIdentifiesEverySchemaAgainstTheGivenSiteVersion(t *testing.T) {
+	t.Parallel()
+
 	schemas := outputschemas.SchemasFor("v4.0.0")
 	if len(schemas) == 0 {
 		t.Fatal("SchemasFor returned no schemas")
@@ -83,6 +87,8 @@ func TestSchemasForIdentifiesEverySchemaAgainstTheGivenSiteVersion(t *testing.T)
 }
 
 func TestSchemasIdentifyAgainstTheLatestAlias(t *testing.T) {
+	t.Parallel()
+
 	for name, schema := range outputschemas.Schemas() {
 		id, _ := schema["$id"].(string)
 		want := "https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/output/" + name

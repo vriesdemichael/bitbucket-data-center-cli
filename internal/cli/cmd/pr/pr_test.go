@@ -74,6 +74,8 @@ func executePr(t *testing.T, serverURL string, args ...string) (string, error) {
 }
 
 func TestPRDefaultDependencies(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(Dependencies{})
 	if cmd == nil {
 		t.Fatal("expected New to return command with default dependencies")

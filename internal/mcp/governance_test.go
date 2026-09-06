@@ -19,6 +19,8 @@ import (
 // code review. Requiring a rule per tool, in both directions, means a new tool
 // stops the build rather than quietly escaping the boundary.
 func TestEveryToolHasAScopeRule(t *testing.T) {
+	t.Parallel()
+
 	for _, spec := range AllSpecs() {
 		if _, ok := scopeRules[spec.Tool.Name]; !ok {
 			t.Errorf("tool %q has no scope rule; add one to scopeRules", spec.Tool.Name)
@@ -39,6 +41,8 @@ func TestEveryToolHasAScopeRule(t *testing.T) {
 }
 
 func TestParseScope(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name        string
 		project     string
@@ -79,6 +83,8 @@ func TestParseScope(t *testing.T) {
 // TestScopeRefusesCallsOutsideTheBoundary is the assertion the whole feature
 // exists for.
 func TestScopeRefusesCallsOutsideTheBoundary(t *testing.T) {
+	t.Parallel()
+
 	scope := Scope{ProjectKey: "PROJ", RepoSlug: "payments"}
 	session := connectWith(t, ServerOptions{
 		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true, Scope: scope,
@@ -102,6 +108,8 @@ func TestScopeRefusesCallsOutsideTheBoundary(t *testing.T) {
 // TestScopeRefusesCallsToAnotherRepositoryInTheSameProject covers the half of
 // the boundary a project-only check would miss.
 func TestScopeRefusesCallsToAnotherRepositoryInTheSameProject(t *testing.T) {
+	t.Parallel()
+
 	session := connectWith(t, ServerOptions{
 		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true,
 		Scope: Scope{ProjectKey: "PROJ", RepoSlug: "payments"},
@@ -126,6 +134,8 @@ func TestScopeRefusesCallsToAnotherRepositoryInTheSameProject(t *testing.T) {
 // is the whole dashboard mode of list_pull_requests. Injecting the scope turns
 // the unbounded call into a bounded one.
 func TestScopeInjectsOmittedArguments(t *testing.T) {
+	t.Parallel()
+
 	var seen map[string]any
 	scope := Scope{ProjectKey: "PROJ", RepoSlug: "payments"}
 
@@ -152,6 +162,8 @@ func TestScopeInjectsOmittedArguments(t *testing.T) {
 // constrain. Withholding is the honest outcome; a commit SHA is global in
 // Bitbucket's API and cannot be bounded to a project.
 func TestScopeWithholdsUnboundableTools(t *testing.T) {
+	t.Parallel()
+
 	session := connectWith(t, ServerOptions{
 		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true,
 		Scope: Scope{ProjectKey: "PROJ"},
@@ -176,6 +188,8 @@ func TestScopeWithholdsUnboundableTools(t *testing.T) {
 // project argument is a filter rather than a target. Pinning the filter still
 // lists sibling repositories, so a filter is not a boundary.
 func TestScopeWithholdsRepositorySearchUnderARepositoryScope(t *testing.T) {
+	t.Parallel()
+
 	repoScoped := connectWith(t, ServerOptions{
 		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true,
 		Scope: Scope{ProjectKey: "PROJ", RepoSlug: "payments"},
@@ -205,6 +219,8 @@ func TestScopeWithholdsRepositorySearchUnderARepositoryScope(t *testing.T) {
 // TestUnscopedServerIsUnchanged pins the default. Scoping is opt-in, so a
 // server without it must expose and dispatch exactly what it did before.
 func TestUnscopedServerIsUnchanged(t *testing.T) {
+	t.Parallel()
+
 	session := connectWith(t, ServerOptions{
 		Name: "bb", Version: "test", Clients: Clients{}, Yolo: true,
 	})
@@ -217,6 +233,8 @@ func TestUnscopedServerIsUnchanged(t *testing.T) {
 // the denial case — the event that exists nowhere else, because a refused call
 // never reaches Bitbucket and so leaves no trace in its audit log.
 func TestAuditRecordsSuccessAndDenial(t *testing.T) {
+	t.Parallel()
+
 	path := filepath.Join(t.TempDir(), "audit.jsonl")
 	audit, err := NewAuditLogger(path)
 	if err != nil {
@@ -283,6 +301,8 @@ func TestAuditRecordsSuccessAndDenial(t *testing.T) {
 // "read the deployment secrets" are different events, which only holds if the
 // values themselves are safe to keep.
 func TestAuditRedactsSensitiveArguments(t *testing.T) {
+	t.Parallel()
+
 	arguments, err := json.Marshal(map[string]any{
 		"project":  "PROJ",
 		"token":    "super-secret-pat",
@@ -311,6 +331,8 @@ func TestAuditRedactsSensitiveArguments(t *testing.T) {
 // that silently stops recording is worse than none, because the absence of a
 // record then carries no information.
 func TestAuditFailureDeniesTheCall(t *testing.T) {
+	t.Parallel()
+
 	failing := &AuditLogger{writer: failingWriter{}}
 
 	session := connectWith(t, ServerOptions{
@@ -329,6 +351,8 @@ func TestAuditFailureDeniesTheCall(t *testing.T) {
 
 // TestAuditFailureWarnLetsTheCallProceed covers the documented escape hatch.
 func TestAuditFailureWarnLetsTheCallProceed(t *testing.T) {
+	t.Parallel()
+
 	var warnings []string
 	failing := &AuditLogger{writer: failingWriter{}}
 
@@ -351,6 +375,8 @@ func TestAuditFailureWarnLetsTheCallProceed(t *testing.T) {
 
 // TestAuditRejectsStdout covers the sink that would corrupt the protocol.
 func TestAuditRejectsStdout(t *testing.T) {
+	t.Parallel()
+
 	for _, path := range []string{"stdout", "STDOUT", "-"} {
 		logger, err := NewAuditLogger(path)
 		if err == nil {
@@ -367,6 +393,8 @@ func TestAuditRejectsStdout(t *testing.T) {
 // TestAuditCreatesMissingDirectories covers the fleet case, where the log path
 // is handed down by policy and its directory may not exist yet.
 func TestAuditCreatesMissingDirectories(t *testing.T) {
+	t.Parallel()
+
 	path := filepath.Join(t.TempDir(), "nested", "dir", "audit.jsonl")
 	logger, err := NewAuditLogger(path)
 	if err != nil {
@@ -386,6 +414,8 @@ func TestAuditCreatesMissingDirectories(t *testing.T) {
 // so a nil logger must be safe to call rather than something every call site
 // has to guard.
 func TestNilAuditLoggerIsInert(t *testing.T) {
+	t.Parallel()
+
 	var logger *AuditLogger
 	if err := logger.Log(AuditRecord{Tool: "list_tags"}); err != nil {
 		t.Errorf("Log on a nil logger returned %v", err)

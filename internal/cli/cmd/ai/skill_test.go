@@ -30,6 +30,8 @@ func testSkillDeps(version string) Dependencies {
 
 // TestBuildSkillStampsVersion ensures the rendered skill names the binary.
 func TestBuildSkillStampsVersion(t *testing.T) {
+	t.Parallel()
+
 	skill, err := lookupSkill("bb")
 	if err != nil {
 		t.Fatalf("unexpected lookup error: %v", err)
@@ -51,6 +53,8 @@ func TestBuildSkillStampsVersion(t *testing.T) {
 
 // TestBuildSkillFallsBackToDev ensures an empty version string yields "dev".
 func TestBuildSkillFallsBackToDev(t *testing.T) {
+	t.Parallel()
+
 	skill, err := lookupSkill("bb")
 	if err != nil {
 		t.Fatalf("unexpected lookup error: %v", err)
@@ -63,6 +67,8 @@ func TestBuildSkillFallsBackToDev(t *testing.T) {
 
 // TestSkillShowPrintsSkillContent tests that `bb ai skill show` writes skill content to stdout.
 func TestSkillShowPrintsSkillContent(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name        string
 		args        []string
@@ -118,6 +124,8 @@ func TestSkillShowPrintsSkillContent(t *testing.T) {
 
 // TestSkillShowUnknownSkillRejects ensures invalid skill name reports validation error.
 func TestSkillShowUnknownSkillRejects(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(testSkillDeps("1.0.0"))
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
@@ -135,6 +143,8 @@ func TestSkillShowUnknownSkillRejects(t *testing.T) {
 
 // TestSkillInstallUnknownSkillRejects ensures invalid skill name reports validation error on install.
 func TestSkillInstallUnknownSkillRejects(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(testSkillDeps("1.0.0"))
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
@@ -152,6 +162,8 @@ func TestSkillInstallUnknownSkillRejects(t *testing.T) {
 
 // TestSkillRemoveUnknownSkillRejects ensures invalid skill name reports validation error on remove.
 func TestSkillRemoveUnknownSkillRejects(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(testSkillDeps("1.0.0"))
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
@@ -350,6 +362,8 @@ func TestResolveInstallPathProject(t *testing.T) {
 
 // TestResolveInstallPathGlobal tests global (home directory) path resolution.
 func TestResolveInstallPathGlobal(t *testing.T) {
+	t.Parallel()
+
 	bbSkill, _ := lookupSkill("bb")
 	got, err := resolveInstallPath(bbSkill, true)
 	if err != nil {
@@ -396,6 +410,8 @@ func TestSkillInstallGlobalWritesFile(t *testing.T) {
 
 // TestSkillShowJSONNotUsedBySkillShow ensures skill show always writes raw text, not JSON envelope.
 func TestSkillShowIsPlainText(t *testing.T) {
+	t.Parallel()
+
 	cmd := New(testSkillDeps("1.0.0"))
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
@@ -429,6 +445,8 @@ func min(a, b int) int {
 // instructions reads the file exactly as committed. A template marker left in
 // it ships raw to them.
 func TestCommittedSkillHasNoUnrenderedPlaceholders(t *testing.T) {
+	t.Parallel()
+
 	skills := map[string][]byte{
 		"bb":      bbskill.Content,
 		"bb-bulk": bbbulkskill.Content,
@@ -449,6 +467,8 @@ func TestCommittedSkillHasNoUnrenderedPlaceholders(t *testing.T) {
 // capabilities of your installed binary", which was never true — it is a static
 // embed with one string substitution.
 func TestCommittedSkillDoesNotClaimToBeGenerated(t *testing.T) {
+	t.Parallel()
+
 	skills := map[string][]byte{
 		"bb":      bbskill.Content,
 		"bb-bulk": bbbulkskill.Content,
@@ -471,6 +491,8 @@ func TestCommittedSkillDoesNotClaimToBeGenerated(t *testing.T) {
 // hand-maintained copy of the tool catalogue that fell out of step with the
 // server and gave no hint which tools are withheld by default.
 func TestSkillDoesNotListMCPToolsInline(t *testing.T) {
+	t.Parallel()
+
 	committed := string(bbskill.Content)
 
 	// Naming a gated tool is the specific failure: an agent plans around it and
