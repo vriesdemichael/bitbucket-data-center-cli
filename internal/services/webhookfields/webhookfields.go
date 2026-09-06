@@ -137,10 +137,20 @@ func ApplyUpdate(current *openapigenerated.RestWebhook, input UpdateInput) {
 // For the callers that publish what the server sent rather than a model of it.
 // A bulk apply is the one that matters: its status document is written to disk
 // and printed under --json, and it carried the webhook Bitbucket answered with,
-// field for field. That answer is usually free of the shared secret -- the
-// create response comes back with an empty configuration object -- but "usually"
-// is not a property to publish credentials on, and every read of a webhook does
-// return it in full.
+// field for field.
+//
+// The create response is why this cannot be skipped. Bitbucket answers an
+// identical create with `"configuration": {"secret": "..."}` sometimes and
+// `"configuration": {}` other times -- five identical requests against one
+// repository produced two of the first and three of the second. So a create
+// response may carry the secret, and the apply status must not.
+//
+// The same inconsistency is why an empty configuration object leaves
+// secretConfigured out rather than setting it false. On a read that shape means
+// "no secret"; on a create it means "the server did not say", and the two are
+// indistinguishable here. Saying false would state as fact something this
+// payload cannot know, which is the mistake the sslVerificationRequired pointer
+// exists to avoid.
 func WithoutCredentials(payload any) any {
 	object, ok := payload.(map[string]any)
 	if !ok {
@@ -151,10 +161,11 @@ func WithoutCredentials(payload any) any {
 	for key, value := range object {
 		switch key {
 		case "configuration":
-			// Whether, not what: the one bit worth keeping.
+			// Whether, not what -- and only when the payload said.
 			configuration, _ := value.(map[string]any)
-			secret, _ := configuration["secret"].(string)
-			copied["secretConfigured"] = strings.TrimSpace(secret) != ""
+			if secret, _ := configuration["secret"].(string); strings.TrimSpace(secret) != "" {
+				copied["secretConfigured"] = true
+			}
 		case "credentials":
 			credentials, _ := value.(map[string]any)
 			if username, _ := credentials["username"].(string); username != "" {

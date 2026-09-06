@@ -218,8 +218,23 @@ $ bb bulk status op-4f2c… --json | grep BB_WEBHOOK_SECRET
 - The same plan applies against different environments without being edited,
   which is the other thing a name buys over a value.
 - The apply status is printed and written to the status store on disk. It
-  reports `secretConfigured` and `credentialsUsername` for the webhook it
-  created, never the credentials themselves.
+  reports `credentialsUsername` for the webhook it created, never the
+  credentials themselves.
+
+!!! note "A create response cannot tell you whether a secret is set"
+
+    Bitbucket answers identical webhook creates inconsistently: some responses
+    carry `configuration.secret` in full, others carry an empty object. Measured
+    against 10.4.2, that is roughly an even split.
+
+    So a bulk apply status omits `secretConfigured` rather than reporting
+    `false` — on a create, an empty configuration means "the server did not
+    say", and claiming otherwise would state a fact the payload cannot know. It
+    also means the apply status has to redact a secret it usually does not
+    receive.
+
+    To confirm a secret was configured, read the webhook: `bb webhook list` and
+    `bb webhook get` answer from the read endpoint, which always returns it.
 
 ### Limitation: one secret per operation
 

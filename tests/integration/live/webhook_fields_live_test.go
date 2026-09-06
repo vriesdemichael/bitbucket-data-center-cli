@@ -652,17 +652,66 @@ func TestLiveBulkWebhookSecretTravelsAsAVariableName(t *testing.T) {
 		if strings.Contains(output, secretCanary) || strings.Contains(output, `"configuration"`) {
 			t.Errorf("the apply status carried the webhook's credentials:\n%s", output)
 		}
-		if !strings.Contains(output, `"secretConfigured": true`) {
-			t.Errorf("the apply status did not report that a secret had been configured:\n%s", output)
-		}
 
-		listing := mustLiveCLI(t, "--json", "webhook", "list")
+		// Deliberately not asserted on the apply status: whether a secret is
+		// configured cannot be read from a create response. Bitbucket echoes
+		// the configuration object on some creates and not others, for
+		// identical requests -- see the contract subtest below. A read is
+		// where that question has an answer.
+		listing := mustLiveCLI(t, "--json", "webhook", "list", "--limit", "50")
 		if strings.Contains(listing, secretCanary) {
 			t.Errorf("the listing carried the secret:\n%s", listing)
 		}
 		if !strings.Contains(listing, `"secretConfigured": true`) {
 			t.Errorf("no webhook came out of the apply with a secret configured:\n%s", listing)
 		}
+	})
+
+	t.Run("a create response is not a reliable source for the secret", func(t *testing.T) {
+		// The quirk the CI run above caught, recorded because it is the reason
+		// two bb surfaces answer this question differently and the reason the
+		// apply status redacts something it usually does not receive.
+		//
+		// Bitbucket answers identical creates inconsistently: some carry
+		// configuration.secret in full, some carry an empty object. Every read
+		// carries it. Ten attempts, because two produced both shapes.
+		path := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/webhooks", seeded.Key, repo.Slug)
+		echoed, empty := 0, 0
+		for attempt := range 10 {
+			created, err := harness.liveJSON(ctx, http.MethodPost, path, map[string]any{
+				"name":          fmt.Sprintf("echo-probe-%d", attempt),
+				"url":           "http://localhost:7990/status",
+				"events":        []string{"repo:refs_changed"},
+				"active":        true,
+				"configuration": map[string]any{"secret": secretCanary},
+			})
+			if err != nil {
+				t.Fatalf("create %d: %v", attempt, err)
+			}
+
+			configuration, _ := created["configuration"].(map[string]any)
+			if secret, _ := configuration["secret"].(string); secret != "" {
+				echoed++
+			} else {
+				empty++
+			}
+
+			// The read, by contrast, always answers.
+			got, err := harness.liveJSON(ctx, http.MethodGet, fmt.Sprintf("%s/%v", path, created["id"]), nil)
+			if err != nil {
+				t.Fatalf("get %d: %v", attempt, err)
+			}
+			readConfiguration, _ := got["configuration"].(map[string]any)
+			if secret, _ := readConfiguration["secret"].(string); secret != secretCanary {
+				t.Fatalf("a read did not return the secret it was created with, so the "+
+					"asymmetry this test records has changed: %#v", got["configuration"])
+			}
+		}
+
+		if echoed == 0 && empty == 0 {
+			t.Fatal("no creates were observed at all")
+		}
+		t.Logf("create responses carrying the secret: %d of %d", echoed, echoed+empty)
 	})
 }
 
