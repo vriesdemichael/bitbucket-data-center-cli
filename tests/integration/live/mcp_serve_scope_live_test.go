@@ -37,7 +37,7 @@ func TestLiveMCPServeIsNotScopedByTheDirectoryItStartsIn(t *testing.T) {
 
 	// Two repositories: the one the server starts inside, and the sibling that
 	// a wrongly scoped server would refuse.
-	seeded, err := harness.seedProjectWithRepositories(ctx, 2, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Repos: 2})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestLiveMCPServeStillHonoursAnExplicitScope(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 2, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Repos: 2})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

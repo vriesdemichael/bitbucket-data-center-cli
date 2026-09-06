@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -110,7 +111,128 @@ func isLocalBitbucketHost(host string) bool {
 	return strings.HasPrefix(trimmed, "localhost:") || strings.HasPrefix(trimmed, "127.0.0.1:") || trimmed == "localhost" || trimmed == "127.0.0.1"
 }
 
-func (h *liveHarness) seedProjectWithRepositories(ctx context.Context, repositoryCount int, commitsPerRepository int) (seededProject, error) {
+// The project the package shares, created once and removed when the package is
+// done with it.
+//
+// Guarded by a mutex rather than sync.Once because the creation can fail, and a
+// Once would remember the failure forever: one unlucky 409 would then take the
+// rest of the run down with it.
+var (
+	sharedProjectMu  sync.Mutex
+	sharedProjectKey string
+)
+
+// sharedProject returns the package's project, creating it on first use.
+func (h *liveHarness) sharedProject(ctx context.Context) (string, error) {
+	sharedProjectMu.Lock()
+	defer sharedProjectMu.Unlock()
+
+	if sharedProjectKey != "" {
+		return sharedProjectKey, nil
+	}
+
+	key, err := h.createProject(ctx, "LS")
+	if err != nil {
+		return "", err
+	}
+	sharedProjectKey = key
+
+	return sharedProjectKey, nil
+}
+
+// removeSharedProject deletes the package's project once its tests are done.
+//
+// It cannot be a t.Cleanup: the project outlives whichever test happened to
+// create it, which is the entire point of sharing it. Deleting the project
+// takes its repositories with it, so a test that failed before its own cleanup
+// ran still leaves nothing behind. Called from TestMain in main_live_test.go.
+func removeSharedProject() {
+	sharedProjectMu.Lock()
+	key := sharedProjectKey
+	sharedProjectMu.Unlock()
+
+	if key == "" {
+		return
+	}
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		return
+	}
+	client, err := newGeneratedClient(cfg)
+	if err != nil {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	_, _ = client.DeleteProjectWithResponse(ctx, key)
+}
+
+// repoSeed says what a test needs from the repository it is given.
+//
+// The zero value is one repository with one commit and no commit ids, which is
+// what most tests want.
+type repoSeed struct {
+	// Commits defaults to 1.
+	Commits int
+	// Repos defaults to 1. More than one is unusual; a test comparing two
+	// repositories wants it.
+	Repos int
+	// WithCommitIDs asks for the ids of the seeded commits. It costs a REST
+	// call per repository and, when Bitbucket has not indexed the push yet, a
+	// poll behind it. 26 of the 78 files that seed read the ids; the rest were
+	// paying for them anyway, which is why this is opt-in rather than always.
+	WithCommitIDs bool
+}
+
+func (seed repoSeed) counts() (repos int, commits int) {
+	repos, commits = seed.Repos, seed.Commits
+	if repos < 1 {
+		repos = 1
+	}
+	if commits < 1 {
+		commits = 1
+	}
+
+	return repos, commits
+}
+
+// seedRepo gives a test a clean repository inside the project the package
+// shares.
+//
+// For a test whose scope is one repository. It gets a repository nothing else
+// touches, so anything it does *to that repository* is private to it. What it
+// must not do is change project-level state -- project permissions, project
+// webhooks, project branch restrictions, project settings -- or address the
+// project as a whole, because a `bulk` plan selecting on projectKey or a
+// `repo list` would then see every other test's repositories. A test that
+// needs any of that wants seedIsolatedProject, and the two names are different
+// so that the choice is made rather than inherited.
+//
+// Creating the project is 419ms of the 830ms a seed used to cost, and every one
+// of 267 tests was paying it to get a repository.
+func (h *liveHarness) seedRepo(ctx context.Context, seed repoSeed) (seededProject, error) {
+	projectKey, err := h.sharedProject(ctx)
+	if err != nil {
+		return seededProject{}, err
+	}
+
+	repositoryCount, commitsPerRepository := seed.counts()
+
+	return h.seedRepositories(ctx, projectKey, repositoryCount, commitsPerRepository, seed.WithCommitIDs, true)
+}
+
+// seedIsolatedProject gives a test a project of its own.
+//
+// For a test whose scope includes project-level state, or which addresses the
+// project as a whole. Costs a project creation and a project deletion that
+// seedRepo does not.
+func (h *liveHarness) seedIsolatedProject(ctx context.Context, repositoryCount int, commitsPerRepository int) (seededProject, error) {
+	return h.seedIsolatedProjectWith(ctx, repositoryCount, commitsPerRepository, true)
+}
+
+func (h *liveHarness) seedIsolatedProjectWith(ctx context.Context, repositoryCount int, commitsPerRepository int, withCommitIDs bool) (seededProject, error) {
 	if repositoryCount < 1 {
 		return seededProject{}, fmt.Errorf("repository count must be >= 1")
 	}
@@ -118,55 +240,77 @@ func (h *liveHarness) seedProjectWithRepositories(ctx context.Context, repositor
 		return seededProject{}, fmt.Errorf("commits per repository must be >= 1")
 	}
 
-	// The project key is derived from the clock, so it can collide with a key
-	// still held by a project an earlier test deleted — Bitbucket removes
-	// projects asynchronously, so the key outlives the delete call. A collision
-	// is answered with 409 and is not a fault in the test being run, so retry
-	// with a fresh key rather than failing an unrelated assertion.
+	projectKey, err := h.createProject(ctx, "LT")
+	if err != nil {
+		return seededProject{}, err
+	}
+
+	// The whole project goes at the end of the test, which takes its
+	// repositories with it.
+	h.t.Cleanup(func() {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+		defer cancel()
+		_, _ = h.client.DeleteProjectWithResponse(cleanupCtx, projectKey)
+	})
+
+	return h.seedRepositories(ctx, projectKey, repositoryCount, commitsPerRepository, withCommitIDs, false)
+}
+
+// createProject makes a project and returns its key.
+//
+// The key is derived from the clock, so it can collide with one still held by a
+// project an earlier test deleted -- Bitbucket removes projects asynchronously,
+// so the key outlives the delete call. A collision is answered with 409 and is
+// not a fault in the test being run, so it retries with a fresh key rather than
+// failing an unrelated assertion.
+func (h *liveHarness) createProject(ctx context.Context, prefix string) (string, error) {
 	const seedAttempts = 5
 
-	var suffix string
 	var projectKey string
 	var lastStatus int
 
 	for attempt := 0; attempt < seedAttempts; attempt++ {
-		suffix = strconv.FormatInt(time.Now().UnixNano(), 10)
-		projectKey = strings.ToUpper("LT" + suffix[len(suffix)-6:])
+		suffix := strconv.FormatInt(time.Now().UnixNano(), 10)
+		projectKey = strings.ToUpper(prefix + suffix[len(suffix)-6:])
 		projectName := "Live Test " + suffix
 
 		createProjectBody := openapigenerated.CreateProjectJSONRequestBody{Key: &projectKey, Name: &projectName}
 		createProjectResponse, err := h.client.CreateProjectWithResponse(ctx, createProjectBody)
 		if err != nil {
-			return seededProject{}, fmt.Errorf("create project call failed: %w", err)
+			return "", fmt.Errorf("create project call failed: %w", err)
 		}
 
 		lastStatus = createProjectResponse.StatusCode()
 		if lastStatus >= 200 && lastStatus < 300 {
-			break
+			return projectKey, nil
 		}
 		if lastStatus != http.StatusConflict {
-			return seededProject{}, fmt.Errorf("create project %s returned status %d", projectKey, lastStatus)
+			return "", fmt.Errorf("create project %s returned status %d", projectKey, lastStatus)
 		}
 
 		if ctx.Err() != nil {
-			return seededProject{}, ctx.Err()
+			return "", ctx.Err()
 		}
 		time.Sleep(150 * time.Millisecond)
 	}
 
-	if lastStatus < 200 || lastStatus >= 300 {
-		return seededProject{}, fmt.Errorf("create project failed after %d attempts, last key %s returned status %d", seedAttempts, projectKey, lastStatus)
-	}
+	return "", fmt.Errorf("create project failed after %d attempts, last key %s returned status %d", seedAttempts, projectKey, lastStatus)
+}
 
+// seedRepositories creates repositories in a project that already exists.
+//
+// Shared by both seeding paths, because what a test gets -- a repository with
+// commits in it -- is the same either way. Only who owns the project differs.
+func (h *liveHarness) seedRepositories(ctx context.Context, projectKey string, repositoryCount, commitsPerRepository int, withCommitIDs bool, removeRepositories bool) (seededProject, error) {
 	seeded := seededProject{Key: projectKey, Repos: make([]seededRepository, 0, repositoryCount)}
-	h.t.Cleanup(func() {
-		cleanupCtx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
-		defer cancel()
-		_ = h.cleanupProject(cleanupCtx, seeded)
-	})
 
 	for index := 0; index < repositoryCount; index++ {
-		repoName := fmt.Sprintf("lt-repo-%d-%s", index+1, suffix[len(suffix)-4:])
+		// Enough of the clock to be unique among the several hundred
+		// repositories the shared project accumulates in a run. Four digits
+		// was fine when each project held one; across 267 it is a collision
+		// waiting for a slow afternoon.
+		suffix := strconv.FormatInt(time.Now().UnixNano(), 10)
+		repoName := fmt.Sprintf("lt-repo-%d-%s", index+1, suffix[len(suffix)-9:])
 		scmID := "git"
 		forkable := true
 		createRepoBody := openapigenerated.CreateRepositoryJSONRequestBody{Name: &repoName, ScmId: &scmID, Forkable: &forkable}
@@ -183,16 +327,31 @@ func (h *liveHarness) seedProjectWithRepositories(ctx context.Context, repositor
 			repoSlug = *createRepoResponse.ApplicationjsonCharsetUTF8201.Slug
 		}
 
+		// Only where the project outlives the test. In an isolated project the
+		// project delete takes the repositories with it, and asking for each of
+		// them first is a REST call per repository that buys nothing.
+		if removeRepositories {
+			h.t.Cleanup(func() {
+				cleanupCtx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+				defer cancel()
+				_, _ = h.client.DeleteRepositoryWithResponse(cleanupCtx, projectKey, repoSlug)
+			})
+		}
+
 		if err := h.pushCommitsToRepository(projectKey, repoSlug, commitsPerRepository); err != nil {
 			return seededProject{}, err
 		}
 
-		commitIDs, err := h.listCommitIDs(ctx, projectKey, repoSlug, commitsPerRepository+2)
-		if err != nil {
-			return seededProject{}, err
+		repo := seededRepository{Name: repoName, Slug: repoSlug}
+		if withCommitIDs {
+			commitIDs, err := h.listCommitIDs(ctx, projectKey, repoSlug, commitsPerRepository+2)
+			if err != nil {
+				return seededProject{}, err
+			}
+			repo.CommitIDs = commitIDs
 		}
 
-		seeded.Repos = append(seeded.Repos, seededRepository{Name: repoName, Slug: repoSlug, CommitIDs: commitIDs})
+		seeded.Repos = append(seeded.Repos, repo)
 	}
 
 	return seeded, nil
@@ -445,15 +604,6 @@ func (h *liveHarness) listCommitIDs(ctx context.Context, projectKey, repositoryS
 	}
 
 	return nil, fmt.Errorf("no commit ids found for %s/%s after retries (last status=%d)", projectKey, repositorySlug, lastStatus)
-}
-
-func (h *liveHarness) cleanupProject(ctx context.Context, seeded seededProject) error {
-	for _, repo := range seeded.Repos {
-		_, _ = h.client.DeleteRepositoryWithResponse(ctx, seeded.Key, repo.Slug)
-	}
-
-	_, _ = h.client.DeleteProjectWithResponse(ctx, seeded.Key)
-	return nil
 }
 
 func repositoryPushURL(cfg config.AppConfig, projectKey, repositorySlug string) (string, error) {
