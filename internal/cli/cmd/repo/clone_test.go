@@ -392,6 +392,7 @@ func TestCloneRepositoryWithAuthFallbackRebuildsHTTPSRetryWhenContextPathDiffers
 		git.CloneOptions{Directory: "demo"},
 		stub,
 		false,
+		canPromptForCloneLogin,
 	)
 	if err != nil {
 		t.Fatalf("clone with auth fallback failed: %v", err)
@@ -915,7 +916,7 @@ func TestCloneRepositoryWithAuthFallbackEdgeCases(t *testing.T) {
 	opts := git.CloneOptions{Directory: "demo"}
 
 	// buildCloneURL error: non-explicit URL with bad cloneHost
-	_, err := cloneRepositoryWithAuthFallback(command, cfg, "", false, "://bad-host", repo, cloneTransportAuto, opts, stub, false)
+	_, err := cloneRepositoryWithAuthFallback(command, cfg, "", false, "://bad-host", repo, cloneTransportAuto, opts, stub, false, canPromptForCloneLogin)
 	if err == nil {
 		t.Fatal("expected error for invalid clone host")
 	}
@@ -924,7 +925,7 @@ func TestCloneRepositoryWithAuthFallbackEdgeCases(t *testing.T) {
 	_, err = cloneRepositoryWithAuthFallback(command, cfg,
 		"https://test.example.com/scm/PRJ/demo.git", true, "https://test.example.com",
 		repositorySelector{ProjectKey: "", Slug: ""},
-		cloneTransportAuto, opts, stub, false)
+		cloneTransportAuto, opts, stub, false, canPromptForCloneLogin)
 	if err == nil {
 		t.Fatal("expected error for empty project in SSH clone URL")
 	}
@@ -1160,14 +1161,7 @@ func TestRepoCloneCommandHTTPFallbackFailsBothSSHAndHTTP(t *testing.T) {
 // path in cloneRepositoryWithAuthFallback when an empty token is provided.  The test injects
 // canPromptForCloneLoginFunc to bypass the TTY guard.
 func TestCloneRepositoryWithAuthFallbackPromptPathEmptyToken(t *testing.T) {
-	originalPromptFunc := canPromptForCloneLoginFunc
-	canPromptForCloneLoginFunc = func(io.Reader, io.Writer) bool { return true }
-	t.Cleanup(func() { canPromptForCloneLoginFunc = originalPromptFunc })
-
-	originalFactory := gitBackendFactory
 	stub := &cloneBackendStub{cloneErr: errors.New("ssh failed")}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
 
 	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
@@ -1182,14 +1176,13 @@ func TestCloneRepositoryWithAuthFallbackPromptPathEmptyToken(t *testing.T) {
 	t.Setenv("ADMIN_USER", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 
-	command := NewRootCommand()
-	out := &bytes.Buffer{}
-	command.SetOut(out)
-	command.SetErr(out)
-	command.SetIn(bytes.NewBufferString("\n")) // empty token → prompted=false
-	command.SetArgs([]string{"repo", "clone", "PRJ/demo"})
+	outText, err := executeTestCLIWith(t, testSetup{
+		Backend:   stub,
+		CanPrompt: func(io.Reader, io.Writer) bool { return true },
+		Stdin:     bytes.NewBufferString("\n"),
+	}, "repo", "clone", "PRJ/demo")
+	_ = outText
 
-	err := command.Execute()
 	if err == nil {
 		t.Fatal("expected error: empty token should not succeed")
 	}
@@ -1202,15 +1195,8 @@ func TestCloneRepositoryWithAuthFallbackPromptPathEmptyToken(t *testing.T) {
 // path through cloneRepositoryWithAuthFallback when a valid token is entered and the clone
 // succeeds.  canPromptForCloneLoginFunc is injected to bypass the TTY guard.
 func TestCloneRepositoryWithAuthFallbackPromptPathSuccess(t *testing.T) {
-	originalPromptFunc := canPromptForCloneLoginFunc
-	canPromptForCloneLoginFunc = func(io.Reader, io.Writer) bool { return true }
-	t.Cleanup(func() { canPromptForCloneLoginFunc = originalPromptFunc })
-
-	originalFactory := gitBackendFactory
 	// First call (SSH) fails; second call (prompted HTTP) succeeds.
 	stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh failed"), nil}}
-	gitBackendFactory = func() git.Backend { return stub }
-	t.Cleanup(func() { gitBackendFactory = originalFactory })
 
 	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
@@ -1225,21 +1211,19 @@ func TestCloneRepositoryWithAuthFallbackPromptPathSuccess(t *testing.T) {
 	t.Setenv("ADMIN_USER", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 
-	command := NewRootCommand()
-	out := &bytes.Buffer{}
-	command.SetOut(out)
-	command.SetErr(out)
-	command.SetIn(bytes.NewBufferString("my-secret-token\n"))
-	command.SetArgs([]string{"repo", "clone", "PRJ/demo"})
-
-	if err := command.Execute(); err != nil {
+	outText, err := executeTestCLIWith(t, testSetup{
+		Backend:   stub,
+		CanPrompt: func(io.Reader, io.Writer) bool { return true },
+		Stdin:     bytes.NewBufferString("my-secret-token\n"),
+	}, "repo", "clone", "PRJ/demo")
+	if err != nil {
 		t.Fatalf("expected successful clone after prompt, got: %v", err)
 	}
 	if len(stub.cloneCalls) != 2 {
 		t.Fatalf("expected 2 clone calls (SSH + prompted HTTP), got %d", len(stub.cloneCalls))
 	}
-	if !strings.Contains(out.String(), "Cloned PRJ/demo into demo") {
-		t.Fatalf("unexpected output: %s", out.String())
+	if !strings.Contains(outText, "Cloned PRJ/demo into demo") {
+		t.Fatalf("unexpected output: %s", outText)
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/repository"
@@ -45,6 +46,18 @@ type Dependencies struct {
 	// Optional: nil reads as not inferred, which is right for a caller that
 	// does no inference at all.
 	RepositoryWasInferred func() bool
+
+	// GitBackend builds the git backend a clone runs through, and
+	// CanPromptForCloneLogin decides whether a clone may ask for credentials.
+	//
+	// Fields rather than the package-level variables they replace. Those were
+	// swapped and restored by 24 tests, which is why every test in this package
+	// had to run on its own: two of them substituting a backend at the same
+	// time would each see the other's. Passing them in is what lets those tests
+	// run together, and it costs the production path nothing -- withDefaults
+	// supplies exactly what the variables held.
+	GitBackend             func() git.Backend
+	CanPromptForCloneLogin func(io.Reader, io.Writer) bool
 }
 
 func (deps *Dependencies) withDefaults() Dependencies {
@@ -78,6 +91,12 @@ func (deps *Dependencies) withDefaults() Dependencies {
 	}
 	if d.WriteJSONList == nil {
 		d.WriteJSONList = jsonoutput.WriteList
+	}
+	if d.GitBackend == nil {
+		d.GitBackend = gitBackendFactory
+	}
+	if d.CanPromptForCloneLogin == nil {
+		d.CanPromptForCloneLogin = canPromptForCloneLogin
 	}
 	return d
 }
