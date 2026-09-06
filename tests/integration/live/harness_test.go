@@ -17,7 +17,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -111,68 +110,6 @@ func isLocalBitbucketHost(host string) bool {
 	return strings.HasPrefix(trimmed, "localhost:") || strings.HasPrefix(trimmed, "127.0.0.1:") || trimmed == "localhost" || trimmed == "127.0.0.1"
 }
 
-// The project the package shares, created once and removed when the package is
-// done with it.
-//
-// Guarded by a mutex rather than sync.Once because the creation can fail, and a
-// Once would remember the failure forever: one unlucky 409 would then take the
-// rest of the run down with it.
-var (
-	sharedProjectMu  sync.Mutex
-	sharedProjectKey string
-)
-
-// sharedProject returns the package's project, creating it on first use.
-func (h *liveHarness) sharedProject(ctx context.Context) (string, error) {
-	sharedProjectMu.Lock()
-	defer sharedProjectMu.Unlock()
-
-	if sharedProjectKey != "" {
-		return sharedProjectKey, nil
-	}
-
-	// Named unlike the per-test projects on purpose. They are called "Live
-	// Test <clock>", and `bb project list --name "Live Test"` is a real
-	// assertion in project_live_test.go: a shared project answering to the same
-	// filter pushed the test's own project off the page.
-	key, err := h.createProject(ctx, "LS", "Live Suite Shared")
-	if err != nil {
-		return "", err
-	}
-	sharedProjectKey = key
-
-	return sharedProjectKey, nil
-}
-
-// removeSharedProject deletes the package's project once its tests are done.
-//
-// It cannot be a t.Cleanup: the project outlives whichever test happened to
-// create it, which is the entire point of sharing it. Deleting the project
-// takes its repositories with it, so a test that failed before its own cleanup
-// ran still leaves nothing behind. Called from TestMain in main_live_test.go.
-func removeSharedProject() {
-	sharedProjectMu.Lock()
-	key := sharedProjectKey
-	sharedProjectMu.Unlock()
-
-	if key == "" {
-		return
-	}
-
-	cfg, err := config.LoadFromEnv()
-	if err != nil {
-		return
-	}
-	client, err := newGeneratedClient(cfg)
-	if err != nil {
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-	_, _ = client.DeleteProjectWithResponse(ctx, key)
-}
-
 // repoSeed says what a test needs from the repository it is given.
 //
 // The zero value is one repository with one commit and no commit ids, which is
@@ -202,40 +139,38 @@ func (seed repoSeed) counts() (repos int, commits int) {
 	return repos, commits
 }
 
-// seedRepo gives a test a clean repository inside the project the package
-// shares.
+// seedRepo says a test's scope is one clean repository.
 //
-// For a test whose scope is one repository. It gets a repository nothing else
-// touches, so anything it does *to that repository* is private to it. What it
-// must not do is change project-level state -- project permissions, project
-// webhooks, project branch restrictions, project settings -- or address the
-// project as a whole, because a `bulk` plan selecting on projectKey or a
-// `repo list` would then see every other test's repositories. A test that
-// needs any of that wants seedIsolatedProject, and the two names are different
-// so that the choice is made rather than inherited.
+// It creates a project of its own, the same as seedIsolatedProject. The name is
+// the difference, and the name is the point: it records that this test needs
+// nothing but a repository, which is what has to be known before any of these
+// can run at the same time.
 //
-// It is barely faster: 476ms against 536ms, measured warm over eight rounds
-// each. The point is not the 60ms, it is that the isolation each test needs is
-// now written down -- which is what has to be known before any of these can run
-// at the same time. That the difference is so small is itself useful: moving a
-// test back to its own project when sharing turns out to bother it costs
-// almost nothing.
+// It did share a project between every such test, and that is worth recording
+// because the experiment answered its own question. Sharing saved 60ms of a
+// 536ms seed -- 11%, and 0.8% of a suite, invisible in it. Against that, four
+// tests broke: a `project list`, a `repo list`, and two pull-request dashboard
+// queries all read across the instance rather than within a repository, so a
+// project holding two hundred other tests' repositories was in their way. Some
+// were mine to fix and some were pre-existing fragility, but the trade was
+// clear either way: 0.8% is not worth a class of failure that only appears
+// under load and only in CI.
+//
+// The cheapness of the isolated path is what makes that an easy call. If the
+// project creation had been the 419ms an early cold-JVM measurement suggested,
+// this would have been a real decision. Measured warm, it is 60ms.
 func (h *liveHarness) seedRepo(ctx context.Context, seed repoSeed) (seededProject, error) {
-	projectKey, err := h.sharedProject(ctx)
-	if err != nil {
-		return seededProject{}, err
-	}
-
 	repositoryCount, commitsPerRepository := seed.counts()
 
-	return h.seedRepositories(ctx, projectKey, repositoryCount, commitsPerRepository, seed.WithCommitIDs, true)
+	return h.seedIsolatedProjectWith(ctx, repositoryCount, commitsPerRepository, seed.WithCommitIDs)
 }
 
 // seedIsolatedProject gives a test a project of its own.
 //
 // For a test whose scope includes project-level state, or which addresses the
-// project as a whole. Costs a project creation and a project deletion that
-// seedRepo does not.
+// project as a whole. Identical to seedRepo in what it does; the two names
+// differ so that a reader can tell which tests could share a project if one
+// were ever worth sharing again.
 func (h *liveHarness) seedIsolatedProject(ctx context.Context, repositoryCount int, commitsPerRepository int) (seededProject, error) {
 	return h.seedIsolatedProjectWith(ctx, repositoryCount, commitsPerRepository, true)
 }
