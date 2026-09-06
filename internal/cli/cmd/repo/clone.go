@@ -25,8 +25,6 @@ var gitBackendFactory = func() git.Backend {
 	return execgit.New()
 }
 
-var canPromptForCloneLoginFunc = canPromptForCloneLogin
-
 func newRepoCloneCommand(deps Dependencies) *cobra.Command {
 	return newCloneCommand(deps)
 }
@@ -72,7 +70,7 @@ func newCloneCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			backend := gitBackendFactory()
+			backend := deps.GitBackend()
 			if backend == nil {
 				return apperrors.New(apperrors.KindInternal, "git backend is not configured", nil)
 			}
@@ -92,6 +90,7 @@ func newCloneCommand(deps Dependencies) *cobra.Command {
 				},
 				backend,
 				deps.JSONEnabled(),
+				deps.CanPromptForCloneLogin,
 			)
 			if err != nil {
 				return err
@@ -306,6 +305,7 @@ func cloneRepositoryWithAuthFallback(
 	cloneOptions git.CloneOptions,
 	backend git.Backend,
 	jsonOutput bool,
+	canPrompt func(io.Reader, io.Writer) bool,
 ) (string, error) {
 	httpCloneURL, err := resolveHTTPCloneURL(rawInput, usedURLInput, cloneHost, repo)
 	if err != nil {
@@ -355,7 +355,7 @@ func cloneRepositoryWithAuthFallback(
 		}
 	}
 
-	if jsonOutput || !canPromptForCloneLoginFunc(cmd.InOrStdin(), cmd.OutOrStdout()) {
+	if jsonOutput || !canPrompt(cmd.InOrStdin(), cmd.OutOrStdout()) {
 		return "", newCloneLoginRequiredError(cloneHost, sshErr, transportMode == cloneTransportAuto)
 	}
 
