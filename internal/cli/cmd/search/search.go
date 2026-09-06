@@ -12,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	commitservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/commit"
@@ -229,6 +230,17 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 		Use:   "prs",
 		Short: "Search for pull requests globally or within a repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// The repository pull-requests endpoint has no role parameter, so
+			// Bitbucket drops one that is sent and answers with every open pull
+			// request in the repository. Dropping the flag here instead was
+			// honest in the help text and silent at the terminal: the caller
+			// asked for their own and got everybody's, with nothing to say the
+			// filter had not been applied (#540).
+			if repositorySelector != "" && role != "" {
+				return apperrors.New(apperrors.KindValidation,
+					"--role cannot be combined with --repo: Bitbucket applies a role only on the dashboard, so drop --repo to use it", nil)
+			}
+
 			cfg, err := deps.LoadConfig()
 			if err != nil {
 				return err
@@ -299,7 +311,7 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 	listPaging.Register(cmd, 25)
 	cmd.Flags().IntVar(&start, "start", 0, "Pagination start index")
 	enumflag.Register(cmd.Flags(), &state, "state", "open", openapi.PullRequestStateFilters, "Filter by state")
-	enumflag.Register(cmd.Flags(), &role, "role", "", participantRoles, "Filter by role, only applied when --repo is not used")
+	enumflag.Register(cmd.Flags(), &role, "role", "", participantRoles, "Filter by role; dashboard only, so it cannot be combined with --repo")
 
 	return cmd
 }
