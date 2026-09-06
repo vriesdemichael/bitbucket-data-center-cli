@@ -2,6 +2,7 @@ number: 30
 title: Linear rebase workflow with generated coverage artifacts
 category: development
 status: superseded
+superseded_by: 45
 decision: >
   Enforce linear PR history (no merge commits) and use a deterministic rebase flow
   when committed quality artifacts are generated from local test runs.

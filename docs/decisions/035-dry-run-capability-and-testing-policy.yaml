@@ -1,7 +1,8 @@
 number: 35
 title: Dry-run capability signaling and test strategy policy
 category: development
-status: accepted
+status: superseded
+superseded_by: 78
 decision: >
   Dry-run implementations must explicitly signal capability level and planning mode in output.
   Static planning paths are validated with unit tests, while stateful dry-run behavior is validated

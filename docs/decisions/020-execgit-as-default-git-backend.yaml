@@ -2,7 +2,7 @@ number: 20
 title: Execgit as default Git backend
 category: architecture
 status: accepted
-supersedes: 12
+amends: 12
 decision: >
   Use execgit (wrapping the system git binary) as the default Git backend for repository operations.
   Keep the Git backend abstraction in place so alternative implementations can be added later,

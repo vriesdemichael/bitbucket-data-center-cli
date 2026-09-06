@@ -6,6 +6,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Machine output carries no contract version; breaking payload changes ride the release major`
 - Category: `architecture`
 - Status: `accepted`
+- Supersedes: `014`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/064-machine-output-carries-no-contract-version.yaml`
 

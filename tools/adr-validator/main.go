@@ -23,12 +23,18 @@ type rejectedAlternative struct {
 }
 
 type decisionRecord struct {
-	Number               int                   `yaml:"number"`
-	Title                string                `yaml:"title"`
-	Category             string                `yaml:"category"`
-	Status               string                `yaml:"status,omitempty"`
-	SupersededBy         *int                  `yaml:"superseded_by,omitempty"`
-	Supersedes           any                   `yaml:"supersedes,omitempty"`
+	Number       int    `yaml:"number"`
+	Title        string `yaml:"title"`
+	Category     string `yaml:"category"`
+	Status       string `yaml:"status,omitempty"`
+	SupersededBy *int   `yaml:"superseded_by,omitempty"`
+	Supersedes   any    `yaml:"supersedes,omitempty"`
+	// Amends is supersedes' smaller sibling: this record replaces part of an
+	// older one that stays in force for the rest. Without it, narrowing a
+	// decision forces a choice between marking a live record superseded and
+	// recording no relationship at all -- and both had happened.
+	AmendedBy            *int                  `yaml:"amended_by,omitempty"`
+	Amends               any                   `yaml:"amends,omitempty"`
 	Decision             string                `yaml:"decision"`
 	AgentInstructions    string                `yaml:"agent_instructions"`
 	Rationale            string                `yaml:"rationale"`
@@ -76,6 +82,124 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
+
+	if err := validateSupersessionLinks(records); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
+	}
+}
+
+// validateSupersessionLinks checks that supersession is recorded from both ends.
+//
+// A one-sided link is not a formatting slip. A reader arriving at the superseded
+// record cannot find what replaced it, and a reader arriving at the replacement
+// cannot tell it replaced anything -- so a record no longer in force reads
+// exactly like one that is, which is the whole thing status is for.
+//
+// Four pairs had drifted apart before anyone looked (#531), because nothing did.
+func validateSupersessionLinks(records []decisionRecord) error {
+	byNumber := make(map[int]decisionRecord, len(records))
+	for _, record := range records {
+		byNumber[record.Number] = record
+	}
+
+	problems := make([]string, 0)
+
+	for _, record := range records {
+		if record.SupersededBy != nil {
+			replacement, ok := byNumber[*record.SupersededBy]
+			switch {
+			case !ok:
+				problems = append(problems, fmt.Sprintf(
+					"ADR-%d is superseded by ADR-%d, which does not exist",
+					record.Number, *record.SupersededBy))
+			case !supersedesNumber(replacement.Supersedes, record.Number):
+				problems = append(problems, fmt.Sprintf(
+					"ADR-%d is superseded by ADR-%d, but ADR-%d does not declare supersedes: %d",
+					record.Number, *record.SupersededBy, *record.SupersededBy, record.Number))
+			}
+		}
+
+		for _, superseded := range supersededNumbers(record.Supersedes) {
+			older, ok := byNumber[superseded]
+			switch {
+			case !ok:
+				problems = append(problems, fmt.Sprintf(
+					"ADR-%d supersedes ADR-%d, which does not exist", record.Number, superseded))
+			case older.SupersededBy == nil || *older.SupersededBy != record.Number:
+				problems = append(problems, fmt.Sprintf(
+					"ADR-%d supersedes ADR-%d, but ADR-%d does not declare superseded_by: %d",
+					record.Number, superseded, superseded, record.Number))
+			}
+		}
+
+		if record.AmendedBy != nil {
+			amender, ok := byNumber[*record.AmendedBy]
+			switch {
+			case !ok:
+				problems = append(problems, fmt.Sprintf(
+					"ADR-%d is amended by ADR-%d, which does not exist", record.Number, *record.AmendedBy))
+			case !supersedesNumber(amender.Amends, record.Number):
+				problems = append(problems, fmt.Sprintf(
+					"ADR-%d is amended by ADR-%d, but ADR-%d does not declare amends: %d",
+					record.Number, *record.AmendedBy, *record.AmendedBy, record.Number))
+			}
+		}
+
+		for _, amended := range supersededNumbers(record.Amends) {
+			older, ok := byNumber[amended]
+			switch {
+			case !ok:
+				problems = append(problems, fmt.Sprintf(
+					"ADR-%d amends ADR-%d, which does not exist", record.Number, amended))
+			case older.AmendedBy == nil || *older.AmendedBy != record.Number:
+				problems = append(problems, fmt.Sprintf(
+					"ADR-%d amends ADR-%d, but ADR-%d does not declare amended_by: %d",
+					record.Number, amended, amended, record.Number))
+			// An amended record stays in force -- that is what tells amends
+			// from supersedes. One marked superseded is one or the other,
+			// recorded wrongly.
+			case older.Status == "superseded":
+				problems = append(problems, fmt.Sprintf(
+					"ADR-%d amends ADR-%d, but ADR-%d is marked superseded; an amended record stays accepted",
+					record.Number, amended, amended))
+			}
+		}
+	}
+
+	if len(problems) > 0 {
+		return fmt.Errorf("supersession is recorded from one end only:\n  %s", strings.Join(problems, "\n  "))
+	}
+
+	return nil
+}
+
+// supersededNumbers reads the one-or-many shape supersedes is allowed to take.
+func supersededNumbers(value any) []int {
+	switch typed := value.(type) {
+	case int:
+		return []int{typed}
+	case []any:
+		numbers := make([]int, 0, len(typed))
+		for _, entry := range typed {
+			if number, ok := entry.(int); ok {
+				numbers = append(numbers, number)
+			}
+		}
+		return numbers
+	default:
+		return nil
+	}
+}
+
+func supersedesNumber(value any, number int) bool {
+	for _, candidate := range supersededNumbers(value) {
+		if candidate == number {
+			return true
+		}
+	}
+
+	return false
 }
 
 func resolveFiles(decisionsDir string, args []string) ([]string, error) {

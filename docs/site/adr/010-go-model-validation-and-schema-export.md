@@ -15,7 +15,7 @@ Use typed Go structs with explicit runtime validation rules for inputs and confi
 
 ## Agent Instructions
 
-Define validation close to model definitions and validate at boundaries (config load, request payload construction, and external input parsing). Keep schemas generated from the model source of truth rather than hand-maintained files.
+Define validation close to model definitions and validate at boundaries (config load, request payload construction, and external input parsing). Keep schemas generated from the model source of truth rather than hand-maintained files. A command output schema is served on demand by `--describe`, derived from the handler type at the moment it is asked for, and is not published as a file on disk. The 200-odd committed per-command schemas this record once implied were deleted with #485: a schema file is a copy of a Go type, and a copy is where the two stop agreeing. Configuration and bulk workflow schemas are still exported, because their consumers are editors and CI rather than bb itself.
 
 ## Rationale
 
