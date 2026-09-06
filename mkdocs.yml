@@ -87,6 +87,7 @@ nav:
       - Git Authentication: advanced/git-authentication.md
       - Networks, Proxies and TLS: advanced/networks-proxies-and-tls.md
       - Machine Mode and Diagnostics: advanced/machine-mode-diagnostics.md
+      - Webhook Secrets: advanced/webhook-secrets.md
   - AI and llms.txt: ai-and-llms.md
   - ADR Records: adr/index.md
   - Changelog: changelog.md

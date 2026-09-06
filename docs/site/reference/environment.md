@@ -66,6 +66,19 @@ subprocesses it starts.
     missing. If you get a confusing "project does not exist" error, this is
     usually why. Set `BITBUCKET_PROJECT_KEY` explicitly, or pass `--repo`.
 
+## Webhook credentials
+
+| Variable | Default | Effect |
+|---|---|---|
+| `BB_WEBHOOK_SECRET` | none | Shared secret for `webhook create` and `webhook update`, used to sign deliveries. There is no flag that takes it as a value ([ADR-047](../adr/047-credential-input-and-keyring-enforcement.md)); the alternative is `--secret-stdin`. |
+| `BB_WEBHOOK_PASSWORD` | none | Password for the endpoint's basic authentication, paired with `--credentials-username`. The alternative is `--credentials-password-stdin`. |
+
+An empty value counts as unset. A `--*-stdin` flag wins over the variable, and
+`--no-secret` / `--no-credentials` override both — a variable exported for every
+command must not make removing a credential impossible. Bulk policies name these
+variables rather than holding a value; see
+[Webhook Secrets](../advanced/webhook-secrets.md).
+
 ## Output and diagnostics
 
 | Variable | Default | Effect |
