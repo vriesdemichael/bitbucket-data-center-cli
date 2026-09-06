@@ -28,7 +28,7 @@ No source file pins a release version. The documentation site resolves it once, 
    `/releases/latest/download/`, so an install snippet needs no version at all. The aliases are
    created before the checksum step, so `sha256sums.txt` lists both names and
    `sha256sum -c --ignore-missing` verifies whichever was downloaded; the signing step's globs
-   cover them too. The versioned names are unchanged, because Homebrew, AUR, WinGet and Scoop all
+   cover them too. The versioned names are unchanged, because Homebrew, WinGet and Scoop all
    reference them.
 
 4. Instructions That Install the Newest Release Name No Version: the README and the quickstart use
@@ -61,5 +61,5 @@ ADR-055 rejected this approach because template tags are not evaluated when mark
 - `Keep ADR-055 and move the version check out of the pre-push and quality gates`: Stops contributors being blocked but leaves the published README and site advertising an old release until someone notices, which is the failure ADR-055 existed to prevent.
 - `Publish a VERSION.txt asset for the README to read`: Its filename carries no version, so /releases/latest/download/VERSION.txt would resolve and a snippet could read the current release from it. Rejected because it still leaves the reader making two requests and carrying a shell variable, and a failed fetch leaves that variable empty and builds a nonsense URL. Aliasing the assets removes the variable entirely.
 - `Read the version from the existing changelog.json asset`: It is already published at a version-less path and its first field is the version, so no new asset would be needed. Rejected for the same reason as VERSION.txt, and because parsing it in a copy-paste snippet needs jq, which is not reliably present, or a brittle grep of JSON.
-- `Publish only version-less names and drop the versioned ones`: Homebrew, AUR, WinGet and Scoop all reference the versioned filenames, and anyone pinning a release depends on them. Publishing both costs duplicate assets and nothing else.
+- `Publish only version-less names and drop the versioned ones`: Homebrew, WinGet and Scoop all reference the versioned filenames, and anyone pinning a release depends on them. Publishing both costs duplicate assets and nothing else.
 - `Use the macros plugin with its default double-brace delimiters`: The documentation shows Ansible and Taskfile snippets whose literal Jinja must survive to the reader. Default delimiters would evaluate them and silently corrupt working examples.

@@ -22,7 +22,7 @@ decision: >
      `/releases/latest/download/`, so an install snippet needs no version at all. The aliases are
      created before the checksum step, so `sha256sums.txt` lists both names and
      `sha256sum -c --ignore-missing` verifies whichever was downloaded; the signing step's globs
-     cover them too. The versioned names are unchanged, because Homebrew, AUR, WinGet and Scoop all
+     cover them too. The versioned names are unchanged, because Homebrew, WinGet and Scoop all
      reference them.
 
   4. Instructions That Install the Newest Release Name No Version: the README and the quickstart use
@@ -83,7 +83,7 @@ rejected_alternatives:
       copy-paste snippet needs jq, which is not reliably present, or a brittle grep of JSON.
   - alternative: Publish only version-less names and drop the versioned ones
     reason: >
-      Homebrew, AUR, WinGet and Scoop all reference the versioned filenames, and anyone pinning a
+      Homebrew, WinGet and Scoop all reference the versioned filenames, and anyone pinning a
       release depends on them. Publishing both costs duplicate assets and nothing else.
   - alternative: Use the macros plugin with its default double-brace delimiters
     reason: >
