@@ -1265,3 +1265,61 @@ fixes:
     verification:
       commands:
         - go test -tags=live ./tests/integration/live -run TestLiveEveryServiceMapsItsFailures
+
+  - id: OPENAPI-030
+    area: code-owners-endpoint-is-absent-from-the-spec
+    source: undocumented-endpoint
+    status: active
+    status_evidence: >
+      Searched for on 10.4.2 and not found. The vendored spec describes 26 namespaces --
+      api, admin, audit, access-tokens, branch-permissions, branch-utils, basicauth,
+      build-status, comment-likes, csp, default-reviewers, default-tasks, git, gpg,
+      indexing, insights, jira, jira-dev, keys, mirroring, policies, required-builds,
+      secrets, ssh, sync, tsv -- and `ui` is not among them. No path in it mentions
+      code-owners. The instance serves no spec of its own: /rest/openapi/latest,
+      /rest/api/latest/swagger.json, /rest/swagger.json, /rest/api/openapi.json and
+      /rest/ui/latest/openapi.json all answer 404, and no openapi or swagger document
+      exists anywhere on the container filesystem, though swagger-jaxrs2 is on the
+      classpath and could generate one if something asked it to.
+    description: >
+      The only endpoint bb calls that the vendored specification does not describe, so
+      tools/openapi-operation-paths cannot record it and quality:spec-coverage cannot
+      count it. It is also, by its own package name, not a public API.
+    reference:
+      type: endpoint
+      value: /ui/latest/projects/{projectKey}/repos/{repositorySlug}/code-owners
+      upstream_issue: >
+        The resource is com.atlassian.bitbucket.internal.rest.codeowners.CodeOwnersResource
+        in bitbucket-rest-ui-10.4.2.jar, and the evaluation behind it is
+        com.atlassian.bitbucket.internal.codeowners.* in bitbucket-code-owners-10.4.2.jar.
+        "internal" is in both package paths, which is the stability statement: there is
+        no promise here, and no documentation to read.
+
+        Read off the annotations on 10.4.2:
+
+          summary "Get code owners"
+          path    projects/{projectKey}/repos/{repositorySlug}/code-owners
+          query   sourceRefId, targetRefId, sourceRepo
+
+        Everything else known about it came from probing a running instance.
+    change:
+      files:
+        - internal/services/codeowners/service.go
+        - tests/integration/live/codeowners_contract_live_test.go
+      detail: >
+        ADR-080 decided to ask Bitbucket rather than parse CODEOWNERS ourselves, because
+        our parser and the server disagreed on six points of the same file. That decision
+        stands -- an internal endpoint that answers correctly beats a documented parser
+        that answers wrongly -- but it rests on an endpoint Atlassian has not promised to
+        keep.
+
+        Since no specification can be vendored, the contract is recorded as a live test
+        instead: the path, the three parameters, the response envelope, and the statuses
+        for a missing ref and a repository that is not there. A change on Bitbucket's side
+        fails that test here rather than surfacing in somebody's pull request. bb already
+        degrades quietly when the route is gone -- pr create skips code owners on
+        openapi.IsRouteMissing -- so the failure mode is a missing reviewer, not a broken
+        command.
+    verification:
+      commands:
+        - go test -tags=live ./tests/integration/live -run TestLiveCodeOwnersEndpointContract
