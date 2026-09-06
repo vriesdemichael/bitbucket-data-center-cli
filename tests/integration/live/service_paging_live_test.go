@@ -38,7 +38,7 @@ func TestLiveServiceListingsPageToTheEnd(t *testing.T) {
 	const seededRepos = 3
 	const seededCommits = 4
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, seededRepos, seededCommits)
+	seeded, err := harness.seedIsolatedProject(ctx, seededRepos, seededCommits)
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

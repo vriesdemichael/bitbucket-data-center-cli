@@ -16,7 +16,7 @@ func TestLiveCommitPaginationOverRealStream(t *testing.T) {
 	defer cancel()
 
 	// Seed 30 commits into a single repo (Bitbucket DC default page size is 25)
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 30)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 30})
 	if err != nil {
 		t.Fatalf("seed project with 30 commits failed: %v", err)
 	}
@@ -68,7 +68,7 @@ func TestLiveBranchPaginationOverRealStream(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 1, 2)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}

@@ -17,7 +17,7 @@ func TestLiveHarnessSeedsMultipleReposWithCommits(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 3, 2)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Repos: 3, Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}

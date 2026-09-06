@@ -131,7 +131,7 @@ func TestLiveMCPEveryToolReturnsAClientCompatibleResult(t *testing.T) {
 func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarness) map[string]map[string]any {
 	t.Helper()
 
-	seeded, err := harness.seedProjectWithRepositories(ctx, 2, 2)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Repos: 2, Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
