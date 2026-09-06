@@ -1,0 +1,279 @@
+{
+  "generatedBy": "tools/error-registry from a live suite run; see docs/quality/README.md",
+  "observations": 648,
+  "entries": [
+    {
+      "status": 204,
+      "bbKind": "success",
+      "endpoints": [
+        "DELETE /rest/access-tokens/latest/users/admin/{id}",
+        "DELETE /rest/api/latest/projects/LT{id}",
+        "DELETE /rest/api/latest/projects/LT{id}/permissions/groups",
+        "DELETE /rest/api/latest/projects/LT{id}/permissions/users",
+        "DELETE /rest/api/latest/projects/LT{id}/repos/canon-fork-{id}",
+        "DELETE /rest/api/latest/projects/LT{id}/repos/{repo}{id}/commits/{id}/builds",
+        "DELETE /rest/api/latest/projects/LT{id}/repos/{repo}{id}/commits/{id}/comments/54",
+        "DELETE /rest/api/latest/projects/LT{id}/repos/{repo}{id}/commits/{id}/comments/61",
+        "... and 80 more"
+      ],
+      "count": 541,
+      "emptyBody": true
+    },
+    {
+      "status": 307,
+      "bbKind": "permanent",
+      "endpoints": [
+        "DELETE /rest/api/latest/projects/LT{id}/repos/test-repo"
+      ],
+      "count": 1
+    },
+    {
+      "status": 400,
+      "bbKind": "validation",
+      "exampleMessage": "The project key must be specified when creating a project.",
+      "endpoints": [
+        "POST /rest/api/latest/projects"
+      ],
+      "count": 3
+    },
+    {
+      "status": 400,
+      "exception": "com.atlassian.bitbucket.repository.DuplicateRefException",
+      "bbKind": "validation",
+      "exampleMessage": "Branch 'feature/dup-test' already exists in repository 'lt-repo-1-1800'",
+      "endpoints": [
+        "POST /rest/branch-utils/latest/projects/LT{id}/repos/{repo}{id}/branches"
+      ],
+      "count": 1
+    },
+    {
+      "status": 400,
+      "exception": "com.atlassian.bitbucket.validation.ArgumentValidationException",
+      "bbKind": "validation",
+      "exampleMessage": "A sourceMatcher with ID and type is required when creating or updating a new condition.",
+      "endpoints": [
+        "POST /rest/default-reviewers/latest/projects/LT{id}/repos/{repo}{id}/condition"
+      ],
+      "count": 1
+    },
+    {
+      "status": 401,
+      "exception": "com.atlassian.bitbucket.AuthorisationException",
+      "bbKind": "authentication",
+      "exampleMessage": "You are not permitted to access this resource",
+      "endpoints": [
+        "DELETE /rest/access-tokens/latest/users/ltuser{id}/{id}",
+        "GET /rest/api/latest/projects/LT{id}/permissions/users"
+      ],
+      "count": 9
+    },
+    {
+      "status": 401,
+      "exception": "com.atlassian.bitbucket.auth.IncorrectPasswordAuthenticationException",
+      "bbKind": "authentication",
+      "exampleMessage": "Authentication failed. Please check your credentials and try again.",
+      "endpoints": [
+        "GET /rest/api/1.0/projects",
+        "GET /rest/api/latest/users"
+      ],
+      "count": 3
+    },
+    {
+      "status": 401,
+      "exception": "com.atlassian.bitbucket.auth.NoAccessAuthenticationException",
+      "bbKind": "authentication",
+      "exampleMessage": "You are not currently licensed to use Bitbucket.\nPlease contact your administrator to resolve this issue.",
+      "endpoints": [
+        "DELETE /rest/api/latest/projects/LT{id}",
+        "GET /rest/api/1.0/repos",
+        "GET /rest/api/latest/projects/LT{id}",
+        "GET /rest/api/latest/projects/LT{id}/permissions/users",
+        "GET /rest/api/latest/projects/LT{id}/repos/{repo}{id}/settings/pull-requests",
+        "GET /rest/api/latest/repos",
+        "POST /rest/api/latest/projects",
+        "POST /rest/api/latest/projects/LT{id}/repos",
+        "... and 3 more"
+      ],
+      "count": 16
+    },
+    {
+      "status": 401,
+      "exception": "com.atlassian.plugins.rest.api.security.exception.AuthenticationRequiredException",
+      "bbKind": "authentication",
+      "exampleMessage": "You are not permitted to access this resource",
+      "endpoints": [
+        "GET /rest/api/1.0/projects",
+        "GET /rest/api/1.0/repos",
+        "GET /rest/api/latest/profile/recent/repos",
+        "GET /rest/api/latest/projects",
+        "GET /rest/api/latest/projects/LT{id}/repos/{repo}{id}/pull-requests"
+      ],
+      "count": 5
+    },
+    {
+      "status": 404,
+      "bbKind": "not_found",
+      "endpoints": [
+        "DELETE /rest/access-tokens/latest/users/admin/{id}",
+        "DELETE /rest/api/latest/projects/NOSUCHPROJECT{id}/permissions/users",
+        "DELETE /rest/branch-permissions/latest/projects/LT{id}/repos/{repo}{id}/restrictions/abc",
+        "GET /rest/api/latest/definitely-not-a-route",
+        "GET /rest/api/latest/projects/LT{id}/repos/{repo}{id}/commits/{id}/builds",
+        "GET /rest/api/latest/projects/LT{id}/repos/{repo}{id}/pull-requests/1/tasks",
+        "GET /rest/api/latest/projects/LT{id}/repos/{repo}{id}/tags/no-such-tag",
+        "GET /rest/api/latest/projects/LT{id}/repos/{repo}{id}/tags/v-live-dryrun-{id}",
+        "... and 8 more"
+      ],
+      "count": 18
+    },
+    {
+      "status": 404,
+      "exception": "com.atlassian.bitbucket.NoSuchEntityException",
+      "bbKind": "not_found",
+      "exampleMessage": "There is no restriction with ID 13",
+      "endpoints": [
+        "DELETE /rest/default-reviewers/latest/projects/LT{id}/condition/{id}",
+        "GET /rest/branch-permissions/latest/projects/LT{id}/repos/{repo}{id}/restrictions/13",
+        "GET /rest/branch-permissions/latest/projects/LT{id}/repos/{repo}{id}/restrictions/{id}",
+        "POST /rest/default-reviewers/latest/projects/LT{id}/repos/{repo}{id}/condition"
+      ],
+      "count": 4
+    },
+    {
+      "status": 404,
+      "exception": "com.atlassian.bitbucket.commit.NoSuchCommitException",
+      "bbKind": "not_found",
+      "exampleMessage": "Commit 'refs/heads/does-not-exist' does not exist in repository 'lt-repo-1-8000'.",
+      "endpoints": [
+        "GET /rest/api/latest/projects/LT{id}/repos/{repo}{id}/patch"
+      ],
+      "count": 1
+    },
+    {
+      "status": 404,
+      "exception": "com.atlassian.bitbucket.project.NoSuchProjectException",
+      "bbKind": "not_found",
+      "exampleMessage": "Project DRYP84800 does not exist.",
+      "endpoints": [
+        "GET /rest/api/latest/projects/DRYP{id}",
+        "GET /rest/api/latest/projects/DRY{id}",
+        "GET /rest/api/latest/projects/NONEXISTENT_KEY_{id}",
+        "GET /rest/api/latest/projects/NOSUCHPROJECT{id}",
+        "GET /rest/api/latest/projects/NOSUCHPROJECT{id}/permissions/users",
+        "GET /rest/api/latest/projects/{project}/permissions/users",
+        "GET /rest/default-reviewers/latest/projects/NOSUCHPROJECT{id}/conditions"
+      ],
+      "count": 10
+    },
+    {
+      "status": 404,
+      "exception": "com.atlassian.bitbucket.pull.NoSuchPullRequestException",
+      "bbKind": "not_found",
+      "exampleMessage": "Pull request 999999 does not exist in LT917500/lt-repo-1-7500.",
+      "endpoints": [
+        "GET /rest/api/latest/projects/LT{id}/repos/{repo}{id}/pull-requests/{id}",
+        "GET /rest/api/latest/projects/LT{id}/repos/{repo}{id}/pull-requests/{id}.diff",
+        "GET /rest/api/latest/projects/LT{id}/repos/{repo}{id}/pull-requests/{id}/activities",
+        "GET /rest/api/latest/projects/LT{id}/repos/{repo}{id}/pull-requests/{id}/blocker-comments"
+      ],
+      "count": 8
+    },
+    {
+      "status": 404,
+      "exception": "com.atlassian.bitbucket.pull.reviewer.NoSuchReviewerGroupException",
+      "bbKind": "not_found",
+      "exampleMessage": "There is no reviewer group with ID 46.",
+      "endpoints": [
+        "DELETE /rest/api/latest/projects/LT{id}/repos/{repo}{id}/settings/reviewer-groups/46"
+      ],
+      "count": 1
+    },
+    {
+      "status": 404,
+      "exception": "com.atlassian.bitbucket.repository.NoSuchRepositoryException",
+      "bbKind": "not_found",
+      "exampleMessage": "Repository LT466600/no-such-repository does not exist.",
+      "endpoints": [
+        "GET /rest/api/latest/projects/LT{id}/repos/does-not-exist/pull-requests/1/blocker-comments",
+        "GET /rest/api/latest/projects/LT{id}/repos/no-such-repository",
+        "GET /rest/api/latest/projects/LT{id}/repos/no-such-repository/archive",
+        "GET /rest/api/latest/projects/LT{id}/repos/no-such-repository/branches",
+        "GET /rest/api/latest/projects/LT{id}/repos/no-such-repository/commits",
+        "GET /rest/api/latest/projects/LT{id}/repos/no-such-repository/files/docs",
+        "GET /rest/api/latest/projects/LT{id}/repos/no-such-repository/settings/pull-requests",
+        "GET /rest/api/latest/projects/LT{id}/repos/no-such-repository/tags/no-such-tag",
+        "... and 1 more"
+      ],
+      "count": 11
+    },
+    {
+      "status": 404,
+      "exception": "com.atlassian.bitbucket.user.NoSuchUserException",
+      "bbKind": "not_found",
+      "exampleMessage": "User nobody-by-that-name does not exist.",
+      "endpoints": [
+        "GET /rest/api/latest/users/nobody-by-that-name"
+      ],
+      "count": 3
+    },
+    {
+      "status": 406,
+      "bbKind": "permanent",
+      "endpoints": [
+        "GET /rest/api/latest/projects/LT{id}"
+      ],
+      "count": 1,
+      "emptyBody": true
+    },
+    {
+      "status": 409,
+      "exception": "com.atlassian.bitbucket.IntegrityException",
+      "bbKind": "conflict",
+      "exampleMessage": "The project \"LT299000\" cannot be deleted because it has repositories.",
+      "endpoints": [
+        "DELETE /rest/api/latest/projects/LT{id}"
+      ],
+      "count": 6
+    },
+    {
+      "status": 409,
+      "exception": "com.atlassian.bitbucket.comment.CommentOutOfDateException",
+      "bbKind": "conflict",
+      "exampleMessage": "You are attempting to modify a comment based on out-of-date information.",
+      "endpoints": [
+        "PUT /rest/api/latest/projects/LT{id}/repos/{repo}{id}/commits/{id}/comments/61"
+      ],
+      "count": 1
+    },
+    {
+      "status": 409,
+      "exception": "com.atlassian.bitbucket.pull.IllegalPullRequestStateException",
+      "bbKind": "conflict",
+      "exampleMessage": "This pull request has already been merged.",
+      "endpoints": [
+        "POST /rest/api/latest/projects/LT{id}/repos/{repo}{id}/pull-requests/1/merge"
+      ],
+      "count": 1
+    },
+    {
+      "status": 409,
+      "exception": "com.atlassian.bitbucket.pull.PullRequestOutOfDateException",
+      "bbKind": "conflict",
+      "exampleMessage": "You are attempting to modify a pull request based on out-of-date information.",
+      "endpoints": [
+        "POST /rest/api/latest/projects/LT{id}/repos/{repo}{id}/pull-requests/1/decline"
+      ],
+      "count": 1
+    },
+    {
+      "status": 409,
+      "exception": "com.atlassian.bitbucket.repository.sync.RefAlreadySynchronizedException",
+      "bbKind": "conflict",
+      "exampleMessage": "Ref refs/heads/master in LT437600/lt-repo-1-7600-fork is already synchronized with its upstream.",
+      "endpoints": [
+        "POST /rest/sync/latest/projects/LT{id}/repos/{repo}{id}-fork/synchronize"
+      ],
+      "count": 2
+    }
+  ]
+}
