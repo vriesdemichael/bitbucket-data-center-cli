@@ -119,3 +119,31 @@ mocks, because all five hung off shared constructors that are still there.
 
 Nothing verifies a number in a commit message, which is the whole reason to read it rather than
 work it out.
+
+## Release prose (`docs/release-notes/`)
+
+A release may carry a written introduction. Put it in
+`docs/release-notes/<version>.md` — `docs/release-notes/v4.0.0.md`, matching the
+tag the version computation will produce — and the release job prepends it to
+the generated notes.
+
+It has to exist **before** the push that triggers the release. The notes are
+rendered into the versioned docs snapshot in the same run, and a mike snapshot
+is immutable in practice: no later commit reaches the `/vX.Y.Z/` page. Prose
+added afterwards can be edited into the GitHub release, but the pinned docs page
+keeps the ledger for good.
+
+Absent for an ordinary release, which is the normal case and changes nothing.
+Above forty entries the generated ledger folds into a `<details>` block, so the
+prose is what a reader meets first; breaking changes stay in the open however
+many there are.
+
+To see what a release would publish, without releasing anything:
+
+```bash
+awk '/Generate changelog from Conventional Commits/,/^      - name: Create and push/' .github/workflows/release.yml \
+  | sed -n "/python - <<'PY'/,/^          PY$/p" | sed '1d;$d' | sed 's/^          //' > /tmp/gen_changelog.py
+VERSION=v4.0.0 PREVIOUS_TAG=v3.5.2 \
+  REPOSITORY_URL="https://github.com/vriesdemichael/bitbucket-data-center-cli" \
+  python /tmp/gen_changelog.py && cat RELEASE_NOTES.md
+```
