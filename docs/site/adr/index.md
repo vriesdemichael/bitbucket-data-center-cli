@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `81`
-- Accepted ADRs: `70`
+- Total ADRs: `82`
+- Accepted ADRs: `71`
 
 ## ADR List
 
@@ -90,4 +90,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 079: Unit tests do not simulate Bitbucket](079-unit-tests-do-not-simulate-bitbucket.md) (`development`, `accepted`)
 - [ADR 080: Bitbucket resolves CODEOWNERS, not bb](080-bitbucket-resolves-codeowners-not-bb.md) (`architecture`, `accepted`)
 - [ADR 081: An issue closes when its fix ships, not when it merges](081-an-issue-closes-when-its-fix-ships.md) (`development`, `proposed`)
+- [ADR 082: A unit test process inherits nothing](082-a-unit-test-process-inherits-nothing.md) (`development`, `accepted`)
 
