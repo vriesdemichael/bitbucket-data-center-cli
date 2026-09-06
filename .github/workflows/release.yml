@@ -46,6 +46,11 @@ jobs:
           MANUAL_VERSION: ${{ github.event.inputs.version || '' }}
         run: |
           set -euo pipefail
+          # The tag list decides the version, and a checkout that started while
+          # another release was still running has a stale one. Refreshing here
+          # is what lets the supersede check below see a tag the other run
+          # pushed a moment ago (#499).
+          git fetch --tags --force origin
           python - <<'PY'
           import os
           import re
@@ -498,12 +503,32 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git rev-parse "$VERSION" >/dev/null 2>&1; then
-            echo "Tag $VERSION already exists; continuing with release publication."
-          else
+
+          # Ask the remote rather than the tag list this job started with: the
+          # question is whether the tag exists now, not whether it existed at
+          # checkout.
+          git fetch --tags --force origin
+
+          if ! git rev-parse --verify --quiet "$VERSION" >/dev/null; then
             git tag -a "$VERSION" -m "Release $VERSION"
             git push origin "$VERSION"
+            exit 0
           fi
+
+          tagged=$(git rev-list -n 1 "$VERSION")
+          if [[ "$tagged" == "$GITHUB_SHA" ]]; then
+            echo "Tag $VERSION is already on this commit; nothing to push."
+            exit 0
+          fi
+
+          # Somebody else published this version, from a different commit. This
+          # run is stale: its artifacts were built from $GITHUB_SHA and would be
+          # published under a tag that does not point at them. Nothing is lost
+          # by stopping -- the next release computes from the last tag and
+          # sweeps these commits up with it.
+          echo "Tag $VERSION already points at $tagged, not $GITHUB_SHA."
+          echo "Another release published this version first; this run is superseded."
+          exit 1
 
       - name: Build Linux .deb and .rpm packages
         env:
