@@ -4,9 +4,12 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestReviewerServiceValidation(t *testing.T) {
@@ -187,4 +190,53 @@ func TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks(t *testing.T)
 	}
 
 	_, _ = service.CreateProjectReviewerGroup(ctx, "PRJ", "group", "", nil)
+}
+
+// TestResolveGroupMembersReportsATransportFailure covers the branch a server
+// cannot produce on request.
+//
+// Resolving a reviewer group's members is an extra round trip the caller never
+// asked for, made on their behalf to turn a username into the numeric id
+// Bitbucket wants. When that lookup cannot be made at all -- the connection
+// refused, the far end gone -- the failure has to reach the caller as
+// transient, naming the user it was looking up. Swallowing it would create the
+// group without that member, which is the outcome the id lookup exists to
+// prevent.
+//
+// A live Bitbucket cannot be asked to drop a connection on cue, so the listener
+// is closed before the request is made.
+func TestResolveGroupMembersReportsATransportFailure(t *testing.T) {
+	client, err := openapigenerated.NewClientWithResponses(testsupport.ClosedListenerURL(t))
+	if err != nil {
+		t.Fatalf("build client: %v", err)
+	}
+	service := NewService(nil)
+	service.client = client
+
+	members, err := service.resolveGroupMembers(context.Background(), []string{"alice"})
+	if err == nil {
+		t.Fatalf("a refused connection resolved to %v", members)
+	}
+	if kind := apperrors.KindOf(err); kind != apperrors.KindTransient {
+		t.Errorf("kind = %v, want transient: %v", kind, err)
+	}
+	if !strings.Contains(err.Error(), "alice") {
+		t.Errorf("the failure does not name the user it was looking up: %v", err)
+	}
+}
+
+// TestResolveGroupMembersSkipsBlanks covers the padding a comma-separated flag
+// leaves behind: "alice,,bob" and "alice, bob" both reach here with entries
+// that are not names. They are dropped rather than looked up, because a lookup
+// of "" is a request that cannot succeed and an error the caller cannot act on.
+func TestResolveGroupMembersSkipsBlanks(t *testing.T) {
+	service := NewService(nil)
+
+	members, err := service.resolveGroupMembers(context.Background(), []string{"", "   ", "\t"})
+	if err != nil {
+		t.Fatalf("blank entries should be skipped, got: %v", err)
+	}
+	if len(members) != 0 {
+		t.Errorf("resolved %d members from blanks, want none", len(members))
+	}
 }

@@ -9446,7 +9446,7 @@ Flags:
       --all            Return every result rather than the first --limit
       --limit int      Maximum number of results to return (default 25)
       --repo string    Optional repository as PROJECT/slug to scope search
-      --role string    Filter by role, only applied when --repo is not used (one of: author, reviewer, participant)
+      --role string    Filter by role; dashboard only, so it cannot be combined with --repo (one of: author, reviewer, participant)
       --start int      Pagination start index
       --state string   Filter by state (one of: open, closed, all) (default "open")
 
