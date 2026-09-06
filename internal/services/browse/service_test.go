@@ -207,8 +207,13 @@ func TestBrowseServiceEdit(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 		_, err := service.Edit(context.Background(), repo, "file.txt", EditInput{Branch: "main"})
-		if err == nil || !strings.Contains(err.Error(), "empty commit response") {
-			t.Fatalf("expected empty response error, got %v", err)
+		if err == nil || !strings.Contains(err.Error(), "empty body where the specification documents a payload") {
+			t.Fatalf("expected the missing-payload error, got %v", err)
+		}
+		// Permanent, not internal: the server and the spec disagree, which is
+		// not bb malfunctioning and not something a retry changes.
+		if kind := apperrors.KindOf(err); kind != apperrors.KindPermanent {
+			t.Errorf("kind = %v, want permanent", kind)
 		}
 	})
 }

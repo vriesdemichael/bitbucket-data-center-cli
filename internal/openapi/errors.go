@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -82,6 +83,9 @@ func MapStatusError(status int, body []byte) error {
 
 	switch status {
 	case http.StatusBadRequest:
+		if kind, ok := kindFromException(body); ok {
+			return apperrors.New(kind, baseMessage, nil)
+		}
 		return apperrors.New(apperrors.KindValidation, baseMessage, nil)
 	case http.StatusUnauthorized:
 		return apperrors.New(apperrors.KindAuthentication, baseMessage, nil)
@@ -102,4 +106,98 @@ func MapStatusError(status int, body []byte) error {
 		}
 		return apperrors.New(apperrors.KindPermanent, baseMessage, nil)
 	}
+}
+
+// badRequestExceptions are the 400s whose exceptionName says the status is
+// wrong about what happened.
+//
+// 400 is the one ambiguous status Bitbucket sends in practice: 403, 404 and 409
+// each mean one thing, and a full live run produces no 5xx at all. So this is a
+// short list rather than a table, and it is grown from
+// docs/quality/bitbucket-error-registry.json -- an entry earns its place by
+// having been observed, not by seeming likely.
+//
+// DuplicateRefException is `bb branch create` on a name that is already taken.
+// The request was well formed and the caller can fix it, but not by correcting
+// their input: the branch is there. Reporting validation sends them looking at
+// what they typed, and exit 2 tells a script the wrong thing about a repository
+// state that exit 5 describes exactly.
+var badRequestExceptions = map[string]apperrors.Kind{
+	"com.atlassian.bitbucket.repository.DuplicateRefException": apperrors.KindConflict,
+}
+
+// kindFromException reads Bitbucket's own name for what went wrong.
+//
+// Additive by construction: an exception that is not listed, or a body that
+// carries none, falls through to the status-only answer. A change here can only
+// correct a case, never break one that works today.
+func kindFromException(body []byte) (apperrors.Kind, bool) {
+	trimmed := strings.TrimSpace(string(body))
+	if trimmed == "" {
+		return "", false
+	}
+
+	var envelope struct {
+		Errors []struct {
+			ExceptionName *string `json:"exceptionName"`
+		} `json:"errors"`
+	}
+	if err := json.Unmarshal([]byte(trimmed), &envelope); err != nil {
+		return "", false
+	}
+
+	for _, one := range envelope.Errors {
+		if one.ExceptionName == nil {
+			continue
+		}
+		if kind, ok := badRequestExceptions[strings.TrimSpace(*one.ExceptionName)]; ok {
+			return kind, true
+		}
+	}
+
+	return "", false
+}
+
+// MissingPayload says what a 2xx that carried no usable payload means.
+//
+// It answers one question ten call sites used to answer four different ways:
+// six returned an empty success, three a KindPermanent, two a KindInternal.
+// Nothing decided that; it is wherever each was written, and the difference
+// matters because KindInternal tells the caller bb is broken.
+//
+// It already has, once. Rebasing a branch that is already on top of its target
+// answers 204, and reading that as a failure produced
+//
+//	internal: unexpected empty rebase response body   (exit 1)
+//
+// for a pull request that was exactly where it had been asked to be
+// (OPENAPI-028). Three situations were being collapsed into one:
+//
+//   - the server sent nothing where the spec documents a payload. The endpoint
+//     and the specification disagree about that, which is not bb malfunctioning.
+//   - the server sent something the generated client could not read as the
+//     documented type. Same disagreement, and the body goes into the message
+//     because it is the evidence for the OPENAPI-* entry that should be written.
+//
+// Both are permanent: a retry sends the identical request and gets the
+// identical answer. Neither is internal, which is the word bb uses for its own
+// bugs and which sends the reader to the wrong repository.
+//
+// This never turns a failure into a success. A 2xx that legitimately carries no
+// payload -- a 204 from an endpoint whose spec documents only the 200 -- is the
+// call site's to recognise, before it asks here; see Rebase, which returns
+// success on a 204 and reaches this only when something else went wrong.
+//
+// what names the operation, so the message says which call came back empty.
+func MissingPayload(status int, body []byte, what string) error {
+	if len(bytes.TrimSpace(body)) == 0 {
+		return apperrors.New(apperrors.KindPermanent, fmt.Sprintf(
+			"%s: the server answered %d with an empty body where the specification documents a payload",
+			what, status), nil)
+	}
+
+	return apperrors.New(apperrors.KindPermanent, fmt.Sprintf(
+		"%s: the server answered %d with a body this client could not read as the documented payload, "+
+			"so the specification and the server disagree: %s",
+		what, status, strings.TrimSpace(string(body))), nil)
 }

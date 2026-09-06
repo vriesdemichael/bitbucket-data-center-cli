@@ -216,7 +216,7 @@ func (service *Service) Edit(ctx context.Context, repo RepositoryRef, path strin
 	}
 
 	if resp.ApplicationjsonCharsetUTF8200 == nil {
-		return nil, apperrors.New(apperrors.KindPermanent, "empty commit response from server", nil)
+		return nil, openapi.MissingPayload(resp.StatusCode(), resp.Body, "reading a commit")
 	}
 
 	return resp.ApplicationjsonCharsetUTF8200, nil

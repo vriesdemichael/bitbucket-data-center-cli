@@ -262,7 +262,7 @@ func (s *Service) Create(ctx context.Context, scope ScopeType, target string, na
 		return openapigenerated.RestRawAccessToken{}, apperrors.New(apperrors.KindValidation, "invalid scope type", nil)
 	}
 
-	return openapigenerated.RestRawAccessToken{}, apperrors.New(apperrors.KindInternal, "unexpected empty response during token creation", nil)
+	return openapigenerated.RestRawAccessToken{}, apperrors.New(apperrors.KindPermanent, "unexpected empty response during token creation", nil)
 }
 
 func (s *Service) Update(ctx context.Context, scope ScopeType, target string, id string, name string, permissions []string) (openapigenerated.RestAccessToken, error) {

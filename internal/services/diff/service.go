@@ -87,7 +87,7 @@ var statsSummaryCounts = []string{"filesChanged", "totalInsertions", "totalDelet
 func decodeStatsSummary(body []byte) (StatsSummary, error) {
 	trimmed := bytes.TrimSpace(body)
 	if len(trimmed) == 0 {
-		return nil, apperrors.New(apperrors.KindInternal, "bitbucket returned an empty diff stats summary", nil)
+		return nil, apperrors.New(apperrors.KindPermanent, "bitbucket returned an empty diff stats summary", nil)
 	}
 
 	var summary StatsSummary
@@ -335,7 +335,7 @@ func (service *Service) CompareDiff(ctx context.Context, repo RepositoryRef, fro
 	}
 
 	if resp.ApplicationjsonCharsetUTF8200 == nil {
-		return nil, apperrors.New(apperrors.KindPermanent, "empty diff response from server", nil)
+		return nil, openapi.MissingPayload(resp.StatusCode(), resp.Body, "reading the diff")
 	}
 
 	return resp.ApplicationjsonCharsetUTF8200, nil
