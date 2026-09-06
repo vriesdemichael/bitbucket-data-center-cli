@@ -553,7 +553,7 @@ jobs:
       # Each one also gets a copy without the version, so
       # /releases/latest/download/bb_linux_amd64.deb resolves for anyone who just
       # wants the current release. The versioned names stay exactly as they were:
-      # Homebrew, AUR, WinGet and Scoop all reference them, as does anyone
+      # Homebrew, WinGet and Scoop all reference them, as does anyone
       # pinning a release.
       #
       # Created before the checksum step on purpose, so both names appear in
