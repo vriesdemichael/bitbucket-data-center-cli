@@ -15,6 +15,8 @@ import (
 // classifier is that it fires on a rare condition, which is exactly the kind
 // that goes untested and quietly stops working.
 func TestLicenceExpiryHint(t *testing.T) {
+	t.Parallel()
+
 	recognised := []struct {
 		name    string
 		message string

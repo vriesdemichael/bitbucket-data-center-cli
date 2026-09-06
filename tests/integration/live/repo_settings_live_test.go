@@ -15,6 +15,8 @@ import (
 )
 
 func TestLiveRepoSettingsSecurityPermissionsUsers(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
@@ -36,6 +38,8 @@ func TestLiveRepoSettingsSecurityPermissionsUsers(t *testing.T) {
 }
 
 func TestLiveRepoSettingsWorkflowWebhooks(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
@@ -57,6 +61,8 @@ func TestLiveRepoSettingsWorkflowWebhooks(t *testing.T) {
 }
 
 func TestLiveRepoSettingsPullRequestSettings(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
@@ -78,6 +84,8 @@ func TestLiveRepoSettingsPullRequestSettings(t *testing.T) {
 }
 
 func TestLiveRepoSettingsGrantUserPermission(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
@@ -97,6 +105,8 @@ func TestLiveRepoSettingsGrantUserPermission(t *testing.T) {
 }
 
 func TestLiveRepoSettingsCreateWebhook(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
@@ -121,6 +131,8 @@ func TestLiveRepoSettingsCreateWebhook(t *testing.T) {
 }
 
 func TestLiveRepoSettingsUpdatePullRequestRequiredAllTasks(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
@@ -152,6 +164,8 @@ func TestLiveRepoSettingsUpdatePullRequestRequiredAllTasks(t *testing.T) {
 }
 
 func TestLiveRepoSettingsDeleteWebhook(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
@@ -184,6 +198,8 @@ func TestLiveRepoSettingsDeleteWebhook(t *testing.T) {
 }
 
 func TestLiveRepoSettingsUpdatePullRequestRequiredApprovers(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 

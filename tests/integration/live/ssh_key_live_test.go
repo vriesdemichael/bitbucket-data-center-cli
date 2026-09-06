@@ -45,6 +45,8 @@ func generateSSHPublicKey(t *testing.T, comment string) string {
 // project, so the test removes what it adds and identifies its own key by label
 // rather than assuming it is the only one present.
 func TestLivePersonalSSHKeyLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -102,6 +104,8 @@ func TestLivePersonalSSHKeyLifecycle(t *testing.T) {
 // a permission and hang off the repository, so the permission round-tripping is
 // the part worth asserting.
 func TestLiveRepositoryAccessKeyLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)

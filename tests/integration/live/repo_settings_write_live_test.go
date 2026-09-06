@@ -20,6 +20,8 @@ import (
 // the read-back is what makes the assertion mean anything: a name the server
 // stored is a name the server understood.
 func TestLiveWorkflowWebhookLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -105,6 +107,8 @@ func trimNumeric(value any) string {
 // which is what #479 was. Reading it back is the only way to know the number
 // the server holds is the number that was asked for.
 func TestLiveRequiredApproversRoundTrip(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -159,6 +163,8 @@ func approverCountFrom(t *testing.T, settings map[string]any) string {
 // matters: a webhook that silently loses it starts failing signature checks at
 // the far end, with nothing in bb's output to say why.
 func TestLiveWebhookUpdatePreservesUnchangedFields(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -223,6 +229,8 @@ func TestLiveWebhookUpdatePreservesUnchangedFields(t *testing.T) {
 // actually has is the same assertion without the fixture deciding the answer,
 // and it catches the case a fixture cannot: a field Bitbucket stopped sending.
 func TestLiveRepoSettingsReadSurfaces(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()

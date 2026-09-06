@@ -11,6 +11,8 @@ import (
 )
 
 func TestLiveCommitPaginationOverRealStream(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
@@ -64,6 +66,8 @@ func TestLiveCommitPaginationOverRealStream(t *testing.T) {
 }
 
 func TestLiveBranchPaginationOverRealStream(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()

@@ -113,6 +113,8 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 // the URL built from it is one git accepts, are the two things that could
 // actually be wrong.
 func TestLiveRepoCloneAddsTheUpstreamRemote(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

@@ -17,6 +17,8 @@ import (
 // one of the cases a stub cannot stand in for: a malformed block, or one bb
 // mangles on the way out, is rejected by the server and by nothing else.
 func TestLiveGPGKeyLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)

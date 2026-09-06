@@ -15,15 +15,16 @@ import (
 // returned nothing and committed an empty file over a real one. ADR-073 now
 // requires the caller to ask, with --content -.
 func TestRepoEditRequiresContentToBeAskedFor(t *testing.T) {
+	t.Parallel()
+
 	// A closed listener rather than a guarded one: the second case is supposed
 	// to reach a request. Both are decided before a reply matters -- one
 	// refuses without asking, and the other only has to get past that same
 	// refusal, so a request that fails at the transport is a pass.
-	t.Setenv("BITBUCKET_URL", testsupport.ClosedListenerURL(t))
-	t.Setenv("BITBUCKET_TOKEN", "token")
+	setup := testSetup{Host: testsupport.ClosedListenerURL(t), Token: "token"}
 
 	t.Run("no content given", func(t *testing.T) {
-		_, err := executeTestCLI(t, "repo", "edit", "file.txt",
+		_, err := executeTestCLIWith(t, setup, "repo", "edit", "file.txt",
 			"--repo", "PRJ/repo", "--message", "m", "--branch", "main")
 		if err == nil {
 			t.Fatal("an empty file was written with no content given")
@@ -34,17 +35,14 @@ func TestRepoEditRequiresContentToBeAskedFor(t *testing.T) {
 	})
 
 	t.Run("stdin when asked for", func(t *testing.T) {
-		root := NewRootCommand()
-		root.SetIn(strings.NewReader("body from stdin"))
-		out := &strings.Builder{}
-		root.SetOut(out)
-		root.SetErr(out)
-		root.SetArgs([]string{"repo", "edit", "file.txt", "--content", "-",
-			"--repo", "PRJ/repo", "--message", "m", "--branch", "main"})
+		reading := setup
+		reading.Stdin = strings.NewReader("body from stdin")
 
 		// The point is that --content - reaches the read rather than being
 		// rejected as missing; whether the stub accepts the write is not.
-		if err := root.Execute(); err != nil && strings.Contains(err.Error(), "no content given") {
+		_, err := executeTestCLIWith(t, reading, "repo", "edit", "file.txt", "--content", "-",
+			"--repo", "PRJ/repo", "--message", "m", "--branch", "main")
+		if err != nil && strings.Contains(err.Error(), "no content given") {
 			t.Errorf("--content - was treated as missing content: %v", err)
 		}
 	})

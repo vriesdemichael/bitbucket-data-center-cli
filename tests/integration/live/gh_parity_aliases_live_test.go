@@ -23,6 +23,8 @@ import (
 // stop being the same command, this fails rather than the two quietly drifting
 // the way hand-maintained duplicates do.
 func TestLiveRepoPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -91,6 +93,8 @@ func TestLiveRepoPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 // TestLiveProjectPermissionShallowAliasesMatchDeepPaths is the project-tree
 // twin of the test above.
 func TestLiveProjectPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)

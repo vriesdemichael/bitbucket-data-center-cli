@@ -15,6 +15,8 @@ import (
 // most likely place for a helper to lose its working directory and operate on
 // the project checkout instead of its own fixture.
 func TestMain(m *testing.M) {
+	configureLiveCLIConstants()
+
 	before := gittest.SnapshotAmbientConfig()
 	code := m.Run()
 

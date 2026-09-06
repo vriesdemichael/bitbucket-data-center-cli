@@ -10,6 +10,8 @@ import (
 )
 
 func TestLiveCLIProjectLifecycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -24,7 +26,10 @@ func TestLiveCLIProjectLifecycle(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	// List
-	listOutput, err := executeLiveCLI(t, "project", "list", "--name", "Live Test")
+	// Filtered by this project's own name, not the "Live Test" prefix every
+	// seeded project shares: the prefix matches the whole suite, so the first
+	// page of the answer is whichever tests seeded most recently.
+	listOutput, err := executeLiveCLI(t, "project", "list", "--name", seeded.Name)
 	if err != nil {
 		t.Fatalf("project list failed: %v\noutput: %s", err, listOutput)
 	}
@@ -76,6 +81,8 @@ func TestLiveCLIProjectLifecycle(t *testing.T) {
 }
 
 func TestLiveCLIProjectUpdateDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -113,6 +120,8 @@ func TestLiveCLIProjectUpdateDryRunNoSideEffect(t *testing.T) {
 }
 
 func TestLiveCLIProjectDeleteDryRunNoSideEffect(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -126,11 +135,6 @@ func TestLiveCLIProjectDeleteDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	listBeforeOutput, err := executeLiveCLI(t, "--json", "project", "list", "--limit", "200")
-	if err != nil {
-		t.Fatalf("project list before failed: %v\noutput: %s", err, listBeforeOutput)
-	}
-
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "project", "delete", seeded.Key)
 	if err != nil {
 		t.Fatalf("project delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
@@ -139,12 +143,12 @@ func TestLiveCLIProjectDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected project.delete intent, got: %s", dryRunOutput)
 	}
 
-	listAfterOutput, err := executeLiveCLI(t, "--json", "project", "list", "--limit", "200")
-	if err != nil {
-		t.Fatalf("project list after failed: %v\noutput: %s", err, listAfterOutput)
-	}
-
-	if listBeforeOutput != listAfterOutput {
-		t.Fatalf("expected no project side-effect from delete dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	// The project itself, rather than a byte comparison of the instance-wide
+	// listing before and after: that listing changes whenever any other test
+	// seeds or removes a project, which under a parallel suite is constantly,
+	// and none of it is this dry run's doing. What the dry run must not have
+	// done is delete this one.
+	if getOutput, getErr := executeLiveCLI(t, "--json", "project", "get", seeded.Key); getErr != nil {
+		t.Fatalf("the delete dry-run removed project %s: %v\noutput: %s", seeded.Key, getErr, getOutput)
 	}
 }

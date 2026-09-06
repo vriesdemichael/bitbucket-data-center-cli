@@ -74,6 +74,12 @@ var exemptFromParity = map[string]string{
 	// locally would replace a three-second warm `go run` with a two-minute
 	// build of a tool they already have cached.
 	"tools:golangci-lint": "installs the linter CI would otherwise rebuild every run; quality:lint works without it",
+	// The race detector needs cgo, and cgo needs a C compiler. A Go toolchain
+	// on Windows has neither by default, so a hook that ran this would fail for
+	// the developers who have not installed one -- and it would fail saying
+	// "-race requires cgo", which reads as a broken repository rather than a
+	// missing toolchain. CI is Linux and has one.
+	"test:unit:race": "the race detector needs cgo, which a default Windows Go toolchain does not have",
 }
 
 func TestEveryHookRunnableGateRunsOnBothSides(t *testing.T) {

@@ -1,7 +1,6 @@
 package reposel
 
 import (
-	"os"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
@@ -48,6 +47,8 @@ func TestParse(t *testing.T) {
 }
 
 func TestResolve(t *testing.T) {
+	t.Parallel()
+
 	t.Run("explicit selector wins", func(t *testing.T) {
 		proj, slug, err := Resolve("FOO/bar", config.AppConfig{ProjectKey: "BAZ"})
 		if err != nil {
@@ -58,11 +59,12 @@ func TestResolve(t *testing.T) {
 		}
 	})
 
-	t.Run("falls back to config and env", func(t *testing.T) {
-		_ = os.Setenv("BITBUCKET_REPO_SLUG", "env-slug")
-		defer os.Unsetenv("BITBUCKET_REPO_SLUG")
-
-		proj, slug, err := Resolve("", config.AppConfig{ProjectKey: "ENVPROJ"})
+	t.Run("falls back to the configured context", func(t *testing.T) {
+		// Both halves come from cfg. The slug used to be read from
+		// BITBUCKET_REPO_SLUG here, which is the variable the config layer
+		// already reads -- and reads after an override, so a repository
+		// inferred from a git remote reached the project key and not the slug.
+		proj, slug, err := Resolve("", config.AppConfig{ProjectKey: "ENVPROJ", RepoSlug: "env-slug"})
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}
@@ -72,7 +74,6 @@ func TestResolve(t *testing.T) {
 	})
 
 	t.Run("missing both returns validation error", func(t *testing.T) {
-		_ = os.Unsetenv("BITBUCKET_REPO_SLUG")
 		_, _, err := Resolve("", config.AppConfig{ProjectKey: ""})
 		if err == nil {
 			t.Fatalf("expected error, got nil")

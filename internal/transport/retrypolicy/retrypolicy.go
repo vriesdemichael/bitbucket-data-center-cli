@@ -13,7 +13,9 @@ package retrypolicy
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // Replayable reports whether a request may be sent again after a transport
@@ -59,3 +61,49 @@ func RetriableStatus(method string, status int) bool {
 
 	return status >= 500 && Replayable(method)
 }
+
+// Delay reports how long to wait before replaying a request.
+//
+// Retry-After decides it when the server sends one, in either form the HTTP
+// specification allows: a number of seconds, or a date. A rate limiter that
+// says when it will have capacity again knows better than any backoff we
+// choose, and a request replayed before then is refused again and spends
+// another attempt. A date already in the past, or a negative count, means now.
+//
+// Without the header it is a linear backoff on the attempt number.
+//
+// This lived twice, once in each transport, in copies that were identical
+// character for character. That made the two consistent by coincidence rather
+// than by construction, which is the same reason Replayable and RetriableStatus
+// are here: a policy about retrying belongs in one place, or the next change
+// lands in one transport and not the other.
+func Delay(headers http.Header, attempt int, fallbackBase time.Duration) time.Duration {
+	if fallbackBase <= 0 {
+		fallbackBase = defaultBackoffBase
+	}
+
+	if headers != nil {
+		if retryAfter := strings.TrimSpace(headers.Get("Retry-After")); retryAfter != "" {
+			if seconds, err := strconv.Atoi(retryAfter); err == nil {
+				if seconds < 0 {
+					seconds = 0
+				}
+
+				return time.Duration(seconds) * time.Second
+			}
+
+			if retryAt, err := http.ParseTime(retryAfter); err == nil {
+				if delay := time.Until(retryAt); delay > 0 {
+					return delay
+				}
+
+				return 0
+			}
+		}
+	}
+
+	return time.Duration(attempt+1) * fallbackBase
+}
+
+// defaultBackoffBase is used when a caller passes no base of its own.
+const defaultBackoffBase = 250 * time.Millisecond

@@ -46,8 +46,7 @@ func TestBranchInternalHelpers(t *testing.T) {
 	}
 
 	// resolveBranchRepositoryReference
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
-	cfg := config.AppConfig{ProjectKey: "PRJ"}
+	cfg := config.AppConfig{ProjectKey: "PRJ", RepoSlug: "repo"}
 	ref, err := resolveBranchRepositoryReference("", cfg)
 	if err != nil || ref.ProjectKey != "PRJ" || ref.Slug != "repo" {
 		t.Fatalf("unexpected resolveBranchRepositoryReference result: %+v, %v", ref, err)

@@ -27,6 +27,8 @@ import (
 // The state is seeded once and read many ways: an unresolved comment with a
 // reply, an unresolved task, and a reviewer who has asked for changes.
 func TestLivePullRequestReviewSurfaces(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
@@ -233,6 +235,8 @@ func TestLivePullRequestReviewSurfaces(t *testing.T) {
 // contract and what a real server's data turns into, and that needs the real
 // server.
 func TestLivePullRequestOutputMatchesDeclaredSchema(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()

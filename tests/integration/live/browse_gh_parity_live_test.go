@@ -10,6 +10,8 @@ import (
 )
 
 func TestLiveBrowseParityURLs(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -58,6 +60,8 @@ func TestLiveBrowseParityURLs(t *testing.T) {
 }
 
 func TestLiveBrowseRejectsUnsupportedGhFlags(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)

@@ -13,6 +13,8 @@ import (
 )
 
 func TestLiveCommentFlowCommit(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := commentservice.NewService(harness.client)
 
@@ -60,6 +62,8 @@ func TestLiveCommentFlowCommit(t *testing.T) {
 }
 
 func TestLiveCommentFlowPullRequest(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := commentservice.NewService(harness.client)
 
@@ -117,6 +121,8 @@ func TestLiveCommentFlowPullRequest(t *testing.T) {
 }
 
 func TestLiveBlockerCommentReactionsAndSuggestionsFlow(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := commentservice.NewService(harness.client)
 
@@ -209,6 +215,8 @@ func TestLiveBlockerCommentReactionsAndSuggestionsFlow(t *testing.T) {
 // question -- and resolving a comment is what an agent does at the end of a
 // review, so a silent failure here is expensive.
 func TestLiveCommentStateAndPending(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := commentservice.NewService(harness.client)
 

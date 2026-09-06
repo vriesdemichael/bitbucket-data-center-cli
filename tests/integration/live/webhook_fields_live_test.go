@@ -43,7 +43,7 @@ func executeLiveCLISplit(t *testing.T, stdin string, args ...string) (string, st
 	command.SetOut(stdout)
 	command.SetErr(stderr)
 	command.SetIn(strings.NewReader(stdin))
-	command.SetArgs(args)
+	command.SetArgs(withLiveRepoContext(t, command, args))
 
 	err := command.Execute()
 
@@ -87,6 +87,8 @@ func seedWebhookWithCredentials(t *testing.T, ctx context.Context, harness *live
 // password, because the password was inside `Basic aG9va3VzZXI6...` and base64
 // is not encryption.
 func TestLiveWebhookCredentialsNeverReachStdout(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -155,6 +157,8 @@ func TestLiveWebhookCredentialsNeverReachStdout(t *testing.T) {
 // requirement is that recovering it is an act: a flag that has to be typed, and
 // a warning on stderr saying a credential just went through stdout.
 func TestLiveWebhookRevealSecretIsDeliberate(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -389,6 +393,8 @@ func TestLiveWebhookDryRunNamesTheSecretWithoutPrintingIt(t *testing.T) {
 // the header. It is the difference between "bb probably preserves it" and
 // knowing.
 func TestLiveWebhookEndpointPasswordSurvivesAnUpdate(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
@@ -718,6 +724,8 @@ func TestLiveBulkWebhookSecretTravelsAsAVariableName(t *testing.T) {
 // TestLiveWebhookListingsAreUsable covers the two listing defects #522 collected
 // while the fields were being counted.
 func TestLiveWebhookListingsAreUsable(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

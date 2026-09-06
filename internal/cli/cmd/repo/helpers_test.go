@@ -51,6 +51,16 @@ type testSetup struct {
 	// means the stored config is disabled outright, which is what the tests
 	// that set BB_DISABLE_STORED_CONFIG wanted.
 	ConfigPath string
+
+	// Retries is how often a failing request is repeated before the command
+	// gives up. Nil means none.
+	//
+	// The shipped policy is two retries at 250ms and 500ms, which is right for
+	// a user and wrong for a test whose subject is the failure: every one of
+	// them waited 750ms for an answer it had already decided about. That is
+	// where the whole clone suite's per-test 830ms went -- a stub git backend
+	// and no network in sight, sleeping through a backoff.
+	Retries *int
 }
 
 // dependencies turns a setup into the Dependencies a command is built with.
@@ -60,11 +70,17 @@ func (setup testSetup) dependencies(jsonEnabled, dryRunEnabled func() bool) Depe
 		DryRunEnabled:     dryRunEnabled,
 		PermissionChecker: func(c *openapigenerated.ClientWithResponses) PermissionChecker { return permissionchecker.New(c) },
 		LoadConfig: func() (config.AppConfig, error) {
+			retries := 0
+			if setup.Retries != nil {
+				retries = *setup.Retries
+			}
+
 			return config.LoadWithOverrides(config.Overrides{
 				Host:       setup.Host,
 				Token:      setup.Token,
 				ProjectKey: setup.ProjectKey,
 				RepoSlug:   setup.RepoSlug,
+				RetryCount: &retries,
 			})
 		},
 	}

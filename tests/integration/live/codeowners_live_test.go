@@ -30,6 +30,8 @@ import (
 // negative cases are the point of half of them: an anchored rule must not
 // match deeper, and a path nobody claims must draw nobody.
 func TestLiveCodeOwnersPatternSyntax(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
@@ -178,6 +180,8 @@ func liveCodeOwner(t *testing.T, ctx context.Context, harness *liveHarness, proj
 // That ambiguity is why #503 was possible -- "@reviewer-group/x" missed the
 // group and then went out as a username, which Bitbucket answered with 409.
 func TestLiveCodeOwnersOwnerSyntax(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)

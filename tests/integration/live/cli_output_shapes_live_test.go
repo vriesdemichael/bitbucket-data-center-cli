@@ -17,6 +17,8 @@ import (
 // then formatted, so the assertion was about the formatter and the fixture
 // agreeing, never about the shape Bitbucket actually sends.
 func TestLiveDiffCLIOutput(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
@@ -70,6 +72,8 @@ func TestLiveDiffCLIOutput(t *testing.T) {
 // TestLiveCommentCLIOutput covers what the comment commands print, including
 // the two shapes of a delete: one that resolved a version and one that had it.
 func TestLiveCommentCLIOutput(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
@@ -120,6 +124,8 @@ func TestLiveCommentCLIOutput(t *testing.T) {
 // TestLiveQualityCLIOutput covers the build status and code insights commands
 // through the CLI rather than the service.
 func TestLiveQualityCLIOutput(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()

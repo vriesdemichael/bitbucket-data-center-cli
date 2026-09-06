@@ -25,6 +25,8 @@ import (
 // Reading the file back is the whole test: a path the server does not
 // understand returns nothing, whatever it looked like on the wire.
 func TestLiveBrowsePathEscaping(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
@@ -69,6 +71,8 @@ func TestLiveBrowsePathEscaping(t *testing.T) {
 // boundary against the server to mean anything. --limit below the total and
 // --all above it are the two answers that matter.
 func TestLiveListingsPageToTheEnd(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
@@ -123,6 +127,8 @@ func TestLiveListingsPageToTheEnd(t *testing.T) {
 // was built from state the author supplied. A real repository produces all
 // three without anyone deciding what they look like.
 func TestLiveBranchCommandSurfaces(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
@@ -179,6 +185,8 @@ func TestLiveBranchCommandSurfaces(t *testing.T) {
 // truncate afterwards, so every restriction came back however small the number
 // asked for. The name said cap, the code said page, and no test asked.
 func TestLiveBranchRestrictionLimitCaps(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
@@ -234,6 +242,8 @@ func TestLiveBranchRestrictionLimitCaps(t *testing.T) {
 // capped the results: `bb commit compare --limit 2` walked to the last page and
 // returned every commit between the two refs.
 func TestLiveCommitCompareLimitCaps(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()

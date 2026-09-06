@@ -22,6 +22,8 @@ import (
 // are cheap to reach for real: create the branch, then ask what creating it
 // again would do.
 func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()

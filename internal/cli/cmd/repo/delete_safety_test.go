@@ -16,13 +16,12 @@ import (
 // The rule that replaces it (ADR-073): the target must be named, and --yes
 // does nothing when it is not.
 func TestRepoDeleteWillNotActOnAnInferredTarget(t *testing.T) {
+	t.Parallel()
+
 	// The dangerous shape: a target is available without the caller naming it.
 	// This is what applyInferredRepositoryContext produces from a git remote,
-	// and it is indistinguishable from an operator setting the variables.
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_TOKEN", "token")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
+	// and it is indistinguishable from an operator having configured one.
+	setup := testSetup{Host: "https://bitbucket.example.com", Token: "token", ProjectKey: "PRJ", RepoSlug: "repo"}
 
 	cases := []struct {
 		name string
@@ -48,7 +47,7 @@ func TestRepoDeleteWillNotActOnAnInferredTarget(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := executeTestCLI(t, testCase.args...)
+			_, err := executeTestCLIWith(t, setup, testCase.args...)
 			if err == nil {
 				t.Fatal("the repository was deleted without an explicitly named target")
 			}
@@ -66,10 +65,11 @@ func TestRepoDeleteWillNotActOnAnInferredTarget(t *testing.T) {
 // learns nothing it can act on. An agent that reads this message can fix its
 // own invocation.
 func TestRepoDeleteRefusalNamesTheFlag(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_TOKEN", "token")
+	t.Parallel()
 
-	_, err := executeTestCLI(t, "repo", "delete", "PRJ/repo")
+	setup := testSetup{Host: "https://bitbucket.example.com", Token: "token"}
+
+	_, err := executeTestCLIWith(t, setup, "repo", "delete", "PRJ/repo")
 	if err == nil {
 		t.Fatal("the repository was deleted with no confirmation and no --yes")
 	}
@@ -88,10 +88,11 @@ func TestRepoDeleteRefusalNamesTheFlag(t *testing.T) {
 // Preferring one is what every other command here does, and for an
 // irreversible one it means the caller watches the wrong repository survive.
 func TestRepoDeleteRefusesTwoDifferentTargets(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_TOKEN", "token")
+	t.Parallel()
 
-	_, err := executeTestCLI(t, "repo", "delete", "PRJ/repo", "--repo", "OTHER/other", "--yes")
+	setup := testSetup{Host: "https://bitbucket.example.com", Token: "token"}
+
+	_, err := executeTestCLIWith(t, setup, "repo", "delete", "PRJ/repo", "--repo", "OTHER/other", "--yes")
 	if err == nil {
 		t.Fatal("two contradictory targets were resolved silently")
 	}
@@ -102,7 +103,7 @@ func TestRepoDeleteRefusesTwoDifferentTargets(t *testing.T) {
 	}
 
 	// The same repository twice is not a contradiction.
-	if _, err := executeTestCLI(t, "repo", "delete", "PRJ/repo", "--repo", "PRJ/repo", "--yes"); err != nil {
+	if _, err := executeTestCLIWith(t, setup, "repo", "delete", "PRJ/repo", "--repo", "PRJ/repo", "--yes"); err != nil {
 		if strings.Contains(err.Error(), "two different repositories") {
 			t.Errorf("naming the same repository twice was rejected: %v", err)
 		}
@@ -115,10 +116,11 @@ func TestRepoDeleteRefusesTwoDifferentTargets(t *testing.T) {
 // --no-input flag" before anything registered it, so a refusal could name a
 // flag nobody could pass. This fails if that regresses.
 func TestNoInputRefusesWithoutPrompting(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_TOKEN", "token")
+	t.Parallel()
 
-	_, err := executeTestCLI(t, "repo", "delete", "PRJ/repo", "--no-input")
+	setup := testSetup{Host: "https://bitbucket.example.com", Token: "token"}
+
+	_, err := executeTestCLIWith(t, setup, "repo", "delete", "PRJ/repo", "--no-input")
 	if err == nil {
 		t.Fatal("the repository was deleted with --no-input and no --yes")
 	}
@@ -140,18 +142,13 @@ func TestNoInputRefusesWithoutPrompting(t *testing.T) {
 // --yes` was treated as an explicit target and deleted the repository you were
 // standing in -- the exact scenario the issue reports, reintroduced by its fix.
 func TestRepoDeleteTreatsAnInferredTargetAsUnnamed(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_TOKEN", "token")
+	t.Parallel()
 
-	root := NewRootCommandWithInference(true)
-	out := &strings.Builder{}
-	root.SetOut(out)
-	root.SetErr(out)
+	setup := testSetup{Host: "https://bitbucket.example.com", Token: "token", Inferred: true}
+
 	// --repo is set the way inference sets it: a real value, flag marked
 	// Changed, but nothing the caller wrote.
-	root.SetArgs([]string{"repo", "delete", "--repo", "PRJ/repo", "--yes"})
-
-	err := root.Execute()
+	_, err := executeTestCLIWith(t, setup, "repo", "delete", "--repo", "PRJ/repo", "--yes")
 	if err == nil {
 		t.Fatal("--yes applied to an inferred target; the repository would have been deleted")
 	}

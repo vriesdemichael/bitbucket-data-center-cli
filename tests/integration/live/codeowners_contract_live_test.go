@@ -39,6 +39,8 @@ import (
 // TestLiveCodeOwnersOwnerSyntax. Those would still pass if Atlassian renamed a
 // field or moved the route, because bb would simply report no owners.
 func TestLiveCodeOwnersEndpointContract(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)

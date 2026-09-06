@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1574,18 +1575,35 @@ var (
 	keyringDelete = keyring.Delete
 )
 
-var policyWarningWriter io.Writer
+// policyWarningWriter is where administrative policy warnings go.
+//
+// Guarded, because it is a package-level destination that one test replaces
+// while another reads it. That is an unsynchronised write against a concurrent
+// read as soon as any test in the process is parallel, and the read happens on
+// every configuration load rather than somewhere rare. It was safe only for as
+// long as nothing ran at the same time as anything else.
+var (
+	policyWarningWriterMu sync.RWMutex
+	policyWarningWriter   io.Writer
+)
 
 func getPolicyWarningWriter() io.Writer {
+	policyWarningWriterMu.RLock()
+	defer policyWarningWriterMu.RUnlock()
+
 	if policyWarningWriter != nil {
 		return policyWarningWriter
 	}
+
 	return os.Stderr
 }
 
 // SetPolicyWarningWriter sets an explicit destination for administrative policy warnings.
 // Passing nil restores writing to os.Stderr.
 func SetPolicyWarningWriter(w io.Writer) {
+	policyWarningWriterMu.Lock()
+	defer policyWarningWriterMu.Unlock()
+
 	policyWarningWriter = w
 }
 

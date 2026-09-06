@@ -190,14 +190,10 @@ func TestRepoCloneCommandHonorsDirectoryAndGitFlags(t *testing.T) {
 }
 
 func TestRepoCloneCommandFallsBackToStoredHTTPToken(t *testing.T) {
+	t.Parallel()
+
 	stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh failed"), nil}}
-	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Token: "test-token", Backend: stub}
 
 	output, err := executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo")
 	if err != nil {
@@ -388,14 +384,10 @@ func TestCloneRepositoryWithAuthFallbackRebuildsHTTPSRetryWhenContextPathDiffers
 }
 
 func TestRepoCloneCommandHTTPSFlagSkipsSSHAndUsesTokenUsername(t *testing.T) {
+	t.Parallel()
+
 	stub := &cloneBackendStub{}
-	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
-	t.Setenv("BITBUCKET_USERNAME", "admin")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Token: "test-token", Backend: stub}
 
 	_, err := executeTestCLIWith(t, setup, "repo", "clone", "--https", "PRJ/demo")
 	if err != nil {
@@ -414,11 +406,11 @@ func TestRepoCloneCommandHTTPSFlagSkipsSSHAndUsesTokenUsername(t *testing.T) {
 }
 
 func TestRepoCloneCommandRejectsConflictingTransportFlags(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
+	t.Parallel()
 
-	_, err := executeTestCLI(t, "repo", "clone", "--ssh", "--https", "PRJ/demo")
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ"}
+
+	_, err := executeTestCLIWith(t, setup, "repo", "clone", "--ssh", "--https", "PRJ/demo")
 	if err == nil {
 		t.Fatal("expected transport flag validation error")
 	}
@@ -440,12 +432,6 @@ func TestRepoCloneCommandPromptsForTokenAfterSSHFailure(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
 	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
 	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 
 	command := NewRootCommand()
 	output := &bytes.Buffer{}
@@ -723,12 +709,6 @@ func TestRepoCloneCommandUsesStoredConfigForOtherHost(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "https://main.example.com")
 	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
 	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 
 	// Cloning from a URL for otherbucket.example.com (which has stored creds)
 	// triggers the LoadStoredAuthForHost path in resolveCloneHTTPAuth.
@@ -751,12 +731,6 @@ func TestRepoCloneCommandUsesStoredConfigForOtherHost(t *testing.T) {
 func TestRepoCloneCommandJSONFailsWithNoAuth(t *testing.T) {
 	stub := &cloneBackendStub{cloneErr: errors.New("ssh: connection refused")}
 	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 
 	_, err := executeTestCLIWith(t, setup, "--json", "repo", "clone", "PRJ/demo")
 	if err == nil {
@@ -780,12 +754,6 @@ func TestRepoCloneCommandEmptyTokenPrompt(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
 	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
 	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 
 	command := NewRootCommand()
 	output := &bytes.Buffer{}
@@ -927,14 +895,10 @@ func TestRepoCloneCommandSSHExplicitURL(t *testing.T) {
 }
 
 func TestRepoCloneCommandExplicitSSHURLFallsBackToHTTPS(t *testing.T) {
+	t.Parallel()
+
 	stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh failed"), nil}}
-	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
-	t.Setenv("BITBUCKET_TOKEN", "stored-token")
-	t.Setenv("BITBUCKET_USERNAME", "admin")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Token: "stored-token", Backend: stub}
 
 	_, err := executeTestCLIWith(t, setup, "repo", "clone", "git@bitbucket.example.com:scm/PRJ/demo.git")
 	if err != nil {
@@ -952,14 +916,10 @@ func TestRepoCloneCommandExplicitSSHURLFallsBackToHTTPS(t *testing.T) {
 }
 
 func TestRepoCloneCommandExplicitSSHSchemeURLFallsBackToHTTPS(t *testing.T) {
+	t.Parallel()
+
 	stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh failed"), nil}}
-	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
-	t.Setenv("BITBUCKET_TOKEN", "stored-token")
-	t.Setenv("BITBUCKET_USERNAME", "admin")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Token: "stored-token", Backend: stub}
 
 	_, err := executeTestCLIWith(t, setup, "repo", "clone", "ssh://git@bitbucket.example.com/scm/PRJ/demo.git")
 	if err != nil {
@@ -992,12 +952,6 @@ func TestRepoCloneCommandBackendFailsAfterTokenPrompt(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
 	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
 	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 
 	command := NewRootCommand()
 	output := &bytes.Buffer{}
@@ -1096,8 +1050,7 @@ func TestPromptForCloneLoginDirect(t *testing.T) {
 // "hasStoredHTTPAuth=true, HTTP clone fails" else-branch in cloneRepositoryWithAuthFallback.
 func TestRepoCloneCommandHTTPFallbackFailsBothSSHAndHTTP(t *testing.T) {
 	stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh failed"), errors.New("http 401 unauthorized")}}
-	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
-	t.Setenv("BITBUCKET_TOKEN", "stored-token")
+	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Token: "stored-token", Backend: stub}
 
 	_, err := executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo")
 	if err == nil {
@@ -1123,12 +1076,6 @@ func TestCloneRepositoryWithAuthFallbackPromptPathEmptyToken(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
 	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
 	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 
 	outText, err := executeTestCLIWith(t, testSetup{
 		Backend:   stub,
@@ -1158,12 +1105,6 @@ func TestCloneRepositoryWithAuthFallbackPromptPathSuccess(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
 	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
 	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 
 	outText, err := executeTestCLIWith(t, testSetup{
 		Backend:   stub,

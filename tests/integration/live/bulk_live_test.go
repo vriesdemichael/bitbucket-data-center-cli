@@ -18,6 +18,8 @@ import (
 )
 
 func TestLiveBulkPolicyPlanApplyStatus(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
@@ -171,6 +173,8 @@ func decodeJSONEnvelopeData(value string, target any) error {
 // Here the apply status is Bitbucket's verdict on each of the nine, one
 // operation result at a time, and the settings are read back afterwards.
 func TestLiveBulkEveryOperationType(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	service := reposettings.NewService(harness.client)
 
@@ -321,6 +325,8 @@ func TestLiveBulkEveryOperationType(t *testing.T) {
 // (ADR-075). And the operation id travels in the error, because
 // `bb bulk status <id>` is the only way back to what did happen.
 func TestLiveBulkApplyReportsAFailedTarget(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)

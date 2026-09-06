@@ -277,54 +277,6 @@ func TestRetryTransport(t *testing.T) {
 	})
 }
 
-func TestRetryDelayFromResponse(t *testing.T) {
-	t.Parallel()
-
-	t.Run("uses retry-after seconds", func(t *testing.T) {
-		delay := retryDelayFromResponse(http.Header{"Retry-After": []string{"3"}}, 0, time.Millisecond)
-		if delay != 3*time.Second {
-			t.Fatalf("expected 3s delay, got %s", delay)
-		}
-	})
-
-	t.Run("falls back on invalid retry-after", func(t *testing.T) {
-		delay := retryDelayFromResponse(http.Header{"Retry-After": []string{"invalid"}}, 1, 200*time.Millisecond)
-		if delay != 400*time.Millisecond {
-			t.Fatalf("expected fallback delay 400ms, got %s", delay)
-		}
-	})
-
-	t.Run("supports retry-after http date", func(t *testing.T) {
-		retryAt := time.Now().Add(2 * time.Second).UTC().Format(http.TimeFormat)
-		delay := retryDelayFromResponse(http.Header{"Retry-After": []string{retryAt}}, 0, time.Millisecond)
-		if delay <= 0 || delay > 3*time.Second {
-			t.Fatalf("expected positive delay <=3s, got %s", delay)
-		}
-	})
-
-	t.Run("normalizes negative retry-after seconds", func(t *testing.T) {
-		delay := retryDelayFromResponse(http.Header{"Retry-After": []string{"-2"}}, 0, time.Millisecond)
-		if delay != 0 {
-			t.Fatalf("expected zero delay for negative retry-after, got %s", delay)
-		}
-	})
-
-	t.Run("falls back when backoff is non-positive", func(t *testing.T) {
-		delay := retryDelayFromResponse(nil, 1, 0)
-		if delay != 500*time.Millisecond {
-			t.Fatalf("expected fallback delay 500ms, got %s", delay)
-		}
-	})
-
-	t.Run("returns zero for past retry-after date", func(t *testing.T) {
-		retryAt := time.Now().Add(-2 * time.Second).UTC().Format(http.TimeFormat)
-		delay := retryDelayFromResponse(http.Header{"Retry-After": []string{retryAt}}, 0, time.Millisecond)
-		if delay != 0 {
-			t.Fatalf("expected zero delay for past date, got %s", delay)
-		}
-	})
-}
-
 func TestSleepWithContext(t *testing.T) {
 	t.Parallel()
 

@@ -20,6 +20,8 @@ import (
 // an error body has a shape, a 204 carries nothing to decode. Those were mocks
 // describing what the author believed, and they are what moves here.
 func TestLiveApiResponseHandling(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
@@ -108,6 +110,8 @@ func TestLiveApiResponseHandling(t *testing.T) {
 // given. Here the server accepting the request, and the change showing up
 // afterwards, is the assertion.
 func TestLiveApiRequestConstruction(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
