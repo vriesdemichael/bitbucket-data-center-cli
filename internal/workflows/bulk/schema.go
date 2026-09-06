@@ -219,13 +219,30 @@ func repoWebhookCreateOperationDefinition() map[string]any {
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"type":   map[string]any{"const": OperationRepoWebhookCreate},
-			"name":   nonEmptyStringSchema(),
-			"url":    nonEmptyStringSchema(),
-			"events": map[string]any{"type": "array", "minItems": 1, "items": nonEmptyStringSchema()},
-			"active": map[string]any{"type": "boolean", "default": true},
+			"type":                    map[string]any{"const": OperationRepoWebhookCreate},
+			"name":                    nonEmptyStringSchema(),
+			"url":                     nonEmptyStringSchema(),
+			"events":                  map[string]any{"type": "array", "minItems": 1, "items": nonEmptyStringSchema()},
+			"active":                  map[string]any{"type": "boolean", "default": true},
+			"sslVerificationRequired": map[string]any{"type": "boolean"},
+			// The pattern is the guard, and it is in the published schema so an
+			// editor refuses a pasted secret as it is typed rather than at
+			// apply time: a credential is almost never a valid variable name.
+			"secretEnv": environmentVariableNameSchema(
+				"Name of the environment variable holding the shared secret. Never the secret itself."),
+			"credentialsUsername": nonEmptyStringSchema(),
+			"credentialsPasswordEnv": environmentVariableNameSchema(
+				"Name of the environment variable holding the endpoint password. Never the password itself."),
 		},
 		"required": s("type", "name", "url"),
+	}
+}
+
+func environmentVariableNameSchema(description string) map[string]any {
+	return map[string]any{
+		"type":        "string",
+		"pattern":     "^[A-Za-z_][A-Za-z0-9_]*$",
+		"description": description,
 	}
 }
 

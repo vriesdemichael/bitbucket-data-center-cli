@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"os"
+	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	qualityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/quality"
 	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/webhookfields"
 )
 
 type ServiceRunner struct {
@@ -17,6 +20,28 @@ type ServiceRunner struct {
 
 func NewServiceRunner(repoSettings *reposettings.Service, quality *qualityservice.Service) *ServiceRunner {
 	return &ServiceRunner{repoSettings: repoSettings, quality: quality}
+}
+
+// secretFromEnv reads the credential a plan referred to by name.
+//
+// Refusing when the variable is unset rather than creating the webhook without
+// it: a webhook whose deliveries carry no signature is not a smaller version of
+// one whose deliveries do, and finding that out from a receiver that started
+// rejecting everything is a bad way to find out. The message names the field
+// and the variable, because a plan applied on a machine where the variable was
+// never exported is the whole failure mode.
+func secretFromEnv(name string, field string) (*string, error) {
+	if strings.TrimSpace(name) == "" {
+		return nil, nil
+	}
+
+	value := os.Getenv(name)
+	if strings.TrimSpace(value) == "" {
+		return nil, apperrors.New(apperrors.KindValidation, fmt.Sprintf(
+			"%s names $%s, which is not set in this environment; export it before applying the plan", field, name), nil)
+	}
+
+	return &value, nil
 }
 
 func (runner *ServiceRunner) Run(ctx context.Context, repo RepositoryTarget, operation OperationSpec) (any, error) {
@@ -52,16 +77,32 @@ func (runner *ServiceRunner) Run(ctx context.Context, repo RepositoryTarget, ope
 		if operation.Active != nil {
 			active = *operation.Active
 		}
+		secret, err := secretFromEnv(operation.SecretEnv, "secretEnv")
+		if err != nil {
+			return nil, err
+		}
+		password, err := secretFromEnv(operation.CredentialsPasswordEnv, "credentialsPasswordEnv")
+		if err != nil {
+			return nil, err
+		}
 		payload, err := runner.repoSettings.CreateRepositoryWebhook(ctx, repoRef, reposettings.WebhookCreateInput{
-			Name:   operation.Name,
-			URL:    operation.URL,
-			Events: operation.Events,
-			Active: active,
+			Name:                    operation.Name,
+			URL:                     operation.URL,
+			Events:                  operation.Events,
+			Active:                  active,
+			SSLVerificationRequired: operation.SSLVerificationRequired,
+			Secret:                  secret,
+			CredentialsUsername:     operation.CredentialsUsername,
+			CredentialsPassword:     password,
 		})
 		if err != nil {
 			return nil, err
 		}
-		return map[string]any{"status": "ok", "webhook": payload}, nil
+		// Without the credentials. This publishes whatever Bitbucket answered
+		// with, and the apply status is both printed under --json and written
+		// to the status store on disk -- so a payload that came back carrying
+		// the shared secret would put it in a file the operator keeps.
+		return map[string]any{"status": "ok", "webhook": webhookfields.WithoutCredentials(payload)}, nil
 	case OperationRepoPullRequestRequiredAllTasksComplete:
 		if runner.repoSettings == nil {
 			return nil, apperrors.New(apperrors.KindInternal, "repo settings service is not configured", nil)

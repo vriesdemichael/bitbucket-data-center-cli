@@ -11,6 +11,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/webhookfields"
 )
 
 type RepositoryRef struct {
@@ -34,12 +35,13 @@ type WebhookList struct {
 	Payload any `json:"payload"`
 }
 
-type WebhookCreateInput struct {
-	Name   string
-	URL    string
-	Events []string
-	Active bool
-}
+// WebhookCreateInput and WebhookUpdateInput are the shared shapes: repository
+// webhooks and project webhooks are one object behind two routes, and the body
+// shaping belongs with the object rather than once per route.
+type (
+	WebhookCreateInput = webhookfields.CreateInput
+	WebhookUpdateInput = webhookfields.UpdateInput
+)
 
 type DefaultTask struct {
 	Id            *int64              `json:"id,omitempty"`
@@ -284,30 +286,9 @@ func (service *Service) CreateRepositoryWebhook(ctx context.Context, repo Reposi
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-	trimmedName := strings.TrimSpace(input.Name)
-	trimmedURL := strings.TrimSpace(input.URL)
-	if trimmedName == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "webhook name is required", nil)
-	}
-	if trimmedURL == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "webhook url is required", nil)
-	}
-
-	events := make([]string, 0, len(input.Events))
-	for _, event := range input.Events {
-		if trimmedEvent := strings.TrimSpace(event); trimmedEvent != "" {
-			events = append(events, trimmedEvent)
-		}
-	}
-	if len(events) == 0 {
-		events = []string{"repo:refs_changed"}
-	}
-
-	body := openapigenerated.CreateWebhook1JSONRequestBody{
-		Name:   &trimmedName,
-		Url:    &trimmedURL,
-		Events: &events,
-		Active: &input.Active,
+	body, err := webhookfields.NewCreateBody(input)
+	if err != nil {
+		return nil, err
 	}
 
 	response, err := service.client.CreateWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
@@ -874,7 +855,7 @@ func (service *Service) webhookForUpdate(ctx context.Context, repo RepositoryRef
 	return current, nil
 }
 
-func (service *Service) UpdateWebhook(ctx context.Context, repo RepositoryRef, id string, name string, url string, events []string, active *bool) (any, error) {
+func (service *Service) UpdateWebhook(ctx context.Context, repo RepositoryRef, id string, input WebhookUpdateInput) (any, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
@@ -887,21 +868,7 @@ func (service *Service) UpdateWebhook(ctx context.Context, repo RepositoryRef, i
 	if err != nil {
 		return nil, err
 	}
-
-	if strings.TrimSpace(name) != "" {
-		n := strings.TrimSpace(name)
-		body.Name = &n
-	}
-	if strings.TrimSpace(url) != "" {
-		u := strings.TrimSpace(url)
-		body.Url = &u
-	}
-	if len(events) > 0 {
-		body.Events = &events
-	}
-	if active != nil {
-		body.Active = active
-	}
+	webhookfields.ApplyUpdate(&body, input)
 
 	response, err := service.client.UpdateWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, body)
 	if err != nil {

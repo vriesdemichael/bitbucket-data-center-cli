@@ -1,57 +1,24 @@
 package auth
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"strings"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/secretinput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
-
-	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // maxSecretLength bounds a secret read from stdin.
-//
-// Without a bound, `bb auth login --token-stdin < /dev/urandom` would buffer
-// without limit. Bitbucket personal access tokens are well under 200 bytes; the
-// ceiling is generous enough that no legitimate credential reaches it.
-const maxSecretLength = 8192
+const maxSecretLength = secretinput.MaxLength
 
 // readSecretFromStdin reads a single credential from reader.
 //
-// Trailing newlines are stripped so the common `echo "$TOKEN" | bb ...` form
-// works, and interior whitespace is rejected rather than silently accepted:
-// a value that arrived with a stray space is far more likely to be a piping
-// mistake than a real credential, and storing it produces an authentication
-// failure much later, far from its cause.
+// The reading is shared with every other command that takes a secret; only the
+// example in the rejection message is login's own.
 func readSecretFromStdin(reader io.Reader, flagName string) (string, error) {
-	if reader == nil {
-		return "", apperrors.New(apperrors.KindValidation, fmt.Sprintf("%s was given but stdin is not available", flagName), nil)
-	}
-
-	limited := io.LimitReader(reader, maxSecretLength+1)
-
-	raw, err := io.ReadAll(bufio.NewReader(limited))
-	if err != nil {
-		return "", apperrors.New(apperrors.KindValidation, fmt.Sprintf("failed to read %s from stdin", flagName), err)
-	}
-
-	if len(raw) > maxSecretLength {
-		return "", apperrors.New(apperrors.KindValidation, fmt.Sprintf("%s input exceeds %d bytes; that is not a credential", flagName, maxSecretLength), nil)
-	}
-
-	secret := strings.TrimRight(string(raw), "\r\n")
-
-	if strings.TrimSpace(secret) == "" {
-		return "", apperrors.New(apperrors.KindValidation, fmt.Sprintf("%s was given but stdin was empty", flagName), nil)
-	}
-
-	if strings.ContainsAny(secret, " \t\r\n") {
-		return "", apperrors.New(apperrors.KindValidation, fmt.Sprintf("%s input contains whitespace; pipe exactly one credential, e.g. printf '%%s' \"$TOKEN\" | bb auth login <host> %s", flagName, flagName), nil)
-	}
-
-	return secret, nil
+	return secretinput.FromStdin(reader, flagName,
+		fmt.Sprintf("printf '%%s' \"$TOKEN\" | bb auth login <host> %s", flagName))
 }
 
 // resolveLoginSecret picks between a flag-supplied secret and one piped on

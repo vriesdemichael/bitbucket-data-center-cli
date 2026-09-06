@@ -12,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/webhookflags"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
@@ -123,16 +124,37 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			published := result.WebhooksFrom(webhooks.Payload)
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), Webhooks{Repository: settingsRepositoryOf(repo), Count: webhooks.Count, Webhooks: result.WebhooksFrom(webhooks.Payload)})
+				return deps.WriteJSON(cmd.OutOrStdout(), Webhooks{Repository: settingsRepositoryOf(repo), Count: webhooks.Count, Webhooks: published})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %d\n", style.Label.Render("Webhooks configured:"), webhooks.Count)
+			// The webhooks, not a count of them. This printed "Webhooks
+			// configured: 3" while --json returned all three, so the id that
+			// `webhooks delete` takes was unobtainable from the command that
+			// lists them. The other two webhook listings render the table.
+			if len(published) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No webhooks found"))
+				return nil
+			}
+
+			rows := make([][]string, len(published))
+			for index, hook := range published {
+				rows[index] = []string{
+					style.Secondary.Render(strconv.Itoa(hook.ID)),
+					hook.Name,
+					hook.URL,
+					strconv.FormatBool(hook.Active),
+					strings.Join(hook.Events, ", "),
+				}
+			}
+			style.WriteTable(cmd.OutOrStdout(), rows)
 			return nil
 		},
 	}
 	var webhookEvents []string
 	var webhookActive bool
+	var webhookFields webhookflags.Fields
 	webhooksCreateCmd := &cobra.Command{
 		Use:   "create <name> <url>",
 		Short: "Create a repository webhook",
@@ -147,6 +169,14 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// Before the dry-run branch, so a preview cannot promise a create
+			// that the real run would refuse for the secret it was handed.
+			input, err := webhookFields.CreateInput(cmd)
+			if err != nil {
+				return err
+			}
+			input.Name, input.URL, input.Events, input.Active = args[0], args[1], webhookEvents, webhookActive
 
 			service := reposettings.NewService(client)
 			if deps.DryRunEnabled() {
@@ -168,9 +198,11 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					blocking = []string{"webhook already exists"}
 				}
 
+				target := map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "url": args[1], "events": webhookEvents, "active": webhookActive}
+				webhookflags.DescribeCreate(target, input, webhookFields.Origins())
 				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
 					Intent:          "repo.webhook.create",
-					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "url": args[1], "events": webhookEvents, "active": webhookActive},
+					Target:          target,
 					Action:          "create",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
@@ -183,12 +215,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			payload, err := service.CreateRepositoryWebhook(cmd.Context(), repo, reposettings.WebhookCreateInput{
-				Name:   args[0],
-				URL:    args[1],
-				Events: webhookEvents,
-				Active: webhookActive,
-			})
+			payload, err := service.CreateRepositoryWebhook(cmd.Context(), repo, input)
 			if err != nil {
 				return err
 			}
@@ -202,6 +229,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 	}
 	webhooksCreateCmd.Flags().StringSliceVar(&webhookEvents, "event", []string{"repo:refs_changed"}, "Webhook event(s) to subscribe to")
 	webhooksCreateCmd.Flags().BoolVar(&webhookActive, "active", true, "Whether the webhook is active")
+	webhookFields.RegisterCreate(webhooksCreateCmd)
 	webhooksDeleteCmd := &cobra.Command{
 		Use:   "delete <webhook-id>",
 		Short: "Delete a repository webhook",

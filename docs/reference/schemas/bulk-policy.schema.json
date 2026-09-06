@@ -374,6 +374,15 @@
           "default": true,
           "type": "boolean"
         },
+        "credentialsPasswordEnv": {
+          "description": "Name of the environment variable holding the endpoint password. Never the password itself.",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "type": "string"
+        },
+        "credentialsUsername": {
+          "minLength": 1,
+          "type": "string"
+        },
         "events": {
           "items": {
             "minLength": 1,
@@ -385,6 +394,14 @@
         "name": {
           "minLength": 1,
           "type": "string"
+        },
+        "secretEnv": {
+          "description": "Name of the environment variable holding the shared secret. Never the secret itself.",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "type": "string"
+        },
+        "sslVerificationRequired": {
+          "type": "boolean"
         },
         "type": {
           "const": "repo.webhook.create"
