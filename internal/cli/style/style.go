@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
@@ -35,6 +36,27 @@ var (
 	Hint lipgloss.Style
 
 	renderer *lipgloss.Renderer
+
+	// initMu guards the rebuild, and builtPlain records what the styles were
+	// last built for.
+	//
+	// Every command calls Init from the root's PersistentPreRunE, so a process
+	// running two commands at once had two goroutines writing these ten
+	// package variables while a third read them to render output. The race
+	// detector reported it the first time the tests ran in parallel; it had
+	// been unreachable before only because nothing ran at the same time as
+	// anything else.
+	//
+	// This narrows the window rather than closing it. The styles are still
+	// package-level and still read directly at every use site, so a rebuild
+	// that genuinely changes them still races with output being written. What
+	// it removes is the case that actually happens: repeated Init calls
+	// asking for the setting the styles already have, which now write nothing
+	// at all. Closing it properly means the renderer travelling with the
+	// command rather than living here.
+	initMu     sync.Mutex
+	built      bool
+	builtPlain bool
 )
 
 func init() {
@@ -45,14 +67,26 @@ func init() {
 // regardless of terminal detection. It is called automatically on package init with
 // noColor=false, and should be called again in the root command's PersistentPreRunE
 // to apply the --no-color flag and NO_COLOR environment variable.
+//
+// Calling it again with the setting already in force does nothing.
 func Init(noColor bool) {
 	_, noColorEnv := os.LookupEnv("NO_COLOR")
-	if noColor || noColorEnv {
+	plain := noColor || noColorEnv
+
+	initMu.Lock()
+	defer initMu.Unlock()
+
+	if built && builtPlain == plain {
+		return
+	}
+
+	if plain {
 		renderer = lipgloss.NewRenderer(os.Stdout)
 		renderer.SetColorProfile(termenv.Ascii)
 	} else {
 		renderer = lipgloss.DefaultRenderer()
 	}
+	built, builtPlain = true, plain
 	rebuild()
 }
 
@@ -63,7 +97,14 @@ func InitWithRenderer(r *lipgloss.Renderer) {
 	if r == nil {
 		panic("style: InitWithRenderer called with nil renderer")
 	}
+
+	initMu.Lock()
+	defer initMu.Unlock()
+
 	renderer = r
+	// A renderer chosen by the caller is never the one Init would have built,
+	// so the next Init rebuilds rather than deciding it has nothing to do.
+	built = false
 	rebuild()
 }
 
