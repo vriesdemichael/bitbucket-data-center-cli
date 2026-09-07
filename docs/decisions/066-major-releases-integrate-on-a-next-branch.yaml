@@ -47,7 +47,7 @@ agent_instructions: >
   if it would, it belongs on `next`. This is enforced rather than trusted: the release-flow job in
   ci.yml refuses a pull request into `main` from anything but `dependabot/*` or `hotfix/*`, and
   refuses any of those carrying a breaking commit. It reads the same classification the release
-  workflow does (scripts/conventional_commits.py), so the gate and the version it protects cannot
+  workflow does (tools/conventionalcommits), so the gate and the version it protects cannot
   disagree about what breaking means.
   Do not open a pull request whose base is another feature branch. CI triggers only on `main` and
   `next`, so a stacked pull request runs nothing and merges having proven nothing. Rebase onto the

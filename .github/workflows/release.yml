@@ -40,6 +40,12 @@ jobs:
             exit 1
           fi
 
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
       - name: Compute release version from Conventional Commits
         id: compute
         env:
@@ -48,93 +54,17 @@ jobs:
           set -euo pipefail
           # The tag list decides the version, and a checkout that started while
           # another release was still running has a stale one. Refreshing here
-          # is what lets the supersede check below see a tag the other run
+          # is what lets the supersede check inside see a tag the other run
           # pushed a moment ago (#499).
           git fetch --tags --force origin
-          python - <<'PY'
-          import os
-          import re
-          import subprocess
-          import sys
 
-          # The one place that reads a commit message, shared with the
-          # release-flow gate in ci.yml. Two copies could disagree about whether
-          # a commit is breaking, and the disagreement that matters is the gate
-          # allowing something into main that this then cuts a major from
-          # (ADR-065). They already had drifted: this asked whether the body
-          # contained "BREAKING CHANGE:" anywhere, while the changelog below
-          # matched a footer anchored to a line.
-          sys.path.insert(0, "scripts")
-          import conventional_commits as cc
-
-
-          def run_git(*args: str) -> str:
-              return subprocess.check_output(["git", *args], text=True).strip()
-
-
-          def write_output(key: str, value: str) -> None:
-              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-                  fh.write(f"{key}={value}\n")
-
-
-          manual_version = os.environ.get("MANUAL_VERSION", "").strip()
-          semver_pattern = re.compile(r"^v\d+\.\d+\.\d+(?:[.-][0-9A-Za-z.-]+)?$")
-
-          try:
-              previous_tag = run_git("describe", "--tags", "--abbrev=0", "--match", "v[0-9]*.[0-9]*.[0-9]*")
-          except subprocess.CalledProcessError:
-              previous_tag = ""
-
-          if manual_version:
-              if not semver_pattern.match(manual_version):
-                  raise SystemExit("Manual version must look like vMAJOR.MINOR.PATCH (optionally with prerelease/build suffix).")
-              write_output("should_release", "true")
-              write_output("version", manual_version)
-              write_output("previous_tag", previous_tag)
-              raise SystemExit(0)
-
-          range_spec = f"{previous_tag}..HEAD" if previous_tag else "HEAD"
-          commits = cc.parse_log(run_git(*cc.LOG_ARGS, range_spec))
-
-          # Which types release, and what counts as breaking, live in
-          # conventional_commits. Only user-visible change releases: every valid
-          # Conventional Commit type used to cut a patch release, which produced
-          # 95 releases in the first six months — a rate that adopters running
-          # binaries through change approval cannot consume, and which left the
-          # version number carrying no signal about whether anything changed for
-          # them.
-          bump_level = cc.bump_level(commits)
-
-          if not cc.has_conventional(commits) or bump_level == cc.BUMP_NONE:
-              write_output("should_release", "false")
-              write_output("version", "")
-              write_output("previous_tag", previous_tag)
-              raise SystemExit(0)
-
-          base_version = previous_tag[1:] if previous_tag else "0.0.0"
-          major, minor, patch = [int(part) for part in base_version.split(".")]
-
-          if bump_level == cc.BUMP_MAJOR:
-              major, minor, patch = major + 1, 0, 0
-          elif bump_level == cc.BUMP_MINOR:
-              minor, patch = minor + 1, 0
-          else:
-              patch += 1
-
-          next_version = f"v{major}.{minor}.{patch}"
-          try:
-              run_git("rev-parse", "--verify", "--quiet", next_version)
-              write_output("should_release", "false")
-              write_output("version", "")
-              write_output("previous_tag", previous_tag)
-              raise SystemExit(0)
-          except subprocess.CalledProcessError:
-              pass
-
-          write_output("should_release", "true")
-          write_output("version", next_version)
-          write_output("previous_tag", previous_tag)
-          PY
+          # Which commits release, and what counts as breaking, live in
+          # tools/conventionalcommits -- the same package the release-flow gate
+          # reads to refuse a breaking change on a pull request into main. Two
+          # copies could disagree, and the disagreement that matters is the gate
+          # allowing something in that this then cuts a major release from
+          # (ADR-065).
+          go run ./tools/release-version
 
   build-artifacts:
     name: Build ${{ matrix.goos }}/${{ matrix.goarch }} artifact
@@ -325,169 +255,12 @@ jobs:
           REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import json
-          import os
-          import re
-          import subprocess
-          import sys
-
-          # Same module the version bump above reads, so the notes and the
-          # version they belong to cannot disagree about which commits break
-          # things (ADR-065).
-          sys.path.insert(0, "scripts")
-          import conventional_commits as cc
-
-
-          def run_git(*args: str) -> str:
-              return subprocess.check_output(["git", *args], text=True).strip()
-
-
-          version = os.environ["VERSION"]
-          previous_tag = os.environ.get("PREVIOUS_TAG", "").strip()
-          repository_url = os.environ["REPOSITORY_URL"].rstrip("/")
-          range_spec = f"{previous_tag}..HEAD" if previous_tag else "HEAD"
-
-          commits = cc.parse_log(run_git(*cc.LOG_ARGS, range_spec))
-
-          section_titles = {
-              "feat": "Features",
-              "fix": "Fixes",
-              "perf": "Performance",
-              "refactor": "Refactors",
-              "docs": "Docs",
-              "test": "Tests",
-              "build": "Build",
-              "ci": "CI",
-              "chore": "Chores",
-          }
-          ordered_sections = [
-              "Features",
-              "Fixes",
-              "Performance",
-              "Refactors",
-              "Docs",
-              "Tests",
-              "Build",
-              "CI",
-              "Chores",
-              "Other",
-          ]
-
-          grouped = {section: [] for section in ordered_sections}
-          breaking_changes = []
-          all_entries = []
-
-          for commit in commits:
-              sha = commit.sha
-              commit_url = f"{repository_url}/commit/{sha}"
-
-              section = section_titles.get(commit.type, "Other")
-              entry = {
-                  "sha": sha,
-                  "shortSha": sha[:7],
-                  "subject": commit.subject,
-                  "description": commit.description,
-                  "scope": commit.scope,
-                  "type": commit.type,
-                  "section": section,
-                  "breaking": commit.breaking,
-                  "url": commit_url,
-              }
-              grouped[section].append(entry)
-              all_entries.append(entry)
-
-              if commit.breaking:
-                  footer_match = cc.BREAKING_FOOTER_PATTERN.search(commit.body)
-                  entry_with_note = dict(entry)
-                  # Collapsed to one line: the note goes into a Markdown list
-                  # item, where the commit's own hard wrapping would otherwise
-                  # break the bullet.
-                  entry_with_note["breakingNote"] = " ".join(footer_match.group(1).split()) if footer_match else ""
-                  breaking_changes.append(entry_with_note)
-
-          compare_url = ""
-          if previous_tag:
-              compare_url = f"{repository_url}/compare/{previous_tag}...{version}"
-
-          lines = [f"## {version}", ""]
-
-          # A release may carry a written introduction, and a large one should.
-          # The generated part below is a ledger: accurate, complete, and no
-          # help at all in answering "what does this mean for me" across two
-          # hundred commits.
-          #
-          # It has to be here rather than added afterwards. The body is rendered
-          # into the versioned docs snapshot in this same run, and a mike
-          # snapshot is immutable in practice -- no later commit reaches the
-          # /vX.Y.Z/ page (#542). Prose that is not in the file when the release
-          # is created never appears there at all.
-          #
-          # Absent for an ordinary release, which is why nothing changes for one.
-          preamble_path = os.path.join("docs", "release-notes", f"{version}.md")
-          if os.path.exists(preamble_path):
-              with open(preamble_path, encoding="utf-8") as preamble_file:
-                  preamble = preamble_file.read().strip()
-              if preamble:
-                  lines.append(preamble)
-                  lines.append("")
-
-          if previous_tag:
-              lines.append(f"Changes since {previous_tag}.")
-              lines.append("")
-              lines.append(f"Compare: [{previous_tag}...{version}]({compare_url})")
-              lines.append("")
-          else:
-              lines.append("Initial release changes.")
-              lines.append("")
-
-          if breaking_changes:
-              lines.append("### ⚠ Breaking Changes")
-              for item in breaking_changes:
-                  breaking_note = f" — {item['breakingNote']}" if item.get("breakingNote") else ""
-                  lines.append(f"- {item['description']} ([{item['shortSha']}]({item['url']})){breaking_note}")
-              lines.append("")
-
-          # Breaking changes stay in the open however many there are: they are
-          # the part a reader has to act on. The rest of the ledger folds away
-          # once it is long enough to bury everything above it, which for a
-          # milestone release means several hundred bullets between the reader
-          # and anything that tells them what changed.
-          COLLAPSE_LEDGER_ABOVE = 40
-          collapse = len(all_entries) > COLLAPSE_LEDGER_ABOVE
-          if collapse:
-              lines.append("<details>")
-              lines.append(f"<summary>All {len(all_entries)} changes</summary>")
-              lines.append("")
-
-          for section in ordered_sections:
-              entries = grouped[section]
-              if not entries:
-                  continue
-              lines.append(f"### {section}")
-              for item in entries:
-                  scoped_description = f"{item['scope']}: {item['description']}" if item.get("scope") else item["description"]
-                  lines.append(f"- {scoped_description} ([{item['shortSha']}]({item['url']}))")
-              lines.append("")
-
-          if collapse:
-              lines.append("</details>")
-              lines.append("")
-
-          with open("RELEASE_NOTES.md", "w", encoding="utf-8") as markdown_file:
-              markdown_file.write("\n".join(lines).rstrip() + "\n")
-
-          payload = {
-              "version": version,
-              "previousTag": previous_tag,
-              "compareUrl": compare_url,
-              "commits": all_entries,
-              "breakingChanges": breaking_changes,
-          }
-          with open("changelog.json", "w", encoding="utf-8") as json_file:
-              json.dump(payload, json_file, indent=2)
-              json_file.write("\n")
-          PY
+          # Reads the same classification the version above was computed from,
+          # so the notes and the number they belong to cannot disagree about
+          # which commits break things (ADR-065). Writes RELEASE_NOTES.md, which
+          # becomes the release body and the versioned docs snapshot, and
+          # changelog.json, which ships as a release asset.
+          go run ./tools/release-notes
 
       - name: Create and push annotated tag
         env:
