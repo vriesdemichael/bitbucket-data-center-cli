@@ -15,7 +15,7 @@ Use a practical auth priority for runtime operations: CLI flags/env and stored c
 
 ## Agent Instructions
 
-Implement and maintain token/basic auth as the default operational path. Do not add OAuth-dependent behavior. Keep onboarding optimized for token creation and login with --token. Document authentication mode in status output and troubleshooting guidance.
+Implement and maintain token/basic auth as the default operational path. Do not add OAuth-dependent behavior. Keep onboarding optimized for token creation and login with --token-stdin. Document authentication mode in status output and troubleshooting guidance.
 
 ## Rationale
 

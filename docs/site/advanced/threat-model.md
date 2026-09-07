@@ -8,11 +8,11 @@ A formal security architecture, trust boundary analysis, and threat model for Ch
 
 | Field | Value |
 |---|---|
-| **Document Version** | 1.1.0 |
-| **Target System** | `bb` (Bitbucket Data Center CLI) v2.10.x+ |
+| **Document Version** | 1.2.0 |
+| **Target System** | `bb` (Bitbucket Data Center CLI) v4.0.x+ |
 | **Classification** | Public Security & Threat Analysis Whitepaper |
 | **Methodology** | STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege) |
-| **Effective Date** | August 2026 |
+| **Effective Date** | September 2026 |
 | **Review Cadence** | Annual, or upon major architectural revision |
 
 ### Scope & System Boundaries
@@ -156,7 +156,7 @@ Each domain is analyzed using the **Threat (STRIDE) ↔ Architectural Mitigation
 
 #### 2. Architectural Mitigations
 - **Mandatory Stdin Ingestion**: `bb auth login` supports `--token-stdin` and `--password-stdin`, reading secrets strictly over standard input.
-- **Process Table Warning**: Supplying `--token` or `--password` as CLI flags prints an explicit warning to `stderr` alerting the operator ([ADR-047](../adr/047-credential-input-and-keyring-enforcement.md)).
+- **No Secret-Bearing Flags**: `--token` and `--password` were removed in v4. No flag accepts a credential value, so process-table exposure has no supported path rather than a warned-about one ([ADR-047](../adr/047-credential-input-and-keyring-enforcement.md)).
 - **Enforced Keyring Storage**: Setting `require_keyring: true` in system configuration or Windows Registry `HKLM\Software\Policies\bb` hard-refuses plaintext fallback machine-wide and cannot be bypassed by unprivileged users unsetting environment variables ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)). Advisory `BB_REQUIRE_KEYRING=1` remains supported for ad-hoc user environments.
 - **Headless Disabling**: Setting `BB_DISABLE_STORED_CONFIG=1` in CI/CD completely skips stored config reads and keyring access, reading solely from `BITBUCKET_TOKEN`.
 
@@ -241,7 +241,7 @@ bb ai mcp serve --project PAYMENTS --audit-file /var/log/bb/mcp-audit.jsonl
 
 #### 4. Residual Gap & Tracking
 - **The audit trail is not tamper-evident.** It is written on the developer's workstation, as the developer, to a path they can modify. It is evidence against a prompt-injected agent confined to MCP tools (ADV-3), which has no shell; it is not evidence against a determined insider.
-- **The CLI beside it is ungated.** An agent with shell access can invoke `bb` directly and reach all 233 commands with none of the safety gating, workspace scoping or auditing described here. This is not closable at this layer — an agent that can run shell commands can also edit the audit file. The mitigation that survives it is the dedicated read-only PAT (`--token`), which binds at the Bitbucket server and is indifferent to which local process issued the call. MCP-layer controls are defence in depth over a correctly scoped token, not a replacement for one.
+- **The CLI beside it is ungated.** An agent with shell access can invoke `bb` directly and reach all 233 commands with none of the safety gating, workspace scoping or auditing described here. This is not closable at this layer — an agent that can run shell commands can also edit the audit file. The mitigation that survives it is the dedicated read-only PAT the server runs under (`BITBUCKET_TOKEN` in the MCP client's `env` block), which binds at the Bitbucket server and is indifferent to which local process issued the call. MCP-layer controls are defence in depth over a correctly scoped token, not a replacement for one.
 
 ---
 
@@ -297,7 +297,7 @@ bb auth token list
 | **T-1** | Process table secret sniffing & plaintext disk fallback | SOC 2 CC6.1, ISO 27001:2022 A.8.24, NIST SP 800-53 AC-3 | **Low** | Fully mitigated via mandatory Keyring policy enforcement (`require_keyring: true`), system configuration tier, and stdin ingestion ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)). | `bb auth status --json` | — |
 | **T-2** | Repository secret bleed & cross-remote credential leakage | SOC 2 CC6.6, ISO 27001:2022 A.8.12 | **Low** | Mitigated via host-scoped Git credential helper (`bb auth setup-git`). | `git config --local --get http.extraHeader` | — |
 | **T-3** | Inability to traverse mutual TLS (mTLS) ingress | NIST SP 800-207 (Zero Trust Architecture), SC-8 | **Low** | Fully mitigated via mTLS client cert/key support (`--client-cert`, `--client-key`, `BB_CLIENT_CERT`, `BB_CLIENT_KEY`, and stored profiles; [ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)). | `bb --client-cert ... --client-key ... repo list` | — |
-| **T-4** | Prompt-injected AI agent executing unauthorized mutations | OWASP Top 10 LLM (2025 LLM01, LLM06), SOC 2 CC6.8 | **Low** | Mitigated via safe/unsafe tool withholding, workspace scoping (`--project`, `--repo`), and a redacted JSONL audit trail recording allowed and denied invocations ([ADR-062](../adr/062-mcp-workspace-scoping-and-agent-audit-trail.md)). Residual: the trail is not tamper-evident, and an agent with shell access can bypass the MCP layer entirely — a read-only `--token` is the control that survives that. | `bb ai mcp serve --project PAYMENTS --audit-file <path>` | — |
+| **T-4** | Prompt-injected AI agent executing unauthorized mutations | OWASP Top 10 LLM (2025 LLM01, LLM06), SOC 2 CC6.8 | **Low** | Mitigated via safe/unsafe tool withholding, workspace scoping (`--project`, `--repo`), and a redacted JSONL audit trail recording allowed and denied invocations ([ADR-062](../adr/062-mcp-workspace-scoping-and-agent-audit-trail.md)). Residual: the trail is not tamper-evident, and an agent with shell access can bypass the MCP layer entirely — a read-only PAT supplied through the client's `env` block is the control that survives that. | `bb ai mcp serve --project PAYMENTS --audit-file <path>` | — |
 | **T-5** | Unmanaged binary updates breaking package manager state | ISO 27001:2022 A.8.19, NIST SP 800-53 SI-2 | **Low** | Fully mitigated via `BB_DISABLE_UPDATE=1`, system config `disable_update: true`, build tag `no_self_update`, and internal release mirror resolution ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)). Air-gapped mirrors additionally require an offline Sigstore trust root ([ADR-063](../adr/063-offline-release-signature-verification.md)). | `bb update` on managed machine | — |
 | **T-6** | Unfederated static token lifecycle management | CIS Controls v8 5.4 / 6.1, NIST SP 800-63B | **Medium** | Mitigate via scoped TTL PATs; browser flow requires Bitbucket DC admin configuration. | `bb auth token list` | [#424](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/424) |
 

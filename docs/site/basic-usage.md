@@ -131,8 +131,10 @@ once to let it authenticate. See [Git Authentication](advanced/git-authenticatio
 
 `bb pr create` fills in reviewers exactly as the web interface does: the default
 reviewer conditions for the branch pair, plus the code owners matching the diff.
-Reviewer groups and the full `.bitbucket/CODEOWNERS` syntax are supported. If a
-lookup fails, `bb` says so and still creates the pull request.
+Bitbucket resolves the code owners, not `bb`, so the `.bitbucket/CODEOWNERS` syntax
+and its meaning are the server's and the answer matches the web interface
+([ADR-080](adr/080-bitbucket-resolves-codeowners-not-bb.md)). If a lookup fails, `bb`
+says so and still creates the pull request.
 
 ```bash
 # Default reviewers and code owners are applied automatically

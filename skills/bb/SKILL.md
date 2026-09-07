@@ -28,11 +28,11 @@ printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --t
 bb auth status
 ```
 
-**Never pass a token as a flag value.** `--token <value>` puts the credential in the
-process argument list, readable by any local user through `ps` or `/proc`, and into
-shell history. Use `--token-stdin`, or set `BITBUCKET_TOKEN` in the environment and
-skip `bb auth login` entirely — that is usually the better choice in CI and containers,
-since it never writes the credential to disk.
+**Never pass a token as a flag value.** No flag takes one: `--token` and `--password` were
+removed in v4, because a flag value lands in the process argument list, readable by any
+local user through `ps` or `/proc`, and in shell history. Use `--token-stdin`, or set
+`BITBUCKET_TOKEN` in the environment and skip `bb auth login` entirely — that is usually
+the better choice in CI and containers, since it never writes the credential to disk.
 
 Agents cannot complete OAuth flows. Always use a Personal Access Token (PAT).
 Create one at: `bb auth token-url`
@@ -538,7 +538,7 @@ not retry it automatically: for a mutating command like `bb bulk apply` that re-
 work the operator just stopped. Report it and wait for instruction.
 
 A failure may carry an optional `error.details` object — a flat string map of handles you
-need to act on it. `bb bulk apply` puts `operation_id` there, which `bb bulk status <id>`
+need to act on it. `bb bulk apply` puts `operationId` there, which `bb bulk status <id>`
 takes. Read handles from those fields; never scrape them out of `error.message`.
 
 Exactly one JSON document reaches stdout per command, so decode it as one value. Two

@@ -381,7 +381,7 @@ bb ai mcp serve --host https://bitbucket.example.com
 
 ### Principle 3: Workspace Scoping
 
-`--token` bounds what an agent may *do*; `--project` and `--repo` bound *where* ([ADR-062](../adr/062-mcp-workspace-scoping-and-agent-audit-trail.md)). On a multi-tenant instance a read-only PAT still reaches every repository its owner can read, which for most developers is most of the organisation.
+The PAT the server runs under bounds what an agent may *do*; `--project` and `--repo` bound *where* ([ADR-062](../adr/062-mcp-workspace-scoping-and-agent-audit-trail.md)). On a multi-tenant instance a read-only PAT still reaches every repository its owner can read, which for most developers is most of the organisation.
 
 ```bash
 bb ai mcp serve --host https://bitbucket.example.com --project PAYMENTS
@@ -425,7 +425,7 @@ Bitbucket's audit log remains authoritative for what actually changed. Correlate
 
 *This log is not tamper-evident.* It is written on the developer's machine, as the developer, to a path they can edit. Against a determined insider it proves nothing. Against a prompt-injected agent confined to MCP tools — the ADV-3 threat it is designed for — it holds, because that agent has no shell.
 
-*An agent with shell access can bypass all of this.* Nothing stops it running `bb pr merge` directly, or any of the 233 CLI commands, none of which are scoped, gated, or audited. That is not a gap this feature can close: an agent that can run shell commands can also edit the audit file. **The control that survives it is `--token`**, because a read-only PAT binds at the Bitbucket server and does not care which local process made the call. Treat MCP scoping and auditing as defence in depth over a correctly scoped token, never as a substitute for one.
+*An agent with shell access can bypass all of this.* Nothing stops it running `bb pr merge` directly, or any of the 233 CLI commands, none of which are scoped, gated, or audited. That is not a gap this feature can close: an agent that can run shell commands can also edit the audit file. **The control that survives it is the token the server runs under**, because a read-only PAT binds at the Bitbucket server and does not care which local process made the call. Treat MCP scoping and auditing as defence in depth over a correctly scoped token, never as a substitute for one.
 
 ### Principle 5: Mandating Audit by Policy
 
@@ -462,12 +462,11 @@ When a record cannot be written the call is **refused**. An audit trail that sil
           "serve",
           "--host",
           "https://bitbucket.example.com",
-          "--token",
-          "${env:BITBUCKET_RO_TOKEN}",
           "--tools",
           "get_pull_request,list_pull_requests,get_pr_diff,list_pr_comments,add_pr_comment"
         ],
         "env": {
+          "BITBUCKET_TOKEN": "${env:BITBUCKET_RO_TOKEN}",
           "BB_CA_FILE": "/Library/Application Support/Corporate/Certs/corp-root-ca.pem"
         }
       }
