@@ -55,6 +55,17 @@ jobs:
           import os
           import re
           import subprocess
+          import sys
+
+          # The one place that reads a commit message, shared with the
+          # release-flow gate in ci.yml. Two copies could disagree about whether
+          # a commit is breaking, and the disagreement that matters is the gate
+          # allowing something into main that this then cuts a major from
+          # (ADR-065). They already had drifted: this asked whether the body
+          # contained "BREAKING CHANGE:" anywhere, while the changelog below
+          # matched a footer anchored to a line.
+          sys.path.insert(0, "scripts")
+          import conventional_commits as cc
 
 
           def run_git(*args: str) -> str:
@@ -83,47 +94,18 @@ jobs:
               raise SystemExit(0)
 
           range_spec = f"{previous_tag}..HEAD" if previous_tag else "HEAD"
-          raw = run_git("log", "--no-merges", "--pretty=format:%H%x1f%s%x1f%b%x1e", range_spec)
-          records = [record for record in raw.split("\x1e") if record.strip()]
+          commits = cc.parse_log(run_git(*cc.LOG_ARGS, range_spec))
 
-          conventional_pattern = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]+)\))?(?P<bang>!)?: (?P<description>.+)$")
-
-          # Only user-visible change releases.  Previously every valid
-          # Conventional Commit type cut a patch release, which produced 95
-          # releases in the first six months — a rate that adopters running
+          # Which types release, and what counts as breaking, live in
+          # conventional_commits. Only user-visible change releases: every valid
+          # Conventional Commit type used to cut a patch release, which produced
+          # 95 releases in the first six months — a rate that adopters running
           # binaries through change approval cannot consume, and which left the
           # version number carrying no signal about whether anything changed for
-          # them.  ci/chore/docs/style/refactor/test/build now accumulate and
-          # ship with the next feat or fix.
-          RELEASING_PATCH_TYPES = {"fix", "perf", "revert"}
+          # them.
+          bump_level = cc.bump_level(commits)
 
-          bump_level = 0
-          found_conventional = False
-          for record in records:
-              parts = record.split("\x1f", 2)
-              if len(parts) < 2:
-                  continue
-              subject = parts[1].strip()
-              body = parts[2] if len(parts) > 2 else ""
-              match = conventional_pattern.match(subject)
-              if not match:
-                  continue
-
-              found_conventional = True
-              commit_type = match.group("type")
-              has_breaking_footer = "BREAKING CHANGE:" in body or "BREAKING-CHANGE:" in body
-              is_breaking = bool(match.group("bang")) or has_breaking_footer
-
-              if is_breaking:
-                  bump_level = max(bump_level, 3)
-              elif commit_type == "feat":
-                  bump_level = max(bump_level, 2)
-              elif commit_type in RELEASING_PATCH_TYPES:
-                  bump_level = max(bump_level, 1)
-              # Every other Conventional Commit type is deliberately
-              # non-releasing.  See RELEASING_PATCH_TYPES above.
-
-          if not found_conventional or bump_level == 0:
+          if not cc.has_conventional(commits) or bump_level == cc.BUMP_NONE:
               write_output("should_release", "false")
               write_output("version", "")
               write_output("previous_tag", previous_tag)
@@ -132,9 +114,9 @@ jobs:
           base_version = previous_tag[1:] if previous_tag else "0.0.0"
           major, minor, patch = [int(part) for part in base_version.split(".")]
 
-          if bump_level == 3:
+          if bump_level == cc.BUMP_MAJOR:
               major, minor, patch = major + 1, 0, 0
-          elif bump_level == 2:
+          elif bump_level == cc.BUMP_MINOR:
               minor, patch = minor + 1, 0
           else:
               patch += 1
@@ -348,6 +330,13 @@ jobs:
           import os
           import re
           import subprocess
+          import sys
+
+          # Same module the version bump above reads, so the notes and the
+          # version they belong to cannot disagree about which commits break
+          # things (ADR-065).
+          sys.path.insert(0, "scripts")
+          import conventional_commits as cc
 
 
           def run_git(*args: str) -> str:
@@ -359,22 +348,7 @@ jobs:
           repository_url = os.environ["REPOSITORY_URL"].rstrip("/")
           range_spec = f"{previous_tag}..HEAD" if previous_tag else "HEAD"
 
-          raw = run_git("log", "--no-merges", "--pretty=format:%H%x1f%s%x1f%b%x1e", range_spec)
-          records = [record for record in raw.split("\x1e") if record.strip()]
-
-          conventional_pattern = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]+)\))?(?P<bang>!)?: (?P<description>.+)$")
-          # Captures the whole footer, not its first line.  `(.+)$` stopped at
-          # the first newline, so a footer wrapped at the usual commit width
-          # reached the release notes cut off -- five of the six breaking
-          # changes accumulated for the next release ended mid-sentence, one of
-          # them mid-word.  Since CHANGELOG.md only points at these generated
-          # notes, that truncation was the migration instructions.
-          # Ends at a blank line so a footer stays separable from anything
-          # following it in the body.
-          breaking_footer_pattern = re.compile(
-              r"^BREAKING(?:-| )CHANGE:\s*(.+?)(?=\n\s*\n|\Z)",
-              re.MULTILINE | re.DOTALL,
-          )
+          commits = cc.parse_log(run_git(*cc.LOG_ARGS, range_spec))
 
           section_titles = {
               "feat": "Features",
@@ -404,45 +378,27 @@ jobs:
           breaking_changes = []
           all_entries = []
 
-          for record in records:
-              parts = record.split("\x1f", 2)
-              if len(parts) < 2:
-                  continue
-
-              sha = parts[0].strip()
-              subject = parts[1].strip()
-              body = parts[2] if len(parts) > 2 else ""
+          for commit in commits:
+              sha = commit.sha
               commit_url = f"{repository_url}/commit/{sha}"
 
-              match = conventional_pattern.match(subject)
-              if match:
-                  commit_type = match.group("type")
-                  description = match.group("description")
-                  scope = match.group("scope")
-                  is_breaking = bool(match.group("bang")) or bool(breaking_footer_pattern.search(body))
-              else:
-                  commit_type = "other"
-                  description = subject
-                  scope = None
-                  is_breaking = bool(breaking_footer_pattern.search(body))
-
-              section = section_titles.get(commit_type, "Other")
+              section = section_titles.get(commit.type, "Other")
               entry = {
                   "sha": sha,
                   "shortSha": sha[:7],
-                  "subject": subject,
-                  "description": description,
-                  "scope": scope,
-                  "type": commit_type,
+                  "subject": commit.subject,
+                  "description": commit.description,
+                  "scope": commit.scope,
+                  "type": commit.type,
                   "section": section,
-                  "breaking": is_breaking,
+                  "breaking": commit.breaking,
                   "url": commit_url,
               }
               grouped[section].append(entry)
               all_entries.append(entry)
 
-              if is_breaking:
-                  footer_match = breaking_footer_pattern.search(body)
+              if commit.breaking:
+                  footer_match = cc.BREAKING_FOOTER_PATTERN.search(commit.body)
                   entry_with_note = dict(entry)
                   # Collapsed to one line: the note goes into a Markdown list
                   # item, where the commit's own hard wrapping would otherwise
