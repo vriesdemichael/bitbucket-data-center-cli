@@ -137,8 +137,9 @@ Things worth knowing before you wire it up:
   handler cannot return a shape its schema does not describe (ADR-061).
 
 The audit trail covers this server only. An agent that can also run shell commands can
-invoke `bb` directly and bypass it. The control that survives that is `--token`, which
-binds at the Bitbucket server.
+invoke `bb` directly and bypass it. The control that survives that is the token the
+server runs under -- give it a read-only PAT via `BITBUCKET_TOKEN` in the client's `env`
+block -- which binds at the Bitbucket server.
 
 ## 5. Which one to enable
 

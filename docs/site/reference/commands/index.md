@@ -4146,7 +4146,7 @@ Flags:
       --draft                    Create as a draft pull request (Bitbucket DC 8.0+)
       --from-ref string          Source branch (name or refs/heads/name)
       --from-repo string         Repository holding --from-ref as PROJECT/slug, for a fork to upstream pull request (defaults to --repo)
-      --no-codeowners            Do not include code owners from .bitbucket/CODEOWNERS
+      --no-codeowners            Do not assign code owners
       --no-default-reviewers     Do not include default reviewers
       --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; a leading @ and a reviewer-group/ prefix are both accepted; alias --reviewer-groups)
       --reviewers strings        Reviewer usernames to add (repeatable or comma-separated, accepts @group syntax, e.g. --reviewers alice,@backend-team)
@@ -8994,7 +8994,7 @@ Manage default reviewers
 ```text
 Manage default reviewer conditions.
 
-Note on CODEOWNERS: .bitbucket/CODEOWNERS is a git-tracked file rather than a REST resource, so it is managed through repository contents and not by this command. For server-level reviewer rules use default-reviewer conditions (bb reviewer condition) and reviewer groups (bb reviewer-group); bb pr create and bb pr review reviewer add read CODEOWNERS and expand groups directly.
+Note on CODEOWNERS: .bitbucket/CODEOWNERS is a git-tracked file rather than a REST resource, so it is managed through repository contents and not by this command. For server-level reviewer rules use default-reviewer conditions (bb reviewer condition) and reviewer groups (bb reviewer-group); bb pr create and bb pr review reviewer add ask Bitbucket which code owners a change has, so they match what the web interface shows.
 
 Usage:
   bb reviewer [command]

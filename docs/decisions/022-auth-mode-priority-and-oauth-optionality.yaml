@@ -12,7 +12,7 @@ decision: >
 agent_instructions: >
   Implement and maintain token/basic auth as the default operational path.
   Do not add OAuth-dependent behavior.
-  Keep onboarding optimized for token creation and login with --token.
+  Keep onboarding optimized for token creation and login with --token-stdin.
   Document authentication mode in status output and troubleshooting guidance.
 rationale: >
   Bitbucket Server/Data Center OAuth setup is not consistently available in local or restricted

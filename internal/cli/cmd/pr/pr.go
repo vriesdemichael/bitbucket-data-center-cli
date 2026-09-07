@@ -643,7 +643,7 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd.Flags().BoolVar(&createDefaultReviewers, "default-reviewers", true, "Include default reviewers configured on repository/project; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal")
 	createCmd.Flags().BoolVar(&createNoDefaultReviewers, "no-default-reviewers", false, "Do not include default reviewers")
 	createCmd.Flags().BoolVar(&createCodeOwners, "codeowners", true, "Assign the code owners Bitbucket reports for the change, the same ones the web interface offers; the CODEOWNERS syntax and its meaning are the server's")
-	createCmd.Flags().BoolVar(&createNoCodeOwners, "no-codeowners", false, "Do not include code owners from .bitbucket/CODEOWNERS")
+	createCmd.Flags().BoolVar(&createNoCodeOwners, "no-codeowners", false, "Do not assign code owners")
 	createCmd.Flags().BoolVar(&createDraft, "draft", false, "Create as a draft pull request (Bitbucket DC 8.0+)")
 	// Not MarkFlagRequired: Cobra rejects before RunE, which forecloses asking
 	// a person who is there. FillMissing enforces the same requirement and, when

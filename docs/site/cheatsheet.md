@@ -285,7 +285,9 @@ Add to `.vscode/settings.json` (or Cursor's MCP configuration):
 }
 ```
 
-To restrict the server to safe read-only operations:
+To hold the server to read-only rights, give it its own PAT through the client's
+`env` block. Every MCP client supports one, and it keeps the agent's token separate
+from the one you use interactively:
 
 ```json
 {
@@ -294,12 +296,17 @@ To restrict the server to safe read-only operations:
       "bb": {
         "type": "stdio",
         "command": "bb",
-        "args": ["ai", "mcp", "serve", "--token", "READ_ONLY_PAT"]
+        "args": ["ai", "mcp", "serve"],
+        "env": { "BITBUCKET_TOKEN": "${env:BB_MCP_READONLY_PAT}" }
       }
     }
   }
 }
 ```
+
+The rights of that PAT are what bound the server: safe-by-default tool exposure is a
+second layer, not the boundary. `--token` was removed in v4 — a flag value sits in the
+process argument list for as long as the server runs.
 
 ---
 
