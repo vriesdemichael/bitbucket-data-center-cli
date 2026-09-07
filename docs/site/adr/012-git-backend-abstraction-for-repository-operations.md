@@ -6,6 +6,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Git backend abstraction for repository operations`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `020`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/012-git-backend-abstraction-for-repository-operations.yaml`
 

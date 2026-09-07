@@ -515,11 +515,21 @@ Almost every command is now in the first group: its schema is derived from the t
 result it fills in, so it cannot describe something other than what it emits. The rest say
 which of the others they are, and why.
 
-Success and failure both produce the same envelope on stdout. Which key is
-present tells you which happened:
+Success and failure both produce the same envelope on stdout, and exactly one of
+`data` and `error` is present. That key is what tells you which happened — never
+both, and never neither.
 
+A successful run:
+
+<!-- docs-lint: envelope-shape -->
 ```json
 { "data": { }, "meta": { "bbVersion": "v4.0.0" } }
+```
+
+A failed run:
+
+<!-- docs-lint: envelope-shape -->
+```json
 { "error": { "kind": "not_found", "message": "…", "exitCode": 4 }, "meta": { "bbVersion": "v4.0.0" } }
 ```
 

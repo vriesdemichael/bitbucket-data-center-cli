@@ -3,9 +3,10 @@ title: Error taxonomy and CLI exit contract
 category: architecture
 status: accepted
 decision: >
-  Define a stable error taxonomy (authentication, authorization, validation, not-found,
-  conflict, transient, permanent) and map it to deterministic CLI exit codes and structured
-  JSON error payloads.
+  Define a stable error taxonomy and map it to deterministic CLI exit codes and structured JSON
+  error payloads. The kinds are authentication, authorization, validation, not_found, conflict,
+  transient, permanent, not_implemented, cancelled and internal; internal is what an
+  unclassified error becomes, so every error has a kind.
 agent_instructions: >
   Map transport and service errors into canonical categories before returning from workflows.
   Keep human output and JSON output consistent with the same underlying error classification.
