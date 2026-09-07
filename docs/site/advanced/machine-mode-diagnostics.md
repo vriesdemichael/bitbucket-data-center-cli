@@ -6,6 +6,7 @@ Use global `--json` for machine-consumable output.
 
 Envelope shape:
 
+<!-- docs-lint: envelope-shape -->
 ```json
 {
   "data": {},
@@ -27,6 +28,7 @@ binary version to pin the contract.
 
 When a command fails while `--json` is set, stdout carries an `error` object where `data` would be:
 
+<!-- docs-lint: envelope-shape -->
 ```json
 {
   "error": {
@@ -158,6 +160,7 @@ and reports `validation` with exit code `2` — the same as any other input the 
 bb --json repo list --nonexistent-flag
 ```
 
+<!-- docs-lint: envelope-shape -->
 ```json
 {
   "error": {

@@ -238,3 +238,15 @@ func relaxRequiredFlags(cmd *cobra.Command) {
 	cmd.Flags().VisitAll(clear)
 	cmd.PersistentFlags().VisitAll(clear)
 }
+
+// DescribeCommand reports the output contract a command path declares, which is
+// the same answer --describe gives for it.
+//
+// Exported for tools/docs-lint, which checks a documented output example
+// against the schema the command declares rather than against other
+// documentation. Both read this one lookup, so an example and the flag cannot
+// disagree about what a command emits -- which is how a documented
+// bb auth server use payload kept a "status" field the command has never had.
+func DescribeCommand(path string) DescribeResult {
+	return describeCommand(path)
+}

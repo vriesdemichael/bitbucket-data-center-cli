@@ -120,6 +120,7 @@ PLATFORM/web      Frontend Web App
 bb --json auth status
 ```
 
+<!-- docs-lint: output-of bb auth status -->
 ```json
 {
   "data": {

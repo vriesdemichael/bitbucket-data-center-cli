@@ -122,6 +122,7 @@ Target Bitbucket: https://bitbucket.acme.corp (expected version 9.4.16, auth=tok
 
 Expected JSON output (example):
 
+<!-- docs-lint: output-of bb auth server use -->
 ```json
 {
   "data": {
