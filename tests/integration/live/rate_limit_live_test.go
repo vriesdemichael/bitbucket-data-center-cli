@@ -33,6 +33,10 @@ import (
 // affects every request anyone makes. Go runs the tests that did not declare
 // themselves parallel before it releases any that did, so a sequential test has
 // the instance to itself, and the switch goes back off in a cleanup.
+// DO NOT ADD t.Parallel TO THIS TEST. It turns rate limiting on for the whole
+// instance; running it beside anything else throttles that too. A sweep that
+// adds t.Parallel wherever the process-global taint is gone did exactly that,
+// and the run reported 181 failures in tests that had nothing wrong with them.
 func TestLiveRateLimitedRequestsAreHandled(t *testing.T) {
 	harness := newLiveHarness(t)
 
@@ -58,6 +62,17 @@ func TestLiveRateLimitedRequestsAreHandled(t *testing.T) {
 	// One token, refilled one per second: the second request in a burst is
 	// refused, which is the smallest limit that produces a 429 reliably.
 	harness.limitUserRate(ctx, t, limited.Username, 1, 1)
+
+	// The switch is instance-wide and its default settings apply to everyone,
+	// the administrator this suite authenticates as included. That is how one
+	// run of this test took the whole suite with it: the administrator spent
+	// its bucket during the test, the cleanup that turns the switch back off
+	// was itself refused with 429, and the remaining 250 tests ran against a
+	// throttled Bitbucket -- 181 failures, none of them about the code.
+	//
+	// So the administrator is exempted before the switch goes on, and the
+	// restore retries. Only the throwaway user is meant to be limited here.
+	harness.exemptFromRateLimiting(ctx, t, harness.username())
 	harness.enableRateLimiting(ctx, t)
 
 	// Bitbucket's own 429, and what it asks for.
@@ -174,14 +189,32 @@ func (h *liveHarness) enableRateLimiting(ctx context.Context, t *testing.T) {
 	previous, _ := settings["enabled"].(bool)
 
 	t.Cleanup(func() {
-		restoreCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		restoreCtx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 		defer cancel()
-		if _, err := h.liveJSON(restoreCtx, http.MethodPut, "/rest/api/latest/admin/rate-limit/settings",
-			map[string]any{"enabled": previous}); err != nil {
-			// Loud, because leaving it on rate-limits every later run against
-			// this instance and the symptom looks like something else entirely.
-			t.Errorf("could not turn rate limiting back %v: %v", previous, err)
+
+		// Retried, because the one call that must not fail is the one most
+		// likely to be refused: it is switching off the thing refusing it. A
+		// single attempt left the switch on for a whole run.
+		var lastErr error
+		for attempt := 0; attempt < 12; attempt++ {
+			if _, err := h.liveJSON(restoreCtx, http.MethodPut, "/rest/api/latest/admin/rate-limit/settings",
+				map[string]any{"enabled": previous}); err == nil {
+				return
+			} else {
+				lastErr = err
+			}
+			if restoreCtx.Err() != nil {
+				break
+			}
+			time.Sleep(2 * time.Second)
 		}
+
+		// Loud, because leaving it on throttles every later test and every
+		// later run against this instance, and the symptom looks like
+		// something else entirely.
+		t.Errorf("could not turn rate limiting back %v -- the instance is still throttled, "+
+			"run: curl -u <admin> -X PUT -H 'Content-Type: application/json' "+
+			"-d '{\"enabled\":false}' <host>/rest/api/latest/admin/rate-limit/settings: %v", previous, lastErr)
 	})
 
 	if _, err := h.liveJSON(ctx, http.MethodPut, "/rest/api/latest/admin/rate-limit/settings",
@@ -238,4 +271,18 @@ func (h *liveHarness) burstUntilRefused(t *testing.T, user restrictedUser, attem
 	}
 
 	return status, nil, fmt.Sprintf("no refusal in %d requests", attempts)
+}
+
+// exemptFromRateLimiting gives one user a bucket large enough never to empty.
+//
+// For the account the suite itself authenticates as. The instance-wide switch
+// applies its default settings to everyone, so turning it on to test one user
+// throttles the harness too -- including the call that turns it back off.
+func (h *liveHarness) exemptFromRateLimiting(ctx context.Context, t *testing.T, username string) {
+	t.Helper()
+
+	// Large rather than unlimited: the API takes a token bucket, and there is
+	// no "off" for a single user while the feature is on. This is more requests
+	// than a suite makes in the seconds this test holds the switch.
+	h.limitUserRate(ctx, t, username, 100000, 10000)
 }

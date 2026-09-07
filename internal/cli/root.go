@@ -44,7 +44,22 @@ import (
 )
 
 func NewRootCommand() *cobra.Command {
-	options := &rootOptions{}
+	return NewRootCommandWithOverrides(config.Overrides{})
+}
+
+// NewRootCommandWithOverrides builds the root command with values already
+// supplied, ahead of the environment and the stored configuration.
+//
+// The global flags write into the same place during PersistentPreRunE, so a
+// flag still outranks what is passed here for the settings a flag can name.
+// What this reaches that a flag cannot is the credential: bb takes a password
+// from stdin or the environment and never as a flag value (ADR-047), so a
+// caller holding one has nowhere to put it except the process -- which is
+// process-wide, and therefore something two concurrent callers take from each
+// other. The live suite runs as sixteen different restricted users at once and
+// needs each command told who it is rather than the process being told.
+func NewRootCommandWithOverrides(supplied config.Overrides) *cobra.Command {
+	options := &rootOptions{runtime: supplied}
 
 	rootCmd := &cobra.Command{
 		Use:   "bb",
@@ -550,6 +565,12 @@ func (options *rootOptions) merge(command config.Overrides) config.Overrides {
 	}
 	if merged.Token == "" {
 		merged.Token = options.runtime.Token
+	}
+	if merged.Username == "" {
+		merged.Username = options.runtime.Username
+	}
+	if merged.Password == "" {
+		merged.Password = options.runtime.Password
 	}
 	if merged.ProjectKey == "" {
 		merged.ProjectKey = options.runtime.ProjectKey

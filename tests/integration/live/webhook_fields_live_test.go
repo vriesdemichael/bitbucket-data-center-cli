@@ -37,7 +37,7 @@ const (
 func executeLiveCLISplit(t *testing.T, stdin string, args ...string) (string, string, error) {
 	t.Helper()
 
-	command := cli.NewRootCommand()
+	command := cli.NewRootCommandWithOverrides(liveCLIOverrides(t))
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	command.SetOut(stdout)

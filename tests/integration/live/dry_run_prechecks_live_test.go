@@ -26,6 +26,8 @@ import (
 // actually has. Here the commands run as a real user holding read and nothing
 // more, so the refusal is the server's.
 func TestLiveDryRunPrechecksRefuseBeforePlanning(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()

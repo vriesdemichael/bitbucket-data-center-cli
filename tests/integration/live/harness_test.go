@@ -810,18 +810,19 @@ func (h *liveHarness) grantRepoPermission(ctx context.Context, projectKey, repoS
 	return nil
 }
 
-// configureLiveCLIEnvForUser sets env vars to run the CLI as the given restricted user
-// (not as the admin from harness.config).
+// configureLiveCLIEnvForUser runs a test's CLI calls as the given restricted
+// user rather than as the admin the harness authenticates with.
+//
+// The credentials travel with the command now instead of being published to
+// the process. Six t.Setenv calls did it before, which is the call that stops a
+// test declaring itself parallel -- and the sixteen permission tests were the
+// largest block of live tests still running one at a time because of it.
 func configureLiveCLIEnvForUser(t *testing.T, harness *liveHarness, projectKey, repositorySlug string, user restrictedUser) {
 	t.Helper()
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", harness.config.BitbucketURL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", projectKey)
-	t.Setenv("BITBUCKET_REPO_SLUG", repositorySlug)
-	t.Setenv("BITBUCKET_USERNAME", user.Username)
-	t.Setenv("BITBUCKET_PASSWORD", user.Password)
-	t.Setenv("BITBUCKET_TOKEN", "")
+	_ = harness
+	setLiveRepoContext(t, projectKey, repositorySlug)
+	setLiveCredentials(t, user)
 }
 
 func TestApplyLocalLiveDefaults(t *testing.T) {

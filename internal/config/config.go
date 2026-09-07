@@ -219,6 +219,19 @@ type Overrides struct {
 	// Token supplies the credential directly, ahead of BITBUCKET_TOKEN and any
 	// stored credential.
 	Token string
+	// Username and Password supply a basic-auth credential directly, ahead of
+	// BITBUCKET_USERNAME, BITBUCKET_USER, BITBUCKET_PASSWORD and the ADMIN_*
+	// pair. Supplying both also suppresses an ambient BITBUCKET_TOKEN: naming a
+	// user is naming who the call is as, and a token left in the environment
+	// would silently make it somebody else.
+	//
+	// There is no flag behind these and there will not be one -- a password is
+	// never a flag value (ADR-047). They exist so a caller that already holds a
+	// credential can hand it over instead of publishing it to the process,
+	// which is what the live suite needs to run as sixteen different restricted
+	// users at once.
+	Username string
+	Password string
 	// ProjectKey and RepoSlug carry a repository context resolved from the git
 	// remote, ahead of BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG.
 	ProjectKey string
@@ -382,9 +395,9 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		BitbucketVersionTarget: envOrDefault("BITBUCKET_VERSION_TARGET", defaultBitbucketVersionTarget),
 		ProjectKey:             projectKey,
 		RepoSlug:               firstNonEmpty(strings.TrimSpace(overrides.RepoSlug), envOrDefault("BITBUCKET_REPO_SLUG", "")),
-		BitbucketToken:         firstNonEmpty(strings.TrimSpace(overrides.Token), envOrDefault("BITBUCKET_TOKEN", "")),
-		BitbucketUsername:      envOrDefault("BITBUCKET_USERNAME", envOrDefault("BITBUCKET_USER", envOrDefault("ADMIN_USER", ""))),
-		BitbucketPassword:      envOrDefault("BITBUCKET_PASSWORD", envOrDefault("ADMIN_PASSWORD", "")),
+		BitbucketToken:         firstNonEmpty(strings.TrimSpace(overrides.Token), suppliedCredentialToken(overrides)),
+		BitbucketUsername:      firstNonEmpty(strings.TrimSpace(overrides.Username), envOrDefault("BITBUCKET_USERNAME", envOrDefault("BITBUCKET_USER", envOrDefault("ADMIN_USER", "")))),
+		BitbucketPassword:      firstNonEmpty(strings.TrimSpace(overrides.Password), envOrDefault("BITBUCKET_PASSWORD", envOrDefault("ADMIN_PASSWORD", ""))),
 		CAFile:                 tlsSettings.CAFile,
 		InsecureSkipVerify:     tlsSettings.InsecureSkipVerify,
 		ClientCertFile:         tlsSettings.ClientCertFile,
@@ -1569,11 +1582,58 @@ func credentialsForStoredHost(stored StoredConfig, key string, profile StoredPro
 // restore the real one, which would make the behaviour of every later test in
 // the binary depend on ordering. These are swapped and restored per test
 // instead.
+// The credential store, which is the real one outside a test binary.
+//
+// keyring.Set writes to the operating system: the Windows Credential Manager,
+// the macOS keychain, the Secret Service. Everything bb stores goes under one
+// service name with a key built from the host, so two tests using the same
+// host share one entry -- and `go test ./...` runs packages as concurrent
+// processes, so they overwrite and read each other's. That was a flake in
+// TestResolveCloneHTTPAuthFallbackBranches, which passed alone and on its own
+// package and failed once in a full run.
+//
+// It was also the unit suite writing bb credentials into the developer's own
+// credential store, and leaving them there. A test has no business in it.
 var (
 	keyringSet    = keyring.Set
 	keyringGet    = keyring.Get
 	keyringDelete = keyring.Delete
 )
+
+// memoryKeyring stands in for the operating system inside a test binary.
+//
+// Per process, so concurrent packages no longer share one store, and gone when
+// the process is. testing.Testing() decides it, the same way the system config
+// path already does.
+type keyringEntry struct{ service, key string }
+
+var memoryKeyring sync.Map // keyringEntry -> secret
+
+func init() {
+	if !testing.Testing() {
+		return
+	}
+
+	keyringSet = func(service, key, secret string) error {
+		memoryKeyring.Store(keyringEntry{service, key}, secret)
+
+		return nil
+	}
+	keyringGet = func(service, key string) (string, error) {
+		value, ok := memoryKeyring.Load(keyringEntry{service, key})
+		if !ok {
+			return "", keyring.ErrNotFound
+		}
+		secret, _ := value.(string)
+
+		return secret, nil
+	}
+	keyringDelete = func(service, key string) error {
+		memoryKeyring.Delete(keyringEntry{service, key})
+
+		return nil
+	}
+}
 
 // policyWarningWriter is where administrative policy warnings go.
 //
@@ -2101,4 +2161,39 @@ func ResolveRequestTimeoutWith(overrides Overrides, fallback time.Duration) (tim
 			nameOf(sourced, settingRequestTimeout)+" must be greater than 0", nil)
 	}
 	return timeout, nil
+}
+
+// suppliedCredentialToken is BITBUCKET_TOKEN, unless the caller named a user.
+//
+// The token and the username/password pair are two answers to "who is this
+// call as", and the client prefers the token when it has one. So an override
+// naming a user would be ignored whenever the environment also held a token --
+// which is exactly the case it exists for, and it would fail silently by
+// acting as somebody else rather than by reporting anything.
+func suppliedCredentialToken(overrides Overrides) string {
+	if strings.TrimSpace(overrides.Username) != "" && strings.TrimSpace(overrides.Password) != "" {
+		return ""
+	}
+
+	return envOrDefault("BITBUCKET_TOKEN", "")
+}
+
+// UseOSKeyring puts a test binary back on the operating system's credential
+// store.
+//
+// A test binary uses an in-memory one by default, so packages running as
+// concurrent processes cannot overwrite each other's entries and so the unit
+// suite stops writing bb credentials into the developer's own store. The live
+// suite is the exception that needs the real thing: it runs `bb auth login` in
+// the test process and then spawns a separately built bb as git's credential
+// helper, which is another process and can only find the credential where the
+// operating system keeps it.
+//
+// A no-op outside a test binary, so nothing a user runs can reach it.
+func UseOSKeyring() {
+	if !testing.Testing() {
+		return
+	}
+
+	keyringSet, keyringGet, keyringDelete = keyring.Set, keyring.Get, keyring.Delete
 }

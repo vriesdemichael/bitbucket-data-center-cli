@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/gittest"
 )
 
@@ -15,6 +16,13 @@ import (
 // most likely place for a helper to lose its working directory and operate on
 // the project checkout instead of its own fixture.
 func TestMain(m *testing.M) {
+	// The real credential store, not the in-memory one a test binary gets by
+	// default. TestLiveGitCredentialHelperAuthenticatesClone runs `bb auth
+	// login` here and then spawns a separately built bb as git's credential
+	// helper -- another process, which can only find the credential where the
+	// operating system keeps it.
+	config.UseOSKeyring()
+
 	configureLiveCLIConstants()
 
 	before := gittest.SnapshotAmbientConfig()

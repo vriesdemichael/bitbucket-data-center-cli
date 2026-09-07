@@ -679,7 +679,7 @@ func configureLiveCLIEnv(t *testing.T, harness *liveHarness, projectKey, reposit
 func executeLiveCLI(t *testing.T, args ...string) (string, error) {
 	t.Helper()
 
-	command := cli.NewRootCommand()
+	command := cli.NewRootCommandWithOverrides(liveCLIOverrides(t))
 	output := &bytes.Buffer{}
 	command.SetOut(output)
 	command.SetErr(output)
@@ -701,7 +701,7 @@ func executeLiveCLI(t *testing.T, args ...string) (string, error) {
 func executeLiveCLIUnscoped(t *testing.T, args ...string) (string, error) {
 	t.Helper()
 
-	command := cli.NewRootCommand()
+	command := cli.NewRootCommandWithOverrides(liveCLIOverrides(t))
 	output := &bytes.Buffer{}
 	command.SetOut(output)
 	command.SetErr(output)

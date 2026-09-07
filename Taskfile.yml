@@ -409,14 +409,46 @@ tasks:
 
   test:live:
     desc: Run live integration tests against local Bitbucket stack
-    # -count=1 because the build cache cannot see Bitbucket.
+    # Compiled to a fixed path and then run, rather than `go test` running it.
     #
-    # A cached result means "the code and the environment are unchanged", which
-    # for a suite whose subject is a server says nothing: the instance can have
-    # been reset, upgraded or left in a different state since, and the run
-    # reports ok (cached) either way. Caught while measuring, when a
-    # deliberately different run answered instantly with the previous result.
-    cmd: go test -tags=live -count=1 -timeout 20m -parallel {{.LIVE_PARALLEL}} ./tests/integration/live
+    # One test listens on 0.0.0.0 so the Bitbucket container can deliver a
+    # webhook back to the host, and a Windows firewall rule is keyed on the
+    # executable's path. `go test` builds into
+    # %TEMP%\go-build<random>\b001\live.test.exe and runs it from there, so
+    # every run is a new program to Windows and prompts again. `go test -o`
+    # does not help: it saves a copy and still runs the temporary one.
+    #
+    # Compiling to .tmp/live.test.exe makes it the same program each time, so
+    # the prompt is answered once. Run from the package directory because that
+    # is where `go test` puts a test binary's working directory, and the suite
+    # resolves .env and the repository root by walking up from it.
+    #
+    # test:live:coverage is deliberately left on `go test`: it is what CI runs,
+    # CI is Linux and headless, and the coverage plumbing is not worth
+    # rearranging for a desktop prompt.
+    #
+    # No caching to worry about here -- running a binary directly never
+    # consults the build cache, which is the right answer for a suite whose
+    # subject is a server the cache cannot see.
+    # The working directory is the package directory, because that is where `go
+    # test` puts a test binary and one test resolves
+    # testdata/live-suite-gpg-public-key.asc relative to it. Set on the task:
+    # dir: is not a per-command key, and Task ignores it there without saying
+    # so -- which read as the directory being set while the suite still ran
+    # from the repository root and could not find its fixture.
+    dir: tests/integration/live
+    cmds:
+      - task: test:live:build
+      # Absolute and forward-slashed. Task's shell reads a backslash as an
+      # escape, so ROOT_DIR verbatim arrives as C:Users... and reports "not
+      # found"; a relative path is not resolved against the task's dir either,
+      # and reports the same thing.
+      - '{{ .ROOT_DIR | replace "\\" "/" }}/.tmp/live.test.exe -test.timeout=20m -test.parallel={{.LIVE_PARALLEL}}'
+
+  test:live:build:
+    desc: Compile the live test binary to the fixed path test:live runs
+    internal: true
+    cmd: go test -tags=live -c -o .tmp/live.test.exe ./tests/integration/live
 
   stack:up:
     desc: Start local SDK-licensed Bitbucket stack (no licence key required)

@@ -44,7 +44,7 @@ func executeLiveMCPServer(t *testing.T, drive func(*mcp.ClientSession), args ...
 	stdoutReader, stdoutWriter := io.Pipe()
 
 	var stderr strings.Builder
-	command := cli.NewRootCommand()
+	command := cli.NewRootCommandWithOverrides(liveCLIOverrides(t))
 	command.SetIn(stdinReader)
 	command.SetOut(stdoutWriter)
 	command.SetErr(&stderr)
@@ -869,6 +869,8 @@ func TestLiveMCPAuditTrailRecordsInvocations(t *testing.T) {
 // All three actions run against the same pull request, and each is read back
 // through a second tool rather than trusted from the write's own answer.
 func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
