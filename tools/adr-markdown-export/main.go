@@ -140,6 +140,18 @@ func renderRecordMarkdown(record decisionRecord) string {
 	if supersedes := formatSupersedes(record.Supersedes); supersedes != "" {
 		fmt.Fprintf(&out, "- Supersedes: `%s`\n", supersedes)
 	}
+	// Amendment is rendered for the same reason supersession is. An amended
+	// record stays accepted, so without this it reads on the published page
+	// exactly like one nothing has touched -- and the part a reader most needs
+	// is which record replaced the paragraph they are about to act on. The
+	// validator has always required the link from both ends in the source; it
+	// reached neither end of the site.
+	if record.AmendedBy != nil {
+		fmt.Fprintf(&out, "- Amended By: `%03d`\n", *record.AmendedBy)
+	}
+	if amends := formatSupersedes(record.Amends); amends != "" {
+		fmt.Fprintf(&out, "- Amends: `%s`\n", amends)
+	}
 	if strings.TrimSpace(record.Provenance) != "" {
 		fmt.Fprintf(&out, "- Provenance: `%s`\n", strings.TrimSpace(record.Provenance))
 	}

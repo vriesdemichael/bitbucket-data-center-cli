@@ -25,7 +25,11 @@ var prosePermitted = map[string]bool{
 	"agent_instructions":    true,
 	"rejected_alternatives": true,
 	"superseded_by":         true,
-	"mcp_audit_file":        true,
+	// The amendment half of the same schema. It was absent here only because no
+	// MCP record had been amended yet; ADR-083 amends ADR-039, and the key
+	// looked like a tool name the moment it appeared.
+	"amended_by":     true,
+	"mcp_audit_file": true,
 }
 
 // TestADRDoesNotNameToolsThatDoNotExist guards the drift that made ADR-039

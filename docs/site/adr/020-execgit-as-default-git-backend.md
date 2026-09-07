@@ -6,6 +6,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Execgit as default Git backend`
 - Category: `architecture`
 - Status: `accepted`
+- Amends: `012`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/020-execgit-as-default-git-backend.yaml`
 

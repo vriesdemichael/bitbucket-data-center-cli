@@ -2,15 +2,13 @@ number: 39
 title: Built-in MCP server with explicit host scoping and token capability restriction
 category: architecture
 status: accepted
+amended_by: 83
 decision: >
   Expose a curated set of high-value Bitbucket operations as MCP tools via bb ai mcp serve.
   The server uses stdio transport for IDE-native integration. When more than one Bitbucket
   server context is configured, --host is required and the server exits immediately with an
-  actionable error if it is omitted. The server runs under the credential its environment
-  supplies, so a read-only PAT set as BITBUCKET_TOKEN in the MCP client's env block restricts
-  capabilities to that token's rights; the --token flag that once did this was removed in
-  v4.0.0, because a flag value sits in the process argument list for as long as the server
-  runs. An optional
+  actionable error if it is omitted. An optional --token flag scopes all API calls made by
+  the server to the supplied PAT, restricting capabilities to that token's rights. An optional
   --tools allowlist and --exclude denylist allow further narrowing of the exposed tool surface.
   A companion bb ai mcp tools command lists all available tools with name, description and
   exposure to support allowlist/denylist construction.
@@ -22,12 +20,13 @@ decision: >
   This record does not enumerate the tools. mcp.AllSpecs() is the catalogue, bb ai mcp tools
   prints it with an EXPOSURE column, and an MCP client receives it at connect time.
 agent_instructions: >
+  The --token flag this record describes was removed in v4: ADR-083. Scope the server by giving
+  it its own read-only PAT as BITBUCKET_TOKEN in the MCP client's env block, never as a flag.
   When generating MCP server configuration for an IDE (e.g. VS Code, Cursor), always emit
   bb ai mcp serve as the server command. If the user has multiple Bitbucket instances
   configured (detectable via bb auth server list), prompt for --host before generating the
-  config snippet. Document the client's env block as the way to run a read-only MCP server
-  instance: instruct users to create a read-only PAT and supply it there as BITBUCKET_TOKEN,
-  never as a flag value.
+  config snippet. Give the server its own read-only PAT through the client's env block, and say
+  so when generating configuration; the flag that once did this is gone.
   Never silently pick one host when multiple are configured; always surface the ambiguity.
   Do not list tool names here or anywhere else that has to be maintained by hand. This record
   previously carried three tiers of them and drifted: it named a tool that has never existed,

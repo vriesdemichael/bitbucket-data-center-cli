@@ -104,3 +104,67 @@ title: Invalid
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestExportADRMarkdownRendersAmendmentFromBothEnds(t *testing.T) {
+	t.Parallel()
+
+	// An amended record stays accepted, so without these lines it reads on the
+	// published page exactly like a record nothing has touched. ADR-056 was
+	// amended by ADR-080 and said so in its source for a release while the site
+	// showed neither end of the link.
+	inputDir := filepath.Join(t.TempDir(), "decisions")
+	outputDir := filepath.Join(t.TempDir(), "site", "adr")
+
+	if err := os.MkdirAll(inputDir, 0o755); err != nil {
+		t.Fatalf("mkdir input: %v", err)
+	}
+
+	amended := `number: 5
+title: Amended Decision
+category: architecture
+status: accepted
+amended_by: 6
+decision: Use thing A.
+agent_instructions: Follow thing A.
+rationale: Thing A was best.
+provenance: human
+`
+	amender := `number: 6
+title: Amending Decision
+category: architecture
+status: accepted
+amends:
+  - 5
+decision: Use thing A, except for the part that changed.
+agent_instructions: Follow the amendment.
+rationale: One paragraph of thing A stopped being true.
+provenance: human
+`
+
+	if err := os.WriteFile(filepath.Join(inputDir, "005-amended-decision.yaml"), []byte(amended), 0o644); err != nil {
+		t.Fatalf("write amended: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(inputDir, "006-amending-decision.yaml"), []byte(amender), 0o644); err != nil {
+		t.Fatalf("write amender: %v", err)
+	}
+
+	if err := exportADRMarkdown(inputDir, outputDir); err != nil {
+		t.Fatalf("exportADRMarkdown failed: %v", err)
+	}
+
+	amendedPage, err := os.ReadFile(filepath.Join(outputDir, "005-amended-decision.md"))
+	if err != nil {
+		t.Fatalf("read amended page: %v", err)
+	}
+	if !strings.Contains(string(amendedPage), "- Amended By: `006`") {
+		t.Fatalf("amended record does not name what amended it:\n%s", amendedPage)
+	}
+
+	amenderPage, err := os.ReadFile(filepath.Join(outputDir, "006-amending-decision.md"))
+	if err != nil {
+		t.Fatalf("read amender page: %v", err)
+	}
+	if !strings.Contains(string(amenderPage), "- Amends: `5`") {
+		t.Fatalf("amending record does not name what it amends:\n%s", amenderPage)
+	}
+}

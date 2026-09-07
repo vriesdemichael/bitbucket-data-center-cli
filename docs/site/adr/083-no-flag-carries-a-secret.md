@@ -1,0 +1,29 @@
+# ADR 083: No flag carries a secret
+
+This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
+
+- Number: `083`
+- Title: `No flag carries a secret`
+- Category: `architecture`
+- Status: `accepted`
+- Amends: `39, 47`
+- Provenance: `guided-ai`
+- Source: `docs/decisions/083-no-flag-carries-a-secret.yaml`
+
+## Decision
+
+Remove every flag whose value is a credential. --token and --password on bb auth login are gone, and so is --token on bb ai mcp serve. A secret reaches bb through stdin (--token-stdin, --password-stdin), the environment (BITBUCKET_TOKEN), or the keyring, and through nothing else. Scope the MCP server by the credential its environment supplies. An MCP client launches the server with an env block, so a read-only PAT set there as BITBUCKET_TOKEN restricts the server to that token's rights -- the same restriction --token performed, bound at Bitbucket rather than written into the process argument list. This ships in a major release and breaks callers on purpose. ADR-047 kept the flags with a warning; that traded a real exposure for compatibility, and the trade is now settled the other way.
+
+## Agent Instructions
+
+Do not add a flag whose value is a secret, and do not restore one. If a command needs a credential, read it from stdin behind a --<name>-stdin flag, or take it from the environment. When generating MCP client configuration, put the credential in the client's env block. Never emit a bb command line containing a credential, in documentation, in a shell snippet or in a configuration file. A retired flag is worth naming when explaining why: readers arrive with the old form in their scripts, and "unknown flag" alone does not tell them where the secret should go instead.
+
+## Rationale
+
+A warning does not remove an exposure, it annotates one. The flag value is readable through ps and /proc/<pid>/cmdline by any local user on the machine, is captured by process-auditing and EDR tooling, and lands in shell history. For bb ai mcp serve it is worse than for a login: the server is long-lived, so the credential sits in the argument list for the whole session rather than for the moment a command runs. The warning also did not move the callers it was meant to move. Both documented IDE configurations still passed --token a release later, and so did the enterprise hardening runbook that exists to teach the careful form. A flag that documentation keeps reaching for is a flag the documentation will keep teaching, whatever the warning says. The compatibility argument ADR-047 accepted was real and is now spent. It reasoned that removal breaks every existing script for a risk that is sometimes acceptable, which is a reason to wait for a major rather than a reason never to act. v4 is that major. Nothing is lost on the MCP side. The env block is supported by every MCP client, keeps the agent's token distinct from the operator's, and does not write the secret into the argument list. It is what the command's own help now teaches.
+
+## Rejected Alternatives
+
+- `Keep the flags and make the warning louder`: The warning had already been in place for the whole life of the flags and had moved neither the documentation nor the configurations. Louder is the same mechanism with more volume.
+- `Remove the auth flags but keep --token on bb ai mcp serve`: It is the worst case rather than an exception: the server runs for a whole IDE session, so the credential is exposed for the whole of it. Keeping one credential-bearing flag also keeps the rule unstatable, and a rule with an exception cannot be checked.
+- `Accept the flag value from a file path instead`: A path is not a secret, so this would be safe, but it adds a third input form to a surface whose problem was never a shortage of ways in. Stdin and the environment already cover the interactive and the automated case.

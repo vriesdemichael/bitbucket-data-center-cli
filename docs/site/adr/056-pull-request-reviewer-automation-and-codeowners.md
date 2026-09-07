@@ -6,6 +6,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Pull request reviewer automation, default reviewers, and CODEOWNERS`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `080`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/056-pull-request-reviewer-automation-and-codeowners.yaml`
 
