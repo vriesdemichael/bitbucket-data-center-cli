@@ -500,6 +500,26 @@ tasks:
           echo "exceed the start period; 'task stack:logs' shows progress." >&2
           exit 1
         fi
+      - task: stack:bootstrap
+
+  stack:bootstrap:
+    desc: Enable basic auth on the running stack (and apply a licence key if one is set)
+    # The live suite authenticates with basic auth, and Bitbucket refuses it
+    # until this script's enable_basic_auth step turns it on. CI has always run
+    # this after starting the stack; nothing local did, and the SDK reprovisions
+    # the instance on every container start -- so `task stack:restart` handed
+    # back a stack where all 250 live tests answered 403, and the message named
+    # neither the cause nor the remedy.
+    #
+    # Part of stack:up rather than a step to remember, because the failure it
+    # prevents looks like a product bug rather than a missing setup step.
+    cmds:
+      - |
+        if [ -f .env ]; then set -a; . ./.env; set +a; fi
+        bash scripts/bootstrap-bitbucket.sh \
+          "${BITBUCKET_URL:-http://localhost:7990}" \
+          "${ADMIN_USER:-admin}" \
+          "${ADMIN_PASSWORD:-admin}"
 
   stack:down:
     desc: Stop local Bitbucket stack

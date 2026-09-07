@@ -170,10 +170,23 @@ submit_setup_user() {
 }
 
 apply_license_via_rest() {
-  local license_response
+  local license_response existing_license_code
 
   if [ -z "${BITBUCKET_LICENSE_KEY:-}" ]; then
     log "BITBUCKET_LICENSE_KEY not set; skipping license application."
+    return 0
+  fi
+
+  # An instance that already has a license keeps the one it has. The SDK
+  # harness issues its own three-hour license at container start, so posting
+  # over it answers 409 -- and this function exits 1 on a failed application,
+  # which is how a local `stack:restart` used to end before basic auth was
+  # enabled and leave every live test answering 403.
+  existing_license_code=$(curl -s -o /dev/null -w '%{http_code}' \
+    -u "${ADMIN_USERNAME}:${ADMIN_PASSWORD}" \
+    "${BASE_URL}/rest/api/latest/admin/license" || true)
+  if [ "$existing_license_code" = "200" ]; then
+    log "Instance is already licensed; leaving the existing license in place."
     return 0
   fi
 
@@ -349,10 +362,17 @@ if [ "$current_state" = "FIRST_RUN" ]; then
   wait_for_states "RUNNING"
 fi
 
+# Before the license, not after. Enabling basic auth needs only the TSV login
+# and WebSudo, so it works on an instance that refuses basic auth, while the
+# license call has no way in until it is done -- it authenticates with either a
+# setup-wizard cookie or basic auth, and an already-provisioned instance offers
+# neither. Running the license first meant a local restart could never repair
+# itself: the step that would have fixed the authentication sat behind the step
+# that needed it.
+enable_basic_auth
+
 if [ "$license_configured_during_setup" != "true" ]; then
   apply_license_via_rest
 fi
-
-enable_basic_auth
 
 log "Bitbucket is RUNNING at ${BASE_URL} (admin user: ${ADMIN_USERNAME})"
