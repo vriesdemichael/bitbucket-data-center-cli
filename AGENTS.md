@@ -243,6 +243,16 @@ linter — that avoids the check rather than passing it. When an example is mean
 the block with `<!-- docs-lint: expect-invalid -->`, which inverts the check so the block also fails
 if the command later becomes valid. Do not add an unconditional ignore.
 
+`json` and `yaml` blocks are checked too, in two other ways. An invocation a client launches from
+configuration — `"command": "bb"` beside an `"args"` array — is reconstructed and validated like a
+shell line, because two IDE configurations kept passing a removed flag for a release while being
+perfectly valid JSON. And a block showing machine output is validated against the schema its command
+declares, so mark it `<!-- docs-lint: output-of bb <command> -->`, or
+`<!-- docs-lint: envelope-shape -->` when it illustrates the envelope rather than one command's
+payload. An unmarked machine-output block fails, so a new example is checked by default. Read a
+payload from the command's `--describe` rather than writing one from memory — that is the same
+declaration the check reads.
+
 If the linter flags something you believe is correct, suspect a trailing carriage return before
 suspecting the documentation: on a CRLF checkout `\r` ends up inside the last token and pflag
 reports it as an unknown flag, with nothing visible in the message to say so. See ADR-048.

@@ -185,6 +185,7 @@ See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and co
 
 - Machine responses are wrapped in a standard envelope:
 
+<!-- docs-lint: envelope-shape -->
 ```json
 {
   "data": {},
@@ -202,6 +203,7 @@ See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and co
 
 Example machine output (`bb --json auth status`):
 
+<!-- docs-lint: output-of bb auth status -->
 ```json
 {
   "data": {

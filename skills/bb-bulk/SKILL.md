@@ -403,6 +403,7 @@ is the error. The status artifact is not lost: `error.details.operationId` names
 
 On failure, stdout is the error envelope and exit is non-zero:
 
+<!-- docs-lint: envelope-shape -->
 ```json
 {
   "error": {

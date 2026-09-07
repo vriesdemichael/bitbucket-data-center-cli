@@ -1,10 +1,25 @@
-// Command docs-lint validates every documented `bb ...` invocation against the
-// real Cobra command tree.
+// Command docs-lint validates documented `bb` usage against the real command
+// tree and the schemas commands declare.
 //
 // Documentation that does not parse is worse than missing documentation: the
 // README quickstart is the first thing a new user copy-pastes, and skills/bb
 // is emitted verbatim by agents. Six such invocations were found by hand during
 // an external review; this makes that check automatic. See ADR-048.
+//
+// Three things are checked, because three things have gone wrong:
+//
+//   - `bb ...` lines in shell blocks, against the Cobra command tree.
+//   - Invocations a client launches from configuration -- "command": "bb" beside
+//     an "args" array. Two IDE configurations went on passing a flag for a
+//     release after it was removed, both valid JSON and both invisible to a
+//     scanner that reads shell lines.
+//   - Documented machine output, against the schema its command declares.
+//     Output drifts more quietly than input: an invocation naming a removed flag
+//     fails the moment anyone runs it, while a payload showing a field the
+//     command stopped emitting looks right forever, because nothing executes it.
+//
+// All of it is static. The command tree and the schema lookup are both
+// in-process, so none of this needs a Bitbucket instance or a built binary.
 package main
 
 import (
@@ -28,15 +43,18 @@ import (
 
 // shellLanguages are the fenced-block languages whose contents are shell.
 //
-// Blocks tagged text, json or yaml hold output and configuration rather than
-// commands, and a `bb` line inside them is illustrative rather than runnable.
+// Only these are scanned for `bb ...` lines. Blocks tagged json or yaml are
+// scanned differently rather than not at all -- see lintConfigInvocations and
+// lintOutputExample -- because what they hold is structured, and reading a
+// `bb` line out of a JSON string would find the fragment rather than the
+// invocation.
 //
-// This is what excludes the generated command reference, which is by far the
-// largest source of `bb ...` lines in the tree: its blocks are tagged text
-// because they are Cobra help output. Those lines are usage strings carrying
-// placeholders like [flags], so parsing them would report failures for
-// documentation that is correct by construction — it is generated from the same
-// command tree this linter validates against.
+// Text blocks stay out of scope entirely, which is what excludes the generated
+// command reference, by far the largest source of `bb ...` lines in the tree:
+// its blocks are tagged text because they are Cobra help output. Those lines are
+// usage strings carrying placeholders like [flags], so parsing them would report
+// failures for documentation that is correct by construction — it is generated
+// from the same command tree this linter validates against.
 var shellLanguages = map[string]bool{
 	"bash":    true,
 	"sh":      true,
@@ -470,6 +488,16 @@ func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) 
 
 	for _, block := range configBlocks {
 		findings = append(findings, lintConfigMCPTools(file, block)...)
+
+		// An invocation a client launches from configuration is validated by
+		// the same rules a shell line gets, and counted the same way: it is a
+		// documented invocation, whatever syntax carries it.
+		configFindings, configChecked := lintConfigInvocations(file, block)
+		findings = append(findings, configFindings...)
+		checked += configChecked
+
+		findings = append(findings, lintOutputExample(file, block)...)
+		findings = append(findings, lintUnannotatedEnvelope(file, block)...)
 	}
 
 	for _, block := range shellBlocks {
@@ -749,6 +777,13 @@ type codeBlock struct {
 	language      string
 	body          string
 	expectInvalid bool
+	// outputOf names the command whose output this block shows, without the
+	// binary name, as command paths are written everywhere else in the project.
+	outputOf string
+	// envelopeShape marks a block that illustrates the envelope itself rather
+	// than any one command's payload, so it is checked for envelope rules and
+	// not against a schema.
+	envelopeShape bool
 }
 
 // expectInvalidDirective marks the next fenced block as deliberately showing
@@ -761,14 +796,48 @@ type codeBlock struct {
 // linter is that no exemption can silently rot.
 const expectInvalidDirective = "docs-lint: expect-invalid"
 
+// outputOfDirectivePrefix binds the next block to the command whose output it
+// shows, as in `<!-- docs-lint: output-of bb auth status -->`.
+//
+// The binding has to be declared rather than inferred. Guessing from the
+// nearest preceding command reads a shell block listing three commands as
+// though the last one produced the output, which is how a bb auth server use
+// payload was mistaken for bb auth status and its wrong "status" field went
+// unnoticed. Naming the command also documents the block for a human reader
+// diffing it.
+const outputOfDirectivePrefix = "docs-lint: output-of "
+
+// envelopeShapeDirective marks a block illustrating the envelope rather than
+// one command's payload, such as the `{"data": {}, "meta": {...}}` that opens
+// the machine-mode page.
+//
+// Still checked, just against the rules every document obeys: one of data or
+// error, and a meta.bbVersion. That is what makes it an exemption from the
+// schema check rather than from checking.
+const envelopeShapeDirective = "docs-lint: envelope-shape"
+
 func isDirectiveComment(trimmed, directive string) bool {
-	if !strings.HasPrefix(trimmed, "<!--") || !strings.HasSuffix(trimmed, "-->") {
-		return false
+	inner, ok := directiveBody(trimmed)
+
+	return ok && inner == directive
+}
+
+// directiveValue returns the argument of a directive written with a prefix.
+func directiveValue(trimmed, prefix string) (string, bool) {
+	inner, ok := directiveBody(trimmed)
+	if !ok || !strings.HasPrefix(inner, prefix) {
+		return "", false
 	}
 
-	inner := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(trimmed, "<!--"), "-->"))
+	return strings.TrimSpace(strings.TrimPrefix(inner, prefix)), true
+}
 
-	return inner == directive
+func directiveBody(trimmed string) (string, bool) {
+	if !strings.HasPrefix(trimmed, "<!--") || !strings.HasSuffix(trimmed, "-->") {
+		return "", false
+	}
+
+	return strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(trimmed, "<!--"), "-->")), true
 }
 
 func parseCodeBlocks(contents string) (shellBlocks []codeBlock, configBlocks []codeBlock, otherBlocks []codeBlock) {
@@ -782,7 +851,17 @@ func parseCodeBlocks(contents string) (shellBlocks []codeBlock, configBlocks []c
 		isConfig        bool
 		expectInvalid   bool
 		pending         bool
+		outputOf        string
+		envelopeShape   bool
+		pendingOutputOf string
+		pendingEnvelope bool
 	)
+
+	clearPending := func() {
+		pending = false
+		pendingOutputOf = ""
+		pendingEnvelope = false
+	}
 
 	for index, line := range strings.Split(contents, "\n") {
 		trimmed := strings.TrimSpace(line)
@@ -792,12 +871,23 @@ func parseCodeBlocks(contents string) (shellBlocks []codeBlock, configBlocks []c
 				pending = true
 				continue
 			}
+			if isDirectiveComment(trimmed, envelopeShapeDirective) {
+				pendingEnvelope = true
+				continue
+			}
+			if command, ok := directiveValue(trimmed, outputOfDirectivePrefix); ok {
+				// Written the way a reader says it, `output-of bb auth status`,
+				// and stored the way the project names commands, without the
+				// binary.
+				pendingOutputOf = strings.TrimSpace(strings.TrimPrefix(command, "bb"))
+				continue
+			}
 
 			marker, language, ok := openingFence(trimmed)
 			if !ok {
 				// A directive applies to the next fence, not across prose.
 				if trimmed != "" {
-					pending = false
+					clearPending()
 				}
 				continue
 			}
@@ -809,7 +899,9 @@ func parseCodeBlocks(contents string) (shellBlocks []codeBlock, configBlocks []c
 			shell = shellLanguages[language]
 			isConfig = configLanguages[language]
 			expectInvalid = pending
-			pending = false
+			outputOf = pendingOutputOf
+			envelopeShape = pendingEnvelope
+			clearPending()
 			body = nil
 
 			continue
@@ -821,6 +913,8 @@ func parseCodeBlocks(contents string) (shellBlocks []codeBlock, configBlocks []c
 				language:      currentLanguage,
 				body:          strings.Join(body, "\n"),
 				expectInvalid: expectInvalid,
+				outputOf:      outputOf,
+				envelopeShape: envelopeShape,
 			}
 			if shell {
 				shellBlocks = append(shellBlocks, block)
