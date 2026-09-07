@@ -61,6 +61,8 @@ func assertDryRunAuthorizationError(t *testing.T, err error, output, context str
 // ---------------------------------------------------------------------------
 
 func TestLivePermissionRepoReadDeniedWithoutAccess(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -89,6 +91,8 @@ func TestLivePermissionRepoReadDeniedWithoutAccess(t *testing.T) {
 // tag create --dry-run calls service.List (tag list) during planning, which requires at
 // least REPO_READ. A user with no permissions at all gets 403 there.
 func TestLivePermissionRepoReadDryRunDeniedWithoutAccess(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -119,6 +123,8 @@ func TestLivePermissionRepoReadDryRunDeniedWithoutAccess(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestLivePermissionRepoWriteDeniedWithRepoReadOnly(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -154,6 +160,8 @@ func TestLivePermissionRepoWriteDeniedWithRepoReadOnly(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestLivePermissionRepoWriteDryRunDeniedWithRepoReadOnly(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -188,6 +196,8 @@ func TestLivePermissionRepoWriteDryRunDeniedWithRepoReadOnly(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestLivePermissionRepoAdminDeniedWithRepoWriteOnly(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -219,6 +229,8 @@ func TestLivePermissionRepoAdminDeniedWithRepoWriteOnly(t *testing.T) {
 // GetRepositoryPullRequestSettings is called during planning — a REPO_ADMIN API — so the permission
 // check fires before any plan is emitted.
 func TestLivePermissionPullRequestSettingsDryRunDeniedWithRepoWriteOnly(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -251,6 +263,8 @@ func TestLivePermissionPullRequestSettingsDryRunDeniedWithRepoWriteOnly(t *testi
 // ---------------------------------------------------------------------------
 
 func TestLivePermissionProjectDeleteDeniedWithProjectWriteOnly(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -280,6 +294,8 @@ func TestLivePermissionProjectDeleteDeniedWithProjectWriteOnly(t *testing.T) {
 
 // Dry-run: project delete with PROJECT_WRITE must surface authorization error.
 func TestLivePermissionProjectDeleteDryRunDeniedWithProjectWriteOnly(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -312,6 +328,8 @@ func TestLivePermissionProjectDeleteDryRunDeniedWithProjectWriteOnly(t *testing.
 // ---------------------------------------------------------------------------
 
 func TestLivePermissionProjectPermissionGrantDeniedWithProjectWriteOnly(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -341,6 +359,8 @@ func TestLivePermissionProjectPermissionGrantDeniedWithProjectWriteOnly(t *testi
 
 // Dry-run: project permission grant with PROJECT_WRITE must surface authorization error.
 func TestLivePermissionProjectPermissionGrantDryRunDeniedWithProjectWriteOnly(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -371,6 +391,8 @@ func TestLivePermissionProjectPermissionGrantDryRunDeniedWithProjectWriteOnly(t 
 // only project-scoped admin on an existing project must be denied before any plan
 // is emitted.
 func TestLivePermissionProjectCreateDryRunDeniedWithProjectAdminOnly(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -401,6 +423,8 @@ func TestLivePermissionProjectCreateDryRunDeniedWithProjectAdminOnly(t *testing.
 // the caller cannot even read the repo. This exercises the conservative ownership-aware
 // precheck path for PR review commands.
 func TestLivePermissionPRApproveDryRunDeniedWithoutRepoRead(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -437,6 +461,8 @@ func TestLivePermissionPRApproveDryRunDeniedWithoutRepoRead(t *testing.T) {
 // caller cannot read the repo. This exercises the conservative ownership-aware
 // precheck path for comment mutation commands.
 func TestLivePermissionCommentUpdateDryRunDeniedWithoutRepoRead(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -491,6 +517,8 @@ func TestLivePermissionCommentUpdateDryRunDeniedWithoutRepoRead(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestLivePermissionPullRequestSettingsDeniedWithRepoWriteOnly(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -526,6 +554,8 @@ func TestLivePermissionPullRequestSettingsDeniedWithRepoWriteOnly(t *testing.T) 
 // ---------------------------------------------------------------------------
 
 func TestLivePermissionRepoCreateDeniedWithProjectReadOnly(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
@@ -555,6 +585,8 @@ func TestLivePermissionRepoCreateDeniedWithProjectReadOnly(t *testing.T) {
 
 // Dry-run: repo create with PROJECT_READ must surface authorization error.
 func TestLivePermissionRepoCreateDryRunDeniedWithProjectReadOnly(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)

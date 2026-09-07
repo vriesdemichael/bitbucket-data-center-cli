@@ -25,10 +25,16 @@ var (
 	licenceSeatsOnce sync.Once
 )
 
-// reservedSeats are the seats that are never the suite's to take: the
-// administrator the harness authenticates as, plus one for whatever else the
-// instance was configured with.
-const reservedSeats = 2
+// spareSeats is the margin left below the licence ceiling.
+//
+// The pool used to be the licence maximum minus a flat two, on the assumption
+// that the administrator and one other account were the only seats already
+// taken. That is a guess, and it was wrong: an instance carrying three
+// licensed accounts made the pool ten, ten plus three is thirteen, and the
+// thirteenth create came back 403 from a group endpoint -- which reads as a
+// permission problem and is a capacity one. The seats already in use are asked
+// for now, and this is only the headroom left on top.
+const spareSeats = 1
 
 // seatsFromLicence reads the licence and sizes the pool.
 //
@@ -43,17 +49,27 @@ func (h *liveHarness) seatsFromLicence(ctx context.Context) int {
 		return fallbackSeats
 	}
 
+	if unlimited, _ := payload["unlimitedNumberOfUsers"].(bool); unlimited {
+		return 64
+	}
+
 	maximum, ok := payload["maximumNumberOfUsers"].(float64)
 	if !ok {
-		// An unlimited licence omits the field, and reports it separately.
-		if unlimited, _ := payload["unlimitedNumberOfUsers"].(bool); unlimited {
-			return 64
-		}
-
 		return fallbackSeats
 	}
 
-	seats := int(maximum) - reservedSeats
+	// The seats already taken, which the licence reports beside the ceiling.
+	// Anything already licensed -- the administrator, accounts the instance was
+	// set up with, users an interrupted run left behind -- is not the suite's
+	// to hand out.
+	taken := 1.0
+	if status, _ := payload["status"].(map[string]any); status != nil {
+		if current, present := status["currentNumberOfUsers"].(float64); present {
+			taken = current
+		}
+	}
+
+	seats := int(maximum-taken) - spareSeats
 	if seats < 1 {
 		return 1
 	}

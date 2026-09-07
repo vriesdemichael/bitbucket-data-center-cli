@@ -30,6 +30,8 @@ import (
 // Both need somebody other than the author: Bitbucket does not let an author
 // approve their own pull request, so the commands run as a second user.
 func TestLivePRReviewApprovalCycle(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()

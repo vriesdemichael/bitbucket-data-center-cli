@@ -23,7 +23,7 @@ import (
 func executeLiveCLIWithStdin(t *testing.T, stdin string, args ...string) (string, error) {
 	t.Helper()
 
-	command := cli.NewRootCommand()
+	command := cli.NewRootCommandWithOverrides(liveCLIOverrides(t))
 	output := &bytes.Buffer{}
 	command.SetOut(output)
 	command.SetErr(output)

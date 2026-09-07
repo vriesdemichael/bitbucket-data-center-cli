@@ -28,6 +28,8 @@ import (
 // whose reviewer is on NEEDS_WORK the answer is not no-op. See
 // TestLivePullRequestReviewSetCommand.
 func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()

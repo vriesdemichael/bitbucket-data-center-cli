@@ -11,7 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 
 ## Decision
 
-A package whose tests run the CLI seals its process in TestMain: the credentials, host and repository context are emptied, the stored config is disabled, and the retry policy is set to none. A test then says what it wants by passing it -- through the Dependencies seam a command is built with, or through a flag -- and never by publishing it to the process. t.Setenv is reserved for tests whose subject is the environment, and those tests accept that they run alone, because the call disqualifies a test from t.Parallel and every helper that reaches it taints its callers.
+A package whose tests run the CLI seals its process in TestMain: the credentials, host and repository context are emptied, the stored config is disabled, and the retry policy is set to none. A test then says what it wants by passing it -- through the Dependencies seam a command is built with, through a flag, or through the config.Overrides a root command is constructed with -- and never by publishing it to the process. The last of those is how a credential travels, because a password is never a flag value (ADR-047) and the environment is shared. t.Setenv is reserved for tests whose subject is the environment, and those tests accept that they run alone, because the call disqualifies a test from t.Parallel and every helper that reaches it taints its callers.
 
 ## Agent Instructions
 

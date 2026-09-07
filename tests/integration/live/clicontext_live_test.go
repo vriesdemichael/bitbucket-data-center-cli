@@ -261,3 +261,58 @@ func configureLiveCLIEnvVars(t *testing.T, projectKey, repositorySlug string) {
 const dashboardPage = 1000
 
 const dashboardPageArg = "1000"
+
+// Credentials for the CLI, carried per test instead of published to the
+// process.
+//
+// configureLiveCLIEnvForUser used to set BITBUCKET_USERNAME, BITBUCKET_PASSWORD
+// and an empty BITBUCKET_TOKEN with t.Setenv, so a test acting as a restricted
+// user announced that to the whole process. Two tests doing it at once would
+// each be the other's user, which is why the sixteen permission tests were the
+// largest block of live tests still running one at a time.
+//
+// They travel as config.Overrides now, which the root command accepts and the
+// configuration layer ranks ahead of the environment. There is no flag to put
+// them in and there should not be: a password is never a flag value (ADR-047).
+var liveCredentials sync.Map // test name -> restrictedUser
+
+// setLiveCredentials records who a test's CLI calls should authenticate as.
+func setLiveCredentials(t *testing.T, user restrictedUser) {
+	t.Helper()
+
+	liveCredentials.Store(t.Name(), user)
+	t.Cleanup(func() { liveCredentials.Delete(t.Name()) })
+}
+
+// liveCredentialsFor finds the credentials a test or any of its subtests should
+// use, by the same longest-prefix rule as the repository context.
+func liveCredentialsFor(t *testing.T) (restrictedUser, bool) {
+	name := t.Name()
+
+	best := ""
+	var found restrictedUser
+	liveCredentials.Range(func(key, value any) bool {
+		candidate, _ := key.(string)
+		if candidate != name && !strings.HasPrefix(name, candidate+"/") {
+			return true
+		}
+		if len(candidate) > len(best) {
+			best = candidate
+			found, _ = value.(restrictedUser)
+		}
+
+		return true
+	})
+
+	return found, best != ""
+}
+
+// liveCLIOverrides is what a test has said about who it is.
+func liveCLIOverrides(t *testing.T) config.Overrides {
+	user, ok := liveCredentialsFor(t)
+	if !ok {
+		return config.Overrides{}
+	}
+
+	return config.Overrides{Username: user.Username, Password: user.Password}
+}
