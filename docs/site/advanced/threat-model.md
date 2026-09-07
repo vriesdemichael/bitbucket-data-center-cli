@@ -114,7 +114,7 @@ When `bb ai mcp serve` runs, it communicates strictly over standard input/output
 [Bitbucket DC] ──(HTTPS/Internal CA)──> [bb CLI (Local)] ──(stdio RPC)──> [Local IDE] ──(HTTPS/IDE Config)──> [Cloud LLM]
 ```
 
-1. **Local CLI Boundary**: `bb` sends **zero external telemetry** and initiates no network requests to AI providers. Its network calls are strictly directed to your Bitbucket server.
+1. **Local CLI Boundary**: `bb` sends **zero external telemetry** and initiates no network requests to AI providers. It has two possible destinations and no others: the Bitbucket server you configure, and — only when someone runs `bb update` — the release host, `api.github.com` by default or an internal mirror via `update_base_url`. There is no background, start-up or periodic check, so nothing leaves the workstation unless a command asks it to. A binary built with `-tags no_self_update`, or one where policy sets `disable_update: true`, refuses before any request is made and leaves Bitbucket as the only destination ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)).
 2. **The Stdio Pipe**: When an AI agent executes tools like `get_pr_diff`, `get_pull_request`, or `list_pr_comments`, `bb` fetches the data from Bitbucket and prints structured JSON to `stdout`.
 3. **The IDE & Cloud LLM Transmission**: The IDE consumes this output and includes the source code diffs in prompt contexts sent to the developer's configured LLM provider (e.g. OpenAI, Anthropic, or internal corporate Ollama/vLLM endpoints).
 
@@ -203,6 +203,7 @@ git config --local --get http.extraHeader
 - **Additive Corporate CA Trust Pool**: `BB_CA_FILE` appends the internal CA bundle to `x509.SystemCertPool()`, preserving public root verification while trusting the internal Bitbucket host.
 - **Proxy Traversal**: Inherits `HTTPS_PROXY`, `HTTP_PROXY`, and `NO_PROXY` directly from Go's `http.DefaultTransport`.
 - **TLS 1.2+ Enforced**: Pinned minimum version `tlsConfig.MinVersion = tls.VersionTLS12`.
+- **Insecure Verification Is Refusable by Policy**: `allow_insecure_skip_verify: false` in system configuration or Windows registry policy makes `--insecure-skip-verify` and `BB_INSECURE_SKIP_VERIFY=true` fail with an authorization error rather than downgrading the connection. This is the control that answers the bypass in the threat above, and it is off unless an administrator deploys it ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)).
 - **Zero Telemetry**: Guaranteed zero external analytics or metrics calls ([SECURITY.md](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md)).
 
 #### 3. Audit Test Procedure
@@ -212,7 +213,8 @@ bb --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.
 *Audit Assertion*: Verify that the connection succeeds over TLS 1.2+ with client certificate authentication and routes through the designated `HTTPS_PROXY`.
 
 #### 4. Residual Gap & Tracking
-- **Resolution**: Fully resolved. Mutual TLS (mTLS) client certificate support is natively built into the transport layer (`--client-cert`, `--client-key`, `BB_CLIENT_CERT`, `BB_CLIENT_KEY`, and per-host stored profiles), leaving zero residual gap ([ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)).
+- **mTLS: resolved.** Client certificate support is native to the transport layer (`--client-cert`, `--client-key`, `BB_CLIENT_CERT`, `BB_CLIENT_KEY`, and per-host stored profiles), so authenticating to an ingress reverse proxy needs no wrapper ([ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)).
+- **The verification bypass is closable, not closed by default.** `--insecure-skip-verify` exists and works until an administrator sets `allow_insecure_skip_verify: false`. On a fleet where that policy has not been deployed, a developer who hits a certificate error can still turn verification off for themselves, and nothing outside the local machine records that they did. Deploying the policy is the control; treat an undeployed fleet as carrying this gap rather than as covered by the paragraph above.
 
 ---
 
@@ -241,7 +243,7 @@ bb ai mcp serve --project PAYMENTS --audit-file /var/log/bb/mcp-audit.jsonl
 
 #### 4. Residual Gap & Tracking
 - **The audit trail is not tamper-evident.** It is written on the developer's workstation, as the developer, to a path they can modify. It is evidence against a prompt-injected agent confined to MCP tools (ADV-3), which has no shell; it is not evidence against a determined insider.
-- **The CLI beside it is ungated.** An agent with shell access can invoke `bb` directly and reach all 233 commands with none of the safety gating, workspace scoping or auditing described here. This is not closable at this layer — an agent that can run shell commands can also edit the audit file. The mitigation that survives it is the dedicated read-only PAT the server runs under (`BITBUCKET_TOKEN` in the MCP client's `env` block), which binds at the Bitbucket server and is indifferent to which local process issued the call. MCP-layer controls are defence in depth over a correctly scoped token, not a replacement for one.
+- **The CLI beside it is ungated.** An agent with shell access can invoke `bb` directly and reach all 233 commands with none of the safety gating, workspace scoping or auditing described here. `bb api` is the sharpest of them: it forwards an arbitrary authenticated request to Bitbucket, so it reaches endpoints no tool wraps and makes per-tool classification irrelevant to anything holding a shell. It is deliberately **not** exposed as an MCP tool — the server exposes a fixed catalogue of named operations, with no raw-request passthrough among them ([ADR-053](../adr/053-raw-api-escape-hatch.md)) — so this is a statement about the shell beside the server, not a gap in the tool surface. None of it is closable at this layer: an agent that can run shell commands can also edit the audit file. The mitigation that survives is the dedicated read-only PAT the server runs under (`BITBUCKET_TOKEN` in the MCP client's `env` block), which binds at the Bitbucket server and is indifferent to which local process issued the call — and which bounds `bb api` exactly as it bounds every tool. MCP-layer controls are defence in depth over a correctly scoped token, not a replacement for one.
 
 ---
 
@@ -266,7 +268,8 @@ cosign verify-blob \
 ```
 
 #### 4. Residual Gap & Tracking
-- **Resolution**: Fully resolved via administrative killswitches (`BB_DISABLE_UPDATE=1`, `disable_update: true` in system configuration), compile-time removal (`-tags no_self_update`), and custom release mirror support (`--base-url`, `BB_UPDATE_BASE_URL`, `update_base_url`) ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)). On hosts with no internet access, a mirror also requires an offline Sigstore trust root (`update_trusted_root`), without which signature verification cannot complete ([ADR-063](../adr/063-offline-release-signature-verification.md)).
+- **Update bypass: resolved.** Administrative killswitches (`BB_DISABLE_UPDATE=1`, `disable_update: true` in system configuration), compile-time removal (`-tags no_self_update`), and custom release mirrors (`--base-url`, `BB_UPDATE_BASE_URL`, `update_base_url`) each stop `bb update` from going around a package manager ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)). On a host with no internet access a mirror also needs an offline Sigstore trust root (`update_trusted_root`), without which signature verification cannot complete ([ADR-063](../adr/063-offline-release-signature-verification.md)).
+- **Signature verification can be switched off by policy.** `allow_unverified_update: true` skips it entirely; the SHA256 checksum is still enforced, so the release is protected against corruption but not against tampering by whoever controls the mirror. It is deliberately policy-only — no flag, no environment variable — and every run warns on stderr and reports `signature_skipped: true` under `--json`. An estate that has set it has traded this domain's main guarantee for reachability, and should treat the mirror as part of its trusted computing base. An offline trust root is the option that does not make that trade.
 
 ---
 
