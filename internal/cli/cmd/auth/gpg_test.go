@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
@@ -106,17 +105,17 @@ func TestAuthGpgKeyCommandsAdditionalCoverage(t *testing.T) {
 
 	// 5. Clear keys cancellation ("n")
 	{
+		// The answer goes to the command, not to the process. This swapped
+		// os.Stdin for a pipe, which the case below had already stopped doing
+		// once the command began reading cmd.InOrStdin() -- and a swap of a
+		// process-global stream is one every other test in the binary is
+		// reading at the same time. The race detector reported exactly that
+		// against cobra's InOrStdin once this package's tests ran in parallel.
 		deps := Dependencies{}
 		cmd := New(deps)
-		oldStdin := os.Stdin
-		r, w, _ := os.Pipe()
-		os.Stdin = r
-		_, _ = w.Write([]byte("n\n"))
-		_ = w.Close()
+		cmd.SetIn(strings.NewReader("n\n"))
 		cmd.SetArgs([]string{"gpg-key", "clear"})
-		err := cmd.Execute()
-		os.Stdin = oldStdin
-		if err == nil {
+		if err := cmd.Execute(); err == nil {
 			t.Fatal("expected error (cancelled) when clearing keys with 'n'")
 		}
 	}
