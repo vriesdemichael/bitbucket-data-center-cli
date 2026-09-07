@@ -25,6 +25,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # main is a release pointer, and release.yml cuts a version from whatever
+  # conventional commits appear on it. A single `feat!:` merged there outside
+  # the flow cuts a major release, which is the thing next exists to manage
+  # (ADR-066). This refuses that at the pull request.
+  #
+  # It needs no ruleset of its own: ci-complete depends on it, and CI Complete
+  # is already the one required status on main.
+  #
+  # The condition is on the steps rather than on the job. A job skipped by its
+  # own `if` reports "skipped", and ci-complete asserts each result is
+  # "success" -- so gating the job would have made every push to main and next
+  # fail the one required check. Gating the steps leaves an empty job that
+  # succeeds.
+  release-flow:
+    name: Release Flow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v7
+        with:
+          # The gate reads the commits the pull request adds, so it needs both
+          # ends of the range rather than a shallow tip.
+          fetch-depth: 0
+
+      - name: Setup Python
+        if: github.event_name == 'pull_request'
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+
+      - name: Verify the pull request may reach its base
+        if: github.event_name == 'pull_request'
+        run: |
+          python scripts/check_release_flow.py \
+            --base-ref "${{ github.event.pull_request.base.ref }}" \
+            --head-ref "${{ github.event.pull_request.head.ref }}" \
+            --base-sha "${{ github.event.pull_request.base.sha }}" \
+            --head-sha "${{ github.event.pull_request.head.sha }}" \
+            --head-repo "${{ github.event.pull_request.head.repo.full_name }}" \
+            --repo "${{ github.repository }}"
+
   adr-validation:
     name: ADR Validation
     runs-on: ubuntu-latest
@@ -116,6 +158,12 @@ jobs:
       # variable is only a race once two tests can reach it at the same time.
       - name: Run Go tests under the race detector
         run: task test:unit:race
+
+      # The classification the release workflow and the release-flow gate share.
+      # It decides whether a commit is breaking, which one reads to cut a
+      # version and the other to refuse a pull request.
+      - name: Test the release-flow scripts
+        run: task quality:scripts:test
 
       - name: Upload unit coverage profile
         if: always()
@@ -478,6 +526,7 @@ jobs:
     name: CI Complete
     runs-on: ubuntu-latest
     needs:
+      - release-flow
       - adr-validation
       - unit-tests
       - docs-site
@@ -488,6 +537,7 @@ jobs:
     steps:
       - name: Verify all required CI jobs passed
         env:
+          RELEASE_FLOW_RESULT: ${{ needs.release-flow.result }}
           ADR_VALIDATION_RESULT: ${{ needs.adr-validation.result }}
           UNIT_TESTS_RESULT: ${{ needs.unit-tests.result }}
           DOCS_SITE_RESULT: ${{ needs.docs-site.result }}
@@ -495,6 +545,9 @@ jobs:
           COVERAGE_GATES_RESULT: ${{ needs.coverage-gates.result }}
           CODECOV_RESULT: ${{ needs.codecov.result }}
         run: |
+          # A pull request that may not reach its base is not a CI failure to
+          # be read past: it is the release flow refusing it (ADR-066).
+          [[ "$RELEASE_FLOW_RESULT" == "success" ]]
           [[ "$ADR_VALIDATION_RESULT" == "success" ]]
           [[ "$UNIT_TESTS_RESULT" == "success" ]]
           [[ "$DOCS_SITE_RESULT" == "success" ]]

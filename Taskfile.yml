@@ -203,6 +203,7 @@ tasks:
       - task: openapi:operation-paths:verify
       - task: quality:format:verify
       - task: quality:lint
+      - task: quality:scripts:test
       - task: quality:vulncheck
       - task: quality:line-endings:verify
       - task: quality:validate-decisions
@@ -444,6 +445,42 @@ tasks:
       # found"; a relative path is not resolved against the task's dir either,
       # and reports the same thing.
       - '{{ .ROOT_DIR | replace "\\" "/" }}/.tmp/live.test.exe -test.timeout=20m -test.parallel={{.LIVE_PARALLEL}}'
+
+  quality:scripts:test:
+    desc: Test the Python shared by the release workflow and the release-flow gate
+    # Standard library unittest, run through uv so a machine without a Python on
+    # PATH still has one. The module under test is what decides whether a commit
+    # is breaking, which the releaser reads to cut a version and the gate reads
+    # to refuse a pull request -- so the two agreeing is structural, and these
+    # tests are what says the shared answer is right.
+    cmd: uv run --no-project python -m unittest discover -s scripts -p '*_test.py' -t scripts
+
+  release:promote:check:
+    desc: Verify next can fast-forward onto main before promoting
+    # main is a release pointer and keeps a linear history, so the promotion is
+    # a fast-forward push and never a pull request -- a rebase-merge would
+    # replay every commit with new shas while next kept the originals, leaving
+    # two copies of the same work.
+    #
+    # Dependency bumps and hotfixes land on main directly, so main moves ahead
+    # of next and the fast-forward stops being possible. Rebasing next onto main
+    # restores it. This says which of the two situations you are in.
+    silent: true
+    cmds:
+      - git fetch --quiet origin main next
+      - |
+        if git merge-base --is-ancestor origin/main origin/next; then
+          ahead=$(git rev-list --count origin/main..origin/next)
+          echo "next is $ahead commits ahead of main and can fast-forward."
+          echo "  git push origin next:main"
+        else
+          behind=$(git rev-list --count origin/next..origin/main)
+          echo "main has $behind commit(s) next does not, so the promotion is not a fast-forward." >&2
+          echo "" >&2
+          echo "Rebase next onto main first:" >&2
+          echo "  git switch next && git fetch origin && git rebase origin/main && git push --force-with-lease origin next" >&2
+          exit 1
+        fi
 
   test:live:build:
     desc: Compile the live test binary to the fixed path test:live runs
