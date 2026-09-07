@@ -25,6 +25,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release-flow:
+    name: Release Flow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v7
+        with:
+          # The gate reads the commits the pull request adds, so it needs both
+          # ends of the range rather than a shallow tip.
+          fetch-depth: 0
+
+      - name: Setup Python
+        if: github.event_name == 'pull_request'
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+
+      - name: Verify the pull request may reach its base
+        if: github.event_name == 'pull_request'
+        run: |
+          python scripts/check_release_flow.py \
+            --base-ref "${{ github.event.pull_request.base.ref }}" \
+            --head-ref "${{ github.event.pull_request.head.ref }}" \
+            --base-sha "${{ github.event.pull_request.base.sha }}" \
+            --head-sha "${{ github.event.pull_request.head.sha }}" \
+            --head-repo "${{ github.event.pull_request.head.repo.full_name }}" \
+            --repo "${{ github.repository }}"
+
   adr-validation:
     name: ADR Validation
     runs-on: ubuntu-latest
