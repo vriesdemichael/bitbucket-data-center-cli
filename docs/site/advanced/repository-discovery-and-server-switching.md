@@ -85,7 +85,7 @@ bb auth alias remove --host https://bitbucket.acme.corp git.acme.corp:7999
 Automatic alias discovery:
 
 ```bash
-printf '%s' "$BB_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
+printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
 bb auth alias discover --host https://bitbucket.acme.corp
 ```
 
@@ -125,7 +125,6 @@ Expected JSON output (example):
 ```json
 {
   "data": {
-    "status": "ok",
     "defaultHost": "https://bitbucket.acme.corp"
   },
   "meta": {
