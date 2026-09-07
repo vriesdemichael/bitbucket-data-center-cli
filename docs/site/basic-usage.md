@@ -183,7 +183,7 @@ See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and co
 
 ## Machine mode (`--json`)
 
-- Machine responses are wrapped in a versioned envelope:
+- Machine responses are wrapped in a standard envelope:
 
 ```json
 {
