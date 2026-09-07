@@ -1,0 +1,1664 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="CLI automation for Bitbucket Data Center">
+      
+      
+      
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/advanced/webhook-secrets/">
+      
+      
+        <link rel="prev" href="../machine-mode-diagnostics/">
+      
+      
+        <link rel="next" href="../../ai-and-llms/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Webhook Secrets - Bitbucket Data Center CLI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"IBM Plex Sans";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#webhook-secrets" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Bitbucket Data Center CLI" class="md-header__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Bitbucket Data Center CLI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Webhook Secrets
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Bitbucket Data Center CLI" class="md-nav__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    Bitbucket Data Center CLI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation-and-quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation and Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cheatsheet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Cheatsheet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../basic-usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Command Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JSON Schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Topics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Topics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enterprise-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise Hardening
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../threat-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Architecture & Threat Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repository-discovery-and-server-switching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository Discovery and Server Switching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bulk-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bulk Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dry-run-planning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-Run Planning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../git-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../networks-proxies-and-tls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Networks, Proxies and TLS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../machine-mode-diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Mode and Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook Secrets
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook Secrets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-bb-publishes-and-what-it-does-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What bb publishes, and what it does not
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What bb publishes, and what it does not">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#recovering-a-secret-on-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recovering a secret on purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-a-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting a secret
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting a secret">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#from-the-environment-the-automation-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From the environment — the automation path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#from-stdin-one-secret-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From stdin — one secret at a time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#precedence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Precedence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-an-update-leaves-alone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What an update leaves alone
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dry-runs-name-the-variable-not-the-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dry runs name the variable, not the value
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bulk-plans-hold-a-variable-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bulk plans hold a variable name
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Bulk plans hold a variable name">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#limitation-one-secret-per-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitation: one secret per operation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-fields-can-be-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the fields can be set
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ai-and-llms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI and llms.txt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-bb-publishes-and-what-it-does-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What bb publishes, and what it does not
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What bb publishes, and what it does not">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#recovering-a-secret-on-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recovering a secret on purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-a-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting a secret
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting a secret">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#from-the-environment-the-automation-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From the environment — the automation path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#from-stdin-one-secret-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From stdin — one secret at a time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#precedence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Precedence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-an-update-leaves-alone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What an update leaves alone
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dry-runs-name-the-variable-not-the-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dry runs name the variable, not the value
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bulk-plans-hold-a-variable-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bulk plans hold a variable name
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Bulk plans hold a variable name">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#limitation-one-secret-per-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitation: one secret per operation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-fields-can-be-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the fields can be set
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="webhook-secrets">Webhook Secrets<a class="headerlink" href="#webhook-secrets" title="Permanent link">&para;</a></h1>
+<p>A Bitbucket webhook can carry two credentials, and <code>bb</code> treats both as things it
+holds rather than things it prints.</p>
+<ul>
+<li>The <strong>shared secret</strong> signs every delivery. Bitbucket sends it as
+  <code>X-Hub-Signature: sha256=…</code> so the receiving endpoint can prove the request
+  came from Bitbucket and not from someone who learned the URL.</li>
+<li>The <strong>endpoint credentials</strong> are a username and password <code>bb</code> never sees the
+  second half of. Bitbucket sends them as an <code>Authorization: Basic …</code> header on
+  every delivery, so the endpoint can authenticate the caller.</li>
+</ul>
+<h2 id="what-bb-publishes-and-what-it-does-not">What <code>bb</code> publishes, and what it does not<a class="headerlink" href="#what-bb-publishes-and-what-it-does-not" title="Permanent link">&para;</a></h2>
+<p>Bitbucket returns the shared secret <strong>in plaintext on every read</strong> of a webhook.
+<code>bb</code> does not pass it on. What the model publishes instead is whether one is
+configured:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>bb<span class="w"> </span>webhook<span class="w"> </span>get<span class="w"> </span><span class="m">42</span><span class="w"> </span>--json
+<span class="go">{</span>
+<span class="go">  &quot;data&quot;: {</span>
+<span class="go">    &quot;webhook&quot;: {</span>
+<span class="go">      &quot;id&quot;: 42,</span>
+<span class="go">      &quot;name&quot;: &quot;ci&quot;,</span>
+<span class="go">      &quot;url&quot;: &quot;https://ci.example.com/hooks/bitbucket&quot;,</span>
+<span class="go">      &quot;active&quot;: true,</span>
+<span class="go">      &quot;events&quot;: [&quot;repo:refs_changed&quot;],</span>
+<span class="go">      &quot;sslVerificationRequired&quot;: true,</span>
+<span class="go">      &quot;scopeType&quot;: &quot;repository&quot;,</span>
+<span class="go">      &quot;secretConfigured&quot;: true,</span>
+<span class="go">      &quot;credentialsUsername&quot;: &quot;bitbucket&quot;</span>
+<span class="go">    }</span>
+<span class="go">  }</span>
+<span class="go">}</span>
+</code></pre></div>
+<p>Three details are worth knowing:</p>
+<ul>
+<li><code>secretConfigured</code> is always present. <code>secret</code> is not — it appears only with
+  <code>--reveal-secret</code>.</li>
+<li><code>sslVerificationRequired</code> is <strong>absent</strong> when the server did not report it,
+  rather than <code>false</code>. Absent and "TLS verification is off" are different
+  answers, and this is the field an audit reads.</li>
+<li>There is no field for the endpoint password. Bitbucket never returns it, so
+  <code>bb</code> has nothing to publish. <code>credentialsUsername</code> is the only half that comes
+  back.</li>
+</ul>
+<p><code>bb webhook test</code> publishes the delivery record Bitbucket produced, and that
+record contains the request headers — including <code>Authorization</code>. <code>bb</code> replaces
+the value with <code>&lt;redacted&gt;</code>. Base64 is not encryption: the header carries the
+endpoint password, and under <code>--json</code> that record is the machine contract.</p>
+<h3 id="recovering-a-secret-on-purpose">Recovering a secret on purpose<a class="headerlink" href="#recovering-a-secret-on-purpose" title="Permanent link">&para;</a></h3>
+<p><code>--reveal-secret</code> prints what would otherwise be redacted. It exists so that
+losing a secret does not mean going to the database, and it has to be typed:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>webhook<span class="w"> </span>get<span class="w"> </span><span class="m">42</span><span class="w"> </span>--json<span class="w"> </span>--reveal-secret<span class="w">          </span><span class="c1"># the shared secret</span>
+bb<span class="w"> </span>webhook<span class="w"> </span><span class="nb">test</span><span class="w"> </span><span class="m">42</span><span class="w"> </span>--json<span class="w"> </span>--reveal-secret<span class="w">         </span><span class="c1"># the Authorization header</span>
+</code></pre></div>
+<p>Both write a warning to <strong>stderr</strong> saying a credential went through stdout, so a
+log that contains one also contains the note that it does. The warning never
+repeats the value.</p>
+<h2 id="setting-a-secret">Setting a secret<a class="headerlink" href="#setting-a-secret" title="Permanent link">&para;</a></h2>
+<p>No flag takes a secret as its value (<a href="../../adr/047-credential-input-and-keyring-enforcement/">ADR-047</a>):
+a flag value lands in the process argument list, which is world-readable on
+Linux, and in shell history. Two routes are open instead.</p>
+<h3 id="from-the-environment-the-automation-path">From the environment — the automation path<a class="headerlink" href="#from-the-environment-the-automation-path" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Sets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BB_WEBHOOK_SECRET</code></td>
+<td>the shared secret</td>
+</tr>
+<tr>
+<td><code>BB_WEBHOOK_PASSWORD</code></td>
+<td>the endpoint password</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">BB_WEBHOOK_SECRET</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>vault<span class="w"> </span><span class="nb">read</span><span class="w"> </span>-field<span class="o">=</span>value<span class="w"> </span>secret/bitbucket/webhook<span class="k">)</span><span class="s2">&quot;</span>
+bb<span class="w"> </span>webhook<span class="w"> </span>create<span class="w"> </span>ci<span class="w"> </span>https://ci.example.com/hooks/bitbucket<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--event<span class="w"> </span>repo:refs_changed<span class="w"> </span>--ssl-verification<span class="o">=</span><span class="nb">true</span>
+</code></pre></div>
+<p>This is the form to reach for in a pipeline: the secret comes from wherever the
+runner keeps secrets and never appears in a command line.</p>
+<p>An <strong>empty</strong> variable counts as unset, so a typo in a variable name two files
+away cannot quietly configure an empty credential.</p>
+<h3 id="from-stdin-one-secret-at-a-time">From stdin — one secret at a time<a class="headerlink" href="#from-stdin-one-secret-at-a-time" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;%s&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$SECRET</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bb<span class="w"> </span>webhook<span class="w"> </span>create<span class="w"> </span>ci<span class="w"> </span>https://ci.example.com/hooks/bitbucket<span class="w"> </span>--secret-stdin
+<span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;%s&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PASSWORD</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bb<span class="w"> </span>webhook<span class="w"> </span>update<span class="w"> </span><span class="m">42</span><span class="w"> </span>--credentials-username<span class="w"> </span>bitbucket<span class="w"> </span>--credentials-password-stdin
+</code></pre></div>
+<p><code>--secret-stdin</code> and <code>--credentials-password-stdin</code> cannot both be given: there
+is one stdin, and <code>bb</code> refuses rather than guessing which secret arrived. Put
+the other one in its environment variable.</p>
+<p>A secret piped on stdin may not contain spaces, tabs or newlines. A value that
+arrived with a stray space is far more likely to be a piping mistake than a real
+credential, and the failure it causes shows up much later, at the receiving
+endpoint. If your secret genuinely contains whitespace, set it through the
+environment instead.</p>
+<h3 id="precedence">Precedence<a class="headerlink" href="#precedence" title="Permanent link">&para;</a></h3>
+<p>stdin wins over the environment. Piping is the explicit act; a variable can come
+from a shell profile the caller has forgotten.</p>
+<p>A flag typed on this invocation outranks the environment entirely, which is what
+makes <code>--no-secret</code> usable on a host that exports <code>BB_WEBHOOK_SECRET</code> for
+everything:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>webhook<span class="w"> </span>update<span class="w"> </span><span class="m">42</span><span class="w"> </span>--no-secret<span class="w">          </span><span class="c1"># removes it, variable or no variable</span>
+bb<span class="w"> </span>webhook<span class="w"> </span>update<span class="w"> </span><span class="m">42</span><span class="w"> </span>--no-credentials<span class="w">     </span><span class="c1"># removes the endpoint credentials</span>
+</code></pre></div>
+<p>Combining <code>--no-secret</code> with <code>--secret-stdin</code> is refused. One of the two has to
+win and neither should.</p>
+<h2 id="what-an-update-leaves-alone">What an update leaves alone<a class="headerlink" href="#what-an-update-leaves-alone" title="Permanent link">&para;</a></h2>
+<p>Bitbucket's update endpoint <strong>replaces</strong> the webhook rather than patching it: a
+field that does not arrive is cleared. <code>bb</code> reads the webhook first and sends
+back what you did not mention, so <code>--name</code> changes the name and nothing else.</p>
+<p>This matters most for the two credentials:</p>
+<ul>
+<li>The <strong>shared secret</strong> survives because Bitbucket returns it and <code>bb</code> sends it
+  straight back. Sending an update without a configuration object clears it.</li>
+<li>The <strong>endpoint password</strong> survives for a different reason. <code>bb</code> cannot send it
+  back — Bitbucket never returned it — so it sends the credentials object with
+  the username alone, and Bitbucket keeps the password it already had. This is
+  verified against a live instance by observing the <code>Authorization</code> header on a
+  real delivery before and after an update, because no API response can show it.</li>
+</ul>
+<h2 id="dry-runs-name-the-variable-not-the-value">Dry runs name the variable, not the value<a class="headerlink" href="#dry-runs-name-the-variable-not-the-value" title="Permanent link">&para;</a></h2>
+<p>A dry run is written to stdout, is what an operator reads before applying, and is
+what gets pasted into a ticket when it looks wrong. It says where the secret will
+come from and never what it is:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span><span class="nb">export</span><span class="w"> </span><span class="nv">BB_WEBHOOK_SECRET</span><span class="o">=</span>…
+<span class="gp">$ </span>bb<span class="w"> </span>webhook<span class="w"> </span>create<span class="w"> </span>ci<span class="w"> </span>https://ci.example.com/hook<span class="w"> </span>--dry-run<span class="w"> </span>--json
+<span class="go">{</span>
+<span class="go">  &quot;data&quot;: {</span>
+<span class="go">    &quot;items&quot;: [</span>
+<span class="go">      {</span>
+<span class="go">        &quot;intent&quot;: &quot;repo.webhook.create&quot;,</span>
+<span class="go">        &quot;target&quot;: {</span>
+<span class="go">          &quot;repository&quot;: &quot;PROJ/repo&quot;,</span>
+<span class="go">          &quot;name&quot;: &quot;ci&quot;,</span>
+<span class="go">          &quot;url&quot;: &quot;https://ci.example.com/hook&quot;,</span>
+<span class="go">          &quot;secret&quot;: &quot;will be set from $BB_WEBHOOK_SECRET&quot;</span>
+<span class="go">        },</span>
+<span class="go">        &quot;predictedAction&quot;: &quot;create&quot;</span>
+<span class="go">      }</span>
+<span class="go">    ]</span>
+<span class="go">  }</span>
+<span class="go">}</span>
+</code></pre></div>
+<p>Naming the variable is also the more useful answer: the mistake a plan makes is
+reading the wrong one. Removing a credential shows as <code>"will be removed"</code>.</p>
+<h2 id="bulk-plans-hold-a-variable-name">Bulk plans hold a variable name<a class="headerlink" href="#bulk-plans-hold-a-variable-name" title="Permanent link">&para;</a></h2>
+<p>A bulk plan is a file. It gets written to disk, committed, attached to a change
+request and read by whoever reviews it — so a literal secret in one is a secret
+in version control, for the same reason ADR-047 keeps secrets off the command
+line.</p>
+<p>The policy therefore names the <strong>variable</strong>, and <code>bb bulk apply</code> reads it at
+apply time:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bb.io/v1alpha1</span>
+<span class="nt">selector</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">projectKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PROJ</span>
+<span class="nt">operations</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">repo.webhook.create</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ci</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://ci.example.com/hooks/bitbucket</span>
+<span class="w">    </span><span class="nt">events</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">repo</span><span class="p p-Indicator">:</span><span class="nv">refs_changed</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">sslVerificationRequired</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">secretEnv</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BB_WEBHOOK_SECRET</span>
+<span class="w">    </span><span class="nt">credentialsUsername</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bitbucket</span>
+<span class="w">    </span><span class="nt">credentialsPasswordEnv</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BB_WEBHOOK_PASSWORD</span>
+</code></pre></div>
+<ul>
+<li><code>secretEnv</code> and <code>credentialsPasswordEnv</code> must look like environment variable
+  names (<code>^[A-Za-z_][A-Za-z0-9_]*$</code>). A pasted credential almost never does, so
+  the mistake the field invites — reading <code>secretEnv</code> as "the secret" — is
+  refused at plan time, by the published JSON schema as you type and by <code>bb</code>
+  when it validates the policy.</li>
+<li>The plan file records the name only. Neither <code>bb bulk plan</code> nor the plan on
+  disk carries the value.</li>
+<li><code>bb bulk apply</code> <strong>refuses</strong> when a named variable is unset, rather than
+  creating a webhook without a secret. A webhook whose deliveries carry no
+  signature is not a smaller version of one whose deliveries do, and finding
+  that out from a receiver that has started rejecting everything is a bad way to
+  find out. The recorded failure names the variable that was missing:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>bb<span class="w"> </span>bulk<span class="w"> </span>apply<span class="w"> </span>--from-plan<span class="w"> </span>plan.json
+<span class="go">Error: bulk apply op-4f2c… completed with failures</span>
+<span class="gp">$ </span>bb<span class="w"> </span>bulk<span class="w"> </span>status<span class="w"> </span>op-4f2c…<span class="w"> </span>--json<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>BB_WEBHOOK_SECRET
+<span class="go">&quot;secretEnv names $BB_WEBHOOK_SECRET, which is not set in this environment; export it before applying the plan&quot;</span>
+</code></pre></div>
+<ul>
+<li>The same plan applies against different environments without being edited,
+  which is the other thing a name buys over a value.</li>
+<li>The apply status is printed and written to the status store on disk. It
+  reports <code>credentialsUsername</code> for the webhook it created, never the
+  credentials themselves.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">A create response cannot tell you whether a secret is set</p>
+<p>Bitbucket answers identical webhook creates inconsistently: some responses
+carry <code>configuration.secret</code> in full, others carry an empty object. Measured
+against 10.4.2, that is roughly an even split.</p>
+<p>So a bulk apply status omits <code>secretConfigured</code> rather than reporting
+<code>false</code> — on a create, an empty configuration means "the server did not
+say", and claiming otherwise would state a fact the payload cannot know. It
+also means the apply status has to redact a secret it usually does not
+receive.</p>
+<p>To confirm a secret was configured, read the webhook: <code>bb webhook list</code> and
+<code>bb webhook get</code> answer from the read endpoint, which always returns it.</p>
+</div>
+<h3 id="limitation-one-secret-per-operation">Limitation: one secret per operation<a class="headerlink" href="#limitation-one-secret-per-operation" title="Permanent link">&para;</a></h3>
+<p>A <code>secretEnv</code> belongs to an <strong>operation</strong>, and the selector applies every
+operation to every repository it matches. So a plan can create several webhooks
+each reading its own variable:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">operations</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">repo.webhook.create</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ci</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://ci.example.com/hooks/bitbucket</span>
+<span class="w">    </span><span class="nt">secretEnv</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BB_WEBHOOK_SECRET_CI</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">repo.webhook.create</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">audit</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://audit.example.com/hooks/bitbucket</span>
+<span class="w">    </span><span class="nt">secretEnv</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BB_WEBHOOK_SECRET_AUDIT</span>
+</code></pre></div>
+<p>— but every repository the selector matches gets the <strong>same</strong> secret for a given
+operation. There is no way to say "this variable for <code>service-a</code>, that one for
+<code>service-b</code>" inside one plan.</p>
+<p>If each repository needs its own secret, that is one plan per repository (or per
+group of repositories sharing a secret), each applied with its own variable
+exported:</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>repo<span class="w"> </span><span class="k">in</span><span class="w"> </span>service-a<span class="w"> </span>service-b<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="nv">BB_WEBHOOK_SECRET</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>vault<span class="w"> </span><span class="nb">read</span><span class="w"> </span>-field<span class="o">=</span>value<span class="w"> </span><span class="s2">&quot;secret/bitbucket/</span><span class="nv">$repo</span><span class="s2">&quot;</span><span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>bb<span class="w"> </span>bulk<span class="w"> </span>apply<span class="w"> </span>--from-plan<span class="w"> </span><span class="s2">&quot;plans/</span><span class="nv">$repo</span><span class="s2">.json&quot;</span>
+<span class="k">done</span>
+</code></pre></div>
+<p>This is a real limitation of the plan model rather than a temporary gap: the
+selector exists precisely so that one operation describes many repositories, and
+per-repository values would make a plan stop being the reviewable artifact it is
+for. A plan whose effect differs per target cannot be read once and understood.</p>
+<h2 id="where-the-fields-can-be-set">Where the fields can be set<a class="headerlink" href="#where-the-fields-can-be-set" title="Permanent link">&para;</a></h2>
+<p>The same flags are registered wherever a webhook is configured, so the answer to
+"can I set the shared secret here" does not depend on which command you reached
+for:</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>create</th>
+<th>update</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bb webhook</code></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>bb project webhook</code></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>bb repo settings workflow webhooks</code></td>
+<td>yes</td>
+<td>no update subcommand</td>
+</tr>
+<tr>
+<td><code>bb bulk</code> (<code>repo.webhook.create</code>)</td>
+<td>yes, by variable name</td>
+<td>n/a</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.tracking", "navigation.sections", "navigation.expand", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

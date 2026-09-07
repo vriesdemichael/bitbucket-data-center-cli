@@ -1,0 +1,201 @@
+# Bitbucket Data Center CLI
+
+`bb` is the operational CLI for Bitbucket Data Center and Bitbucket Server. It is the
+high-signal command surface for working with self-hosted Bitbucket — pull requests,
+repositories, branches, tags, commits, build status, and multi-repository bulk changes —
+without scraping web pages or inventing API calls. It is not the CLI for Bitbucket Cloud.
+
+This file is a setup guide. If you are an agent, work through it in order: install,
+authenticate, then enable either the skill or the MCP server. The last section describes
+the machine-readable output contract you will be parsing.
+
+## 1. Install
+
+`bb` ships as a single binary. Use whichever package manager is present:
+
+```bash
+brew install vriesdemichael/tap/bb
+```
+
+```powershell
+winget install vriesdemichael.bb
+```
+
+```bash
+yay -S bb-bin
+```
+
+Debian, Ubuntu, RHEL and Fedora packages, platform archives, and Sigstore verification
+instructions are on the installation page linked at the end.
+
+Confirm the binary is present and note its version — the skill and the command surface are
+version-specific:
+
+```bash
+bb --version
+```
+
+## 2. Authenticate
+
+`bb` authenticates with a personal access token. There is no OAuth flow: Bitbucket Data
+Center ships with no configured OAuth clients and non-admin users cannot create them, so
+token auth is the supported path (ADR-022). Ask the user for a PAT rather than trying to
+provision one yourself.
+
+Pass the token on stdin. A secret passed as a flag value appears in the process argument
+list, where any local user can read it, and the shell records it in history:
+
+```bash
+printf '%s' "$BB_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
+```
+
+If the user does not have a token yet, print the host-specific creation URL for them:
+
+```bash
+bb auth token-url --host https://bitbucket.example.com
+```
+
+Verify the result. `bb auth status` reports the resolved host, how the credential is
+stored, and whether it still authenticates. Add `--check` to make a failing check a
+non-zero exit, which is what you want when you are deciding whether to continue:
+
+```bash
+bb auth status --check
+```
+
+Credentials go to the OS keyring. On headless servers and most containers there is no
+keyring and `bb` falls back to a plaintext config file, saying so. Pass
+`--require-keyring` to `bb auth login` to fail instead of falling back.
+
+## 3. Enable the skill
+
+The skill teaches a shell-driving agent the command surface. `bb` carries it embedded, so
+installing it needs no network:
+
+```bash
+bb ai skill install
+```
+
+That writes `.agents/skills/bb/SKILL.md` — project scope. For user scope:
+
+```bash
+bb ai skill install --global
+```
+
+A second skill covers multi-repository bulk governance:
+
+```bash
+bb ai skill install bulk
+```
+
+If the agent expects a different path, print the skill and redirect it:
+
+```bash
+bb ai skill show > .agents/skills/bb/SKILL.md
+```
+
+When `bb` is not installed yet, the baseline skills are also published through the open
+agent skills ecosystem:
+
+```bash
+npx skills add vriesdemichael/bitbucket-data-center-cli
+```
+
+Prefer `bb ai skill show` or `bb ai skill install` where you can. Those print the skill
+embedded in the running binary, so it always matches the `bb` you are about to invoke. The
+npx copy is a snapshot taken from the repository at release time and can describe a
+different version than the one installed (ADR-040). Re-run `bb ai skill install` after
+upgrading `bb`.
+
+## 4. Or enable the MCP server
+
+The MCP server exposes Bitbucket operations as typed tools over stdio, for clients that
+speak MCP natively rather than driving a shell:
+
+```bash
+bb ai mcp serve
+```
+
+Configure it as a stdio server — command `bb`, args `["ai", "mcp", "serve"]`. It is not an
+HTTP server and there is no port to connect to.
+
+Things worth knowing before you wire it up:
+
+- `--host` is required when more than one Bitbucket instance is configured; the server
+  exits immediately if it is missing (ADR-039).
+- Tools whose effects are irreversible, such as merge, are withheld by default. `--yolo`
+  exposes them. `bb ai mcp tools` lists every tool with its exposure, and `--safe-only`
+  lists just the default set.
+- `--tools` is an allowlist and `--exclude` a denylist, for narrowing the surface further.
+  `--tools` overrides the safety filter, so naming a withheld tool there exposes it.
+- `--project` and `--repo` confine the server to one workspace; a call aimed elsewhere is
+  refused, and tools that address something Bitbucket does not scope to a project are
+  withheld entirely (ADR-062).
+- `--audit-file` records every tool call as JSON Lines, to a path or to `stderr`. It is off
+  by default (ADR-062).
+- Every tool declares an output schema and the SDK validates results against it, so a
+  handler cannot return a shape its schema does not describe (ADR-061).
+
+The audit trail covers this server only. An agent that can also run shell commands can
+invoke `bb` directly and bypass it. The control that survives that is `--token`, which
+binds at the Bitbucket server.
+
+## 5. Which one to enable
+
+- **The skill**, if you drive a shell. You already have `bb`; the skill tells you how to
+  use it, and you get the full command surface rather than a curated tool set.
+- **The MCP server**, if your client is MCP-native and you would rather call typed tools
+  than parse a terminal. You also get the workspace confinement and audit trail described
+  above, which have no equivalent on the shell path.
+
+Both at once is redundant, not additive. Pick the one that matches how you invoke things.
+
+## 6. The machine contract
+
+Pass `--json` whenever another system parses the output. Every command that supports it
+emits a single bb.machine envelope on stdout:
+
+```json
+{"data": {}, "meta": {"bbVersion": "4.0.0"}}
+```
+
+There is no envelope version field. The release version is the compatibility
+signal, and `meta.bbVersion` reports the binary that produced the document.
+
+A failure replaces `data` with `error`, carrying a `kind` from a fixed taxonomy
+(`authentication`, `authorization`, `validation`, `not_found`, `conflict`, `transient`,
+`permanent`, `not_implemented`, `internal`), a `message`, and the `exitCode` that matches
+the process exit status. Branch on `kind`, not on message text.
+
+Diagnostics go to stderr and never contaminate the document on stdout. `--log-format jsonl`
+makes them machine-readable too.
+
+Ask a command what it returns rather than looking a schema up: `bb <command> --describe`
+prints the JSON Schema of that command's `data` payload, derived from the same model the
+command fills in, so it cannot disagree with what you get. A command that returns no data
+payload -- or one whose payload bb cannot promise a shape for -- answers with `described`
+false and a `reason` saying which.
+
+State-changing commands accept `--dry-run`, which previews the mutation without applying
+it. Use it before a write when you need to show the user what will happen.
+
+Prefer the published command reference over guessing flags or subcommands.
+
+## Links
+
+- [Docs home](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/): Main navigation for operators and agents
+- [Installation and Quickstart](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/installation-and-quickstart/): Install, authenticate, and run first commands
+- [Command Reference](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/commands/): Exact public command surface and flags
+- [JSON Schemas](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/): Machine contracts for output and bulk inputs
+- [Machine Mode and Diagnostics](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/advanced/machine-mode-diagnostics/): JSON envelope contract and supportability patterns
+- [Basic Usage](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/basic-usage/): Common workflows and command patterns
+- [Advanced Topics](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/advanced/): Dry-run, bulk automation, diagnostics, and repository discovery
+- [AI and llms.txt overview](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/ai-and-llms/): How this file and the AI tooling fit together
+- [Architecture Decision Records](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/adr/): Design rationale and system constraints
+- [Changelog](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/changelog/): Release history and release notes
+- [bb AI core skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb/SKILL.md)
+- [bb bulk governance AI skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb-bulk/SKILL.md)
+
+If you hit behaviour that does not match this file, open an issue at
+<https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/new>, or ask the user
+to file one for you.
