@@ -340,7 +340,24 @@ func (h *liveHarness) pushCommitsToRepository(projectKey, repositorySlug string,
 		if err := runGit(tempDir, "add", "seed.txt"); err != nil {
 			return fmt.Errorf("git add failed: %w", err)
 		}
-		if err := runGit(tempDir, "commit", "-m", fmt.Sprintf("seed commit %d", index+1)); err != nil {
+		// The repository's identity goes in the message, so that no two seeded
+		// repositories can produce the same commit object.
+		//
+		// Without it every seeded commit is byte-identical -- same empty
+		// parent, same seed.txt, same "seed commit 1", same bb-live-test
+		// author -- and a git timestamp has one-second resolution, so two
+		// repositories seeded in the same second get the same sha. Under a
+		// parallel suite that is constant rather than rare.
+		//
+		// A shared sha is not cosmetic. Bitbucket keys build statuses on the
+		// commit hash across the whole instance, not per repository, so a test
+		// that sets a build status marks every other test's identical commit as
+		// built -- which is how TestLiveQualityEmptyAnswers came to find four
+		// successful builds on a commit nobody built. Statuses also outlive the
+		// repository they were set through, so the collision reaches across
+		// runs as well.
+		message := fmt.Sprintf("seed commit %d for %s/%s", index+1, projectKey, repositorySlug)
+		if err := runGit(tempDir, "commit", "-m", message); err != nil {
 			return fmt.Errorf("git commit failed: %w", err)
 		}
 	}
