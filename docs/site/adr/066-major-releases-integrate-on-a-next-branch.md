@@ -30,9 +30,14 @@ A breaking major release is assembled on a long-lived integration branch named `
    - This is the property that makes the branch safe to batch on. ADR-033 releases from every
      conventional commit on `main`, so without a branch that does not release, a breaking change
      could not be staged at all: it would ship the moment it merged.
-   - The major is cut by merging `next` into `main`. Every accumulated commit lands at once and
-     the existing automation reads the breaking markers among them, so the version bump is
-     computed rather than chosen. Nothing about the release path is special-cased for a major.
+   - The major is cut by fast-forwarding `main` to `next`, as a push and never as a pull request.
+     `main` allows only rebase-merge, which replays every commit with a new sha while `next` keeps
+     the originals, so a promotion by pull request leaves the two branches holding duplicate
+     copies of the same history. Rebasing `next` onto `main` first is what makes the
+     fast-forward possible; `task release:promote:check` says whether it still is.
+   - Every accumulated commit lands at once and the existing automation reads the breaking markers
+     among them, so the version bump is computed rather than chosen. Nothing about the release
+     path is special-cased for a major.
 
 3. `next` is gated exactly like `main`:
    - CI triggers on `pull_request` and `push` for both branches, and nothing else. A pull request
@@ -45,7 +50,7 @@ A breaking major release is assembled on a long-lived integration branch named `
 
 ## Agent Instructions
 
-Target `next` for anything belonging to the next major, and `main` for v3.x patches and non-breaking work. When unsure, ask whether the change would fail a command line that works today; if it would, it belongs on `next`. Do not open a pull request whose base is another feature branch. CI triggers only on `main` and `next`, so a stacked pull request runs nothing and merges having proven nothing. Rebase onto the integration branch and target it directly. Do not add a release trigger to `next`, and do not tag from it. The absence of one is what makes batching possible; adding it would ship each breaking change as it lands, which is the outcome the branch exists to avoid. When adding a branch to the CI workflow triggers, add it to both the pull_request and push lists. Adding only one leaves either pull requests or the merged result unverified. Mark breaking commits properly -- `!` or a `BREAKING CHANGE:` footer -- on `next` as well as on `main`. The release that eventually reads them is computed from the commits, and a breaking change recorded as a plain fix produces the wrong version at the moment it matters most.
+Target `next` for anything belonging to the next major, and `main` for v3.x patches and non-breaking work. When unsure, ask whether the change would fail a command line that works today; if it would, it belongs on `next`. This is enforced rather than trusted: the release-flow job in ci.yml refuses a pull request into `main` from anything but `dependabot/*` or `hotfix/*`, and refuses any of those carrying a breaking commit. It reads the same classification the release workflow does (scripts/conventional_commits.py), so the gate and the version it protects cannot disagree about what breaking means. Do not open a pull request whose base is another feature branch. CI triggers only on `main` and `next`, so a stacked pull request runs nothing and merges having proven nothing. Rebase onto the integration branch and target it directly. Do not add a release trigger to `next`, and do not tag from it. The absence of one is what makes batching possible; adding it would ship each breaking change as it lands, which is the outcome the branch exists to avoid. When adding a branch to the CI workflow triggers, add it to both the pull_request and push lists. Adding only one leaves either pull requests or the merged result unverified. Mark breaking commits properly -- `!` or a `BREAKING CHANGE:` footer -- on `next` as well as on `main`. The release that eventually reads them is computed from the commits, and a breaking change recorded as a plain fix produces the wrong version at the moment it matters most.
 
 ## Rationale
 
