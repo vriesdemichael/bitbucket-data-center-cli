@@ -453,7 +453,19 @@ tasks:
     # is breaking, which the releaser reads to cut a version and the gate reads
     # to refuse a pull request -- so the two agreeing is structural, and these
     # tests are what says the shared answer is right.
-    cmd: uv run --no-project python -m unittest discover -s scripts -p '*_test.py' -t scripts
+    #
+    # The first interpreter that actually runs, rather than the first one on
+    # PATH. A GitHub runner has python3 and no uv; a Windows developer box has
+    # uv and a python3 that is the Microsoft Store stub -- which exists on PATH
+    # and fails when executed, so the probe runs it instead of testing for it.
+    cmds:
+      - |
+        for candidate in python3 python; do
+          if "$candidate" -c "" >/dev/null 2>&1; then
+            exec "$candidate" -m unittest discover -s scripts -p '*_test.py' -t scripts
+          fi
+        done
+        exec uv run --no-project python -m unittest discover -s scripts -p '*_test.py' -t scripts
 
   release:promote:check:
     desc: Verify next can fast-forward onto main before promoting
