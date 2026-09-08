@@ -81,11 +81,11 @@ cosign verify-blob \
 ```
 
 Each archive carries its own bundle too, so you can verify an individual
-artifact the same way (`bb_2.0.2_linux_amd64.tar.gz.sigstore.json`), or use the
+artifact the same way (`bb_linux_amd64.tar.gz.sigstore.json`), or use the
 build provenance attestation:
 
 ```bash
-gh attestation verify bb_2.0.2_linux_amd64.tar.gz \
+gh attestation verify bb_linux_amd64.tar.gz \
   --repo vriesdemichael/bitbucket-data-center-cli
 ```
 
@@ -101,7 +101,7 @@ against each released binary, so the link between the SBOM and the artifact is
 itself verifiable rather than asserted:
 
 ```bash
-gh attestation verify bb_2.0.2_linux_amd64.tar.gz \
+gh attestation verify bb_linux_amd64.tar.gz \
   --repo vriesdemichael/bitbucket-data-center-cli \
   --predicate-type https://spdx.dev/Document
 ```

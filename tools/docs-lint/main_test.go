@@ -597,3 +597,38 @@ vars:
 		t.Fatalf("updateContentVersions mismatch:\nExpected:\n%s\nActual:\n%s", expected, actual)
 	}
 }
+
+// The class the lint could not see: a version embedded in a release artifact's
+// filename is neither a bb invocation nor one of ADR-055's version declaration
+// forms, so SECURITY.md carried a v2.0.2 verify command across four releases.
+func TestArtifactFilenameVersionMustMatchTheRelease(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		line     string
+		findings int
+	}{
+		{name: "stale version in prose", line: "Verify `bb_2.0.2_linux_amd64.tar.gz.sigstore.json` first.", findings: 1},
+		{name: "stale version inside a fence", line: "```bash\ngh attestation verify bb_2.0.2_linux_amd64.tar.gz\n```", findings: 1},
+		{name: "current version passes", line: "Download `bb_4.0.0_linux_amd64.tar.gz`.", findings: 0},
+		{name: "version-less alias passes", line: "Download `bb_linux_amd64.tar.gz`.", findings: 0},
+		{name: "illustrative shape is exempt", line: "Published as `bb_1.2.3_linux_amd64.deb`.", findings: 0},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			findings, _ := lintMarkdownWithVersion("doc.md", testCase.line+"\n", "4.0.0")
+
+			stale := 0
+			for _, item := range findings {
+				if strings.Contains(item.Problem, "release artifact") {
+					stale++
+				}
+			}
+			if stale != testCase.findings {
+				t.Fatalf("expected %d artifact finding(s), got %d from %+v", testCase.findings, stale, findings)
+			}
+		})
+	}
+}
