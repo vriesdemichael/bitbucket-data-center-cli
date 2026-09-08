@@ -1,5 +1,31 @@
 # Installation and Quickstart
 
+## Which Bitbucket versions work
+
+| | |
+|---|---|
+| **Tested against** | Bitbucket Data Center **10.4.2** |
+| **Expected to work on** | Bitbucket Data Center **8.0 and later** |
+| **Not supported** | **Bitbucket Cloud** — a different API |
+
+10.4.2 is the version the live suite provisions and runs every command against
+on every pull request, following
+[ADR-042](adr/042-track-newest-containerisable-bitbucket-version.md), which
+tracks the newest containerisable release rather than freezing on one.
+
+The wider range is an expectation rather than a test result, and it is worth
+saying why it is a reasonable one: `bb` does not branch on the server version.
+It sends the same requests to every instance, and a version pinned with
+`BITBUCKET_VERSION_TARGET` is reported by `bb auth status` and acted on nowhere.
+So compatibility is a question of which REST endpoints your server has, not of
+version detection inside `bb`. A few features document their own minimum — draft
+pull requests need Bitbucket Data Center 8.0 or later, for example.
+
+If `bb` fails against a version other than 10.4.2, please open an issue naming
+the version. That is what turns "expected to work" into "tested". Only the most
+recent `bb` release is supported; see
+[SECURITY.md](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md).
+
 ## Install on Windows via WinGet
 
 ```powershell
