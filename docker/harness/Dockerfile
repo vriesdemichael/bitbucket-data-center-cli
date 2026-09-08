@@ -19,7 +19,7 @@
 # The image tag is therefore the single version pin for the whole harness.
 # Dependabot manages it, and the product version is read back out of the image
 # at build time so nothing has to be kept in sync by hand.
-FROM atlassian/bitbucket:10.4.2
+FROM atlassian/bitbucket:10.4.3
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV JAVA_HOME=/opt/java/openjdk
