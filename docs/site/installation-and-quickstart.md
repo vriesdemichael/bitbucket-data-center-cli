@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Tested against** | Bitbucket Data Center **10.4.2** |
-| **Expected to work on** | Bitbucket Data Center **8.0 and later** |
+| **Intended to support** | the range Atlassian supports |
 | **Not supported** | **Bitbucket Cloud** — a different API |
 
 10.4.2 is the version the live suite provisions and runs every command against
@@ -13,18 +13,36 @@ on every pull request, following
 [ADR-042](adr/042-track-newest-containerisable-bitbucket-version.md), which
 tracks the newest containerisable release rather than freezing on one.
 
-The wider range is an expectation rather than a test result, and it is worth
-saying why it is a reasonable one: `bb` does not branch on the server version.
-It sends the same requests to every instance, and a version pinned with
-`BITBUCKET_VERSION_TARGET` is reported by `bb auth status` and acted on nowhere.
-So compatibility is a question of which REST endpoints your server has, not of
-version detection inside `bb`. A few features document their own minimum — draft
-pull requests need Bitbucket Data Center 8.0 or later, for example.
+The intent is wider than the test, and it is worth saying why that is a
+reasonable position rather than a hopeful one: `bb` does not branch on the
+server version. It sends the same requests to every instance, and a version
+pinned with `BITBUCKET_VERSION_TARGET` is reported by `bb auth status` and acted
+on nowhere. So compatibility is a question of which REST endpoints your server
+has, not of version detection inside `bb`. A few features document their own
+minimum — draft pull requests need Bitbucket Data Center 8.0 or later, for
+example.
 
+Closing the gap between "tested against one version" and "supports the range
+Atlassian supports" is tracked in
+[#307](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/307).
 If `bb` fails against a version other than 10.4.2, please open an issue naming
-the version. That is what turns "expected to work" into "tested". Only the most
-recent `bb` release is supported; see
-[SECURITY.md](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md).
+the version — that is what moves a version from intended to tested.
+
+## Which version of `bb` to run
+
+The latest one.
+
+There is no reason to pin an older `bb`, and none is supported. That is the same
+answer `gh` and most CLIs give, and it is deliberate: `bb` is **not**
+version-coupled to your server the way `kubectl` is to a cluster. One `bb` is
+meant to work across the whole supported Bitbucket range, so upgrading `bb` is
+never a Bitbucket upgrade decision — it is just a newer client against the same
+API.
+
+That is also why "latest release only" in
+[SECURITY.md](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md)
+is a support policy rather than a gap: pinning is not a thing you should need to
+do.
 
 ## Install on Windows via WinGet
 
