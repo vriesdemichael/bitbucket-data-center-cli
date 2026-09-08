@@ -33,6 +33,7 @@ disk, which is what makes it the right choice for CI and containers.
 | `BB_REQUIRE_KEYRING` | unset | `1` makes `bb` refuse to read or write credentials through the plaintext config fallback. Use it where storing a secret unencrypted is not acceptable — see [keyring storage](../installation-and-quickstart.md#where-credentials-are-stored). |
 | `BB_DISABLE_STORED_CONFIG` | unset | `1` ignores `~/.config/bb/config.yaml` entirely, so only flags and environment variables are consulted. Useful in CI, where a stray config file on a shared runner would otherwise be picked up. |
 | `BB_CONFIG_PATH` | `~/.config/bb/config.yaml` | Path to the stored configuration file. |
+| `BB_WORKSPACE_CONFIG_PATH` | unset | Path to the per-workspace configuration file. Unset, `bb` looks for `.bb/config.yaml`, searching upward from the working directory and stopping at the repository root. |
 
 `BITBUCKET_USER`, `ADMIN_USER` and `ADMIN_PASSWORD` exist because the test
 harness sets them. They work, but prefer the primary names.
@@ -79,6 +80,50 @@ command must not make removing a credential impossible. Bulk policies name these
 variables rather than holding a value; see
 [Webhook Secrets](../advanced/webhook-secrets.md).
 
+## Interactivity
+
+`bb` prompts only when a person is there to answer, and decides that in one
+place ([ADR-072](../adr/072-interactivity-is-decided-in-one-place.md)). These
+two variables are how you tell it nobody is.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `BB_NO_PROMPT` | unset | Any value other than `0`, `false` or empty turns prompting off for every command in the process. A command that then needs a value it cannot ask for fails naming the flag that would have supplied it, rather than falling back to a default. Equivalent flag: `--no-input`. |
+| `BB_NO_PROMPT_VARS` | unset | Comma-separated names of *further* variables whose presence also means nobody is watching. |
+
+`bb` already treats `CI`, `DEBIAN_FRONTEND`, `NONINTERACTIVE`, `TERM=dumb` and a
+list of coding harnesses as proof that nobody is there. `BB_NO_PROMPT_VARS` is
+for the harness it has not heard of: set it once in the environment to the
+variable that harness does set, instead of waiting for a release or passing
+`--no-input` on every call.
+
+```bash
+export BB_NO_PROMPT_VARS=MY_BUILD_RUNNER,ACME_AGENT
+```
+
+`--json` suppresses prompting on its own: a machine reading structured output is
+not a person who can answer a question.
+
+## Updates
+
+| Variable | Default | Effect |
+|---|---|---|
+| `BB_DISABLE_UPDATE` | unset | `1` or `true` disables `bb update`. The command explains that it is disabled and points at your system package manager. Administrative policy can disable it too, and is reported separately. |
+| `BB_UPDATE_BASE_URL` | GitHub releases | Base URL the updater fetches manifests and artifacts from, for an internal mirror. The `--base-url` flag wins over it; it wins over the workspace, stored and system configuration. |
+
+!!! note "Update trust is settable from system policy only"
+
+    `BB_UPDATE_TRUSTED_ROOT`, `BB_UPDATE_SIGNATURE_IDENTITY` and
+    `BB_ALLOW_UNVERIFIED_UPDATE` are **deliberately not read** from the
+    environment. A variable that could redirect the trust root would let
+    anything able to set a variable in your shell approve its own update.
+    Configure these through system policy instead — see
+    [Enterprise Hardening](../advanced/enterprise-hardening.md).
+
+    `BB_DISABLE_UPDATE` and `BB_UPDATE_BASE_URL` are honoured because neither
+    weakens verification: the first only refuses to update, and an artifact from
+    a mirror still has to pass the same signature check.
+
 ## Output and diagnostics
 
 | Variable | Default | Effect |
@@ -104,6 +149,8 @@ supported interface and may change without notice.
 | Variable | Effect |
 |---|---|
 | `BB_BLOCK_EXTERNAL_NETWORK` | `1` makes any HTTP request to a non-loopback host fail immediately. Used so unit tests cannot reach the internet. |
+| `BB_ERROR_HARVEST` | Names a file every non-2xx response is recorded to, so live tests can capture what the server actually returns. Unset in every real run, and nothing is opened. |
+| `BB_SYSTEM_CONFIG_PATH` | Overrides where system policy is read from. **Honoured only under `go test`** — the shipped binary ignores it, so a user's shell cannot replace the policy tier and with it `require_keyring`, `allowed_hosts` and `disable_update`. |
 
 ## See also
 
