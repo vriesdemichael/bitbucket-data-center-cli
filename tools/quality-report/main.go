@@ -259,7 +259,15 @@ func printCoverageSummary(reportData report) {
 	fmt.Printf("  unit     %.2f%% (%d/%d statements)\n", reportData.Coverage.UnitRawPercent, reportData.Coverage.UnitStatements.Covered, reportData.Coverage.UnitStatements.Total)
 	fmt.Printf("  live     %.2f%% (%d/%d statements)\n", reportData.Coverage.LiveRawPercent, reportData.Coverage.LiveStatements.Covered, reportData.Coverage.LiveStatements.Total)
 	fmt.Printf("  combined %.2f%% (%d/%d statements)\n", reportData.Coverage.CombinedRawPercent, reportData.Coverage.CombinedStatements.Covered, reportData.Coverage.CombinedStatements.Total)
-	fmt.Printf("Combined scoped coverage (gated): %.2f%% (%d/%d statements)\n", reportData.Coverage.CombinedScopedPercent, reportData.Coverage.CombinedScopedStatements.Covered, reportData.Coverage.CombinedScopedStatements.Total)
+	// Unit and live are printed scoped as well as raw, because only the scoped
+	// numbers are comparable to each other and to the gate. Both were computed
+	// and then withheld, and the live one is the number a reader of "live
+	// behaviour validation" is actually looking for: a figure that is measured
+	// and not shown is assumed to be the bad one (#585).
+	fmt.Println("Scoped coverage, hand-written code only:")
+	fmt.Printf("  unit     %.2f%% (%d/%d statements)\n", reportData.Coverage.UnitScopedPercent, reportData.Coverage.UnitScopedStatements.Covered, reportData.Coverage.UnitScopedStatements.Total)
+	fmt.Printf("  live     %.2f%% (%d/%d statements)\n", reportData.Coverage.LiveScopedPercent, reportData.Coverage.LiveScopedStatements.Covered, reportData.Coverage.LiveScopedStatements.Total)
+	fmt.Printf("  combined %.2f%% (%d/%d statements)  <- gated\n", reportData.Coverage.CombinedScopedPercent, reportData.Coverage.CombinedScopedStatements.Covered, reportData.Coverage.CombinedScopedStatements.Total)
 }
 
 func enforceThresholds(reportData report, patch patchCoverage, minGlobalCombined, minPatch float64, minPatchLines int, maxUncoveredSmallPatch int) {
