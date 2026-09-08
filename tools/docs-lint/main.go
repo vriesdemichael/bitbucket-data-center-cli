@@ -289,6 +289,13 @@ var (
 	yamlVersionRe   = regexp.MustCompile(`^\s*bb_version:\s*["']?(v?[0-9]+\.[0-9]+\.[0-9]+)["']?$`)
 	proseVersionRe  = regexp.MustCompile(`(?i)\b(?:target|release)\s+version\s*\((?:e\.g\.|example:)\s*[\x60"]?(v?[0-9]+\.[0-9]+\.[0-9]+)[\x60"]?\)`)
 
+	// artifactVersionRe matches a release artifact named with its version, e.g.
+	// bb_4.0.0_linux_amd64.tar.gz. This is the form ADR-055's version
+	// *declarations* miss: it is neither a VERSION= assignment nor a bb
+	// invocation, so SECURITY.md shipped a v2.0.2 verify command through four
+	// releases without the lint noticing (#582).
+	artifactVersionRe = regexp.MustCompile(`\bbb_(v?[0-9]+\.[0-9]+\.[0-9]+)_`)
+
 	updateShellVersionRe  = regexp.MustCompile(`(?m)^((?:export\s+)?VERSION=["']?)(v?)[0-9]+\.[0-9]+\.[0-9]+(["']?)$`)
 	updatePwshVersionRe   = regexp.MustCompile(`(?m)^(\$Version\s*=\s*["']?)(v?)[0-9]+\.[0-9]+\.[0-9]+(["']?)$`)
 	updateDockerVersionRe = regexp.MustCompile(`(?m)^(ARG\s+BB_VERSION=)(v?)[0-9]+\.[0-9]+\.[0-9]+$`)
@@ -377,6 +384,23 @@ func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) 
 	for i, line := range lines {
 		lineNum := i + 1
 		trimmed := strings.TrimSpace(line)
+
+		// Checked ahead of the fence handling below, because the reader copies
+		// these out of a code block: a stale name inside a bash fence is the
+		// case that actually reaches them.
+		if targetVer != "" {
+			for _, m := range artifactVersionRe.FindAllStringSubmatch(line, -1) {
+				if strings.TrimPrefix(m[1], "v") == targetVer || m[1] == illustrativeVersion {
+					continue
+				}
+				findings = append(findings, finding{
+					File:    file,
+					Line:    lineNum,
+					Command: strings.TrimSpace(line),
+					Problem: fmt.Sprintf("release artifact %q names version %q; must match current release version %q, or use the version-less alias that /releases/latest/download/ serves", m[0], m[1], targetVer),
+				})
+			}
+		}
 
 		if !inFence {
 			if isDirectiveComment(trimmed, expectInvalidDirective) {
@@ -794,6 +818,12 @@ type codeBlock struct {
 // merely skipped: a block claiming to demonstrate a broken invocation that has
 // quietly become valid is itself documentation drift, and the point of this
 // linter is that no exemption can silently rot.
+// illustrativeVersion is the conventional semver stand-in. README.md and
+// ADR-057 both use bb_1.2.3_linux_amd64.tar.gz to show the *shape* of a
+// versioned asset name, which is not a claim about the current release and
+// must not be rewritten into one.
+const illustrativeVersion = "1.2.3"
+
 const expectInvalidDirective = "docs-lint: expect-invalid"
 
 // outputOfDirectivePrefix binds the next block to the command whose output it
