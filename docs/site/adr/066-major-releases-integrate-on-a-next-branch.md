@@ -22,9 +22,12 @@ A breaking major release is assembled on a long-lived integration branch named `
      conventional commit on `main`, so a batch of ten small fixes landing there is ten releases.
      The same batch on `next` is one. A branch that releases nothing is what makes any bundle
      possible, patch and minor bundles included.
-   - `next` is created from `main` when a bundle is opened, and rebases onto `main` for the rest
-     of its life (ADR-025, rebase-only). It is deleted after the bundle ships and recreated for
-     the one after.
+   - `next` is permanent. It rebases onto `main` for the rest of its life (ADR-025,
+     rebase-only), and a promotion leaves it equal to `main` rather than finished: the next
+     bundle simply starts accumulating on it. It is not deleted between bundles, because every
+     branch is routed to it -- deleting it would leave contributors, and the fork-pull-request
+     redirect the gate prints, pointing at a branch that does not exist. That is exactly what
+     #583 reported while `next` was absent.
    - Whether a change is breaking no longer decides its branch -- everything goes to `next` --
      but it still decides the version the bundle cuts, so it must be marked. A change that alters
      an exit code, an error kind, a flag's meaning, the shape of parsed output, or that rejects an
