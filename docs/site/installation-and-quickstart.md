@@ -19,12 +19,6 @@ scoop install vriesdemichael/bb
 brew install vriesdemichael/tap/bb
 ```
 
-## Install on Arch Linux from the AUR
-
-```bash
-yay -S bb-bin
-```
-
 ## Install on Debian/Ubuntu or RHEL/Fedora
 
 Download the `.deb` or `.rpm` for your architecture from GitHub Releases and install it:
