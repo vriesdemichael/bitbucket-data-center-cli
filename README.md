@@ -178,6 +178,8 @@ carry a `detail` and a `remedy` when they fail, omitted here for brevity.
 
 This README is an adopter-focused landing page.
 
+- **Start here: [CONTRIBUTING.md](CONTRIBUTING.md)** — setup, the local gates, what CI checks,
+  and how the live suite runs against a real Bitbucket
 - Development workflows and project tasks: `Taskfile.yml`
 - Decision records: `docs/decisions/`
 - Generated docs and docs tooling: `docs/site/`, `tools/cli-docs-export/`, `tools/adr-markdown-export/`

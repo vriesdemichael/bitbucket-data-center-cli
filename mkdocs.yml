@@ -90,4 +90,8 @@ nav:
       - Webhook Secrets: advanced/webhook-secrets.md
   - AI and llms.txt: ai-and-llms.md
   - ADR Records: adr/index.md
+  # Linked rather than copied into docs_dir: the guide is 365 lines that change with the
+  # gates it describes, and a second copy under docs/site would drift from the one
+  # contributors actually open from the repository root.
+  - Contributing: https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md
   - Changelog: changelog.md

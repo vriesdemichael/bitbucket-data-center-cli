@@ -275,16 +275,13 @@ They are still expected, and a reviewer will ask:
   wrongly, and `tools/quality-report` produces the numbers every other gate
   reads — a bug there makes CI pass when it should not. ADR-049 has the
   measurements behind leaving `tools/` out of the gate.
-- **golangci-lint.** There is no configuration and no lint job. `gofmt` *is*
-  enforced (see below), but nothing checks for unused parameters, shadowing, or
-  the other things a linter would catch.
 
 ## What CI checks
 
 | Job | What it does |
 |---|---|
 | ADR Validation | validates `docs/decisions/*.yaml` |
-| Unit Tests | non-live tests, that the live-tagged tree compiles, that generated artifacts are current, and that every documented `bb ...` invocation parses |
+| Unit Tests | formatting, line endings, `golangci-lint` against the pinned version, non-live tests, that the live-tagged tree compiles, that generated artifacts are current, and that every documented `bb ...` invocation parses |
 | Docs Site | builds the MkDocs site |
 | Live Integration Tests | starts Bitbucket and runs the live suite |
 | Coverage Gates | global and patch coverage thresholds, against the profiles the live job produced |
@@ -317,7 +314,7 @@ Collected from actually doing this, not hypothetical:
   hypothetical — it once wrote an `http.extraHeader` credential into the
   project's `.git/config` and broke pushes to GitHub.
 - **New mutating commands must be registered** in `dryRunProfiles`
-  (`internal/cli/dryrun.go`) or `TestAllMutatingCommandsHaveDryRunProfile`
+  (`internal/cli/dryrun.go`) or `TestAllCommandsExhaustivelyClassifiedForDryRun`
   fails.
 - **Use `-count=1`** when testing config loading or environment variables; Go's
   test cache will otherwise mask state pollution.

@@ -340,7 +340,7 @@ The governance guards, so the set is knowable:
 | `TestEveryToolHasAScopeRule` | no MCP tool escapes workspace scoping |
 | `TestADRDoesNotNameToolsThatDoNotExist` | decision records do not name tools that were removed |
 | `TestGatedToolsAreTheOnesThatMergeOrGate` | the `--yolo` set is exactly the tools that merge or gate |
-| `TestUnsafeToolsAreAnnotatedDestructive`, `TestSafeToolsAreNotAnnotatedDestructive` | the safety flag and the annotations agree, both ways |
+| `TestReadOnlyToolsAreNotGated` | a tool annotated read-only is not withheld behind `--yolo` — either it writes after all, or it needs no gating |
 | `TestLiveMCPEveryToolReturnsAClientCompatibleResult` | every MCP tool is actually called, and its result is a JSON object with a text fallback |
 | `TestTheStatusMappingIsOnlyTestedWhereItLives` | no package outside `internal/openapi` tests the status-to-kind mapping |
 | `TestNoServiceOptionIsCalledLimit` | no service option names a limit the call site cannot act on |
@@ -354,7 +354,7 @@ If the rebase brought in API changes from `main` (e.g. a command's flag changed 
 ## Development Tips & Gotchas
 
 ### Stateful Dry-Run Interceptor
-Bitbucket server-mutating CLI commands (ending in words like `create`, `update`, `delete`, `add`, etc.) are intercepted by the global dry-run interceptor (`internal/cli/dryrun.go`). Any new mutating command must be registered in the `dryRunProfiles` map as `Stateful: true` (or `Stateful: false` if it has stateless behaviour). For commands that are server-mutating but where dry-run does not add any operational benefit or is not supported (such as `bulk apply`), you must explicitly register them with `DryRunDoesNotAddBenefit: true`. Failing to register a mutating command will cause the unit test `TestAllMutatingCommandsHaveDryRunProfile` in `internal/cli/dryrun_test.go` to fail.
+Bitbucket server-mutating CLI commands (ending in words like `create`, `update`, `delete`, `add`, etc.) are intercepted by the global dry-run interceptor (`internal/cli/dryrun.go`). Any new mutating command must be registered in the `dryRunProfiles` map as `Stateful: true` (or `Stateful: false` if it has stateless behaviour). For commands that are server-mutating but where dry-run does not add any operational benefit or is not supported (such as `bulk apply`), you must explicitly register them with `DryRunDoesNotAddBenefit: true`. Failing to register a mutating command will cause the unit test `TestAllCommandsExhaustivelyClassifiedForDryRun` in `internal/cli/dryrun_test.go` to fail.
 
 ### Generating CLI Reference Documentation
 The CLI command reference documentation (`docs/site/reference/commands/index.md`) is generated from Cobra command definitions. When adding commands, modifying flags, or changing help descriptions, always regenerate the documentation using:
