@@ -21,10 +21,6 @@ brew install vriesdemichael/tap/bb
 winget install vriesdemichael.bb
 ```
 
-```bash
-yay -S bb-bin
-```
-
 Debian, Ubuntu, RHEL and Fedora packages, platform archives, and Sigstore verification
 instructions are on the installation page linked at the end.
 
