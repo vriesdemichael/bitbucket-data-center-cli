@@ -13,14 +13,25 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 
 A breaking major release is assembled on a long-lived integration branch named `next`, and is published only when `next` reaches `main`.
 1. Where work goes:
-   - Every change for the next major targets `next`. Every v3.x patch and non-breaking change
-     targets `main`.
-   - `next` is created from `main` when a major is opened, and rebases onto `main` for the rest of
-     its life (ADR-025, rebase-only). It is deleted after the major ships and recreated for the
-     one after.
-   - Whether a change is breaking is the question that decides its branch. A change that alters an
-     exit code, an error kind, a flag's meaning, the shape of parsed output, or that rejects an
-     invocation which previously succeeded, goes to `next` even when it is a bug fix. Several of
+   - Every change targets `next`, whatever version it would cut. Only `dependabot/*` and
+     `hotfix/*` may open a pull request into `main`, and only carrying no breaking change; the
+     release-flow job refuses everything else and says so. An earlier wording sent patches and
+     non-breaking work straight to `main`, which the gate has not permitted since it was
+     enforced.
+   - Grouping is the reason, and it is not only about majors. ADR-033 cuts a release from every
+     conventional commit on `main`, so a batch of ten small fixes landing there is ten releases.
+     The same batch on `next` is one. A branch that releases nothing is what makes any bundle
+     possible, patch and minor bundles included.
+   - `next` is created from `main` when a bundle is opened, and rebases onto `main` for the rest
+     of its life (ADR-025, rebase-only). It is deleted after the bundle ships and recreated for
+     the one after.
+   - Whether a change is breaking no longer decides its branch -- everything goes to `next` --
+     but it still decides the version the bundle cuts, so it must be marked. A change that alters
+     an exit code, an error kind, a flag's meaning, the shape of parsed output, or that rejects an
+     invocation which previously succeeded, is breaking even when it is a bug fix.
+   - Restoring behaviour that an accepted ADR or a shipped release note already specified is not
+     breaking. The promise was made to consumers at that release; the binary simply did not keep
+     it. Marking such a fix breaking cuts a major for finishing work already announced. Several of
      the Phase 0 fixes were exactly that: rejecting an out-of-range --expiry-days is a fix, and it
      fails a command line that used to work.
 
