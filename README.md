@@ -184,5 +184,8 @@ This README is an adopter-focused landing page.
 
 ## License and platform note
 
+`bb` is licensed under the [Apache License 2.0](LICENSE). The published Homebrew
+formula, Scoop manifest and `.deb`/`.rpm` packages all declare the same licence.
+
 Atlassian Bitbucket Data Center is proprietary software.
 Use of local Docker images and server instances must comply with Atlassian licensing terms.
