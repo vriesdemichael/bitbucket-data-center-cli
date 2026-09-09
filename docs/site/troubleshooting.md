@@ -108,7 +108,7 @@ are in [System Policy](reference/system-policy.md).
 Not policy — the binary itself. Installs from WinGet, Scoop and Homebrew are
 `_noupdate` builds, which have self-update compiled out so they cannot replace a
 file the package manager owns. Update through that package manager instead. See
-[Builds without the self-updater](installation-and-quickstart.md#builds-without-the-self-updater).
+[Builds With Self-Update Compiled Out](advanced/enterprise-hardening.md#builds-with-self-update-compiled-out).
 
 ## A command exits non-zero and I need to know why
 
