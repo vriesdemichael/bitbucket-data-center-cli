@@ -1,3 +1,8 @@
+---
+search:
+  boost: 0.3
+---
+
 # ADR 055: Documented release versions are validated and synchronized
 
 This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.

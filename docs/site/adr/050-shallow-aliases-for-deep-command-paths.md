@@ -1,3 +1,8 @@
+---
+search:
+  boost: 0.3
+---
+
 # ADR 050: Frequently-used commands get a shallow alias, and the deep path stays canonical
 
 This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.

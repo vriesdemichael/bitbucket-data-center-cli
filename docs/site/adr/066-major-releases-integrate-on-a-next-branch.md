@@ -1,3 +1,8 @@
+---
+search:
+  boost: 0.3
+---
+
 # ADR 066: Major releases integrate on a next branch, and only main releases
 
 This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.

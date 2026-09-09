@@ -122,9 +122,18 @@ func slugFromFileName(path string) string {
 	return name
 }
 
+// One value governs every generated ADR page, rather than front matter written
+// into 84 files that would drift apart.
+
 func renderRecordMarkdown(record decisionRecord) string {
 	var out strings.Builder
 
+	// Published and searchable, but weighted below the task pages. 407 of the
+	// 1036 entries in the search index are ADR pages, so an unweighted index
+	// answers "merge a pull request" with decision records instead of with
+	// bb pr merge. De-boosting keeps them findable by name and stops them
+	// outranking the page the reader was looking for.
+	out.WriteString("---\nsearch:\n  boost: 0.3\n---\n\n")
 	fmt.Fprintf(&out, "# ADR %03d: %s\n\n", record.Number, strings.TrimSpace(record.Title))
 	out.WriteString("This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.\n\n")
 

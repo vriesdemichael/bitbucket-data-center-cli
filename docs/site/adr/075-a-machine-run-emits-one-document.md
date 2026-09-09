@@ -1,3 +1,8 @@
+---
+search:
+  boost: 0.3
+---
+
 # ADR 075: A machine-mode command emits one document, and a failed run is named by its id
 
 This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.

@@ -1,3 +1,8 @@
+---
+search:
+  boost: 0.3
+---
+
 # ADR 043: Provision the live test instance with the Atlassian Plugin SDK
 
 This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
