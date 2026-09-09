@@ -633,9 +633,10 @@ func TestArtifactFilenameVersionMustMatchTheRelease(t *testing.T) {
 	}
 }
 
-// The markdown pages carry meta.bbVersion through the [[ bb_version_tag ]]
-// macro, but docs/site/llms.txt is copied verbatim by mkdocs, so its example
-// has to stay a literal. This is what keeps that literal honest.
+// Anything mkdocs builds carries meta.bbVersion through the [[ bb_version_tag ]]
+// macro. README.md and the two skills/*/SKILL.md files are not built by
+// anything, so their copies of the envelope stay literal, and this is what
+// holds them to the current release.
 func TestEnvelopeVersionMustMatchTheRelease(t *testing.T) {
 	t.Parallel()
 
