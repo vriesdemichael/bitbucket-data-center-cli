@@ -329,6 +329,7 @@ your behalf using the link above.`,
 
 	registerGlobalDryRunInterceptors(rootCmd, options)
 	enforceNoArgsDefaults(rootCmd)
+	sendFailingGroupHelpToStderr(rootCmd)
 
 	// Installed last, over the finished tree, because it wraps every runnable
 	// command it finds. Anything added after this point would not answer
@@ -604,4 +605,29 @@ func (options *rootOptions) merge(command config.Overrides) config.Overrides {
 	}
 
 	return merged
+}
+
+// sendFailingGroupHelpToStderr keeps stdout clean for the invocation that is
+// about to be reported as a failure.
+//
+// A group handed an unknown subcommand is an error (see UnknownSubcommandError),
+// but Cobra has already answered it by printing the group's help before anything
+// can intervene. On stdout that is the defect the exit code alone does not fix:
+// under --json a caller reading stdout gets two kilobytes of prose, and now the
+// failure envelope after it.
+//
+// The help itself is worth keeping -- it lists the subcommands that do exist,
+// which is what the reader needs -- so it moves to stderr rather than being
+// suppressed, and stdout carries only the envelope.
+func sendFailingGroupHelpToStderr(root *cobra.Command) {
+	defaultHelp := root.HelpFunc()
+	root.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		if !cmd.Runnable() && cmd.HasSubCommands() && len(cmd.Flags().Args()) > 0 {
+			restore := cmd.OutOrStdout()
+			cmd.SetOut(cmd.ErrOrStderr())
+			defer cmd.SetOut(restore)
+		}
+
+		defaultHelp(cmd, args)
+	})
 }
