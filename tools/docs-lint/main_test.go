@@ -215,9 +215,19 @@ func TestSplitShellSegmentsTrailingComments(t *testing.T) {
 		t.Fatalf("unexpected segments: %+v", segments)
 	}
 
+	// An unquoted #42 is a comment, not an argument. The splitter used to keep
+	// it, on the grounds that bb accepts '#42' as a selector -- but no shell
+	// applies that rule, so the lint validated `bb pr checkout #42` while the
+	// shell ran `bb pr checkout` with nothing. Matching the shell is what makes
+	// the missing argument visible.
 	prHashRef := splitShellSegments(`bb pr checkout #42`)
-	if len(prHashRef) != 1 || strings.TrimSpace(prHashRef[0]) != "bb pr checkout #42" {
-		t.Fatalf("unexpected segments for PR hash argument: %+v", prHashRef)
+	if len(prHashRef) != 1 || strings.TrimSpace(prHashRef[0]) != "bb pr checkout" {
+		t.Fatalf("unexpected segments for unquoted hash: %+v", prHashRef)
+	}
+
+	quotedHashRef := splitShellSegments(`bb pr checkout '#42'`)
+	if len(quotedHashRef) != 1 || strings.TrimSpace(quotedHashRef[0]) != "bb pr checkout '#42'" {
+		t.Fatalf("unexpected segments for quoted hash: %+v", quotedHashRef)
 	}
 
 	hashInRef := splitShellSegments(`bb commit compare --repo A/b HEAD#1`)
@@ -663,6 +673,67 @@ func TestEnvelopeVersionMustMatchTheRelease(t *testing.T) {
 			}
 			if stale != testCase.findings {
 				t.Fatalf("expected %d bbVersion finding(s), got %d from %+v", testCase.findings, stale, findings)
+			}
+		})
+	}
+}
+
+// bb accepts '#42' as a pull request selector, so a documented `bb pr checkout
+// #42` looks correct and is not: a shell reads the unquoted hash as the start
+// of a comment and runs the command with no argument at all. The splitter used
+// to carry an exception treating #<digit> as an argument, which meant the lint
+// validated a line no shell would run that way.
+func TestUnquotedHashSelectorIsReportedRatherThanAccepted(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		command  string
+		reported bool
+	}{
+		{name: "unquoted selector", command: "bb pr checkout #42", reported: true},
+		{name: "single-quoted selector", command: "bb pr checkout '#42'", reported: false},
+		{name: "double-quoted selector", command: "bb pr checkout \"#42\"", reported: false},
+		{name: "ordinary trailing comment", command: "bb repo list # list them", reported: false},
+		{name: "issue number inside a comment", command: "bb repo list # see #42", reported: false},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			findings, _ := lintMarkdown("doc.md", "```bash\n"+testCase.command+"\n```\n")
+
+			reported := false
+			for _, item := range findings {
+				if strings.Contains(item.Problem, "start of a comment") {
+					reported = true
+				}
+			}
+			if reported != testCase.reported {
+				t.Fatalf("expected reported=%v, got %v from %+v", testCase.reported, reported, findings)
+			}
+		})
+	}
+}
+
+func TestShellCommentStartMatchesShellWordRules(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name  string
+		line  string
+		index int
+	}{
+		{name: "no hash", line: "bb repo list", index: -1},
+		{name: "hash starting a word", line: "bb pr checkout #42", index: 15},
+		{name: "hash inside single quotes", line: "bb pr checkout '#42'", index: -1},
+		{name: "hash inside double quotes", line: "bb pr checkout \"#42\"", index: -1},
+		{name: "hash mid-word is not a comment", line: "bb repo view a#b", index: -1},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := shellCommentStart(testCase.line); got != testCase.index {
+				t.Fatalf("expected index %d, got %d", testCase.index, got)
 			}
 		})
 	}
