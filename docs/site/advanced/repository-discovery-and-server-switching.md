@@ -117,7 +117,7 @@ Expected human output:
 
 ```text
 Active server set to https://bitbucket.acme.corp
-Target Bitbucket: https://bitbucket.acme.corp (expected version 10.4.2, auth=token, source=stored)
+Target Bitbucket: https://bitbucket.acme.corp (expected version [[ bitbucket_version ]], auth=token, source=stored)
 ```
 
 Expected JSON output (example):

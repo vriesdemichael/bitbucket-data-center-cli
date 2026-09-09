@@ -14,6 +14,8 @@ was built for and no committed file can go stale.
 from __future__ import annotations
 
 import os
+import pathlib
+import re
 import subprocess
 
 # The release workflow already knows the version it is publishing and passes it
@@ -26,6 +28,33 @@ VERSION_ENV_VAR = "BB_DOCS_VERSION"
 # It is deliberately not a plausible version — a reader who sees it should know
 # the value is missing rather than trust a wrong one.
 FALLBACK_VERSION = "X.Y.Z"
+
+# The Bitbucket version the live suite provisions, read from the stack
+# definition rather than typed into the pages that mention it.
+#
+# ADR-042 keeps that pin in one place so an upgrade is one line with no copies
+# to drift. The documentation was a copy: three sample outputs still read
+# "expected version 9.4.16" long after CI had moved to 10.4.2, because nothing
+# connected the prose to the thing being tested. Reading it here means the next
+# upgrade updates the docs by updating the stack.
+HARNESS_DOCKERFILE = pathlib.Path(__file__).resolve().parent.parent / "docker" / "harness" / "Dockerfile"
+HARNESS_IMAGE_PATTERN = re.compile(r"^FROM\s+atlassian/bitbucket:(\S+)", re.MULTILINE)
+
+
+def resolve_bitbucket_version() -> str:
+    """Version of the Bitbucket image the live harness builds on.
+
+    Falls back to the same placeholder the release version uses: a reader who
+    sees it should know the value is missing rather than trust a wrong one.
+    """
+    try:
+        dockerfile = HARNESS_DOCKERFILE.read_text(encoding="utf-8")
+    except OSError:
+        return FALLBACK_VERSION
+
+    match = HARNESS_IMAGE_PATTERN.search(dockerfile)
+    return match.group(1) if match else FALLBACK_VERSION
+
 
 
 def _from_environment() -> str | None:
@@ -76,3 +105,4 @@ def define_env(env) -> None:
 
     env.variables["bb_version"] = bare
     env.variables["bb_version_tag"] = tag
+    env.variables["bitbucket_version"] = resolve_bitbucket_version()

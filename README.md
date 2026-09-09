@@ -3,8 +3,8 @@
 [![codecov](https://codecov.io/gh/vriesdemichael/bitbucket-data-center-cli/branch/main/graph/badge.svg)](https://codecov.io/gh/vriesdemichael/bitbucket-data-center-cli)
 
 `bb` is a production-focused CLI for automating Bitbucket Data Center workflows (targeting recent versions of Bitbucket for Data Center).
-It combines scriptable machine output, safe dry-run planning, and a live test suite that
-exercises every command against a real Bitbucket instance rather than a mock.
+It combines scriptable machine output, safe dry-run planning, and behavior validated
+against a real Bitbucket server.
 
 It is designed as the `gh`-style CLI experience for Bitbucket Data Center, including
 repository cloning and browser navigation ergonomics tailored to Bitbucket-hosted projects.
@@ -186,8 +186,7 @@ This README is an adopter-focused landing page.
 
 ## License and platform note
 
-`bb` is licensed under the [Apache License 2.0](LICENSE). The published Homebrew
-formula, Scoop manifest and `.deb`/`.rpm` packages all declare the same licence.
+`bb` is licensed under the [Apache License 2.0](LICENSE).
 
 Atlassian Bitbucket Data Center is proprietary software.
 Use of local Docker images and server instances must comply with Atlassian licensing terms.
