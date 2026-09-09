@@ -27,8 +27,18 @@ contains `token`, `password`, `secret`, `authorization`, `cookie`, `apikey`,
 parses as a URL has its embedded credentials and sensitive query parameters
 rewritten the same way.
 
-That is name-based, so it cannot catch a secret pasted into free text under an
-innocent-looking field. **Read a trace before you send it to anyone.**
+Two things that leaves in place, both worth checking before you send a trace
+anywhere:
+
+- **URLs keep everything but their credentials.** Only embedded userinfo and
+  sensitive query parameters are rewritten — the scheme, host, port and path
+  survive. A trace therefore contains your internal hostnames, and the project
+  keys and repository slugs in every request path.
+- **Redaction is by field name.** A secret pasted into free text under an
+  innocent-looking field is not caught, because nothing there looks like a
+  credential to a name match.
+
+**Read a trace before you send it to anyone.**
 
 To capture what the server answered rather than what `bb` did, set
 `BB_ERROR_HARVEST` to a file path and reproduce the problem once. It records the
@@ -51,15 +61,35 @@ set `BITBUCKET_URL` and a credential.
     else, because `bb auth login` rewrites the user one and any other hosts in
     it are lost.
 
-    The user file, and the system file an administrator may also have placed:
-
     | Platform | User | System |
     |---|---|---|
     | Linux, macOS | `~/.config/bb/config.yaml` | `/etc/bb/config.yaml` |
     | Windows | `%APPDATA%\bb\config.yaml` | `%ProgramData%\bb\config.yaml` |
 
     `BB_CONFIG_PATH` overrides the user one, so check that first if it is set.
-    Fix the syntax, or move the file aside and log in again.
+
+### Validating a configuration file
+
+Both files are described by a published JSON Schema, which catches a malformed
+file and a well-formed one using a key that does not exist:
+
+```bash
+uvx check-jsonschema --schemafile https://raw.githubusercontent.com/vriesdemichael/bitbucket-data-center-cli/main/docs/reference/schemas/config.schema.json ~/.config/bb/config.yaml
+```
+
+Better, add the reference to the file itself and let your editor validate it as
+you type:
+
+```yaml
+$schema: https://raw.githubusercontent.com/vriesdemichael/bitbucket-data-center-cli/main/docs/reference/schemas/config.schema.json
+default_host: bitbucket.example.com
+policies:
+  require_keyring: true
+```
+
+`$schema` is an accepted key; `bb` ignores it. This is worth doing on the system
+policy file in particular, where a typo silently drops a control rather than
+reporting one — see [System Policy](reference/system-policy.md).
 
 ## Git asks for a password on push or pull
 
