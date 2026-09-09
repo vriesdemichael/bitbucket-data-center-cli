@@ -302,10 +302,14 @@ var (
 	updateYamlVersionRe   = regexp.MustCompile(`(?m)^(\s*bb_version:\s*["']?)(v?)[0-9]+\.[0-9]+\.[0-9]+(["']?)$`)
 	updateProseVersionRe  = regexp.MustCompile(`(?i)\b((?:target|release)\s+version\s*\((?:e\.g\.|example:)\s*[\x60"]?)(v?)[0-9]+\.[0-9]+\.[0-9]+([\x60"]?\))`)
 
-	// bb's own version inside a machine-output example. The markdown pages use
-	// the [[ bb_version_tag ]] macro, but docs/site/llms.txt is a static file
-	// mkdocs copies verbatim, so a macro there would publish its own source to
-	// the machine audience. The literal stays and this watches it instead.
+	// bb's own version inside a machine-output example.
+	//
+	// Everything mkdocs builds carries this through the [[ bb_version_tag ]]
+	// macro, static files included since docs/main.py grew an on_post_build
+	// hook. This covers what mkdocs never sees: README.md and the two
+	// skills/*/SKILL.md files show the same envelope and are read straight from
+	// the repository, so nothing renders a macro for them and the literal is
+	// all they can carry.
 	envelopeVersionRe       = regexp.MustCompile(`"bbVersion":\s*"(v?[0-9]+\.[0-9]+\.[0-9]+)"`)
 	updateEnvelopeVersionRe = regexp.MustCompile(`("bbVersion":\s*")(v?)[0-9]+\.[0-9]+\.[0-9]+(")`)
 )
