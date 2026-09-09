@@ -106,3 +106,75 @@ def define_env(env) -> None:
     env.variables["bb_version"] = bare
     env.variables["bb_version_tag"] = tag
     env.variables["bitbucket_version"] = resolve_bitbucket_version()
+
+
+# Files mkdocs copies verbatim instead of running through the macro engine.
+#
+# Only pages are rendered, so a placeholder in a static file is published as its
+# own source. llms.txt is the worst place for that to happen: its audience is
+# machines, which will not recognise "[[ bb_version_tag ]]" as a mistake the way
+# a human skimming a page would.
+STATIC_MACRO_FILES = ("llms.txt",)
+
+# The same delimiters mkdocs-macros uses, chosen in ADR-057 so documented Jinja
+# reaches the reader unevaluated. Substitution here is a plain name lookup
+# rather than a Jinja render: a static file should interpolate variables, not
+# execute template logic.
+PLACEHOLDER_PATTERN = re.compile(r"\[\[\s*([a-z_][a-z0-9_]*)\s*\]\]")
+
+# Rendered output that is ours rather than the theme's. The bundled search and
+# lunr scripts contain "[[" of their own, so the leftover check would trip on
+# them forever.
+GUARDED_SUFFIXES = frozenset({".html", ".txt", ".json", ".xml", ".md"})
+
+
+def _render_placeholders(text: str, variables: dict, origin: str) -> str:
+    def replace(match: re.Match) -> str:
+        name = match.group(1)
+        if name not in variables:
+            raise ValueError(f"{origin} uses [[ {name} ]], which is not a defined macro variable")
+        return str(variables[name])
+
+    return PLACEHOLDER_PATTERN.sub(replace, text)
+
+
+def on_post_build(env) -> None:
+    """Interpolate variables into the files mkdocs copied without rendering.
+
+    Then confirm no placeholder survived anywhere in the output. The check is
+    the point: substituting is easy to get right once and easy to forget when
+    the next static file is added, and the failure is silent -- a published
+    page that shows its own template source.
+    """
+    site_dir = pathlib.Path(env.conf["site_dir"])
+
+    for name in STATIC_MACRO_FILES:
+        path = site_dir / name
+        if not path.exists():
+            continue
+        original = path.read_text(encoding="utf-8")
+        rendered = _render_placeholders(original, env.variables, name)
+        if rendered != original:
+            path.write_text(rendered, encoding="utf-8")
+
+    unrendered = []
+    for path in sorted(site_dir.rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in GUARDED_SUFFIXES:
+            continue
+        relative = path.relative_to(site_dir)
+        if relative.parts and relative.parts[0] == "assets":
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for match in PLACEHOLDER_PATTERN.finditer(text):
+            unrendered.append(f"{relative}: {match.group(0)}")
+
+    if unrendered:
+        joined = "\n  ".join(unrendered)
+        raise ValueError(
+            "macro placeholders reached the built site unrendered:\n  "
+            + joined
+            + "\nAdd the file to STATIC_MACRO_FILES in docs/main.py if mkdocs copies it verbatim."
+        )
