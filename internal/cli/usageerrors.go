@@ -2,8 +2,10 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
@@ -86,4 +88,46 @@ func isUsageError(err error) bool {
 	}
 
 	return false
+}
+
+// UnknownSubcommandError reports the invocation Cobra answers with help and a
+// zero exit: a command group handed something that is not one of its
+// subcommands.
+//
+// Cobra returns flag.ErrHelp for any command with no RunE before it validates
+// arguments, and ExecuteC turns that into "print help, return nil". So `bb pr
+// bogus` matched no subcommand, fell through to the group's help and exited 0 --
+// in 64 of 65 groups, and under --json too, where a caller reading stdout got
+// two kilobytes of prose instead of an envelope. The v4 release notes promised
+// exit 2 for invalid arguments; this is the part that never shipped.
+//
+// Setting Args on the group does not help, because the ErrHelp bail happens
+// first. Giving every group a RunE would work and would make 66 groups Runnable,
+// which is the predicate the dry-run classification, the result declarations and
+// command reach all use to decide what must be registered.
+//
+// So the check runs after Execute instead. Cobra parses the group's flags before
+// it bails, so Flags().Args() holds exactly the positional arguments it could not
+// consume -- which is why this is accurate where inspecting os.Args would not be:
+// it cannot mistake a flag's value for a subcommand.
+func UnknownSubcommandError(root *cobra.Command, args []string) error {
+	if root == nil {
+		return nil
+	}
+
+	cmd, _, err := root.Find(args)
+	if err != nil || cmd == nil || cmd.Runnable() || !cmd.HasSubCommands() {
+		return nil
+	}
+
+	unconsumed := cmd.Flags().Args()
+	if len(unconsumed) == 0 {
+		return nil
+	}
+
+	return apperrors.New(
+		apperrors.KindValidation,
+		fmt.Sprintf("unknown command %q for %q", unconsumed[0], cmd.CommandPath()),
+		nil,
+	)
 }
