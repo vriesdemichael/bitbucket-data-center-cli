@@ -25,12 +25,14 @@ decision: >
      - Whether a change is breaking no longer decides its branch -- everything goes to `next` --
        but it still decides the version the bundle cuts, so it must be marked. A change that alters
        an exit code, an error kind, a flag's meaning, the shape of parsed output, or that rejects an
-       invocation which previously succeeded, is breaking even when it is a bug fix.
+       invocation which previously succeeded, is breaking even when it is a bug fix. Several of the
+       Phase 0 fixes were exactly that: rejecting an out-of-range --expiry-days is a fix, and it
+       fails a command line that used to work.
      - Restoring behaviour that an accepted ADR or a shipped release note already specified is not
        breaking. The promise was made to consumers at that release; the binary simply did not keep
-       it. Marking such a fix breaking cuts a major for finishing work already announced. Several of
-       the Phase 0 fixes were exactly that: rejecting an out-of-range --expiry-days is a fix, and it
-       fails a command line that used to work.
+       it. Marking such a fix breaking cuts a major for finishing work already announced. #570 and
+       #569 are both that shape: ADR-073 requires --yes on destructive commands and the v4 notes
+       promise exit 2 for invalid arguments, and the binary kept neither.
 
   2. Nothing releases from `next`:
      - The release workflow triggers on `push` to `main` only. `next` accumulates conventional
