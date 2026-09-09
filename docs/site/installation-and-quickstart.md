@@ -1,3 +1,8 @@
+---
+search:
+  boost: 1.5
+---
+
 # Installation and Quickstart
 
 ## Which Bitbucket versions work

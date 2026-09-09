@@ -1,3 +1,8 @@
+---
+search:
+  boost: 2.0
+---
+
 # Basic Usage
 
 ## What you can manage
