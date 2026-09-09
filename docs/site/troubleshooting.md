@@ -1,3 +1,8 @@
+---
+search:
+  boost: 2.0
+---
+
 # Troubleshooting
 
 Symptoms a person hits while using `bb`, and what to check first. Fleet-wide
