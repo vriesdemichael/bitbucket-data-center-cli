@@ -153,7 +153,7 @@ Pass `--json` whenever another system parses the output. Every command that supp
 emits a single bb.machine envelope on stdout:
 
 ```json
-{"data": {}, "meta": {"bbVersion": "v4.0.0"}}
+{"data": {}, "meta": {"bbVersion": "[[ bb_version_tag ]]"}}
 ```
 
 There is no envelope version field. The release version is the compatibility
