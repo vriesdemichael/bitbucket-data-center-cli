@@ -45,7 +45,15 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 	output := outwriter.New(stdout)
 	rootCmd.SetOut(output)
 
-	if err := cli.ClassifyUsageError(rootCmd.Execute()); err != nil {
+	// Execute answers a group given an unknown subcommand with help and no error,
+	// so the result is inspected rather than trusted. Checked here rather than
+	// inside the tree because Cobra has to have parsed the group's flags first.
+	executeErr := rootCmd.Execute()
+	if executeErr == nil {
+		executeErr = cli.UnknownSubcommandError(rootCmd, args)
+	}
+
+	if err := cli.ClassifyUsageError(executeErr); err != nil {
 		emitCommandFailureDiagnostic(err, stderr)
 
 		// Under --json, stdout is a machine contract, and a failure that leaves
