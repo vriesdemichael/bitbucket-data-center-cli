@@ -75,6 +75,12 @@ func init() {
 	result.Declare("pr build status", result.For[BuildStatuses](map[string][]string{
 		"statuses.state": {"SUCCESSFUL", "FAILED", "INPROGRESS", "CANCELLED", "UNKNOWN"},
 	}))
+	// The gh spelling of the same command (ADR-050), so it emits the same
+	// payload and declares the same type. Two registrations of one constructor
+	// are two commands to every registry that walks the tree.
+	result.Declare("pr checks", result.For[BuildStatuses](map[string][]string{
+		"statuses.state": {"SUCCESSFUL", "FAILED", "INPROGRESS", "CANCELLED", "UNKNOWN"},
+	}))
 
 	result.Declare("pr auto-merge get", result.For[AutoMergeState](nil))
 	result.Declare("pr auto-merge enable", result.For[AutoMergeState](nil))

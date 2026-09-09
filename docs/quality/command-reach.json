@@ -1,8 +1,8 @@
 {
   "version": 2,
   "summary": {
-    "runnable_commands": 233,
-    "covered_commands": 233,
+    "runnable_commands": 235,
+    "covered_commands": 235,
     "covered_percent": 100,
     "masked_commands": 0,
     "dry_run_only_commands": 0,
@@ -89,6 +89,7 @@
     "pr auto-merge get",
     "pr build status",
     "pr checkout",
+    "pr checks",
     "pr comment add",
     "pr comment apply-suggestion",
     "pr comment get",
@@ -116,6 +117,7 @@
     "pr review get",
     "pr review reviewer add",
     "pr review reviewer remove",
+    "pr review set",
     "pr review unapprove",
     "pr status",
     "pr unwatch",
