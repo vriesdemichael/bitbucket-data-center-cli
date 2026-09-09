@@ -72,6 +72,7 @@ nav:
   - Installation and Quickstart: installation-and-quickstart.md
   - Developer Cheatsheet: cheatsheet.md
   - Basic Usage: basic-usage.md
+  - Troubleshooting: troubleshooting.md
   - Command Reference:
       - Overview: reference/overview.md
       - All Commands: reference/commands/index.md
