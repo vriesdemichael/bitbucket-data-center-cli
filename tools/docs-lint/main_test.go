@@ -600,7 +600,7 @@ vars:
 
 // The class the lint could not see: a version embedded in a release artifact's
 // filename is neither a bb invocation nor one of ADR-055's version declaration
-// forms, so SECURITY.md carried a v2.0.2 verify command across four releases.
+// forms, so SECURITY.md carried a v2.0.2 verify command all the way to v4.0.0.
 func TestArtifactFilenameVersionMustMatchTheRelease(t *testing.T) {
 	t.Parallel()
 
