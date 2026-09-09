@@ -209,7 +209,7 @@ Example machine output (`bb --json auth status`):
   "data": {
     "ok": true,
     "bitbucketUrl": "https://bitbucket.acme.corp",
-    "bitbucketVersionTarget": "10.4.2",
+    "bitbucketVersionTarget": "[[ bitbucket_version ]]",
     "authMode": "token",
     "authSource": "stored",
     "credentialStorage": "keyring",
@@ -261,5 +261,5 @@ bb --dry-run project create DEMO --name "Demo Project"
 Example human output (`bb auth status`):
 
 ```text
-Target Bitbucket: https://bitbucket.acme.corp (expected version 10.4.2, auth=token, source=stored)
+Target Bitbucket: https://bitbucket.acme.corp (expected version [[ bitbucket_version ]], auth=token, source=stored)
 ```
