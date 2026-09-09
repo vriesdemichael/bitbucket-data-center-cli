@@ -7,12 +7,12 @@ server the CLI ships.
 
 `bb ai mcp serve` speaks the Model Context Protocol over stdio, so an IDE or
 agent framework calls typed tools instead of parsing command output. It
-registers 24 tools; 20 are available to any client that connects, and 4 are
+exposes most of its tools to any client that connects. The ones that merge a
+pull request, or feed the checks deciding whether a merge is allowed, are
 withheld unless the server is started with `--yolo`.
 
-[**MCP Tools**](reference/mcp-tools.md) lists all of them, which are read-only,
-and which need `--yolo`. That page is generated from the server's own registry,
-so it cannot fall behind the tools that actually exist.
+[**MCP Tools**](reference/mcp-tools.md) is the reference: every tool, which of
+them write, and which need `--yolo`.
 
 ```bash
 bb ai mcp serve
@@ -37,7 +37,7 @@ Three flags decide what the server can reach:
 
 | Flag | Effect |
 |---|---|
-| `--yolo` (alias `--allow-writes`) | Also expose the four withheld tools |
+| `--yolo` (alias `--allow-writes`) | Also expose the withheld tools |
 | `--project`, `--repo` | Confine the server to one project or repository; calls aimed elsewhere are refused |
 | `--audit-file` | Append a JSON Lines record per tool call, to a path or to `stderr` |
 
@@ -55,9 +55,12 @@ has the envelope, the error kinds and the exit codes.
 
 ## llms.txt
 
-`bb` publishes an `llms.txt` document for agents that need a product-level briefing before they start calling anything.
+[`llms.txt`](llms.txt) is a setup guide written for an agent to work through in
+order: install, authenticate, then enable either the skill or the MCP server. It
+ends with the machine contract and links onward.
 
-Use it when you want a compact description of what the CLI is for, what it does well, and where the deeper source-of-truth docs live.
+Point an agent at it when the task is getting `bb` working. The pages here are
+what it consults afterwards.
 
 - Published `llms.txt`: [llms.txt](llms.txt)
 - Versioned docs home: [Home](index.md)
