@@ -13,6 +13,12 @@ server.
 bb --dry-run project create DEMO --name "Demo Project"
 ```
 
+```text
+Dry-run (stateful, capability=full)
+- intent=project.create action=create predictedAction=create
+  note=project will be created
+```
+
 The value of a preview depends entirely on how it was reached, and `bb` tells
 you which. That is the part worth reading before you rely on one.
 
@@ -50,6 +56,42 @@ Under `--json` each item reports:
 | `tier`, `confidence` | how the answer was reached, and what it is worth |
 | `requiredState` | conditions the operation depends on |
 | `blockingReasons` | why it would not succeed, when it would not |
+
+Under `--json` the same preview arrives as an envelope:
+
+<!-- docs-lint: envelope-shape -->
+```json
+{
+  "data": {
+    "dryRun": true,
+    "planningMode": "stateful",
+    "capability": "full",
+    "items": [
+      {
+        "intent": "project.create",
+        "target": { "project": "DEMO", "name": "Demo Project", "description": "" },
+        "action": "create",
+        "predictedAction": "create",
+        "supported": true,
+        "reason": "project will be created",
+        "tier": "preconditions-checked",
+        "confidence": "full",
+        "requiredState": ["project get"]
+      }
+    ],
+    "summary": {
+      "total": 1, "supported": 1, "unsupported": 0, "noOp": 0,
+      "create": 1, "update": 0, "delete": 0, "unknown": 0
+    }
+  },
+  "meta": { "bbVersion": "[[ bb_version_tag ]]" }
+}
+```
+
+`planningMode` and `capability` describe the run as a whole; `tier` and
+`confidence` are per item, because one command can predict several things with
+different certainty. `summary` counts what would happen, which is the part a
+pipeline gates on.
 
 ```bash
 bb --dry-run --json pr merge 42 --repo PROJ/repo
