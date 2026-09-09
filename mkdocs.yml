@@ -79,6 +79,7 @@ nav:
       - JSON Schemas: reference/schemas.md
       - Environment Variables: reference/environment.md
       - System Policy: reference/system-policy.md
+      - MCP Tools: reference/mcp-tools.md
   - Advanced Topics:
       - Overview: advanced/index.md
       - Enterprise Hardening: advanced/enterprise-hardening.md
