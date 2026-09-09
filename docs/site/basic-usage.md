@@ -74,7 +74,7 @@ bb pr diff https://bitbucket.acme.corp/projects/PRJ/repos/demo/pull-requests/42
 
 # Check out via source branch name or hash
 bb pr checkout feature/payment-gateway
-bb pr checkout #42
+bb pr checkout '#42'
 ```
 
 ## `bb pr status`
@@ -100,7 +100,7 @@ run it, review it, and push fixes back.
 
 ```bash
 bb pr checkout 42
-bb pr checkout #42
+bb pr checkout '#42'
 bb pr checkout feature/login
 bb pr checkout https://bitbucket.acme.corp/projects/PRJ/repos/demo/pull-requests/42
 bb pr checkout 42 --branch review-42
@@ -250,7 +250,7 @@ bb repo clone TEST/my-repo
 bb repo create --project TEST --name my-service
 bb repo fork --repo TEST/my-service --name my-service-fork
 bb pr get https://bitbucket.acme.corp/projects/TEST/repos/my-service/pull-requests/42
-bb pr checkout #42
+bb pr checkout '#42'
 bb pr diff feature/payments
 bb browse --repo TEST/my-repo src/main.go
 bb search repos demo --limit 20

@@ -427,6 +427,22 @@ func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) 
 			}
 		}
 
+		// bb accepts '#42' as a pull request selector, but a shell reads an
+		// unquoted #42 as the start of a comment, so the documented command
+		// runs without it. The invocation check below sees the same thing the
+		// shell does and reports a missing argument; this says why it is
+		// missing, which is not obvious when the argument is right there.
+		if inFence && strings.HasPrefix(trimmed, "bb ") {
+			if at := shellCommentStart(trimmed); at >= 0 && at+1 < len(trimmed) && trimmed[at+1] >= '0' && trimmed[at+1] <= '9' {
+				findings = append(findings, finding{
+					File:    file,
+					Line:    lineNum,
+					Command: trimmed,
+					Problem: fmt.Sprintf("%q is read by a shell as the start of a comment, so this command runs without it; quote it as '%s'", trimmed[at:], trimmed[at:]),
+				})
+			}
+		}
+
 		if !inFence {
 			if isDirectiveComment(trimmed, expectInvalidDirective) {
 				pendingInvalid = true
@@ -1200,4 +1216,27 @@ func splitCSV(raw string) []string {
 	}
 
 	return values
+}
+
+// shellCommentStart returns the index of the first hash a shell would read as
+// starting a comment, or -1. A hash only opens a comment at the start of a word,
+// so quoted text and mid-word hashes are skipped the way a shell skips them.
+func shellCommentStart(line string) int {
+	var quote rune
+	previousWasSpace := true
+	for index, char := range line {
+		switch {
+		case quote != 0:
+			if char == quote {
+				quote = 0
+			}
+		case char == '\'' || char == '"':
+			quote = char
+		case char == '#' && previousWasSpace:
+			return index
+		}
+		previousWasSpace = char == ' ' || char == '	'
+	}
+
+	return -1
 }

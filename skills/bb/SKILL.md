@@ -76,7 +76,7 @@ Commands that operate on pull requests (`bb pr get`, `bb pr checkout`, `bb pr di
    Pass `42` or `#42` (infers repository from local git remotes, or explicit `--repo PROJ/repo`):
    ```bash
    bb pr checkout 42
-   bb pr checkout #42
+   bb pr checkout '#42'
    ```
 
 `bb repo clone` also directly accepts full Bitbucket repository browser URLs:
