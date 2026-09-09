@@ -1,3 +1,8 @@
+---
+search:
+  boost: 2.0
+---
+
 # Developer Cheatsheet & Cookbook
 
 A scannable reference and recipe collection for developers using `bb` with Bitbucket Server and Bitbucket Data Center.
