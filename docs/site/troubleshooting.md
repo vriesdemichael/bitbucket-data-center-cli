@@ -70,40 +70,15 @@ set `BITBUCKET_URL` and a credential.
 
 ### Validating a configuration file
 
-Both files are described by a published JSON Schema, which catches a malformed
-file and a well-formed one using a key that does not exist — a typo in a policy
-key silently drops the control rather than reporting anything.
+Both files are described by a JSON Schema, published at
+[`config.schema.json`](reference/schemas/config.schema.json). It covers every key
+`bb` reads, so a validator can check a file for a malformed structure or a key
+that does not exist — the case a YAML parser cannot see, because a misspelled
+policy key is valid YAML and is silently ignored.
 
-**Needing nothing installed:** add the reference to the top of the file and let
-your editor check it as you type.
-
-```yaml
-$schema: https://raw.githubusercontent.com/vriesdemichael/bitbucket-data-center-cli/main/docs/reference/schemas/config.schema.json
-default_host: bitbucket.example.com
-policies:
-  require_keyring: true
-```
-
-`$schema` is an accepted key and `bb` ignores it. VS Code with the YAML
-extension, and the JetBrains IDEs, both act on it with no further setup.
-
-**From a shell**, if the machine has `uv`:
-
-```bash
-uvx check-jsonschema --schemafile https://raw.githubusercontent.com/vriesdemichael/bitbucket-data-center-cli/main/docs/reference/schemas/config.schema.json ~/.config/bb/config.yaml
-```
-
-Any JSON Schema validator works; that one reads YAML directly, so the file needs
-no conversion first.
-
-!!! danger "Do not paste the file into an online validator"
-
-    A `bb` configuration can contain an `insecure_secrets` block, which holds
-    tokens and passwords in plain text, alongside your internal hostnames.
-    Validate it on the machine it lives on.
-
-If none of that is available, the file is YAML, so any YAML parser you already
-have will find a syntax error — it just will not find a misspelled key.
+A configuration file may contain an `insecure_secrets` block holding tokens and
+passwords in plain text, so treat it as a credential file when deciding where to
+check it.
 
 ## Git asks for a password on push or pull
 
