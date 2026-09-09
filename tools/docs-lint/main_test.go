@@ -632,3 +632,37 @@ func TestArtifactFilenameVersionMustMatchTheRelease(t *testing.T) {
 		})
 	}
 }
+
+// The markdown pages carry meta.bbVersion through the [[ bb_version_tag ]]
+// macro, but docs/site/llms.txt is copied verbatim by mkdocs, so its example
+// has to stay a literal. This is what keeps that literal honest.
+func TestEnvelopeVersionMustMatchTheRelease(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		line     string
+		findings int
+	}{
+		{name: "stale version in prose", line: "Emits `{\"meta\": {\"bbVersion\": \"v3.1.0\"}}` today.", findings: 1},
+		{name: "stale version inside a fence", line: "```json\n{\"data\": {}, \"meta\": {\"bbVersion\": \"v2.0.0\"}}\n```", findings: 1},
+		{name: "current version passes", line: "Emits `{\"bbVersion\": \"v4.0.0\"}`.", findings: 0},
+		{name: "bare version passes", line: "Emits `{\"bbVersion\": \"4.0.0\"}`.", findings: 0},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			findings, _ := lintMarkdownWithVersion("doc.md", testCase.line+"\n", "4.0.0")
+
+			stale := 0
+			for _, item := range findings {
+				if strings.Contains(item.Problem, "meta.bbVersion") {
+					stale++
+				}
+			}
+			if stale != testCase.findings {
+				t.Fatalf("expected %d bbVersion finding(s), got %d from %+v", testCase.findings, stale, findings)
+			}
+		})
+	}
+}

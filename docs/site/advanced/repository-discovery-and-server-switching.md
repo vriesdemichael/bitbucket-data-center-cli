@@ -129,7 +129,7 @@ Expected JSON output (example):
     "defaultHost": "https://bitbucket.acme.corp"
   },
   "meta": {
-    "bbVersion": "v4.0.0"
+    "bbVersion": "[[ bb_version_tag ]]"
   }
 }
 ```

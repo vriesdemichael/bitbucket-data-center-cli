@@ -301,6 +301,13 @@ var (
 	updateDockerVersionRe = regexp.MustCompile(`(?m)^(ARG\s+BB_VERSION=)(v?)[0-9]+\.[0-9]+\.[0-9]+$`)
 	updateYamlVersionRe   = regexp.MustCompile(`(?m)^(\s*bb_version:\s*["']?)(v?)[0-9]+\.[0-9]+\.[0-9]+(["']?)$`)
 	updateProseVersionRe  = regexp.MustCompile(`(?i)\b((?:target|release)\s+version\s*\((?:e\.g\.|example:)\s*[\x60"]?)(v?)[0-9]+\.[0-9]+\.[0-9]+([\x60"]?\))`)
+
+	// bb's own version inside a machine-output example. The markdown pages use
+	// the [[ bb_version_tag ]] macro, but docs/site/llms.txt is a static file
+	// mkdocs copies verbatim, so a macro there would publish its own source to
+	// the machine audience. The literal stays and this watches it instead.
+	envelopeVersionRe       = regexp.MustCompile(`"bbVersion":\s*"(v?[0-9]+\.[0-9]+\.[0-9]+)"`)
+	updateEnvelopeVersionRe = regexp.MustCompile(`("bbVersion":\s*")(v?)[0-9]+\.[0-9]+\.[0-9]+(")`)
 )
 
 var (
@@ -398,6 +405,20 @@ func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) 
 					Line:    lineNum,
 					Command: strings.TrimSpace(line),
 					Problem: fmt.Sprintf("release artifact %q names version %q; must match current release version %q, or use the version-less alias that /releases/latest/download/ serves", m[0], m[1], targetVer),
+				})
+			}
+		}
+
+		if targetVer != "" {
+			for _, m := range envelopeVersionRe.FindAllStringSubmatch(line, -1) {
+				if strings.TrimPrefix(m[1], "v") == targetVer {
+					continue
+				}
+				findings = append(findings, finding{
+					File:    file,
+					Line:    lineNum,
+					Command: strings.TrimSpace(line),
+					Problem: fmt.Sprintf("meta.bbVersion example says %q; must match current release version %q", m[1], targetVer),
 				})
 			}
 		}
@@ -719,6 +740,17 @@ func updateContentVersions(content, targetVersion string) string {
 
 	content = updateProseVersionRe.ReplaceAllStringFunc(content, func(m string) string {
 		sub := updateProseVersionRe.FindStringSubmatch(m)
+		prefix := sub[1]
+		hasV := sub[2] == "v"
+		suffix := sub[3]
+		if hasV {
+			return prefix + "v" + targetVersion + suffix
+		}
+		return prefix + targetVersion + suffix
+	})
+
+	content = updateEnvelopeVersionRe.ReplaceAllStringFunc(content, func(m string) string {
+		sub := updateEnvelopeVersionRe.FindStringSubmatch(m)
 		prefix := sub[1]
 		hasV := sub[2] == "v"
 		suffix := sub[3]
