@@ -190,7 +190,7 @@ See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and co
 {
   "data": {},
   "meta": {
-    "bbVersion": "v4.0.0"
+    "bbVersion": "[[ bb_version_tag ]]"
   }
 }
 ```
@@ -219,7 +219,7 @@ Example machine output (`bb --json auth status`):
     ]
   },
   "meta": {
-    "bbVersion": "v4.0.0"
+    "bbVersion": "[[ bb_version_tag ]]"
   }
 }
 ```
