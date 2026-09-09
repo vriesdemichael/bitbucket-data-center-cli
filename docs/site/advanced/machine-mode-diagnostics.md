@@ -11,7 +11,7 @@ Envelope shape:
 {
   "data": {},
   "meta": {
-    "bbVersion": "v4.0.0"
+    "bbVersion": "[[ bb_version_tag ]]"
   }
 }
 ```
@@ -37,7 +37,7 @@ When a command fails while `--json` is set, stdout carries an `error` object whe
     "exitCode": 2
   },
   "meta": {
-    "bbVersion": "v4.0.0"
+    "bbVersion": "[[ bb_version_tag ]]"
   }
 }
 ```
@@ -168,7 +168,7 @@ bb --json repo list --nonexistent-flag
     "message": "unknown flag: --nonexistent-flag",
     "exitCode": 2
   },
-  "meta": { "bbVersion": "v4.0.0" }
+  "meta": { "bbVersion": "[[ bb_version_tag ]]" }
 }
 ```
 
