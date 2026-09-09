@@ -131,9 +131,12 @@ not a person who can answer a question.
 | `BB_LOG_LEVEL` | `error` | Diagnostic verbosity: `error`, `warn`, `info`, `debug`. Diagnostics go to stderr, so they never corrupt `--json` output on stdout. Equivalent flag: `--log-level`. |
 | `BB_LOG_FORMAT` | `text` | `text` or `jsonl`. Equivalent flag: `--log-format`. |
 | `NO_COLOR` | unset | Any value disables coloured output, following [no-color.org](https://no-color.org). Equivalent flag: `--no-color`. |
+| `BB_ERROR_HARVEST` | unset | Path to a file recording every response Bitbucket refuses, with the request that provoked it. Useful when a failure is hard to describe: set it, reproduce the problem once, and attach the file. Unset, nothing is opened. |
 
 For a report of what went wrong, `--log-level debug --log-format jsonl` gives a
-structured trace worth attaching to an issue.
+structured trace worth attaching to an issue. `BB_ERROR_HARVEST` is the narrower
+companion: the trace shows what `bb` did, the harvest file shows exactly what the
+server sent back.
 
 ## Bulk operations
 
@@ -149,8 +152,6 @@ supported interface and may change without notice.
 | Variable | Effect |
 |---|---|
 | `BB_BLOCK_EXTERNAL_NETWORK` | `1` makes any HTTP request to a non-loopback host fail immediately. Used so unit tests cannot reach the internet. |
-| `BB_ERROR_HARVEST` | Names a file every non-2xx response is recorded to, so live tests can capture what the server actually returns. Unset in every real run, and nothing is opened. |
-| `BB_SYSTEM_CONFIG_PATH` | Overrides where system policy is read from. **Honoured only under `go test`** — the shipped binary ignores it, so a user's shell cannot replace the policy tier and with it `require_keyring`, `allowed_hosts` and `disable_update`. |
 
 ## See also
 
