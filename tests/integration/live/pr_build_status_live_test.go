@@ -63,6 +63,19 @@ func TestLivePullRequestBuildStatuses(t *testing.T) {
 		}
 	})
 
+	t.Run("bb pr checks is the same command under the gh spelling", func(t *testing.T) {
+		// ADR-050 asks an alias to prove it produces what the canonical path
+		// produces. Asserted here rather than in a unit test because the two
+		// are separate registrations built from one constructor: they could
+		// diverge in what they send, and only a real call sees that.
+		canonical := mustLiveCLI(t, "pr", "build", "status", prID, "--all")
+		alias := mustLiveCLI(t, "pr", "checks", prID, "--all")
+
+		if alias != canonical {
+			t.Errorf("pr checks and pr build status disagree.\nchecks:\n%s\nbuild status:\n%s", alias, canonical)
+		}
+	})
+
 	t.Run("--limit truncates the result", func(t *testing.T) {
 		// The flag has to mean "give me at most this many", not "fetch this
 		// many per page and return everything".
