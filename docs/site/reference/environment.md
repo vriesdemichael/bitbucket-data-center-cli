@@ -118,7 +118,7 @@ not a person who can answer a question.
     environment. A variable that could redirect the trust root would let
     anything able to set a variable in your shell approve its own update.
     Configure these through system policy instead — see
-    [Enterprise Hardening](../advanced/enterprise-hardening.md).
+    [System Policy](system-policy.md).
 
     `BB_DISABLE_UPDATE` and `BB_UPDATE_BASE_URL` are honoured because neither
     weakens verification: the first only refuses to update, and an artifact from
@@ -155,6 +155,8 @@ supported interface and may change without notice.
 
 ## See also
 
+- [System Policy](system-policy.md) — the machine-wide settings an administrator
+  sets, and which of the variables above they override
 - [Config and auth precedence](../basic-usage.md#config-and-auth-precedence)
 - [Networks, Proxies and TLS](../advanced/networks-proxies-and-tls.md)
 - [Repository Discovery and Server Switching](../advanced/repository-discovery-and-server-switching.md)
