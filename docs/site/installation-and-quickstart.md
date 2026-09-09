@@ -41,32 +41,6 @@ sudo rpm -i bb_linux_amd64.rpm
 To install a specific release rather than the newest, use the versioned name and
 a release tag: `.../releases/download/[[ bb_version_tag ]]/bb_[[ bb_version ]]_linux_amd64.deb`.
 
-## Builds without the self-updater
-
-Every release ships each platform twice. The `_noupdate` archives are built with
-self-update compiled out: `bb update` in one of them exits `3`
-(`authorization`) with
-
-```text
-self-update is disabled in this build; update bb using your system package manager
-```
-
-Everything else behaves identically.
-
-**If you installed through WinGet, Scoop or Homebrew, this is the build you
-have.** All three package a `_noupdate` archive on purpose: a binary that
-replaces itself behind the package manager's back leaves the manager's records
-describing a version that is no longer on disk.
-
-Take a `_noupdate` archive deliberately when you deploy `bb` through any tool
-that owns the installed file — a configuration manager, a container image, an
-internal package repository — and want `bb update` to say so rather than
-succeed. Take the plain archive when you want `bb` to update itself.
-
-To disable updating for a machine that has the ordinary build, use the
-`disable_update` policy key instead; see
-[System Policy](reference/system-policy.md).
-
 ## Install from release artifacts
 
 1. Download the platform archive, `sha256sums.txt`, and `sha256sums.txt.sigstore.json` from GitHub Releases.

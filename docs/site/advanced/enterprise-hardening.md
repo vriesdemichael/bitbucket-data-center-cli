@@ -69,7 +69,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    - `allow_insecure_skip_verify: false`: Hard-refuses `--insecure-skip-verify` and `BB_INSECURE_SKIP_VERIFY=true`.
 
 2. **Enterprise Update Controls and Release Mirrors ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md))**:
-   - **Disabling In-Place Self-Updates**: On managed corporate machines where software must be installed exclusively through IT package managers (e.g. Jamf, Ansible, Intune, SCCM), disable `bb update` by setting `disable_update: true` in system configuration or `export BB_DISABLE_UPDATE=1`. Alternatively, install builds compiled with `-tags no_self_update`.
+   - **Disabling In-Place Self-Updates**: On managed corporate machines where software must be installed exclusively through IT package managers (e.g. Jamf, Ansible, Intune, SCCM), disable `bb update` by setting `disable_update: true` in system configuration or `export BB_DISABLE_UPDATE=1`. Alternatively, deploy the `_noupdate` builds described below, which cannot self-update whatever the configuration says.
    - **Internal Release Mirrors**: In firewalled or air-gapped enterprise enclaves, configure `bb update` to query internal mirrors (e.g. JFrog Artifactory, Sonatype Nexus) instead of `api.github.com` via `--base-url <url>`, `BB_UPDATE_BASE_URL`, or `update_base_url` in system/user config. A mirror alone is not sufficient on a host with no internet access: pair it with an offline trust root, below.
    - **Offline Signature Verification ([ADR-063](../adr/063-offline-release-signature-verification.md))**: By default, `bb update` fetches Sigstore trust material from `https://tuf-repo-cdn.sigstore.dev` on every run. Deploy a `trusted_root.json` alongside the corporate CA bundle and point at it to verify releases with no internet access at all:
      ```yaml
@@ -123,6 +123,41 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    export BB_DISABLE_STORED_CONFIG=1
    ```
    Ensures that ephemeral CI/CD runners read authentication strictly from `BITBUCKET_TOKEN`, guaranteeing that no stored credential profile is read and no desktop keyring daemon is contacted.
+
+### Builds With Self-Update Compiled Out
+
+Every release publishes each platform twice. The `_noupdate` archives are built
+with `-tags no_self_update`, so `bb update` in one of them exits `3`
+(`authorization`) with:
+
+```text
+self-update is disabled in this build; update bb using your system package manager
+```
+
+Everything else behaves identically.
+
+This matters for a fleet in two ways.
+
+**It is what your users already have.** The WinGet, Scoop and Homebrew manifests
+all reference `_noupdate` archives, so a developer who installed through a
+package manager cannot self-update regardless of policy. A binary that replaces
+itself behind a package manager leaves that manager's records describing a
+version no longer on disk.
+
+**It survives a machine you do not control.** `disable_update` and
+`BB_DISABLE_UPDATE` are configuration, and configuration can be missing —
+an imaging step that has not run yet, a container built from a bare archive, a
+developer who installed the binary by hand. A `_noupdate` build refuses in all
+of those cases because the capability is not compiled in. Prefer it wherever the
+requirement is that a host never fetches its own binary; use `disable_update`
+where you need the same result on hosts that already have the ordinary build.
+
+Both spellings are published, versioned and version-less:
+
+```text
+bb_[[ bb_version ]]_linux_amd64_noupdate.tar.gz
+bb_linux_amd64_noupdate.tar.gz
+```
 
 ### Socialized Developer Practices
 

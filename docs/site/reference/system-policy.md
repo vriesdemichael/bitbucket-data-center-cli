@@ -33,7 +33,7 @@ policies:
 | Key | Type | Effect |
 |---|---|---|
 | `require_keyring` | boolean | Mandate OS keyring storage for credentials and prohibit the plaintext config file fallback. |
-| `allowed_hosts` | list of strings | Permitted Bitbucket instance URLs or hostnames. A host outside the list is refused. |
+| `allowed_hosts` | list of strings | Permitted Bitbucket instances, written as full URLs or bare hostnames. A host outside the list is refused with exit `3` before any request is made. See the note below on what an entry does and does not constrain. |
 | `ca_file` | string | Path to a PEM CA bundle that `bb` must use. |
 | `allow_insecure_skip_verify` | boolean | When `false`, `--insecure-skip-verify` cannot be enabled. |
 | `disable_update` | boolean | Disable `bb update` machine-wide. |
@@ -44,6 +44,17 @@ policies:
 | `update_signature_identity` | string | Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. |
 | `update_signature_issuer` | string | Expected OIDC issuer of the release signer. |
 | `allow_unverified_update` | boolean | Permit `bb update` without Sigstore signature verification. A last resort; SHA256 checksum verification still applies. |
+
+!!! warning "`allowed_hosts` constrains the host, not the port or the path"
+
+    An entry matches when the whole normalised URL is equal, **or** when the
+    hostnames match. The second case is what most entries hit, and it ignores
+    scheme, port and context path — so `https://bitbucket.example.com` in the
+    list also permits `https://bitbucket.example.com:9999/anything`.
+
+    That is usually what an administrator wants, since one Bitbucket instance
+    can be reached several ways. It is worth knowing before treating the list as
+    a defence against a rogue service on the same host.
 
 ## What a user meets when policy refuses them
 
