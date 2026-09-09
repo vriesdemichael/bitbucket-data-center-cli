@@ -212,8 +212,9 @@ func New(deps Dependencies) *cobra.Command {
 	prCmd.AddCommand(listCmd)
 
 	getCmd := &cobra.Command{
-		Use:   "get <id>",
-		Short: "Get pull request details, including outstanding review feedback",
+		Use:     "get <id>",
+		Aliases: []string{"view"},
+		Short:   "Get pull request details, including outstanding review feedback",
 		Long: "Get pull request details. The output carries a review summary describing unresolved comment " +
 			"threads, open tasks and reviewers who requested changes, so outstanding feedback is visible without " +
 			"a separate lookup.\n\n" +
@@ -657,8 +658,9 @@ func New(deps Dependencies) *cobra.Command {
 	var updateDraft bool
 	var updateReviewers []string
 	updateCmd := &cobra.Command{
-		Use:   "update <id>",
-		Short: "Update pull request metadata",
+		Use:     "update <id>",
+		Aliases: []string{"edit"},
+		Short:   "Update pull request metadata",
 		Example: "  # Update title and description\n" +
 			"  bb pr update 42 --repo PROJ/repo --version 1 --title \"New title\"\n\n" +
 			"  # Mark a draft PR as ready for review\n" +
@@ -887,9 +889,10 @@ func New(deps Dependencies) *cobra.Command {
 	prCmd.AddCommand(mergeCmd)
 
 	declineCmd := &cobra.Command{
-		Use:   "decline <id>",
-		Short: "Decline a pull request",
-		Args:  cobra.ExactArgs(1),
+		Use:     "decline <id>",
+		Aliases: []string{"close"},
+		Short:   "Decline a pull request",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -2382,60 +2385,70 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 	activityCmd.AddCommand(activityListCmd)
 	prCmd.AddCommand(activityCmd)
 
-	var buildPaging paging.Options
+	// bb pr build status and bb pr checks are the same command registered twice:
+	// once on the canonical path that names its subject, and once under the gh
+	// spelling a reader arrives with (ADR-050). Built from a constructor rather
+	// than by adding one *cobra.Command to two parents, so each registration
+	// gets its own paging flags and resolves --repo from the tree it sits in.
+	newBuildStatusCmd := func(use string, short string) *cobra.Command {
+		var statusPaging paging.Options
+		cmd := &cobra.Command{
+			Use:   use,
+			Short: short,
+			Args:  cobra.ExactArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				cfg, err := deps.LoadConfig()
+				if err != nil {
+					return err
+				}
+
+				service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
+				target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
+				if err != nil {
+					return err
+				}
+				repo := target.RepositoryRef()
+
+				statuses, err := service.GetBuildStatuses(cmd.Context(), repo, target.PullRequestID, statusPaging.ServiceLimit())
+				if err != nil {
+					return err
+				}
+
+				// Reads to exhaustion, so --limit only sized the pages (#473).
+				statuses = paging.Truncate(statusPaging, statuses)
+
+				if deps.JSONEnabled() {
+					return deps.WriteJSON(cmd.OutOrStdout(), BuildStatuses{
+						Repository:    repositoryOf(repo),
+						PullRequestID: target.PullRequestID,
+						Statuses:      buildStatusesFrom(statuses),
+					})
+				}
+
+				if len(statuses) == 0 {
+					fmt.Fprintln(cmd.OutOrStdout(), "No build statuses found")
+					return nil
+				}
+
+				for _, s := range statuses {
+					fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", s.Key, s.State, s.URL)
+				}
+
+				return nil
+			},
+		}
+		statusPaging.Register(cmd, 25)
+
+		return cmd
+	}
+
 	buildCmd := &cobra.Command{
 		Use:   "build",
 		Short: "Pull request build status commands",
 	}
-
-	buildStatusCmd := &cobra.Command{
-		Use:   "status <id>",
-		Short: "Show build statuses for a pull request's source commit",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := deps.LoadConfig()
-			if err != nil {
-				return err
-			}
-
-			service := pullrequestservice.NewService(httpclient.NewFromConfig(cfg))
-			target, err := prsel.Resolve(cmd.Context(), args[0], repository, cfg, service)
-			if err != nil {
-				return err
-			}
-			repo := target.RepositoryRef()
-
-			statuses, err := service.GetBuildStatuses(cmd.Context(), repo, target.PullRequestID, buildPaging.ServiceLimit())
-			if err != nil {
-				return err
-			}
-
-			// Reads to exhaustion, so --limit only sized the pages (#473).
-			statuses = paging.Truncate(buildPaging, statuses)
-
-			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), BuildStatuses{
-					Repository:    repositoryOf(repo),
-					PullRequestID: target.PullRequestID,
-					Statuses:      buildStatusesFrom(statuses),
-				})
-			}
-
-			if len(statuses) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "No build statuses found")
-				return nil
-			}
-
-			for _, s := range statuses {
-				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", s.Key, s.State, s.URL)
-			}
-
-			return nil
-		},
-	}
-	buildPaging.Register(buildStatusCmd, 25)
-	buildCmd.AddCommand(buildStatusCmd)
+	buildCmd.AddCommand(newBuildStatusCmd("status <id>", "Show build statuses for a pull request's source commit"))
 	prCmd.AddCommand(buildCmd)
+	prCmd.AddCommand(newBuildStatusCmd("checks <id>", "Show build statuses for a pull request's source commit (alias for bb pr build status)"))
 
 	autoMergeCmd := &cobra.Command{
 		Use:   "auto-merge",

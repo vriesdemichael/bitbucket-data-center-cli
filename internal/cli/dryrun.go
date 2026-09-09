@@ -230,6 +230,7 @@ var readOnlyCommands = map[string]struct{}{
 	"pr activity list":                {},
 	"pr auto-merge get":               {},
 	"pr build status":                 {},
+	"pr checks":                       {},
 	"pr comment get":                  {},
 	"pr comment list":                 {},
 	"pr commits":                      {},
