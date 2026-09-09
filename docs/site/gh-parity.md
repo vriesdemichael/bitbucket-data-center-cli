@@ -39,6 +39,14 @@ path rather than in a flag.
 | `gh repo create` | `bb repo create` | |
 | `gh browse` | `bb browse` | Opens repository pages in a browser. Not to be confused with `bb repo browse`, which reads file content over REST rather than opening anything |
 
+## Anything else
+
+| `gh` | `bb` | Notes |
+|---|---|---|
+| `gh api` | `bb api` | The same escape hatch under the same name. It speaks Bitbucket's REST API, so the paths are Bitbucket's — `/rest/api/latest/...` rather than GitHub's |
+| `gh completion` | `bb completion` | |
+| `gh version` | `bb --version` | |
+
 ## Authentication
 
 | `gh` | `bb` | Notes |
@@ -64,9 +72,6 @@ issues linked to a pull request, because that link is Bitbucket's own data.
 directory. `bb` does too, and it also accepts `--repo PROJECT/slug`, because a
 Bitbucket estate is addressed by project and repository rather than by owner and
 name.
-
-**There is no `gh api` equivalent by that name.** `bb api` is the escape hatch,
-and it speaks Bitbucket's REST API.
 
 **`--json` is a flag, not a field selector.** In `gh`, `--json` takes a list of
 fields. In `bb` it takes nothing and emits the whole envelope; see
