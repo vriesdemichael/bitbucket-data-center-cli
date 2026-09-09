@@ -71,3 +71,43 @@ func TestChecksAndBuildStatusDoNotShareFlagState(t *testing.T) {
 		t.Fatal("setting --limit on pr checks changed pr build status; the two share flag state")
 	}
 }
+
+// UnknownSubcommandError answers only for the case it exists for. Everything
+// else has to come back nil, because it runs after every successful Execute and
+// a false positive there would fail a command that worked.
+func TestUnknownSubcommandErrorIgnoresEverythingElse(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil root", func(t *testing.T) {
+		t.Parallel()
+
+		if err := UnknownSubcommandError(nil, []string{"pr", "bogus"}); err != nil {
+			t.Fatalf("expected nil for a nil root, got %v", err)
+		}
+	})
+
+	testCases := []struct {
+		name string
+		args []string
+	}{
+		{name: "group with no arguments", args: []string{"pr"}},
+		{name: "runnable command with its argument", args: []string{"pr", "get", "42"}},
+		{name: "runnable command at the top level", args: []string{"browse"}},
+		{name: "nothing at all", args: nil},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			root := NewRootCommand()
+			root.SetArgs(testCase.args)
+			// Execute so the flags are parsed, which is the state the check reads.
+			_ = root.Execute()
+
+			if err := UnknownSubcommandError(root, testCase.args); err != nil {
+				t.Fatalf("expected nil for %v, got %v", testCase.args, err)
+			}
+		})
+	}
+}
