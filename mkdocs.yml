@@ -73,6 +73,7 @@ nav:
   - Developer Cheatsheet: cheatsheet.md
   - Basic Usage: basic-usage.md
   - Troubleshooting: troubleshooting.md
+  - Coming from gh: gh-parity.md
   - Command Reference:
       - Overview: reference/overview.md
       - All Commands: reference/commands/index.md
