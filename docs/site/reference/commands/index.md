@@ -19,7 +19,7 @@ Global Flags:
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
       --describe                 Print the command's output schema instead of running it
-      --dry-run                  Preview server mutations without applying them
+      --dry-run                  Preview mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
       --log-format string        Diagnostics format: text or jsonl
@@ -87,7 +87,7 @@ Flags:
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
       --describe                 Print the command's output schema instead of running it
-      --dry-run                  Preview server mutations without applying them
+      --dry-run                  Preview mutations without applying them
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
       --json                     Output as JSON
       --log-format string        Diagnostics format: text or jsonl
@@ -125,7 +125,7 @@ Use "bb admin [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -160,7 +160,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -197,7 +197,7 @@ Use "bb ai [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -234,7 +234,7 @@ Use "bb ai mcp [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -332,7 +332,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -379,7 +379,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -417,7 +417,7 @@ Use "bb ai skill [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -460,7 +460,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -494,7 +494,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -545,7 +545,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -614,7 +614,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -660,7 +660,7 @@ Use "bb auth [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -699,7 +699,7 @@ Use "bb auth alias [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -733,7 +733,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -772,7 +772,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -806,7 +806,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -840,7 +840,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -878,7 +878,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -917,7 +917,7 @@ Use "bb auth gpg-key [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -948,7 +948,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -982,7 +982,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1017,7 +1017,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1048,7 +1048,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1085,7 +1085,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1135,7 +1135,7 @@ Flags:
     Global Flags:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1169,7 +1169,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1206,7 +1206,7 @@ Use "bb auth server [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1237,7 +1237,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1271,7 +1271,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1311,7 +1311,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1367,7 +1367,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1412,7 +1412,7 @@ Use "bb auth token [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1448,7 +1448,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1482,7 +1482,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1520,7 +1520,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1554,7 +1554,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1592,7 +1592,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1629,7 +1629,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1674,7 +1674,7 @@ Use "bb branch [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1708,7 +1708,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1747,7 +1747,7 @@ Use "bb branch default [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1780,7 +1780,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1813,7 +1813,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1849,7 +1849,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1890,7 +1890,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1929,7 +1929,7 @@ Use "bb branch model [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1966,7 +1966,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -1999,7 +1999,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2041,7 +2041,7 @@ Use "bb branch restriction [command] --help" for more information about a comman
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2083,7 +2083,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2116,7 +2116,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2149,7 +2149,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2189,7 +2189,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2231,7 +2231,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2273,7 +2273,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2316,7 +2316,7 @@ Use "bb build [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2350,7 +2350,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2385,7 +2385,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2425,7 +2425,7 @@ Use "bb build required [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2460,7 +2460,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2496,7 +2496,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2532,7 +2532,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2567,7 +2567,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2610,7 +2610,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2652,7 +2652,7 @@ Use "bb build status [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2689,7 +2689,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --include-unique           Include unique result details when available
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
@@ -2733,7 +2733,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --include-unique           Include unique result details when available
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
@@ -2766,7 +2766,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --include-unique           Include unique result details when available
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
@@ -2806,7 +2806,7 @@ Use "bb bulk [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2840,7 +2840,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2875,7 +2875,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2906,7 +2906,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2943,7 +2943,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -2986,7 +2986,7 @@ Use "bb commit [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3021,7 +3021,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3054,7 +3054,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3093,7 +3093,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3126,7 +3126,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3169,7 +3169,7 @@ Use "bb deployment [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3212,7 +3212,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3249,7 +3249,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3286,7 +3286,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3328,7 +3328,7 @@ Use "bb diff [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3362,7 +3362,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3401,7 +3401,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3439,7 +3439,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3480,7 +3480,7 @@ Use "bb insights [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3519,7 +3519,7 @@ Use "bb insights annotation [command] --help" for more information about a comma
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3554,7 +3554,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3589,7 +3589,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3625,7 +3625,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3665,7 +3665,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3705,7 +3705,7 @@ Use "bb insights report [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3737,7 +3737,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3769,7 +3769,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3805,7 +3805,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3840,7 +3840,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3904,7 +3904,7 @@ Use "bb pr [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3940,7 +3940,7 @@ Use "bb pr activity [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -3976,7 +3976,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4015,7 +4015,7 @@ Use "bb pr auto-merge [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4047,7 +4047,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4089,7 +4089,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4121,7 +4121,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4158,7 +4158,7 @@ Use "bb pr build [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4194,7 +4194,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4235,7 +4235,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4271,7 +4271,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4314,7 +4314,7 @@ Use "bb pr comment [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4375,7 +4375,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4413,7 +4413,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4445,7 +4445,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4492,7 +4492,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4527,7 +4527,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4559,7 +4559,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4591,7 +4591,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4628,7 +4628,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4690,7 +4690,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4728,7 +4728,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4766,7 +4766,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4805,7 +4805,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4845,7 +4845,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4885,7 +4885,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4917,7 +4917,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4958,7 +4958,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -4993,7 +4993,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5025,7 +5025,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5060,7 +5060,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5095,7 +5095,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5130,7 +5130,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5173,7 +5173,7 @@ Use "bb pr review [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5208,7 +5208,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5244,7 +5244,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5276,7 +5276,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5308,7 +5308,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5346,7 +5346,7 @@ Use "bb pr review reviewer [command] --help" for more information about a comman
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5402,7 +5402,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5437,7 +5437,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5488,7 +5488,7 @@ Examples:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5525,7 +5525,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5563,7 +5563,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5595,7 +5595,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5647,7 +5647,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5679,7 +5679,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5724,7 +5724,7 @@ Use "bb project [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5764,7 +5764,7 @@ Use "bb project branch-restriction [command] --help" for more information about 
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5804,7 +5804,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5835,7 +5835,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5866,7 +5866,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5902,7 +5902,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5942,7 +5942,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -5977,7 +5977,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6016,7 +6016,7 @@ Use "bb project default-task [command] --help" for more information about a comm
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6051,7 +6051,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6082,7 +6082,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6113,7 +6113,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6149,7 +6149,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6180,7 +6180,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6211,7 +6211,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6248,7 +6248,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6289,7 +6289,7 @@ Use "bb project permissions [command] --help" for more information about a comma
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6325,7 +6325,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6363,7 +6363,7 @@ Use "bb project permissions groups [command] --help" for more information about 
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6396,7 +6396,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6433,7 +6433,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6466,7 +6466,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6504,7 +6504,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6540,7 +6540,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6571,7 +6571,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6609,7 +6609,7 @@ Use "bb project permissions users [command] --help" for more information about a
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6642,7 +6642,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6679,7 +6679,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6712,7 +6712,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6747,7 +6747,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6788,7 +6788,7 @@ Use "bb project webhook [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6827,7 +6827,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6858,7 +6858,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6894,7 +6894,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6928,7 +6928,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -6963,7 +6963,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7006,7 +7006,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7046,7 +7046,7 @@ Use "bb ref [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7080,7 +7080,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7112,7 +7112,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7168,7 +7168,7 @@ Use "bb repo [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7210,7 +7210,7 @@ Use "bb repo admin [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7250,7 +7250,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7287,7 +7287,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7325,7 +7325,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7362,7 +7362,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7402,7 +7402,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7445,7 +7445,7 @@ Use "bb repo browse [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7479,7 +7479,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7514,7 +7514,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7550,7 +7550,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7585,7 +7585,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7622,7 +7622,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7658,7 +7658,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7695,7 +7695,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7739,7 +7739,7 @@ Use "bb repo comment [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7780,7 +7780,7 @@ Flags:
           --client-key string        Path to PEM client key for mTLS
           --commit string            Commit ID context
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7818,7 +7818,7 @@ Flags:
           --client-key string        Path to PEM client key for mTLS
           --commit string            Commit ID context
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7857,7 +7857,7 @@ Flags:
           --client-key string        Path to PEM client key for mTLS
           --commit string            Commit ID context
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7896,7 +7896,7 @@ Flags:
           --client-key string        Path to PEM client key for mTLS
           --commit string            Commit ID context
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7933,7 +7933,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -7973,7 +7973,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8015,7 +8015,7 @@ Use "bb repo default-task [command] --help" for more information about a command
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8050,7 +8050,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8082,7 +8082,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8114,7 +8114,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8151,7 +8151,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8194,7 +8194,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8233,7 +8233,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8271,7 +8271,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8312,7 +8312,7 @@ Use "bb repo label [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8343,7 +8343,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8375,7 +8375,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8407,7 +8407,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8445,7 +8445,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8487,7 +8487,7 @@ Use "bb repo permissions [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8523,7 +8523,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8562,7 +8562,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8599,7 +8599,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8631,7 +8631,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8675,7 +8675,7 @@ Use "bb repo settings [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8716,7 +8716,7 @@ Use "bb repo settings auto-decline [command] --help" for more information about 
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8747,7 +8747,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8779,7 +8779,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8815,7 +8815,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8857,7 +8857,7 @@ Use "bb repo settings auto-merge [command] --help" for more information about a 
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8888,7 +8888,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8920,7 +8920,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8955,7 +8955,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -8996,7 +8996,7 @@ Use "bb repo settings pull-requests [command] --help" for more information about
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9028,7 +9028,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9065,7 +9065,7 @@ Use "bb repo settings pull-requests merge-checks [command] --help" for more info
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9097,7 +9097,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9129,7 +9129,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9164,7 +9164,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9199,7 +9199,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9236,7 +9236,7 @@ Use "bb repo settings security [command] --help" for more information about a co
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9274,7 +9274,7 @@ Use "bb repo settings security permissions [command] --help" for more informatio
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9313,7 +9313,7 @@ Use "bb repo settings security permissions groups [command] --help" for more inf
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9347,7 +9347,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9385,7 +9385,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9419,7 +9419,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9458,7 +9458,7 @@ Use "bb repo settings security permissions users [command] --help" for more info
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9492,7 +9492,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9530,7 +9530,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9564,7 +9564,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9601,7 +9601,7 @@ Use "bb repo settings workflow [command] --help" for more information about a co
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9640,7 +9640,7 @@ Use "bb repo settings workflow webhooks [command] --help" for more information a
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9680,7 +9680,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9712,7 +9712,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9744,7 +9744,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9787,7 +9787,7 @@ Use "bb repo ssh-key [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9824,7 +9824,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9861,7 +9861,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9894,7 +9894,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9940,7 +9940,7 @@ Use "bb repo sync [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -9971,7 +9971,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10003,7 +10003,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10035,7 +10035,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10070,7 +10070,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10104,7 +10104,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10147,7 +10147,7 @@ Use "bb reviewer [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10187,7 +10187,7 @@ Use "bb reviewer condition [command] --help" for more information about a comman
           --client-key string        Path to PEM client key for mTLS
           --config-file string       JSON file containing condition settings
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10221,7 +10221,7 @@ Usage:
           --client-key string        Path to PEM client key for mTLS
           --config-file string       JSON file containing condition settings
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10255,7 +10255,7 @@ Usage:
           --client-key string        Path to PEM client key for mTLS
           --config-file string       JSON file containing condition settings
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10289,7 +10289,7 @@ Usage:
           --client-key string        Path to PEM client key for mTLS
           --config-file string       JSON file containing condition settings
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10323,7 +10323,7 @@ Usage:
           --client-key string        Path to PEM client key for mTLS
           --config-file string       JSON file containing condition settings
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10369,7 +10369,7 @@ Use "bb reviewer-group [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10404,7 +10404,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10437,7 +10437,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10470,7 +10470,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10508,7 +10508,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10541,7 +10541,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10581,7 +10581,7 @@ Use "bb search [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10622,7 +10622,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10661,7 +10661,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10698,7 +10698,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10736,7 +10736,7 @@ Use "bb ssh-key [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10770,7 +10770,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10806,7 +10806,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10837,7 +10837,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10880,7 +10880,7 @@ Use "bb tag [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -10915,7 +10915,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --filter string            Filter text for tag names
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
@@ -10948,7 +10948,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --filter string            Filter text for tag names
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
@@ -10987,7 +10987,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --filter string            Filter text for tag names
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
@@ -11020,7 +11020,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --filter string            Filter text for tag names
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
@@ -11056,7 +11056,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -11101,7 +11101,7 @@ Use "bb webhook [command] --help" for more information about a command.
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -11140,7 +11140,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -11172,7 +11172,7 @@ Usage:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -11207,7 +11207,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -11244,7 +11244,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -11279,7 +11279,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -11315,7 +11315,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
@@ -11359,7 +11359,7 @@ Flags:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --describe                 Print the command's output schema instead of running it
-          --dry-run                  Preview server mutations without applying them
+          --dry-run                  Preview mutations without applying them
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
           --json                     Output as JSON
           --log-format string        Diagnostics format: text or jsonl
