@@ -12,8 +12,13 @@ func TestCommitCLICommandValidation(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty commit get")
 	}
-	if !strings.Contains(err.Error(), "accepts 1 arg(s)") {
-		t.Fatalf("expected arg validation error, got: %v (output: %s)", err, output)
+	// The message has to name what was wanted. "accepts 1 arg(s), received 0"
+	// named neither the command nor the argument, which is what #587 reported
+	// across 150 leaf commands.
+	for _, want := range []string{"commit get", "<id>"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("expected the error to name %q, got: %v (output: %s)", want, err, output)
+		}
 	}
 
 	_, err = executeTestCLI(t, "commit", "compare", "abc")
