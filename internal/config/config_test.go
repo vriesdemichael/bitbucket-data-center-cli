@@ -2041,6 +2041,11 @@ hosts:
 	}
 	t.Setenv("BB_WORKSPACE_CONFIG_PATH", wsPath)
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user-empty.yaml"))
+	// The seal turns the stored config off for the whole binary; this test is
+	// the one whose subject is reading it. Both paths above are fixtures this
+	// test just wrote, so re-enabling it here reaches those and never the
+	// developer's own config.
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 	t.Setenv("BITBUCKET_URL", "https://bb.example.local")
 	t.Setenv("BITBUCKET_TOKEN", "test-token")
 	t.Setenv("BITBUCKET_USERNAME", "")
