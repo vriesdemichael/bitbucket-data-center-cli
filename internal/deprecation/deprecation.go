@@ -73,8 +73,14 @@ func (entry Entry) Warning() string {
 // An entry deprecated during the cycle that is now shipping is not outstanding:
 // deprecated in v5.2.0 means due in v6, so a pending v5 leaves it alone.
 func Outstanding(pendingMajor int) ([]Entry, error) {
+	return outstandingIn(Entries, pendingMajor)
+}
+
+// outstandingIn is the same question asked of an arbitrary list, so a test can
+// pose it without swapping the registry out from under a parallel reader.
+func outstandingIn(entries []Entry, pendingMajor int) ([]Entry, error) {
 	var due []Entry
-	for _, entry := range Entries {
+	for _, entry := range entries {
 		removeIn, err := entry.RemoveIn()
 		if err != nil {
 			return nil, err
