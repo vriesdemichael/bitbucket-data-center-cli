@@ -17,6 +17,19 @@ import (
 	bulkworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/bulk"
 )
 
+// executeLiveBulk runs a bulk command and returns stdout alone.
+//
+// bb bulk warns on stderr on every invocation, and the shared helper merges the
+// streams -- deliberately, because several tests assert on diagnostics that go
+// there. Bulk decodes its stdout as an envelope, so it needs them apart.
+func executeLiveBulk(t *testing.T, args ...string) (string, error) {
+	t.Helper()
+
+	stdout, _, err := executeLiveCLISplit(t, "", args...)
+
+	return stdout, err
+}
+
 func TestLiveBulkPolicyPlanApplyStatus(t *testing.T) {
 	t.Parallel()
 
@@ -57,7 +70,7 @@ func TestLiveBulkPolicyPlanApplyStatus(t *testing.T) {
 		t.Fatalf("write bulk policy: %v", err)
 	}
 
-	planOutput, err := executeLiveCLI(t, "--json", "bulk", "plan", "-f", policyPath, "-o", planPath)
+	planOutput, err := executeLiveBulk(t, "--json", "bulk", "plan", "-f", policyPath, "-o", planPath)
 	if err != nil {
 		t.Fatalf("bulk plan failed: %v\noutput: %s", err, planOutput)
 	}
@@ -73,7 +86,7 @@ func TestLiveBulkPolicyPlanApplyStatus(t *testing.T) {
 		t.Fatal("expected bulk plan hash")
 	}
 
-	applyOutput, err := executeLiveCLI(t, "--json", "bulk", "apply", "--from-plan", planPath)
+	applyOutput, err := executeLiveBulk(t, "--json", "bulk", "apply", "--from-plan", planPath)
 	if err != nil {
 		t.Fatalf("bulk apply failed: %v\noutput: %s", err, applyOutput)
 	}
@@ -89,7 +102,7 @@ func TestLiveBulkPolicyPlanApplyStatus(t *testing.T) {
 		t.Fatal("expected bulk operation id")
 	}
 
-	statusOutput, err := executeLiveCLI(t, "--json", "bulk", "status", status.OperationID)
+	statusOutput, err := executeLiveBulk(t, "--json", "bulk", "status", status.OperationID)
 	if err != nil {
 		t.Fatalf("bulk status failed: %v\noutput: %s", err, statusOutput)
 	}
@@ -241,7 +254,7 @@ func TestLiveBulkEveryOperationType(t *testing.T) {
 		t.Fatalf("write bulk policy: %v", err)
 	}
 
-	planOutput, err := executeLiveCLI(t, "--json", "bulk", "plan", "-f", policyPath, "-o", planPath)
+	planOutput, err := executeLiveBulk(t, "--json", "bulk", "plan", "-f", policyPath, "-o", planPath)
 	if err != nil {
 		t.Fatalf("bulk plan failed: %v\noutput: %s", err, planOutput)
 	}
@@ -254,7 +267,7 @@ func TestLiveBulkEveryOperationType(t *testing.T) {
 		t.Fatalf("expected all nine operation types in the plan, got %d:\n%s", plan.Summary.OperationCount, planOutput)
 	}
 
-	applyOutput, err := executeLiveCLI(t, "--json", "bulk", "apply", "--from-plan", planPath)
+	applyOutput, err := executeLiveBulk(t, "--json", "bulk", "apply", "--from-plan", planPath)
 	if err != nil {
 		t.Fatalf("bulk apply failed: %v\noutput: %s", err, applyOutput)
 	}
@@ -356,11 +369,11 @@ func TestLiveBulkApplyReportsAFailedTarget(t *testing.T) {
 		t.Fatalf("write bulk policy: %v", err)
 	}
 
-	if output, err := executeLiveCLI(t, "--json", "bulk", "plan", "-f", policyPath, "-o", planPath); err != nil {
+	if output, err := executeLiveBulk(t, "--json", "bulk", "plan", "-f", policyPath, "-o", planPath); err != nil {
 		t.Fatalf("bulk plan failed: %v\noutput: %s", err, output)
 	}
 
-	applyOutput, applyErr := executeLiveCLI(t, "--json", "bulk", "apply", "--from-plan", planPath)
+	applyOutput, applyErr := executeLiveBulk(t, "--json", "bulk", "apply", "--from-plan", planPath)
 	if applyErr == nil {
 		t.Fatalf("granting to an account that does not exist was reported as a success:\n%s", applyOutput)
 	}
@@ -372,7 +385,7 @@ func TestLiveBulkApplyReportsAFailedTarget(t *testing.T) {
 	}
 
 	operationID := bulkOperationIDFrom(t, applyErr)
-	statusOutput, err := executeLiveCLI(t, "--json", "bulk", "status", operationID)
+	statusOutput, err := executeLiveBulk(t, "--json", "bulk", "status", operationID)
 	if err != nil {
 		t.Fatalf("the id named in the error does not resolve: %v\noutput: %s", err, statusOutput)
 	}
