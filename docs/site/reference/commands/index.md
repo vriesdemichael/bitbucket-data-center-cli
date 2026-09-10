@@ -62,7 +62,7 @@ Available Commands:
   branch         Repository branch and branch restriction commands
   browse         Open repository pages in a web browser
   build          Build status and required merge-check commands
-  bulk           Plan and apply multi-repository policies
+  bulk           Plan and apply multi-repository policies (deprecated)
   clone          Clone a repository to the local filesystem
   commit         Commit inspection and compare commands
   completion     Generate the autocompletion script for the specified shell
@@ -2782,10 +2782,10 @@ Usage:
 
 ## `bb bulk`
 
-Plan and apply multi-repository policies
+Plan and apply multi-repository policies (deprecated)
 
 ```text
-Plan and apply multi-repository policies
+Plan and apply multi-repository policies (deprecated)
 
 Usage:
   bb bulk [command]
