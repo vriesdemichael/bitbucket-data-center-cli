@@ -110,7 +110,7 @@ your behalf using the link above.`,
 	})
 
 	rootCmd.PersistentFlags().BoolVar(&options.JSON, "json", false, "Output as JSON")
-	rootCmd.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "Preview server mutations without applying them")
+	rootCmd.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "Preview mutations without applying them")
 	rootCmd.PersistentFlags().BoolVar(&options.NoColor, "no-color", false, "Disable colored output")
 	rootCmd.PersistentFlags().Bool("no-input", false, "Never prompt; fail instead when a value is missing")
 	rootCmd.PersistentFlags().BoolVar(&options.Describe, describeFlag, false, "Print the command's output schema instead of running it")
