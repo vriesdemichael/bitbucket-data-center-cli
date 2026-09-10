@@ -11,6 +11,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -31,6 +32,11 @@ type Dependencies struct {
 	WriteJSON           func(io.Writer, any) error
 	WriteJSONList       func(io.Writer, any, bool) error
 	PermissionChecker   func(*openapigenerated.ClientWithResponses) PermissionChecker
+
+	// RepositoryWasInferred reports that --repo was filled in from the git
+	// remote rather than named by the caller. ADR-073 makes --yes inert on an
+	// inferred target: it is the one you happen to be standing in.
+	RepositoryWasInferred func() bool
 }
 
 func (deps *Dependencies) withDefaults() Dependencies {
@@ -252,7 +258,8 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	})
 
-	tagCmd.AddCommand(&cobra.Command{
+	var confirmTagDelete bool
+	tagDeleteCmd := &cobra.Command{
 		Use:   "delete <name>",
 		Short: "Delete repository tag",
 		Args:  cobra.ExactArgs(1),
@@ -299,6 +306,15 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
+			// ADR-073. Past the dry-run branch above, so this is the real
+			// deletion. The repository is named too: it is the part that came
+			// from the git remote unless --repo said otherwise.
+			target := fmt.Sprintf("%s/%s@%s", repo.ProjectKey, repo.Slug, args[0])
+			if err := prompt.ConfirmDeleteOf(cmd, d.JSONEnabled(), confirmTagDelete,
+				prompt.TargetNamed(cmd, d.RepositoryWasInferred), target); err != nil {
+				return err
+			}
+
 			if err := service.Delete(cmd.Context(), repo, args[0]); err != nil {
 				return err
 			}
@@ -312,7 +328,9 @@ func New(deps Dependencies) *cobra.Command {
 			fmt.Fprintf(cmd.OutOrStdout(), "Deleted tag %s\n", reported.Tag)
 			return nil
 		},
-	})
+	}
+	tagDeleteCmd.Flags().BoolVarP(&confirmTagDelete, "yes", "y", false, "Confirm deletion without being asked")
+	tagCmd.AddCommand(tagDeleteCmd)
 
 	return tagCmd
 }
