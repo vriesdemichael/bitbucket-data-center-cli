@@ -8,8 +8,13 @@ search:
 ## Which Bitbucket versions work
 
 `bb` works with the latest available Bitbucket Data Center release, and is
-tested against [[ bitbucket_version ]] on every pull request. Bitbucket Cloud is
-a different API and is not supported.
+tested against [[ bitbucket_version ]] on every pull request.
+
+!!! warning "Data Center only — Bitbucket Cloud is not supported"
+
+    Bitbucket Cloud (bitbucket.org) is a different API, and no `bb` command
+    will work against it. Installing `bb` for a bitbucket.org repository will
+    not get you anywhere.
 
 ## Install on Windows via WinGet
 

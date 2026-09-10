@@ -17,6 +17,12 @@ hide:
 	</div>
 </section>
 
+!!! warning "Data Center only — Bitbucket Cloud is not supported"
+
+    `bb` talks to the Bitbucket Data Center REST API. Bitbucket Cloud
+    (bitbucket.org) is a different API, and no `bb` command will work against
+    it. If your repositories live on bitbucket.org, this is not your CLI.
+
 <section class="bb-grid bb-grid-3">
 	<article class="bb-card bb-card-accent">
 		<p class="bb-card-kicker">Operational Safety</p>
