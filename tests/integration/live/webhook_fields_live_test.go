@@ -7,9 +7,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"net"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -408,25 +406,13 @@ func TestLiveWebhookEndpointPasswordSurvivesAnUpdate(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	delivered := make(chan string, 8)
-	listener, err := net.Listen("tcp", "0.0.0.0:0")
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	receiver := &httptest.Server{
-		Listener: listener,
-		Config: &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			select {
-			case delivered <- r.Header.Get("Authorization"):
-			default:
-			}
-			w.WriteHeader(http.StatusOK)
-		})},
-	}
-	receiver.Start()
-	defer receiver.Close()
-
-	// The instance runs in a container, so it reaches the host by name.
-	target := fmt.Sprintf("http://host.docker.internal:%d/hook", listener.Addr().(*net.TCPAddr).Port)
+	_, target := newContainerReachableReceiver(t, func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case delivered <- r.Header.Get("Authorization"):
+		default:
+		}
+		w.WriteHeader(http.StatusOK)
+	})
 	id := seedWebhookWithCredentials(t, ctx, harness, seeded.Key, repo.Slug, target)
 
 	expected := "Basic " + base64.StdEncoding.EncodeToString([]byte("hookuser:"+passwordCanary))
@@ -440,7 +426,18 @@ func TestLiveWebhookEndpointPasswordSurvivesAnUpdate(t *testing.T) {
 		case header := <-delivered:
 			return header
 		case <-time.After(30 * time.Second):
-			t.Skipf("no delivery arrived at %s; this host cannot receive from the instance", target)
+			// A failure, not a skip. This used to skip, so an instance that
+			// could not reach the host produced a green run with the assertion
+			// never made -- which is what it did on every CI run until the
+			// extra_hosts entry in docker/compose.yml gave the container a
+			// route back. An undeliverable webhook is now the test's answer.
+			t.Fatalf(
+				"no delivery arrived at %s within 30s. The instance could not reach the receiver: check that "+
+					"docker/compose.yml still maps host.docker.internal and that the listener is bound where the "+
+					"container can reach it (webhookReceiverAddress).",
+				target,
+			)
+
 			return ""
 		}
 	}
