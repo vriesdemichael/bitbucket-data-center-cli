@@ -77,11 +77,11 @@ func TestLiveRepoPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 		t.Fatalf("repo permissions grant diverged from the deep path\ndeep:    %s\nshallow: %s", deepGrant, shallowGrant)
 	}
 
-	deepRevoke, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "groups", "revoke", "alias-parity-group")
+	deepRevoke, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "groups", "revoke", "alias-parity-group", "--yes")
 	if err != nil {
 		t.Fatalf("deep groups revoke dry-run failed: %v\noutput: %s", err, deepRevoke)
 	}
-	shallowRevoke, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "permissions", "revoke", "--group", "alias-parity-group")
+	shallowRevoke, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "permissions", "revoke", "--group", "alias-parity-group", "--yes")
 	if err != nil {
 		t.Fatalf("shallow permissions revoke --group dry-run failed: %v\noutput: %s", err, shallowRevoke)
 	}
@@ -144,11 +144,11 @@ func TestLiveProjectPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 		t.Fatalf("project permissions grant diverged\ndeep:    %s\nshallow: %s", deepGrant, shallowGrant)
 	}
 
-	deepRevoke, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "groups", "revoke", seeded.Key, "alias-parity-group")
+	deepRevoke, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "groups", "revoke", seeded.Key, "alias-parity-group", "--yes")
 	if err != nil {
 		t.Fatalf("deep project groups revoke dry-run failed: %v\noutput: %s", err, deepRevoke)
 	}
-	shallowRevoke, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "revoke", "--group", seeded.Key, "alias-parity-group")
+	shallowRevoke, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "revoke", "--group", seeded.Key, "alias-parity-group", "--yes")
 	if err != nil {
 		t.Fatalf("shallow project permissions revoke --group dry-run failed: %v\noutput: %s", err, shallowRevoke)
 	}

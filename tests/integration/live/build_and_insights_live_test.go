@@ -76,7 +76,7 @@ func TestLiveBuildStatusLifecycle(t *testing.T) {
 		t.Errorf("duration came back as %v, want 1234:\n%s", duration, getOutput)
 	}
 
-	deleteOutput, err := executeLiveCLI(t, "--json", "build", "delete", commit, "--key", buildKey, "--repo", repoRef)
+	deleteOutput, err := executeLiveCLI(t, "--json", "build", "delete", commit, "--key", buildKey, "--repo", repoRef, "--yes")
 	if err != nil {
 		t.Fatalf("build delete failed: %v\noutput: %s", err, deleteOutput)
 	}

@@ -69,6 +69,7 @@ func TestLiveDeploymentLifecycle(t *testing.T) {
 		"--key", deploymentKey,
 		"--env-key", envKey,
 		"--deployment-sequence-number", "1",
+		"--yes",
 	)
 	if err != nil {
 		t.Fatalf("deployment delete failed: %v\noutput: %s", err, deleteOutput)

@@ -155,7 +155,7 @@ func TestLiveCLIRepoAdminDeleteDryRunNoSideEffect(t *testing.T) {
 
 	listBefore := projectRepositoryListing(t, seeded.Key)
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "admin", "delete")
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "admin", "delete", "--yes")
 	if err != nil {
 		t.Fatalf("repo admin delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}

@@ -72,7 +72,7 @@ func TestLivePersonalSSHKeyLifecycle(t *testing.T) {
 	removed := false
 	t.Cleanup(func() {
 		if !removed {
-			_, _ = executeLiveCLI(t, "--json", "ssh-key", "remove", keyID)
+			_, _ = executeLiveCLI(t, "--json", "ssh-key", "remove", keyID, "--yes")
 		}
 	})
 
@@ -84,7 +84,7 @@ func TestLivePersonalSSHKeyLifecycle(t *testing.T) {
 		t.Fatalf("expected the added key in the listing, got: %s", listOutput)
 	}
 
-	if _, err := executeLiveCLI(t, "--json", "ssh-key", "remove", keyID); err != nil {
+	if _, err := executeLiveCLI(t, "--json", "ssh-key", "remove", keyID, "--yes"); err != nil {
 		t.Fatalf("ssh-key remove failed: %v", err)
 	}
 	removed = true
@@ -143,7 +143,7 @@ func TestLiveRepositoryAccessKeyLifecycle(t *testing.T) {
 	removed := false
 	t.Cleanup(func() {
 		if !removed {
-			_, _ = executeLiveCLI(t, "--json", "repo", "ssh-key", "remove", keyID, "--repo", repoRef)
+			_, _ = executeLiveCLI(t, "--json", "repo", "ssh-key", "remove", keyID, "--repo", repoRef, "--yes")
 		}
 	})
 
@@ -161,7 +161,7 @@ func TestLiveRepositoryAccessKeyLifecycle(t *testing.T) {
 		t.Errorf("repo ssh-key list did not report whether the limit was reached: %s", listOutput)
 	}
 
-	if _, err := executeLiveCLI(t, "--json", "repo", "ssh-key", "remove", keyID, "--repo", repoRef); err != nil {
+	if _, err := executeLiveCLI(t, "--json", "repo", "ssh-key", "remove", keyID, "--repo", repoRef, "--yes"); err != nil {
 		t.Fatalf("repo ssh-key remove failed: %v", err)
 	}
 	removed = true

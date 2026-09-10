@@ -345,7 +345,7 @@ func TestLiveCLIInsightsReportDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("insights report list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "insights", "report", "delete", commitID, reportKey)
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "insights", "report", "delete", commitID, reportKey, "--yes")
 	if err != nil {
 		t.Fatalf("insights report delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -362,7 +362,7 @@ func TestLiveCLIInsightsReportDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected no report side-effect from delete dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
 
-	_, _ = executeLiveCLI(t, "--json", "insights", "report", "delete", commitID, reportKey)
+	_, _ = executeLiveCLI(t, "--json", "insights", "report", "delete", commitID, reportKey, "--yes")
 }
 
 func TestLiveCLIInsightsAnnotationAddDeleteDryRunNoSideEffect(t *testing.T) {
@@ -424,7 +424,7 @@ func TestLiveCLIInsightsAnnotationAddDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("insights annotation list before delete dry-run failed: %v\noutput: %s", err, listBeforeDeleteOutput)
 	}
 
-	deleteDryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "insights", "annotation", "delete", commitID, reportKey, "--external-id", externalID)
+	deleteDryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "insights", "annotation", "delete", commitID, reportKey, "--external-id", externalID, "--yes")
 	if err != nil {
 		t.Fatalf("insights annotation delete dry-run failed: %v\noutput: %s", err, deleteDryRunOutput)
 	}
@@ -440,8 +440,8 @@ func TestLiveCLIInsightsAnnotationAddDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected no annotation side-effect from delete dry-run\nbefore: %s\nafter: %s", listBeforeDeleteOutput, listAfterDeleteOutput)
 	}
 
-	_, _ = executeLiveCLI(t, "--json", "insights", "annotation", "delete", commitID, reportKey, "--external-id", externalID)
-	_, _ = executeLiveCLI(t, "--json", "insights", "report", "delete", commitID, reportKey)
+	_, _ = executeLiveCLI(t, "--json", "insights", "annotation", "delete", commitID, reportKey, "--external-id", externalID, "--yes")
+	_, _ = executeLiveCLI(t, "--json", "insights", "report", "delete", commitID, reportKey, "--yes")
 }
 
 func TestLiveCLIBuildRequiredCreateUpdateDeleteDryRunNoSideEffect(t *testing.T) {
@@ -513,7 +513,7 @@ func TestLiveCLIBuildRequiredCreateUpdateDeleteDryRunNoSideEffect(t *testing.T) 
 		t.Fatalf("build required list before delete dry-run failed: %v\noutput: %s", err, listBeforeDeleteOutput)
 	}
 
-	deleteDryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "build", "required", "delete", requiredID)
+	deleteDryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "build", "required", "delete", requiredID, "--yes")
 	if err != nil {
 		t.Fatalf("build required delete dry-run failed: %v\noutput: %s", err, deleteDryRunOutput)
 	}
@@ -529,7 +529,7 @@ func TestLiveCLIBuildRequiredCreateUpdateDeleteDryRunNoSideEffect(t *testing.T) 
 		t.Fatalf("expected no required-build side-effect from delete dry-run\nbefore: %s\nafter: %s", listBeforeDeleteOutput, listAfterDeleteOutput)
 	}
 
-	_, _ = executeLiveCLI(t, "build", "required", "delete", requiredID)
+	_, _ = executeLiveCLI(t, "build", "required", "delete", requiredID, "--yes")
 }
 
 func requiredBuildCheckID(payload map[string]any) (int64, bool) {

@@ -137,7 +137,7 @@ func TestLiveGovernanceCommandsMapTheirFailures(t *testing.T) {
 		},
 		{
 			name:     "reviewer condition delete of an id that is not there",
-			args:     []string{"reviewer", "condition", "delete", "999999", "--project", seeded.Key},
+			args:     []string{"reviewer", "condition", "delete", "999999", "--project", seeded.Key, "--yes"},
 			wantExit: 4,
 		},
 		{
@@ -147,7 +147,7 @@ func TestLiveGovernanceCommandsMapTheirFailures(t *testing.T) {
 		},
 		{
 			name:     "project permissions revoke on a project that is not there",
-			args:     []string{"project", "permissions", "users", "revoke", missingProject, "nobody"},
+			args:     []string{"project", "permissions", "users", "revoke", missingProject, "nobody", "--yes"},
 			wantExit: 4,
 		},
 		{

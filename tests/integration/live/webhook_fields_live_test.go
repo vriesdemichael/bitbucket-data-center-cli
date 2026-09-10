@@ -240,7 +240,7 @@ func TestLiveWebhookFieldsAreSettableAndPublished(t *testing.T) {
 	created, _ := decodeJSONMap(t, createOutput)["webhook"].(map[string]any)
 	id := fmt.Sprintf("%d", int(created["id"].(float64)))
 	defer func() {
-		_, _ = executeLiveCLI(t, "webhook", "delete", id)
+		_, _ = executeLiveCLI(t, "webhook", "delete", id, "--yes")
 	}()
 
 	readBack := func(t *testing.T) map[string]any {

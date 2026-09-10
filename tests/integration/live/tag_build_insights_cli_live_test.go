@@ -62,7 +62,7 @@ func TestLiveTagCLISurface(t *testing.T) {
 	})
 
 	t.Run("deleting it removes it", func(t *testing.T) {
-		mustLiveCLI(t, "tag", "delete", tag)
+		mustLiveCLI(t, "tag", "delete", tag, "--yes")
 		if listing := mustLiveCLI(t, "tag", "list", "--all"); strings.Contains(listing, tag) {
 			t.Fatalf("the tag survived the delete:\n%s", listing)
 		}

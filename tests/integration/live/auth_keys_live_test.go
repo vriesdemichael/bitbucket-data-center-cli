@@ -70,7 +70,7 @@ func TestLiveGPGKeyLifecycle(t *testing.T) {
 		keyID = gpgFingerprintFrom(t, listOutput)
 	}
 
-	if _, err := executeLiveCLI(t, "--json", "auth", "gpg-key", "remove", keyID); err != nil {
+	if _, err := executeLiveCLI(t, "--json", "auth", "gpg-key", "remove", keyID, "--yes"); err != nil {
 		t.Fatalf("auth gpg-key remove failed: %v", err)
 	}
 

@@ -147,7 +147,7 @@ func TestLiveRepoLabelAndWatchLifecycle(t *testing.T) {
 		t.Fatalf("expected the added label to be listed, got: %s", listOutput)
 	}
 
-	if output, err := executeLiveCLI(t, "--json", "repo", "label", "remove", label, "--repo", repoRef); err != nil {
+	if output, err := executeLiveCLI(t, "--json", "repo", "label", "remove", label, "--repo", repoRef, "--yes"); err != nil {
 		t.Fatalf("repo label remove failed: %v\noutput: %s", err, output)
 	}
 
