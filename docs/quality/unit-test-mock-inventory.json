@@ -1,15 +1,15 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 176,
+    "mocked_servers": 177,
     "files": 62,
-    "functions": 167,
+    "functions": 168,
     "by_class": {
       "external-service": 14,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 76,
-      "unreachable-state": 22,
+      "unreachable-state": 23,
       "unreached-guard": 41
     },
     "behaviour_by_package": {}
@@ -17,7 +17,7 @@
   "entries": [
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 139,
+      "line": 151,
       "function": "TestApiPaginatedErrors",
       "class": "transport-fault",
       "signals": [
@@ -34,7 +34,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 180,
+      "line": 192,
       "function": "TestApiHostFlagOverride",
       "class": "routing-beacon",
       "signals": [
@@ -48,7 +48,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 216,
+      "line": 228,
       "function": "TestApiHostFlagDoesNotFallBackToDefaultHost",
       "class": "routing-beacon",
       "signals": [
@@ -61,7 +61,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 223,
+      "line": 235,
       "function": "TestApiHostFlagDoesNotFallBackToDefaultHost",
       "class": "routing-beacon",
       "signals": [
@@ -74,7 +74,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 266,
+      "line": 278,
       "function": "TestApiHostFlagLeavesEnvironmentAlone",
       "class": "routing-beacon",
       "signals": [
@@ -88,7 +88,7 @@
     },
     {
       "file": "internal/cli/cmd/auth/gpg_test.go",
-      "line": 124,
+      "line": 127,
       "function": "TestAuthGpgKeyCommandsAdditionalCoverage",
       "class": "unreached-guard",
       "signals": [
@@ -112,7 +112,7 @@
     },
     {
       "file": "internal/cli/cmd/build/build_internal_test.go",
-      "line": 128,
+      "line": 134,
       "function": "TestBuildDryRunPermissionRejection",
       "class": "unreached-guard",
       "signals": [
@@ -148,7 +148,7 @@
     },
     {
       "file": "internal/cli/cmd/deployment/permission_contract_test.go",
-      "line": 75,
+      "line": 74,
       "function": "TestDeploymentCommandsHonourRefusedPermission",
       "class": "unreached-guard",
       "signals": [
@@ -172,7 +172,7 @@
     },
     {
       "file": "internal/cli/cmd/insights/insights_internal_test.go",
-      "line": 104,
+      "line": 110,
       "function": "TestInsightsDryRunPermissionRejection",
       "class": "unreached-guard",
       "signals": [
@@ -220,7 +220,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/permission_contract_test.go",
-      "line": 170,
+      "line": 172,
       "function": "TestPRCommandsCheckPermissionBeforePlanning",
       "class": "unreached-guard",
       "signals": [
@@ -232,7 +232,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/pr_test.go",
-      "line": 90,
+      "line": 92,
       "function": "TestPRValidationErrors",
       "class": "unreached-guard",
       "signals": [
@@ -244,7 +244,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/pr_test.go",
-      "line": 127,
+      "line": 129,
       "function": "TestPRCreateFromAForkRefusesAMalformedRepository",
       "class": "unreached-guard",
       "signals": [
@@ -309,7 +309,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_helpers_test.go",
-      "line": 128,
+      "line": 138,
       "function": "TestAtGroupShorthandDoesNotMaskServerFailures",
       "class": "unreachable-state",
       "signals": [
@@ -352,7 +352,7 @@
     },
     {
       "file": "internal/cli/cmd/project/permissions_test.go",
-      "line": 85,
+      "line": 87,
       "function": "TestProjectPermissionsShowRequiresAWiredChecker",
       "class": "unreached-guard",
       "signals": [
@@ -364,7 +364,7 @@
     },
     {
       "file": "internal/cli/cmd/repo/permissions_test.go",
-      "line": 24,
+      "line": 23,
       "function": "TestRepoPermissionAliasRejectsBadInvocations",
       "class": "unreached-guard",
       "signals": [
@@ -376,7 +376,7 @@
     },
     {
       "file": "internal/cli/cmd/repo/permissions_test.go",
-      "line": 58,
+      "line": 56,
       "function": "TestPermissionsShowRequiresAWiredChecker",
       "class": "unreached-guard",
       "signals": [
@@ -388,7 +388,7 @@
     },
     {
       "file": "internal/cli/cmd/repo/sync_test.go",
-      "line": 11,
+      "line": 13,
       "function": "TestRepoSyncCLICommandsErrors",
       "class": "transport-fault",
       "signals": [
@@ -401,7 +401,7 @@
     },
     {
       "file": "internal/cli/cmd/reviewer/reviewer_test.go",
-      "line": 26,
+      "line": 28,
       "function": "TestReviewerConditionCommands",
       "class": "transport-fault",
       "signals": [
@@ -416,7 +416,7 @@
     },
     {
       "file": "internal/cli/cmd/reviewer/reviewer_test.go",
-      "line": 530,
+      "line": 534,
       "function": "TestReviewerPermissionErrors",
       "class": "unreached-guard",
       "signals": [
@@ -428,7 +428,7 @@
     },
     {
       "file": "internal/cli/cmd/reviewer/reviewer_test.go",
-      "line": 621,
+      "line": 627,
       "function": "TestConditionJSONIsValidatedNotReportedAsADefect",
       "class": "transport-fault",
       "signals": [
@@ -441,7 +441,7 @@
     },
     {
       "file": "internal/cli/cmd/reviewergroup/reviewer_group_test.go",
-      "line": 60,
+      "line": 62,
       "function": "TestReviewerGroupPermissionRejections",
       "class": "unreached-guard",
       "signals": [
@@ -467,7 +467,7 @@
     },
     {
       "file": "internal/cli/cmd/webhook/webhook_test.go",
-      "line": 72,
+      "line": 76,
       "function": "TestWebhookListAcceptsABareArray",
       "class": "unreachable-state",
       "signals": [
@@ -481,7 +481,7 @@
     },
     {
       "file": "internal/cli/cmd/webhook/webhook_test.go",
-      "line": 110,
+      "line": 116,
       "function": "TestWebhookCommandsHonourRefusedPermission",
       "class": "unreached-guard",
       "signals": [
@@ -531,7 +531,7 @@
     },
     {
       "file": "internal/cli/permissionchecker/permission_checker_test.go",
-      "line": 21,
+      "line": 23,
       "function": "TestPermissionCheckerInspect500Error",
       "class": "transport-fault",
       "signals": [
@@ -546,7 +546,7 @@
     },
     {
       "file": "internal/cli/permissionchecker/permission_checker_test.go",
-      "line": 214,
+      "line": 216,
       "function": "TestASecondRequestFailingIsAlsoTransient",
       "class": "transport-fault",
       "signals": [
@@ -702,7 +702,7 @@
     },
     {
       "file": "internal/mcp/tools_pr_review_test.go",
-      "line": 33,
+      "line": 35,
       "function": "TestGetPullRequestFallsBackToBlockerCommentCounts",
       "class": "unreachable-state",
       "signals": [
@@ -716,7 +716,7 @@
     },
     {
       "file": "internal/mcp/tools_pr_review_test.go",
-      "line": 73,
+      "line": 77,
       "function": "TestListPRCommentsRejectsUnknownState",
       "class": "unreached-guard",
       "signals": [
@@ -728,7 +728,7 @@
     },
     {
       "file": "internal/mcp/tools_pr_test.go",
-      "line": 50,
+      "line": 52,
       "function": "newUnreachedClients",
       "class": "unreached-guard",
       "signals": [
@@ -740,7 +740,7 @@
     },
     {
       "file": "internal/openapi/client_test.go",
-      "line": 189,
+      "line": 191,
       "function": "TestRetryTransport",
       "class": "transport-fault",
       "signals": [
@@ -754,7 +754,7 @@
     },
     {
       "file": "internal/openapi/client_test.go",
-      "line": 425,
+      "line": 391,
       "function": "TestRetriesDoNotReplayMutations",
       "class": "transport-fault",
       "signals": [
@@ -793,7 +793,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 65,
+      "line": 67,
       "function": "TestBranchServiceCreateFallbackBodyDecode",
       "class": "unreachable-state",
       "signals": [
@@ -810,7 +810,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 139,
+      "line": 144,
       "function": "TestBranchServiceEmptyResponsesAndTransientErrors",
       "class": "transport-fault",
       "signals": [
@@ -826,7 +826,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 217,
+      "line": 224,
       "function": "TestBranchServiceAdditionalValidationAndFallbackPaths",
       "class": "transport-fault",
       "signals": [
@@ -843,7 +843,7 @@
     },
     {
       "file": "internal/services/branch/service_test.go",
-      "line": 304,
+      "line": 313,
       "function": "TestBranchServiceTransientAcrossOperations",
       "class": "transport-fault",
       "signals": [
@@ -881,7 +881,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 59,
+      "line": 61,
       "function": "TestBrowseServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -897,7 +897,7 @@
     },
     {
       "file": "internal/services/browse/service_test.go",
-      "line": 116,
+      "line": 120,
       "function": "TestBrowseServiceEdit",
       "class": "transport-fault",
       "signals": [
@@ -914,7 +914,7 @@
     },
     {
       "file": "internal/services/codeowners/service_test.go",
-      "line": 45,
+      "line": 47,
       "function": "TestOwnersRefusesBeforeItAsks",
       "class": "unreached-guard",
       "signals": [
@@ -937,7 +937,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 57,
+      "line": 61,
       "function": "TestServiceCreateExplainsAnchorRejection",
       "class": "transport-fault",
       "signals": [
@@ -952,7 +952,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 101,
+      "line": 107,
       "function": "TestCountTasksValidatesTarget",
       "class": "unreached-guard",
       "signals": [
@@ -965,7 +965,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 130,
+      "line": 140,
       "function": "TestListSurfacesAMalformedPage",
       "class": "transport-fault",
       "signals": [
@@ -980,7 +980,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 158,
+      "line": 170,
       "function": "TestCreateRefusesABlockerOnACommit",
       "class": "unreached-guard",
       "signals": [
@@ -992,7 +992,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 190,
+      "line": 204,
       "function": "TestAnUnreadableVersionLookupStopsTheWrite",
       "class": "transport-fault",
       "signals": [
@@ -1005,7 +1005,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 244,
+      "line": 260,
       "function": "TestEveryEmptyReadIsRefused",
       "class": "transport-fault",
       "signals": [
@@ -1018,7 +1018,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 289,
+      "line": 307,
       "function": "TestAStationaryPageEndsTheListing",
       "class": "transport-fault",
       "signals": [
@@ -1032,7 +1032,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 323,
+      "line": 343,
       "function": "TestEveryEmptyWriteFallsBackToWhatWasSent",
       "class": "unreachable-state",
       "signals": [
@@ -1057,7 +1057,7 @@
     },
     {
       "file": "internal/services/commit/service_test.go",
-      "line": 56,
+      "line": 58,
       "function": "TestCommitServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -1073,7 +1073,7 @@
     },
     {
       "file": "internal/services/contract/paging_contract_test.go",
-      "line": 211,
+      "line": 213,
       "function": "TestZeroMeansTheServiceDefault",
       "class": "routing-beacon",
       "signals": [
@@ -1088,7 +1088,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 176,
+      "line": 186,
       "function": "TestDiffTransportFailureBranches",
       "class": "transport-fault",
       "signals": [
@@ -1102,7 +1102,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 252,
+      "line": 264,
       "function": "newDiffServiceWithHandler",
       "class": "harness-constructor",
       "signals": [
@@ -1113,7 +1113,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 510,
+      "line": 524,
       "function": "TestStatRunsSurfaceAnUndecodableSummary",
       "class": "transport-fault",
       "signals": [
@@ -1126,7 +1126,7 @@
     },
     {
       "file": "internal/services/diff/service_test.go",
-      "line": 559,
+      "line": 573,
       "function": "TestCompareDiffRefusesABodylessSuccess",
       "class": "unreachable-state",
       "signals": [
@@ -1151,7 +1151,7 @@
     },
     {
       "file": "internal/services/forksync/service_test.go",
-      "line": 52,
+      "line": 54,
       "function": "TestForkSyncServiceErrors",
       "class": "transport-fault",
       "signals": [
@@ -1165,7 +1165,7 @@
     },
     {
       "file": "internal/services/forksync/service_test.go",
-      "line": 128,
+      "line": 134,
       "function": "TestForkSyncSynchronizeDefaultsToMerge",
       "class": "unreachable-state",
       "signals": [
@@ -1191,7 +1191,7 @@
     },
     {
       "file": "internal/services/gpgkey/service_test.go",
-      "line": 46,
+      "line": 48,
       "function": "TestGpgKeyServicePagination",
       "class": "transport-fault",
       "signals": [
@@ -1206,7 +1206,7 @@
     },
     {
       "file": "internal/services/gpgkey/service_test.go",
-      "line": 70,
+      "line": 74,
       "function": "TestGpgKeyServiceErrors",
       "class": "transport-fault",
       "signals": [
@@ -1220,7 +1220,7 @@
     },
     {
       "file": "internal/services/gpgkey/service_test.go",
-      "line": 132,
+      "line": 138,
       "function": "TestGpgKeyServiceLimitAndEmpty",
       "class": "unreached-guard",
       "signals": [
@@ -1287,7 +1287,7 @@
     },
     {
       "file": "internal/services/project/service_test.go",
-      "line": 55,
+      "line": 57,
       "function": "TestProjectServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -1315,7 +1315,7 @@
     },
     {
       "file": "internal/services/pullrequest/inspection_test.go",
-      "line": 50,
+      "line": 52,
       "function": "TestInspectionPropagatesTransportErrors",
       "class": "transport-fault",
       "signals": [
@@ -1329,7 +1329,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 24,
+      "line": 25,
       "function": "TestListPullRequestsValidation",
       "class": "unreached-guard",
       "signals": [
@@ -1342,7 +1342,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 94,
+      "line": 99,
       "function": "TestGetPRBuildStatusesValidation",
       "class": "unreached-guard",
       "signals": [
@@ -1355,7 +1355,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 121,
+      "line": 126,
       "function": "TestGetBuildStatusesPaginationStuck",
       "class": "transport-fault",
       "signals": [
@@ -1370,7 +1370,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 485,
+      "line": 516,
       "function": "newCommentTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1381,7 +1381,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 511,
+      "line": 542,
       "function": "TestNeedsWorkPropagatesUserLookupFailure",
       "class": "unreachable-state",
       "signals": [
@@ -1395,7 +1395,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 670,
+      "line": 707,
       "function": "TestRebaseRejectsOutOfRangeVersion",
       "class": "unreached-guard",
       "signals": [
@@ -1405,6 +1405,21 @@
       ],
       "action": "keep",
       "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
+      "file": "internal/services/pullrequest/service_test.go",
+      "line": 774,
+      "function": "TestRebaseRetriesOnceOnAVersionItReadItself",
+      "class": "unreachable-state",
+      "signals": [
+        "asserts-request-body",
+        "returns-a-status",
+        "returns-bitbucket-entity",
+        "inspects-the-request-path"
+      ],
+      "action": "keep",
+      "reason": "the retry needs Bitbucket to bump the pull request's version between bb's read of it and bb's rebase, within a single command invocation. That is a race the live instance cannot be put into, only won or lost, so the live suite cannot arrange it. What can be reached is covered there: TestLivePRRebase for the ordinary path and TestLivePRRebaseWithAnExplicitVersionStillReportsAConflict for the --version boundary. The 409 body below is the one the live instance really sent while #598 was being reproduced, not a body composed from the spec.",
+      "reviewed": true
     },
     {
       "file": "internal/services/pullrequestactivity/service_test.go",
@@ -1419,7 +1434,7 @@
     },
     {
       "file": "internal/services/pullrequestactivity/service_test.go",
-      "line": 163,
+      "line": 169,
       "function": "TestListReportsATruncatedBodyAsTransient",
       "class": "transport-fault",
       "signals": [
@@ -1458,7 +1473,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 141,
+      "line": 145,
       "function": "TestQualityReportAndAnnotationFallbackBranches",
       "class": "unreachable-state",
       "signals": [
@@ -1474,7 +1489,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 185,
+      "line": 191,
       "function": "TestBuildStatusFocusedErrorAndFallbackBranches",
       "class": "transport-fault",
       "signals": [
@@ -1490,7 +1505,7 @@
     },
     {
       "file": "internal/services/quality/service_test.go",
-      "line": 275,
+      "line": 283,
       "function": "TestQualityServiceScopedAndDeploymentsErrorPaths",
       "class": "transport-fault",
       "signals": [
@@ -1521,7 +1536,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 115,
+      "line": 117,
       "function": "settingsServiceOn",
       "class": "unreachable-state",
       "signals": [
@@ -1535,7 +1550,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 147,
+      "line": 151,
       "function": "TestRepositorySettingsJSONFallbackAndValidationBranches",
       "class": "unreachable-state",
       "signals": [
@@ -1551,7 +1566,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 224,
+      "line": 230,
       "function": "newServiceWithBaseURL",
       "class": "harness-constructor",
       "signals": [
@@ -1562,7 +1577,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 236,
+      "line": 242,
       "function": "TestRepositorySettingsAdditionalBranches",
       "class": "unreachable-state",
       "signals": [
@@ -1588,7 +1603,7 @@
     },
     {
       "file": "internal/services/repository/admin_test.go",
-      "line": 55,
+      "line": 57,
       "function": "TestAdminServiceTransientAndMapping",
       "class": "transport-fault",
       "signals": [
@@ -1602,7 +1617,7 @@
     },
     {
       "file": "internal/services/reviewer/regressions_test.go",
-      "line": 40,
+      "line": 44,
       "function": "TestResolveReviewerGroupUsersSurfacesMembershipFailure",
       "class": "transport-fault",
       "signals": [
@@ -1618,7 +1633,7 @@
     },
     {
       "file": "internal/services/reviewer/regressions_test.go",
-      "line": 66,
+      "line": 70,
       "function": "TestResolveReviewerGroupUsersSurfacesMembershipFailure",
       "class": "transport-fault",
       "signals": [
@@ -1634,7 +1649,7 @@
     },
     {
       "file": "internal/services/reviewer/regressions_test.go",
-      "line": 167,
+      "line": 177,
       "function": "TestRepositoryIDErrorsWhenTheResponseCarriesNoID",
       "class": "unreachable-state",
       "signals": [
@@ -1648,7 +1663,7 @@
     },
     {
       "file": "internal/services/reviewer/service_coverage_test.go",
-      "line": 36,
+      "line": 40,
       "function": "TestCreateRepositoryConditionUnmarshalError",
       "class": "transport-fault",
       "signals": [
@@ -1662,7 +1677,7 @@
     },
     {
       "file": "internal/services/reviewer/service_coverage_test.go",
-      "line": 53,
+      "line": 59,
       "function": "TestCreateProjectConditionUnmarshalError",
       "class": "transport-fault",
       "signals": [
@@ -1676,7 +1691,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 104,
+      "line": 115,
       "function": "TestReviewerGroupsAndDefaultReviewersServiceContextCanceled",
       "class": "transport-fault",
       "signals": [
@@ -1690,7 +1705,7 @@
     },
     {
       "file": "internal/services/reviewer/service_test.go",
-      "line": 155,
+      "line": 168,
       "function": "TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks",
       "class": "unreachable-state",
       "signals": [
@@ -1716,7 +1731,7 @@
     },
     {
       "file": "internal/services/sshkey/service_test.go",
-      "line": 89,
+      "line": 91,
       "function": "TestSshKeyServicePagination",
       "class": "transport-fault",
       "signals": [
@@ -1730,7 +1745,7 @@
     },
     {
       "file": "internal/services/sshkey/service_test.go",
-      "line": 117,
+      "line": 121,
       "function": "TestSshKeyServicePaginationEdgeCases",
       "class": "transport-fault",
       "signals": [
@@ -1744,7 +1759,7 @@
     },
     {
       "file": "internal/services/sshkey/service_test.go",
-      "line": 133,
+      "line": 139,
       "function": "TestSshKeyServiceTransientErrors",
       "class": "transport-fault",
       "signals": [
@@ -1759,7 +1774,7 @@
     },
     {
       "file": "internal/services/sshkey/service_test.go",
-      "line": 177,
+      "line": 187,
       "function": "TestSshKeyServiceNetworkErrors",
       "class": "transport-fault",
       "signals": [
@@ -1796,7 +1811,7 @@
     },
     {
       "file": "internal/services/tag/service_test.go",
-      "line": 71,
+      "line": 75,
       "function": "TestTagServiceTransportAndValidationBranches",
       "class": "transport-fault",
       "signals": [
@@ -1821,7 +1836,7 @@
     },
     {
       "file": "internal/services/token/service_test.go",
-      "line": 116,
+      "line": 118,
       "function": "TestTokenServicePagination",
       "class": "transport-fault",
       "signals": [
@@ -1835,7 +1850,7 @@
     },
     {
       "file": "internal/services/token/service_test.go",
-      "line": 135,
+      "line": 139,
       "function": "TestTokenServiceTransientErrors",
       "class": "transport-fault",
       "signals": [
@@ -1850,7 +1865,7 @@
     },
     {
       "file": "internal/services/token/service_test.go",
-      "line": 204,
+      "line": 212,
       "function": "TestTokenServiceNetworkErrors",
       "class": "transport-fault",
       "signals": [
@@ -1862,7 +1877,7 @@
     },
     {
       "file": "internal/testsupport/unreached_test.go",
-      "line": 39,
+      "line": 41,
       "function": "TestUnreachedHandlerFailsWhenItIsReached",
       "class": "unreached-guard",
       "signals": [
@@ -1900,7 +1915,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 82,
+      "line": 84,
       "function": "TestClientLatestValidationAndErrorPaths",
       "class": "external-service",
       "signals": [
@@ -1913,7 +1928,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 95,
+      "line": 97,
       "function": "TestClientLatestValidationAndErrorPaths",
       "class": "external-service",
       "signals": [
@@ -1926,7 +1941,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 108,
+      "line": 110,
       "function": "TestClientLatestValidationAndErrorPaths",
       "class": "external-service",
       "signals": [
@@ -1939,7 +1954,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 204,
+      "line": 212,
       "function": "TestClientMirrorFallback",
       "class": "external-service",
       "signals": [
@@ -1952,7 +1967,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 227,
+      "line": 237,
       "function": "TestClientDownloadRelativeAndMirrorFallback",
       "class": "external-service",
       "signals": [
@@ -1964,7 +1979,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 264,
+      "line": 276,
       "function": "TestClientDownloadPrefersMirrorOverManifestURL",
       "class": "external-service",
       "signals": [
@@ -1975,7 +1990,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 270,
+      "line": 282,
       "function": "TestClientDownloadPrefersMirrorOverManifestURL",
       "class": "external-service",
       "signals": [
@@ -1986,7 +2001,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 294,
+      "line": 308,
       "function": "TestClientDownloadReportsBothAddressesWhenMirrorAndManifestFail",
       "class": "external-service",
       "signals": [
@@ -1997,7 +2012,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 299,
+      "line": 313,
       "function": "TestClientDownloadReportsBothAddressesWhenMirrorAndManifestFail",
       "class": "external-service",
       "signals": [
@@ -2008,7 +2023,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 316,
+      "line": 332,
       "function": "TestClientLatestFallsBackOnNonNotFoundMirrorErrors",
       "class": "external-service",
       "signals": [
@@ -2021,7 +2036,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 49,
+      "line": 53,
       "function": "TestHealthServerError",
       "class": "transport-fault",
       "signals": [
@@ -2035,7 +2050,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 67,
+      "line": 73,
       "function": "TestGetJSONSuccessWithTokenAuth",
       "class": "transport-fault",
       "signals": [
@@ -2051,7 +2066,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 100,
+      "line": 108,
       "function": "TestGetJSONRetriesAndSucceeds",
       "class": "transport-fault",
       "signals": [
@@ -2066,7 +2081,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 127,
+      "line": 137,
       "function": "TestGetJSONDecodeFailure",
       "class": "transport-fault",
       "signals": [
@@ -2081,7 +2096,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 166,
+      "line": 180,
       "function": "TestHealthRedirectConsideredReachable",
       "class": "transport-fault",
       "signals": [
@@ -2095,7 +2110,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 203,
+      "line": 221,
       "function": "TestGetJSONOutputTargetType",
       "class": "transport-fault",
       "signals": [
@@ -2109,7 +2124,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 228,
+      "line": 248,
       "function": "TestWriteJSONMethods",
       "class": "transport-fault",
       "signals": [
@@ -2124,7 +2139,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 273,
+      "line": 297,
       "function": "TestGetJSONTooManyRequestsRetryExhaustion",
       "class": "transport-fault",
       "signals": [
@@ -2139,7 +2154,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 298,
+      "line": 324,
       "function": "TestGetJSONTooManyRequestsUsesRetryAfter",
       "class": "transport-fault",
       "signals": [
@@ -2155,7 +2170,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 329,
+      "line": 357,
       "function": "TestGetJSONRetryCanceledDuringBackoff",
       "class": "transport-fault",
       "signals": [
@@ -2170,7 +2185,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 369,
+      "line": 399,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -2185,7 +2200,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 393,
+      "line": 423,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -2200,7 +2215,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 413,
+      "line": 443,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -2215,7 +2230,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 444,
+      "line": 474,
       "function": "TestHealthTransportAndPermanentErrorBranches",
       "class": "transport-fault",
       "signals": [
@@ -2230,7 +2245,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 578,
+      "line": 588,
       "function": "TestGetRawReturnsBodyVerbatim",
       "class": "transport-fault",
       "signals": [
@@ -2246,7 +2261,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 616,
+      "line": 628,
       "function": "TestGetRawRetriesServerErrors",
       "class": "transport-fault",
       "signals": [
@@ -2262,7 +2277,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 644,
+      "line": 658,
       "function": "TestGetRawTransientNetworkFailure",
       "class": "transport-fault",
       "signals": [
@@ -2276,7 +2291,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 666,
+      "line": 682,
       "function": "TestCurrentUserSlugMissingHeader",
       "class": "transport-fault",
       "signals": [
@@ -2290,7 +2305,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 688,
+      "line": 706,
       "function": "TestDoRequestSuccess",
       "class": "transport-fault",
       "signals": [
@@ -2308,7 +2323,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 748,
+      "line": 768,
       "function": "TestDoRequestFullURL",
       "class": "transport-fault",
       "signals": [
@@ -2323,7 +2338,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 794,
+      "line": 820,
       "function": "TestDoRequestRetriesAndStatusErrors",
       "class": "transport-fault",
       "signals": [
@@ -2338,7 +2353,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 831,
+      "line": 859,
       "function": "TestDoRequestRetryExhaustion",
       "class": "transport-fault",
       "signals": [
@@ -2354,7 +2369,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 874,
+      "line": 904,
       "function": "TestRetriesDoNotReplayMutations",
       "class": "transport-fault",
       "signals": [
@@ -2369,7 +2384,7 @@
     },
     {
       "file": "internal/transport/sigstore/trustedroot_test.go",
-      "line": 57,
+      "line": 61,
       "function": "TestTrustedRootFromTUFUsesSuppliedClient",
       "class": "external-service",
       "signals": [
@@ -2381,7 +2396,7 @@
     },
     {
       "file": "internal/transport/sigstore/trustedroot_test.go",
-      "line": 77,
+      "line": 83,
       "function": "TestHTTPFetcherDownloadFile",
       "class": "external-service",
       "signals": [
@@ -2393,7 +2408,7 @@
     },
     {
       "file": "internal/workflows/bulk/runner_test.go",
-      "line": 58,
+      "line": 62,
       "function": "TestServiceRunnerValidationBranches",
       "class": "unreached-guard",
       "signals": [
@@ -2406,7 +2421,7 @@
     },
     {
       "file": "internal/workflows/bulk/runner_test.go",
-      "line": 115,
+      "line": 121,
       "function": "TestAutoDeclineRejectsOutOfRangeInactivityWeeks",
       "class": "unreached-guard",
       "signals": [

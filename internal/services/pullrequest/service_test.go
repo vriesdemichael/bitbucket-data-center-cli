@@ -2,6 +2,7 @@ package pullrequest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
@@ -761,4 +762,68 @@ func TestUpdateRequiresAFieldTheCallerNamed(t *testing.T) {
 			t.Errorf("reviewers = %#v, want an empty list", payload["reviewers"])
 		}
 	})
+}
+
+// mock-inventory: unreachable-state — the retry needs Bitbucket to bump the pull request's version between bb's read of it and bb's rebase, within a single command invocation. That is a race the live instance cannot be put into, only won or lost, so the live suite cannot arrange it. What can be reached is covered there: TestLivePRRebase for the ordinary path and TestLivePRRebaseWithAnExplicitVersionStillReportsAConflict for the --version boundary. The 409 body below is the one the live instance really sent while #598 was being reproduced, not a body composed from the spec.
+func TestRebaseRetriesOnceOnAVersionItReadItself(t *testing.T) {
+	const outOfDate = `{"errors":[{"message":"You are attempting to modify a pull request based on out-of-date information.","exceptionName":"com.atlassian.bitbucket.pull.PullRequestOutOfDateException","currentVersion":1,"expectedVersion":0}]}`
+
+	var rebaseAttempts int
+	var sentVersions []any
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		if !strings.HasSuffix(request.URL.Path, "/rebase") {
+			// The version read: behind what the server holds, which is the
+			// whole point -- bb asked for 0 and 1 is current.
+			w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+			_, _ = fmt.Fprint(w, `{"id":42,"version":1,"title":"t","state":"OPEN","open":true}`)
+			return
+		}
+
+		rebaseAttempts++
+
+		var body struct {
+			Version any `json:"version"`
+		}
+		_ = json.NewDecoder(request.Body).Decode(&body)
+		sentVersions = append(sentVersions, body.Version)
+
+		if rebaseAttempts == 1 {
+			w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+			w.WriteHeader(http.StatusConflict)
+			_, _ = fmt.Fprint(w, outOfDate)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		_, _ = fmt.Fprint(w, `{"refChange":{"fromHash":"aaa","toHash":"bbb"}}`)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("BITBUCKET_URL", server.URL)
+	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	apiClient, err := openapigenerated.NewClientWithResponses(server.URL)
+	if err != nil {
+		t.Fatalf("failed to create api client: %v", err)
+	}
+
+	service := NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(apiClient)
+	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
+
+	// version nil: bb resolves it, so bb owns it going stale.
+	if _, err := service.Rebase(context.Background(), repo, "42", nil); err != nil {
+		t.Fatalf("expected the retry to recover, got: %v", err)
+	}
+	if rebaseAttempts != 2 {
+		t.Fatalf("expected exactly two rebase attempts, got %d", rebaseAttempts)
+	}
+	if len(sentVersions) != 2 || fmt.Sprintf("%v", sentVersions[1]) != "1" {
+		t.Fatalf("the retry did not send the re-read version: %v", sentVersions)
+	}
 }
