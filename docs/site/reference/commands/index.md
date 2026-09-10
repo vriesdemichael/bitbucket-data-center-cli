@@ -7955,7 +7955,18 @@ Flags:
 Compare commits or branches
 
 ```text
-Compare commits or branches
+Compare commits or branches.
+
+The direction is Bitbucket's, and it is the reverse of git's: the result is
+what is reachable from <from> but not from <to>. To see what a feature branch
+adds, pass the feature as <from> and the base as <to>.
+
+  bb repo compare feature/x main        # what feature/x adds
+  bb repo compare main feature/x        # nothing, unless main has moved
+
+Given git log base..feature reads the other way round, the git-natural order
+reports no changes for refs that do differ, which reads like the refs are
+identical.
 
 Usage:
   bb repo compare <from> <to> [flags]

@@ -49,6 +49,19 @@ func TestLiveRepoContentCommands(t *testing.T) {
 		if err != nil {
 			t.Fatalf("repo compare failed: %v\noutput: %s", err, compareOutput)
 		}
+
+		// --diff has to produce the patch it promises. It used to read the JSON
+		// diff endpoint, whose schema describes a single file, so a whole-repo
+		// comparison decoded empty and printed two /dev/null lines -- which a
+		// human reads as "the refs are identical" (#587).
+		patchOutput, err := executeLiveCLI(t, "--json", "repo", "compare", repo.CommitIDs[1], repo.CommitIDs[0], "--repo", repoRef, "--diff")
+		if err != nil {
+			t.Fatalf("repo compare --diff failed: %v\noutput: %s", err, patchOutput)
+		}
+		patch, _ := decodeJSONMap(t, patchOutput)["patch"].(string)
+		if !strings.Contains(patch, "diff --git") {
+			t.Fatalf("expected a unified diff between two commits that differ, got:\n%s", patch)
+		}
 	}
 
 	// A commit compared with itself: no changes, and no error either. A unit
