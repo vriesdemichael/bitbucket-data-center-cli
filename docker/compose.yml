@@ -25,6 +25,15 @@ services:
     # to keep in sync.
     image: bitbucket-cli-harness:local
     container_name: bb-bitbucket
+    # One live test has the instance deliver a webhook back to a listener on the
+    # host, and reaches it by this name.
+    #
+    # Docker Desktop provides the name itself, so it resolved on a developer's
+    # machine and nowhere else: Docker Engine, which the CI runners use, does
+    # not, so the delivery never arrived there. The test skipped rather than
+    # failed, which is why nobody noticed the assertion had never run in CI.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # atlas-run treats stdin EOF as a shutdown request. Without both of these
     # the container starts Bitbucket, immediately stops it, and exits 0.
     stdin_open: true
