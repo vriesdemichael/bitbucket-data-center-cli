@@ -1839,6 +1839,7 @@ Usage:
 
 Flags:
       --end-point string   Expected commit at branch tip
+  -y, --yes                Confirm deletion without being asked
 ```
 
 ??? note "Global flags"
@@ -10938,6 +10939,9 @@ Delete repository tag
 
 Usage:
   bb tag delete <name> [flags]
+
+Flags:
+  -y, --yes   Confirm deletion without being asked
 ```
 
 ??? note "Global flags"
@@ -11162,6 +11166,9 @@ Delete a repository webhook
 
 Usage:
   bb webhook delete <id> [flags]
+
+Flags:
+  -y, --yes   Confirm deletion without being asked
 ```
 
 ??? note "Global flags"

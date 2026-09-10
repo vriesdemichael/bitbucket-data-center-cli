@@ -274,3 +274,36 @@ func FillMissing(request Request, missing []Missing) error {
 	}
 	return nil
 }
+
+// ConfirmDeleteOf is ADR-073 for a command whose target is one named resource.
+//
+// The rule was implemented once, correctly, on repo delete, and stayed there:
+// thirty-four other destructive commands had no confirmation and no --yes at
+// all. Copying seven lines to thirty-four call sites is how the copies drift,
+// so the seven lines live here and the call sites pass what differs.
+func ConfirmDeleteOf(cmd *cobra.Command, machineOutput, yes, targetExplicit bool, resource string) error {
+	request := RequestFor(cmd, machineOutput)
+	request.Yes = yes
+	request.TargetExplicit = targetExplicit
+	request.Resource = resource
+	request.Flag = "--yes"
+
+	return ConfirmDestructive(request)
+}
+
+// TargetNamed reports whether the caller named the repository, rather than
+// having it filled in from the git remote.
+//
+// Changed alone is not "the caller named it": inference sets --repo and marks
+// it Changed so every command can resolve a target, which silently made an
+// inferred repository count as explicit and let --yes apply to the one you
+// happened to be standing in (#472). A branch named on the command line does
+// not rescue that -- `bb branch delete main` names the branch and infers the
+// repository, which is how a probe deleted main.
+func TargetNamed(cmd *cobra.Command, repositoryWasInferred func() bool) bool {
+	if cmd == nil || !cmd.Flags().Changed("repo") {
+		return false
+	}
+
+	return repositoryWasInferred == nil || !repositoryWasInferred()
+}
