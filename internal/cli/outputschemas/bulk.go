@@ -18,15 +18,21 @@ func bulkOutputSchemas(_, _ map[string]any) map[string]map[string]any {
 			map[string]any{
 				"type":                 "object",
 				"additionalProperties": true,
+				// Taken from reference/schemas/bulk-plan.schema.json, which is the
+				// artifact this describes. It declared a status field the plan
+				// never carries and omitted policy and validation, which it
+				// always does, so an agent reading --describe was told the
+				// wrong shape in both directions (#577).
 				"properties": map[string]any{
 					"apiVersion": map[string]any{"type": "string"},
 					"kind":       map[string]any{"const": "BulkPlan"},
 					"planHash":   map[string]any{"type": "string"},
-					"status":     map[string]any{"type": "string"},
+					"policy":     map[string]any{"type": "object"},
 					"summary":    map[string]any{"type": "object"},
 					"targets":    map[string]any{"type": "array"},
+					"validation": map[string]any{"type": "object"},
 				},
-				"required": []any{"apiVersion", "kind", "planHash"},
+				"required": []any{"apiVersion", "kind", "planHash", "policy", "summary", "targets", "validation"},
 			},
 		),
 		"output.bulk.apply.schema.json": jsonoutput.EnvelopeSchemaFor(

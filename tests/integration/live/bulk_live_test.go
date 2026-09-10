@@ -85,6 +85,11 @@ func TestLiveBulkPolicyPlanApplyStatus(t *testing.T) {
 	if strings.TrimSpace(plan.PlanHash) == "" {
 		t.Fatal("expected bulk plan hash")
 	}
+	// The schema --describe publishes has to match the plan the server
+	// produced. It declared a status field the plan never carries and
+	// omitted policy and validation, which it always does, so an agent was
+	// told the wrong shape in both directions (#577).
+	assertLiveDescribedShapeMatches(t, "bulk plan", planOutput)
 
 	applyOutput, err := executeLiveBulk(t, "--json", "bulk", "apply", "--from-plan", planPath)
 	if err != nil {
@@ -421,4 +426,49 @@ func bulkOperationIDFrom(t *testing.T, err error) string {
 	t.Fatalf("the error names no operation id, so there is no way back to the status: %v (details: %v)", err, details)
 
 	return ""
+}
+
+// assertLiveDescribedShapeMatches checks every field --describe promises is
+// present in a payload the server actually produced, and that the payload
+// carries nothing required which the schema omits.
+func assertLiveDescribedShapeMatches(t *testing.T, command, output string) {
+	t.Helper()
+
+	// executeLiveBulk, not executeLiveCLI: bb bulk writes its deprecation
+	// warning to stderr, and a combined read puts that in front of the JSON.
+	described, err := executeLiveBulk(t, "--json", "--describe", strings.Fields(command)[0], strings.Fields(command)[1])
+	if err != nil {
+		t.Fatalf("%s --describe failed: %v\noutput: %s", command, err, described)
+	}
+
+	// Two envelopes to get through: --json wraps the description in the
+	// standard data envelope, and the schema inside describes the command's data
+	// payload directly rather than the envelope around it -- which is the gap
+	// #573 reports.
+	var schema struct {
+		Data struct {
+			Schema struct {
+				Required []string `json:"required"`
+			} `json:"schema"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(described), &schema); err != nil {
+		t.Fatalf("decode the description: %v\n%s", err, described)
+	}
+	if len(schema.Data.Schema.Required) == 0 {
+		t.Fatalf("%s --describe promises no required fields:\n%s", command, described)
+	}
+
+	var envelope struct {
+		Data map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(output), &envelope); err != nil {
+		t.Fatalf("decode the payload: %v\n%s", err, output)
+	}
+
+	for _, field := range schema.Data.Schema.Required {
+		if _, present := envelope.Data[field]; !present {
+			t.Errorf("%s --describe requires %q, and the server's payload has no such field", command, field)
+		}
+	}
 }

@@ -143,7 +143,7 @@ type Participant struct {
 // Reported so a caller reading a saved document knows what it is looking at: an
 // empty list means something different under state=open than under state=all.
 type ListFilters struct {
-	State        string `json:"state,omitempty" jsonschema:"State filter: open, merged, declined or all."`
+	State        string `json:"state,omitempty" jsonschema:"State filter, one of: open, closed, all. Kept in step with openapi.PullRequestStateFilters, which --state validates against; the vocabulary published here named two values the flag rejects and omitted the one it accepts."`
 	Start        int    `json:"start" jsonschema:"Offset the page started at."`
 	Limit        int    `json:"limit" jsonschema:"Maximum entries requested."`
 	SourceBranch string `json:"sourceBranch,omitempty" jsonschema:"Source branch filter, when one was given."`
