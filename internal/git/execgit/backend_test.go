@@ -509,7 +509,7 @@ func TestCloneFailureRedactsCredentials(t *testing.T) {
 	backend.Timeout = 5 * time.Second
 
 	err := backend.Clone(context.Background(), "https://bitbucket.example.com/scm/PRJ/does-not-exist.git", git.CloneOptions{
-		Directory: "unused-dir",
+		Directory: t.TempDir(),
 		AuthToken: "super-secret-token-12345",
 	})
 	if err == nil {
@@ -532,7 +532,7 @@ func TestCloneFailureRedactsURLCredentials(t *testing.T) {
 	backend.Timeout = 5 * time.Second
 
 	err := backend.Clone(context.Background(), "https://x-token-auth:super-secret-password-54321@bitbucket.example.com/scm/PRJ/does-not-exist.git", git.CloneOptions{
-		Directory: "unused-dir",
+		Directory: t.TempDir(),
 	})
 	if err == nil {
 		t.Fatal("expected clone to fail")
