@@ -123,7 +123,7 @@ func settingsServiceOn(t *testing.T, handler http.HandlerFunc) (*Service, func()
 		handler(writer, request)
 	}))
 
-	client, err := openapigenerated.NewClientWithResponses(server.URL)
+	client, err := openapigenerated.NewClientWithResponses(server.URL, openapigenerated.WithHTTPClient(server.Client()))
 	if err != nil {
 		server.Close()
 		t.Fatalf("create generated client: %v", err)
@@ -230,7 +230,7 @@ func newServiceWithBaseURL(t *testing.T, handler http.HandlerFunc) *Service {
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 
-	client, err := openapigenerated.NewClientWithResponses(server.URL)
+	client, err := openapigenerated.NewClientWithResponses(server.URL, openapigenerated.WithHTTPClient(server.Client()))
 	if err != nil {
 		t.Fatalf("create generated client: %v", err)
 	}

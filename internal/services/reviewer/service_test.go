@@ -117,7 +117,7 @@ func TestReviewerGroupsAndDefaultReviewersServiceContextCanceled(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client, _ := openapigenerated.NewClientWithResponses(server.URL)
+	client, _ := openapigenerated.NewClientWithResponses(server.URL, openapigenerated.WithHTTPClient(server.Client()))
 	service := NewService(client)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -177,7 +177,7 @@ func TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks(t *testing.T)
 	}))
 	defer server.Close()
 
-	client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	client, _ := openapigenerated.NewClientWithResponses(server.URL+"/rest", openapigenerated.WithHTTPClient(server.Client()))
 	service := NewService(client)
 
 	ctx := context.Background()
