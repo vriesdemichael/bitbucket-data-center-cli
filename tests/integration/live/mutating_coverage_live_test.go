@@ -65,13 +65,31 @@ func TestLivePRReviewApprovalCycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr review approve failed: %v\noutput: %s", err, approveOutput)
 	}
+	// The command's own reply has to name the pull request it acted on.
+	// Bitbucket answers an approve with the participant, not the pull request,
+	// and decoding that as a pull request left every field zero -- so this
+	// reported #0 while approving the right one, and a machine caller reading
+	// the id got 0 (#587).
+	assertLiveReplyNamesPullRequest(t, approveOutput, prID)
 	assertLiveReviewerApproval(t, prID, reviewer.Username, true)
 
 	unapproveOutput, err := executeLiveCLI(t, "--json", "pr", "review", "unapprove", prID)
 	if err != nil {
 		t.Fatalf("pr review unapprove failed: %v\noutput: %s", err, unapproveOutput)
 	}
+	assertLiveReplyNamesPullRequest(t, unapproveOutput, prID)
 	assertLiveReviewerApproval(t, prID, reviewer.Username, false)
+}
+
+// assertLiveReplyNamesPullRequest checks that a mutating command's own reply
+// identifies the pull request, rather than returning a zero-valued one.
+func assertLiveReplyNamesPullRequest(t *testing.T, output, prID string) {
+	t.Helper()
+
+	id, _ := extractPRData(decodeJSONMap(t, output))["id"].(float64)
+	if got := fmt.Sprintf("%d", int(id)); got != prID {
+		t.Fatalf("the reply names pull request %s, want %s:\n%s", got, prID, output)
+	}
 }
 
 // assertLiveReviewerApproval reads the pull request back and checks one

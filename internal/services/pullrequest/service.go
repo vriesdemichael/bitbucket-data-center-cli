@@ -422,12 +422,17 @@ func (service *Service) Approve(ctx context.Context, repository RepositoryRef, p
 		return PullRequest{}, err
 	}
 
-	var response pullRequestValue
-	if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/approve", pullRequestPath(repository), resolvedID), nil, map[string]any{}, &response); err != nil {
+	if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/approve", pullRequestPath(repository), resolvedID), nil, map[string]any{}, nil); err != nil {
 		return PullRequest{}, err
 	}
 
-	return mapPullRequest(response), nil
+	// The participant endpoints answer with the participant, not the pull
+	// request -- the spec calls it "Details of the new participant" -- so
+	// decoding the reply as a pull request left a zero in every field, and
+	// `bb pr review approve` reported "pull request #0" while succeeding
+	// against the right one (#587). Read the pull request back instead: the
+	// shape callers already parse stays the same, and now it is true.
+	return service.Get(ctx, repository, resolvedID)
 }
 
 func (service *Service) Unapprove(ctx context.Context, repository RepositoryRef, pullRequestID string) (PullRequest, error) {
@@ -440,12 +445,17 @@ func (service *Service) Unapprove(ctx context.Context, repository RepositoryRef,
 		return PullRequest{}, err
 	}
 
-	var response pullRequestValue
-	if err := service.client.DeleteJSON(ctx, fmt.Sprintf("%s/%s/approve", pullRequestPath(repository), resolvedID), nil, nil, &response); err != nil {
+	if err := service.client.DeleteJSON(ctx, fmt.Sprintf("%s/%s/approve", pullRequestPath(repository), resolvedID), nil, nil, nil); err != nil {
 		return PullRequest{}, err
 	}
 
-	return mapPullRequest(response), nil
+	// The participant endpoints answer with the participant, not the pull
+	// request -- the spec calls it "Details of the new participant" -- so
+	// decoding the reply as a pull request left a zero in every field, and
+	// `bb pr review approve` reported "pull request #0" while succeeding
+	// against the right one (#587). Read the pull request back instead: the
+	// shape callers already parse stays the same, and now it is true.
+	return service.Get(ctx, repository, resolvedID)
 }
 
 // NeedsWork sets the current user's review status to NEEDS_WORK on a pull
@@ -470,12 +480,17 @@ func (service *Service) NeedsWork(ctx context.Context, repository RepositoryRef,
 	path := fmt.Sprintf("%s/%s/participants/%s", pullRequestPath(repository), resolvedID, url.PathEscape(userSlug))
 	payload := map[string]any{"status": "NEEDS_WORK"}
 
-	var response pullRequestValue
-	if err := service.client.PutJSON(ctx, path, nil, payload, &response); err != nil {
+	if err := service.client.PutJSON(ctx, path, nil, payload, nil); err != nil {
 		return PullRequest{}, err
 	}
 
-	return mapPullRequest(response), nil
+	// The participant endpoints answer with the participant, not the pull
+	// request -- the spec calls it "Details of the new participant" -- so
+	// decoding the reply as a pull request left a zero in every field, and
+	// `bb pr review approve` reported "pull request #0" while succeeding
+	// against the right one (#587). Read the pull request back instead: the
+	// shape callers already parse stays the same, and now it is true.
+	return service.Get(ctx, repository, resolvedID)
 }
 
 // InlineCommentAnchor specifies the file location for an inline PR comment.

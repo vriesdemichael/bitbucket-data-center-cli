@@ -113,3 +113,83 @@ func TestAnAbsentConfigIsNotAnError(t *testing.T) {
 		t.Fatalf("an absent config must resolve, got: %v", err)
 	}
 }
+
+// TestTwoConfigFilesKeepSeparateCredentialsForOneHost is #587.
+//
+// The keyring entry was keyed by host alone, so a second identity against the
+// same Bitbucket host evicted the first -- even from a different config file,
+// because the path did not reach the key.
+func TestTwoConfigFilesKeepSeparateCredentialsForOneHost(t *testing.T) {
+	const host = "https://bitbucket.example"
+
+	directory := t.TempDir()
+	personal := filepath.Join(directory, "personal.yaml")
+	service := filepath.Join(directory, "service.yaml")
+
+	login := func(path, token string) {
+		t.Helper()
+		t.Setenv("BB_CONFIG_PATH", path)
+		t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+		if _, err := SaveLogin(LoginInput{Host: host, Token: token}); err != nil {
+			t.Fatalf("login into %s: %v", path, err)
+		}
+	}
+
+	tokenFor := func(path string) string {
+		t.Helper()
+		t.Setenv("BB_CONFIG_PATH", path)
+		t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+		t.Setenv("BITBUCKET_TOKEN", "")
+		t.Setenv("BITBUCKET_URL", "")
+
+		cfg, err := LoadFromEnv()
+		if err != nil {
+			t.Fatalf("load %s: %v", path, err)
+		}
+
+		return cfg.BitbucketToken
+	}
+
+	login(personal, "personal-token")
+	login(service, "service-token")
+
+	// The second login must not have evicted the first.
+	if got := tokenFor(personal); got != "personal-token" {
+		t.Errorf("the personal config resolves %q, want personal-token", got)
+	}
+	if got := tokenFor(service); got != "service-token" {
+		t.Errorf("the service config resolves %q, want service-token", got)
+	}
+}
+
+// A credential stored before the key carried the config file still resolves,
+// so nobody has to log in again for the fix.
+func TestALegacyKeyringEntryStillResolves(t *testing.T) {
+	const host = "https://legacy.example"
+
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	t.Setenv("BB_CONFIG_PATH", path)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+	t.Setenv("BITBUCKET_TOKEN", "")
+	t.Setenv("BITBUCKET_URL", "")
+
+	if _, err := SaveLogin(LoginInput{Host: host, Token: "current"}); err != nil {
+		t.Fatalf("login: %v", err)
+	}
+
+	// Rewrite the secret the way a pre-fix bb stored it: host key, no file.
+	if err := keyringDelete(keyringServiceName, credentialKey(host)+":token"); err != nil {
+		t.Fatalf("clear the scoped entry: %v", err)
+	}
+	if err := keyringSet(keyringServiceName, hostKey(host)+":token", "legacy"); err != nil {
+		t.Fatalf("write the legacy entry: %v", err)
+	}
+
+	cfg, err := LoadFromEnv()
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.BitbucketToken != "legacy" {
+		t.Fatalf("the legacy credential did not resolve, got %q", cfg.BitbucketToken)
+	}
+}
