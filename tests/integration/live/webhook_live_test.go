@@ -44,7 +44,7 @@ func TestLiveRepositoryWebhookLifecycle(t *testing.T) {
 		t.Fatalf("expected a webhook id in the create output: %s", createOutput)
 	}
 	defer func() {
-		_, _ = executeLiveCLI(t, "repo", "settings", "workflow", "webhooks", "delete", webhookID)
+		_, _ = executeLiveCLI(t, "repo", "settings", "workflow", "webhooks", "delete", webhookID, "--yes")
 	}()
 
 	listOutput, err := executeLiveCLI(t, "--json", "webhook", "list", "--limit", "50")
@@ -175,7 +175,7 @@ func TestLiveProjectWebhookLifecycle(t *testing.T) {
 		t.Fatalf("project webhook stats failed: %v", err)
 	}
 
-	if _, err := executeLiveCLI(t, "--json", "project", "webhook", "delete", seeded.Key, webhookID); err != nil {
+	if _, err := executeLiveCLI(t, "--json", "project", "webhook", "delete", seeded.Key, webhookID, "--yes"); err != nil {
 		t.Fatalf("project webhook delete failed: %v", err)
 	}
 }

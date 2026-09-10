@@ -109,7 +109,7 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 		// that does not exist, which is a 404. The mock made the branch look
 		// reachable because its permission lookup answered 200 for every project
 		// while only the project itself 404'd.
-		output, err := executeLiveCLI(t, "--json", "--dry-run", "project", "delete", "NOSUCHPROJECTKEY")
+		output, err := executeLiveCLI(t, "--json", "--dry-run", "project", "delete", "NOSUCHPROJECTKEY", "--yes")
 		if err == nil {
 			t.Fatalf("expected a missing project to fail, got:\n%s", output)
 		}

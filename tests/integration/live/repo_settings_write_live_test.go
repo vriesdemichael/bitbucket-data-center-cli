@@ -59,7 +59,7 @@ func TestLiveWorkflowWebhookLifecycle(t *testing.T) {
 	})
 
 	t.Run("deleting it removes it", func(t *testing.T) {
-		mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "delete", id, "--repo", repoRef)
+		mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "delete", id, "--repo", repoRef, "--yes")
 
 		listing := mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "list", "--repo", repoRef)
 		if strings.Contains(listing, url) {

@@ -74,7 +74,7 @@ func TestLiveGovernanceCLI(t *testing.T) {
 
 		if id != "" {
 			_, _ = executeLiveCLI(t, "--json", "reviewer", "condition", "update", id, `{"requiredApprovals": 2}`, "--repo", seeded.Key+"/"+repo.Slug)
-			_, _ = executeLiveCLI(t, "--json", "reviewer", "condition", "delete", id, "--repo", seeded.Key+"/"+repo.Slug)
+			_, _ = executeLiveCLI(t, "--json", "reviewer", "condition", "delete", id, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
 		}
 	}
 
@@ -256,7 +256,7 @@ func TestLiveCLIProjectPermissionsUserRevokeDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("project permissions users list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "users", "revoke", seeded.Key, "dryrun-missing-user")
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "users", "revoke", seeded.Key, "dryrun-missing-user", "--yes")
 	if err != nil {
 		t.Fatalf("project permissions users revoke dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -294,7 +294,7 @@ func TestLiveCLIProjectPermissionsGroupRevokeDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("project permissions groups list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "groups", "revoke", seeded.Key, "dryrun-missing-group")
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "groups", "revoke", seeded.Key, "dryrun-missing-group", "--yes")
 	if err != nil {
 		t.Fatalf("project permissions groups revoke dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -411,7 +411,7 @@ func TestLiveCLIReviewerConditionDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("reviewer condition list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "reviewer", "condition", "delete", "999999", "--repo", seeded.Key+"/"+seeded.Repos[0].Slug)
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "reviewer", "condition", "delete", "999999", "--repo", seeded.Key+"/"+seeded.Repos[0].Slug, "--yes")
 	if err != nil {
 		t.Fatalf("reviewer condition delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -536,10 +536,10 @@ func TestLiveReviewerGroupsAndDefaultReviewersCLI(t *testing.T) {
 			}
 
 			// Dry-run delete
-			_, _ = executeLiveCLI(t, "--json", "--dry-run", "reviewer-group", "delete", id, "--repo", seeded.Key+"/"+repo.Slug)
+			_, _ = executeLiveCLI(t, "--json", "--dry-run", "reviewer-group", "delete", id, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
 
 			// Delete
-			_, _ = executeLiveCLI(t, "--json", "reviewer-group", "delete", id, "--repo", seeded.Key+"/"+repo.Slug)
+			_, _ = executeLiveCLI(t, "--json", "reviewer-group", "delete", id, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
 		}
 	}
 

@@ -123,7 +123,7 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 		}
 		if tokenID, ok := numericOrStringID(created["id"]); ok {
 			defer func() {
-				_, _ = executeLiveCLI(t, "auth", "token", "revoke", tokenID, "--user", reviewer.Username)
+				_, _ = executeLiveCLI(t, "auth", "token", "revoke", tokenID, "--user", reviewer.Username, "--yes")
 			}()
 		}
 

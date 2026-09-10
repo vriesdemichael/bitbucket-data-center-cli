@@ -212,7 +212,7 @@ func TestLiveCommentVersionHandling(t *testing.T) {
 	})
 
 	t.Run("a delete without a version resolves it", func(t *testing.T) {
-		mustLiveCLI(t, "repo", "comment", "delete", "--commit", commit, "--id", id)
+		mustLiveCLI(t, "repo", "comment", "delete", "--commit", commit, "--id", id, "--yes")
 
 		// An unanchored commit comment belongs to no file, so there is no
 		// listing to read it out of. Fetching it by id is the check.

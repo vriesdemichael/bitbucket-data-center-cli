@@ -14,7 +14,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
@@ -37,11 +36,6 @@ type Dependencies struct {
 	WriteJSON           func(io.Writer, any) error
 	WriteJSONList       func(io.Writer, any, bool) error
 	PermissionChecker   func(*openapigenerated.ClientWithResponses) PermissionChecker
-
-	// RepositoryWasInferred reports that --repo was filled in from the git
-	// remote rather than named by the caller. ADR-073 makes --yes inert on an
-	// inferred target: it is the one you happen to be standing in.
-	RepositoryWasInferred func() bool
 }
 
 func (deps *Dependencies) withDefaults() Dependencies {
@@ -357,7 +351,6 @@ func New(deps Dependencies) *cobra.Command {
 	branchCmd.AddCommand(createCmd)
 
 	var deleteEndPoint string
-	var confirmBranchDelete bool
 	deleteCmd := &cobra.Command{
 		Use:   "delete <name>",
 		Short: "Delete repository branch",
@@ -374,20 +367,6 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			service := branchservice.NewService(client)
-			// ADR-073. Not under --dry-run: that path validates without
-			// deleting, so there is nothing to confirm.
-			//
-			// The resource names the repository as well as the branch, because
-			// the repository is the part the caller may not have chosen -- it
-			// comes from the git remote unless --repo said otherwise.
-			if !d.DryRunEnabled() {
-				target := fmt.Sprintf("%s/%s@%s", repo.ProjectKey, repo.Slug, args[0])
-				if err := prompt.ConfirmDeleteOf(cmd, d.JSONEnabled(), confirmBranchDelete,
-					prompt.TargetNamed(cmd, d.RepositoryWasInferred), target); err != nil {
-					return err
-				}
-			}
-
 			if err := service.Delete(cmd.Context(), repo, args[0], deleteEndPoint, d.DryRunEnabled()); err != nil {
 				return err
 			}
@@ -429,7 +408,6 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	deleteCmd.Flags().StringVar(&deleteEndPoint, "end-point", "", "Expected commit at branch tip")
-	deleteCmd.Flags().BoolVarP(&confirmBranchDelete, "yes", "y", false, "Confirm deletion without being asked")
 	branchCmd.AddCommand(deleteCmd)
 
 	defaultCmd := &cobra.Command{Use: "default", Short: "Get or set repository default branch"}

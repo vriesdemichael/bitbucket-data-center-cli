@@ -131,11 +131,11 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected comment id in reply create output: %s", replyOnCommitOutput)
 	}
-	if deleteReplyOutput, err := executeLiveCLI(t, "repo", "comment", "delete", "--commit", commitID, "--id", replyCommentID); err != nil {
+	if deleteReplyOutput, err := executeLiveCLI(t, "repo", "comment", "delete", "--commit", commitID, "--id", replyCommentID, "--yes"); err != nil {
 		t.Fatalf("repo comment delete (reply) failed: %v\noutput: %s", err, deleteReplyOutput)
 	}
 
-	deleteCommitArgs := []string{"repo", "comment", "delete", "--commit", commitID, "--id", commitCommentID}
+	deleteCommitArgs := []string{"repo", "comment", "delete", "--commit", commitID, "--id", commitCommentID, "--yes"}
 	if updatedCommitVersion != "" {
 		deleteCommitArgs = append(deleteCommitArgs, "--version", updatedCommitVersion)
 	}
@@ -239,7 +239,7 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 		t.Fatalf("expected version in pr update output: %s", updatePROutput)
 	}
 
-	deletePRArgs := []string{"repo", "comment", "delete", "--pr", pullRequestID, "--id", prCommentID}
+	deletePRArgs := []string{"repo", "comment", "delete", "--pr", pullRequestID, "--id", prCommentID, "--yes"}
 	if updatedPRVersion != "" {
 		deletePRArgs = append(deletePRArgs, "--version", updatedPRVersion)
 	}
@@ -307,7 +307,7 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 	}
 	webhookID, ok := webhookIDFromCreateOutput(createWebhookOutput)
 	if ok {
-		deleteWebhookOutput, deleteErr := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "delete", webhookID)
+		deleteWebhookOutput, deleteErr := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "delete", webhookID, "--yes")
 		if deleteErr != nil {
 			t.Fatalf("repo settings workflow webhooks delete failed: %v\noutput: %s", deleteErr, deleteWebhookOutput)
 		}
@@ -494,7 +494,7 @@ func TestLiveCLIRepoPermissionsUserRevokeDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("permissions users list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "users", "revoke", "dryrun-missing-user")
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "users", "revoke", "dryrun-missing-user", "--yes")
 	if err != nil {
 		t.Fatalf("permissions users revoke dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -533,7 +533,7 @@ func TestLiveCLIRepoPermissionsGroupRevokeDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("permissions groups list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "groups", "revoke", "dryrun-missing-group")
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "groups", "revoke", "dryrun-missing-group", "--yes")
 	if err != nil {
 		t.Fatalf("permissions groups revoke dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -748,7 +748,7 @@ func TestLiveCLIRepoWebhookDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("webhooks list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "workflow", "webhooks", "delete", webhookID)
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "workflow", "webhooks", "delete", webhookID, "--yes")
 	if err != nil {
 		t.Fatalf("webhook delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -765,7 +765,7 @@ func TestLiveCLIRepoWebhookDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected no webhook side-effect from delete dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
 
-	_, _ = executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "delete", webhookID)
+	_, _ = executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "delete", webhookID, "--yes")
 }
 
 func TestLiveCLIPRCreateDryRunNoSideEffect(t *testing.T) {
@@ -946,7 +946,7 @@ func TestLiveCLIPRReviewerRemoveDryRunNoSideEffect(t *testing.T) {
 	}
 	beforeReviewers := prReviewersSnapshot(t, beforeOutput)
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "review", "reviewer", "remove", pullRequestID, "--user", username)
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "review", "reviewer", "remove", pullRequestID, "--user", username, "--yes")
 	if err != nil {
 		t.Fatalf("pr reviewer remove dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -1289,7 +1289,7 @@ func TestLiveCLIRepoCommentUpdateDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected no comment side-effect from update dry-run\nbefore: %s\nafter: %s", beforeOutput, afterOutput)
 	}
 
-	_, _ = executeLiveCLI(t, "repo", "comment", "delete", "--pr", pullRequestID, "--id", commentID)
+	_, _ = executeLiveCLI(t, "repo", "comment", "delete", "--pr", pullRequestID, "--id", commentID, "--yes")
 }
 
 func TestLiveCLIRepoCommentDeleteDryRunNoSideEffect(t *testing.T) {
@@ -1332,7 +1332,7 @@ func TestLiveCLIRepoCommentDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("comment list before failed: %v\noutput: %s", err, beforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "comment", "delete", "--pr", pullRequestID, "--id", commentID)
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "comment", "delete", "--pr", pullRequestID, "--id", commentID, "--yes")
 	if err != nil {
 		t.Fatalf("repo comment delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -1349,7 +1349,7 @@ func TestLiveCLIRepoCommentDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected no comment side-effect from delete dry-run\nbefore: %s\nafter: %s", beforeOutput, afterOutput)
 	}
 
-	_, _ = executeLiveCLI(t, "repo", "comment", "delete", "--pr", pullRequestID, "--id", commentID)
+	_, _ = executeLiveCLI(t, "repo", "comment", "delete", "--pr", pullRequestID, "--id", commentID, "--yes")
 }
 
 func prepareOpenPRDryRunFixture(t *testing.T) (*liveHarness, seededProject, seededRepository, string) {

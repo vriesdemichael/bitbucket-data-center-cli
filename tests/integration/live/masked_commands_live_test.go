@@ -63,7 +63,7 @@ func TestLiveReviewerConditionUpdateAndDelete(t *testing.T) {
 	})
 
 	t.Run("delete removes it", func(t *testing.T) {
-		mustLiveCLI(t, "reviewer", "condition", "delete", id, "--repo", repoRef)
+		mustLiveCLI(t, "reviewer", "condition", "delete", id, "--repo", repoRef, "--yes")
 
 		listing := mustLiveCLI(t, "reviewer", "condition", "list", "--repo", repoRef)
 		if strings.Contains(listing, `"id": `+id) {
@@ -160,9 +160,9 @@ func TestLiveReviewerGroupUpdate(t *testing.T) {
 	t.Run("a group that is not there is reported as missing", func(t *testing.T) {
 		for _, args := range [][]string{
 			{"reviewer-group", "update", "no-such-group", "--name", "x", "--repo", repoRef},
-			{"reviewer-group", "delete", "no-such-group", "--repo", repoRef},
+			{"reviewer-group", "delete", "no-such-group", "--repo", repoRef, "--yes"},
 			{"reviewer-group", "update", "no-such-group", "--name", "x", "--project", seeded.Key},
-			{"reviewer-group", "delete", "no-such-group", "--project", seeded.Key},
+			{"reviewer-group", "delete", "no-such-group", "--project", seeded.Key, "--yes"},
 		} {
 			output, err := executeLiveCLI(t, append([]string{"--json"}, args...)...)
 			if err == nil {
@@ -202,7 +202,7 @@ func TestLiveGroupPermissionGrants(t *testing.T) {
 			t.Fatalf("the group grant did not take:\n%s", listing)
 		}
 
-		mustLiveCLI(t, "project", "permissions", "groups", "revoke", seeded.Key, licensedGroup)
+		mustLiveCLI(t, "project", "permissions", "groups", "revoke", seeded.Key, licensedGroup, "--yes")
 	})
 
 	t.Run("repo settings security permissions groups grant", func(t *testing.T) {
@@ -215,6 +215,6 @@ func TestLiveGroupPermissionGrants(t *testing.T) {
 		}
 
 		mustLiveCLI(t, "repo", "settings", "security", "permissions", "groups", "revoke",
-			licensedGroup, "--repo", repoRef)
+			licensedGroup, "--repo", repoRef, "--yes")
 	})
 }

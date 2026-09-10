@@ -288,7 +288,7 @@ func TestLivePermissionProjectDeleteDeniedWithProjectWriteOnly(t *testing.T) {
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, user)
 
 	// project delete requires PROJECT_ADMIN.
-	output, cliErr := executeLiveCLI(t, "--json", "project", "delete", seeded.Key)
+	output, cliErr := executeLiveCLI(t, "--json", "project", "delete", seeded.Key, "--yes")
 	assertAuthorizationError(t, cliErr, output, "project delete with PROJECT_WRITE only")
 }
 
@@ -318,7 +318,7 @@ func TestLivePermissionProjectDeleteDryRunDeniedWithProjectWriteOnly(t *testing.
 	repo := seeded.Repos[0]
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, user)
 
-	output, cliErr := executeLiveCLI(t, "--json", "--dry-run", "project", "delete", seeded.Key)
+	output, cliErr := executeLiveCLI(t, "--json", "--dry-run", "project", "delete", seeded.Key, "--yes")
 	assertDryRunAuthorizationError(t, cliErr, output, "project delete dry-run with PROJECT_WRITE only")
 }
 
@@ -818,7 +818,7 @@ func TestLivePermissionAliasSubjects(t *testing.T) {
 			t.Errorf("expected a bare user name, got: %s", userOutput)
 		}
 
-		groupOutput := mustLiveHumanCLI(t, "repo", "permissions", "revoke", "--group", group)
+		groupOutput := mustLiveHumanCLI(t, "repo", "permissions", "revoke", "--group", group, "--yes")
 		if !strings.Contains(groupOutput, "for group "+group) {
 			t.Errorf("expected the group to be named as one, got: %s", groupOutput)
 		}
@@ -937,7 +937,7 @@ func TestLivePermissionAliasSubjectsForProjects(t *testing.T) {
 		t.Errorf("expected a bare user name in the human grant, got: %s", humanGrant)
 	}
 
-	humanRevoke := mustLiveHumanCLI(t, "project", "permissions", "revoke", "--group", seeded.Key, group)
+	humanRevoke := mustLiveHumanCLI(t, "project", "permissions", "revoke", "--group", seeded.Key, group, "--yes")
 	if !strings.Contains(humanRevoke, "Revoked permission") ||
 		!strings.Contains(humanRevoke, "for group "+group+" on project "+seeded.Key) {
 		t.Errorf("expected the group to be named as one, got: %s", humanRevoke)

@@ -149,7 +149,7 @@ func TestLiveAISkillLifecycle(t *testing.T) {
 		t.Fatalf("expected the installed skill to have content at %s", installedPath)
 	}
 
-	removeOutput, err := executeLiveCLI(t, "ai", "skill", "remove")
+	removeOutput, err := executeLiveCLI(t, "ai", "skill", "remove", "--yes")
 	if err != nil {
 		t.Fatalf("ai skill remove failed: %v\noutput: %s", err, removeOutput)
 	}

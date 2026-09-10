@@ -1,73 +1,12 @@
 package cli
 
 import (
-	"slices"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
 )
-
-// destructiveVerbs name a command that destroys something.
-//
-// By name, deliberately. The alternative was to ride the dry-run registry,
-// which already classifies every command by what it does to the server and
-// would have caught a destructive command that is not named like one. The name
-// is what a user reads before typing, and the one real gap -- bulk apply, which
-// mutates many repositories and is called neither delete nor remove -- leaves
-// with bb bulk in v5 (#608).
-var destructiveVerbs = map[string]struct{}{
-	"delete": {},
-	"remove": {},
-	"clear":  {},
-	"revoke": {},
-}
-
-// notYetGuarded is the backlog, and it shrinks only.
-//
-// ADR-073 was written unconditionally and implemented on two commands, so
-// thirty-four were unguarded when this test was written. Landing them all in one
-// change would be a single unreviewable diff across a dozen packages; landing
-// them without a list would lose track of which were left.
-//
-// The list is checked in both directions. A command not on it must be guarded,
-// and a command on it must NOT be -- so guarding one fails this test until its
-// entry is deleted, and the list cannot quietly outlive the work. Empty is the
-// finished state, and then this map and its check go away with it.
-var notYetGuarded = map[string]struct{}{
-	"ai skill remove":                                  {},
-	"auth alias remove":                                {},
-	"auth gpg-key remove":                              {},
-	"auth token revoke":                                {},
-	"branch restriction delete":                        {},
-	"build delete":                                     {},
-	"build required delete":                            {},
-	"deployment delete":                                {},
-	"insights annotation delete":                       {},
-	"insights report delete":                           {},
-	"pr review reviewer remove":                        {},
-	"project branch-restriction delete":                {},
-	"project default-task delete":                      {},
-	"project delete":                                   {},
-	"project permissions groups revoke":                {},
-	"project permissions revoke":                       {},
-	"project permissions users revoke":                 {},
-	"project webhook delete":                           {},
-	"repo comment delete":                              {},
-	"repo default-task delete":                         {},
-	"repo label remove":                                {},
-	"repo permissions revoke":                          {},
-	"repo settings auto-decline delete":                {},
-	"repo settings auto-merge delete":                  {},
-	"repo settings security permissions groups revoke": {},
-	"repo settings security permissions users revoke":  {},
-	"repo settings workflow webhooks delete":           {},
-	"repo ssh-key remove":                              {},
-	"reviewer condition delete":                        {},
-	"reviewer-group delete":                            {},
-	"ssh-key remove":                                   {},
-}
 
 // TestEveryDestructiveCommandCanBeConfirmed is ADR-073's rule, enforced.
 //
@@ -116,36 +55,14 @@ func TestEveryDestructiveCommandCanBeConfirmed(t *testing.T) {
 		t.Fatalf("found only %d destructive commands, expected dozens.\nThe detector is probably broken, not the command tree.", found)
 	}
 
-	var stillUnguarded, nowGuarded []string
-	for _, path := range unguarded {
-		if _, known := notYetGuarded[path]; !known {
-			stillUnguarded = append(stillUnguarded, path)
-		}
-	}
-	for path := range notYetGuarded {
-		if !slices.Contains(unguarded, path) {
-			nowGuarded = append(nowGuarded, path)
-		}
-	}
-
-	if len(stillUnguarded) > 0 {
-		sort.Strings(stillUnguarded)
-		t.Errorf(
+	if len(unguarded) > 0 {
+		sort.Strings(unguarded)
+		t.Fatalf(
 			"%d destructive command(s) cannot be confirmed:\n  %s\n\n"+
-				"Each needs a --yes flag and a prompt.ConfirmDeleteOf (single named target) or\n"+
-				"prompt.ConfirmAction (no single target) call. ADR-073 requires both: confirm\n"+
-				"when a person is present, require the flag when not.",
-			len(stillUnguarded), strings.Join(stillUnguarded, "\n  "),
-		)
-	}
-
-	if len(nowGuarded) > 0 {
-		sort.Strings(nowGuarded)
-		t.Errorf(
-			"%d command(s) are guarded but still listed in notYetGuarded:\n  %s\n\n"+
-				"Delete those entries. The list exists to shrink, and an entry that outlives\n"+
-				"its command is how a backlog becomes a permanent exemption.",
-			len(nowGuarded), strings.Join(nowGuarded, "\n  "),
+				"registerDestructiveConfirmations installs --yes and the question on every leaf\n"+
+				"named delete, remove, clear or revoke. A command here means the walk missed it,\n"+
+				"or that it is listed in confirmsItself without asking on its own.",
+			len(unguarded), strings.Join(unguarded, "\n  "),
 		)
 	}
 }

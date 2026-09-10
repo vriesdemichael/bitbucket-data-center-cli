@@ -174,7 +174,7 @@ func TestLivePRReviewerAddAndRemove(t *testing.T) {
 		t.Errorf("the human line names the wrong pull request:\n%s", humanAdd)
 	}
 
-	removeOutput, err := executeLiveCLI(t, "--json", "pr", "review", "reviewer", "remove", prID, "--user", reviewer.Username)
+	removeOutput, err := executeLiveCLI(t, "--json", "pr", "review", "reviewer", "remove", prID, "--user", reviewer.Username, "--yes")
 	if err != nil {
 		t.Fatalf("pr review reviewer remove failed: %v\noutput: %s", err, removeOutput)
 	}
@@ -361,7 +361,7 @@ func TestLiveProjectPermissionsGrantAndRevoke(t *testing.T) {
 		mustLiveCLI(t, "project", "permissions", "grant", seeded.Key, user.Username, "PROJECT_READ")
 		assertLiveProjectPermission(t, seeded.Key, false, user.Username, true)
 
-		mustLiveCLI(t, "project", "permissions", "revoke", seeded.Key, user.Username)
+		mustLiveCLI(t, "project", "permissions", "revoke", seeded.Key, user.Username, "--yes")
 		assertLiveProjectPermission(t, seeded.Key, false, user.Username, false)
 	})
 
@@ -371,7 +371,7 @@ func TestLiveProjectPermissionsGrantAndRevoke(t *testing.T) {
 		mustLiveCLI(t, "project", "permissions", "grant", seeded.Key, user.Username, "PROJECT_WRITE")
 		assertLiveProjectPermission(t, seeded.Key, false, user.Username, true)
 
-		mustLiveCLI(t, "project", "permissions", "users", "revoke", seeded.Key, user.Username)
+		mustLiveCLI(t, "project", "permissions", "users", "revoke", seeded.Key, user.Username, "--yes")
 		assertLiveProjectPermission(t, seeded.Key, false, user.Username, false)
 	})
 
@@ -379,7 +379,7 @@ func TestLiveProjectPermissionsGrantAndRevoke(t *testing.T) {
 		mustLiveCLI(t, "project", "permissions", "grant", "--group", seeded.Key, licensedGroup, "PROJECT_READ")
 		assertLiveProjectPermission(t, seeded.Key, true, licensedGroup, true)
 
-		mustLiveCLI(t, "project", "permissions", "groups", "revoke", seeded.Key, licensedGroup)
+		mustLiveCLI(t, "project", "permissions", "groups", "revoke", seeded.Key, licensedGroup, "--yes")
 		assertLiveProjectPermission(t, seeded.Key, true, licensedGroup, false)
 	})
 }
@@ -411,7 +411,7 @@ func TestLiveRepoPermissionsGrantAndRevoke(t *testing.T) {
 		mustLiveCLI(t, "repo", "permissions", "grant", user.Username, "REPO_READ", "--repo", repoRef)
 		assertLiveRepoPermission(t, repoRef, false, user.Username, true)
 
-		mustLiveCLI(t, "repo", "permissions", "revoke", user.Username, "--repo", repoRef)
+		mustLiveCLI(t, "repo", "permissions", "revoke", user.Username, "--repo", repoRef, "--yes")
 		assertLiveRepoPermission(t, repoRef, false, user.Username, false)
 	})
 
@@ -419,7 +419,7 @@ func TestLiveRepoPermissionsGrantAndRevoke(t *testing.T) {
 		mustLiveCLI(t, "repo", "permissions", "grant", "--group", licensedGroup, "REPO_READ", "--repo", repoRef)
 		assertLiveRepoPermission(t, repoRef, true, licensedGroup, true)
 
-		mustLiveCLI(t, "repo", "permissions", "revoke", "--group", licensedGroup, "--repo", repoRef)
+		mustLiveCLI(t, "repo", "permissions", "revoke", "--group", licensedGroup, "--repo", repoRef, "--yes")
 		assertLiveRepoPermission(t, repoRef, true, licensedGroup, false)
 	})
 
@@ -428,13 +428,13 @@ func TestLiveRepoPermissionsGrantAndRevoke(t *testing.T) {
 		mustLiveCLI(t, "repo", "permissions", "grant", user.Username, "REPO_WRITE", "--repo", repoRef)
 		assertLiveRepoPermission(t, repoRef, false, user.Username, true)
 
-		mustLiveCLI(t, "repo", "settings", "security", "permissions", "users", "revoke", user.Username, "--repo", repoRef)
+		mustLiveCLI(t, "repo", "settings", "security", "permissions", "users", "revoke", user.Username, "--repo", repoRef, "--yes")
 		assertLiveRepoPermission(t, repoRef, false, user.Username, false)
 
 		mustLiveCLI(t, "repo", "permissions", "grant", "--group", licensedGroup, "REPO_WRITE", "--repo", repoRef)
 		assertLiveRepoPermission(t, repoRef, true, licensedGroup, true)
 
-		mustLiveCLI(t, "repo", "settings", "security", "permissions", "groups", "revoke", licensedGroup, "--repo", repoRef)
+		mustLiveCLI(t, "repo", "settings", "security", "permissions", "groups", "revoke", licensedGroup, "--repo", repoRef, "--yes")
 		assertLiveRepoPermission(t, repoRef, true, licensedGroup, false)
 	})
 }
@@ -897,7 +897,7 @@ func TestLiveReviewerGroupDeleteAcceptsAName(t *testing.T) {
 	}
 
 	t.Run("a name that exists is deleted", func(t *testing.T) {
-		mustLiveCLI(t, "reviewer-group", "delete", groupName, "--repo", repoRef)
+		mustLiveCLI(t, "reviewer-group", "delete", groupName, "--repo", repoRef, "--yes")
 
 		listing := mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef)
 		if strings.Contains(listing, groupName) {
@@ -906,7 +906,7 @@ func TestLiveReviewerGroupDeleteAcceptsAName(t *testing.T) {
 	})
 
 	t.Run("a name that does not exist is not found, not transient", func(t *testing.T) {
-		output, err := executeLiveCLI(t, "--json", "reviewer-group", "delete", "no_such_group", "--repo", repoRef)
+		output, err := executeLiveCLI(t, "--json", "reviewer-group", "delete", "no_such_group", "--repo", repoRef, "--yes")
 		if err == nil {
 			t.Fatalf("expected a failure, got:\n%s", output)
 		}

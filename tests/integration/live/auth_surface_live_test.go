@@ -127,7 +127,7 @@ func TestLiveAuthAliasLifecycle(t *testing.T) {
 		t.Fatalf("auth alias add before remove failed: %v\noutput: %s", err, output)
 	}
 
-	if output, err := executeLiveCLI(t, "auth", "alias", "remove", alias, "--host", host); err != nil {
+	if output, err := executeLiveCLI(t, "auth", "alias", "remove", alias, "--host", host, "--yes"); err != nil {
 		t.Fatalf("auth alias remove failed: %v\noutput: %s", err, output)
 	}
 
@@ -172,7 +172,7 @@ func TestLiveAuthTokenLifecycle(t *testing.T) {
 		t.Fatalf("expected a token id in the create output: %s", createOutput)
 	}
 	defer func() {
-		_, _ = executeLiveCLI(t, "auth", "token", "revoke", tokenID, "--user", "admin")
+		_, _ = executeLiveCLI(t, "auth", "token", "revoke", tokenID, "--user", "admin", "--yes")
 	}()
 
 	// The token is worth having only if Bitbucket accepts it the way bb sends
@@ -237,7 +237,7 @@ func TestLiveAuthTokenLifecycle(t *testing.T) {
 		t.Fatalf("expected the rename to persist, got: %s", afterUpdate)
 	}
 
-	if _, err := executeLiveCLI(t, "--json", "auth", "token", "revoke", tokenID, "--user", "admin"); err != nil {
+	if _, err := executeLiveCLI(t, "--json", "auth", "token", "revoke", tokenID, "--user", "admin", "--yes"); err != nil {
 		t.Fatalf("auth token revoke failed: %v", err)
 	}
 }

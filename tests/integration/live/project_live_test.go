@@ -70,7 +70,7 @@ func TestLiveCLIProjectLifecycle(t *testing.T) {
 	}
 
 	// Delete
-	deleteOutput, err := executeLiveCLI(t, "--json", "project", "delete", newKey)
+	deleteOutput, err := executeLiveCLI(t, "--json", "project", "delete", newKey, "--yes")
 	if err != nil {
 		t.Fatalf("project delete failed: %v\noutput: %s", err, deleteOutput)
 	}
@@ -135,7 +135,7 @@ func TestLiveCLIProjectDeleteDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "project", "delete", seeded.Key)
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "project", "delete", seeded.Key, "--yes")
 	if err != nil {
 		t.Fatalf("project delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}

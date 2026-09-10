@@ -72,7 +72,7 @@ func TestLiveReviewerConditionsLifecycle(t *testing.T) {
 	}
 
 	defer func() {
-		_, _ = executeLiveCLI(t, "reviewer", "condition", "delete", conditionID, "--repo", seeded.Key+"/"+repo.Slug)
+		_, _ = executeLiveCLI(t, "reviewer", "condition", "delete", conditionID, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
 	}()
 
 	// 3. Verify condition appears in listing
@@ -98,7 +98,7 @@ func TestLiveReviewerConditionsLifecycle(t *testing.T) {
 	}
 
 	// 5. Delete condition with dry-run
-	dryRunOutput, err := executeLiveCLI(t, "--dry-run", "reviewer", "condition", "delete", conditionID, "--repo", seeded.Key+"/"+repo.Slug)
+	dryRunOutput, err := executeLiveCLI(t, "--dry-run", "reviewer", "condition", "delete", conditionID, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
 	if err != nil {
 		t.Fatalf("reviewer condition delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -107,7 +107,7 @@ func TestLiveReviewerConditionsLifecycle(t *testing.T) {
 	}
 
 	// 6. Delete condition for real
-	deleteOutput, err := executeLiveCLI(t, "--json", "reviewer", "condition", "delete", conditionID, "--repo", seeded.Key+"/"+repo.Slug)
+	deleteOutput, err := executeLiveCLI(t, "--json", "reviewer", "condition", "delete", conditionID, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
 	if err != nil {
 		t.Fatalf("reviewer condition delete failed: %v\noutput: %s", err, deleteOutput)
 	}
@@ -144,7 +144,7 @@ func TestLiveReviewerGroupsLifecycle(t *testing.T) {
 	groupID := fmt.Sprintf("%d", int64(decodeJSONMap(t, createOutput)["id"].(float64)))
 
 	defer func() {
-		_, _ = executeLiveCLI(t, "reviewer-group", "delete", groupID, "--repo", seeded.Key+"/"+repo.Slug)
+		_, _ = executeLiveCLI(t, "reviewer-group", "delete", groupID, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
 	}()
 
 	// 2. List reviewer groups on repository
@@ -166,13 +166,13 @@ func TestLiveReviewerGroupsLifecycle(t *testing.T) {
 	}
 
 	// 4. Delete reviewer group with dry-run
-	dryRunOutput, err := executeLiveCLI(t, "--dry-run", "reviewer-group", "delete", groupID, "--repo", seeded.Key+"/"+repo.Slug)
+	dryRunOutput, err := executeLiveCLI(t, "--dry-run", "reviewer-group", "delete", groupID, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
 	if err != nil {
 		t.Fatalf("reviewer group delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
 
 	// 5. Delete reviewer group for real
-	deleteOutput, err := executeLiveCLI(t, "--json", "reviewer-group", "delete", groupID, "--repo", seeded.Key+"/"+repo.Slug)
+	deleteOutput, err := executeLiveCLI(t, "--json", "reviewer-group", "delete", groupID, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
 	if err != nil {
 		t.Fatalf("reviewer group delete failed: %v\noutput: %s", err, deleteOutput)
 	}
