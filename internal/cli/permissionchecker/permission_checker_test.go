@@ -26,7 +26,7 @@ func TestPermissionCheckerInspect500Error(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	client, err := openapigenerated.NewClientWithResponses(server.URL+"/rest", openapigenerated.WithHTTPClient(server.Client()))
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}

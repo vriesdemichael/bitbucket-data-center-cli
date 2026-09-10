@@ -44,7 +44,7 @@ func TestCreateRepositoryConditionUnmarshalError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client, _ := openapigenerated.NewClientWithResponses(server.URL)
+	client, _ := openapigenerated.NewClientWithResponses(server.URL, openapigenerated.WithHTTPClient(server.Client()))
 	service := NewService(client)
 
 	_, err := service.CreateRepositoryCondition(context.Background(), "P", "R", openapigenerated.RestDefaultReviewersRequest{})
@@ -63,7 +63,7 @@ func TestCreateProjectConditionUnmarshalError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client, _ := openapigenerated.NewClientWithResponses(server.URL)
+	client, _ := openapigenerated.NewClientWithResponses(server.URL, openapigenerated.WithHTTPClient(server.Client()))
 	service := NewService(client)
 
 	_, err := service.CreateProjectCondition(context.Background(), "P", openapigenerated.RestDefaultReviewersRequest{})
