@@ -99,7 +99,7 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 	*/
 
 	// Delete branch
-	deleteOutput, err := executeLiveCLI(t, "branch", "delete", branchName)
+	deleteOutput, err := executeLiveCLI(t, "branch", "delete", branchName, "--yes")
 	if err != nil {
 		t.Fatalf("branch delete failed: %v\noutput: %s", err, deleteOutput)
 	}
@@ -177,7 +177,7 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 		t.Fatalf("expected restriction %s in human list output, got: %s", restrictionID, listOutput)
 	}
 
-	deleteOutput, err := executeLiveCLI(t, "--json", "branch", "restriction", "delete", restrictionID)
+	deleteOutput, err := executeLiveCLI(t, "--json", "branch", "restriction", "delete", restrictionID, "--yes")
 	if err != nil {
 		t.Fatalf("restriction delete failed: %v\noutput: %s", err, deleteOutput)
 	}
@@ -226,7 +226,7 @@ func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {
 		t.Fatalf("branch create failed: %v\noutput: %s", err, createOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "branch", "delete", branchName)
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "branch", "delete", branchName, "--yes")
 	if err != nil {
 		t.Fatalf("branch delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -245,7 +245,7 @@ func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {
 		t.Fatalf("expected branch %s to remain after dry-run delete, got: %s", branchName, listOutput)
 	}
 
-	deleteOutput, err := executeLiveCLI(t, "branch", "delete", branchName)
+	deleteOutput, err := executeLiveCLI(t, "branch", "delete", branchName, "--yes")
 	if err != nil {
 		t.Fatalf("branch delete cleanup failed: %v\noutput: %s", err, deleteOutput)
 	}
@@ -409,7 +409,7 @@ func TestLiveCLIBranchRestrictionDeleteDryRunHasNoSideEffect(t *testing.T) {
 		t.Fatalf("restriction list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "branch", "restriction", "delete", restrictionID)
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "branch", "restriction", "delete", restrictionID, "--yes")
 	if err != nil {
 		t.Fatalf("restriction delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -426,7 +426,7 @@ func TestLiveCLIBranchRestrictionDeleteDryRunHasNoSideEffect(t *testing.T) {
 		t.Fatalf("expected no restriction side-effect from delete dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
 
-	_, _ = executeLiveCLI(t, "--json", "branch", "restriction", "delete", restrictionID)
+	_, _ = executeLiveCLI(t, "--json", "branch", "restriction", "delete", restrictionID, "--yes")
 }
 
 func TestLiveCLIBranchModelUpdateDryRunHasNoSideEffect(t *testing.T) {
@@ -531,5 +531,5 @@ func TestLiveCLIBranchRestrictionUpdateDryRunHasNoSideEffect(t *testing.T) {
 		t.Fatalf("expected no restriction side-effect from update dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
 
-	_, _ = executeLiveCLI(t, "--json", "branch", "restriction", "delete", restrictionID)
+	_, _ = executeLiveCLI(t, "--json", "branch", "restriction", "delete", restrictionID, "--yes")
 }

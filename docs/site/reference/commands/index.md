@@ -484,6 +484,7 @@ Usage:
 
 Flags:
       --global   Remove from user-level path (~/.agents/skills/<skill>/SKILL.md)
+  -y, --yes      Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -830,6 +831,7 @@ Usage:
 
 Flags:
       --host string   Bitbucket host URL
+  -y, --yes           Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -1038,6 +1040,9 @@ Remove a personal GPG key
 
 Usage:
   bb auth gpg-key remove <id-or-fingerprint> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -1544,6 +1549,9 @@ Revoke an HTTP access token by ID
 
 Usage:
   bb auth token revoke <id> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -1839,7 +1847,7 @@ Usage:
 
 Flags:
       --end-point string   Expected commit at branch tip
-  -y, --yes                Confirm deletion without being asked
+  -y, --yes                Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -2107,6 +2115,9 @@ Delete branch restriction
 
 Usage:
   bb branch restriction delete <id> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -2341,6 +2352,7 @@ Usage:
 
 Flags:
       --key string   Build status key
+  -y, --yes          Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -2487,6 +2499,7 @@ Usage:
 Flags:
       --all         Return every result rather than the first --limit
       --limit int   Maximum number of results to return (default 25)
+  -y, --yes         Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -3240,6 +3253,7 @@ Flags:
       --deployment-sequence-number string   Identify by deployment sequence number
       --env-key string                      Identify by environment key
       --key string                          Identify by deployment key
+  -y, --yes                                 Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -3580,6 +3594,7 @@ Usage:
 
 Flags:
       --external-id string   External annotation ID to delete
+  -y, --yes                  Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -3728,6 +3743,9 @@ Delete a Code Insights report
 
 Usage:
   bb insights report delete <commit> <key> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -5428,6 +5446,7 @@ Usage:
 
 Flags:
       --user string   Reviewer username
+  -y, --yes           Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -5826,6 +5845,9 @@ Delete a project restriction
 
 Usage:
   bb project branch-restriction delete <project-key> <restriction-id> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -6073,6 +6095,9 @@ Delete a default checklist task
 
 Usage:
   bb project default-task delete <project-key> <task-id> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -6171,6 +6196,9 @@ Delete a project
 
 Usage:
   bb project delete <key> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -6457,6 +6485,9 @@ Also available as bb project permissions revoke --group, one level shallower.
 
 Usage:
   bb project permissions groups revoke <key> <group> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -6531,6 +6562,7 @@ Usage:
 
 Flags:
       --group   Treat the argument as a group rather than a user
+  -y, --yes     Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -6703,6 +6735,9 @@ Also available as bb project permissions revoke, one level shallower.
 
 Usage:
   bb project permissions users revoke <key> <username> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -6849,6 +6884,9 @@ Delete a project webhook
 
 Usage:
   bb project webhook delete <project-key> <webhook-id> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -7808,6 +7846,7 @@ Usage:
 Flags:
       --id string       Comment ID
       --version int32   Expected comment version
+  -y, --yes             Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -8073,6 +8112,9 @@ Delete a default checklist task
 
 Usage:
   bb repo default-task delete <id> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -8398,6 +8440,9 @@ Remove a repository label
 
 Usage:
   bb repo label remove <label> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -8590,6 +8635,7 @@ Usage:
 
 Flags:
       --group   Treat the argument as a group rather than a user
+  -y, --yes     Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -8738,6 +8784,9 @@ Delete repository auto-decline settings
 
 Usage:
   bb repo settings auto-decline delete [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -8879,6 +8928,9 @@ Delete repository auto-merge settings
 
 Usage:
   bb repo settings auto-merge delete [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -9410,6 +9462,9 @@ Also available as bb repo permissions revoke --group, one level shallower.
 
 Usage:
   bb repo settings security permissions groups revoke <group> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -9555,6 +9610,9 @@ Also available as bb repo permissions revoke, one level shallower.
 
 Usage:
   bb repo settings security permissions users revoke <username> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -9703,6 +9761,9 @@ Delete a repository webhook
 
 Usage:
   bb repo settings workflow webhooks delete <webhook-id> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -9885,6 +9946,9 @@ Remove a project or repository SSH access key by ID
 
 Usage:
   bb repo ssh-key remove <key-id> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -10245,6 +10309,9 @@ Delete a default reviewer condition
 
 Usage:
   bb reviewer condition delete <id> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -10428,6 +10495,9 @@ Delete a reviewer group
 
 Usage:
   bb reviewer-group delete <id> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -10828,6 +10898,9 @@ Remove a personal SSH key by ID
 
 Usage:
   bb ssh-key remove <key-id> [flags]
+
+Flags:
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -10941,7 +11014,7 @@ Usage:
   bb tag delete <name> [flags]
 
 Flags:
-  -y, --yes   Confirm deletion without being asked
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"
@@ -11168,7 +11241,7 @@ Usage:
   bb webhook delete <id> [flags]
 
 Flags:
-  -y, --yes   Confirm deletion without being asked
+  -y, --yes   Confirm without being asked
 ```
 
 ??? note "Global flags"

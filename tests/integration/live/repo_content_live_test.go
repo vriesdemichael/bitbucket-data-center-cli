@@ -153,7 +153,7 @@ func TestLiveRepoDefaultTaskLifecycle(t *testing.T) {
 	assertMatcherID(t, anyRefData, "targetMatcher", "ANY_REF_MATCHER_ID")
 	if anyRefID, ok := numericOrStringID(anyRefData["id"]); ok {
 		t.Cleanup(func() {
-			_, _ = executeLiveCLI(t, "--json", "repo", "default-task", "delete", anyRefID, "--repo", repoRef)
+			_, _ = executeLiveCLI(t, "--json", "repo", "default-task", "delete", anyRefID, "--repo", repoRef, "--yes")
 		})
 	}
 
@@ -178,7 +178,7 @@ func TestLiveRepoDefaultTaskLifecycle(t *testing.T) {
 		t.Fatalf("expected the update to persist, got: %s", afterUpdate)
 	}
 
-	if _, err := executeLiveCLI(t, "--json", "repo", "default-task", "delete", taskID, "--repo", repoRef); err != nil {
+	if _, err := executeLiveCLI(t, "--json", "repo", "default-task", "delete", taskID, "--repo", repoRef, "--yes"); err != nil {
 		t.Fatalf("repo default-task delete failed: %v", err)
 	}
 }

@@ -178,12 +178,12 @@ func TestLiveCLIInsightsLifecycle(t *testing.T) {
 		t.Fatalf("expected annotation external id %s in output: %s", externalID, listAnnotationOutput)
 	}
 
-	deleteAnnotationOutput, err := executeLiveCLI(t, "--json", "insights", "annotation", "delete", commitID, reportKey, "--external-id", externalID)
+	deleteAnnotationOutput, err := executeLiveCLI(t, "--json", "insights", "annotation", "delete", commitID, reportKey, "--external-id", externalID, "--yes")
 	if err != nil {
 		t.Fatalf("insights annotation delete failed: %v\noutput: %s", err, deleteAnnotationOutput)
 	}
 
-	deleteReportOutput, err := executeLiveCLI(t, "--json", "insights", "report", "delete", commitID, reportKey)
+	deleteReportOutput, err := executeLiveCLI(t, "--json", "insights", "report", "delete", commitID, reportKey, "--yes")
 	if err != nil {
 		t.Fatalf("insights report delete failed: %v\noutput: %s", err, deleteReportOutput)
 	}
@@ -279,7 +279,7 @@ func TestLiveCLIBuildAndTagLifecycle(t *testing.T) {
 		t.Fatalf("expected tag name in human tag list output, got: %s", listTagOutput)
 	}
 
-	deleteTagOutput, err := executeLiveCLI(t, "--json", "tag", "delete", tagName)
+	deleteTagOutput, err := executeLiveCLI(t, "--json", "tag", "delete", tagName, "--yes")
 	if err != nil {
 		t.Fatalf("tag delete failed: %v\noutput: %s", err, deleteTagOutput)
 	}
@@ -353,7 +353,7 @@ func TestLiveCLIBuildRequiredAndInsightsHumanOutput(t *testing.T) {
 			t.Fatalf("build required update failed: %v\noutput: %s", err, updateRequiredOutput)
 		}
 
-		deleteRequiredOutput, err := executeLiveCLI(t, "build", "required", "delete", requiredID)
+		deleteRequiredOutput, err := executeLiveCLI(t, "build", "required", "delete", requiredID, "--yes")
 		if err != nil {
 			t.Fatalf("build required delete (human) failed: %v\noutput: %s", err, deleteRequiredOutput)
 		}
@@ -401,7 +401,7 @@ func TestLiveCLIBuildRequiredAndInsightsHumanOutput(t *testing.T) {
 		t.Fatalf("expected annotation details in human list output, got: %s", listAnnotationOutput)
 	}
 
-	deleteAnnotationOutput, err := executeLiveCLI(t, "insights", "annotation", "delete", commitID, reportKey, "--external-id", externalID)
+	deleteAnnotationOutput, err := executeLiveCLI(t, "insights", "annotation", "delete", commitID, reportKey, "--external-id", externalID, "--yes")
 	if err != nil {
 		t.Fatalf("insights annotation delete (human) failed: %v\noutput: %s", err, deleteAnnotationOutput)
 	}
@@ -409,7 +409,7 @@ func TestLiveCLIBuildRequiredAndInsightsHumanOutput(t *testing.T) {
 		t.Fatalf("expected human annotation delete output, got: %s", deleteAnnotationOutput)
 	}
 
-	deleteReportOutput, err := executeLiveCLI(t, "insights", "report", "delete", commitID, reportKey)
+	deleteReportOutput, err := executeLiveCLI(t, "insights", "report", "delete", commitID, reportKey, "--yes")
 	if err != nil {
 		t.Fatalf("insights report delete (human) failed: %v\noutput: %s", err, deleteReportOutput)
 	}
@@ -610,7 +610,7 @@ func TestLiveCLITagDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("tag list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "tag", "delete", tagName)
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "tag", "delete", tagName, "--yes")
 	if err != nil {
 		t.Fatalf("tag delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -630,7 +630,7 @@ func TestLiveCLITagDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected no tag side-effect from dry-run delete\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
 
-	_, _ = executeLiveCLI(t, "--json", "tag", "delete", tagName)
+	_, _ = executeLiveCLI(t, "--json", "tag", "delete", tagName, "--yes")
 }
 
 func createRequiredBuildCheckWithRetry(t *testing.T, body string) (string, bool) {

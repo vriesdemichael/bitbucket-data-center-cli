@@ -14,7 +14,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
@@ -37,11 +36,6 @@ type Dependencies struct {
 	WriteJSON           func(io.Writer, any) error
 	WriteJSONList       func(io.Writer, any, bool) error
 	PermissionChecker   func(*openapigenerated.ClientWithResponses) PermissionChecker
-
-	// RepositoryWasInferred reports that --repo was filled in from the git
-	// remote rather than named by the caller. ADR-073 makes --yes inert on an
-	// inferred target: it is the one you happen to be standing in.
-	RepositoryWasInferred func() bool
 }
 
 func (d Dependencies) withDefaults() Dependencies {
@@ -437,7 +431,6 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd.Flags().BoolVar(&createActive, "active", true, "Whether the new webhook is active")
 	createFields.RegisterCreate(createCmd)
 
-	var confirmWebhookDelete bool
 	deleteCmd := &cobra.Command{
 		Use:   "delete <id>",
 		Short: "Delete a repository webhook",
@@ -470,15 +463,6 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
-			// ADR-073. The repository is named alongside the id: the id means
-			// nothing on its own, and the repository is the part that came from
-			// the git remote unless --repo said otherwise.
-			target := fmt.Sprintf("%s/%s webhook %s", repo.ProjectKey, repo.Slug, args[0])
-			if err := prompt.ConfirmDeleteOf(cmd, d.JSONEnabled(), confirmWebhookDelete,
-				prompt.TargetNamed(cmd, d.RepositoryWasInferred), target); err != nil {
-				return err
-			}
-
 			if err := service.DeleteRepositoryWebhook(cmd.Context(), repo, args[0]); err != nil {
 				return err
 			}
@@ -500,7 +484,6 @@ func New(deps Dependencies) *cobra.Command {
 	webhookCmd.AddCommand(listCmd)
 	webhookCmd.AddCommand(createCmd)
 	webhookCmd.AddCommand(updateCmd)
-	deleteCmd.Flags().BoolVarP(&confirmWebhookDelete, "yes", "y", false, "Confirm deletion without being asked")
 	webhookCmd.AddCommand(deleteCmd)
 	testCmd.Flags().StringVar(&webhookTestURL, "url", "", "Test this URL instead of the webhook's configured one")
 	webhookflags.RegisterReveal(testCmd, &testRevealSecret, "the endpoint credentials Bitbucket sent")

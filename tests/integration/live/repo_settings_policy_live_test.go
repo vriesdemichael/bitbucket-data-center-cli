@@ -46,7 +46,7 @@ func TestLiveRepoSettingsAutoDeclineLifecycle(t *testing.T) {
 		t.Fatalf("expected auto-decline to read back as enabled, got: %s", getOutput)
 	}
 
-	deleteOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "auto-decline", "delete", "--repo", repoRef)
+	deleteOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "auto-decline", "delete", "--repo", repoRef, "--yes")
 	if err != nil {
 		t.Fatalf("auto-decline delete failed: %v\noutput: %s", err, deleteOutput)
 	}
@@ -94,7 +94,7 @@ func TestLiveRepoSettingsAutoMergeLifecycle(t *testing.T) {
 		t.Fatalf("expected auto-merge to read back as enabled, got: %s", getOutput)
 	}
 
-	deleteOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "auto-merge", "delete", "--repo", repoRef)
+	deleteOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "auto-merge", "delete", "--repo", repoRef, "--yes")
 	if err != nil {
 		t.Fatalf("auto-merge delete failed: %v\noutput: %s", err, deleteOutput)
 	}

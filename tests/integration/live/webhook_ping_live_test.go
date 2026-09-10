@@ -45,7 +45,7 @@ func TestLiveWebhookRealPingDelivery(t *testing.T) {
 		t.Fatalf("expected valid webhook ID in create output: %s", createOutput)
 	}
 	defer func() {
-		_, _ = executeLiveCLI(t, "repo", "settings", "workflow", "webhooks", "delete", webhookID)
+		_, _ = executeLiveCLI(t, "repo", "settings", "workflow", "webhooks", "delete", webhookID, "--yes")
 	}()
 
 	// Execute webhook test ping via bb CLI

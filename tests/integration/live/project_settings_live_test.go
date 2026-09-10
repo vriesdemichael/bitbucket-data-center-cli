@@ -50,7 +50,7 @@ func TestLiveProjectDefaultTaskLifecycle(t *testing.T) {
 	assertMatcherID(t, anyRefData, "targetMatcher", "ANY_REF_MATCHER_ID")
 	if anyRefID, ok := numericOrStringID(anyRefData["id"]); ok {
 		t.Cleanup(func() {
-			_, _ = executeLiveCLI(t, "--json", "project", "default-task", "delete", seeded.Key, anyRefID)
+			_, _ = executeLiveCLI(t, "--json", "project", "default-task", "delete", seeded.Key, anyRefID, "--yes")
 		})
 	}
 
@@ -75,7 +75,7 @@ func TestLiveProjectDefaultTaskLifecycle(t *testing.T) {
 		t.Fatalf("expected the update to persist, got: %s", afterUpdate)
 	}
 
-	if _, err := executeLiveCLI(t, "--json", "project", "default-task", "delete", seeded.Key, taskID); err != nil {
+	if _, err := executeLiveCLI(t, "--json", "project", "default-task", "delete", seeded.Key, taskID, "--yes"); err != nil {
 		t.Fatalf("project default-task delete failed: %v", err)
 	}
 }
@@ -115,7 +115,7 @@ func TestLiveProjectBranchRestrictionLifecycle(t *testing.T) {
 		t.Fatalf("expected a restriction id in the create output: %s", createOutput)
 	}
 	t.Cleanup(func() {
-		_, _ = executeLiveCLI(t, "--json", "project", "branch-restriction", "delete", seeded.Key, restrictionID)
+		_, _ = executeLiveCLI(t, "--json", "project", "branch-restriction", "delete", seeded.Key, restrictionID, "--yes")
 	})
 
 	getOutput, err := executeLiveCLI(t, "--json", "project", "branch-restriction", "get", seeded.Key, restrictionID)
@@ -146,7 +146,7 @@ func TestLiveProjectBranchRestrictionLifecycle(t *testing.T) {
 		t.Fatalf("expected the updated matcher in the output, got: %s", updateOutput)
 	}
 
-	deleteOutput, err := executeLiveCLI(t, "--json", "project", "branch-restriction", "delete", seeded.Key, restrictionID)
+	deleteOutput, err := executeLiveCLI(t, "--json", "project", "branch-restriction", "delete", seeded.Key, restrictionID, "--yes")
 	if err != nil {
 		t.Fatalf("project branch-restriction delete failed: %v\noutput: %s", err, deleteOutput)
 	}

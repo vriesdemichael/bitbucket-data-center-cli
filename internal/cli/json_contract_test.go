@@ -89,8 +89,11 @@ func TestSkillInstallAndRemoveEmitAnEnvelope(t *testing.T) {
 
 	for _, arguments := range [][]string{
 		{"--json", "ai", "skill", "install"},
-		{"--json", "ai", "skill", "remove"},
-		{"--json", "ai", "skill", "remove"}, // again: already absent
+		// --yes because removal is a deletion and ADR-073 now guards every one
+		// of them. Under --json there is nobody to ask, so the flag is the only
+		// way to say it was meant.
+		{"--json", "ai", "skill", "remove", "--yes"},
+		{"--json", "ai", "skill", "remove", "--yes"}, // again: already absent
 	} {
 		root := NewRootCommand()
 		out := &bytes.Buffer{}

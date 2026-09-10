@@ -54,7 +54,7 @@ func TestLiveWebhookCreateAndDelete(t *testing.T) {
 		t.Fatalf("expected the created webhook in the listing, got: %s", listOutput)
 	}
 
-	deleteOutput, err := executeLiveCLI(t, "--json", "webhook", "delete", webhookID)
+	deleteOutput, err := executeLiveCLI(t, "--json", "webhook", "delete", webhookID, "--yes")
 	if err != nil {
 		t.Fatalf("webhook delete failed: %v\noutput: %s", err, deleteOutput)
 	}

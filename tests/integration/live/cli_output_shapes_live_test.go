@@ -114,7 +114,7 @@ func TestLiveCommentCLIOutput(t *testing.T) {
 
 		// No --version: the command has to look it up, and the human output
 		// names the one it used so the caller can see what it acted on.
-		output := mustLiveCLI(t, "repo", "comment", "delete", "--commit", commit, "--id", id)
+		output := mustLiveCLI(t, "repo", "comment", "delete", "--commit", commit, "--id", id, "--yes")
 		if !strings.Contains(output, "version") {
 			t.Errorf("expected the delete to report the version it used:\n%s", output)
 		}
