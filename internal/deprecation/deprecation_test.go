@@ -1,6 +1,9 @@
 package deprecation
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestRemoveInIsTheMajorAfterTheOneThatWarned(t *testing.T) {
 	t.Parallel()
@@ -31,15 +34,12 @@ func TestRemoveInIsTheMajorAfterTheOneThatWarned(t *testing.T) {
 func TestOutstandingIgnoresDeprecationsFromTheCycleBeingShipped(t *testing.T) {
 	t.Parallel()
 
-	saved := Entries
-	t.Cleanup(func() { Entries = saved })
-
-	Entries = []Entry{
+	registry := []Entry{
 		{Name: "old", DeprecatedIn: "v4.1.0"},
 		{Name: "added during v5", DeprecatedIn: "v5.2.0"},
 	}
 
-	due, err := Outstanding(5)
+	due, err := outstandingIn(registry, 5)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -47,7 +47,7 @@ func TestOutstandingIgnoresDeprecationsFromTheCycleBeingShipped(t *testing.T) {
 		t.Fatalf("expected only the v4 deprecation to be due for v5, got %+v", due)
 	}
 
-	none, err := Outstanding(4)
+	none, err := outstandingIn(registry, 4)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -65,6 +65,27 @@ func TestEveryRegisteredEntryIsWellFormed(t *testing.T) {
 		}
 		if _, err := entry.RemoveIn(); err != nil {
 			t.Fatalf("entry %q: %v", entry.Name, err)
+		}
+	}
+}
+
+// Outstanding is the wrapper the tools call; this is the one place it reads the
+// real registry.
+func TestOutstandingReadsTheRegistry(t *testing.T) {
+	t.Parallel()
+
+	for _, entry := range Entries {
+		removeIn, err := entry.RemoveIn()
+		if err != nil {
+			t.Fatalf("entry %q: %v", entry.Name, err)
+		}
+
+		due, err := Outstanding(removeIn)
+		if err != nil {
+			t.Fatalf("entry %q: %v", entry.Name, err)
+		}
+		if !slices.ContainsFunc(due, func(due Entry) bool { return due.Name == entry.Name }) {
+			t.Fatalf("%q is due in v%d but Outstanding(%d) did not list it", entry.Name, removeIn, removeIn)
 		}
 	}
 }
