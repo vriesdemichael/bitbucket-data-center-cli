@@ -1447,7 +1447,22 @@ func (service *Service) Rebase(ctx context.Context, repository RepositoryRef, pu
 		v32 := int32(at)
 		request.Version = &v32
 
-		response, err := service.apiClient.RebaseWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID, request)
+		// The spec-coverage detector recognises a generated-client call by the
+		// receiver field being named `client` (tools/quality-report). Every
+		// other service names it that; this one cannot, because `client` here
+		// is the REST client and the generated one is `apiClient`. So the call
+		// goes through a local of the right shape, or the report stops counting
+		// the rebase endpoint as reached while the call is still sitting here.
+		//
+		// This was load-bearing and unexplained, and deleting it as dead code
+		// silently dropped an endpoint from the report. #609 tracks resolving
+		// the receiver by type instead of by name.
+		var wrapper struct {
+			client *openapigenerated.ClientWithResponses
+		}
+		wrapper.client = service.apiClient
+
+		response, err := wrapper.client.RebaseWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID, request)
 		if err != nil {
 			return nil, apperrors.New(apperrors.KindTransient, "failed to rebase pull request", err)
 		}
