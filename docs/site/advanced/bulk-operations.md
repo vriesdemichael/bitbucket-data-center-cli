@@ -1,8 +1,3 @@
----
-search:
-  boost: 1.5
----
-
 # Bulk Operations
 
 !!! danger "Deprecated — scheduled for removal in v5.0.0"
