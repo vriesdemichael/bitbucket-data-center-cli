@@ -193,3 +193,77 @@ func TestALegacyKeyringEntryStillResolves(t *testing.T) {
 		t.Fatalf("the legacy credential did not resolve, got %q", cfg.BitbucketToken)
 	}
 }
+
+// TestAnAliasResolvesTheHostsCredential checks the case aliases could have
+// broken: the credential is keyed by the canonical host, and reaching the
+// profile through an alias must still find it.
+//
+// resolveStoredHostAlias maps an alias onto profile.URL before any key is
+// built, so an alias never becomes a key of its own -- this pins that.
+func TestAnAliasResolvesTheHostsCredential(t *testing.T) {
+	const host = "https://bitbucket.corp.example"
+	const alias = "git.corp.example:7999"
+
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "config.yaml"))
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+
+	if _, err := SaveLogin(LoginInput{Host: host, Token: "aliased-token", Aliases: []string{alias}}); err != nil {
+		t.Fatalf("login: %v", err)
+	}
+
+	stored, err := LoadStoredConfig()
+	if err != nil {
+		t.Fatalf("load stored: %v", err)
+	}
+
+	match, found, err := resolveStoredHostAlias(stored, "https://"+alias)
+	if err != nil || !found {
+		t.Fatalf("the alias did not resolve: found=%t err=%v", found, err)
+	}
+	if match.Host != normalizeURL(host) {
+		t.Fatalf("the alias resolved to %q, want %q", match.Host, normalizeURL(host))
+	}
+
+	// The credential is read for the canonical host the alias resolved to.
+	if secret := keyringSecret(match.Host, "token"); secret != "aliased-token" {
+		t.Fatalf("reaching the host through its alias resolved %q", secret)
+	}
+}
+
+// Two hosts in one file cannot claim the same alias, so an alias can never
+// stand for two profiles at once.
+func TestOneAliasCannotBeClaimedByTwoHosts(t *testing.T) {
+	const alias = "git.shared.example:7999"
+
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "config.yaml"))
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+
+	if _, err := SaveLogin(LoginInput{Host: "https://first.example", Token: "a", Aliases: []string{alias}}); err != nil {
+		t.Fatalf("first login: %v", err)
+	}
+
+	_, err := SaveLogin(LoginInput{Host: "https://second.example", Token: "b", Aliases: []string{alias}})
+	if err == nil {
+		t.Fatal("a second host claimed an alias that was already taken")
+	}
+	if !strings.Contains(err.Error(), alias) {
+		t.Fatalf("the refusal does not name the alias: %v", err)
+	}
+}
+
+// A profile whose URL and map key disagree -- which only a hand-edited config
+// produces -- must still find the credential written under its key.
+func TestACredentialUnderTheMapKeyStillResolves(t *testing.T) {
+	const host = "https://divergent.example"
+
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "config.yaml"))
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+
+	if err := keyringSet(keyringServiceName, hostKey(host)+":token", "under-the-map-key"); err != nil {
+		t.Fatalf("seed the entry: %v", err)
+	}
+
+	if secret := keyringSecret("https://something-else.example", "token", hostKey(host)); secret != "under-the-map-key" {
+		t.Fatalf("the map-key fallback did not resolve, got %q", secret)
+	}
+}
