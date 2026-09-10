@@ -55,14 +55,6 @@ func newLiveHarness(t *testing.T) *liveHarness {
 		t.Fatalf("load config: %v", err)
 	}
 
-	if cfg.BitbucketUsername == "" || cfg.BitbucketPassword == "" {
-		t.Skip("BITBUCKET_USERNAME/BITBUCKET_PASSWORD (or ADMIN_USER/ADMIN_PASSWORD) required for live harness")
-	}
-
-	if _, err := exec.LookPath("git"); err != nil {
-		t.Skip("git executable is required for commit seeding")
-	}
-
 	// Before anything is seeded. An expired licence still reports RUNNING and
 	// only refuses writes, so without this the run gets several minutes in and
 	// then fails at a git push with a message that reads like a product bug.

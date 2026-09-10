@@ -187,7 +187,11 @@ func TestLiveAuthTokenLifecycle(t *testing.T) {
 	t.Run("bitbucket accepts the token as a bearer credential", func(t *testing.T) {
 		secret, _ := created["token"].(string)
 		if secret == "" {
-			t.Skipf("the create response carried no secret to authenticate with:\n%s", createOutput)
+			// A token nobody can read is not a token. The secret is returned
+			// once, at creation, so a create that omits it has failed at the
+			// one thing it exists to do -- and skipping here meant the bearer
+			// assertion below never ran and nothing said so.
+			t.Fatalf("auth token create returned no secret, so the token it made is unusable:\n%s", createOutput)
 		}
 
 		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")

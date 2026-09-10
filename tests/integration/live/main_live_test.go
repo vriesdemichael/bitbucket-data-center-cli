@@ -5,6 +5,7 @@ package live_test
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
@@ -25,6 +26,20 @@ func TestMain(m *testing.M) {
 
 	configureLiveCLIConstants()
 
+	// The suite is unusable without credentials and git, and it used to skip
+	// every test that noticed -- so `task test:live` against an unconfigured
+	// machine reported success having run nothing at all. The build tag is
+	// already the opt-in: asking for this suite and not being set up for it is
+	// a misconfiguration, and the answer to it is a message, not a green run.
+	//
+	// Once, here, rather than per test: newLiveHarness runs for every test in
+	// the suite, so skipping there turned one cause into a hundred silences,
+	// and failing there would turn it into a hundred failures.
+	if reason := liveSuiteUnusable(); reason != "" {
+		fmt.Fprintf(os.Stderr, "the live suite cannot run: %s\n", reason)
+		os.Exit(1)
+	}
+
 	before := gittest.SnapshotAmbientConfig()
 	code := m.Run()
 
@@ -36,4 +51,25 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(code)
+}
+
+// liveSuiteUnusable names what is missing, or returns empty when the suite can
+// run. Everything it checks is a precondition of the suite as a whole rather
+// than of any one test.
+func liveSuiteUnusable() string {
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		return fmt.Sprintf("the configuration did not load: %v", err)
+	}
+
+	if cfg.BitbucketUsername == "" || cfg.BitbucketPassword == "" {
+		return "no credentials. Set BITBUCKET_USERNAME/BITBUCKET_PASSWORD (or ADMIN_USER/ADMIN_PASSWORD), " +
+			"or run `task stack:up` which writes them"
+	}
+
+	if _, err := exec.LookPath("git"); err != nil {
+		return "git is not on PATH, and the suite seeds repositories by pushing real commits"
+	}
+
+	return ""
 }
