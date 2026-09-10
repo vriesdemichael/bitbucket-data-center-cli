@@ -2,6 +2,7 @@ package deprecation
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -87,5 +88,63 @@ func TestOutstandingReadsTheRegistry(t *testing.T) {
 		if !slices.ContainsFunc(due, func(due Entry) bool { return due.Name == entry.Name }) {
 			t.Fatalf("%q is due in v%d but Outstanding(%d) did not list it", entry.Name, removeIn, removeIn)
 		}
+	}
+}
+
+// A malformed DeprecatedIn must be loud. The alternative -- guessing a major --
+// would put a removal deadline on a date nobody chose.
+func TestAMalformedDeprecatedInIsRejectedRatherThanGuessed(t *testing.T) {
+	t.Parallel()
+
+	rejected := []string{"", "v4", "4", "vx.1.0", "v.1.0", "latest"}
+	for _, version := range rejected {
+		entry := Entry{Name: "x", DeprecatedIn: version}
+		if _, err := entry.RemoveIn(); err == nil {
+			t.Fatalf("DeprecatedIn %q was accepted", version)
+		}
+	}
+
+	// The v prefix is optional; the three components are not.
+	entry := Entry{Name: "x", DeprecatedIn: "4.1.0"}
+	got, err := entry.RemoveIn()
+	if err != nil {
+		t.Fatalf("unprefixed version rejected: %v", err)
+	}
+	if got != 5 {
+		t.Fatalf("removal major %d, want 5", got)
+	}
+}
+
+// Outstanding cannot report on a list it cannot read, so it surfaces the error
+// rather than reporting a shorter list than the truth.
+func TestOutstandingRefusesAListItCannotRead(t *testing.T) {
+	t.Parallel()
+
+	_, err := outstandingIn([]Entry{{Name: "broken", DeprecatedIn: "someday"}}, 5)
+	if err == nil {
+		t.Fatal("expected an error for an unparseable entry")
+	}
+	if !strings.Contains(err.Error(), "broken") {
+		t.Fatalf("error does not name the offending entry: %v", err)
+	}
+}
+
+// Warning still has to say something useful when the version is unusable --
+// it is printed on a user's terminal, not parsed.
+func TestWarningFallsBackWhenTheVersionIsUnusable(t *testing.T) {
+	t.Parallel()
+
+	broken := Entry{Name: "bb x", DeprecatedIn: "someday", Advice: "use bb y"}
+	warning := broken.Warning()
+	if !strings.Contains(warning, "bb x") || !strings.Contains(warning, "use bb y") {
+		t.Fatalf("fallback warning lost the name or the advice: %q", warning)
+	}
+	if strings.Contains(warning, "v0.0.0") {
+		t.Fatalf("fallback warning invented a removal version: %q", warning)
+	}
+
+	sound := Entry{Name: "bb x", DeprecatedIn: "v4.1.0", Reason: "r", Advice: "use bb y"}
+	if !strings.Contains(sound.Warning(), "v5.0.0") {
+		t.Fatalf("warning omits the removal release: %q", sound.Warning())
 	}
 }
