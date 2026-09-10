@@ -129,8 +129,10 @@ a way a printed preview is not. `bb bulk apply` therefore rejects `--dry-run`
 rather than accepting it and doing nothing: the plan already is the dry run, and
 accepting the flag would suggest a second, weaker one exists.
 
-If you are reaching for `--dry-run` in a loop over repositories, use
-[Bulk Operations](bulk-operations.md) instead.
+`bb bulk` is **deprecated** and scheduled for removal in v5.0.0; see
+[Bulk Operations](bulk-operations.md) for why, and for what to use instead. A
+loop over `bb` with `--dry-run` is the supported way to preview a change across
+repositories.
 
 ## See also
 

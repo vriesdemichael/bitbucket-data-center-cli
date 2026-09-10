@@ -209,6 +209,12 @@ jobs:
       # passes whether or not the committed copies match. Nothing in CI compared
       # the two, so a schema change with its regenerated files left uncommitted
       # went green.
+      # Reported, never enforced. A breaking change can land on next weeks
+      # before the major ships, and failing the build from that moment would
+      # fail every unrelated pull request for the rest of the window.
+      - name: Report deprecations due for removal
+        run: go run ./tools/deprecation-check -annotate
+
       - name: Verify committed generated docs artifacts are current
         run: task docs:verify-generated
 
