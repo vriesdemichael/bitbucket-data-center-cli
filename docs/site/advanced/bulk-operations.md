@@ -5,6 +5,37 @@ search:
 
 # Bulk Operations
 
+!!! danger "Deprecated — scheduled for removal in v5.0.0"
+
+    `bb bulk` still works and is still supported until it is removed. **Do not
+    start with it.** If you already use it, the migration is below.
+
+    **Why.** Its nine operations are all repository *configuration*, and four of
+    them — user and group permissions, webhooks, default tasks — are settable
+    once at the **project** level, where Bitbucket cascades them to every
+    repository it contains. Doing those per repository is more work for the same
+    result. What remains is a handful of repository-only settings, and a shell
+    loop over `bb` reaches those with more flexibility than a policy file and
+    without a plan artifact to manage.
+
+    It also never grew into what a bulk tool is actually wanted for: changing
+    *code* across an estate — branch, run a script, commit, open a pull request
+    with reviewers. That needs a different shape, and this one was not going to
+    become it.
+
+    **What to use instead.**
+
+    | Instead of | Use |
+    |---|---|
+    | `repo.permission.user.grant`, `repo.permission.group.grant` | `bb project permissions` |
+    | `repo.webhook.create` | `bb project webhook` |
+    | `repo.default-task.create` | `bb project default-task` |
+    | the repository-only settings | `bb repo settings ...` in a loop over `bb repo list` |
+    | cross-repository code changes | a tool built for it, such as multi-gitter or Sourcegraph batch changes |
+
+    `bb project branch-restriction` is worth knowing about too: it has no
+    repository-level equivalent, so it was never reachable through bulk at all.
+
 `bb bulk` applies one reviewed change across many repositories. It is a
 three-step workflow — write a policy, plan it, apply the plan — and the split
 exists so that what gets applied is a thing you looked at rather than a

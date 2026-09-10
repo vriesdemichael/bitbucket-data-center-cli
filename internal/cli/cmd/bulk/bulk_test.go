@@ -284,7 +284,11 @@ func TestBulkApplyReportsCancellationWithoutLosingTheArtifact(t *testing.T) {
 		statusCommand := New(testDependencies("http://127.0.0.1:1"))
 		statusBuffer := &bytes.Buffer{}
 		statusCommand.SetOut(statusBuffer)
-		statusCommand.SetErr(statusBuffer)
+		// Its own buffer: stdout is the machine contract and stderr is
+		// diagnostics, so pointing both at one buffer and decoding it as JSON
+		// asserts something the binary never does. bb bulk writes a deprecation
+		// warning to stderr, and this test decoded it as the envelope.
+		statusCommand.SetErr(&bytes.Buffer{})
 		statusCommand.SetArgs([]string{"status", operationID})
 		if statusErr := statusCommand.Execute(); statusErr != nil {
 			t.Fatalf("the id named in the error does not resolve: %v", statusErr)

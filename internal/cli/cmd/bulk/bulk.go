@@ -12,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/deprecation"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	qualityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/quality"
@@ -44,9 +45,21 @@ func New(deps Dependencies) *cobra.Command {
 
 	bulkCmd := &cobra.Command{
 		Use:           "bulk",
-		Short:         "Plan and apply multi-repository policies",
+		Short:         "Plan and apply multi-repository policies (deprecated)",
 		SilenceErrors: true,
 		SilenceUsage:  true,
+
+		// Warned once per invocation, on stderr, so --json output stays a clean
+		// contract. PersistentPreRun rather than per-subcommand: plan, apply and
+		// status are all going, and a reader who only ever runs one of them still
+		// needs to hear it (ADR-084).
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+			for _, entry := range deprecation.Entries {
+				if entry.Name == "bb bulk" {
+					fmt.Fprintln(cmd.ErrOrStderr(), entry.Warning())
+				}
+			}
+		},
 	}
 
 	var policyFile string

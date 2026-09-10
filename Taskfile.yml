@@ -468,6 +468,15 @@ tasks:
           ahead=$(git rev-list --count origin/main..origin/next)
           echo "next is $ahead commits ahead of main and can fast-forward."
           echo "  git push origin next:main"
+          # The last place a person looks before a major ships. Advisory:
+          # promote:check is a convenience, not a gate, and a deprecation left
+          # in place is a decision rather than a mistake to be blocked.
+          outstanding=$(go run ./tools/deprecation-check)
+          if [ -n "$outstanding" ]; then
+            echo ""
+            echo "Deprecations due for removal in the release this would cut:"
+            echo "$outstanding"
+          fi
         else
           behind=$(git rev-list --count origin/next..origin/main)
           echo "main has $behind commit(s) next does not, so the promotion is not a fast-forward." >&2

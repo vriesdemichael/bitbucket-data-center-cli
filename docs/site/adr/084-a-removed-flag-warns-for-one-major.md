@@ -10,7 +10,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `084`
 - Title: `A removed flag warns for one major before it stops working`
 - Category: `architecture`
-- Status: `proposed`
+- Status: `accepted`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/084-a-removed-flag-warns-for-one-major.yaml`
 
@@ -19,6 +19,8 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 A flag, a machine-output field, or an accepted value for either, keeps working for one major release after its replacement ships. Using it writes one line to stderr naming the replacement, and the command otherwise behaves as it did. It is removed in the major after that.
 Stderr, never stdout, so a `--json` consumer sees the warning without its document changing. The warning is emitted once per invocation rather than once per occurrence.
 Two things are outside this. A change that closes a security hole removes the old form immediately, because a deprecation window on that is an attack window. And a form that never reached a release is not deprecated; it is deleted, since nobody can be depending on it.
+Not every deprecation has a replacement. `bb bulk` is being removed rather than superseded, so its warning names what to do instead in prose. A deprecation with nothing to point at still states an alternative, because "deprecated" without one leaves the reader stuck.
+Deprecations are registered in `internal/deprecation`, and the removal major is derived from the release that started warning rather than declared beside it. One list feeds the runtime warning, a CI annotation on `next`, and `release:promote:check`, so the three cannot disagree about what is outstanding. None of them fails a build: a breaking change can land on `next` weeks before the major ships, and a gate that went red at that moment would fail every unrelated pull request for the rest of the integration window, which is how a team learns to ignore a red build.
 
 ## Agent Instructions
 
