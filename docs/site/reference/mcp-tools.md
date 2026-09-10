@@ -16,7 +16,7 @@ Exposed to every client `bb ai mcp serve` accepts. **Not all of them are read-on
 | Tool | Access | What it does |
 |---|---|---|
 | `add_pr_comment` | writes | Add a comment to a pull request. Provide path and line to create an inline comment on a specific file line. Provide parent_id to reply to an existing comment. |
-| `compare_refs` | read-only | List commits between two refs. Returns the commits reachable from 'to' but not from 'from'. |
+| `compare_refs` | read-only | List commits between two refs. Returns the commits reachable from 'from' but not from 'to' -- Bitbucket's direction, which is the reverse of git log base..feature. To list what a feature branch adds, pass from=feature and to=base; the git-natural order returns nothing. |
 | `create_pull_request` | writes | Create a new pull request. |
 | `create_tag` | writes | Create a tag on a specific commit or ref. Use for release tagging after a PR is merged. |
 | `disable_auto_merge` | writes | Disable auto-merge on a pull request. The PR will no longer be merged automatically. |

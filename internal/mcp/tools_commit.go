@@ -85,8 +85,8 @@ func specGetCommit() Spec {
 type CompareRefsInput struct {
 	Project string `json:"project" jsonschema:"Bitbucket project key"`
 	Repo    string `json:"repo" jsonschema:"Repository slug"`
-	From    string `json:"from" jsonschema:"Base ref or commit (older side of comparison)"`
-	To      string `json:"to" jsonschema:"Target ref or commit (newer side of comparison)"`
+	From    string `json:"from" jsonschema:"The ref whose commits you want. Bitbucket returns commits reachable from this ref but not from 'to', so this is the feature side -- the opposite way round from git log base..feature"`
+	To      string `json:"to" jsonschema:"The ref to compare against. Commits already reachable from this ref are excluded, so this is the base side"`
 	Limit   int    `json:"limit,omitempty" jsonschema:"Maximum number of commits to return (default 25)"`
 }
 
@@ -98,7 +98,7 @@ type CompareRefsOutput struct {
 func specCompareRefs() Spec {
 	tool := &mcp.Tool{
 		Name:        "compare_refs",
-		Description: "List commits between two refs. Returns the commits reachable from 'to' but not from 'from'.",
+		Description: "List commits between two refs. Returns the commits reachable from 'from' but not from 'to' -- Bitbucket's direction, which is the reverse of git log base..feature. To list what a feature branch adds, pass from=feature and to=base; the git-natural order returns nothing.",
 		Annotations: readOnly(),
 	}
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[CompareRefsInput, CompareRefsOutput] {

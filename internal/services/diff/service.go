@@ -601,3 +601,21 @@ func pathFromDiffGitHeader(header string) string {
 
 	return ""
 }
+
+// ComparePatch returns the unified diff between two refs, as a patch.
+//
+// CompareDiff reads the JSON diff endpoint, whose schema describes one file:
+// source, destination, hunks. Asked for a whole repository it answers with a
+// wrapper the generated type has no field for, so every field decoded empty
+// and `bb repo compare --diff` printed two /dev/null lines and nothing else --
+// a human read that as "the refs are identical" (#587).
+//
+// The raw endpoint answers with the patch itself, which is what the flag
+// promises and what `bb diff` has always used.
+func (service *Service) ComparePatch(ctx context.Context, repo RepositoryRef, from, to string) (string, error) {
+	if err := validateRepoRef(repo); err != nil {
+		return "", err
+	}
+
+	return service.streamRefRawDiff(ctx, repo, "", from, to)
+}

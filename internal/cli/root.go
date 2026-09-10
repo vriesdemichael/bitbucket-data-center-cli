@@ -334,6 +334,10 @@ your behalf using the link above.`,
 	// rather than by its author remembering ADR-073.
 	registerDestructiveConfirmations(rootCmd, options)
 	enforceNoArgsDefaults(rootCmd)
+
+	// After the defaults, because it wraps whatever validator a command ended
+	// up with -- including the NoArgs just installed above.
+	nameTheMissingArgument(rootCmd)
 	sendFailingGroupHelpToStderr(rootCmd)
 
 	// Installed last, over the finished tree, because it wraps every runnable

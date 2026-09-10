@@ -41,7 +41,7 @@ func TestLintMarkdownCatchesTheRealDefects(t *testing.T) {
 		{name: "search name as a flag", command: `bb search repos --name demo --limit 20`, problem: "unknown flag: --name"},
 		{name: "project key as a flag", command: `bb project create --key DEMO --name Demo`, problem: "unknown flag: --key"},
 		{name: "compare refs as flags", command: `bb commit compare --repo A/b --from x --to y`, problem: "unknown flag: --from"},
-		{name: "too many positionals", command: `bb tag create --repo A/b v1.2.3 main`, problem: "accepts 1 arg"},
+		{name: "too many positionals", command: `bb tag create --repo A/b v1.2.3 main`, problem: "tag create takes <name>"},
 	}
 
 	for _, testCase := range testCases {

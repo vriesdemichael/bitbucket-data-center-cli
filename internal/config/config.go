@@ -604,7 +604,12 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 	hasToken := strings.TrimSpace(input.Token) != ""
 	hasBasic := strings.TrimSpace(input.Username) != "" || strings.TrimSpace(input.Password) != ""
 	if hasToken == hasBasic {
-		return LoginResult{}, apperrors.New(apperrors.KindValidation, "provide either token or username/password", nil)
+		return LoginResult{}, apperrors.New(apperrors.KindValidation,
+			// Naming the flags, because the ones a reader would guess from the
+			// old wording -- --token and --password -- were retired in v4 and
+			// do not exist (#587).
+			"no credential given. Pass a token with --token-stdin, or a username with --username and its password with --password-stdin",
+			nil)
 	}
 	if hasBasic && (strings.TrimSpace(input.Username) == "" || strings.TrimSpace(input.Password) == "") {
 		return LoginResult{}, apperrors.New(apperrors.KindValidation, "username and password must be provided together", nil)
