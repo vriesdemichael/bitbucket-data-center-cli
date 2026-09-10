@@ -564,6 +564,61 @@ func TestLivePRRebase(t *testing.T) {
 	waitForLivePRSourceCommit(t, prID, toHash)
 }
 
+// TestLivePRRebaseWithAnExplicitVersionStillReportsAConflict is the boundary on
+// the retry TestLivePRRebase depends on.
+//
+// bb recovers from a stale version it read itself, because #532 made reading it
+// bb's job. A caller who passes --version did the opposite: they asserted a
+// specific lock, and a conflict is the answer they asked for. Recovering there
+// would rebase against a version they did not name, which is the one thing the
+// flag exists to prevent.
+func TestLivePRRebaseWithAnExplicitVersionStillReportsAConflict(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	branch := "feature/explicit-stale-version"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "rebase-me.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+
+	prID := createLivePRForRegression(t, branch, "Rebased with a stale version", "--no-default-reviewers", "--no-codeowners")
+
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", "moved-ahead.txt", "the target moved\n"); err != nil {
+		t.Fatalf("advancing master failed: %v", err)
+	}
+
+	// Read the version rather than assume it. Advancing the target rescopes the
+	// pull request and bumps the version, but only eventually -- that timing is
+	// the whole subject of #598, and a test that hard-codes a number here
+	// reproduces the flake it exists to close off.
+	stale := currentLivePRVersion(t, prID)
+
+	// An update is a version bump the server performs synchronously, so after
+	// this the number read above is behind by exactly one, whatever it was.
+	if output, err := executeLiveCLI(t, "--json", "pr", "update", prID, "--title", "Bumped", "--version", stale); err != nil {
+		t.Fatalf("bumping the version failed: %v\noutput: %s", err, output)
+	}
+
+	// The caller named a version that is genuinely behind.
+	output, err := executeLiveCLI(t, "--json", "pr", "rebase", prID, "--version", stale)
+	if err == nil {
+		t.Fatalf("expected a conflict for an explicitly stale version, got success:\n%s", output)
+	}
+	if !strings.Contains(output, "409") && !strings.Contains(err.Error(), "409") {
+		t.Fatalf("expected a 409 conflict, got: %v\noutput: %s", err, output)
+	}
+}
+
 // waitForLivePRSourceCommit waits for the pull request to report a source
 // commit, because the ref moves before the pull request's view of it does.
 func waitForLivePRSourceCommit(t *testing.T, prID, want string) {

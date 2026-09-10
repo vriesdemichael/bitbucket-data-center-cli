@@ -201,3 +201,37 @@ func MissingPayload(status int, body []byte, what string) error {
 			"so the specification and the server disagree: %s",
 		what, status, strings.TrimSpace(string(body))), nil)
 }
+
+// NamesException reports whether a Bitbucket error body names a given exception.
+//
+// kindFromException answers "what kind of failure is this" for every caller.
+// This answers a narrower question for a caller that recognises one specific
+// failure and recovers from it rather than classifying it: the exception name
+// is the only part of a 409 body that distinguishes a stale optimistic lock
+// from every other conflict.
+//
+// A body that is empty, is not JSON, or carries no exception name reports
+// false, so a caller falls back to treating the status at face value.
+func NamesException(body []byte, name string) bool {
+	trimmed := strings.TrimSpace(string(body))
+	if trimmed == "" {
+		return false
+	}
+
+	var envelope struct {
+		Errors []struct {
+			ExceptionName *string `json:"exceptionName"`
+		} `json:"errors"`
+	}
+	if err := json.Unmarshal([]byte(trimmed), &envelope); err != nil {
+		return false
+	}
+
+	for _, one := range envelope.Errors {
+		if one.ExceptionName != nil && strings.TrimSpace(*one.ExceptionName) == name {
+			return true
+		}
+	}
+
+	return false
+}
