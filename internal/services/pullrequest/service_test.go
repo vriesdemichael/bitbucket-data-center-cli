@@ -716,7 +716,7 @@ func TestRebaseRejectsOutOfRangeVersion(t *testing.T) {
 	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer server.Close()
 
-	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	client, err := openapigenerated.NewClientWithResponses(server.URL+"/rest", openapigenerated.WithHTTPClient(server.Client()))
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
@@ -817,7 +817,7 @@ func TestRebaseRetriesOnceOnAVersionItReadItself(t *testing.T) {
 		t.Fatalf("failed to load config: %v", err)
 	}
 
-	apiClient, err := openapigenerated.NewClientWithResponses(server.URL)
+	apiClient, err := openapigenerated.NewClientWithResponses(server.URL, openapigenerated.WithHTTPClient(server.Client()))
 	if err != nil {
 		t.Fatalf("failed to create api client: %v", err)
 	}

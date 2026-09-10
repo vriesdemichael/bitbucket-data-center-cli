@@ -17,7 +17,7 @@ func newCommentTestService(t *testing.T, handler http.HandlerFunc) *Service {
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 
-	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	client, err := openapigenerated.NewClientWithResponses(server.URL+"/rest", openapigenerated.WithHTTPClient(server.Client()))
 	if err != nil {
 		t.Fatalf("create client: %v", err)
 	}

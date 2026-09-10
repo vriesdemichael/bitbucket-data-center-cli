@@ -55,7 +55,7 @@ func TestResolveReviewerGroupUsersSurfacesMembershipFailure(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+		client, _ := openapigenerated.NewClientWithResponses(server.URL+"/rest", openapigenerated.WithHTTPClient(server.Client()))
 
 		users, err := NewService(client).ResolveReviewerGroupUsers(context.Background(), "PRJ", "demo", "core-team")
 		if err == nil {
@@ -81,7 +81,7 @@ func TestResolveReviewerGroupUsersSurfacesMembershipFailure(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client, _ := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+		client, _ := openapigenerated.NewClientWithResponses(server.URL+"/rest", openapigenerated.WithHTTPClient(server.Client()))
 
 		users, err := NewService(client).ResolveReviewerGroupUsers(context.Background(), "PRJ", "", "arch-team")
 		if err == nil {
@@ -180,7 +180,7 @@ func TestRepositoryIDErrorsWhenTheResponseCarriesNoID(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client, err := openapigenerated.NewClientWithResponses(server.URL + "/rest")
+	client, err := openapigenerated.NewClientWithResponses(server.URL+"/rest", openapigenerated.WithHTTPClient(server.Client()))
 	if err != nil {
 		t.Fatalf("create client: %v", err)
 	}
