@@ -457,9 +457,18 @@ func TestWatchUnwatchRebaseAPIErrors(t *testing.T) {
 	}
 
 	// Test Rebase error
-	_, err = service.Rebase(context.Background(), repo, "42", nil)
+	//
+	// Without a version it stops at the missing REST client, which is a
+	// different failure and never reaches the call. Naming one skips the
+	// resolving read, so this reaches RebaseWithResponse and covers the
+	// transport fault it is here for.
+	version := 0
+	_, err = service.Rebase(context.Background(), repo, "42", &version)
 	if err == nil {
 		t.Fatalf("expected error on Rebase")
+	}
+	if apperrors.ExitCode(err) != 10 {
+		t.Fatalf("expected an unreachable server to be transient, got exit %d for: %v", apperrors.ExitCode(err), err)
 	}
 }
 
