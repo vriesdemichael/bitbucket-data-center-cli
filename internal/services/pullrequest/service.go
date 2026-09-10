@@ -1331,12 +1331,7 @@ func (service *Service) Watch(ctx context.Context, repository RepositoryRef, pul
 		return apperrors.New(apperrors.KindInternal, "openapi client is not configured on pullrequest service", nil)
 	}
 
-	var wrapper struct {
-		client *openapigenerated.ClientWithResponses
-	}
-	wrapper.client = service.apiClient
-
-	response, err := wrapper.client.Watch1WithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID)
+	response, err := service.apiClient.Watch1WithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID)
 	if err != nil {
 		return apperrors.New(apperrors.KindTransient, "failed to watch pull request", err)
 	}
@@ -1355,12 +1350,7 @@ func (service *Service) Unwatch(ctx context.Context, repository RepositoryRef, p
 		return apperrors.New(apperrors.KindInternal, "openapi client is not configured on pullrequest service", nil)
 	}
 
-	var wrapper struct {
-		client *openapigenerated.ClientWithResponses
-	}
-	wrapper.client = service.apiClient
-
-	response, err := wrapper.client.Unwatch1WithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID)
+	response, err := service.apiClient.Unwatch1WithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID)
 	if err != nil {
 		return apperrors.New(apperrors.KindTransient, "failed to unwatch pull request", err)
 	}
@@ -1379,12 +1369,7 @@ func (service *Service) CanRebase(ctx context.Context, repository RepositoryRef,
 		return nil, apperrors.New(apperrors.KindInternal, "openapi client is not configured on pullrequest service", nil)
 	}
 
-	var wrapper struct {
-		client *openapigenerated.ClientWithResponses
-	}
-	wrapper.client = service.apiClient
-
-	response, err := wrapper.client.CanRebaseWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID)
+	response, err := service.apiClient.CanRebaseWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID)
 	if err != nil {
 		return nil, apperrors.New(apperrors.KindTransient, "failed to check rebase status", err)
 	}
@@ -1447,22 +1432,7 @@ func (service *Service) Rebase(ctx context.Context, repository RepositoryRef, pu
 		v32 := int32(at)
 		request.Version = &v32
 
-		// The spec-coverage detector recognises a generated-client call by the
-		// receiver field being named `client` (tools/quality-report). Every
-		// other service names it that; this one cannot, because `client` here
-		// is the REST client and the generated one is `apiClient`. So the call
-		// goes through a local of the right shape, or the report stops counting
-		// the rebase endpoint as reached while the call is still sitting here.
-		//
-		// This was load-bearing and unexplained, and deleting it as dead code
-		// silently dropped an endpoint from the report. #609 tracks resolving
-		// the receiver by type instead of by name.
-		var wrapper struct {
-			client *openapigenerated.ClientWithResponses
-		}
-		wrapper.client = service.apiClient
-
-		response, err := wrapper.client.RebaseWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID, request)
+		response, err := service.apiClient.RebaseWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID, request)
 		if err != nil {
 			return nil, apperrors.New(apperrors.KindTransient, "failed to rebase pull request", err)
 		}
@@ -1543,12 +1513,7 @@ func (service *Service) ListPullRequestsContainingCommit(ctx context.Context, re
 		return nil, apperrors.New(apperrors.KindInternal, "openapi client is not configured on pullrequest service", nil)
 	}
 
-	var wrapper struct {
-		client *openapigenerated.ClientWithResponses
-	}
-	wrapper.client = service.apiClient
-
-	response, err := wrapper.client.GetPullRequestsWithResponse(ctx, repository.ProjectKey, repository.Slug, trimmedCommit, nil)
+	response, err := service.apiClient.GetPullRequestsWithResponse(ctx, repository.ProjectKey, repository.Slug, trimmedCommit, nil)
 	if err != nil {
 		return nil, apperrors.New(apperrors.KindTransient, "failed to list pull requests containing commit", err)
 	}
@@ -1587,12 +1552,7 @@ func (service *Service) SearchParticipants(ctx context.Context, repository Repos
 		return nil, apperrors.New(apperrors.KindInternal, "openapi client is not configured on pullrequest service", nil)
 	}
 
-	var wrapper struct {
-		client *openapigenerated.ClientWithResponses
-	}
-	wrapper.client = service.apiClient
-
-	response, err := wrapper.client.SearchWithResponse(ctx, repository.ProjectKey, repository.Slug, &openapigenerated.SearchParams{
+	response, err := service.apiClient.SearchWithResponse(ctx, repository.ProjectKey, repository.Slug, &openapigenerated.SearchParams{
 		Filter: &trimmedFilter,
 	})
 	if err != nil {
