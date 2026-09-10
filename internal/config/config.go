@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/url"
@@ -628,6 +630,12 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 
 	key := hostKey(host)
 
+	// The config file is still keyed by host: that map lives inside one file,
+	// so a host names one profile in it. The credential store is shared by
+	// every config file on the machine, which is why its key carries the file
+	// as well (#587).
+	secretKey := credentialKey(host)
+
 	// Aliases are host-recognition config, not credentials: re-authenticating
 	// against a host should not discard the ones already stored. Discovery
 	// cannot find every alias, so an alias added by hand would otherwise be lost
@@ -670,23 +678,23 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 
 	insecure := StoredSecret{}
 	if hasToken {
-		if keyringErr := keyringSet(keyringServiceName, key+":token", strings.TrimSpace(input.Token)); keyringErr != nil {
+		if keyringErr := keyringSet(keyringServiceName, secretKey+":token", strings.TrimSpace(input.Token)); keyringErr != nil {
 			if requireKeyring {
 				return LoginResult{}, keyringUnavailableError(keyringErr)
 			}
 			insecure.Token = strings.TrimSpace(input.Token)
 			result.UsedInsecureStorage = true
 		}
-		_ = keyringDelete(keyringServiceName, key+":password")
+		_ = keyringDelete(keyringServiceName, secretKey+":password")
 	} else {
-		if keyringErr := keyringSet(keyringServiceName, key+":password", strings.TrimSpace(input.Password)); keyringErr != nil {
+		if keyringErr := keyringSet(keyringServiceName, secretKey+":password", strings.TrimSpace(input.Password)); keyringErr != nil {
 			if requireKeyring {
 				return LoginResult{}, keyringUnavailableError(keyringErr)
 			}
 			insecure.Password = strings.TrimSpace(input.Password)
 			result.UsedInsecureStorage = true
 		}
-		_ = keyringDelete(keyringServiceName, key+":token")
+		_ = keyringDelete(keyringServiceName, secretKey+":token")
 	}
 
 	if insecure.Token != "" || insecure.Password != "" {
@@ -874,6 +882,10 @@ func Logout(host string) error {
 	}
 
 	key := hostKey(hostURL)
+	// Both keys. A logout that left the unscoped entry behind would leave a
+	// credential on the machine with no profile naming it.
+	_ = keyringDelete(keyringServiceName, credentialKey(hostURL)+":token")
+	_ = keyringDelete(keyringServiceName, credentialKey(hostURL)+":password")
 	_ = keyringDelete(keyringServiceName, key+":token")
 	_ = keyringDelete(keyringServiceName, key+":password")
 
@@ -1585,10 +1597,10 @@ func credentialsForStoredHost(stored StoredConfig, key string, profile StoredPro
 		ClientKeyFile:     profile.ClientKey,
 	}
 
-	if token, err := keyringGet(keyringServiceName, key+":token"); err == nil && strings.TrimSpace(token) != "" {
+	if token := keyringSecret(profile.URL, "token"); token != "" {
 		resolved.BitbucketToken = token
 	}
-	if password, err := keyringGet(keyringServiceName, key+":password"); err == nil && strings.TrimSpace(password) != "" {
+	if password := keyringSecret(profile.URL, "password"); password != "" {
 		resolved.BitbucketPassword = password
 	}
 
@@ -2264,4 +2276,48 @@ func unreadableConfig(pathOf func() (string, error), what string, cause error) e
 			what, path,
 		),
 		cause)
+}
+
+// credentialKey scopes a keyring entry to the config file it belongs to.
+//
+// The entry used to be keyed by host alone, so logging in as a second identity
+// against the same Bitbucket host silently evicted the first -- even with a
+// separate BB_CONFIG_PATH, because the path did not reach the key. Anyone
+// keeping a personal account and a service account on one corporate host lost
+// one of them without being told (#587).
+//
+// The config path is what distinguishes the two, so it is what scopes the key.
+// It is hashed rather than embedded: the path can be long, can contain
+// characters a credential store treats specially, and is not something to
+// publish into an entry name that other software can list.
+func credentialKey(host string) string {
+	base := hostKey(host)
+
+	path, err := ConfigPath()
+	if err != nil || strings.TrimSpace(path) == "" {
+		return base
+	}
+
+	sum := sha256.Sum256([]byte(filepath.Clean(path)))
+
+	return base + "#" + hex.EncodeToString(sum[:8])
+}
+
+// keyringSecret reads a secret written under either key.
+//
+// Entries written before credentialKey existed are keyed by host alone, and a
+// user who has one should not have to log in again to keep it: the scoped key
+// is tried first, and the unscoped one answers for anything already stored.
+// A new login writes only the scoped key, so the two stop overlapping as
+// credentials are refreshed.
+func keyringSecret(host, suffix string) string {
+	if secret, err := keyringGet(keyringServiceName, credentialKey(host)+":"+suffix); err == nil && strings.TrimSpace(secret) != "" {
+		return secret
+	}
+
+	if secret, err := keyringGet(keyringServiceName, hostKey(host)+":"+suffix); err == nil && strings.TrimSpace(secret) != "" {
+		return secret
+	}
+
+	return ""
 }
