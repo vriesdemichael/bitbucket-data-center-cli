@@ -593,20 +593,26 @@ func TestLivePRRebaseWithAnExplicitVersionStillReportsAConflict(t *testing.T) {
 
 	prID := createLivePRForRegression(t, branch, "Rebased with a stale version", "--no-default-reviewers", "--no-codeowners")
 
-	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", "moved-ahead.txt", "the target moved\n"); err != nil {
-		t.Fatalf("advancing master failed: %v", err)
-	}
-
-	// Read the version rather than assume it. Advancing the target rescopes the
-	// pull request and bumps the version, but only eventually -- that timing is
-	// the whole subject of #598, and a test that hard-codes a number here
-	// reproduces the flake it exists to close off.
+	// Bump the version before the target moves, not after.
+	//
+	// Advancing master makes Bitbucket rescope the pull request and bump the
+	// version asynchronously -- which is the subject of #598 -- so a read taken
+	// after the push can already be stale by the time the next call lands. This
+	// test did the push first and failed on CI for exactly that: the update
+	// meant to bump the version was itself rejected as out of date.
+	//
+	// Nothing else is touching the pull request yet, so this update is the only
+	// writer, and the number read before it is behind afterwards whatever the
+	// rescope below does.
 	stale := currentLivePRVersion(t, prID)
-
-	// An update is a version bump the server performs synchronously, so after
-	// this the number read above is behind by exactly one, whatever it was.
 	if output, err := executeLiveCLI(t, "--json", "pr", "update", prID, "--title", "Bumped", "--version", stale); err != nil {
 		t.Fatalf("bumping the version failed: %v\noutput: %s", err, output)
+	}
+
+	// Now give the rebase something to replay. Whatever this does to the
+	// version, the number above is behind it.
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", "moved-ahead.txt", "the target moved\n"); err != nil {
+		t.Fatalf("advancing master failed: %v", err)
 	}
 
 	// The caller named a version that is genuinely behind.
