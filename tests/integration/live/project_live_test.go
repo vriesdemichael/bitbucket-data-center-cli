@@ -47,8 +47,13 @@ func TestLiveCLIProjectLifecycle(t *testing.T) {
 	}
 
 	// Create
+	// The name is derived too, not just the key. Bitbucket enforces unique
+	// project names, so a constant one turned any interrupted run into a
+	// permanent failure: the project survived, and every later run reported a
+	// 409 from project create that read like the change under test had broken
+	// project creation.
 	newKey := seeded.Key + "X"
-	createOutput, err := executeLiveCLI(t, "--json", "project", "create", newKey, "--name", "Test Project X")
+	createOutput, err := executeLiveCLI(t, "--json", "project", "create", newKey, "--name", "Test Project "+newKey)
 	if err != nil {
 		t.Fatalf("project create failed: %v\noutput: %s", err, createOutput)
 	}
@@ -59,13 +64,13 @@ func TestLiveCLIProjectLifecycle(t *testing.T) {
 	}
 
 	// Update
-	updateOutput, err := executeLiveCLI(t, "--json", "project", "update", newKey, "--name", "Updated Test Project X")
+	updateOutput, err := executeLiveCLI(t, "--json", "project", "update", newKey, "--name", "Updated Test Project "+newKey)
 	if err != nil {
 		t.Fatalf("project update failed: %v\noutput: %s", err, updateOutput)
 	}
 	updatePayload := decodeJSONMap(t, updateOutput)
 	updateObj, ok := updatePayload["project"].(map[string]any)
-	if !ok || asString(updateObj["name"]) != "Updated Test Project X" {
+	if !ok || asString(updateObj["name"]) != "Updated Test Project "+newKey {
 		t.Fatalf("expected updated project name in output, got: %s", updateOutput)
 	}
 
