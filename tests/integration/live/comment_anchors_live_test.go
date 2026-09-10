@@ -94,7 +94,7 @@ func TestLiveInlineCommentAnchoring(t *testing.T) {
 
 	t.Run("a reply is attached to its parent", func(t *testing.T) {
 		if rootID == "" {
-			t.Skip("no root comment to reply to")
+			t.Fatal("the anchored comment above was never created, so there is no parent to reply to. This used to skip, which reported the earlier failure once and dropped this case without saying it had gone.")
 		}
 
 		created := mustLiveCLI(t, "repo", "comment", "create", "--pr", prID,
@@ -115,7 +115,7 @@ func TestLiveInlineCommentAnchoring(t *testing.T) {
 
 	t.Run("a comment resolves and reopens", func(t *testing.T) {
 		if rootID == "" {
-			t.Skip("no comment to resolve")
+			t.Fatal("the anchored comment above was never created, so there is nothing to resolve. This used to skip, which dropped the case silently.")
 		}
 
 		mustLiveCLI(t, "pr", "comment", "resolve", prID, rootID)

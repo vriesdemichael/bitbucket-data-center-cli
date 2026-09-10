@@ -26,10 +26,6 @@ func TestOpenAPIParity(t *testing.T) {
 		t.Fatalf("load config: %v", err)
 	}
 
-	if cfg.BitbucketUsername == "" || cfg.BitbucketPassword == "" {
-		t.Skip("BITBUCKET_USERNAME/BITBUCKET_PASSWORD (or ADMIN_USER/ADMIN_PASSWORD) required for parity test")
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 

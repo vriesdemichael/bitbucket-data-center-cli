@@ -69,7 +69,7 @@ func TestLivePRCommentAnchors(t *testing.T) {
 
 	t.Run("a reply hangs off its parent", func(t *testing.T) {
 		if rootID == "" {
-			t.Skip("no root comment to reply to")
+			t.Fatal("the anchored comment above was never created, so there is no parent to reply to. This used to skip, which reported the earlier failure once and dropped this case without saying it had gone.")
 		}
 
 		output := mustLiveCLI(t, "pr", "comment", "add", prID,
