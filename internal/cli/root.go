@@ -179,6 +179,7 @@ your behalf using the link above.`,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) tagcmd.PermissionChecker {
 			return options.permissionCheckerFor(client)
 		},
+		RepositoryWasInferred: func() bool { return options.repositoryInferred },
 	}))
 	rootCmd.AddCommand(branchcmd.New(branchcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
@@ -190,6 +191,7 @@ your behalf using the link above.`,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) branchcmd.PermissionChecker {
 			return options.permissionCheckerFor(client)
 		},
+		RepositoryWasInferred: func() bool { return options.repositoryInferred },
 	}))
 	rootCmd.AddCommand(diffcmd.New(diffcmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
@@ -300,6 +302,7 @@ your behalf using the link above.`,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) webhookcmd.PermissionChecker {
 			return options.permissionCheckerFor(client)
 		},
+		RepositoryWasInferred: func() bool { return options.repositoryInferred },
 	}))
 	rootCmd.AddCommand(browsecmd.New(browsecmd.Dependencies{
 		JSONEnabled: func() bool { return options.JSON },
