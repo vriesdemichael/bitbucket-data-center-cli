@@ -279,3 +279,31 @@ func TestMapStatusErrorReadsTheExceptionOnA400(t *testing.T) {
 		})
 	}
 }
+
+func TestNamesExceptionRecognisesOnlyTheNameAsked(t *testing.T) {
+	t.Parallel()
+
+	const outOfDate = "com.atlassian.bitbucket.pull.PullRequestOutOfDateException"
+	body := []byte(`{"errors":[{"message":"You are attempting to modify a pull request based on out-of-date information.","exceptionName":"com.atlassian.bitbucket.pull.PullRequestOutOfDateException","currentVersion":1,"expectedVersion":0}]}`)
+
+	if !NamesException(body, outOfDate) {
+		t.Fatal("did not recognise the exception it names")
+	}
+	if NamesException(body, "com.atlassian.bitbucket.pull.SomeOtherException") {
+		t.Fatal("matched an exception the body does not name")
+	}
+
+	// A caller that cannot read the body treats the status at face value, so
+	// every unusable shape has to report false rather than guess.
+	for name, unusable := range map[string][]byte{
+		"empty":          {},
+		"whitespace":     []byte("   \n"),
+		"not json":       []byte("<html>502 Bad Gateway</html>"),
+		"no errors key":  []byte(`{"message":"nope"}`),
+		"null exception": []byte(`{"errors":[{"message":"nope","exceptionName":null}]}`),
+	} {
+		if NamesException(unusable, outOfDate) {
+			t.Fatalf("%s body reported a match", name)
+		}
+	}
+}
