@@ -698,9 +698,22 @@ func discoverUsedGeneratedOperations(root string) ([]string, error) {
 			if !ok || sel.Sel == nil {
 				return true
 			}
-			inner, ok := sel.X.(*ast.SelectorExpr)
-			if !ok || inner.Sel == nil || inner.Sel.Name != "client" {
-				return true
+			// Any receiver. The method name is what identifies a generated call,
+			// and the real filter is downstream: an operation that generatedPaths
+			// does not know is dropped there, so a wrong guess here costs nothing.
+			//
+			// This used to require the receiver to be a selector whose field was
+			// named `client`. Every service names it that except one --
+			// pullrequest already uses `client` for the REST client and holds the
+			// generated one in `apiClient` -- so that service carried a struct
+			// whose only purpose was to give the call a shape this walk would
+			// recognise. It read as dead code, was deleted as dead code, and took
+			// the rebase endpoint out of the report while the call sat there (#609).
+			// The check was never load-bearing, only the workaround was.
+			if _, isSelector := sel.X.(*ast.SelectorExpr); !isSelector {
+				if _, isIdent := sel.X.(*ast.Ident); !isIdent {
+					return true
+				}
 			}
 			set[sel.Sel.Name] = struct{}{}
 			return true
@@ -710,6 +723,20 @@ func discoverUsedGeneratedOperations(root string) ([]string, error) {
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// A walk that stopped matching would report a low number rather than an
+	// error, and the gate only says the report is out of date -- so the
+	// obvious response is to commit the smaller number and move on. That is
+	// how #609 nearly went unnoticed. This repository calls well over a
+	// hundred generated operations; finding a handful means the walk broke,
+	// not that the services stopped calling Bitbucket.
+	const fewestPlausibleOperations = 50
+	if len(set) < fewestPlausibleOperations {
+		return nil, fmt.Errorf(
+			"found only %d generated operations in %s, expected at least %d. The detector is probably broken, not the services",
+			len(set), root, fewestPlausibleOperations,
+		)
 	}
 
 	operations := make([]string, 0, len(set))
