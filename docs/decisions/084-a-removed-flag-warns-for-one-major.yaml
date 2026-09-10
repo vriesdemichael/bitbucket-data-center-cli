@@ -14,9 +14,9 @@ decision: >
   immediately, because a deprecation window on that is an attack window. And a form that never
   reached a release is not deprecated; it is deleted, since nobody can be depending on it.
 
-  Not every deprecation has a replacement. `bb bulk` is being removed rather than superseded, so
-  its warning names what to do instead in prose. A deprecation with nothing to point at still
-  states an alternative, because "deprecated" without one leaves the reader stuck.
+  Not every deprecation has a replacement. A form may be removed rather than superseded, and its
+  warning then says what to do instead in prose. A deprecation with nothing to point at still
+  names an alternative, because "deprecated" on its own leaves the reader nowhere to go.
 
   Deprecations are registered in `internal/deprecation`, and the removal major is derived from the
   release that started warning rather than declared beside it. One list feeds the runtime warning,

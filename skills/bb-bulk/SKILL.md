@@ -1,9 +1,20 @@
 ---
 name: bb-bulk
-description: Plan, review, and execute multi-repository bulk governance policies, declarative repository configurations, permissions, webhooks, PR settings, branch settings, and staged rollouts across Bitbucket Data Center repositories using bb.
+description: DEPRECATED, removed in v5.0.0 — prefer project-level settings. Plan, review, and execute multi-repository bulk governance policies, declarative repository configurations, permissions, webhooks, PR settings, branch settings, and staged rollouts across Bitbucket Data Center repositories using bb.
 ---
 
 # bb-bulk — Multi-Repository Bulk Governance Skill
+
+> **Deprecated — scheduled for removal in v5.0.0.** `bb bulk` still works and is
+> still supported until it is removed, and it warns on stderr on every
+> invocation. **Do not choose it for new work.**
+>
+> Most of what it does is settable once at the project level, where Bitbucket
+> cascades it to every repository: use `bb project permissions`,
+> `bb project webhook`, `bb project default-task` and
+> `bb project branch-restriction`. For repository-only settings, loop
+> `bb repo settings ...` over `bb repo list`. For changing code across many
+> repositories — the job this reads as if it does — use a tool built for it.
 
 `bb bulk` is the multi-repository policy and governance engine for Bitbucket Server and Bitbucket Data Center. Use it to declare, validate, simulate, review, and apply repository configurations, access controls, quality gates, and branch policies across multiple repositories.
 
