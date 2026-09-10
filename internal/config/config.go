@@ -1602,10 +1602,10 @@ func credentialsForStoredHost(stored StoredConfig, key string, profile StoredPro
 		ClientKeyFile:     profile.ClientKey,
 	}
 
-	if token := keyringSecret(profile.URL, "token"); token != "" {
+	if token := keyringSecret(profile.URL, "token", key); token != "" {
 		resolved.BitbucketToken = token
 	}
-	if password := keyringSecret(profile.URL, "password"); password != "" {
+	if password := keyringSecret(profile.URL, "password", key); password != "" {
 		resolved.BitbucketPassword = password
 	}
 
@@ -2315,13 +2315,26 @@ func credentialKey(host string) string {
 // is tried first, and the unscoped one answers for anything already stored.
 // A new login writes only the scoped key, so the two stop overlapping as
 // credentials are refreshed.
-func keyringSecret(host, suffix string) string {
-	if secret, err := keyringGet(keyringServiceName, credentialKey(host)+":"+suffix); err == nil && strings.TrimSpace(secret) != "" {
-		return secret
-	}
+//
+// legacyKeys carries the map key the profile is filed under. For anything bb
+// wrote that equals hostKey(profile.URL), but a hand-edited config can hold a
+// profile whose URL and key disagree, and reading only by URL would lose a
+// credential that is sitting right there.
+//
+// Aliases need nothing here: resolveStoredHostAlias maps an alias onto the
+// canonical profile.URL before any key is built, so an alias never becomes a
+// key, and ensureAliasOwnership already refuses to let two hosts in one file
+// claim the same one.
+func keyringSecret(host, suffix string, legacyKeys ...string) string {
+	candidates := append([]string{credentialKey(host), hostKey(host)}, legacyKeys...)
 
-	if secret, err := keyringGet(keyringServiceName, hostKey(host)+":"+suffix); err == nil && strings.TrimSpace(secret) != "" {
-		return secret
+	for _, candidate := range candidates {
+		if strings.TrimSpace(candidate) == "" {
+			continue
+		}
+		if secret, err := keyringGet(keyringServiceName, candidate+":"+suffix); err == nil && strings.TrimSpace(secret) != "" {
+			return secret
+		}
 	}
 
 	return ""
