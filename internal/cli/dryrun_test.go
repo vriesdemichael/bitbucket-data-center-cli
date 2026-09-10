@@ -545,36 +545,29 @@ func TestAllCommandsExhaustivelyClassifiedForDryRun(t *testing.T) {
 			path := dryRunCommandPath(cmd)
 			category := classifyCommand(path)
 			if category == classificationUnknown {
-				t.Errorf("Command %q is unclassified in internal/cli/dryrun.go. Every runnable CLI command must be registered in dryRunProfiles (mutating), readOnlyCommands (read-only/inspection), or clientLocalCommands (client-local/configuration) to prevent fail-open dry-run bugs.", path)
+				t.Errorf("Command %q is unclassified in internal/cli/dryrun.go. Every runnable CLI command must be registered in dryRunProfiles (mutating), readOnlyCommands (read-only), clientLocalCommands (changes nothing, or honours --dry-run itself), clientLocalMutatingCommands (changes local state) or dryRunRefusedCommands (--dry-run has no meaning) to prevent fail-open dry-run bugs.", path)
 			}
 
-			// Verify disjoint sets (no overlaps)
-			inMutating := false
+			// Exactly one registry, so no command can be read two ways.
+			var found []string
 			if _, ok := dryRunProfiles[path]; ok {
-				inMutating = true
+				found = append(found, "mutating")
 			}
-			inReadOnly := false
 			if _, ok := readOnlyCommands[path]; ok {
-				inReadOnly = true
+				found = append(found, "read-only")
 			}
-			inLocal := false
 			if _, ok := clientLocalCommands[path]; ok {
-				inLocal = true
+				found = append(found, "client-local")
+			}
+			if _, ok := clientLocalMutatingCommands[path]; ok {
+				found = append(found, "client-local-mutating")
+			}
+			if _, ok := dryRunRefusedCommands[path]; ok {
+				found = append(found, "dry-run-refused")
 			}
 
-			categories := 0
-			if inMutating {
-				categories++
-			}
-			if inReadOnly {
-				categories++
-			}
-			if inLocal {
-				categories++
-			}
-
-			if categories > 1 {
-				t.Errorf("Command %q is classified in multiple categories (mutating: %t, read-only: %t, local: %t)", path, inMutating, inReadOnly, inLocal)
+			if len(found) > 1 {
+				t.Errorf("Command %q is classified in more than one registry: %s", path, strings.Join(found, ", "))
 			}
 		}
 		for _, child := range cmd.Commands() {
@@ -790,4 +783,114 @@ func TestVerbClassificationExemptionsNameRealCommands(t *testing.T) {
 			t.Errorf("the exemption for %q records no reason; ADR-070 requires one", path)
 		}
 	}
+}
+
+// TestLocalMutationsArePreviewedRatherThanPerformed is #571.
+//
+// These commands used to sit in the registry that means "let it run", so
+// --dry-run removed the stored credentials and reported it in the past tense.
+func TestLocalMutationsArePreviewedRatherThanPerformed(t *testing.T) {
+	t.Parallel()
+
+	for path := range clientLocalMutatingCommands {
+		t.Run(path, func(t *testing.T) {
+			t.Parallel()
+
+			options := &rootOptions{DryRun: true}
+			root := &cobra.Command{Use: "bb"}
+			root.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "")
+
+			ran := false
+			leaf := buildCommandPath(root, path, func(cmd *cobra.Command, args []string) error {
+				ran = true
+				return nil
+			})
+			if leaf == nil {
+				t.Fatalf("could not build a command for %q", path)
+			}
+
+			registerGlobalDryRunInterceptors(root, options)
+
+			buffer := &bytes.Buffer{}
+			root.SetOut(buffer)
+			root.SetErr(buffer)
+			root.SetArgs(append([]string{"--dry-run"}, strings.Fields(path)...))
+
+			if err := root.Execute(); err != nil {
+				t.Fatalf("expected a preview, got: %v", err)
+			}
+			if ran {
+				t.Fatal("the command ran under --dry-run instead of being previewed")
+			}
+			if buffer.Len() == 0 {
+				t.Fatal("nothing was previewed")
+			}
+		})
+	}
+}
+
+// TestRefusedCommandsRejectDryRunRatherThanIgnoringIt is #568: the flag parsed
+// and did nothing, so an operator who wired up an agent with --dry-run believing
+// they were rehearsing got a live, write-capable server.
+func TestRefusedCommandsRejectDryRunRatherThanIgnoringIt(t *testing.T) {
+	t.Parallel()
+
+	for path, reason := range dryRunRefusedCommands {
+		t.Run(path, func(t *testing.T) {
+			t.Parallel()
+
+			options := &rootOptions{DryRun: true}
+			root := &cobra.Command{Use: "bb"}
+			root.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "")
+
+			ran := false
+			buildCommandPath(root, path, func(cmd *cobra.Command, args []string) error {
+				ran = true
+				return nil
+			})
+
+			registerGlobalDryRunInterceptors(root, options)
+
+			buffer := &bytes.Buffer{}
+			root.SetOut(buffer)
+			root.SetErr(buffer)
+			root.SetArgs(append([]string{"--dry-run"}, strings.Fields(path)...))
+
+			err := root.Execute()
+			if err == nil {
+				t.Fatal("expected --dry-run to be refused")
+			}
+			if ran {
+				t.Fatal("the command ran despite --dry-run being refused")
+			}
+			if apperrors.KindOf(err) != apperrors.KindValidation {
+				t.Fatalf("expected a validation error, got %v for: %v", apperrors.KindOf(err), err)
+			}
+			if !strings.Contains(err.Error(), reason) {
+				t.Fatalf("the refusal does not carry its reason:\n got: %v\nwant: %s", err, reason)
+			}
+		})
+	}
+}
+
+// buildCommandPath makes a nested cobra tree for "a b c" and returns the leaf.
+func buildCommandPath(root *cobra.Command, path string, run func(*cobra.Command, []string) error) *cobra.Command {
+	parent := root
+	fields := strings.Fields(path)
+	for index, name := range fields {
+		if index == len(fields)-1 {
+			leaf := &cobra.Command{Use: name, RunE: run}
+			parent.AddCommand(leaf)
+			return leaf
+		}
+
+		next, _, err := parent.Find([]string{name})
+		if err != nil || next == parent {
+			next = &cobra.Command{Use: name}
+			parent.AddCommand(next)
+		}
+		parent = next
+	}
+
+	return nil
 }

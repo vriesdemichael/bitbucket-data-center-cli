@@ -191,7 +191,26 @@ const (
 	classificationUnknown commandClassification = iota
 	classificationMutating
 	classificationReadOnly
+
+	// classificationLocal is a command that changes nothing, or that honours
+	// --dry-run itself. The interceptor lets it run.
 	classificationLocal
+
+	// classificationLocalMutating is a command that changes state on this
+	// machine -- stored credentials, git configuration, a file, a working copy
+	// -- and does not honour --dry-run itself.
+	//
+	// It used to sit in classificationLocal, which means "let it run", so
+	// `bb auth logout --dry-run` deleted the credentials and reported it in the
+	// past tense. The flag's help said "server mutations" and these are local,
+	// which is a defence on paper: a user who watches --dry-run delete their
+	// credentials does not re-read the flag description, they stop trusting the
+	// flag (#571).
+	classificationLocalMutating
+
+	// classificationRefused is a command for which --dry-run has no sensible
+	// meaning, so it is rejected rather than accepted and ignored.
+	classificationRefused
 )
 
 var readOnlyCommands = map[string]struct{}{
@@ -294,24 +313,61 @@ var readOnlyCommands = map[string]struct{}{
 	"webhook stats":                                  {},
 }
 
+// clientLocalCommands never change anything the user would want previewed:
+// they read local configuration, or they honour --dry-run themselves. The
+// interceptor lets them run.
 var clientLocalCommands = map[string]struct{}{
-	"ai mcp serve":        {},
-	"ai skill install":    {},
-	"ai skill remove":     {},
-	"auth alias add":      {},
-	"auth alias discover": {},
 	"auth alias list":     {},
-	"auth alias remove":   {},
 	"auth git-credential": {},
-	"auth login":          {},
-	"auth logout":         {},
 	"auth server list":    {},
-	"auth server use":     {},
-	"auth setup-git":      {},
-	"clone":               {},
-	"pr checkout":         {},
-	"repo clone":          {},
-	"update":              {},
+
+	// update honours --dry-run itself: the flag reaches the workflow, which
+	// reports what it would install rather than installing it.
+	"update": {},
+}
+
+// clientLocalMutatingCommands change state on this machine and do not honour
+// --dry-run themselves, so the interceptor previews them instead of letting
+// them run.
+//
+// Each entry names what it writes, because that is the evidence for it being
+// here rather than in clientLocalCommands, and the two lists are one edit apart.
+var clientLocalMutatingCommands = map[string]dryRunProfile{
+	// config.SaveLogin / config.Logout -- the stored credential.
+	"auth login":  {Intent: "auth.login", Action: "store credentials"},
+	"auth logout": {Intent: "auth.logout", Action: "remove stored credentials"},
+
+	// config.AddHostAliases / SetHostAliases / RemoveHostAlias / SetDefaultHost.
+	"auth alias add":      {Intent: "auth.alias.add", Action: "add host aliases"},
+	"auth alias discover": {Intent: "auth.alias.discover", Action: "replace host aliases"},
+	"auth alias remove":   {Intent: "auth.alias.remove", Action: "remove a host alias"},
+	"auth server use":     {Intent: "auth.server.use", Action: "change the default host"},
+
+	// The user's git configuration. #571 reproduced this writing 302 bytes into
+	// an empty GIT_CONFIG_GLOBAL under --dry-run.
+	"auth setup-git": {Intent: "auth.setup-git", Action: "configure git to authenticate through bb"},
+
+	// os.WriteFile, and its removal.
+	"ai skill install": {Intent: "ai.skill.install", Action: "write the skill file"},
+	"ai skill remove":  {Intent: "ai.skill.remove", Action: "delete the skill file"},
+
+	// A working copy, and a local branch.
+	"clone":       {Intent: "repo.clone", Action: "clone into a new directory"},
+	"repo clone":  {Intent: "repo.clone", Action: "clone into a new directory"},
+	"pr checkout": {Intent: "pr.checkout", Action: "create a local branch"},
+}
+
+// dryRunRefusedCommands accept no meaningful preview, so --dry-run is an error
+// rather than a flag that parses and does nothing.
+var dryRunRefusedCommands = map[string]string{
+	// It starts a live, write-capable MCP server: every mutating tool call
+	// reaches Bitbucket. It sat in clientLocalCommands -- "commands that never
+	// reach it" -- so the one command whose purpose is to hand a machine the
+	// ability to mutate Bitbucket was the one command where the preview was
+	// silently a no-op (#568). A dry-run of a long-lived server is not a
+	// preview of anything, so the flag is refused rather than reinterpreted.
+	"ai mcp serve": "ai mcp serve starts a live server whose tools reach Bitbucket; --dry-run cannot preview a session. " +
+		"Restrict what the server can do instead: it exposes read-only tools unless --yolo is passed",
 }
 
 func classifyCommand(path string) commandClassification {
@@ -324,6 +380,12 @@ func classifyCommand(path string) commandClassification {
 	}
 	if _, ok := clientLocalCommands[trimmed]; ok {
 		return classificationLocal
+	}
+	if _, ok := clientLocalMutatingCommands[trimmed]; ok {
+		return classificationLocalMutating
+	}
+	if _, ok := dryRunRefusedCommands[trimmed]; ok {
+		return classificationRefused
 	}
 	return classificationUnknown
 }
@@ -372,6 +434,13 @@ func registerGlobalDryRunInterceptors(root *cobra.Command, options *rootOptions)
 					return originalRun(cmd, args)
 				}
 
+				// Local state is still the user's state. Preview it rather than
+				// changing it and reporting the change in the past tense (#571).
+				if localProfile, ok := clientLocalMutatingCommands[path]; ok {
+					preview := newDryRunPreview(localProfile, cmd, args)
+					return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+				}
+
 				return dryRunUnsupportedError(path)
 			}
 		}
@@ -399,6 +468,12 @@ func dryRunCommandPath(command *cobra.Command) string {
 }
 
 func dryRunUnsupportedError(path string) error {
+	if reason, ok := dryRunRefusedCommands[strings.TrimSpace(path)]; ok {
+		// A validation error, not not-implemented: nothing is missing here, the
+		// flag does not apply.
+		return apperrors.New(apperrors.KindValidation, reason, nil)
+	}
+
 	if strings.EqualFold(strings.TrimSpace(path), "bulk apply") {
 		return apperrors.New(apperrors.KindValidation, "bulk apply does not support --dry-run; use bulk plan to preview operations", nil)
 	}
