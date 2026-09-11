@@ -111,7 +111,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 			listed := result.FlattenComments(comments)
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), Comments{Context: commentContextFrom(target.Context()), Comments: listed})
+				return deps.WriteJSONList(cmd.OutOrStdout(), Comments{Context: commentContextFrom(target.Context()), Comments: listed}, paging.LimitReached(listPaging, len(listed)))
 			}
 
 			if len(listed) == 0 {

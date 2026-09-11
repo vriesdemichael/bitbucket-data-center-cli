@@ -120,7 +120,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), reported)
+				return d.WriteJSONList(cmd.OutOrStdout(), reported, paging.LimitReached(listPaging, len(commits)))
 			}
 
 			if len(reported.Commits) == 0 {
@@ -210,7 +210,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), reported)
+				return d.WriteJSONList(cmd.OutOrStdout(), reported, paging.LimitReached(listPaging, len(commits)))
 			}
 
 			if len(reported.Commits) == 0 {
