@@ -4,15 +4,13 @@ package live_test
 
 import (
 	"os"
-	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // Repository context for the CLI, carried per test instead of published to the
@@ -230,11 +228,15 @@ func applyLocalLiveDefaultsToProcess() {
 // answered the duplicate insert with a 500 rather than the 409 the retry loop
 // was written for. A counter cannot collide with itself, and the clock prefix
 // keeps keys sortable and distinct across runs against the same instance.
+// uniqueSuffix names a fixture on the server.
+//
+// It was Unix()%100000 plus a process-local counter, which is unique within
+// one run and repeats on the next: a run that crashed and left fixtures behind
+// collided with the run that followed it, and the second run's failures looked
+// like product bugs. ADR-085 says random, not clock.
 func uniqueSuffix() string {
-	return strconv.FormatInt(time.Now().Unix()%100000, 10) + strconv.FormatUint(uniqueCounter.Add(1), 10)
+	return testsupport.UniqueSuffix()
 }
-
-var uniqueCounter atomic.Uint64
 
 // configureLiveCLIEnvVars publishes the repository context the way a user's
 // shell would, for the tests whose subject is that mechanism.

@@ -4,12 +4,12 @@ package live_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestLiveDiffRefs(t *testing.T) {
@@ -62,7 +62,7 @@ func TestLiveDiffPullRequest(t *testing.T) {
 	}
 
 	repo := seeded.Repos[0]
-	branch := fmt.Sprintf("lt-feature-%d", time.Now().UnixNano())
+	branch := testsupport.UniqueName("lt-feature-")
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "feature.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
