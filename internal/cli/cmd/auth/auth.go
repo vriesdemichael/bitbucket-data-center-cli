@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -46,8 +47,11 @@ type Dependencies struct {
 	// is given and this is nil, rather than resolving the wrong instance.
 	LoadConfigWithOverrides func(config.Overrides) (config.AppConfig, error)
 	WriteJSON               func(io.Writer, any) error
-	NewUsersClient          func(config.AppConfig) (usersClient, error)
-	NewReposClient          func(config.AppConfig) (repositoriesClient, error)
+	// WriteJSONList carries meta.limitReached, so a caller can tell a full
+	// page from all there is (#573).
+	WriteJSONList  func(io.Writer, any, bool) error
+	NewUsersClient func(config.AppConfig) (usersClient, error)
+	NewReposClient func(config.AppConfig) (repositoriesClient, error)
 	// ConfigureGitCredentialHelper writes the git configuration that points git
 	// at bb for credentials. Injected so setup-git can be tested without
 	// mutating the developer's real git configuration.
@@ -71,6 +75,10 @@ func New(deps Dependencies) *cobra.Command {
 		deps.WriteJSON = func(io.Writer, any) error {
 			return apperrors.New(apperrors.KindInternal, "auth command dependency WriteJSON is not configured", nil)
 		}
+	}
+
+	if deps.WriteJSONList == nil {
+		deps.WriteJSONList = jsonoutput.WriteList
 	}
 
 	if deps.GitBackend == nil {
