@@ -147,7 +147,7 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 		t.Fatalf("expected human delete output, got: %s", deleteCommitOutput)
 	}
 
-	branch := fmt.Sprintf("lt-repo-cli-%d", time.Now().UnixNano()%100000)
+	branch := fmt.Sprintf("lt-repo-cli-%d", time.Now().UnixNano())
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "repo-cli-feature.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
@@ -300,7 +300,7 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 		t.Fatalf("expected webhooks field in webhooks list output: %s", webhooksListOutput)
 	}
 
-	webhookName := fmt.Sprintf("lt-cli-webhook-%d", time.Now().UnixNano()%100000)
+	webhookName := fmt.Sprintf("lt-cli-webhook-%d", time.Now().UnixNano())
 	createWebhookOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "create", webhookName, "http://localhost:65535/hook", "--event", "repo:refs_changed")
 	if err != nil {
 		t.Fatalf("repo settings workflow webhooks create failed: %v\noutput: %s", err, createWebhookOutput)
@@ -572,7 +572,7 @@ func TestLiveCLIRepoWebhookCreateDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("webhooks list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
 
-	name := fmt.Sprintf("lt-dryrun-webhook-%d", time.Now().UnixNano()%100000)
+	name := fmt.Sprintf("lt-dryrun-webhook-%d", time.Now().UnixNano())
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "workflow", "webhooks", "create", name, "http://localhost:65535/hook", "--event", "repo:refs_changed")
 	if err != nil {
 		t.Fatalf("webhook create dry-run failed: %v\noutput: %s", err, dryRunOutput)
@@ -733,7 +733,7 @@ func TestLiveCLIRepoWebhookDeleteDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	createName := fmt.Sprintf("lt-dryrun-webhook-del-%d", time.Now().UnixNano()%100000)
+	createName := fmt.Sprintf("lt-dryrun-webhook-del-%d", time.Now().UnixNano())
 	createOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "create", createName, "http://localhost:65535/hook", "--event", "repo:refs_changed")
 	if err != nil {
 		t.Fatalf("webhook create fixture failed: %v\noutput: %s", err, createOutput)
@@ -1199,7 +1199,7 @@ func TestLiveCLIRepoCommentCreateDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	branch := fmt.Sprintf("feature/live-comment-dryrun-%d", time.Now().UnixNano()%100000)
+	branch := fmt.Sprintf("feature/live-comment-dryrun-%d", time.Now().UnixNano())
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "dryrun-comment-fixture.txt"); err != nil {
 		t.Fatalf("create branch failed: %v", err)
 	}
@@ -1248,7 +1248,7 @@ func TestLiveCLIRepoCommentUpdateDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	branch := fmt.Sprintf("feature/live-comment-update-dryrun-%d", time.Now().UnixNano()%100000)
+	branch := fmt.Sprintf("feature/live-comment-update-dryrun-%d", time.Now().UnixNano())
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "dryrun-comment-update-fixture.txt"); err != nil {
 		t.Fatalf("create branch failed: %v", err)
 	}
@@ -1308,7 +1308,7 @@ func TestLiveCLIRepoCommentDeleteDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	branch := fmt.Sprintf("feature/live-comment-delete-dryrun-%d", time.Now().UnixNano()%100000)
+	branch := fmt.Sprintf("feature/live-comment-delete-dryrun-%d", time.Now().UnixNano())
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "dryrun-comment-delete-fixture.txt"); err != nil {
 		t.Fatalf("create branch failed: %v", err)
 	}
@@ -1366,7 +1366,7 @@ func prepareOpenPRDryRunFixture(t *testing.T) (*liveHarness, seededProject, seed
 	}
 
 	repo := seeded.Repos[0]
-	branch := fmt.Sprintf("feature/live-pr-dryrun-%d", time.Now().UnixNano()%100000)
+	branch := fmt.Sprintf("feature/live-pr-dryrun-%d", time.Now().UnixNano())
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "dryrun-pr-fixture.txt"); err != nil {
 		t.Fatalf("create branch failed: %v", err)
 	}

@@ -29,7 +29,7 @@ func TestLiveBuildStatusSetAndGet(t *testing.T) {
 
 	repo := seeded.Repos[0]
 	commitID := repo.CommitIDs[0]
-	buildKey := fmt.Sprintf("live-build-%d", time.Now().UnixNano()%100000)
+	buildKey := fmt.Sprintf("live-build-%d", time.Now().UnixNano())
 
 	err = service.SetBuildStatus(ctx, commitID, qualityservice.BuildStatusSetInput{
 		Key:   buildKey,
@@ -75,7 +75,7 @@ func TestLiveCodeInsightsReportSetAndGet(t *testing.T) {
 
 	repo := seeded.Repos[0]
 	commitID := repo.CommitIDs[0]
-	reportKey := fmt.Sprintf("live-report-%d", time.Now().UnixNano()%100000)
+	reportKey := fmt.Sprintf("live-report-%d", time.Now().UnixNano())
 	title := "Live Insights"
 	result := "PASS"
 	reportRequest := openapigenerated.SetACodeInsightsReportJSONRequestBody{
@@ -189,7 +189,7 @@ func TestLiveCodeInsightsAnnotationsLifecycle(t *testing.T) {
 
 	repo := qualityservice.RepositoryRef{ProjectKey: seeded.Key, Slug: seeded.Repos[0].Slug}
 	commitID := seeded.Repos[0].CommitIDs[0]
-	reportKey := fmt.Sprintf("live-report-annotations-%d", time.Now().UnixNano()%100000)
+	reportKey := fmt.Sprintf("live-report-annotations-%d", time.Now().UnixNano())
 
 	result := "PASS"
 	title := "Live Annotations"
@@ -198,7 +198,7 @@ func TestLiveCodeInsightsAnnotationsLifecycle(t *testing.T) {
 		t.Fatalf("set report for annotations failed: %v", err)
 	}
 
-	externalID := fmt.Sprintf("ann-%d", time.Now().UnixNano()%100000)
+	externalID := fmt.Sprintf("ann-%d", time.Now().UnixNano())
 	path := "seed.txt"
 	line := int32(1)
 	annotations := []openapigenerated.RestSingleAddInsightAnnotationRequest{{
@@ -247,7 +247,7 @@ func TestLiveCLIInsightsReportSetDryRunNoSideEffect(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	commitID := repo.CommitIDs[0]
-	reportKey := fmt.Sprintf("live-dryrun-report-%d", time.Now().UnixNano()%100000)
+	reportKey := fmt.Sprintf("live-dryrun-report-%d", time.Now().UnixNano())
 
 	listBeforeOutput, err := executeLiveCLI(t, "--json", "insights", "report", "list", commitID, "--limit", "200")
 	if err != nil {
@@ -296,7 +296,7 @@ func TestLiveCLIBuildStatusSetDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("build status stats before failed: %v\noutput: %s", err, statsBeforeOutput)
 	}
 
-	statusKey := fmt.Sprintf("live-dryrun-status-%d", time.Now().UnixNano()%100000)
+	statusKey := fmt.Sprintf("live-dryrun-status-%d", time.Now().UnixNano())
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "build", "status", "set", commitID, "--key", statusKey, "--state", "SUCCESSFUL", "--url", "https://example.invalid/dryrun")
 	if err != nil {
 		t.Fatalf("build status set dry-run failed: %v\noutput: %s", err, dryRunOutput)
@@ -332,7 +332,7 @@ func TestLiveCLIInsightsReportDeleteDryRunNoSideEffect(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	commitID := repo.CommitIDs[0]
-	reportKey := fmt.Sprintf("live-dryrun-report-del-%d", time.Now().UnixNano()%100000)
+	reportKey := fmt.Sprintf("live-dryrun-report-del-%d", time.Now().UnixNano())
 	body := fmt.Sprintf(`{"title":"Dry Run Report Delete %s","result":"PASS"}`, reportKey)
 
 	setOutput, err := executeLiveCLI(t, "--json", "insights", "report", "set", commitID, reportKey, "--body", body)
@@ -382,7 +382,7 @@ func TestLiveCLIInsightsAnnotationAddDeleteDryRunNoSideEffect(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	commitID := repo.CommitIDs[0]
-	reportKey := fmt.Sprintf("live-dryrun-ann-report-%d", time.Now().UnixNano()%100000)
+	reportKey := fmt.Sprintf("live-dryrun-ann-report-%d", time.Now().UnixNano())
 	body := fmt.Sprintf(`{"title":"Dry Run Annotation Report %s","result":"PASS"}`, reportKey)
 
 	setOutput, err := executeLiveCLI(t, "--json", "insights", "report", "set", commitID, reportKey, "--body", body)
@@ -395,7 +395,7 @@ func TestLiveCLIInsightsAnnotationAddDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("insights annotation list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
 
-	externalID := fmt.Sprintf("live-dryrun-ann-%d", time.Now().UnixNano()%100000)
+	externalID := fmt.Sprintf("live-dryrun-ann-%d", time.Now().UnixNano())
 	annotationBody := fmt.Sprintf(`[{"externalId":"%s","message":"dry-run annotation","severity":"LOW","path":"seed.txt","line":1}]`, externalID)
 
 	addDryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "insights", "annotation", "add", commitID, reportKey, "--body", annotationBody)
@@ -585,7 +585,7 @@ func TestLiveQualityListingsPageToTheEnd(t *testing.T) {
 
 	t.Run("build statuses", func(t *testing.T) {
 		for index := range total {
-			key := fmt.Sprintf("paged-build-%d-%d", time.Now().UnixNano()%100000, index)
+			key := fmt.Sprintf("paged-build-%d-%d", time.Now().UnixNano(), index)
 			if err := service.SetBuildStatus(ctx, commitID, qualityservice.BuildStatusSetInput{
 				Key:   key,
 				State: "SUCCESSFUL",
@@ -615,7 +615,7 @@ func TestLiveQualityListingsPageToTheEnd(t *testing.T) {
 	t.Run("insight reports", func(t *testing.T) {
 		passed := "PASS"
 		for index := range total {
-			key := fmt.Sprintf("paged-report-%d-%d", time.Now().UnixNano()%100000, index)
+			key := fmt.Sprintf("paged-report-%d-%d", time.Now().UnixNano(), index)
 			if _, err := service.SetReport(ctx, repoRef, commitID, key,
 				openapigenerated.SetACodeInsightsReportJSONRequestBody{Title: key, Result: &passed}); err != nil {
 				t.Fatalf("set report %d failed: %v", index, err)
@@ -717,7 +717,7 @@ func TestLiveQualityEmptyAnswers(t *testing.T) {
 
 	t.Run("annotations on a report that has none", func(t *testing.T) {
 		passed := "PASS"
-		key := fmt.Sprintf("empty-report-%d", time.Now().UnixNano()%100000)
+		key := fmt.Sprintf("empty-report-%d", time.Now().UnixNano())
 		created, err := service.SetReport(ctx, repoRef, commitID, key,
 			openapigenerated.SetACodeInsightsReportJSONRequestBody{Title: key, Result: &passed})
 		if err != nil {
