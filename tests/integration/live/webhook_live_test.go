@@ -32,7 +32,7 @@ func TestLiveRepositoryWebhookLifecycle(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	name := fmt.Sprintf("live-webhook-%d", time.Now().UnixNano()%100000)
+	name := fmt.Sprintf("live-webhook-%d", time.Now().UnixNano())
 	createOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "create",
 		name, "http://localhost:7990/status", "--event", "repo:refs_changed")
 	if err != nil {
@@ -123,7 +123,7 @@ func TestLiveProjectWebhookLifecycle(t *testing.T) {
 	}
 	configureLiveCLIEnv(t, harness, seeded.Key, seeded.Repos[0].Slug)
 
-	name := fmt.Sprintf("live-project-webhook-%d", time.Now().UnixNano()%100000)
+	name := fmt.Sprintf("live-project-webhook-%d", time.Now().UnixNano())
 	createOutput, err := executeLiveCLI(t, "--json", "project", "webhook", "create",
 		seeded.Key, name, "http://localhost:7990/status", "--event", "repo:refs_changed")
 	if err != nil {

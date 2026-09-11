@@ -32,7 +32,7 @@ func TestLiveDeploymentLifecycle(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	commitID := repo.CommitIDs[0]
-	deploymentKey := fmt.Sprintf("live-deploy-%d", time.Now().UnixNano()%100000)
+	deploymentKey := fmt.Sprintf("live-deploy-%d", time.Now().UnixNano())
 	const envKey = "live-env"
 
 	createOutput, err := executeLiveCLI(t, "--json", "deployment", "create", commitID,

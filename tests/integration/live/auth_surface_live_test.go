@@ -159,7 +159,7 @@ func TestLiveAuthTokenLifecycle(t *testing.T) {
 
 	configureLiveCLIEnv(t, harness, "", "")
 
-	name := fmt.Sprintf("live-token-%d", time.Now().UnixNano()%100000)
+	name := fmt.Sprintf("live-token-%d", time.Now().UnixNano())
 	createOutput, err := executeLiveCLI(t, "--json", "auth", "token", "create", name,
 		"--user", "admin", "--permission", "REPO_READ", "--expiry-days", "1")
 	if err != nil {

@@ -213,7 +213,7 @@ func TestLiveBulkEveryOperationType(t *testing.T) {
 		t.Fatalf("create user failed: %v", err)
 	}
 
-	hookName := fmt.Sprintf("bulk-hook-%d", time.Now().UnixNano()%100000)
+	hookName := fmt.Sprintf("bulk-hook-%d", time.Now().UnixNano())
 	policy := strings.Join([]string{
 		"apiVersion: bb.io/v1alpha1",
 		"selector:",

@@ -127,7 +127,7 @@ func TestLiveRepoCloneAddsTheUpstreamRemote(t *testing.T) {
 	upstream := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, upstream.Slug)
 
-	forkName := fmt.Sprintf("lt-fork-clone-%d", time.Now().UnixNano()%100000)
+	forkName := fmt.Sprintf("lt-fork-clone-%d", time.Now().UnixNano())
 	forkOutput, err := executeLiveCLI(t, "--json", "repo", "admin", "fork",
 		"--repo", seeded.Key+"/"+upstream.Slug, "--name", forkName, "--project", seeded.Key)
 	if err != nil {

@@ -118,7 +118,7 @@ func TestLiveRepoSettingsCreateWebhook(t *testing.T) {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
 
-	name := fmt.Sprintf("lt-webhook-%d", time.Now().UnixNano()%100000)
+	name := fmt.Sprintf("lt-webhook-%d", time.Now().UnixNano())
 	_, err = service.CreateRepositoryWebhook(ctx, reposettings.RepositoryRef{ProjectKey: seeded.Key, Slug: seeded.Repos[0].Slug}, reposettings.WebhookCreateInput{
 		Name:   name,
 		URL:    "http://localhost:65535/hook",

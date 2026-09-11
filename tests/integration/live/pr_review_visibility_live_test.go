@@ -49,7 +49,7 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	}
 
 	repo := seeded.Repos[0]
-	branch := fmt.Sprintf("lt-review-vis-%d", time.Now().UnixNano()%100000)
+	branch := fmt.Sprintf("lt-review-vis-%d", time.Now().UnixNano())
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "review-visibility.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}

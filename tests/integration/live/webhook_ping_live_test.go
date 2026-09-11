@@ -33,7 +33,7 @@ func TestLiveWebhookRealPingDelivery(t *testing.T) {
 		}
 	})
 
-	webhookName := fmt.Sprintf("live-ping-test-%d", time.Now().UnixNano()%100000)
+	webhookName := fmt.Sprintf("live-ping-test-%d", time.Now().UnixNano())
 	createOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "create",
 		webhookName, target, "--event", "repo:refs_changed")
 	if err != nil {

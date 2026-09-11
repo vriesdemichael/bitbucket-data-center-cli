@@ -128,7 +128,7 @@ func TestLiveReviewerGroupsLifecycle(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	username := harness.username()
-	groupName := fmt.Sprintf("team-gov-%d", time.Now().UnixNano()%10000)
+	groupName := fmt.Sprintf("team-gov-%d", time.Now().UnixNano())
 
 	// 1. Create reviewer group on repository
 	//
