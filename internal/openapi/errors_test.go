@@ -307,3 +307,80 @@ func TestNamesExceptionRecognisesOnlyTheNameAsked(t *testing.T) {
 		}
 	}
 }
+
+// TestAnUpstreamBodyIsSummarizedNotPasted is #574: one bad project key put
+// 18,414 characters of HTML into a single error.message.
+func TestAnUpstreamBodyIsSummarizedNotPasted(t *testing.T) {
+	// Bitbucket's own sentence is the whole answer, and it was buried in the
+	// JSON it arrived in. This body is the one the issue reports.
+	approval := []byte(`{"errors":[{"message":"Authors may not update their status.","exceptionName":"com.atlassian.bitbucket.pull.InvalidPullRequestRoleException"}]}`)
+	err := MapStatusError(400, approval)
+	if err == nil {
+		t.Fatal("expected an error for a 400")
+	}
+	if !strings.Contains(err.Error(), "Authors may not update their status.") {
+		t.Fatalf("the message does not carry Bitbucket's sentence: %v", err)
+	}
+	if strings.Contains(err.Error(), "exceptionName") {
+		t.Fatalf("the message still pastes the raw envelope: %v", err)
+	}
+
+	// A body with no envelope to read is truncated, and says so.
+	page := []byte("<html>" + strings.Repeat("x", 18_000) + "</html>")
+	err = MapStatusError(400, page)
+	message := err.Error()
+	if len(message) > 1_000 {
+		t.Fatalf("an 18KB body produced a %d character message", len(message))
+	}
+	if !strings.Contains(message, "--full-error-body") {
+		t.Fatalf("the truncated message does not say how to see the rest: %s", message)
+	}
+	if !strings.Contains(message, "more characters") {
+		t.Fatalf("the truncated message does not say how much was dropped: %s", message)
+	}
+}
+
+// The way out has to work, for somebody debugging a server bb cannot summarise.
+func TestFullUpstreamBodiesPrintsTheWholeThing(t *testing.T) {
+	page := []byte("<html>" + strings.Repeat("y", 5_000) + "</html>")
+
+	SetFullUpstreamBodies(true)
+	t.Cleanup(func() { SetFullUpstreamBodies(false) })
+
+	message := MapStatusError(500, page).Error()
+	if len(message) < 5_000 {
+		t.Fatalf("--full-error-body produced a %d character message for a 5KB body", len(message))
+	}
+}
+
+// TestAnUpstreamBodyIsRedactedBeforeItBecomesAMessage is the security half of
+// #574: error.message is shown to the user and kept in logs, and a server that
+// echoes the request can put a live credential in the body it sends back.
+func TestAnUpstreamBodyIsRedactedBeforeItBecomesAMessage(t *testing.T) {
+	const token = "NjE2MTYxNjE2MTYxOnNlY3JldA"
+
+	for name, body := range map[string]string{
+		"a clone URL carrying a token":   `{"errors":[{"message":"could not reach https://x-token-auth:` + token + `@bitbucket.example/scm/p/r.git"}]}`,
+		"an echoed Authorization header": `{"errors":[{"message":"rejected request with Authorization: Bearer ` + token + `"}]}`,
+		"a secret in a JSON field":       `{"errors":[{"message":"bad request"}],"token":"` + token + `"}`,
+		"a token in an HTML page":        `<html><body>Authorization: Bearer ` + token + `</body></html>`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := MapStatusError(400, []byte(body))
+			if err == nil {
+				t.Fatal("expected an error")
+			}
+			if strings.Contains(err.Error(), token) {
+				t.Fatalf("the credential reached error.message:\n%v", err)
+			}
+			// A marker is required only where the credential sat in text that is
+			// surfaced. One in a sibling field is never read at all, which is safe
+			// without a marker -- demanding one there was this test being wrong.
+			if strings.Contains(err.Error(), "bitbucket.example") || strings.Contains(err.Error(), "Authorization") {
+				if !strings.Contains(err.Error(), "REDACTED") {
+					t.Fatalf("an inline credential was dropped rather than marked:\n%v", err)
+				}
+			}
+		})
+	}
+}

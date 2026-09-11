@@ -107,7 +107,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), Projects{Projects: projectsFrom(projects)})
+				return d.WriteJSONList(cmd.OutOrStdout(), Projects{Projects: projectsFrom(projects)}, paging.LimitReached(listPaging, len(projects)))
 			}
 
 			if len(projects) == 0 {

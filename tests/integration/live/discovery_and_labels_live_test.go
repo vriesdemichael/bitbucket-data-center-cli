@@ -4,10 +4,11 @@ package live_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestLiveSearchCommands covers bb search repos, commits and prs.
@@ -133,7 +134,7 @@ func TestLiveRepoLabelAndWatchLifecycle(t *testing.T) {
 	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	label := fmt.Sprintf("live-label-%d", time.Now().UnixNano()%100000)
+	label := testsupport.UniqueName("live-label-")
 
 	if output, err := executeLiveCLI(t, "--json", "repo", "label", "add", label, "--repo", repoRef); err != nil {
 		t.Fatalf("repo label add failed: %v\noutput: %s", err, output)

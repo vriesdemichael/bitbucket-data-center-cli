@@ -17,6 +17,7 @@ import (
 	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
@@ -49,7 +50,7 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	}
 
 	repo := seeded.Repos[0]
-	branch := fmt.Sprintf("lt-review-vis-%d", time.Now().UnixNano()%100000)
+	branch := testsupport.UniqueName("lt-review-vis-")
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "review-visibility.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}

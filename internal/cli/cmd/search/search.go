@@ -188,7 +188,7 @@ func newSearchCommitsCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), reported)
+				return deps.WriteJSONList(cmd.OutOrStdout(), reported, paging.LimitReached(listPaging, len(commits)))
 			}
 
 			if len(reported.Commits) == 0 {
@@ -285,7 +285,7 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 			reported := PullRequests{PullRequests: result.PullRequestsFrom(prs)}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), reported)
+				return deps.WriteJSONList(cmd.OutOrStdout(), reported, paging.LimitReached(listPaging, len(prs)))
 			}
 
 			if len(reported.PullRequests) == 0 {

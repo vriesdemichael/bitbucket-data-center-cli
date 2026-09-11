@@ -87,6 +87,9 @@ your behalf using the link above.`,
 			// must not need configuration, a server, or a git checkout. Running
 			// the rest of this would make asking what a command returns fail in
 			// exactly the situations where the answer is most wanted.
+			// Before the --describe bail, so it applies to every run.
+			openapi.SetFullUpstreamBodies(options.FullErrorBody)
+
 			if options.Describe {
 				style.Init(options.NoColor)
 				return nil
@@ -112,6 +115,8 @@ your behalf using the link above.`,
 	rootCmd.PersistentFlags().BoolVar(&options.JSON, "json", false, "Output as JSON")
 	rootCmd.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "Preview mutations without applying them")
 	rootCmd.PersistentFlags().BoolVar(&options.NoColor, "no-color", false, "Disable colored output")
+	rootCmd.PersistentFlags().BoolVar(&options.FullErrorBody, "full-error-body", false,
+		"Print the whole upstream response body in an error instead of a summary")
 	rootCmd.PersistentFlags().Bool("no-input", false, "Never prompt; fail instead when a value is missing")
 	rootCmd.PersistentFlags().BoolVar(&options.Describe, describeFlag, false, "Print the command's output schema instead of running it")
 	rootCmd.PersistentFlags().String("ca-file", "", "Path to PEM CA bundle for TLS trust")
@@ -142,6 +147,7 @@ your behalf using the link above.`,
 		LoadConfigWithOverrides: options.loadConfigWithOverrides,
 		RuntimeOverrides:        func() config.Overrides { return options.runtime },
 		WriteJSON:               writeJSON,
+		WriteJSONList:           writeJSONList,
 	}))
 	rootCmd.AddCommand(bulkcmd.New(bulkcmd.Dependencies{
 		JSONEnabled: func() bool { return options.JSON },
@@ -334,6 +340,10 @@ your behalf using the link above.`,
 	// rather than by its author remembering ADR-073.
 	registerDestructiveConfirmations(rootCmd, options)
 	enforceNoArgsDefaults(rootCmd)
+
+	// After the defaults, because it wraps whatever validator a command ended
+	// up with -- including the NoArgs just installed above.
+	nameTheMissingArgument(rootCmd)
 	sendFailingGroupHelpToStderr(rootCmd)
 
 	// Installed last, over the finished tree, because it wraps every runnable
@@ -348,6 +358,13 @@ type rootOptions struct {
 	JSON    bool
 	DryRun  bool
 	NoColor bool
+	// FullErrorBody turns off the summary of an upstream response body.
+	//
+	// One bad project key produced 18,414 characters of HTML in a single
+	// error.message (#574), so the default is a summary. This is the way out
+	// for somebody debugging a server that answers with something bb cannot
+	// read.
+	FullErrorBody bool
 	// Describe makes a command print its own output contract instead of running
 	// it. A pointer to this is handed to installDescribe, so the wrappers see the
 	// parsed value rather than the value at construction time.

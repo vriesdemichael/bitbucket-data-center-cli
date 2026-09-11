@@ -4,10 +4,11 @@ package live_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestLiveCLIRepoAdminLifecycle(t *testing.T) {
@@ -74,7 +75,7 @@ func TestLiveCLIRepoAdminCreateDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	name := fmt.Sprintf("dryrun-repo-%d", time.Now().UnixNano()%100000)
+	name := testsupport.UniqueName("dryrun-repo-")
 
 	listBefore := projectRepositoryListing(t, seeded.Key)
 
@@ -107,7 +108,7 @@ func TestLiveCLIRepoAdminUpdateDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("seed project failed: %v", err)
 	}
 
-	repoName := fmt.Sprintf("dryrun-update-repo-%d", time.Now().UnixNano()%100000)
+	repoName := testsupport.UniqueName("dryrun-update-repo-")
 	configureLiveCLIEnv(t, harness, seeded.Key, repoName)
 
 	createOutput, err := executeLiveCLI(t, "--json", "repo", "admin", "create", "--project", seeded.Key, "--name", repoName)
@@ -145,7 +146,7 @@ func TestLiveCLIRepoAdminDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("seed project failed: %v", err)
 	}
 
-	repoName := fmt.Sprintf("dryrun-delete-repo-%d", time.Now().UnixNano()%100000)
+	repoName := testsupport.UniqueName("dryrun-delete-repo-")
 	configureLiveCLIEnv(t, harness, seeded.Key, repoName)
 
 	createOutput, err := executeLiveCLI(t, "--json", "repo", "admin", "create", "--project", seeded.Key, "--name", repoName)
@@ -188,7 +189,7 @@ func TestLiveCLIRepoAdminForkDryRunNoSideEffect(t *testing.T) {
 
 	listBefore := projectRepositoryListing(t, seeded.Key)
 
-	forkName := fmt.Sprintf("dryrun-fork-%d", time.Now().UnixNano()%100000)
+	forkName := testsupport.UniqueName("dryrun-fork-")
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "admin", "fork", "--repo", seeded.Key+"/"+repo.Slug, "--name", forkName)
 	if err != nil {
 		t.Fatalf("repo admin fork dry-run failed: %v\noutput: %s", err, dryRunOutput)
@@ -217,8 +218,8 @@ func TestLiveCLIRepoLifecyclePromotedCanonical(t *testing.T) {
 		t.Fatalf("seed project failed: %v", err)
 	}
 
-	repoName := fmt.Sprintf("canon-repo-%d", time.Now().UnixNano()%100000)
-	forkName := fmt.Sprintf("canon-fork-%d", time.Now().UnixNano()%100000)
+	repoName := testsupport.UniqueName("canon-repo-")
+	forkName := testsupport.UniqueName("canon-fork-")
 
 	configureLiveCLIEnv(t, harness, seeded.Key, repoName)
 

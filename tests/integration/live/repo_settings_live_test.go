@@ -5,13 +5,13 @@ package live_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestLiveRepoSettingsSecurityPermissionsUsers(t *testing.T) {
@@ -118,7 +118,7 @@ func TestLiveRepoSettingsCreateWebhook(t *testing.T) {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
 
-	name := fmt.Sprintf("lt-webhook-%d", time.Now().UnixNano()%100000)
+	name := testsupport.UniqueName("lt-webhook-")
 	_, err = service.CreateRepositoryWebhook(ctx, reposettings.RepositoryRef{ProjectKey: seeded.Key, Slug: seeded.Repos[0].Slug}, reposettings.WebhookCreateInput{
 		Name:   name,
 		URL:    "http://localhost:65535/hook",

@@ -3,8 +3,13 @@ package httpclient
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -224,7 +229,7 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 				"duration_ms": time.Since(started).Milliseconds(),
 				"error":       err.Error(),
 			}
-			lastErr = apperrors.New(apperrors.KindTransient, "request failed", err)
+			lastErr = classifyTransportError(method, err)
 			if attempt < client.retries && retrypolicy.Replayable(method) {
 				client.logger.Warn("http request failed", fields)
 				if sleepErr := sleepWithContext(ctx, time.Duration(attempt+1)*client.backoff); sleepErr != nil {
@@ -449,4 +454,46 @@ func sleepWithContext(ctx context.Context, delay time.Duration) error {
 	case <-timer.C:
 		return nil
 	}
+}
+
+// classifyTransportError says whether a failed request is worth trying again.
+//
+// Every transport failure used to be transient, exit 10, "retry later" -- and
+// retried three times. That is wrong twice (#574).
+//
+// A rejected certificate or a name that does not resolve will not fix itself,
+// so reporting it as transient sends the caller round a retry loop that cannot
+// succeed and buries the real cause under three attempts.
+//
+// And a mutation that timed out has an unknown outcome. The retry policy is
+// already careful here -- it refuses to replay POST and PATCH after a transport
+// error -- but exit 10 then told the caller's own wrapper to perform exactly
+// the replay the policy declined. The server may well have applied it.
+func classifyTransportError(method string, err error) error {
+	var certificateError *tls.CertificateVerificationError
+	var unknownAuthority x509.UnknownAuthorityError
+	var invalidCertificate x509.CertificateInvalidError
+	var wrongHostname x509.HostnameError
+
+	switch {
+	case errors.As(err, &certificateError),
+		errors.As(err, &unknownAuthority),
+		errors.As(err, &invalidCertificate),
+		errors.As(err, &wrongHostname):
+		return apperrors.New(apperrors.KindPermanent,
+			"the server's TLS certificate was rejected, which retrying will not change", err)
+	}
+
+	var dnsError *net.DNSError
+	if errors.As(err, &dnsError) && dnsError.IsNotFound {
+		return apperrors.New(apperrors.KindPermanent,
+			"the host does not resolve, which retrying will not change", err)
+	}
+
+	if errors.Is(err, context.DeadlineExceeded) && !retrypolicy.Replayable(method) {
+		return apperrors.New(apperrors.KindUnknownOutcome,
+			fmt.Sprintf("the %s timed out and its outcome is unknown: check whether it was applied before sending it again", method), err)
+	}
+
+	return apperrors.New(apperrors.KindTransient, "request failed", err)
 }

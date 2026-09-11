@@ -799,7 +799,19 @@ func newRepoCompareCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "compare <from> <to>",
 		Short: "Compare commits or branches",
-		Args:  cobra.ExactArgs(2),
+		Long: `Compare commits or branches.
+
+The direction is Bitbucket's, and it is the reverse of git's: the result is
+what is reachable from <from> but not from <to>. To see what a feature branch
+adds, pass the feature as <from> and the base as <to>.
+
+  bb repo compare feature/x main        # what feature/x adds
+  bb repo compare main feature/x        # nothing, unless main has moved
+
+Given git log base..feature reads the other way round, the git-natural order
+reports no changes for refs that do differ, which reads like the refs are
+identical.`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -818,12 +830,10 @@ func newRepoCompareCommand(deps Dependencies) *cobra.Command {
 			to := args[1]
 
 			if diff {
-				diffResult, err := service.CompareDiff(cmd.Context(), repo, from, to)
+				text, err := service.ComparePatch(cmd.Context(), repo, from, to)
 				if err != nil {
 					return err
 				}
-
-				text := diffservice.FormatRestDiff(diffResult)
 				if deps.JSONEnabled() {
 					return deps.WriteJSON(cmd.OutOrStdout(), Comparison{
 						Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},

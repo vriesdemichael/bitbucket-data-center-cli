@@ -4,11 +4,12 @@ package live_test
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestLiveAuthIdentityAndTokenURL covers the two read-only auth commands that
@@ -159,7 +160,7 @@ func TestLiveAuthTokenLifecycle(t *testing.T) {
 
 	configureLiveCLIEnv(t, harness, "", "")
 
-	name := fmt.Sprintf("live-token-%d", time.Now().UnixNano()%100000)
+	name := testsupport.UniqueName("live-token-")
 	createOutput, err := executeLiveCLI(t, "--json", "auth", "token", "create", name,
 		"--user", "admin", "--permission", "REPO_READ", "--expiry-days", "1")
 	if err != nil {

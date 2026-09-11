@@ -5,12 +5,12 @@ package live_test
 import (
 	"context"
 	stderrors "errors"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	tagservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/tag"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestLiveTagLifecycle(t *testing.T) {
@@ -28,7 +28,7 @@ func TestLiveTagLifecycle(t *testing.T) {
 	}
 
 	repo := seeded.Repos[0]
-	tagName := fmt.Sprintf("v-live-%d", time.Now().UnixNano()%100000)
+	tagName := testsupport.UniqueName("v-live-")
 
 	created, err := service.Create(
 		ctx,

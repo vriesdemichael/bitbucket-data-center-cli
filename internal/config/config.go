@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/url"
@@ -312,9 +314,33 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		return AppConfig{}, err
 	}
 
-	sysConfig, _ := LoadSystemConfig()
-	workspaceConfig, _ := LoadWorkspaceConfig()
-	storedConfig, _ := LoadStoredConfig()
+	// A file bb cannot read is not the same as a file that is not there.
+	//
+	// These three used to discard the error, so a damaged config resolved as
+	// an empty one: the user was told they were not logged in, and the remedy
+	// that message prescribed -- auth login -- rewrote the file and deleted
+	// every other host in it (#567). LoadStoredConfig already draws the
+	// distinction, returning an empty config and no error when the file is
+	// simply absent; only the caller threw the answer away.
+	//
+	// The system file is the sharper case. It carries the administrator's
+	// policy, so ignoring a broken one silently means the controls do not
+	// apply and nobody is told -- a policy that can be switched off by
+	// corrupting the file is not a policy.
+	sysConfig, err := LoadSystemConfig()
+	if err != nil {
+		return AppConfig{}, unreadableConfig(SystemConfigPath, "system configuration", err)
+	}
+
+	workspaceConfig, err := LoadWorkspaceConfig()
+	if err != nil {
+		return AppConfig{}, unreadableConfig(WorkspaceConfigPath, "workspace configuration", err)
+	}
+
+	storedConfig, err := LoadStoredConfig()
+	if err != nil {
+		return AppConfig{}, unreadableConfig(ConfigPath, "stored configuration", err)
+	}
 
 	tlsSettings, err := resolveTLSSettings(policy, sysConfig, overrides, flagSourced)
 	if err != nil {
@@ -578,13 +604,28 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 	hasToken := strings.TrimSpace(input.Token) != ""
 	hasBasic := strings.TrimSpace(input.Username) != "" || strings.TrimSpace(input.Password) != ""
 	if hasToken == hasBasic {
-		return LoginResult{}, apperrors.New(apperrors.KindValidation, "provide either token or username/password", nil)
+		return LoginResult{}, apperrors.New(apperrors.KindValidation,
+			// Naming the flags, because the ones a reader would guess from the
+			// old wording -- --token and --password -- were retired in v4 and
+			// do not exist (#587).
+			"no credential given. Pass a token with --token-stdin, or a username with --username and its password with --password-stdin",
+			nil)
 	}
 	if hasBasic && (strings.TrimSpace(input.Username) == "" || strings.TrimSpace(input.Password) == "") {
 		return LoginResult{}, apperrors.New(apperrors.KindValidation, "username and password must be provided together", nil)
 	}
 
-	stored, _ := LoadStoredConfig()
+	// Refuse rather than rewrite. This is where the file was destroyed: the
+	// error was discarded, the damaged config resolved as an empty one, and
+	// the new host was written into it -- so a login prescribed by a
+	// misdiagnosis deleted every host the file already held (#567).
+	//
+	// There is deliberately no --force. A flag that overwrites a file bb could
+	// not read is the same hazard with a longer name.
+	stored, err := LoadStoredConfig()
+	if err != nil {
+		return LoginResult{}, unreadableConfig(ConfigPath, "stored configuration", err)
+	}
 	if stored.Hosts == nil {
 		stored.Hosts = map[string]StoredProfile{}
 	}
@@ -593,6 +634,12 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 	}
 
 	key := hostKey(host)
+
+	// The config file is still keyed by host: that map lives inside one file,
+	// so a host names one profile in it. The credential store is shared by
+	// every config file on the machine, which is why its key carries the file
+	// as well (#587).
+	secretKey := credentialKey(host)
 
 	// Aliases are host-recognition config, not credentials: re-authenticating
 	// against a host should not discard the ones already stored. Discovery
@@ -636,23 +683,23 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 
 	insecure := StoredSecret{}
 	if hasToken {
-		if keyringErr := keyringSet(keyringServiceName, key+":token", strings.TrimSpace(input.Token)); keyringErr != nil {
+		if keyringErr := keyringSet(keyringServiceName, secretKey+":token", strings.TrimSpace(input.Token)); keyringErr != nil {
 			if requireKeyring {
 				return LoginResult{}, keyringUnavailableError(keyringErr)
 			}
 			insecure.Token = strings.TrimSpace(input.Token)
 			result.UsedInsecureStorage = true
 		}
-		_ = keyringDelete(keyringServiceName, key+":password")
+		_ = keyringDelete(keyringServiceName, secretKey+":password")
 	} else {
-		if keyringErr := keyringSet(keyringServiceName, key+":password", strings.TrimSpace(input.Password)); keyringErr != nil {
+		if keyringErr := keyringSet(keyringServiceName, secretKey+":password", strings.TrimSpace(input.Password)); keyringErr != nil {
 			if requireKeyring {
 				return LoginResult{}, keyringUnavailableError(keyringErr)
 			}
 			insecure.Password = strings.TrimSpace(input.Password)
 			result.UsedInsecureStorage = true
 		}
-		_ = keyringDelete(keyringServiceName, key+":token")
+		_ = keyringDelete(keyringServiceName, secretKey+":token")
 	}
 
 	if insecure.Token != "" || insecure.Password != "" {
@@ -840,6 +887,10 @@ func Logout(host string) error {
 	}
 
 	key := hostKey(hostURL)
+	// Both keys. A logout that left the unscoped entry behind would leave a
+	// credential on the machine with no profile naming it.
+	_ = keyringDelete(keyringServiceName, credentialKey(hostURL)+":token")
+	_ = keyringDelete(keyringServiceName, credentialKey(hostURL)+":password")
 	_ = keyringDelete(keyringServiceName, key+":token")
 	_ = keyringDelete(keyringServiceName, key+":password")
 
@@ -1096,9 +1147,12 @@ func LoadWorkspaceConfig() (WorkspaceConfigFile, error) {
 }
 
 func LoadPolicy() (PolicyConfig, error) {
+	// The policy is read before anything else, so a damaged system file
+	// surfaces here rather than at the load below. It already failed closed;
+	// what it did not do was say which file (#567).
 	sys, err := LoadSystemConfig()
 	if err != nil {
-		return PolicyConfig{}, err
+		return PolicyConfig{}, unreadableConfig(SystemConfigPath, "system configuration", err)
 	}
 
 	policy := sys.PolicyConfig()
@@ -1548,10 +1602,10 @@ func credentialsForStoredHost(stored StoredConfig, key string, profile StoredPro
 		ClientKeyFile:     profile.ClientKey,
 	}
 
-	if token, err := keyringGet(keyringServiceName, key+":token"); err == nil && strings.TrimSpace(token) != "" {
+	if token := keyringSecret(profile.URL, "token", key); token != "" {
 		resolved.BitbucketToken = token
 	}
-	if password, err := keyringGet(keyringServiceName, key+":password"); err == nil && strings.TrimSpace(password) != "" {
+	if password := keyringSecret(profile.URL, "password", key); password != "" {
 		resolved.BitbucketPassword = password
 	}
 
@@ -2196,4 +2250,92 @@ func UseOSKeyring() {
 	}
 
 	keyringSet, keyringGet, keyringDelete = keyring.Set, keyring.Get, keyring.Delete
+}
+
+// unreadableConfig says which file bb could not read, and does not suggest a
+// remedy that would destroy it.
+//
+// The message this replaces was "no Bitbucket host configured: set
+// BITBUCKET_URL or run 'bb auth login <host>'", produced for every config
+// fault alike: missing file, malformed YAML, a path pointing at a directory,
+// wrong-typed values, a file the user can write but not read. It could not
+// tell "you never logged in" from "your config is damaged", and in the second
+// case the action it recommended was the one that deleted the other hosts.
+//
+// So this names the file and stops. Repairing it is the reader's decision,
+// with the path in front of them, rather than a suggestion from the tool that
+// has already misread it once.
+func unreadableConfig(pathOf func() (string, error), what string, cause error) error {
+	// The cause is not repeated in the message: AppError.Error appends it, and
+	// embedding it too produced the parse error twice, each with its own kind
+	// prefix.
+	path, pathErr := pathOf()
+	if pathErr != nil || strings.TrimSpace(path) == "" {
+		return apperrors.New(apperrors.KindValidation,
+			fmt.Sprintf("the %s could not be read", what), cause)
+	}
+
+	return apperrors.New(apperrors.KindValidation,
+		fmt.Sprintf(
+			"the %s at %s could not be read. Fix or remove that file; bb will not rewrite a file it could not read",
+			what, path,
+		),
+		cause)
+}
+
+// credentialKey scopes a keyring entry to the config file it belongs to.
+//
+// The entry used to be keyed by host alone, so logging in as a second identity
+// against the same Bitbucket host silently evicted the first -- even with a
+// separate BB_CONFIG_PATH, because the path did not reach the key. Anyone
+// keeping a personal account and a service account on one corporate host lost
+// one of them without being told (#587).
+//
+// The config path is what distinguishes the two, so it is what scopes the key.
+// It is hashed rather than embedded: the path can be long, can contain
+// characters a credential store treats specially, and is not something to
+// publish into an entry name that other software can list.
+func credentialKey(host string) string {
+	base := hostKey(host)
+
+	path, err := ConfigPath()
+	if err != nil || strings.TrimSpace(path) == "" {
+		return base
+	}
+
+	sum := sha256.Sum256([]byte(filepath.Clean(path)))
+
+	return base + "#" + hex.EncodeToString(sum[:8])
+}
+
+// keyringSecret reads a secret written under either key.
+//
+// Entries written before credentialKey existed are keyed by host alone, and a
+// user who has one should not have to log in again to keep it: the scoped key
+// is tried first, and the unscoped one answers for anything already stored.
+// A new login writes only the scoped key, so the two stop overlapping as
+// credentials are refreshed.
+//
+// legacyKeys carries the map key the profile is filed under. For anything bb
+// wrote that equals hostKey(profile.URL), but a hand-edited config can hold a
+// profile whose URL and key disagree, and reading only by URL would lose a
+// credential that is sitting right there.
+//
+// Aliases need nothing here: resolveStoredHostAlias maps an alias onto the
+// canonical profile.URL before any key is built, so an alias never becomes a
+// key, and ensureAliasOwnership already refuses to let two hosts in one file
+// claim the same one.
+func keyringSecret(host, suffix string, legacyKeys ...string) string {
+	candidates := append([]string{credentialKey(host), hostKey(host)}, legacyKeys...)
+
+	for _, candidate := range candidates {
+		if strings.TrimSpace(candidate) == "" {
+			continue
+		}
+		if secret, err := keyringGet(keyringServiceName, candidate+":"+suffix); err == nil && strings.TrimSpace(secret) != "" {
+			return secret
+		}
+	}
+
+	return ""
 }

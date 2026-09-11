@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync/atomic"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -74,7 +76,7 @@ func MapStatusError(status int, body []byte) error {
 		return nil
 	}
 
-	message := strings.TrimSpace(string(body))
+	message := summarizeUpstream(body)
 	if message == "" {
 		message = http.StatusText(status)
 	}
@@ -234,4 +236,81 @@ func NamesException(body []byte, name string) bool {
 	}
 
 	return false
+}
+
+// upstreamBodyLimit is how much of an unreadable body reaches the message.
+//
+// One bad project key produced 18,414 characters of HTML in a single
+// error.message (#574). A body that long is not a message; it is a page, and
+// pasting it into the error buries whatever the user needed to read.
+const upstreamBodyLimit = 300
+
+// fullUpstreamBodies makes the whole upstream body reach the message.
+//
+// Off by default, because the default has to be readable; --full-error-body
+// turns it on for somebody debugging a server bb cannot summarise.
+//
+// Atomic, not a plain bool. The root command sets it on every invocation, and
+// the JSON contract test runs invocations in parallel subtests, so a plain
+// assignment was a data race the race detector caught in CI.
+var fullUpstreamBodies atomic.Bool
+
+// SetFullUpstreamBodies is what --full-error-body sets.
+func SetFullUpstreamBodies(enabled bool) {
+	fullUpstreamBodies.Store(enabled)
+}
+
+// summarizeUpstream turns a response body into one line worth reading.
+//
+// Bitbucket's own sentence is preferred where there is one: the body for a
+// rejected approval carries "Authors may not update their status.", which is
+// the whole answer, and it was buried in the JSON it arrived in. Anything else
+// is truncated -- the reader is told how much was dropped and how to see it.
+func summarizeUpstream(body []byte) string {
+	// Redacted first, because everything below this line ends up in
+	// error.message, which the user sees and a log may keep. A server that
+	// echoes the request line, a clone URL or an Authorization header puts a
+	// live credential in the body it sends back, and nothing on this path was
+	// removing it.
+	trimmed := diagnostics.RedactText(strings.TrimSpace(string(body)))
+	if trimmed == "" {
+		return ""
+	}
+
+	if messages := upstreamMessages([]byte(trimmed)); len(messages) > 0 {
+		return diagnostics.RedactText(strings.Join(messages, "; "))
+	}
+
+	if fullUpstreamBodies.Load() || len(trimmed) <= upstreamBodyLimit {
+		return trimmed
+	}
+
+	return fmt.Sprintf(
+		"%s... (%d more characters; pass --full-error-body to see all of it)",
+		trimmed[:upstreamBodyLimit], len(trimmed)-upstreamBodyLimit,
+	)
+}
+
+// upstreamMessages are the sentences Bitbucket put in its error envelope.
+func upstreamMessages(body []byte) []string {
+	var envelope struct {
+		Errors []struct {
+			Message *string `json:"message"`
+		} `json:"errors"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return nil
+	}
+
+	var messages []string
+	for _, one := range envelope.Errors {
+		if one.Message == nil {
+			continue
+		}
+		if text := strings.TrimSpace(*one.Message); text != "" {
+			messages = append(messages, text)
+		}
+	}
+
+	return messages
 }

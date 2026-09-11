@@ -10,6 +10,7 @@ import (
 
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestLiveCommentFlowCommit(t *testing.T) {
@@ -76,7 +77,7 @@ func TestLiveCommentFlowPullRequest(t *testing.T) {
 	}
 
 	repo := seeded.Repos[0]
-	branch := fmt.Sprintf("lt-comment-%d", time.Now().UnixNano()%100000)
+	branch := testsupport.UniqueName("lt-comment-")
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "comment-feature.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
@@ -135,7 +136,7 @@ func TestLiveBlockerCommentReactionsAndSuggestionsFlow(t *testing.T) {
 	}
 
 	repo := seeded.Repos[0]
-	branch := fmt.Sprintf("lt-blocker-%d", time.Now().UnixNano()%100000)
+	branch := testsupport.UniqueName("lt-blocker-")
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "blocker-feature.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
@@ -229,7 +230,7 @@ func TestLiveCommentStateAndPending(t *testing.T) {
 	}
 	repo := seeded.Repos[0]
 
-	branch := fmt.Sprintf("lt-comment-state-%d", time.Now().UnixNano()%100000)
+	branch := testsupport.UniqueName("lt-comment-state-")
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "state.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}

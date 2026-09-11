@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestLivePullRequestCheckout runs bb pr checkout against a real Bitbucket and
@@ -162,7 +164,7 @@ func TestLivePullRequestCheckoutFromAFork(t *testing.T) {
 	upstream := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, upstream.Slug)
 
-	forkName := fmt.Sprintf("lt-fork-checkout-%d", time.Now().UnixNano()%100000)
+	forkName := testsupport.UniqueName("lt-fork-checkout-")
 	forkOutput, err := executeLiveCLI(t, "--json", "repo", "admin", "fork",
 		"--repo", seeded.Key+"/"+upstream.Slug, "--name", forkName, "--project", seeded.Key)
 	if err != nil {

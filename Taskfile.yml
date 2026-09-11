@@ -85,6 +85,16 @@ tasks:
     desc: Export JSON Schema for bb configuration and policy files
     cmd: go run ./tools/config-schema-export -out docs/reference/schemas
 
+  docs:export-output-schemas:
+    desc: Export the --json envelope schemas, including the failure envelope
+    cmd: go run ./tools/output-schema-export -out docs/reference/schemas/output
+
+  docs:publish-output-schemas:
+    desc: Publish the envelope schemas into the MkDocs docs directory
+    cmds:
+      - mkdir -p docs/site/reference/schemas/output
+      - cp docs/reference/schemas/output/*.schema.json docs/site/reference/schemas/output/
+
   docs:publish-bulk-schemas:
     desc: Publish bulk JSON schema files into MkDocs docs directory
     cmds:
@@ -108,6 +118,8 @@ tasks:
       - task: docs:export-bulk-schemas
       - task: docs:publish-bulk-schemas
       - task: docs:export-config-schema
+      - task: docs:export-output-schemas
+      - task: docs:publish-output-schemas
       - task: docs:publish-config-schema
 
   docs:verify-generated:

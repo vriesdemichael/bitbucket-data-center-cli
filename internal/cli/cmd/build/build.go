@@ -553,6 +553,9 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
+			// limit-not-reported: the bounded read above finds the check to delete;
+			// what this command returns is one deletion, and meta.limitReached on a
+			// single object would be answering a question nobody asked.
 			if err := service.DeleteRequiredBuildCheck(cmd.Context(), repo, id); err != nil {
 				return err
 			}

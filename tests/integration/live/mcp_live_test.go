@@ -19,6 +19,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
 	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // executeLiveMCPServer runs `bb ai mcp serve` and drives a real MCP client
@@ -385,7 +386,7 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 		// something a caller can do, and a server does not report it -- the
 		// field is what the contract actually offers.
 		t.Run("get_pull_request skip_review_summary", func(t *testing.T) {
-			branch := fmt.Sprintf("lt-mcp-skip-%d", time.Now().UnixNano()%100000)
+			branch := testsupport.UniqueName("lt-mcp-skip-")
 			if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "mcp-skip.txt"); err != nil {
 				t.Fatalf("push commit on branch failed: %v", err)
 			}
@@ -883,7 +884,7 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	branch := fmt.Sprintf("lt-mcp-review-%d", time.Now().UnixNano()%100000)
+	branch := testsupport.UniqueName("lt-mcp-review-")
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "mcp-review.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
@@ -1034,7 +1035,7 @@ func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	const anchoredFile = "mcp-comment.txt"
-	branch := fmt.Sprintf("lt-mcp-comment-%d", time.Now().UnixNano()%100000)
+	branch := testsupport.UniqueName("lt-mcp-comment-")
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, anchoredFile); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}

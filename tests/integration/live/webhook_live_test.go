@@ -4,10 +4,11 @@ package live_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestLiveRepositoryWebhookLifecycle covers bb webhook list, get, update, test
@@ -32,7 +33,7 @@ func TestLiveRepositoryWebhookLifecycle(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	name := fmt.Sprintf("live-webhook-%d", time.Now().UnixNano()%100000)
+	name := testsupport.UniqueName("live-webhook-")
 	createOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "create",
 		name, "http://localhost:7990/status", "--event", "repo:refs_changed")
 	if err != nil {
@@ -123,7 +124,7 @@ func TestLiveProjectWebhookLifecycle(t *testing.T) {
 	}
 	configureLiveCLIEnv(t, harness, seeded.Key, seeded.Repos[0].Slug)
 
-	name := fmt.Sprintf("live-project-webhook-%d", time.Now().UnixNano()%100000)
+	name := testsupport.UniqueName("live-project-webhook-")
 	createOutput, err := executeLiveCLI(t, "--json", "project", "webhook", "create",
 		seeded.Key, name, "http://localhost:7990/status", "--event", "repo:refs_changed")
 	if err != nil {
