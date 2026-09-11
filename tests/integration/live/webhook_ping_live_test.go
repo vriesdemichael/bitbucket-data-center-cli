@@ -4,10 +4,11 @@ package live_test
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestLiveWebhookRealPingDelivery(t *testing.T) {
@@ -33,7 +34,7 @@ func TestLiveWebhookRealPingDelivery(t *testing.T) {
 		}
 	})
 
-	webhookName := fmt.Sprintf("live-ping-test-%d", time.Now().UnixNano())
+	webhookName := testsupport.UniqueName("live-ping-test-")
 	createOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "create",
 		webhookName, target, "--event", "repo:refs_changed")
 	if err != nil {

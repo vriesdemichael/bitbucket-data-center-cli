@@ -8,8 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"time"
+
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // The five commands command-reach reported as masked: their only live coverage

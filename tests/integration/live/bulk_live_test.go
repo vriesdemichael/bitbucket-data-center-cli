@@ -5,7 +5,6 @@ package live_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +13,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	bulkworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/bulk"
 )
 
@@ -213,7 +213,7 @@ func TestLiveBulkEveryOperationType(t *testing.T) {
 		t.Fatalf("create user failed: %v", err)
 	}
 
-	hookName := fmt.Sprintf("bulk-hook-%d", time.Now().UnixNano())
+	hookName := testsupport.UniqueName("bulk-hook-")
 	policy := strings.Join([]string{
 		"apiVersion: bb.io/v1alpha1",
 		"selector:",

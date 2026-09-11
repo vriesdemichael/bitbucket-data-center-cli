@@ -4,10 +4,11 @@ package live_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestLiveWebhookCreateAndDelete covers the top-level `bb webhook create` and
@@ -34,7 +35,7 @@ func TestLiveWebhookCreateAndDelete(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	name := fmt.Sprintf("live-wh-create-%d", time.Now().UnixNano())
+	name := testsupport.UniqueName("live-wh-create-")
 	createOutput, err := executeLiveCLI(t, "--json", "webhook", "create",
 		name, "http://localhost:7990/status", "--event", "repo:refs_changed")
 	if err != nil {

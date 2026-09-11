@@ -15,12 +15,12 @@ package live_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestLiveCodeOwnersPatternSyntax walks the pattern forms a CODEOWNERS file
@@ -129,7 +129,7 @@ func TestLiveCodeOwnersPatternSyntax(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			branch := fmt.Sprintf("feature/co-%d", time.Now().UnixNano())
+			branch := testsupport.UniqueName("feature/co-")
 			if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, testCase.file, "content\n"); err != nil {
 				t.Fatalf("push %s failed: %v", testCase.file, err)
 			}
@@ -224,7 +224,7 @@ func TestLiveCodeOwnersOwnerSyntax(t *testing.T) {
 	reviewersFor := func(t *testing.T, directory string) []string {
 		t.Helper()
 
-		branch := fmt.Sprintf("feature/owner-%d", time.Now().UnixNano())
+		branch := testsupport.UniqueName("feature/owner-")
 		if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, directory+"/file.txt", "x\n"); err != nil {
 			t.Fatalf("push %s failed: %v", directory, err)
 		}
