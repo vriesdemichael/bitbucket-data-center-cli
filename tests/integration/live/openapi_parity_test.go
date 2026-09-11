@@ -15,6 +15,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/repository"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
@@ -187,7 +188,7 @@ func seedParityData(ctx context.Context, cfg config.AppConfig) (paritySeed, erro
 		return paritySeed{}, err
 	}
 
-	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+	suffix := testsupport.UniqueName("")
 	projectKey := strings.ToUpper("pt" + suffix[len(suffix)-6:])
 	projectName := "Parity Test " + suffix
 	repoName := "parity-repo-" + suffix

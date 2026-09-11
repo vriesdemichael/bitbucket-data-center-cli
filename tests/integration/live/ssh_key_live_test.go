@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -58,7 +59,7 @@ func TestLivePersonalSSHKeyLifecycle(t *testing.T) {
 	}
 	configureLiveCLIEnv(t, harness, seeded.Key, seeded.Repos[0].Slug)
 
-	label := fmt.Sprintf("live-suite-personal-%d", time.Now().UnixNano())
+	label := testsupport.UniqueName("live-suite-personal-")
 	publicKey := generateSSHPublicKey(t, label)
 
 	addOutput, err := executeLiveCLI(t, "--json", "ssh-key", "add", publicKey, "--label", label)
@@ -119,7 +120,7 @@ func TestLiveRepositoryAccessKeyLifecycle(t *testing.T) {
 	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	label := fmt.Sprintf("live-suite-access-%d", time.Now().UnixNano())
+	label := testsupport.UniqueName("live-suite-access-")
 	publicKey := generateSSHPublicKey(t, label)
 
 	addOutput, err := executeLiveCLI(t, "--json", "repo", "ssh-key", "add", publicKey,
