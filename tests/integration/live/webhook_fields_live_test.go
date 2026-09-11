@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // secretCanary and passwordCanary are what a leak looks like when it happens.
@@ -224,7 +225,7 @@ func TestLiveWebhookFieldsAreSettableAndPublished(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	name := fmt.Sprintf("live-fields-%d", time.Now().UnixNano())
+	name := testsupport.UniqueName("live-fields-")
 
 	// The secret on stdin, the endpoint password in the environment: the two
 	// routes ADR-047 leaves open, and the combination automation actually needs
@@ -736,7 +737,7 @@ func TestLiveWebhookListingsAreUsable(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	for index := range 2 {
-		name := fmt.Sprintf("listing-%d-%d", index, time.Now().UnixNano())
+		name := fmt.Sprintf("listing-%d-%s", index, testsupport.UniqueSuffix())
 		if output, err := executeLiveCLI(t, "--json", "webhook", "create", name, "http://localhost:7990/status"); err != nil {
 			t.Fatalf("create webhook %d failed: %v\noutput: %s", index, err, output)
 		}

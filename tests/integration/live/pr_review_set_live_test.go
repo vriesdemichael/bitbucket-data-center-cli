@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestLivePullRequestReviewSetCommand covers `bb pr review set`, the CLI
@@ -33,7 +35,7 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	branch := fmt.Sprintf("lt-review-status-%d", time.Now().UnixNano())
+	branch := testsupport.UniqueName("lt-review-status-")
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "review-status.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
@@ -112,7 +114,7 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 		//
 		// Bitbucket names the caller on every authenticated response, so the
 		// answer costs one request and no configuration.
-		tokenName := fmt.Sprintf("live-review-set-%d", time.Now().UnixNano())
+		tokenName := testsupport.UniqueName("live-review-set-")
 		createOutput := mustLiveCLI(t, "auth", "token", "create", tokenName,
 			"--user", reviewer.Username, "--permission", "REPO_WRITE", "--expiry-days", "1")
 

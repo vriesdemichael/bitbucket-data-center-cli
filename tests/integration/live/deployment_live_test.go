@@ -4,10 +4,11 @@ package live_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestLiveDeploymentLifecycle covers bb deployment create, get and delete.
@@ -32,7 +33,7 @@ func TestLiveDeploymentLifecycle(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	commitID := repo.CommitIDs[0]
-	deploymentKey := fmt.Sprintf("live-deploy-%d", time.Now().UnixNano())
+	deploymentKey := testsupport.UniqueName("live-deploy-")
 	const envKey = "live-env"
 
 	createOutput, err := executeLiveCLI(t, "--json", "deployment", "create", commitID,

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // Dry-run previews, against real state.
@@ -57,7 +59,7 @@ func TestLiveDryRunPreviewsAndLeaveNoTrace(t *testing.T) {
 	})
 
 	t.Run("creating a project", func(t *testing.T) {
-		key := fmt.Sprintf("DRYP%d", time.Now().UnixNano())
+		key := testsupport.UniqueName("DRYP")
 
 		output := mustLiveCLI(t, "--dry-run", "project", "create", key, "--name", "Dry run project")
 		assertLivePreview(t, output, "create")

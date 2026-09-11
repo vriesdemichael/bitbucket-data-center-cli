@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestLiveCLIDiffOutputModes(t *testing.T) {
@@ -81,7 +82,7 @@ func TestLiveCLIDiffPRAndCommitHumanOutput(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	branch := fmt.Sprintf("lt-diff-cli-%d", time.Now().UnixNano())
+	branch := testsupport.UniqueName("lt-diff-cli-")
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "diff-feature.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
@@ -139,8 +140,8 @@ func TestLiveCLIInsightsLifecycle(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	commitID := repo.CommitIDs[0]
-	reportKey := fmt.Sprintf("live-cli-report-%d", time.Now().UnixNano())
-	externalID := fmt.Sprintf("live-cli-ann-%d", time.Now().UnixNano())
+	reportKey := testsupport.UniqueName("live-cli-report-")
+	externalID := testsupport.UniqueName("live-cli-ann-")
 
 	reportBody := `{"title":"Live CLI Insights","result":"PASS","details":"cli lifecycle"}`
 	setOutput, err := executeLiveCLI(t, "--json", "insights", "report", "set", commitID, reportKey, "--body", reportBody)
@@ -210,7 +211,7 @@ func TestLiveCLIBuildAndTagLifecycle(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	commitID := repo.CommitIDs[0]
-	buildKey := fmt.Sprintf("live-cli-build-%d", time.Now().UnixNano())
+	buildKey := testsupport.UniqueName("live-cli-build-")
 
 	setBuildOutput, err := executeLiveCLI(
 		t,
@@ -252,7 +253,7 @@ func TestLiveCLIBuildAndTagLifecycle(t *testing.T) {
 		t.Fatalf("expected the row to name the commit it counts, got: %s", statsBuildOutput)
 	}
 
-	tagName := fmt.Sprintf("v-live-cli-%d", time.Now().UnixNano())
+	tagName := testsupport.UniqueName("v-live-cli-")
 	createTagOutput, err := executeLiveCLI(t, "--json", "tag", "create", tagName, "--start-point", commitID, "--message", "live cli tag")
 	if err != nil {
 		t.Fatalf("tag create failed: %v\noutput: %s", err, createTagOutput)
@@ -305,7 +306,7 @@ func TestLiveCLIBuildRequiredAndInsightsHumanOutput(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	commitID := repo.CommitIDs[0]
-	buildKey := fmt.Sprintf("live-cli-build-human-%d", time.Now().UnixNano())
+	buildKey := testsupport.UniqueName("live-cli-build-human-")
 
 	setBuildOutput, err := executeLiveCLI(
 		t,
@@ -362,8 +363,8 @@ func TestLiveCLIBuildRequiredAndInsightsHumanOutput(t *testing.T) {
 		}
 	}
 
-	reportKey := fmt.Sprintf("live-cli-insights-human-%d", time.Now().UnixNano())
-	externalID := fmt.Sprintf("live-cli-insights-ann-%d", time.Now().UnixNano())
+	reportKey := testsupport.UniqueName("live-cli-insights-human-")
+	externalID := testsupport.UniqueName("live-cli-insights-ann-")
 	reportBody := `{"title":"Live CLI Insights Human","result":"PASS","details":"human output coverage"}`
 
 	setReportOutput, err := executeLiveCLI(t, "--json", "insights", "report", "set", commitID, reportKey, "--body", reportBody)
@@ -472,7 +473,7 @@ func TestLiveCLIPRListAndIssueCommandUnavailable(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	branch := fmt.Sprintf("lt-pr-list-%d", time.Now().UnixNano())
+	branch := testsupport.UniqueName("lt-pr-list-")
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "pr-list-feature.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
@@ -561,7 +562,7 @@ func TestLiveCLITagCreateDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("tag list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
 
-	tagName := fmt.Sprintf("v-live-dryrun-%d", time.Now().UnixNano())
+	tagName := testsupport.UniqueName("v-live-dryrun-")
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "tag", "create", tagName, "--start-point", repo.CommitIDs[0])
 	if err != nil {
 		t.Fatalf("tag create dry-run failed: %v\noutput: %s", err, dryRunOutput)
@@ -599,7 +600,7 @@ func TestLiveCLITagDeleteDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	tagName := fmt.Sprintf("v-live-dryrun-del-%d", time.Now().UnixNano())
+	tagName := testsupport.UniqueName("v-live-dryrun-del-")
 	createOutput, err := executeLiveCLI(t, "--json", "tag", "create", tagName, "--start-point", repo.CommitIDs[0])
 	if err != nil {
 		t.Fatalf("tag create fixture failed: %v\noutput: %s", err, createOutput)

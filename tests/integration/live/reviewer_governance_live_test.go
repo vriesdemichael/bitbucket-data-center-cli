@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestLiveReviewerConditionsLifecycle(t *testing.T) {
@@ -128,7 +130,7 @@ func TestLiveReviewerGroupsLifecycle(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	username := harness.username()
-	groupName := fmt.Sprintf("team-gov-%d", time.Now().UnixNano())
+	groupName := testsupport.UniqueName("team-gov-")
 
 	// 1. Create reviewer group on repository
 	//
