@@ -491,7 +491,7 @@ func classifyTransportError(method string, err error) error {
 	}
 
 	if errors.Is(err, context.DeadlineExceeded) && !retrypolicy.Replayable(method) {
-		return apperrors.New(apperrors.KindPermanent,
+		return apperrors.New(apperrors.KindUnknownOutcome,
 			fmt.Sprintf("the %s timed out and its outcome is unknown: check whether it was applied before sending it again", method), err)
 	}
 
