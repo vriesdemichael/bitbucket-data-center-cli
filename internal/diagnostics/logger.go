@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -294,4 +295,86 @@ func strconvQuote(value string) string {
 		return "\"\""
 	}
 	return string(encoded)
+}
+
+// credentialInURL matches a URL carrying userinfo, which is where a token
+// hides in text that is not a URL field: clone links, Location headers, and the
+// echoed request line in an upstream error page.
+var credentialInURL = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.-]*://)([^/\s:@]+):([^/\s@]+)@`)
+
+// authorizationHeader matches an Authorization header and everything it
+// carries, up to whatever ends the value.
+//
+// It has to reach past the scheme. Written as \S+ it matched "Bearer" and left
+// the credential after it untouched, which is the one thing this exists to
+// prevent. The stop set is what ends a value in the places a header turns up:
+// a line break, a quote in JSON, a tag in an HTML page.
+var authorizationHeader = regexp.MustCompile(`(?i)(authorization\s*[:=]\s*)([^\r\n"'<;]+)`)
+
+// RedactText removes credentials from free text.
+//
+// The log fields have RedactFields, which works because a field has a name.
+// Free text has none: an upstream error body is whatever the server chose to
+// send, and it reaches the user through error.message. A server that echoes the
+// request line, a clone URL, or an Authorization header puts a live credential
+// in there, and nothing on that path was redacting anything (#574).
+//
+// Three passes, cheapest first. A body that parses as JSON is redacted by key,
+// which is exact. Everything else is matched: a URL carrying userinfo, and an
+// Authorization header. Matching is a blunt instrument and will not catch a
+// secret a server invents a new shape for -- it is the floor, not the ceiling.
+func RedactText(text string) string {
+	if strings.TrimSpace(text) == "" {
+		return text
+	}
+
+	if redacted, ok := redactJSONText(text); ok {
+		text = redacted
+	}
+
+	text = credentialInURL.ReplaceAllString(text, "${1}${2}:[REDACTED]@")
+
+	return authorizationHeader.ReplaceAllString(text, "${1}[REDACTED]")
+}
+
+// redactJSONText redacts a JSON document by key, and reports whether the text
+// was JSON at all.
+func redactJSONText(text string) (string, bool) {
+	var decoded any
+	if err := json.Unmarshal([]byte(text), &decoded); err != nil {
+		return text, false
+	}
+
+	encoded, err := json.Marshal(redactAny("", decoded))
+	if err != nil {
+		return text, false
+	}
+
+	return string(encoded), true
+}
+
+// redactAny walks a decoded document, redacting by the key a value sits under.
+func redactAny(key string, value any) any {
+	if isSensitiveKey(key) {
+		return "[REDACTED]"
+	}
+
+	switch typed := value.(type) {
+	case map[string]any:
+		redacted := make(map[string]any, len(typed))
+		for nestedKey, nested := range typed {
+			redacted[nestedKey] = redactAny(nestedKey, nested)
+		}
+		return redacted
+	case []any:
+		redacted := make([]any, 0, len(typed))
+		for _, nested := range typed {
+			redacted = append(redacted, redactAny(key, nested))
+		}
+		return redacted
+	case string:
+		return redactURLString(typed)
+	default:
+		return value
+	}
 }

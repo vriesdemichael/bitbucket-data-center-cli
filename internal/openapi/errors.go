@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -257,13 +258,18 @@ var FullUpstreamBodies = false
 // the whole answer, and it was buried in the JSON it arrived in. Anything else
 // is truncated -- the reader is told how much was dropped and how to see it.
 func summarizeUpstream(body []byte) string {
-	trimmed := strings.TrimSpace(string(body))
+	// Redacted first, because everything below this line ends up in
+	// error.message, which the user sees and a log may keep. A server that
+	// echoes the request line, a clone URL or an Authorization header puts a
+	// live credential in the body it sends back, and nothing on this path was
+	// removing it.
+	trimmed := diagnostics.RedactText(strings.TrimSpace(string(body)))
 	if trimmed == "" {
 		return ""
 	}
 
-	if messages := upstreamMessages(body); len(messages) > 0 {
-		return strings.Join(messages, "; ")
+	if messages := upstreamMessages([]byte(trimmed)); len(messages) > 0 {
+		return diagnostics.RedactText(strings.Join(messages, "; "))
 	}
 
 	if FullUpstreamBodies || len(trimmed) <= upstreamBodyLimit {

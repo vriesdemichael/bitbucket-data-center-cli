@@ -129,7 +129,7 @@ func TestLiveCodeOwnersPatternSyntax(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			branch := fmt.Sprintf("feature/co-%d", time.Now().UnixNano()%1000000)
+			branch := fmt.Sprintf("feature/co-%d", time.Now().UnixNano())
 			if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, testCase.file, "content\n"); err != nil {
 				t.Fatalf("push %s failed: %v", testCase.file, err)
 			}
@@ -224,7 +224,7 @@ func TestLiveCodeOwnersOwnerSyntax(t *testing.T) {
 	reviewersFor := func(t *testing.T, directory string) []string {
 		t.Helper()
 
-		branch := fmt.Sprintf("feature/owner-%d", time.Now().UnixNano()%1000000)
+		branch := fmt.Sprintf("feature/owner-%d", time.Now().UnixNano())
 		if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, directory+"/file.txt", "x\n"); err != nil {
 			t.Fatalf("push %s failed: %v", directory, err)
 		}

@@ -57,7 +57,7 @@ func TestLiveDryRunPreviewsAndLeaveNoTrace(t *testing.T) {
 	})
 
 	t.Run("creating a project", func(t *testing.T) {
-		key := fmt.Sprintf("DRYP%d", time.Now().UnixNano()%100000)
+		key := fmt.Sprintf("DRYP%d", time.Now().UnixNano())
 
 		output := mustLiveCLI(t, "--dry-run", "project", "create", key, "--name", "Dry run project")
 		assertLivePreview(t, output, "create")
