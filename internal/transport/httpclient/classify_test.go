@@ -48,7 +48,7 @@ func TestATransportFailureIsClassifiedByWhetherRetryingCouldHelp(t *testing.T) {
 		"a mutation that timed out": {
 			method: http.MethodPost,
 			err:    fmt.Errorf("do: %w", context.DeadlineExceeded),
-			want:   apperrors.KindPermanent,
+			want:   apperrors.KindUnknownOutcome,
 			says:   "outcome is unknown",
 		},
 		"a read that timed out": {

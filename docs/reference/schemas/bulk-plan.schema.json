@@ -115,6 +115,7 @@
             "permanent",
             "not_implemented",
             "cancelled",
+            "unknown_outcome",
             "internal"
           ],
           "type": "string"

@@ -96,8 +96,15 @@ Command failures use deterministic exit codes by error kind.
 - `conflict` -> exit code `5`
 - `transient` -> exit code `10`
 - `not_implemented` -> exit code `11`
-- `cancelled` -> exit code `12` (interrupted or timed out; not something to retry automatically)
+- `cancelled` -> exit code `12` (interrupted; not something to retry automatically)
+- `unknown_outcome` -> exit code `13` (the request was sent and its result never came back)
 - `permanent` and `internal` (or unknown) -> exit code `1`
+
+`unknown_outcome` is the one worth wiring into a script deliberately. It means bb
+cannot say whether the server applied the request -- a mutation that timed out, for
+instance. Retrying it may repeat work that already happened, so the answer is to
+check the state and then decide. That is why it sits outside `transient`, which is
+the code a retry loop should key on.
 
 ### Handles on the failure envelope
 
