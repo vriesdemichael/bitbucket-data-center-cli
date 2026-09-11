@@ -88,7 +88,7 @@ your behalf using the link above.`,
 			// the rest of this would make asking what a command returns fail in
 			// exactly the situations where the answer is most wanted.
 			// Before the --describe bail, so it applies to every run.
-			openapi.FullUpstreamBodies = options.FullErrorBody
+			openapi.SetFullUpstreamBodies(options.FullErrorBody)
 
 			if options.Describe {
 				style.Init(options.NoColor)

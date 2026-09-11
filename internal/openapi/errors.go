@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync/atomic"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -244,12 +245,20 @@ func NamesException(body []byte, name string) bool {
 // pasting it into the error buries whatever the user needed to read.
 const upstreamBodyLimit = 300
 
-// FullUpstreamBodies makes the whole upstream body reach the message.
+// fullUpstreamBodies makes the whole upstream body reach the message.
 //
-// Off by default, because the default has to be readable. It is set from
-// --full-error-body for the run when somebody is debugging a server that
-// answers with something bb cannot summarise.
-var FullUpstreamBodies = false
+// Off by default, because the default has to be readable; --full-error-body
+// turns it on for somebody debugging a server bb cannot summarise.
+//
+// Atomic, not a plain bool. The root command sets it on every invocation, and
+// the JSON contract test runs invocations in parallel subtests, so a plain
+// assignment was a data race the race detector caught in CI.
+var fullUpstreamBodies atomic.Bool
+
+// SetFullUpstreamBodies is what --full-error-body sets.
+func SetFullUpstreamBodies(enabled bool) {
+	fullUpstreamBodies.Store(enabled)
+}
 
 // summarizeUpstream turns a response body into one line worth reading.
 //
@@ -272,7 +281,7 @@ func summarizeUpstream(body []byte) string {
 		return diagnostics.RedactText(strings.Join(messages, "; "))
 	}
 
-	if FullUpstreamBodies || len(trimmed) <= upstreamBodyLimit {
+	if fullUpstreamBodies.Load() || len(trimmed) <= upstreamBodyLimit {
 		return trimmed
 	}
 
