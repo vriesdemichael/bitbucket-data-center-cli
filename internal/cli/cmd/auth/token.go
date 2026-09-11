@@ -104,7 +104,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if isJSON() {
-				return deps.WriteJSON(cmd.OutOrStdout(), accessTokensFrom(tokens))
+				return deps.WriteJSONList(cmd.OutOrStdout(), accessTokensFrom(tokens), paging.LimitReached(listPaging, len(tokens)))
 			}
 
 			if len(tokens) == 0 {
