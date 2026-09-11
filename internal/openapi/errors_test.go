@@ -307,3 +307,48 @@ func TestNamesExceptionRecognisesOnlyTheNameAsked(t *testing.T) {
 		}
 	}
 }
+
+// TestAnUpstreamBodyIsSummarizedNotPasted is #574: one bad project key put
+// 18,414 characters of HTML into a single error.message.
+func TestAnUpstreamBodyIsSummarizedNotPasted(t *testing.T) {
+	// Bitbucket's own sentence is the whole answer, and it was buried in the
+	// JSON it arrived in. This body is the one the issue reports.
+	approval := []byte(`{"errors":[{"message":"Authors may not update their status.","exceptionName":"com.atlassian.bitbucket.pull.InvalidPullRequestRoleException"}]}`)
+	err := MapStatusError(400, approval)
+	if err == nil {
+		t.Fatal("expected an error for a 400")
+	}
+	if !strings.Contains(err.Error(), "Authors may not update their status.") {
+		t.Fatalf("the message does not carry Bitbucket's sentence: %v", err)
+	}
+	if strings.Contains(err.Error(), "exceptionName") {
+		t.Fatalf("the message still pastes the raw envelope: %v", err)
+	}
+
+	// A body with no envelope to read is truncated, and says so.
+	page := []byte("<html>" + strings.Repeat("x", 18_000) + "</html>")
+	err = MapStatusError(400, page)
+	message := err.Error()
+	if len(message) > 1_000 {
+		t.Fatalf("an 18KB body produced a %d character message", len(message))
+	}
+	if !strings.Contains(message, "--full-error-body") {
+		t.Fatalf("the truncated message does not say how to see the rest: %s", message)
+	}
+	if !strings.Contains(message, "more characters") {
+		t.Fatalf("the truncated message does not say how much was dropped: %s", message)
+	}
+}
+
+// The way out has to work, for somebody debugging a server bb cannot summarise.
+func TestFullUpstreamBodiesPrintsTheWholeThing(t *testing.T) {
+	page := []byte("<html>" + strings.Repeat("y", 5_000) + "</html>")
+
+	FullUpstreamBodies = true
+	t.Cleanup(func() { FullUpstreamBodies = false })
+
+	message := MapStatusError(500, page).Error()
+	if len(message) < 5_000 {
+		t.Fatalf("--full-error-body produced a %d character message for a 5KB body", len(message))
+	}
+}
