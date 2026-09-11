@@ -242,7 +242,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), Branches{Repository: repositoryOf(repo), Branches: branchesFrom(branches)})
+				return d.WriteJSONList(cmd.OutOrStdout(), Branches{Repository: repositoryOf(repo), Branches: branchesFrom(branches)}, paging.LimitReached(listPaging, len(branches)))
 			}
 
 			if len(branches) == 0 {
@@ -535,7 +535,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), CommitRefs{Repository: repositoryOf(repo), Commit: args[0], Refs: result.RefsFrom(refs)})
+				return d.WriteJSONList(cmd.OutOrStdout(), CommitRefs{Repository: repositoryOf(repo), Commit: args[0], Refs: result.RefsFrom(refs)}, paging.LimitReached(listPaging, len(refs)))
 			}
 
 			if len(refs) == 0 {
@@ -651,7 +651,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), Restrictions{Repository: repositoryOf(repo), Restrictions: result.RestrictionsFrom(restrictions)})
+				return d.WriteJSONList(cmd.OutOrStdout(), Restrictions{Repository: repositoryOf(repo), Restrictions: result.RestrictionsFrom(restrictions)}, paging.LimitReached(listPaging, len(restrictions)))
 			}
 
 			if len(restrictions) == 0 {

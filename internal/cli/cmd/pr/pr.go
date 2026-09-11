@@ -314,7 +314,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestCommits{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Commits: commitsFrom(commits)})
+				return deps.WriteJSONList(cmd.OutOrStdout(), PullRequestCommits{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Commits: commitsFrom(commits)}, paging.LimitReached(commitsPaging, len(commits)))
 			}
 
 			if len(commits) == 0 {
@@ -357,7 +357,7 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), PullRequestChanges{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Changes: changesFrom(changes)})
+				return deps.WriteJSONList(cmd.OutOrStdout(), PullRequestChanges{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Changes: changesFrom(changes)}, paging.LimitReached(filesPaging, len(changes)))
 			}
 
 			if len(changes) == 0 {
@@ -2366,7 +2366,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			activities = paging.Truncate(activityPaging, activities)
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), Activities{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Activities: activitiesFrom(activities)})
+				return deps.WriteJSONList(cmd.OutOrStdout(), Activities{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Activities: activitiesFrom(activities)}, paging.LimitReached(activityPaging, len(activities)))
 			}
 
 			if len(activities) == 0 {
@@ -2418,11 +2418,11 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 				statuses = paging.Truncate(statusPaging, statuses)
 
 				if deps.JSONEnabled() {
-					return deps.WriteJSON(cmd.OutOrStdout(), BuildStatuses{
+					return deps.WriteJSONList(cmd.OutOrStdout(), BuildStatuses{
 						Repository:    repositoryOf(repo),
 						PullRequestID: target.PullRequestID,
 						Statuses:      buildStatusesFrom(statuses),
-					})
+					}, paging.LimitReached(statusPaging, len(statuses)))
 				}
 
 				if len(statuses) == 0 {

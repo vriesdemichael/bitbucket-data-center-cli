@@ -147,6 +147,7 @@ your behalf using the link above.`,
 		LoadConfigWithOverrides: options.loadConfigWithOverrides,
 		RuntimeOverrides:        func() config.Overrides { return options.runtime },
 		WriteJSON:               writeJSON,
+		WriteJSONList:           writeJSONList,
 	}))
 	rootCmd.AddCommand(bulkcmd.New(bulkcmd.Dependencies{
 		JSONEnabled: func() bool { return options.JSON },

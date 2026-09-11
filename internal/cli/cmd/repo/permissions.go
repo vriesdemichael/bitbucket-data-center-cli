@@ -125,11 +125,11 @@ func newRepoPermissionListCommand(deps Dependencies, repositorySelector *string,
 			entries = paging.Truncate(listPaging, entries)
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), GrantedPermissions{
+				return deps.WriteJSONList(cmd.OutOrStdout(), GrantedPermissions{
 					Repository: settingsRepositoryOf(repo),
 					Subject:    subject.noun,
 					Entries:    permissionEntriesFrom(entries),
-				})
+				}, paging.LimitReached(listPaging, len(entries)))
 			}
 			if len(entries) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render(fmt.Sprintf("No %ss with repository permissions found", subject.noun)))

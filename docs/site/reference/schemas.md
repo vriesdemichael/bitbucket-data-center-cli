@@ -88,3 +88,22 @@ Equivalent repository-relative schema association is also valid for local develo
 - Use plan schema to validate reviewed plan artifacts produced by `bb bulk plan`.
 - Use apply-status schema to validate outputs from `bb bulk apply` and `bb bulk status`.
 - Use `bb <command> --describe` to get the schema for a command's `--json` output.
+
+## The envelope, and the failure envelope
+
+`--describe` answers at one level: the `data` payload a command returns. The
+envelope around it is the same for every command, so it is published once
+rather than repeated in each schema.
+
+- [`output/output.error.schema.json`](schemas/output/output.error.schema.json)
+  is the failure envelope. It carries the full `error.kind` vocabulary and the
+  exit code each kind maps to, so a consumer can branch on a failure from a
+  command it has never seen without provoking one first.
+- `meta` is described there too: `meta.bbVersion`, and `meta.limitReached`,
+  which says whether a listing was capped by `--limit`. An absent
+  `limitReached` reads as "not truncated", so a command that caps a result set
+  always emits it.
+
+A success document carries `data` and no `error`; a failure carries `error` and
+no `data`. Which key is present is how a consumer tells them apart, and that is
+why neither is ever null (ADR-046).
