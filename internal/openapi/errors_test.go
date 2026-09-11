@@ -344,8 +344,8 @@ func TestAnUpstreamBodyIsSummarizedNotPasted(t *testing.T) {
 func TestFullUpstreamBodiesPrintsTheWholeThing(t *testing.T) {
 	page := []byte("<html>" + strings.Repeat("y", 5_000) + "</html>")
 
-	FullUpstreamBodies = true
-	t.Cleanup(func() { FullUpstreamBodies = false })
+	SetFullUpstreamBodies(true)
+	t.Cleanup(func() { SetFullUpstreamBodies(false) })
 
 	message := MapStatusError(500, page).Error()
 	if len(message) < 5_000 {
