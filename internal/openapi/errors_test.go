@@ -352,3 +352,35 @@ func TestFullUpstreamBodiesPrintsTheWholeThing(t *testing.T) {
 		t.Fatalf("--full-error-body produced a %d character message for a 5KB body", len(message))
 	}
 }
+
+// TestAnUpstreamBodyIsRedactedBeforeItBecomesAMessage is the security half of
+// #574: error.message is shown to the user and kept in logs, and a server that
+// echoes the request can put a live credential in the body it sends back.
+func TestAnUpstreamBodyIsRedactedBeforeItBecomesAMessage(t *testing.T) {
+	const token = "NjE2MTYxNjE2MTYxOnNlY3JldA"
+
+	for name, body := range map[string]string{
+		"a clone URL carrying a token":   `{"errors":[{"message":"could not reach https://x-token-auth:` + token + `@bitbucket.example/scm/p/r.git"}]}`,
+		"an echoed Authorization header": `{"errors":[{"message":"rejected request with Authorization: Bearer ` + token + `"}]}`,
+		"a secret in a JSON field":       `{"errors":[{"message":"bad request"}],"token":"` + token + `"}`,
+		"a token in an HTML page":        `<html><body>Authorization: Bearer ` + token + `</body></html>`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := MapStatusError(400, []byte(body))
+			if err == nil {
+				t.Fatal("expected an error")
+			}
+			if strings.Contains(err.Error(), token) {
+				t.Fatalf("the credential reached error.message:\n%v", err)
+			}
+			// A marker is required only where the credential sat in text that is
+			// surfaced. One in a sibling field is never read at all, which is safe
+			// without a marker -- demanding one there was this test being wrong.
+			if strings.Contains(err.Error(), "bitbucket.example") || strings.Contains(err.Error(), "Authorization") {
+				if !strings.Contains(err.Error(), "REDACTED") {
+					t.Fatalf("an inline credential was dropped rather than marked:\n%v", err)
+				}
+			}
+		})
+	}
+}

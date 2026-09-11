@@ -224,7 +224,7 @@ func TestLiveWebhookFieldsAreSettableAndPublished(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	name := fmt.Sprintf("live-fields-%d", time.Now().UnixNano()%100000)
+	name := fmt.Sprintf("live-fields-%d", time.Now().UnixNano())
 
 	// The secret on stdin, the endpoint password in the environment: the two
 	// routes ADR-047 leaves open, and the combination automation actually needs
@@ -736,7 +736,7 @@ func TestLiveWebhookListingsAreUsable(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	for index := range 2 {
-		name := fmt.Sprintf("listing-%d-%d", index, time.Now().UnixNano()%100000)
+		name := fmt.Sprintf("listing-%d-%d", index, time.Now().UnixNano())
 		if output, err := executeLiveCLI(t, "--json", "webhook", "create", name, "http://localhost:7990/status"); err != nil {
 			t.Fatalf("create webhook %d failed: %v\noutput: %s", index, err, output)
 		}

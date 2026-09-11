@@ -33,7 +33,7 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	branch := fmt.Sprintf("lt-review-status-%d", time.Now().UnixNano()%100000)
+	branch := fmt.Sprintf("lt-review-status-%d", time.Now().UnixNano())
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "review-status.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 		//
 		// Bitbucket names the caller on every authenticated response, so the
 		// answer costs one request and no configuration.
-		tokenName := fmt.Sprintf("live-review-set-%d", time.Now().UnixNano()%100000)
+		tokenName := fmt.Sprintf("live-review-set-%d", time.Now().UnixNano())
 		createOutput := mustLiveCLI(t, "auth", "token", "create", tokenName,
 			"--user", reviewer.Username, "--permission", "REPO_WRITE", "--expiry-days", "1")
 

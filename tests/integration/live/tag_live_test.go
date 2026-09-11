@@ -28,7 +28,7 @@ func TestLiveTagLifecycle(t *testing.T) {
 	}
 
 	repo := seeded.Repos[0]
-	tagName := fmt.Sprintf("v-live-%d", time.Now().UnixNano()%100000)
+	tagName := fmt.Sprintf("v-live-%d", time.Now().UnixNano())
 
 	created, err := service.Create(
 		ctx,

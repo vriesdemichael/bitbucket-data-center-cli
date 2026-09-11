@@ -34,7 +34,7 @@ func TestLiveWebhookCreateAndDelete(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	name := fmt.Sprintf("live-wh-create-%d", time.Now().UnixNano()%100000)
+	name := fmt.Sprintf("live-wh-create-%d", time.Now().UnixNano())
 	createOutput, err := executeLiveCLI(t, "--json", "webhook", "create",
 		name, "http://localhost:7990/status", "--event", "repo:refs_changed")
 	if err != nil {

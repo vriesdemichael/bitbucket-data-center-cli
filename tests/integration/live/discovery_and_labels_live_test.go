@@ -133,7 +133,7 @@ func TestLiveRepoLabelAndWatchLifecycle(t *testing.T) {
 	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	label := fmt.Sprintf("live-label-%d", time.Now().UnixNano()%100000)
+	label := fmt.Sprintf("live-label-%d", time.Now().UnixNano())
 
 	if output, err := executeLiveCLI(t, "--json", "repo", "label", "add", label, "--repo", repoRef); err != nil {
 		t.Fatalf("repo label add failed: %v\noutput: %s", err, output)
