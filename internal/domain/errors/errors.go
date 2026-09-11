@@ -26,6 +26,16 @@ const (
 	// somebody just interrupted -- for `bb bulk apply` that means replaying
 	// mutations across every repository in the plan.
 	KindCancelled Kind = "cancelled"
+
+	// KindUnknownOutcome is a request that was sent and whose result never
+	// came back, so bb cannot say whether the server applied it.
+	//
+	// Distinct from transient, which invites a retry, and from permanent,
+	// which says the work did not happen. A mutation that timed out may well
+	// have been applied: the honest answer is that it has to be checked, not
+	// repeated. Reporting it as transient sent callers to replay exactly what
+	// the retry policy had already refused to replay (#574).
+	KindUnknownOutcome Kind = "unknown_outcome"
 )
 
 type AppError struct {
@@ -101,6 +111,7 @@ func Kinds() []Kind {
 		KindPermanent,
 		KindNotImplemented,
 		KindCancelled,
+		KindUnknownOutcome,
 		KindInternal,
 	}
 }
@@ -146,6 +157,10 @@ func ExitCode(err error) int {
 			return 11
 		case KindCancelled:
 			return 12
+		case KindUnknownOutcome:
+			// Deliberately not in the retriable range: a wrapper that retries on
+			// 10 must not retry this one.
+			return 13
 		default:
 			return 1
 		}
