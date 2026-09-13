@@ -25,7 +25,8 @@ agent_instructions: >
   A failed exchange is classified once, by internal/transport/outcome, for both transports. For a
   method that is never replayed, whether the request reached the connection decides between
   transient and unknown_outcome; a rejected certificate or an unresolvable host is permanent; an
-  interrupt is cancelled. Only a transient failure is retried. A service wrapping a transport
+  interrupt is cancelled; a gateway's 502 or 504, or the 400 Bitbucket raises while writing its
+  answer (openapi.FailedWritingAnswer), is unknown_outcome. Only a transient failure is retried. A service wrapping a transport
   error uses apperrors.Transport, which keeps that classification; TestNoFailureIsWrappedAsTransient
   fails on New(KindTransient, message, err).
 rationale: >

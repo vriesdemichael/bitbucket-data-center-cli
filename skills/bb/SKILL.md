@@ -548,7 +548,7 @@ exit status.
 automatically: for a mutating command like `bb bulk apply` that re-runs the work the
 operator just stopped. Report it and wait for instruction.
 
-`unknown_outcome` / exit `13` means the request reached Bitbucket and no answer came back,
+`unknown_outcome` / exit `13` means the request reached Bitbucket and no usable answer came back,
 so it may have been applied. Never retry it automatically. Check the state first — does
 the pull request, comment or branch exist — and then decide.
 

@@ -45,17 +45,37 @@ type (
 	WebhookUpdateInput = webhookfields.UpdateInput
 )
 
+// CreateProjectWebhook creates a project webhook, and looks for it when the
+// create's outcome is unknown (see webhookfields.CreateChecked).
 func (service *Service) CreateProjectWebhook(ctx context.Context, projectKey string, input WebhookCreateInput) (any, error) {
 	trimmedProject := strings.TrimSpace(projectKey)
 	if trimmedProject == "" {
 		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
 
-	body, err := webhookfields.NewCreateBody(input)
+	return webhookfields.CreateChecked(ctx, input,
+		func(ctx context.Context, start, limit int) (openapi.Page[json.RawMessage], error) {
+			return service.projectWebhookPage(ctx, trimmedProject, start, limit)
+		},
+		func(ctx context.Context, body openapigenerated.RestWebhook) (any, error) {
+			return service.createProjectWebhook(ctx, trimmedProject, body)
+		})
+}
+
+// projectWebhookPage reads one page of a project's webhooks.
+func (service *Service) projectWebhookPage(ctx context.Context, projectKey string, start, limit int) (openapi.Page[json.RawMessage], error) {
+	response, err := service.client.FindWebhooksWithResponse(ctx, projectKey, nil, openapi.PageQuery(start, limit))
 	if err != nil {
-		return nil, err
+		return openapi.Page[json.RawMessage]{}, apperrors.Transport("failed to list project webhooks", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapi.Page[json.RawMessage]{}, err
 	}
 
+	return webhookfields.DecodePage(response.Body)
+}
+
+func (service *Service) createProjectWebhook(ctx context.Context, trimmedProject string, body openapigenerated.RestWebhook) (any, error) {
 	response, err := service.client.CreateWebhookWithResponse(ctx, trimmedProject, body)
 	if err != nil {
 		return nil, apperrors.Transport("failed to create project webhook", err)

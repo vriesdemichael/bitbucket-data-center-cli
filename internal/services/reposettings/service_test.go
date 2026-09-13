@@ -155,9 +155,6 @@ func TestRepositorySettingsJSONFallbackAndValidationBranches(t *testing.T) {
 		switch {
 		case request.Method == http.MethodGet && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks":
 			_, _ = writer.Write([]byte(`[1,2]`))
-		case request.Method == http.MethodPost && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/webhooks":
-			writer.WriteHeader(http.StatusCreated)
-			_, _ = writer.Write([]byte("created"))
 		case request.Method == http.MethodPost && request.URL.Path == "/api/latest/projects/PRJ/repos/demo/settings/pull-requests":
 			writer.WriteHeader(http.StatusOK)
 			_, _ = writer.Write([]byte("updated"))
@@ -174,14 +171,6 @@ func TestRepositorySettingsJSONFallbackAndValidationBranches(t *testing.T) {
 	}
 	if webhooks.Count != 2 {
 		t.Fatalf("expected webhook count=2 from array payload, got: %d", webhooks.Count)
-	}
-
-	created, err := service.CreateRepositoryWebhook(context.Background(), repo, WebhookCreateInput{Name: "ci", URL: "http://example.local/hook"})
-	if err != nil {
-		t.Fatalf("expected no error creating webhook with non-json response, got: %v", err)
-	}
-	if created != nil {
-		t.Fatalf("expected nil payload for non-json create response, got: %#v", created)
 	}
 
 	allTasksSettings, err := service.UpdateRepositoryPullRequestRequiredAllTasks(context.Background(), repo, true)

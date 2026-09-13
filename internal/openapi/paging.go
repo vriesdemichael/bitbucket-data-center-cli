@@ -1,6 +1,12 @@
 package openapi
 
-import "context"
+import (
+	"context"
+	"net/http"
+	"strconv"
+
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+)
 
 // Page is one answer from a paged Bitbucket endpoint, reduced to the three
 // fields the convention turns on.
@@ -33,6 +39,20 @@ func Offset(start *int32) *int {
 	next := int(*start)
 
 	return &next
+}
+
+// PageQuery asks a generated call for one page, for the endpoints Bitbucket
+// pages although the specification gives them no start or limit -- the webhook
+// listings among them.
+func PageQuery(start, limit int) openapigenerated.RequestEditorFn {
+	return func(_ context.Context, request *http.Request) error {
+		query := request.URL.Query()
+		query.Set("start", strconv.Itoa(start))
+		query.Set("limit", strconv.Itoa(limit))
+		request.URL.RawQuery = query.Encode()
+
+		return nil
+	}
 }
 
 // pageWindow is how much PageThrough asks for at once.
