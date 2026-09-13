@@ -28,11 +28,11 @@ printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --t
 bb auth status
 ```
 
-**Never pass a token as a flag value.** No flag takes one: `--token` and `--password` were
-removed in v4, because a flag value lands in the process argument list, readable by any
-local user through `ps` or `/proc`, and in shell history. Use `--token-stdin`, or set
-`BITBUCKET_TOKEN` in the environment and skip `bb auth login` entirely — that is usually
-the better choice in CI and containers, since it never writes the credential to disk.
+**Never pass a token as a flag value.** No flag takes one, because a flag value lands in the
+process argument list, readable by any local user through `ps` or `/proc`, and in shell
+history. Use `--token-stdin`, or set `BITBUCKET_TOKEN` in the environment and skip
+`bb auth login` entirely — that is usually the better choice in CI and containers, since it
+never writes the credential to disk.
 
 Agents cannot complete OAuth flows. Always use a Personal Access Token (PAT).
 Create one at: `bb auth token-url`
@@ -289,7 +289,7 @@ bb build status get <commit-sha>
 # Get commit details for context
 bb commit get --repo MYPROJ/payments <commit-sha>
 
-# Commits since the previous green build (Bitbucket's order: the failing commit first)
+# Commits since the previous green build (the failing commit first)
 bb commit compare <failing-sha> <green-sha> --repo MYPROJ/payments
 ```
 
@@ -314,7 +314,7 @@ bb repo cat README.md --repo MYPROJ/payments --at main
 # Edit/create a file directly via REST
 bb repo edit README.md --repo MYPROJ/payments --branch main --message "Update README" --content "New content..."
 
-# List the files a branch changes (Bitbucket's order: the branch first, the reverse of git log)
+# List the files a branch changes (the branch first, then its base)
 bb repo compare feature/my-work main --repo MYPROJ/payments
 
 # Show those changes as a unified diff

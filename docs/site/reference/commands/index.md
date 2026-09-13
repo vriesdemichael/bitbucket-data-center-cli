@@ -3093,16 +3093,12 @@ Use "bb commit [command] --help" for more information about a command.
 Compare two commits or refs
 
 ```text
-List the commits reachable from <from> but not from <to>.
-
-The direction is Bitbucket's, and it is the reverse of git's. To list what a
-branch or a failing commit has that another does not, pass it first.
+List the commits reachable from <from> but not from <to>: what <from> has
+that <to> lacks. Pass the ref you are asking about first; git log's range puts
+it last.
 
   bb commit compare feature/x main        # commits feature/x adds
   bb commit compare <failing> <green>     # commits since the last green build
-
-Given git log base..feature reads the other way round, the git-natural order
-lists nothing for refs that do differ.
 
 Usage:
   bb commit compare <from> <to> [flags]
@@ -8170,18 +8166,11 @@ Flags:
 Compare commits or branches
 
 ```text
-Compare commits or branches.
-
-The direction is Bitbucket's, and it is the reverse of git's: the result is
-what is reachable from <from> but not from <to>. To see what a feature branch
-adds, pass the feature as <from> and the base as <to>.
+Compare commits or branches: what is reachable from <from> but not from
+<to>. Pass the ref you are asking about first; git log's range puts it last.
 
   bb repo compare feature/x main        # what feature/x adds
   bb repo compare main feature/x        # nothing, unless main has moved
-
-Given git log base..feature reads the other way round, the git-natural order
-reports no changes for refs that do differ, which reads like the refs are
-identical.
 
 Usage:
   bb repo compare <from> <to> [flags]

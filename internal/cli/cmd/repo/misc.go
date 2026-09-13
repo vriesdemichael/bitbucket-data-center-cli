@@ -802,18 +802,11 @@ func newRepoCompareCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "compare <from> <to>",
 		Short: "Compare commits or branches",
-		Long: `Compare commits or branches.
-
-The direction is Bitbucket's, and it is the reverse of git's: the result is
-what is reachable from <from> but not from <to>. To see what a feature branch
-adds, pass the feature as <from> and the base as <to>.
+		Long: `Compare commits or branches: what is reachable from <from> but not from
+<to>. Pass the ref you are asking about first; git log's range puts it last.
 
   bb repo compare feature/x main        # what feature/x adds
-  bb repo compare main feature/x        # nothing, unless main has moved
-
-Given git log base..feature reads the other way round, the git-natural order
-reports no changes for refs that do differ, which reads like the refs are
-identical.`,
+  bb repo compare main feature/x        # nothing, unless main has moved`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
