@@ -20,7 +20,7 @@ Use typed configuration with strict validation and environment-backed secret inp
 
 ## Agent Instructions
 
-Validate configuration at startup and fail fast with actionable, non-secret error messages. Keep secret values out of logs, panic output, and CLI JSON payloads. Prefer environment variables or secure stores over checked-in configuration files.
+Validate configuration at startup and fail fast with actionable, non-secret error messages. Keep secret values out of logs, panic output, and CLI JSON payloads. Prefer environment variables or secure stores over checked-in configuration files. A configuration file bb found and could not read is an error that names the file, never an empty configuration, and bb does not rewrite a file it could not read: no command does, and no flag makes it. BB_DISABLE_STORED_CONFIG=1 means the stored file is not read at all.
 
 ## Rationale
 

@@ -87,7 +87,7 @@ Equivalent repository-relative schema association is also valid for local develo
 - Use policy schema for authoring bulk policy YAML/JSON input files.
 - Use plan schema to validate reviewed plan artifacts produced by `bb bulk plan`.
 - Use apply-status schema to validate outputs from `bb bulk apply` and `bb bulk status`.
-- Use `bb <command> --describe` to get the schema for a command's `--json` output.
+- Use `bb <command> --describe` to get the schema for a command's `--json` data payload.
 
 ## The envelope, and the failure envelope
 
@@ -96,26 +96,24 @@ does not describe the envelope around it, so it cannot on its own validate a
 whole `--json` document. That envelope is the same for every command, so its
 parts are published once rather than repeated in each schema.
 
-Two things `--describe` does not cover yet. Under `--dry-run` a command
-that changes something answers with a preview rather than its normal `data`,
-and `--describe` still returns the normal schema. And there is no published
-schema for a whole success document. Both are deliberate, not oversights.
-Describing the complete document properly means settling how `--describe`
-answers per mode, which top-level member `--dry-run` returns, and what a
-preview contains -- and each of those changes the shape of output that
-exists today, which is a breaking change. That work belongs to the next
-major release and is tracked in #616.
+Two things `--describe` does not cover. Under `--dry-run` a command that changes
+something answers with a preview rather than its normal `data`, and `--describe`
+still returns the normal schema. And only `bb bulk`'s whole documents are published
+as schemas; for every other command, validate `data` against `--describe` and the
+rest against the parts below. Describing every document whole changes the shape of
+output that exists today, so it is planned for the next major release
+([#616](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/616)).
 
 - [`output/output.error.schema.json`](schemas/output/output.error.schema.json)
   is the failure envelope. It carries the full `error.kind` vocabulary and the
-  exit code each kind maps to, so a consumer can branch on a failure from a
-  command it has never seen without provoking one first.
+  set of exit codes, so a consumer can branch on a failure from a command it has
+  never seen without provoking one first. Which code each kind maps to is in
+  [Machine Mode and Diagnostics](../advanced/machine-mode-diagnostics.md#error-kinds-and-exit-codes).
 - `meta` is described there too: `meta.bbVersion`, and `meta.limitReached`,
   which says whether a listing was capped by `--limit`. `meta` is open: it may
   gain fields in a minor release, so validate the fields you use rather than
-  rejecting ones you do not know. An absent
-  `limitReached` reads as "not truncated", so a command that caps a result set
-  always emits it.
+  rejecting ones you do not know. Every command that takes `--limit` emits
+  `limitReached`, true or false; other commands omit it.
 
 A success document carries `data` and no `error`; a failure carries `error` and
 no `data`. Which key is present is how a consumer tells them apart, and that is

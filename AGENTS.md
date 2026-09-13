@@ -344,6 +344,12 @@ The governance guards, so the set is knowable:
 | `TestLiveMCPEveryToolReturnsAClientCompatibleResult` | every MCP tool is actually called, and its result is a JSON object with a text fallback |
 | `TestTheStatusMappingIsOnlyTestedWhereItLives` | no package outside `internal/openapi` tests the status-to-kind mapping |
 | `TestNoServiceOptionIsCalledLimit` | no service option names a limit the call site cannot act on |
+| `TestACappedListingSaysSoIsEnforced` | a command that takes `--limit` reports reaching it, in JSON and in text |
+| `TestEveryLimitedToolSaysWhenItStopped` | an MCP tool that takes a `limit` returns a required `limit_reached` |
+| `TestNoFailureIsWrappedAsTransient` | a transport failure keeps its classification through the service that wraps it |
+| `TestAnEchoedFlagPublishesTheValuesItAccepts` | a payload field echoing an enum flag publishes that flag's values |
+| `TestAMissingArgumentIsNamed` | a missing positional argument is named in the error |
+| `TestNoFixtureIsNamedFromTheClock` | no test builds a fixture name from the clock |
 | `gittest` ambient config snapshot | no test reconfigures the repository it runs in |
 | `TestEveryHookRunnableGateRunsOnBothSides` | every gate needing no Bitbucket runs locally and in CI |
 

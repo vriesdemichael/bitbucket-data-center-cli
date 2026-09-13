@@ -543,6 +543,7 @@ Confirm:
 | `could not load the Sigstore trust material needed to verify the release manifest` | The host cannot reach `https://tuf-repo-cdn.sigstore.dev`, and no offline trust root is configured. The release itself is not implicated. | Deploy a `trusted_root.json` and set `update_trusted_root` in system configuration (or `update_tuf_url` for a mirrored TUF repository). |
 | `update_trusted_root is invalid` | The configured trusted root path does not exist on this host — typically an imaging race, the same one that bites `ca_file`. | Ensure the provisioning script writes `trusted_root.json` before the configuration file that references it. |
 | `update_trusted_root and update_tuf_url are mutually exclusive` | Both Sigstore trust sources are configured. | Keep the trusted root file for air-gapped hosts, or the TUF mirror URL — not both. |
+| `the system configuration at ... could not be read` | The system configuration file is malformed, typically from a provisioning template or a partial write. bb fails closed rather than run without the policy. | Validate the file against `config.schema.json` (see [Validating a configuration file](../troubleshooting.md#validating-a-configuration-file)) and redeploy it. Users cannot work around it, by design. |
 | `update_tuf_url must be an absolute https URL` | The configured mirror is a bare hostname, a relative path, or plain `http`. | Give the full origin, for example `https://artifactory.corp.internal/tuf`. |
 
 ---

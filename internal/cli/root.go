@@ -130,7 +130,7 @@ your behalf using the link above.`,
 	rootCmd.PersistentFlags().BoolVar(&options.FullErrorBody, "full-error-body", false,
 		"Print the whole upstream response body in an error instead of a summary")
 	rootCmd.PersistentFlags().Bool("no-input", false, "Never prompt; fail instead when a value is missing")
-	rootCmd.PersistentFlags().BoolVar(&options.Describe, describeFlag, false, "Print the command's output schema instead of running it")
+	rootCmd.PersistentFlags().BoolVar(&options.Describe, describeFlag, false, "Print the JSON Schema of the command's --json data payload instead of running it")
 	rootCmd.PersistentFlags().String("ca-file", "", "Path to PEM CA bundle for TLS trust")
 	rootCmd.PersistentFlags().Bool("insecure-skip-verify", false, "Disable TLS certificate verification (unsafe; local/dev only)")
 	rootCmd.PersistentFlags().String("client-cert", "", "Path to PEM client certificate for mTLS")

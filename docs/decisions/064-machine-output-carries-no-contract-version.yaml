@@ -9,7 +9,8 @@ decision: >
   binary that produced the document: provenance for an operator reading stored output, not a
   compatibility switch. Nothing in bb branches on it and nothing outside bb should.
   What identifies the document is its shape -- meta.bbVersion, and exactly one of data or error.
-  Compatibility rides the release major instead. Adding a field to data is additive. Removing or
+  Compatibility rides the release major instead. Adding a field to data is additive, and so is
+  adding one to meta: meta is open, while the set of top-level members is closed. Removing or
   renaming one, changing its type, or changing whether it can be null is breaking, and the commit
   must carry a ! or a BREAKING CHANGE footer so the release automation cuts a major.
   Whether a change is breaking is therefore computed from the schemas rather than judged, so the

@@ -161,8 +161,10 @@ signal, and `meta.bbVersion` reports the binary that produced the document.
 
 A failure replaces `data` with `error`, carrying a `kind` from a fixed taxonomy
 (`authentication`, `authorization`, `validation`, `not_found`, `conflict`, `transient`,
-`permanent`, `not_implemented`, `internal`), a `message`, and the `exitCode` that matches
-the process exit status. Branch on `kind`, not on message text.
+`permanent`, `not_implemented`, `cancelled`, `unknown_outcome`, `internal`), a `message`,
+and the `exitCode` that matches the process exit status. Branch on `kind`, not on message
+text. A listing that stopped at `--limit` says so with `meta.limitReached: true`; raise
+`--limit` or pass `--all` for the rest.
 
 Diagnostics go to stderr and never contaminate the document on stdout. `--log-format jsonl`
 makes them machine-readable too.

@@ -21,7 +21,8 @@ agent_instructions: >
   than the thing that makes the flag work. Unexported helpers may still speak of pages.
   A new list command passes paging.LimitReached to WriteJSONList and calls paging.Hint before its
   text output returns. A new MCP list tool returns its collection through capped and sets
-  limit_reached from it.
+  limit_reached from it. A command that takes --limit only to find one thing rather than to return
+  a page says so in its RunE with a `limit-not-reported:` comment giving the reason.
 rationale: >
   This began as a rule about ambiguity. Eleven services capped and eight paged to exhaustion, the
   field was called Limit in all nineteen, and the wrong guess failed silently in the direction that
@@ -39,8 +40,9 @@ rejected_alternatives:
     reason: >
       The check would have to know whether a value flowing into a parameter is a cap, which needs
       type resolution the guard does not have, and would still pass the dashboard.
-  - alternative: Return a truncated flag alongside the results
+  - alternative: Keep PageSize and have each service report whether it truncated
     reason: >
-      Composes with the envelope's meta.limitReached and is worth having, but it makes truncation
-      observable rather than unambiguous.
+      It makes a page size observable rather than removing it. The signal a caller reads comes
+      from the cap itself -- meta.limitReached, limit_reached, the text hint -- and needs no second
+      meaning to exist.
 provenance: guided-ai

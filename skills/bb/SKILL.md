@@ -540,16 +540,26 @@ the installed version.
 
 Check for `error` before reading `data`. `kind` is one of `authentication`,
 `authorization`, `validation`, `not_found`, `conflict`, `transient`, `permanent`,
-`not_implemented`, `cancelled`, `internal` — so you can tell "fix your invocation" from
-"retry later" without parsing the message. `exitCode` matches the process exit status.
+`not_implemented`, `cancelled`, `unknown_outcome`, `internal` — so you can tell "fix your
+invocation" from "retry later" without parsing the message. `exitCode` matches the process
+exit status.
 
-`cancelled` / exit `12` means somebody interrupted the command or a deadline expired. Do
-not retry it automatically: for a mutating command like `bb bulk apply` that re-runs the
-work the operator just stopped. Report it and wait for instruction.
+`cancelled` / exit `12` means somebody interrupted the command. Do not retry it
+automatically: for a mutating command like `bb bulk apply` that re-runs the work the
+operator just stopped. Report it and wait for instruction.
+
+`unknown_outcome` / exit `13` means the request reached Bitbucket and no answer came back,
+so it may have been applied. Never retry it automatically. Check the state first — does
+the pull request, comment or branch exist — and then decide.
 
 A failure may carry an optional `error.details` object — a flat string map of handles you
 need to act on it. `bb bulk apply` puts `operationId` there, which `bb bulk status <id>`
-takes. Read handles from those fields; never scrape them out of `error.message`.
+takes. A failure Bitbucket answered also carries `upstreamStatus` and, when Bitbucket names
+one, `upstreamException`. Read handles from those fields; never scrape them out of
+`error.message`.
+
+A listing returns at most `--limit` results. `meta.limitReached: true` means there may be
+more: raise `--limit` or pass `--all` rather than assuming you have everything.
 
 Exactly one JSON document reaches stdout per command, so decode it as one value. Two
 documents would be a bug — report it rather than working around it, because `jq` reads a
@@ -557,7 +567,8 @@ value stream and would hide it by printing a result per document and exiting 0.
 
 A malformed invocation — unknown flag, unknown command, bad flag value, wrong number of
 arguments — reports `validation` / exit `2`. Treat that as your own mistake to correct, not
-something to retry. `internal` / exit `1` means the CLI or the server genuinely failed.
+something to retry. `permanent` / exit `1` is a failure retrying will not fix, such as a
+rejected TLS certificate. `internal` / exit `1` means bb itself failed: report it.
 
 ## Error Reporting
 
