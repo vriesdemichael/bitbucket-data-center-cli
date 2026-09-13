@@ -1941,6 +1941,7 @@ changes as readily as an approval, which its name does not suggest.`,
 				for _, comment := range ungrouped {
 					fmt.Fprintln(cmd.OutOrStdout(), result.FormatComment(comment))
 				}
+				paging.Hint(cmd.ErrOrStderr(), commentPaging, len(threads))
 
 				return nil
 			}
