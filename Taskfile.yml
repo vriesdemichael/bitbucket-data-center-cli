@@ -126,7 +126,11 @@ tasks:
     desc: Verify generated docs artifacts are up to date
     cmds:
       - task: docs:generate
-      - git diff --exit-code -- docs/site/reference/commands/index.md docs/site/reference/mcp-tools.md docs/site/adr docs/reference/schemas docs/site/reference/schemas
+      # --stat, not the whole diff. A stale artifact is named either way, and the
+      # full diff runs to hundreds of kilobytes. On Windows, printing that much
+      # into a pipe after the go run steps above deadlocked the task, so the check
+      # hung instead of failing. `git diff` shows the change once you know where.
+      - git diff --exit-code --stat -- docs/site/reference/commands/index.md docs/site/reference/mcp-tools.md docs/site/adr docs/reference/schemas docs/site/reference/schemas
 
   docs:sync-version:
     desc: Sync documented release versions across markdown files to match latest git tag (or VERSION)
