@@ -310,7 +310,7 @@ from the one you use interactively:
 ```
 
 The rights of that PAT are what bound the server: safe-by-default tool exposure is a
-second layer, not the boundary. `--token` was removed in v4 — a flag value sits in the
+second layer, not the boundary. There is no `--token` flag: a flag value sits in the
 process argument list for as long as the server runs.
 
 ---

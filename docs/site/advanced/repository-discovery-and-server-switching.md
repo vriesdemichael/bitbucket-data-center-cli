@@ -134,6 +134,21 @@ Expected JSON output (example):
 }
 ```
 
+## Two identities on one host
+
+Stored credentials belong to the configuration file they were stored with. To keep two
+identities for one Bitbucket host — a personal account and a service account, say — give
+each its own file through `BB_CONFIG_PATH`:
+
+```bash
+export BB_CONFIG_PATH="$HOME/.config/bb/service-account.yaml"
+printf '%s' "$SERVICE_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
+bb auth status
+```
+
+A login is found only through the path it was made with, so after moving or renaming a
+configuration file, log in again from its new location.
+
 ## Recommended team pattern
 
 - Keep one stored context per server (`bb auth login <host>`).
