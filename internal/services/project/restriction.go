@@ -82,7 +82,7 @@ func (service *Service) ListRestrictions(ctx context.Context, projectKey string,
 
 			response, err := service.client.GetRestrictionsWithResponse(ctx, trimmedProject, &pageParams)
 			if err != nil {
-				return openapi.Page[openapigenerated.RestRefRestriction]{}, apperrors.New(apperrors.KindTransient, "failed to list project branch restrictions", err)
+				return openapi.Page[openapigenerated.RestRefRestriction]{}, apperrors.Transport("failed to list project branch restrictions", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[openapigenerated.RestRefRestriction]{}, err
@@ -117,7 +117,7 @@ func (service *Service) GetRestriction(ctx context.Context, projectKey string, i
 
 	response, err := service.client.GetRestrictionWithResponse(ctx, trimmedProject, trimmedID)
 	if err != nil {
-		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindTransient, "failed to get project branch restriction", err)
+		return openapigenerated.RestRefRestriction{}, apperrors.Transport("failed to get project branch restriction", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestRefRestriction{}, err
@@ -243,13 +243,13 @@ func (service *Service) upsertRestriction(ctx context.Context, projectKey string
 
 	rawResponse, err := client.CreateRestrictionsWithApplicationVndAtlBitbucketBulkPlusJSONBody(ctx, trimmedProject, requestBody)
 	if err != nil {
-		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindTransient, "failed to upsert project branch restriction", err)
+		return openapigenerated.RestRefRestriction{}, apperrors.Transport("failed to upsert project branch restriction", err)
 	}
 	defer func() { _ = rawResponse.Body.Close() }()
 
 	responseBody, readErr := io.ReadAll(rawResponse.Body)
 	if readErr != nil {
-		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindTransient, "failed to read project branch restriction response", readErr)
+		return openapigenerated.RestRefRestriction{}, apperrors.Transport("failed to read project branch restriction response", readErr)
 	}
 
 	if err := openapi.MapStatusError(rawResponse.StatusCode, responseBody); err != nil {
@@ -281,7 +281,7 @@ func (service *Service) DeleteRestriction(ctx context.Context, projectKey string
 
 	response, err := service.client.DeleteRestrictionWithResponse(ctx, trimmedProject, trimmedID)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete project branch restriction", err)
+		return apperrors.Transport("failed to delete project branch restriction", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)

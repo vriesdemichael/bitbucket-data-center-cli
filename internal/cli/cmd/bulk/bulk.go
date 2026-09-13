@@ -354,29 +354,20 @@ func applyFailureError(status bulkworkflow.ApplyStatus) error {
 	return apperrors.New(kind, fmt.Sprintf("bulk apply %s completed with failures", status.OperationID), nil)
 }
 
+// parseErrorKind reads a kind an apply-status artifact recorded.
+//
+// Every kind in the taxonomy, not a list of its own. A list of its own missed
+// cancelled and unknown_outcome, so an apply that recorded either reported
+// conflict, exit 5, instead (#574).
 func parseErrorKind(value string) apperrors.Kind {
-	switch strings.TrimSpace(value) {
-	case string(apperrors.KindAuthentication):
-		return apperrors.KindAuthentication
-	case string(apperrors.KindAuthorization):
-		return apperrors.KindAuthorization
-	case string(apperrors.KindValidation):
-		return apperrors.KindValidation
-	case string(apperrors.KindNotFound):
-		return apperrors.KindNotFound
-	case string(apperrors.KindConflict):
-		return apperrors.KindConflict
-	case string(apperrors.KindTransient):
-		return apperrors.KindTransient
-	case string(apperrors.KindPermanent):
-		return apperrors.KindPermanent
-	case string(apperrors.KindNotImplemented):
-		return apperrors.KindNotImplemented
-	case string(apperrors.KindInternal):
-		return apperrors.KindInternal
-	default:
-		return ""
+	trimmed := strings.TrimSpace(value)
+	for _, kind := range apperrors.Kinds() {
+		if string(kind) == trimmed {
+			return kind
+		}
 	}
+
+	return ""
 }
 
 // cancelledCount renders the cancelled tally, and nothing at all when there is

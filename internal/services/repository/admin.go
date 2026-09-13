@@ -67,7 +67,7 @@ func (service *AdminService) Create(ctx context.Context, projectKey string, inpu
 
 	response, err := service.client.CreateRepositoryWithResponse(ctx, trimmedProject, body)
 	if err != nil {
-		return openapigenerated.RestRepository{}, apperrors.New(apperrors.KindTransient, "failed to create repository", err)
+		return openapigenerated.RestRepository{}, apperrors.Transport("failed to create repository", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestRepository{}, err
@@ -107,7 +107,7 @@ func (service *AdminService) Fork(ctx context.Context, repo RepositoryRef, input
 
 	response, err := service.client.ForkRepositoryWithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
-		return openapigenerated.RestRepository{}, apperrors.New(apperrors.KindTransient, "failed to fork repository", err)
+		return openapigenerated.RestRepository{}, apperrors.Transport("failed to fork repository", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestRepository{}, err
@@ -127,7 +127,7 @@ func (service *AdminService) Delete(ctx context.Context, repo RepositoryRef) err
 
 	response, err := service.client.DeleteRepositoryWithResponse(ctx, repo.ProjectKey, repo.Slug)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete repository", err)
+		return apperrors.Transport("failed to delete repository", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -151,7 +151,7 @@ func (service *AdminService) Update(ctx context.Context, repo RepositoryRef, inp
 
 	response, err := service.client.UpdateRepositoryWithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
-		return openapigenerated.RestRepository{}, apperrors.New(apperrors.KindTransient, "failed to update repository", err)
+		return openapigenerated.RestRepository{}, apperrors.Transport("failed to update repository", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestRepository{}, err

@@ -64,7 +64,7 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 
 			response, err := service.client.GetCommitsWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
 			if err != nil {
-				return openapi.Page[openapigenerated.RestCommit]{}, apperrors.New(apperrors.KindTransient, "failed to list repository commits", err)
+				return openapi.Page[openapigenerated.RestCommit]{}, apperrors.Transport("failed to list repository commits", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[openapigenerated.RestCommit]{}, err
@@ -95,7 +95,7 @@ func (service *Service) Get(ctx context.Context, repo RepositoryRef, commitID st
 
 	response, err := service.client.GetCommitWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, nil)
 	if err != nil {
-		return openapigenerated.RestCommit{}, apperrors.New(apperrors.KindTransient, "failed to get repository commit", err)
+		return openapigenerated.RestCommit{}, apperrors.Transport("failed to get repository commit", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestCommit{}, err
@@ -139,7 +139,7 @@ func (service *Service) Compare(ctx context.Context, repo RepositoryRef, options
 
 			response, err := service.client.StreamCommitsWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
 			if err != nil {
-				return openapi.Page[openapigenerated.RestCommit]{}, apperrors.New(apperrors.KindTransient, "failed to compare commits", err)
+				return openapi.Page[openapigenerated.RestCommit]{}, apperrors.Transport("failed to compare commits", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[openapigenerated.RestCommit]{}, err
@@ -175,7 +175,7 @@ func (service *Service) ListTagsAndBranches(ctx context.Context, repo Repository
 	branchParams := &openapigenerated.GetBranchesParams{Limit: &limit, FilterText: filter}
 	branchResp, err := service.client.GetBranchesWithResponse(ctx, repo.ProjectKey, repo.Slug, branchParams)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to query branches for refs", err)
+		return nil, apperrors.Transport("failed to query branches for refs", err)
 	}
 	if err := openapi.MapStatusError(branchResp.StatusCode(), branchResp.Body); err != nil {
 		return nil, err
@@ -200,7 +200,7 @@ func (service *Service) ListTagsAndBranches(ctx context.Context, repo Repository
 	tagParams := &openapigenerated.GetTagsParams{Limit: &limit, FilterText: filter}
 	tagResp, err := service.client.GetTagsWithResponse(ctx, repo.ProjectKey, repo.Slug, tagParams)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to query tags for refs", err)
+		return nil, apperrors.Transport("failed to query tags for refs", err)
 	}
 	if err := openapi.MapStatusError(tagResp.StatusCode(), tagResp.Body); err != nil {
 		return nil, err

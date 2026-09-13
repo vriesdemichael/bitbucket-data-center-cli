@@ -957,7 +957,7 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 				// Classified, like every service call and like the two other raw
 				// client calls in the tree. Unwrapped it fell through to internal,
 				// so an unreachable host read as a defect in bb (#478).
-				return apperrors.New(apperrors.KindTransient, "failed to stream the repository archive", err)
+				return apperrors.Transport("failed to stream the repository archive", err)
 			}
 			defer func() { _ = resp.Body.Close() }()
 

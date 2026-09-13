@@ -96,7 +96,7 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 
 			response, err := service.client.GetBranchesWithResponse(ctx, repo.ProjectKey, repo.Slug, &pageParams)
 			if err != nil {
-				return openapi.Page[openapigenerated.RestBranch]{}, apperrors.New(apperrors.KindTransient, "failed to list repository branches", err)
+				return openapi.Page[openapigenerated.RestBranch]{}, apperrors.Transport("failed to list repository branches", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[openapigenerated.RestBranch]{}, err
@@ -136,7 +136,7 @@ func (service *Service) Create(ctx context.Context, repo RepositoryRef, name str
 
 	response, err := service.client.CreateBranchWithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
-		return openapigenerated.RestBranch{}, apperrors.New(apperrors.KindTransient, "failed to create repository branch", err)
+		return openapigenerated.RestBranch{}, apperrors.Transport("failed to create repository branch", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestBranch{}, err
@@ -174,7 +174,7 @@ func (service *Service) Delete(ctx context.Context, repo RepositoryRef, name str
 
 	response, err := service.client.DeleteBranchWithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete repository branch", err)
+		return apperrors.Transport("failed to delete repository branch", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -187,7 +187,7 @@ func (service *Service) GetDefault(ctx context.Context, repo RepositoryRef) (ope
 
 	response, err := service.client.GetDefaultBranch2WithResponse(ctx, repo.ProjectKey, repo.Slug)
 	if err != nil {
-		return openapigenerated.RestMinimalRef{}, apperrors.New(apperrors.KindTransient, "failed to get repository default branch", err)
+		return openapigenerated.RestMinimalRef{}, apperrors.Transport("failed to get repository default branch", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestMinimalRef{}, err
@@ -225,7 +225,7 @@ func (service *Service) SetDefault(ctx context.Context, repo RepositoryRef, bran
 	body := openapigenerated.SetDefaultBranch2JSONRequestBody{Id: &ref}
 	response, err := service.client.SetDefaultBranch2WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to set repository default branch", err)
+		return apperrors.Transport("failed to set repository default branch", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -297,7 +297,7 @@ func (service *Service) FindByCommit(ctx context.Context, repo RepositoryRef, co
 			response, err := service.client.FindByCommitWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID,
 				&openapigenerated.FindByCommitParams{Start: &startValue, Limit: &limitValue})
 			if err != nil {
-				return openapi.Page[openapigenerated.RestMinimalRef]{}, apperrors.New(apperrors.KindTransient, "failed to inspect branch model details", err)
+				return openapi.Page[openapigenerated.RestMinimalRef]{}, apperrors.Transport("failed to inspect branch model details", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[openapigenerated.RestMinimalRef]{}, err
@@ -358,7 +358,7 @@ func (service *Service) ListRestrictions(ctx context.Context, repo RepositoryRef
 
 			response, err := service.client.GetRestrictions1WithResponse(ctx, repo.ProjectKey, repo.Slug, &pageParams)
 			if err != nil {
-				return openapi.Page[openapigenerated.RestRefRestriction]{}, apperrors.New(apperrors.KindTransient, "failed to list branch restrictions", err)
+				return openapi.Page[openapigenerated.RestRefRestriction]{}, apperrors.Transport("failed to list branch restrictions", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[openapigenerated.RestRefRestriction]{}, err
@@ -389,7 +389,7 @@ func (service *Service) GetRestriction(ctx context.Context, repo RepositoryRef, 
 
 	response, err := service.client.GetRestriction1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID)
 	if err != nil {
-		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindTransient, "failed to get branch restriction", err)
+		return openapigenerated.RestRefRestriction{}, apperrors.Transport("failed to get branch restriction", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestRefRestriction{}, err
@@ -522,13 +522,13 @@ func (service *Service) upsertRestriction(ctx context.Context, repo RepositoryRe
 
 	rawResponse, err := client.CreateRestrictions1WithApplicationVndAtlBitbucketBulkPlusJSONBody(ctx, repo.ProjectKey, repo.Slug, requestBody)
 	if err != nil {
-		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindTransient, "failed to upsert branch restriction", err)
+		return openapigenerated.RestRefRestriction{}, apperrors.Transport("failed to upsert branch restriction", err)
 	}
 	defer func() { _ = rawResponse.Body.Close() }()
 
 	responseBody, readErr := io.ReadAll(rawResponse.Body)
 	if readErr != nil {
-		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindTransient, "failed to read branch restriction response", readErr)
+		return openapigenerated.RestRefRestriction{}, apperrors.Transport("failed to read branch restriction response", readErr)
 	}
 
 	if err := openapi.MapStatusError(rawResponse.StatusCode, responseBody); err != nil {
@@ -561,7 +561,7 @@ func (service *Service) DeleteRestriction(ctx context.Context, repo RepositoryRe
 
 	response, err := service.client.DeleteRestriction1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete branch restriction", err)
+		return apperrors.Transport("failed to delete branch restriction", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)

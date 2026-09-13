@@ -30,7 +30,7 @@ func (s *Service) ListGpgKeys(ctx context.Context, maxResults int) ([]openapigen
 				Limit: &limitValue,
 			})
 			if err != nil {
-				return openapi.Page[openapigenerated.RestGpgKey]{}, apperrors.New(apperrors.KindTransient, "failed to list user GPG keys", err)
+				return openapi.Page[openapigenerated.RestGpgKey]{}, apperrors.Transport("failed to list user GPG keys", err)
 			}
 			if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 				return openapi.Page[openapigenerated.RestGpgKey]{}, err
@@ -66,7 +66,7 @@ func (s *Service) AddGpgKey(ctx context.Context, keyText string) ([]openapigener
 
 	resp, err := s.client.AddKeyWithResponse(ctx, nil, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to add GPG key", err)
+		return nil, apperrors.Transport("failed to add GPG key", err)
 	}
 	if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (s *Service) RemoveGpgKey(ctx context.Context, fingerprintOrId string) erro
 
 	resp, err := s.client.DeleteKeyWithResponse(ctx, trimmedId)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to remove GPG key", err)
+		return apperrors.Transport("failed to remove GPG key", err)
 	}
 	return openapi.MapStatusError(resp.StatusCode(), resp.Body)
 }
@@ -94,7 +94,7 @@ func (s *Service) RemoveGpgKey(ctx context.Context, fingerprintOrId string) erro
 func (s *Service) ClearGpgKeys(ctx context.Context) error {
 	resp, err := s.client.DeleteForUserWithResponse(ctx, nil)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to clear GPG keys", err)
+		return apperrors.Transport("failed to clear GPG keys", err)
 	}
 	return openapi.MapStatusError(resp.StatusCode(), resp.Body)
 }

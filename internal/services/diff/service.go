@@ -141,7 +141,7 @@ func (service *Service) DiffRefs(ctx context.Context, input DiffRefsInput) (Resu
 			Until: &to,
 		})
 		if err != nil {
-			return Result{}, apperrors.New(apperrors.KindTransient, "failed to stream patch", err)
+			return Result{}, apperrors.Transport("failed to stream patch", err)
 		}
 		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return Result{}, err
@@ -156,7 +156,7 @@ func (service *Service) DiffRefs(ctx context.Context, input DiffRefsInput) (Resu
 			&openapigenerated.GetDiffStatsSummary1Params{From: &from, To: &to},
 		)
 		if err != nil {
-			return Result{}, apperrors.New(apperrors.KindTransient, "failed to get diff stats", err)
+			return Result{}, apperrors.Transport("failed to get diff stats", err)
 		}
 		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return Result{}, err
@@ -198,7 +198,7 @@ func (service *Service) DiffPR(ctx context.Context, input DiffPRInput) (Result, 
 	case OutputKindPatch:
 		response, err := service.client.StreamPatch1WithResponse(ctx, input.Repository.ProjectKey, input.Repository.Slug, prID)
 		if err != nil {
-			return Result{}, apperrors.New(apperrors.KindTransient, "failed to stream pull request patch", err)
+			return Result{}, apperrors.Transport("failed to stream pull request patch", err)
 		}
 		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return Result{}, err
@@ -207,7 +207,7 @@ func (service *Service) DiffPR(ctx context.Context, input DiffPRInput) (Result, 
 	case OutputKindStat:
 		response, err := service.client.GetDiffStatsSummary2WithResponse(ctx, input.Repository.ProjectKey, input.Repository.Slug, prID, ".", nil)
 		if err != nil {
-			return Result{}, apperrors.New(apperrors.KindTransient, "failed to get pull request diff stats", err)
+			return Result{}, apperrors.Transport("failed to get pull request diff stats", err)
 		}
 		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return Result{}, err
@@ -221,7 +221,7 @@ func (service *Service) DiffPR(ctx context.Context, input DiffPRInput) (Result, 
 	case OutputKindRaw, OutputKindNameOnly:
 		response, err := service.client.StreamRawDiff2WithResponse(ctx, input.Repository.ProjectKey, input.Repository.Slug, prID, nil)
 		if err != nil {
-			return Result{}, apperrors.New(apperrors.KindTransient, "failed to stream pull request diff", err)
+			return Result{}, apperrors.Transport("failed to stream pull request diff", err)
 		}
 		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return Result{}, err
@@ -285,7 +285,7 @@ func (service *Service) CompareChanges(ctx context.Context, repo RepositoryRef, 
 
 			response, err := service.client.StreamChangesWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
 			if err != nil {
-				return openapi.Page[openapigenerated.RestChange]{}, apperrors.New(apperrors.KindTransient, "failed to stream compare changes", err)
+				return openapi.Page[openapigenerated.RestChange]{}, apperrors.Transport("failed to stream compare changes", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[openapigenerated.RestChange]{}, err
@@ -327,7 +327,7 @@ func (service *Service) CompareDiff(ctx context.Context, repo RepositoryRef, fro
 
 	resp, err := service.client.StreamDiff1WithResponse(ctx, repo.ProjectKey, repo.Slug, "", params)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to stream compare diff", err)
+		return nil, apperrors.Transport("failed to stream compare diff", err)
 	}
 
 	if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
@@ -445,7 +445,7 @@ func (service *Service) streamRefRawDiff(ctx context.Context, repo RepositoryRef
 	if strings.TrimSpace(path) == "" {
 		response, err := service.client.StreamPatchWithResponse(ctx, repo.ProjectKey, repo.Slug, &openapigenerated.StreamPatchParams{Since: params.Since, Until: params.Until})
 		if err != nil {
-			return "", apperrors.New(apperrors.KindTransient, "failed to stream raw diff", err)
+			return "", apperrors.Transport("failed to stream raw diff", err)
 		}
 		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return "", err
@@ -455,7 +455,7 @@ func (service *Service) streamRefRawDiff(ctx context.Context, repo RepositoryRef
 
 	response, err := service.client.StreamRawDiff1WithResponse(ctx, repo.ProjectKey, repo.Slug, strings.TrimSpace(path), &openapigenerated.StreamRawDiff1Params{Since: params.Since, Until: params.Until})
 	if err != nil {
-		return "", apperrors.New(apperrors.KindTransient, "failed to stream raw diff for file path", err)
+		return "", apperrors.Transport("failed to stream raw diff for file path", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return "", err

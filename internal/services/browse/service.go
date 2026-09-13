@@ -208,7 +208,7 @@ func (service *Service) Edit(ctx context.Context, repo RepositoryRef, path strin
 
 	resp, err := service.client.EditFileWithBodyWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedPath, writer.FormDataContentType(), body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to edit file", err)
+		return nil, apperrors.Transport("failed to edit file", err)
 	}
 
 	if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {

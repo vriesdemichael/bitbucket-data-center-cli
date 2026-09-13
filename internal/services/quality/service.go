@@ -89,7 +89,7 @@ func (service *Service) SetBuildStatus(ctx context.Context, commitID string, inp
 
 	response, err := service.client.AddBuildStatusWithResponse(ctx, trimmedCommitID, body)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to set build status", err)
+		return apperrors.Transport("failed to set build status", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -114,7 +114,7 @@ func (service *Service) GetBuildStatuses(ctx context.Context, commitID string, m
 
 			response, err := service.client.GetBuildStatusWithResponse(ctx, trimmedCommitID, params)
 			if err != nil {
-				return openapi.Page[openapigenerated.RestBuildStatus]{}, apperrors.New(apperrors.KindTransient, "failed to get build statuses", err)
+				return openapi.Page[openapigenerated.RestBuildStatus]{}, apperrors.Transport("failed to get build statuses", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[openapigenerated.RestBuildStatus]{}, err
@@ -142,7 +142,7 @@ func (service *Service) GetBuildStatusStats(ctx context.Context, commitID string
 	params := &openapigenerated.GetBuildStatusStatsParams{IncludeUnique: &includeUnique}
 	response, err := service.client.GetBuildStatusStatsWithResponse(ctx, trimmedCommitID, params)
 	if err != nil {
-		return openapigenerated.RestBuildStats{}, apperrors.New(apperrors.KindTransient, "failed to get build status stats", err)
+		return openapigenerated.RestBuildStats{}, apperrors.Transport("failed to get build status stats", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestBuildStats{}, err
@@ -169,7 +169,7 @@ func (service *Service) ListRequiredBuildChecks(ctx context.Context, repo Reposi
 			response, err := service.client.GetPageOfRequiredBuildsMergeChecksWithResponse(ctx, repo.ProjectKey, repo.Slug,
 				&openapigenerated.GetPageOfRequiredBuildsMergeChecksParams{Start: &startValue, Limit: &limitValue})
 			if err != nil {
-				return openapi.Page[openapigenerated.RestRequiredBuildCondition]{}, apperrors.New(apperrors.KindTransient, "failed to list required build merge checks", err)
+				return openapi.Page[openapigenerated.RestRequiredBuildCondition]{}, apperrors.Transport("failed to list required build merge checks", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[openapigenerated.RestRequiredBuildCondition]{}, err
@@ -206,7 +206,7 @@ func (service *Service) CreateRequiredBuildCheck(ctx context.Context, repo Repos
 		bytes.NewReader(rawPayload),
 	)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to create required build merge check", err)
+		return nil, apperrors.Transport("failed to create required build merge check", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -251,7 +251,7 @@ func (service *Service) UpdateRequiredBuildCheck(ctx context.Context, repo Repos
 		bytes.NewReader(rawPayload),
 	)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to update required build merge check", err)
+		return nil, apperrors.Transport("failed to update required build merge check", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -284,7 +284,7 @@ func (service *Service) DeleteRequiredBuildCheck(ctx context.Context, repo Repos
 
 	response, err := service.client.DeleteRequiredBuildsMergeCheckWithResponse(ctx, repo.ProjectKey, repo.Slug, id)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete required build merge check", err)
+		return apperrors.Transport("failed to delete required build merge check", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -308,7 +308,7 @@ func (service *Service) ListReports(ctx context.Context, repo RepositoryRef, com
 			response, err := service.client.GetReportsWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID,
 				&openapigenerated.GetReportsParams{Start: &startValue, Limit: &limitValue})
 			if err != nil {
-				return openapi.Page[openapigenerated.RestInsightReport]{}, apperrors.New(apperrors.KindTransient, "failed to list code insight reports", err)
+				return openapi.Page[openapigenerated.RestInsightReport]{}, apperrors.Transport("failed to list code insight reports", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[openapigenerated.RestInsightReport]{}, err
@@ -343,7 +343,7 @@ func (service *Service) SetReport(ctx context.Context, repo RepositoryRef, commi
 
 	response, err := service.client.SetACodeInsightsReportWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, trimmedKey, request)
 	if err != nil {
-		return openapigenerated.RestInsightReport{}, apperrors.New(apperrors.KindTransient, "failed to set code insights report", err)
+		return openapigenerated.RestInsightReport{}, apperrors.Transport("failed to set code insights report", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestInsightReport{}, err
@@ -372,7 +372,7 @@ func (service *Service) GetReport(ctx context.Context, repo RepositoryRef, commi
 
 	response, err := service.client.GetACodeInsightsReportWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, trimmedKey)
 	if err != nil {
-		return openapigenerated.RestInsightReport{}, apperrors.New(apperrors.KindTransient, "failed to get code insights report", err)
+		return openapigenerated.RestInsightReport{}, apperrors.Transport("failed to get code insights report", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestInsightReport{}, err
@@ -401,7 +401,7 @@ func (service *Service) DeleteReport(ctx context.Context, repo RepositoryRef, co
 
 	response, err := service.client.DeleteACodeInsightsReportWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, trimmedKey)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete code insights report", err)
+		return apperrors.Transport("failed to delete code insights report", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -427,7 +427,7 @@ func (service *Service) AddAnnotations(ctx context.Context, repo RepositoryRef, 
 	body := openapigenerated.AddAnnotationsJSONRequestBody{Annotations: &annotations}
 	response, err := service.client.AddAnnotationsWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, trimmedKey, body)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to add code insights annotations", err)
+		return apperrors.Transport("failed to add code insights annotations", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -449,7 +449,7 @@ func (service *Service) ListAnnotations(ctx context.Context, repo RepositoryRef,
 
 	response, err := service.client.GetAnnotationsWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, trimmedKey)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list code insights annotations", err)
+		return nil, apperrors.Transport("failed to list code insights annotations", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -488,7 +488,7 @@ func (service *Service) DeleteAnnotations(ctx context.Context, repo RepositoryRe
 		&openapigenerated.DeleteAnnotationsParams{ExternalId: &trimmedExternalID},
 	)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete code insights annotations", err)
+		return apperrors.Transport("failed to delete code insights annotations", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -562,7 +562,7 @@ func (service *Service) AddScopedBuildStatus(ctx context.Context, repo Repositor
 		bytes.NewReader(rawPayload),
 	)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to add build status", err)
+		return apperrors.Transport("failed to add build status", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -584,7 +584,7 @@ func (service *Service) GetScopedBuildStatus(ctx context.Context, repo Repositor
 	params := &openapigenerated.GetParams{Key: trimmedKey}
 	response, err := service.client.GetWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, params)
 	if err != nil {
-		return openapigenerated.RestBuildStatus{}, apperrors.New(apperrors.KindTransient, "failed to get build status", err)
+		return openapigenerated.RestBuildStatus{}, apperrors.Transport("failed to get build status", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestBuildStatus{}, err
@@ -613,7 +613,7 @@ func (service *Service) DeleteScopedBuildStatus(ctx context.Context, repo Reposi
 	params := &openapigenerated.DeleteParams{Key: trimmedKey}
 	response, err := service.client.DeleteWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, params)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete build status", err)
+		return apperrors.Transport("failed to delete build status", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -637,7 +637,7 @@ func (service *Service) GetMultipleBuildStatusStats(ctx context.Context, commitI
 
 	response, err := service.client.GetMultipleBuildStatusStatsWithResponse(ctx, cleanedCommits)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get multiple build status stats", err)
+		return nil, apperrors.Transport("failed to get multiple build status stats", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -681,7 +681,7 @@ func (service *Service) CreateOrUpdateDeployment(ctx context.Context, repo Repos
 		bytes.NewReader(rawPayload),
 	)
 	if err != nil {
-		return openapigenerated.RestDeployment{}, apperrors.New(apperrors.KindTransient, "failed to create or update deployment", err)
+		return openapigenerated.RestDeployment{}, apperrors.Transport("failed to create or update deployment", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestDeployment{}, err
@@ -705,7 +705,7 @@ func (service *Service) GetDeployment(ctx context.Context, repo RepositoryRef, c
 
 	response, err := service.client.Get1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, &params)
 	if err != nil {
-		return openapigenerated.RestDeployment{}, apperrors.New(apperrors.KindTransient, "failed to get deployment", err)
+		return openapigenerated.RestDeployment{}, apperrors.Transport("failed to get deployment", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestDeployment{}, err
@@ -729,7 +729,7 @@ func (service *Service) DeleteDeployment(ctx context.Context, repo RepositoryRef
 
 	response, err := service.client.Delete1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, &params)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete deployment", err)
+		return apperrors.Transport("failed to delete deployment", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -754,7 +754,7 @@ func (service *Service) SetAnnotation(ctx context.Context, repo RepositoryRef, c
 
 	response, err := service.client.SetAnnotationWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, trimmedReportKey, trimmedExternalID, request)
 	if err != nil {
-		return openapigenerated.RestInsightAnnotation{}, apperrors.New(apperrors.KindTransient, "failed to set code insights annotation", err)
+		return openapigenerated.RestInsightAnnotation{}, apperrors.Transport("failed to set code insights annotation", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestInsightAnnotation{}, err
@@ -781,7 +781,7 @@ func (service *Service) ListCommitAnnotations(ctx context.Context, repo Reposito
 
 	response, err := service.client.GetAnnotations1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, &params)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list commit annotations", err)
+		return nil, apperrors.Transport("failed to list commit annotations", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
