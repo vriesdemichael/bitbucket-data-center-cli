@@ -202,7 +202,7 @@ Exit codes are deterministic by error kind:
 | `10` | `transient` |
 | `11` | `not_implemented` |
 | `12` | `cancelled`: the command was interrupted |
-| `13` | `unknown_outcome`: the request reached the server and no answer came back; check whether it was applied before running it again |
+| `13` | `unknown_outcome`: the request reached the server and no usable answer came back; check whether it was applied before running it again |
 | `1` | `permanent` (including a rejected TLS certificate or a host that does not resolve), `internal`, or unknown |
 
 Under `--json` the failure arrives as an envelope with an `error` key instead of

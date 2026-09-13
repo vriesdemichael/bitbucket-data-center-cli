@@ -445,7 +445,7 @@ Responses follow the machine output contract:
 - `conflict` (`exit 5`): One or more targets failed during execution.
 - `cancelled` (`exit 12`): Interrupted before every repository was attempted. Not a retry
   signal — re-running replays mutations across the whole plan.
-- `unknown_outcome` (`exit 13`): A mutation reached Bitbucket and no answer came back, so it
+- `unknown_outcome` (`exit 13`): A mutation reached Bitbucket and no usable answer came back, so it
   may have been applied. Read the status artifact before re-running.
 - `transient` (`exit 10`): A failure a retry may fix. `permanent` or `internal` (`exit 1`):
   one it will not, or a bb bug.

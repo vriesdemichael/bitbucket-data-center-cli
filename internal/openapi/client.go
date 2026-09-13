@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -89,6 +90,25 @@ func (doer classifyingDoer) Do(request *http.Request) (*http.Response, error) {
 		_ = response.Body.Close()
 
 		return nil, exchange.Status(response.StatusCode, MapStatusError(response.StatusCode, body))
+	}
+
+	// A 400 is read here too. The one Bitbucket sends when writing its answer
+	// failed leaves a mutation's outcome unknown, and only this layer has the
+	// method. Any other 400 goes on to the service with its body as it came.
+	if response.StatusCode == http.StatusBadRequest {
+		body, err := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		if err != nil {
+			return nil, exchange.ClassifyRead(err)
+		}
+		if FailedWritingAnswer(response.StatusCode, body) {
+			if unknown := exchange.AnswerFailed(MapStatusError(response.StatusCode, body)); unknown != nil {
+				return nil, unknown
+			}
+		}
+		response.Body = io.NopCloser(bytes.NewReader(body))
+
+		return response, nil
 	}
 
 	response.Body = exchange.Body(response.Body)

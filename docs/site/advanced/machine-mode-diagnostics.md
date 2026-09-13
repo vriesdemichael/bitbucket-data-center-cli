@@ -118,15 +118,19 @@ Command failures use deterministic exit codes by error kind.
 - `transient` -> exit code `10`
 - `not_implemented` -> exit code `11`
 - `cancelled` -> exit code `12` (interrupted; not something to retry automatically)
-- `unknown_outcome` -> exit code `13` (the request was sent and its result never came back)
+- `unknown_outcome` -> exit code `13` (the request was sent and whether it was applied is unknown)
 - `permanent` and `internal` (or unknown) -> exit code `1`
 
 `unknown_outcome` is the one worth wiring into a script deliberately. It means bb
 cannot say whether the server applied the request: a mutation whose connection was
-lost, timed out or was interrupted after it was sent, or that a gateway answered with
-`502` or `504`. Retrying it may repeat work that already happened, so the answer is to
-check the state and then decide. That is why it sits outside `transient`, which is
-the code a retry loop should key on.
+lost, timed out or was interrupted after it was sent, that a gateway answered with `502`
+or `504`, or that Bitbucket answered with an error it raised while writing the answer.
+Retrying it may repeat work that already happened, so the answer is to check the state
+and then decide. That is why it sits outside `transient`, which is the code a retry loop
+should key on.
+
+`bb webhook create` and `bb project webhook create` make that check themselves: when the
+webhook they asked for is there, they report it and exit `0`.
 
 A failure retrying cannot fix is `permanent`: a rejected TLS certificate, a host that
 does not resolve. bb does not retry those itself either.

@@ -142,6 +142,21 @@ func (exchange *Exchange) Status(status int, mapped error) error {
 		exchange.method, status), mapped)
 }
 
+// AnswerFailed reports a request Bitbucket answered with an error it raised
+// while writing the answer, which may come after it applied the request.
+//
+// For a method the retry policy will not replay that is unknown_outcome, as a
+// gateway's 502 is. A request it would replay lost nothing, and gets nil.
+func (exchange *Exchange) AnswerFailed(mapped error) error {
+	if retrypolicy.Replayable(exchange.method) {
+		return nil
+	}
+
+	return apperrors.New(apperrors.KindUnknownOutcome, fmt.Sprintf(
+		"Bitbucket failed while answering the %s, possibly after applying it, so whether it did is unknown: check before sending it again",
+		exchange.method), mapped)
+}
+
 // Body wraps a response body so a failure reading it is classified like any
 // other failure of the exchange.
 func (exchange *Exchange) Body(body io.ReadCloser) io.ReadCloser {

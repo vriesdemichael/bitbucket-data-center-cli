@@ -271,8 +271,13 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 			"error":       mappedErr.Error(),
 		}
 		// A gateway's 502 or 504 to a request that will not be replayed leaves
-		// its outcome unknown, which transient would misreport as retriable.
-		if unknown := exchange.Status(response.StatusCode, mappedErr); unknown != nil {
+		// its outcome unknown, which transient would misreport as retriable, and
+		// so does the 400 Bitbucket sends when writing its answer failed.
+		unknown := exchange.Status(response.StatusCode, mappedErr)
+		if unknown == nil && openapi.FailedWritingAnswer(response.StatusCode, body) {
+			unknown = exchange.AnswerFailed(mappedErr)
+		}
+		if unknown != nil {
 			client.logger.Error("http request returned error status", fields)
 			return nil, unknown
 		}
