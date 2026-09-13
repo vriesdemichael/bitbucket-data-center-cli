@@ -183,7 +183,17 @@ func New(deps Dependencies) *cobra.Command {
 	compareCmd := &cobra.Command{
 		Use:   "compare <from> <to>",
 		Short: "Compare two commits or refs",
-		Args:  cobra.ExactArgs(2),
+		Long: `List the commits reachable from <from> but not from <to>.
+
+The direction is Bitbucket's, and it is the reverse of git's. To list what a
+branch or a failing commit has that another does not, pass it first.
+
+  bb commit compare feature/x main        # commits feature/x adds
+  bb commit compare <failing> <green>     # commits since the last green build
+
+Given git log base..feature reads the other way round, the git-natural order
+lists nothing for refs that do differ.`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {

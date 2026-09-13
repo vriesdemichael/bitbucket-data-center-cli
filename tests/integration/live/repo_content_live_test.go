@@ -44,23 +44,40 @@ func TestLiveRepoContentCommands(t *testing.T) {
 	}
 
 	// Two seeded commits, so a comparison between them has something to report.
+	// The harness lists them newest first, and compare's direction is
+	// Bitbucket's: the newer commit is the side whose changes are wanted.
 	if len(repo.CommitIDs) >= 2 {
-		compareOutput, err := executeLiveCLI(t, "--json", "repo", "compare", repo.CommitIDs[1], repo.CommitIDs[0], "--repo", repoRef)
+		newer, older := repo.CommitIDs[0], repo.CommitIDs[1]
+
+		compareOutput, err := executeLiveCLI(t, "--json", "repo", "compare", newer, older, "--repo", repoRef)
 		if err != nil {
 			t.Fatalf("repo compare failed: %v\noutput: %s", err, compareOutput)
+		}
+		if changes, _ := decodeJSONMap(t, compareOutput)["changes"].([]any); len(changes) == 0 {
+			t.Fatalf("comparing the newer commit against the older one reported no changes:\n%s", compareOutput)
+		}
+		backwards := mustLiveCLI(t, "repo", "compare", older, newer, "--repo", repoRef)
+		if changes, _ := decodeJSONMap(t, backwards)["changes"].([]any); len(changes) != 0 {
+			t.Fatalf("the base-first order reported changes, so the direction is not Bitbucket's:\n%s", backwards)
 		}
 
 		// --diff has to produce the patch it promises. It used to read the JSON
 		// diff endpoint, whose schema describes a single file, so a whole-repo
 		// comparison decoded empty and printed two /dev/null lines -- which a
 		// human reads as "the refs are identical" (#587).
-		patchOutput, err := executeLiveCLI(t, "--json", "repo", "compare", repo.CommitIDs[1], repo.CommitIDs[0], "--repo", repoRef, "--diff")
+		patchOutput, err := executeLiveCLI(t, "--json", "repo", "compare", newer, older, "--repo", repoRef, "--diff")
 		if err != nil {
 			t.Fatalf("repo compare --diff failed: %v\noutput: %s", err, patchOutput)
 		}
 		patch, _ := decodeJSONMap(t, patchOutput)["patch"].(string)
 		if !strings.Contains(patch, "diff --git") {
 			t.Fatalf("expected a unified diff between two commits that differ, got:\n%s", patch)
+		}
+		// The same direction as the listing. --diff passed compare's refs to the
+		// patch endpoint unchanged, which takes them the other way round, so the
+		// newer commit's additions came out as deletions.
+		if strings.Contains(patch, "+++ /dev/null") {
+			t.Fatalf("the patch deletes what the newer commit added, so it runs backwards:\n%s", patch)
 		}
 	}
 

@@ -42,9 +42,9 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 | Create a branch | `bb branch create feature/retry --start-point main --repo PROJ/my-repo` | Created directly on server |
 | Delete a branch | `bb branch delete feature/retry --repo PROJ/my-repo` | Removes branch from server |
 | View commit details | `bb commit get 1a2b3c4 --repo PROJ/my-repo` | Author, message, and timestamp |
-| Compare commits or refs | `bb commit compare 1a2b3c4 5d6e7f8 --repo PROJ/my-repo` | Compares two commit SHAs |
+| Compare commits or refs | `bb commit compare 5d6e7f8 1a2b3c4 --repo PROJ/my-repo` | Commits in the first that the second does not have |
 | Read file without cloning | `bb repo cat README.md --repo PROJ/my-repo --at main` | Outputs raw content to stdout |
-| Diff refs on server | `bb repo compare main feature/retry --repo PROJ/my-repo --diff` | Unified diff without local git fetch |
+| Diff refs on server | `bb repo compare feature/retry main --repo PROJ/my-repo --diff` | Unified diff of what `feature/retry` adds, without a local fetch |
 
 ### 4. Pull Requests: Creation & Local Testing
 
@@ -215,8 +215,8 @@ You do not need to clone a multi-gigabyte repository just to view a file or comp
 # Print raw file contents to terminal or pipe to tools
 bb repo cat src/config.yaml --repo PROJ/my-repo --at main | grep timeout
 
-# View unified diff between release branches on the server
-bb repo compare main feature/my-work --repo PROJ/my-repo --diff
+# View what a branch adds, as a unified diff, on the server (the branch comes first)
+bb repo compare feature/my-work main --repo PROJ/my-repo --diff
 
 # Open directly in your browser
 bb browse src/config.yaml --repo PROJ/my-repo

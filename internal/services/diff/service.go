@@ -612,10 +612,15 @@ func pathFromDiffGitHeader(header string) string {
 //
 // The raw endpoint answers with the patch itself, which is what the flag
 // promises and what `bb diff` has always used.
+//
+// from and to are compare's, where from is the feature side, and the patch
+// endpoint takes its refs the other way round: since is the base, until the
+// change. Passed straight through, the flag printed the reverse of the change
+// the same command lists without it.
 func (service *Service) ComparePatch(ctx context.Context, repo RepositoryRef, from, to string) (string, error) {
 	if err := validateRepoRef(repo); err != nil {
 		return "", err
 	}
 
-	return service.streamRefRawDiff(ctx, repo, "", from, to)
+	return service.streamRefRawDiff(ctx, repo, "", to, from)
 }
