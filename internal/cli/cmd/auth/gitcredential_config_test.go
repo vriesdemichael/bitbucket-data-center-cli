@@ -70,7 +70,7 @@ func writeStoredConfig(t *testing.T, hostURL, token string, aliases ...string) {
 func TestResolveGitCredentialReturnsStoredToken(t *testing.T) {
 	writeStoredConfig(t, "https://bb-credhelper-fixture.invalid", "secret-token")
 
-	username, password, ok := resolveGitCredential(credentialRequest{
+	username, password, ok, _ := resolveGitCredential(credentialRequest{
 		Protocol: "https",
 		Host:     "bb-credhelper-fixture.invalid",
 	})
@@ -92,7 +92,7 @@ func TestResolveGitCredentialReturnsStoredToken(t *testing.T) {
 func TestResolveGitCredentialMatchesConfiguredAlias(t *testing.T) {
 	writeStoredConfig(t, "https://bb-credhelper-fixture.invalid", "secret-token", "git.example.com")
 
-	if _, _, ok := resolveGitCredential(credentialRequest{Protocol: "https", Host: "git.example.com"}); !ok {
+	if _, _, ok, _ := resolveGitCredential(credentialRequest{Protocol: "https", Host: "git.example.com"}); !ok {
 		t.Fatal("expected a configured alias to resolve")
 	}
 }
@@ -104,7 +104,7 @@ func TestResolveGitCredentialRefusesUnconfiguredHosts(t *testing.T) {
 	writeStoredConfig(t, "https://bb-credhelper-fixture.invalid", "secret-token")
 
 	for _, host := range []string{"github.com", "gitlab.com", "bb-credhelper-fixture.invalid.attacker.test"} {
-		if _, _, ok := resolveGitCredential(credentialRequest{Protocol: "https", Host: host}); ok {
+		if _, _, ok, _ := resolveGitCredential(credentialRequest{Protocol: "https", Host: host}); ok {
 			t.Fatalf("resolved credentials for unconfigured host %q", host)
 		}
 	}
@@ -114,7 +114,7 @@ func TestResolveGitCredentialWithNothingStored(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 
-	if _, _, ok := resolveGitCredential(credentialRequest{Protocol: "https", Host: "bb-credhelper-fixture.invalid"}); ok {
+	if _, _, ok, _ := resolveGitCredential(credentialRequest{Protocol: "https", Host: "bb-credhelper-fixture.invalid"}); ok {
 		t.Fatal("expected no credentials when nothing is stored")
 	}
 }
@@ -334,7 +334,7 @@ func TestResolveGitCredentialReturnsStoredBasicAuth(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 
-	username, password, ok := resolveGitCredential(credentialRequest{
+	username, password, ok, _ := resolveGitCredential(credentialRequest{
 		Protocol: "https",
 		Host:     "bb-basic-fixture.invalid",
 	})
@@ -361,7 +361,7 @@ func TestResolveGitCredentialWithHostButNoSecret(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 
-	if _, _, ok := resolveGitCredential(credentialRequest{
+	if _, _, ok, _ := resolveGitCredential(credentialRequest{
 		Protocol: "https",
 		Host:     "bb-nosecret-fixture.invalid",
 	}); ok {
