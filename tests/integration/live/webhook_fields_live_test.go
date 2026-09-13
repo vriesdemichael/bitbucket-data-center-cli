@@ -679,25 +679,41 @@ func TestLiveBulkWebhookSecretTravelsAsAVariableName(t *testing.T) {
 		// Bitbucket answers identical creates inconsistently: some carry
 		// configuration.secret in full, some carry an empty object. Every read
 		// carries it. Ten attempts, because two produced both shapes.
+		//
+		// It is a race, and load decides it. Bitbucket serialises the create
+		// response while the configuration it echoes is still being changed:
+		// 200 sequential creates against an idle instance echoed the secret 8
+		// times, 800 creates eight at a time 303 times, and 6,400 thirty-two at
+		// a time 5,539 times. Once in a while the serialiser trips over the
+		// change outright and the create answers 400 with a
+		// ConcurrentModificationException through RestWebhook["configuration"]
+		// -- seen once in CI, not reproduced in those 7,400 creates. That is the
+		// same race lost, not a failed create: the response is written after
+		// the webhook is stored, so the read below still has to find it.
 		path := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/webhooks", seeded.Key, repo.Slug)
-		echoed, empty := 0, 0
+		echoed, empty, raced := 0, 0, 0
 		for attempt := range 10 {
+			name := fmt.Sprintf("echo-probe-%d", attempt)
 			created, err := harness.liveJSON(ctx, http.MethodPost, path, map[string]any{
-				"name":          fmt.Sprintf("echo-probe-%d", attempt),
+				"name":          name,
 				"url":           "http://localhost:7990/status",
 				"events":        []string{"repo:refs_changed"},
 				"active":        true,
 				"configuration": map[string]any{"secret": secretCanary},
 			})
-			if err != nil {
+			switch {
+			case err == nil:
+				configuration, _ := created["configuration"].(map[string]any)
+				if secret, _ := configuration["secret"].(string); secret != "" {
+					echoed++
+				} else {
+					empty++
+				}
+			case strings.Contains(err.Error(), "ConcurrentModificationException"):
+				raced++
+				created = liveWebhookNamed(t, ctx, harness, path, name)
+			default:
 				t.Fatalf("create %d: %v", attempt, err)
-			}
-
-			configuration, _ := created["configuration"].(map[string]any)
-			if secret, _ := configuration["secret"].(string); secret != "" {
-				echoed++
-			} else {
-				empty++
 			}
 
 			// The read, by contrast, always answers.
@@ -712,11 +728,34 @@ func TestLiveBulkWebhookSecretTravelsAsAVariableName(t *testing.T) {
 			}
 		}
 
-		if echoed == 0 && empty == 0 {
+		if echoed == 0 && empty == 0 && raced == 0 {
 			t.Fatal("no creates were observed at all")
 		}
-		t.Logf("create responses carrying the secret: %d of %d", echoed, echoed+empty)
+		t.Logf("create responses carrying the secret: %d, without it: %d, lost to the race: %d", echoed, empty, raced)
 	})
+}
+
+// liveWebhookNamed finds a webhook by name, for a create whose response was
+// lost to Bitbucket's serialisation race. Not finding it fails the test: that
+// would mean the race can lose the webhook too, which is not what was observed.
+func liveWebhookNamed(t *testing.T, ctx context.Context, harness *liveHarness, path, name string) map[string]any {
+	t.Helper()
+
+	listing, err := harness.liveJSON(ctx, http.MethodGet, path+"?limit=1000", nil)
+	if err != nil {
+		t.Fatalf("list webhooks to find %s after its create lost the response: %v", name, err)
+	}
+	values, _ := listing["values"].([]any)
+	for _, value := range values {
+		if hook, ok := value.(map[string]any); ok && hook["name"] == name {
+			return hook
+		}
+	}
+
+	t.Fatalf("a create answered with a ConcurrentModificationException and %s does not exist, "+
+		"so the race loses webhooks and not only their responses", name)
+
+	return nil
 }
 
 // TestLiveWebhookListingsAreUsable covers the two listing defects #522 collected
