@@ -15,8 +15,8 @@ import (
 //
 //	Error: accepts 1 arg(s), received 0
 //
-// which names neither the command nor the thing it wanted, and 150 of 233
-// leaf commands answered that way -- 31 of them destructive. ADR-073 requires
+// which names neither the command nor the thing it wanted, and 151 of 163
+// commands that take a positional answered that way -- 31 of them destructive. ADR-073 requires
 // a missing required value to fail with a message naming what would have
 // supplied it (#587).
 //
@@ -62,16 +62,43 @@ func nameTheMissingArgument(root *cobra.Command) {
 
 // positionalPlaceholders are the <required> and [optional] words in a Use
 // line, which is where the command already declares them for its help text.
+//
+// A bracketed group is one placeholder however many spaces it holds. browse
+// declares [<number> | <path> | <commit-sha>], one argument that is any of
+// three, and splitting it on spaces dropped the bars that say so.
 func positionalPlaceholders(use string) []string {
-	fields := strings.Fields(use)
-	if len(fields) <= 1 {
+	var words []string
+	var word strings.Builder
+	depth := 0
+
+	for _, character := range use {
+		switch {
+		case character == ' ' && depth == 0:
+			if word.Len() > 0 {
+				words = append(words, word.String())
+				word.Reset()
+			}
+
+			continue
+		case character == '[' || character == '<':
+			depth++
+		case (character == ']' || character == '>') && depth > 0:
+			depth--
+		}
+		word.WriteRune(character)
+	}
+	if word.Len() > 0 {
+		words = append(words, word.String())
+	}
+
+	if len(words) <= 1 {
 		return nil
 	}
 
 	var placeholders []string
-	for _, field := range fields[1:] {
-		if strings.HasPrefix(field, "<") || strings.HasPrefix(field, "[") {
-			placeholders = append(placeholders, field)
+	for _, candidate := range words[1:] {
+		if strings.HasPrefix(candidate, "<") || strings.HasPrefix(candidate, "[") {
+			placeholders = append(placeholders, candidate)
 		}
 	}
 

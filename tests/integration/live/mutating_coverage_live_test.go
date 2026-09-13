@@ -196,6 +196,11 @@ func TestLivePRReviewerAddAndRemove(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr review reviewer remove failed: %v\noutput: %s", err, removeOutput)
 	}
+	// Removing a participant answers with no body, which decoded as a pull
+	// request reported #0 (#587).
+	if removed, _ := decodeJSONMap(t, removeOutput)["pullRequest"].(map[string]any); fmt.Sprint(removed["id"]) != prID {
+		t.Errorf("reviewer remove reported pull request %v, want %s:\n%s", removed["id"], prID, removeOutput)
+	}
 	if names := currentLivePRReviewers(t, prID); containsFold(names, reviewer.Username) {
 		t.Fatalf("expected %s to have been removed, got %v", reviewer.Username, names)
 	}

@@ -289,8 +289,8 @@ bb build status get <commit-sha>
 # Get commit details for context
 bb commit get --repo MYPROJ/payments <commit-sha>
 
-# Compare against the previous green commit
-bb commit compare <green-sha> <failing-sha> --repo MYPROJ/payments
+# Commits since the previous green build (Bitbucket's order: the failing commit first)
+bb commit compare <failing-sha> <green-sha> --repo MYPROJ/payments
 ```
 
 ### 9. Release tagging
@@ -314,11 +314,11 @@ bb repo cat README.md --repo MYPROJ/payments --at main
 # Edit/create a file directly via REST
 bb repo edit README.md --repo MYPROJ/payments --branch main --message "Update README" --content "New content..."
 
-# Compare commits or branches to list changed files
-bb repo compare main feature/my-work --repo MYPROJ/payments
+# List the files a branch changes (Bitbucket's order: the branch first, the reverse of git log)
+bb repo compare feature/my-work main --repo MYPROJ/payments
 
-# Show a unified diff of changes between two refs
-bb repo compare main feature/my-work --repo MYPROJ/payments --diff
+# Show those changes as a unified diff
+bb repo compare feature/my-work main --repo MYPROJ/payments --diff
 
 # Download a repository archive (defaults to zip format)
 bb repo archive --repo MYPROJ/payments --at main --output payments-main.zip

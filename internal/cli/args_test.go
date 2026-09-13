@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TestAMissingArgumentIsNamed is #587: 150 of 233 leaf commands answered a
+// TestAMissingArgumentIsNamed is #587: 151 of 163 commands answered a
 // missing positional with Cobra's own arity message, which names neither the
 // command nor the value it wanted. ADR-073 asks for the opposite.
 func TestAMissingArgumentIsNamed(t *testing.T) {
