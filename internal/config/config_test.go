@@ -1706,6 +1706,9 @@ func TestResolveUpdateBaseURLHierarchy(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", userPath)
 	t.Setenv("BB_WORKSPACE_CONFIG_PATH", wsPath)
 	t.Setenv("BB_UPDATE_BASE_URL", "")
+	// The user file is one of the tiers under test, so it is read; with
+	// BB_DISABLE_STORED_CONFIG=1 it is ignored, as the variable promises.
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 
 	// 1. CLI flag beats everything
 	url, err := ResolveUpdateBaseURL("https://flag-mirror.corp")

@@ -232,7 +232,7 @@ func ValidateConfigYAML(rawYAML []byte) error {
 
 	schema := getCompiledConfigSchema()
 	if err := schema.Validate(data); err != nil {
-		return apperrors.New(apperrors.KindValidation, fmt.Sprintf("configuration does not match schema: %v", err), err)
+		return apperrors.New(apperrors.KindValidation, "configuration does not match schema", err)
 	}
 
 	return nil
