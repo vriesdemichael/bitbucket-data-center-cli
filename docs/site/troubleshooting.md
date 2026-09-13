@@ -56,22 +56,32 @@ and never response bodies, only their size.
 validation: no Bitbucket host configured: set BITBUCKET_URL or run 'bb auth login <host>'
 ```
 
-Usually what it says: nothing has been configured yet. Run `bb auth login`, or
-set `BITBUCKET_URL` and a credential.
+Nothing has been configured yet. Run `bb auth login`, or set `BITBUCKET_URL` and
+a credential.
 
-!!! warning "If you are sure you did log in"
+## `the stored configuration at ... could not be read`
 
-    The same message appears when a configuration file exists but cannot be
-    parsed — a stray indent is enough. Check the files before doing anything
-    else, because `bb auth login` rewrites the user one and any other hosts in
-    it are lost.
+```text
+permanent: the stored configuration at /home/alice/.config/bb/config.yaml could not be read. Fix or remove that file; bb will not rewrite a file it could not read (invalid YAML configuration (yaml: line 5: found character that cannot start any token))
+```
 
-    | Platform | User | System |
-    |---|---|---|
-    | Linux, macOS | `~/.config/bb/config.yaml` | `/etc/bb/config.yaml` |
-    | Windows | `%APPDATA%\bb\config.yaml` | `%ProgramData%\bb\config.yaml` |
+A configuration file exists and bb cannot read it -- a stray indent is enough.
+Every command stops here rather than carry on as if you had never logged in, and
+`bb auth login` and `bb auth logout` refuse to write over the file, so the other
+hosts in it are not lost. Repair it using the line the message names, or move it
+aside and log in again.
 
-    `BB_CONFIG_PATH` overrides the user one, so check that first if it is set.
+The same message names a workspace's `.bb/config.yaml`. For the system file it
+says to ask your administrator instead: that file carries policy, and bb stops
+rather than run without it.
+
+| Platform | User | System |
+|---|---|---|
+| Linux, macOS | `~/.config/bb/config.yaml` | `/etc/bb/config.yaml` |
+| Windows | `%APPDATA%\bb\config.yaml` | `%ProgramData%\bb\config.yaml` |
+
+`BB_CONFIG_PATH` overrides the user file. In CI, `BB_DISABLE_STORED_CONFIG=1`
+skips it entirely, so a stray file on a shared runner cannot fail the run.
 
 ### Validating a configuration file
 
@@ -190,7 +200,10 @@ Exit codes are deterministic by error kind:
 | `4` | `not_found` |
 | `5` | `conflict` |
 | `10` | `transient` |
-| `1` | `permanent`, `internal`, or unknown |
+| `11` | `not_implemented` |
+| `12` | `cancelled`: the command was interrupted |
+| `13` | `unknown_outcome`: the request reached the server and no answer came back; check whether it was applied before running it again |
+| `1` | `permanent` (including a rejected TLS certificate or a host that does not resolve), `internal`, or unknown |
 
 Under `--json` the failure arrives as an envelope with an `error` key instead of
 `data`, carrying the same kind. See

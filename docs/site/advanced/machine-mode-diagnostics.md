@@ -86,6 +86,21 @@ else
 fi
 ```
 
+## Listings that stop at `--limit`
+
+A command that lists something returns at most `--limit` results, and says whether
+it reached that limit:
+
+<!-- docs-lint: envelope-shape -->
+```json
+{ "data": { }, "meta": { "bbVersion": "[[ bb_version_tag ]]", "limitReached": true } }
+```
+
+`limitReached: true` means there may be more: raise `--limit`, or pass `--all`. It is
+present, true or false, on every command that takes `--limit`, and absent elsewhere.
+Text output gives the same answer as a line on stderr, so a pipeline counting rows still
+counts rows, and the MCP list tools return it as `limit_reached`.
+
 ## Error kinds and exit codes
 
 Command failures use deterministic exit codes by error kind.
@@ -101,10 +116,34 @@ Command failures use deterministic exit codes by error kind.
 - `permanent` and `internal` (or unknown) -> exit code `1`
 
 `unknown_outcome` is the one worth wiring into a script deliberately. It means bb
-cannot say whether the server applied the request -- a mutation that timed out, for
-instance. Retrying it may repeat work that already happened, so the answer is to
+cannot say whether the server applied the request: a mutation whose connection was
+lost, timed out or was interrupted after it was sent, or that a gateway answered with
+`502` or `504`. Retrying it may repeat work that already happened, so the answer is to
 check the state and then decide. That is why it sits outside `transient`, which is
 the code a retry loop should key on.
+
+A failure retrying cannot fix is `permanent`: a rejected TLS certificate, a host that
+does not resolve. bb does not retry those itself either.
+
+### Changed since v4.0.0
+
+What a script may notice after upgrading:
+
+- A request whose TLS certificate is rejected, or whose host does not resolve, exits `1`
+  (`permanent`) rather than `10`, and is not retried.
+- A POST or PATCH that reached the server without a usable answer exits `13`
+  (`unknown_outcome`) rather than `10`, and so does one a gateway answered with `502` or
+  `504`.
+- An interrupt ends a command with exit `12` (`cancelled`), or `13` for a mutation it had
+  already sent.
+- A configuration file that exists and cannot be read fails every command with exit `1`
+  instead of reading as empty.
+- `error.message` carries Bitbucket's own sentence, redacted and cut to 300 characters
+  unless `--full-error-body` is passed, and `error.details` carries `upstreamStatus` and
+  `upstreamException`.
+- Listings report `meta.limitReached`, and print a line on stderr in text output when they
+  stop at `--limit`. `bb insights annotation list` now stops at `--limit` too, 25 by
+  default; it used to return every annotation.
 
 ### Handles on the failure envelope
 
@@ -120,6 +159,11 @@ bb bulk status "$operationId" --json
 ```
 
 Read handles from `error.details`, not by parsing `error.message`.
+
+A failure Bitbucket answered carries `upstreamStatus`, the HTTP status, and
+`upstreamException` when Bitbucket named its exception. The exception name is the stable
+part: branch on it rather than on the wording of `error.message`, which Bitbucket
+rewords between releases.
 
 #### Changed in v4: `bb bulk apply --json` on the failure path
 
@@ -180,5 +224,6 @@ bb --json repo list --nonexistent-flag
 ```
 
 This matters for automation: `internal` means *the CLI broke*, and a caller that retries or
-escalates on it would do the wrong thing with its own typo. Genuine failures — a refused
-connection, an unexpected server response — still report `internal` and exit `1`.
+escalates on it would do the wrong thing with its own typo. A failure bb did not cause keeps
+the kind it was classified as: a refused connection is `transient`, a rejected certificate
+`permanent`, and a server response whatever its status maps to.

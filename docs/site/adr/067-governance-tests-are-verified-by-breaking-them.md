@@ -39,6 +39,12 @@ A governance test asserts an invariant about the codebase rather than a behaviou
    - TestOnlyTheSharedHelperDecidesInteractivity: only the shared helper asks whether a stream is a terminal.
    - TestEveryUseOfStandardInputIsAccountedFor: every place standard input is used is recorded.
    - TestNoServiceOptionIsCalledLimit: a service list option says whether it caps or pages.
+   - TestACappedListingSaysSoIsEnforced: a command that takes --limit reports reaching it, in JSON and in text.
+   - TestEveryLimitedToolSaysWhenItStopped: an MCP tool that takes a limit returns a required limit_reached.
+   - TestNoFailureIsWrappedAsTransient: a transport failure keeps its classification through the service that wraps it.
+   - TestAnEchoedFlagPublishesTheValuesItAccepts: a payload field that echoes an enum flag publishes the flag's values.
+   - TestAMissingArgumentIsNamed: a missing positional argument is named in the error.
+   - TestNoFixtureIsNamedFromTheClock: no test builds a fixture name from time.Now().
    - TestGovernanceTestsNamedInThisRecordExist: this list names only tests that exist.
 
 ## Agent Instructions
