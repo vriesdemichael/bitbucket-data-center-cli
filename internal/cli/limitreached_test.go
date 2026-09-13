@@ -10,12 +10,16 @@ import (
 	"testing"
 )
 
-// limitRegistration matches a command being given --limit. The paging options
-// are named for what they page -- listPaging, commentPaging, statusPaging -- so
-// the receiver is recognised by its suffix.
-var limitRegistration = regexp.MustCompile(`\b(\w+[Pp]aging)\.Register\((\w+),`)
+// limitRegistration matches a command being given --limit, through either of
+// the paging package's registrations. The paging options are named for what
+// they page -- listPaging, commentPaging, statusPaging -- so the receiver is
+// recognised by its suffix.
+var limitRegistration = regexp.MustCompile(`\b(\w+[Pp]aging)\.(?:Register|RegisterPersistent)\((\w+),`)
 
-// reportsTruncation matches the command saying whether it hit that limit.
+// jsonWrite matches a command writing its --json document.
+var jsonWrite = regexp.MustCompile(`\b(?:d|deps)\.(WriteJSONList|WriteJSON)\(`)
+
+// reportsTruncation matches the command working out whether it hit that limit.
 var reportsTruncation = regexp.MustCompile(`paging\.LimitReached\(`)
 
 // notAListing is the way out for a command that takes --limit in order to find
@@ -29,10 +33,11 @@ var notAListing = regexp.MustCompile(`limit-not-reported:\s*\S+`)
 // asked for 25 repositories and received 25 could not tell whether that was all
 // of them. An absent field reads as "not truncated" rather than "not answered".
 //
-// Keyed on the --limit registration, not on how the command caps. An earlier
-// version looked only at RunE blocks that called ServiceLimit(), and so never
-// saw pr comment list, which caps with Truncate() instead -- and which was
-// silent while this test reported compliance.
+// Every JSON write is checked, not the command as a whole. pr comment list
+// writes its document from two places, threaded and under --full, and a version
+// of this test that passed once a command reported anywhere would have let one
+// of them stay silent. The version before that looked only at commands calling
+// ServiceLimit() and never saw pr comment list at all.
 //
 // A registration is matched to the command declared nearest before it. A file
 // can declare several commands under the same variable name; taking the first
@@ -43,7 +48,7 @@ func TestACappedListingSaysSoIsEnforced(t *testing.T) {
 	root := filepath.Join("..", "..", "internal", "cli", "cmd")
 
 	var silent []string
-	var registrations int
+	var registrations, writes int
 
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -59,26 +64,51 @@ func TestACappedListingSaysSoIsEnforced(t *testing.T) {
 		}
 		text := string(contents)
 		lines := strings.Split(text, "\n")
+		at := func(line int, what string) string {
+			return filepath.ToSlash(path) + ":" + strconv.Itoa(line+1) + " " + what
+		}
 
 		for _, match := range limitRegistration.FindAllStringSubmatchIndex(text, -1) {
 			registrations++
 			command := text[match[4]:match[5]]
-			registeredAt := lineOf(text, match[0])
+			registeredAt := strings.Count(text[:match[0]], "\n")
 
-			block, found := runEBlockFor(lines, command, registeredAt)
+			start, end, found := runEFor(lines, command, registeredAt)
 			if !found {
-				silent = append(silent, filepath.ToSlash(path)+":"+strconv.Itoa(registeredAt+1)+" ("+command+": no RunE found)")
-				continue
-			}
-			if notAListing.MatchString(block) || reportsTruncation.MatchString(block) {
-				continue
-			}
-			if !strings.Contains(block, "WriteJSON") {
-				// No envelope to carry the field.
+				silent = append(silent, at(registeredAt, "("+command+"): no RunE found"))
 				continue
 			}
 
-			silent = append(silent, filepath.ToSlash(path)+":"+strconv.Itoa(registeredAt+1)+" ("+command+")")
+			block := strings.Join(lines[start:end], "\n")
+			if notAListing.MatchString(block) {
+				continue
+			}
+
+			sites := 0
+			for index := start; index < end; index++ {
+				write := jsonWrite.FindStringSubmatch(lines[index])
+				if write == nil {
+					continue
+				}
+				sites++
+				writes++
+
+				call := callFrom(lines, index)
+				switch {
+				case strings.Contains(call, "dryrunpreview."):
+					// A preview answers what would change, not a page of results.
+				case write[1] == "WriteJSON":
+					silent = append(silent, at(index, "("+command+"): WriteJSON carries no meta.limitReached"))
+				case !reportsTruncation.MatchString(call) && !computedInBlock(block, call):
+					silent = append(silent, at(index, "("+command+"): WriteJSONList not given paging.LimitReached"))
+				}
+			}
+
+			if sites == 0 {
+				// A document written through a helper is invisible here, which is
+				// exactly how a silent listing would hide.
+				silent = append(silent, at(start, "("+command+"): no JSON write in its RunE to check"))
+			}
 		}
 
 		return nil
@@ -89,26 +119,26 @@ func TestACappedListingSaysSoIsEnforced(t *testing.T) {
 
 	// A walk that stopped matching would report perfect compliance, which is the
 	// failure mode ADR-067 exists to catch.
-	if registrations < 25 {
-		t.Fatalf("found only %d --limit registrations, expected dozens.\nThe walk is probably broken, not the commands.", registrations)
+	if registrations < 25 || writes < 25 {
+		t.Fatalf("found only %d --limit registrations and %d JSON writes under them, expected dozens of each.\nThe walk is probably broken, not the commands.", registrations, writes)
 	}
 
 	if len(silent) > 0 {
 		sort.Strings(silent)
 		t.Fatalf(
-			"%d of %d commands that take --limit do not report meta.limitReached:\n  %s\n\n"+
+			"%d JSON write(s) under a command that takes --limit do not report meta.limitReached:\n  %s\n\n"+
 				"Write the payload with WriteJSONList and paging.LimitReached(options, len(items)).\n"+
 				"An absent field reads as \"not truncated\", so a caller cannot tell a full page\n"+
 				"from all there is. A command that takes --limit to find one thing rather than to\n"+
 				"return a page says so with a limit-not-reported: comment giving the reason.",
-			len(silent), registrations, strings.Join(silent, "\n  "),
+			len(silent), strings.Join(silent, "\n  "),
 		)
 	}
 }
 
-// runEBlockFor returns the RunE body of the command declared under name,
-// nearest before the line that registered its limit.
-func runEBlockFor(lines []string, name string, before int) (string, bool) {
+// runEFor returns the line range of the RunE body of the command declared
+// under name, nearest before the line that registered its limit.
+func runEFor(lines []string, name string, before int) (int, int, bool) {
 	declaration := regexp.MustCompile(`\b` + regexp.QuoteMeta(name) + `\s*:?=\s*&cobra\.Command\{`)
 
 	declared := -1
@@ -119,7 +149,7 @@ func runEBlockFor(lines []string, name string, before int) (string, bool) {
 		}
 	}
 	if declared == -1 {
-		return "", false
+		return 0, 0, false
 	}
 
 	for index := declared; index < before; index++ {
@@ -131,16 +161,46 @@ func runEBlockFor(lines []string, name string, before int) (string, bool) {
 		for end := index + 1; end < len(lines); end++ {
 			trimmed := strings.TrimSpace(lines[end])
 			if strings.HasPrefix(trimmed, "},") && len(lines[end])-len(strings.TrimLeft(lines[end], "\t")) == indent {
-				return strings.Join(lines[index:end], "\n"), true
+				return index, end, true
 			}
 		}
 
-		return strings.Join(lines[index:], "\n"), true
+		return index, len(lines), true
 	}
 
-	return "", false
+	return 0, 0, false
 }
 
-func lineOf(text string, offset int) int {
-	return strings.Count(text[:offset], "\n")
+// lastArgument matches a call ending in a plain variable.
+var lastArgument = regexp.MustCompile(`,\s*(\w+)\s*\)\s*$`)
+
+// computedInBlock reports whether a write's truncation argument is a variable
+// the block assigns from paging.LimitReached. pr status pages two listings and
+// reports either one reaching the limit, so it works that out before writing.
+func computedInBlock(block, call string) bool {
+	variable := lastArgument.FindStringSubmatch(call)
+	if variable == nil {
+		return false
+	}
+
+	assigned := regexp.MustCompile(`\b` + regexp.QuoteMeta(variable[1]) + `\s*:?=\s*paging\.LimitReached\(`)
+
+	return assigned.MatchString(block)
+}
+
+// callFrom returns a call's source, from the line it starts on until its
+// parentheses balance.
+func callFrom(lines []string, start int) string {
+	var call strings.Builder
+	depth := 0
+	for index := start; index < len(lines); index++ {
+		call.WriteString(lines[index])
+		call.WriteString("\n")
+		depth += strings.Count(lines[index], "(") - strings.Count(lines[index], ")")
+		if depth <= 0 {
+			break
+		}
+	}
+
+	return call.String()
 }
