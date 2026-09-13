@@ -90,7 +90,7 @@ func ErrorEnvelopeSchema(schemaFileName string) map[string]any {
 						"enum":        codeValues,
 					},
 					"details": map[string]any{
-						"description": "Machine-readable handles the caller needs to act on the failure, keyed by name. Absent when there are none. bb bulk apply sets operationId, which `bb bulk status <id>` takes.",
+						"description": "Machine-readable fields to act or branch on, keyed by name, rather than words to match in the message. Absent when there are none. bb bulk apply sets operationId, which `bb bulk status <id>` takes. A failure Bitbucket answered carries upstreamStatus, and upstreamException when Bitbucket named the exception.",
 						"type":        "object",
 						"additionalProperties": map[string]any{
 							"type":      "string",

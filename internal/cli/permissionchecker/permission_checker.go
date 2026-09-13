@@ -367,5 +367,5 @@ func transportFailure(err error) error {
 		return err
 	}
 
-	return apperrors.New(apperrors.KindTransient, "permission pre-flight could not reach Bitbucket", err)
+	return apperrors.Transport("permission pre-flight could not reach Bitbucket", err)
 }

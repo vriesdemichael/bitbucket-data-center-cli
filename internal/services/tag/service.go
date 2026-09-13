@@ -50,7 +50,7 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 
 			response, err := service.client.GetTagsWithResponse(ctx, repo.ProjectKey, repo.Slug, params)
 			if err != nil {
-				return openapi.Page[openapigenerated.RestTag]{}, apperrors.New(apperrors.KindTransient, "failed to list repository tags", err)
+				return openapi.Page[openapigenerated.RestTag]{}, apperrors.Transport("failed to list repository tags", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[openapigenerated.RestTag]{}, err
@@ -94,7 +94,7 @@ func (service *Service) Create(ctx context.Context, repo RepositoryRef, name str
 
 	response, err := service.client.CreateTagForRepositoryWithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
-		return openapigenerated.RestTag{}, apperrors.New(apperrors.KindTransient, "failed to create repository tag", err)
+		return openapigenerated.RestTag{}, apperrors.Transport("failed to create repository tag", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestTag{}, err
@@ -119,7 +119,7 @@ func (service *Service) Get(ctx context.Context, repo RepositoryRef, name string
 
 	response, err := service.client.GetTagWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedName)
 	if err != nil {
-		return openapigenerated.RestTag{}, apperrors.New(apperrors.KindTransient, "failed to get repository tag", err)
+		return openapigenerated.RestTag{}, apperrors.Transport("failed to get repository tag", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestTag{}, err
@@ -144,7 +144,7 @@ func (service *Service) Delete(ctx context.Context, repo RepositoryRef, name str
 
 	response, err := service.client.DeleteTagWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedName)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete repository tag", err)
+		return apperrors.Transport("failed to delete repository tag", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)

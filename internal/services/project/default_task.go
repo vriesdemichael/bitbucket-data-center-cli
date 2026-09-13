@@ -31,7 +31,7 @@ func (service *Service) ListDefaultTasks(ctx context.Context, projectKey string)
 
 	response, err := service.client.GetDefaultTasksWithResponse(ctx, trimmedProject, nil)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list project default tasks", err)
+		return nil, apperrors.Transport("failed to list project default tasks", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (service *Service) AddDefaultTask(ctx context.Context, projectKey string, d
 
 	response, err := service.client.AddDefaultTaskWithResponse(ctx, trimmedProject, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to add project default task", err)
+		return nil, apperrors.Transport("failed to add project default task", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func (service *Service) UpdateDefaultTask(ctx context.Context, projectKey string
 
 	response, err := service.client.UpdateDefaultTaskWithResponse(ctx, trimmedProject, trimmedTaskID, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to update project default task", err)
+		return nil, apperrors.Transport("failed to update project default task", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (service *Service) DeleteDefaultTask(ctx context.Context, projectKey string
 
 	response, err := service.client.DeleteDefaultTaskWithResponse(ctx, trimmedProject, trimmedTaskID)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete project default task", err)
+		return apperrors.Transport("failed to delete project default task", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)

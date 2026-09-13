@@ -43,6 +43,18 @@ import (
 	qualityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/quality"
 )
 
+// Run hooks traverse the tree, root first.
+//
+// Cobra runs only the nearest PersistentPreRun by default, so a subcommand
+// group with a hook of its own silently replaced the root's. bb bulk has one,
+// for its deprecation warning, and none of what the root sets up before a
+// command -- --full-error-body among it -- reached plan, apply or status
+// (#574). Set once, at package load: it is process-wide, and assigning it per
+// invocation would race in the parallel command tests.
+func init() {
+	cobra.EnableTraverseRunHooks = true
+}
+
 func NewRootCommand() *cobra.Command {
 	return NewRootCommandWithOverrides(config.Overrides{})
 }

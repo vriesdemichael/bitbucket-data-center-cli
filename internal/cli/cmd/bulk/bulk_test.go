@@ -74,16 +74,21 @@ func TestBulkCommandErrorPaths(t *testing.T) {
 	})
 }
 
+// TestParseErrorKindCoverage reads back every kind an apply-status artifact
+// can record. It used to call parseErrorKind and discard the answer, so the
+// missing cancelled and unknown_outcome cases -- reported as conflict, exit 5
+// -- went unnoticed (#574).
 func TestParseErrorKindCoverage(t *testing.T) {
 	t.Parallel()
 
-	kinds := []string{
-		"authentication", "authorization", "validation", "not_found",
-		"conflict", "transient", "permanent", "not_implemented", "internal",
-		"unknown",
+	for _, kind := range apperrors.Kinds() {
+		if got := parseErrorKind(string(kind)); got != kind {
+			t.Errorf("parseErrorKind(%q) = %q", kind, got)
+		}
 	}
-	for _, k := range kinds {
-		_ = parseErrorKind(k)
+
+	if got := parseErrorKind("unknown"); got != "" {
+		t.Errorf("a word that is not a kind parsed as %q", got)
 	}
 }
 

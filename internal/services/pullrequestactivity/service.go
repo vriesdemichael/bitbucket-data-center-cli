@@ -71,7 +71,7 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, pull
 			response, err := service.client.GetActivitiesWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID,
 				&openapigenerated.GetActivitiesParams{Start: &startValue, Limit: &limitValue})
 			if err != nil {
-				return openapi.Page[Activity]{}, apperrors.New(apperrors.KindTransient, "failed to list pull request activities", err)
+				return openapi.Page[Activity]{}, apperrors.Transport("failed to list pull request activities", err)
 			}
 			if response.StatusCode() >= 400 {
 				return openapi.Page[Activity]{}, mapActivityStatusError(response.StatusCode(), response.Body)

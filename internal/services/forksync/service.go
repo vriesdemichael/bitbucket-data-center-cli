@@ -30,7 +30,7 @@ func (s *Service) GetSyncStatus(ctx context.Context, projectKey, repoSlug string
 	// GetStatus2 is /tsv/latest/status.
 	resp, err := s.client.GetStatusWithResponse(ctx, proj, slug, nil)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get fork synchronization status", err)
+		return nil, apperrors.Transport("failed to get fork synchronization status", err)
 	}
 	if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func (s *Service) SetEnabled(ctx context.Context, projectKey, repoSlug string, e
 
 	resp, err := s.client.SetEnabledWithResponse(ctx, proj, slug, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to update fork synchronization settings", err)
+		return nil, apperrors.Transport("failed to update fork synchronization settings", err)
 	}
 	if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func (s *Service) Synchronize(ctx context.Context, projectKey, repoSlug, refID, 
 
 	resp, err := s.client.SynchronizeWithResponse(ctx, proj, slug, body)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to trigger fork synchronization", err)
+		return apperrors.Transport("failed to trigger fork synchronization", err)
 	}
 	return openapi.MapStatusError(resp.StatusCode(), resp.Body)
 }

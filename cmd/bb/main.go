@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
@@ -27,7 +31,23 @@ func main() {
 	// because the version is stamped into this package at build time and the
 	// ~250 sites that write an envelope have no reason to know it.
 	jsonoutput.SetReleaseVersion(Version)
-	os.Exit(executeRootCommand(cmd, os.Args[1:], os.Stdout, os.Stderr))
+
+	// An interrupt cancels the command's context instead of killing the
+	// process, so a request in flight ends through the transport and is
+	// reported as what it was: cancelled, exit 12, or unknown_outcome for a
+	// mutation that had already reached the server (#574). Only the first is
+	// caught. stop restores the default, so a second interrupt still ends a
+	// command that is not listening to its context.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-ctx.Done()
+		stop()
+	}()
+	cmd.SetContext(ctx)
+
+	code := executeRootCommand(cmd, os.Args[1:], os.Stdout, os.Stderr)
+	stop()
+	os.Exit(code)
 }
 
 func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io.Writer) int {
@@ -52,6 +72,7 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 	if executeErr == nil {
 		executeErr = cli.UnknownSubcommandError(rootCmd, args)
 	}
+	executeErr = interrupted(rootCmd, executeErr)
 
 	if err := cli.ClassifyUsageError(executeErr); err != nil {
 		emitCommandFailureDiagnostic(err, stderr)
@@ -81,6 +102,31 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 	}
 
 	return 0
+}
+
+// interrupted reports a failure that followed an interrupt as the interrupt.
+//
+// The transport classifies a request an interrupt cut short, but a command
+// can fail somewhere else -- a git subprocess, a prompt, the gap between two
+// requests -- and what it returns then is a consequence of the interrupt, not
+// a failure of its own. unknown_outcome is kept: it is the more specific
+// answer, and the one that says to check before running the command again.
+func interrupted(rootCmd *cobra.Command, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	ctx := rootCmd.Context()
+	if ctx == nil || !errors.Is(ctx.Err(), context.Canceled) {
+		return err
+	}
+
+	switch apperrors.KindOf(err) {
+	case apperrors.KindCancelled, apperrors.KindUnknownOutcome:
+		return err
+	default:
+		return apperrors.New(apperrors.KindCancelled, "interrupted", err)
+	}
 }
 
 // jsonRequested reports whether machine output was asked for.

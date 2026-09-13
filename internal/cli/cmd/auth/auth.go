@@ -660,7 +660,7 @@ func resolveIdentity(ctx context.Context, cfg config.AppConfig, newUsersClient f
 
 	response, err := client.GetUsers2WithResponse(ctx, nil)
 	if err != nil {
-		return result.User{}, apperrors.New(apperrors.KindTransient, "identity lookup failed", err)
+		return result.User{}, apperrors.Transport("identity lookup failed", err)
 	}
 
 	if response.StatusCode() < 200 || response.StatusCode() >= 300 {
@@ -764,7 +764,7 @@ func discoverAliases(ctx context.Context, cfg config.AppConfig, newReposClient f
 		Permission: &permission,
 	})
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "alias discovery failed", err)
+		return nil, apperrors.Transport("alias discovery failed", err)
 	}
 
 	aliases, found, err := discoverAliasesFromRepositoryPage(recent.StatusCode(), recent.Body, recent.ApplicationjsonCharsetUTF8200)
@@ -777,7 +777,7 @@ func discoverAliases(ctx context.Context, cfg config.AppConfig, newReposClient f
 
 	all, err := client.GetRepositories1WithResponse(ctx, &openapigenerated.GetRepositories1Params{Limit: &limit})
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "alias discovery failed", err)
+		return nil, apperrors.Transport("alias discovery failed", err)
 	}
 
 	aliases, _, err = discoverAliasesFromRepositoryPage(all.StatusCode(), all.Body, all.ApplicationjsonCharsetUTF8200)

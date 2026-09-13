@@ -83,7 +83,7 @@ func (service *Service) ListRepositoryPermissionUsers(ctx context.Context, repo 
 			response, err := service.client.GetUsersWithAnyPermission2WithResponse(ctx, repo.ProjectKey, repo.Slug,
 				&openapigenerated.GetUsersWithAnyPermission2Params{Start: &startValue, Limit: &limitValue})
 			if err != nil {
-				return openapi.Page[PermissionUser]{}, apperrors.New(apperrors.KindTransient, "failed to list repository permissions", err)
+				return openapi.Page[PermissionUser]{}, apperrors.Transport("failed to list repository permissions", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[PermissionUser]{}, err
@@ -128,7 +128,7 @@ func (service *Service) ListRepositoryPermissionGroups(ctx context.Context, repo
 			response, err := service.client.GetGroupsWithAnyPermission2WithResponse(ctx, repo.ProjectKey, repo.Slug,
 				&openapigenerated.GetGroupsWithAnyPermission2Params{Start: &startValue, Limit: &limitValue})
 			if err != nil {
-				return openapi.Page[PermissionGroup]{}, apperrors.New(apperrors.KindTransient, "failed to list repository group permissions", err)
+				return openapi.Page[PermissionGroup]{}, apperrors.Transport("failed to list repository group permissions", err)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return openapi.Page[PermissionGroup]{}, err
@@ -178,7 +178,7 @@ func (service *Service) GrantRepositoryUserPermission(ctx context.Context, repo 
 		Permission: openapigenerated.SetPermissionForUserParamsPermission(normalizedPermission),
 	})
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to grant repository permission", err)
+		return apperrors.Transport("failed to grant repository permission", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -197,7 +197,7 @@ func (service *Service) RevokeRepositoryUserPermission(ctx context.Context, repo
 		Name: trimmedUser,
 	})
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to revoke repository user permission", err)
+		return apperrors.Transport("failed to revoke repository user permission", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -222,7 +222,7 @@ func (service *Service) GrantRepositoryGroupPermission(ctx context.Context, repo
 		Permission: openapigenerated.SetPermissionForGroupParamsPermission(normalizedPermission),
 	})
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to grant repository group permission", err)
+		return apperrors.Transport("failed to grant repository group permission", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -241,7 +241,7 @@ func (service *Service) RevokeRepositoryGroupPermission(ctx context.Context, rep
 		Name: trimmedGroup,
 	})
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to revoke repository group permission", err)
+		return apperrors.Transport("failed to revoke repository group permission", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -254,7 +254,7 @@ func (service *Service) ListRepositoryWebhooks(ctx context.Context, repo Reposit
 
 	response, err := service.client.FindWebhooks1WithResponse(ctx, repo.ProjectKey, repo.Slug, nil)
 	if err != nil {
-		return WebhookList{}, apperrors.New(apperrors.KindTransient, "failed to list repository webhooks", err)
+		return WebhookList{}, apperrors.Transport("failed to list repository webhooks", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return WebhookList{}, err
@@ -293,7 +293,7 @@ func (service *Service) CreateRepositoryWebhook(ctx context.Context, repo Reposi
 
 	response, err := service.client.CreateWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to create repository webhook", err)
+		return nil, apperrors.Transport("failed to create repository webhook", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -322,7 +322,7 @@ func (service *Service) DeleteRepositoryWebhook(ctx context.Context, repo Reposi
 
 	response, err := service.client.DeleteWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedWebhookID)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete repository webhook", err)
+		return apperrors.Transport("failed to delete repository webhook", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -335,12 +335,12 @@ func (service *Service) GetRepositoryPullRequestSettings(ctx context.Context, re
 
 	response, err := service.client.GetPullRequestSettings1(ctx, repo.ProjectKey, repo.Slug)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get pull request settings", err)
+		return nil, apperrors.Transport("failed to get pull request settings", err)
 	}
 	body, readErr := io.ReadAll(response.Body)
 	_ = response.Body.Close()
 	if readErr != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to read pull request settings response", readErr)
+		return nil, apperrors.Transport("failed to read pull request settings response", readErr)
 	}
 
 	if err := openapi.MapStatusError(response.StatusCode, body); err != nil {
@@ -370,12 +370,12 @@ func (service *Service) UpdateRepositoryPullRequestSettings(ctx context.Context,
 
 	response, err := service.client.UpdatePullRequestSettings1WithBody(ctx, repo.ProjectKey, repo.Slug, "application/json", bytes.NewReader(rawPayload))
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to update pull request settings", err)
+		return nil, apperrors.Transport("failed to update pull request settings", err)
 	}
 	body, readErr := io.ReadAll(response.Body)
 	_ = response.Body.Close()
 	if readErr != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to read pull request settings update response", readErr)
+		return nil, apperrors.Transport("failed to read pull request settings update response", readErr)
 	}
 	if err := openapi.MapStatusError(response.StatusCode, body); err != nil {
 		return nil, err
@@ -449,7 +449,7 @@ func (service *Service) ListRequiredBuildsMergeChecks(ctx context.Context, repo 
 
 	response, err := service.client.GetPageOfRequiredBuildsMergeChecksWithResponse(ctx, repo.ProjectKey, repo.Slug, nil)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list required builds merge checks", err)
+		return nil, apperrors.Transport("failed to list required builds merge checks", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -486,7 +486,7 @@ func (service *Service) GetRepositoryAutoMergeSettings(ctx context.Context, repo
 	}
 	response, err := service.client.Get5WithResponse(ctx, repo.ProjectKey, repo.Slug)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get auto-merge settings", err)
+		return nil, apperrors.Transport("failed to get auto-merge settings", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -503,7 +503,7 @@ func (service *Service) UpdateRepositoryAutoMergeSettings(ctx context.Context, r
 	}
 	response, err := service.client.Set1WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to update auto-merge settings", err)
+		return nil, apperrors.Transport("failed to update auto-merge settings", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -517,7 +517,7 @@ func (service *Service) DeleteRepositoryAutoMergeSettings(ctx context.Context, r
 	}
 	response, err := service.client.Delete5WithResponse(ctx, repo.ProjectKey, repo.Slug)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete auto-merge settings", err)
+		return apperrors.Transport("failed to delete auto-merge settings", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -528,7 +528,7 @@ func (service *Service) GetRepositoryAutoDeclineSettings(ctx context.Context, re
 	}
 	response, err := service.client.GetAutoDeclineSettings1WithResponse(ctx, repo.ProjectKey, repo.Slug)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get auto-decline settings", err)
+		return nil, apperrors.Transport("failed to get auto-decline settings", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -548,7 +548,7 @@ func (service *Service) UpdateRepositoryAutoDeclineSettings(ctx context.Context,
 	}
 	response, err := service.client.SetAutoDeclineSettings1WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to update auto-decline settings", err)
+		return nil, apperrors.Transport("failed to update auto-decline settings", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -562,7 +562,7 @@ func (service *Service) DeleteRepositoryAutoDeclineSettings(ctx context.Context,
 	}
 	response, err := service.client.DeleteAutoDeclineSettings1WithResponse(ctx, repo.ProjectKey, repo.Slug)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete auto-decline settings", err)
+		return apperrors.Transport("failed to delete auto-decline settings", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -573,7 +573,7 @@ func (service *Service) ListRepositoryLabels(ctx context.Context, repo Repositor
 	}
 	response, err := service.client.GetAllLabelsForRepositoryWithResponse(ctx, repo.ProjectKey, repo.Slug)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list labels", err)
+		return nil, apperrors.Transport("failed to list labels", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -608,7 +608,7 @@ func (service *Service) AddRepositoryLabel(ctx context.Context, repo RepositoryR
 	}
 	response, err := service.client.AddLabelWithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to add repository label", err)
+		return apperrors.Transport("failed to add repository label", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -623,7 +623,7 @@ func (service *Service) RemoveRepositoryLabel(ctx context.Context, repo Reposito
 	}
 	response, err := service.client.RemoveLabelWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmed)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to remove repository label", err)
+		return apperrors.Transport("failed to remove repository label", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -635,7 +635,7 @@ func (service *Service) WatchRepository(ctx context.Context, repo RepositoryRef)
 	body := openapigenerated.Watch2JSONRequestBody{}
 	response, err := service.client.Watch2WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to watch repository", err)
+		return apperrors.Transport("failed to watch repository", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -646,7 +646,7 @@ func (service *Service) UnwatchRepository(ctx context.Context, repo RepositoryRe
 	}
 	response, err := service.client.Unwatch2WithResponse(ctx, repo.ProjectKey, repo.Slug)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to unwatch repository", err)
+		return apperrors.Transport("failed to unwatch repository", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -657,7 +657,7 @@ func (service *Service) ListDefaultTasks(ctx context.Context, repo RepositoryRef
 	}
 	response, err := service.client.GetDefaultTasks1WithResponse(ctx, repo.ProjectKey, repo.Slug, nil)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list default tasks", err)
+		return nil, apperrors.Transport("failed to list default tasks", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -691,7 +691,7 @@ func (service *Service) AddDefaultTask(ctx context.Context, repo RepositoryRef, 
 
 	response, err := service.client.AddDefaultTask1WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to add default task", err)
+		return nil, apperrors.Transport("failed to add default task", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -747,7 +747,7 @@ func (service *Service) UpdateDefaultTask(ctx context.Context, repo RepositoryRe
 
 	response, err := service.client.UpdateDefaultTask1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to update default task", err)
+		return nil, apperrors.Transport("failed to update default task", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -800,7 +800,7 @@ func (service *Service) DeleteDefaultTask(ctx context.Context, repo RepositoryRe
 	}
 	response, err := service.client.DeleteDefaultTask1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete default task", err)
+		return apperrors.Transport("failed to delete default task", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -815,7 +815,7 @@ func (service *Service) GetWebhook(ctx context.Context, repo RepositoryRef, id s
 	}
 	response, err := service.client.GetWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, nil)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get webhook", err)
+		return nil, apperrors.Transport("failed to get webhook", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -836,7 +836,7 @@ func (service *Service) GetWebhook(ctx context.Context, repo RepositoryRef, id s
 func (service *Service) webhookForUpdate(ctx context.Context, repo RepositoryRef, id string) (openapigenerated.RestWebhook, error) {
 	response, err := service.client.GetWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, id, nil)
 	if err != nil {
-		return openapigenerated.RestWebhook{}, apperrors.New(apperrors.KindTransient, "failed to read the webhook before updating it", err)
+		return openapigenerated.RestWebhook{}, apperrors.Transport("failed to read the webhook before updating it", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestWebhook{}, err
@@ -872,7 +872,7 @@ func (service *Service) UpdateWebhook(ctx context.Context, repo RepositoryRef, i
 
 	response, err := service.client.UpdateWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to update webhook", err)
+		return nil, apperrors.Transport("failed to update webhook", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -926,7 +926,7 @@ func (service *Service) TestWebhook(ctx context.Context, repo RepositoryRef, id 
 
 	response, err := service.client.TestWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, params, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to test webhook", err)
+		return nil, apperrors.Transport("failed to test webhook", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -969,7 +969,7 @@ func (service *Service) GetWebhookStatistics(ctx context.Context, repo Repositor
 	}
 	response, err := service.client.GetStatistics1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, nil)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get statistics", err)
+		return nil, apperrors.Transport("failed to get statistics", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -991,7 +991,7 @@ func (service *Service) GetWebhookStatisticsSummary(ctx context.Context, repo Re
 	}
 	response, err := service.client.GetStatisticsSummary1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get statistics summary", err)
+		return nil, apperrors.Transport("failed to get statistics summary", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err

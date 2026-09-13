@@ -167,7 +167,7 @@ func (service *Service) CountTasks(ctx context.Context, repository RepositoryRef
 	count := "true"
 	response, err := service.client.GetComments1WithResponse(ctx, repository.ProjectKey, repository.Slug, pullRequestID, &openapigenerated.GetComments1Params{Count: &count})
 	if err != nil {
-		return TaskCounts{}, apperrors.New(apperrors.KindTransient, "failed to count pull request tasks", err)
+		return TaskCounts{}, apperrors.Transport("failed to count pull request tasks", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return TaskCounts{}, err
@@ -262,13 +262,13 @@ const jsonContentType = "application/json"
 // Bitbucket sends them as strings while the generated model expects objects.
 func decodeWrittenComment(response *http.Response, requestErr error, failureMessage string, echo openapigenerated.RestComment) (openapigenerated.RestComment, error) {
 	if requestErr != nil {
-		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, failureMessage, requestErr)
+		return openapigenerated.RestComment{}, apperrors.Transport(failureMessage, requestErr)
 	}
 
 	raw, readErr := io.ReadAll(response.Body)
 	_ = response.Body.Close()
 	if readErr != nil {
-		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, failureMessage, readErr)
+		return openapigenerated.RestComment{}, apperrors.Transport(failureMessage, readErr)
 	}
 
 	if err := openapi.MapStatusError(response.StatusCode, raw); err != nil {
@@ -365,7 +365,7 @@ func (service *Service) Delete(ctx context.Context, target Target, commentID str
 	if strings.TrimSpace(target.CommitID) != "" {
 		response, err := service.client.DeleteCommentWithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.CommitID, trimmedCommentID, &openapigenerated.DeleteCommentParams{Version: versionParam})
 		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to delete commit comment", err)
+			return nil, apperrors.Transport("failed to delete commit comment", err)
 		}
 		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return nil, err
@@ -376,7 +376,7 @@ func (service *Service) Delete(ctx context.Context, target Target, commentID str
 	if target.Blocker {
 		response, err := service.client.DeleteComment1WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, &openapigenerated.DeleteComment1Params{Version: versionParam})
 		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to delete pull request blocker comment", err)
+			return nil, apperrors.Transport("failed to delete pull request blocker comment", err)
 		}
 		if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 			return nil, err
@@ -386,7 +386,7 @@ func (service *Service) Delete(ctx context.Context, target Target, commentID str
 
 	response, err := service.client.DeleteComment2WithResponse(ctx, target.Repository.ProjectKey, target.Repository.Slug, target.PullRequestID, trimmedCommentID, &openapigenerated.DeleteComment2Params{Version: versionParam})
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to delete pull request comment", err)
+		return nil, apperrors.Transport("failed to delete pull request comment", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -443,7 +443,7 @@ func (service *Service) React(ctx context.Context, repo RepositoryRef, prID stri
 
 	response, err := service.client.React1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedPrID, trimmedCommentID, trimmedEmoticon)
 	if err != nil {
-		return openapigenerated.RestUserReaction{}, apperrors.New(apperrors.KindTransient, "failed to add reaction", err)
+		return openapigenerated.RestUserReaction{}, apperrors.Transport("failed to add reaction", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestUserReaction{}, err
@@ -474,7 +474,7 @@ func (service *Service) UnReact(ctx context.Context, repo RepositoryRef, prID st
 
 	response, err := service.client.UnReact1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedPrID, trimmedCommentID, trimmedEmoticon)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to remove reaction", err)
+		return apperrors.Transport("failed to remove reaction", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -495,7 +495,7 @@ func (service *Service) ApplySuggestion(ctx context.Context, repo RepositoryRef,
 
 	response, err := service.client.ApplySuggestionWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedPrID, trimmedCommentID, req)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to apply suggestion", err)
+		return apperrors.Transport("failed to apply suggestion", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -593,13 +593,13 @@ type commentPage struct {
 // comment until now, so nothing it made ever came back with one.
 func decodeCommentPage(response *http.Response, requestErr error, failureMessage string) (commentPage, error) {
 	if requestErr != nil {
-		return commentPage{}, apperrors.New(apperrors.KindTransient, failureMessage, requestErr)
+		return commentPage{}, apperrors.Transport(failureMessage, requestErr)
 	}
 
 	raw, readErr := io.ReadAll(response.Body)
 	_ = response.Body.Close()
 	if readErr != nil {
-		return commentPage{}, apperrors.New(apperrors.KindTransient, failureMessage, readErr)
+		return commentPage{}, apperrors.Transport(failureMessage, readErr)
 	}
 
 	if err := openapi.MapStatusError(response.StatusCode, raw); err != nil {
@@ -639,13 +639,13 @@ func decodeCommentPage(response *http.Response, requestErr error, failureMessage
 // edit, reported as a success. Resolving a blocker always takes that path.
 func decodeReadComment(response *http.Response, requestErr error, failureMessage string) (openapigenerated.RestComment, error) {
 	if requestErr != nil {
-		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, failureMessage, requestErr)
+		return openapigenerated.RestComment{}, apperrors.Transport(failureMessage, requestErr)
 	}
 
 	raw, readErr := io.ReadAll(response.Body)
 	_ = response.Body.Close()
 	if readErr != nil {
-		return openapigenerated.RestComment{}, apperrors.New(apperrors.KindTransient, failureMessage, readErr)
+		return openapigenerated.RestComment{}, apperrors.Transport(failureMessage, readErr)
 	}
 
 	if err := openapi.MapStatusError(response.StatusCode, raw); err != nil {

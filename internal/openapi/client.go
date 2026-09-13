@@ -12,6 +12,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/outcome"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/retrypolicy"
 )
 
@@ -43,7 +44,7 @@ func NewClientWithResponsesFromConfig(cfg config.AppConfig) (*openapigenerated.C
 
 	return openapigenerated.NewClientWithResponses(
 		serverURL,
-		openapigenerated.WithHTTPClient(httpClient),
+		openapigenerated.WithHTTPClient(classifyingDoer{client: httpClient}),
 		openapigenerated.WithRequestEditorFn(func(_ context.Context, request *http.Request) error {
 			if cfg.BitbucketToken != "" {
 				request.Header.Set("Authorization", "Bearer "+cfg.BitbucketToken)
@@ -55,6 +56,41 @@ func NewClientWithResponsesFromConfig(cfg config.AppConfig) (*openapigenerated.C
 			return nil
 		}),
 	)
+}
+
+// classifyingDoer classifies every exchange the generated client makes, so a
+// command on it reports what httpclient's do: a rejected certificate as
+// permanent, a lost mutation as unknown_outcome (#574).
+//
+// It wraps the http.Client rather than living in retryTransport because the
+// client stands between the two. When its Timeout fires it replaces whatever
+// the transport returned with an error of its own, so a classification made
+// inside the transport would not reach the service that reports it.
+type classifyingDoer struct {
+	client *http.Client
+}
+
+func (doer classifyingDoer) Do(request *http.Request) (*http.Response, error) {
+	tracked, exchange := outcome.Track(request)
+
+	response, err := doer.client.Do(tracked)
+	if err != nil {
+		return nil, exchange.Classify(err)
+	}
+
+	// Answered here rather than by the service that reads the status: the
+	// service has the status and not the method, and a gateway's 502 or 504
+	// means something different for a request that is never replayed.
+	if exchange.Status(response.StatusCode, nil) != nil {
+		body, _ := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+
+		return nil, exchange.Status(response.StatusCode, MapStatusError(response.StatusCode, body))
+	}
+
+	response.Body = exchange.Body(response.Body)
+
+	return response, nil
 }
 
 // errBodyNotReplayable is returned rather than a response whose body has
@@ -115,7 +151,10 @@ func (transport *retryTransport) RoundTrip(request *http.Request) (*http.Respons
 				"duration_ms": time.Since(started).Milliseconds(),
 				"error":       err.Error(),
 			}
-			if attempt < transport.retries && retrypolicy.Replayable(request.Method) {
+			// Classified only to decide: the doer above classifies what the caller
+			// sees. A certificate the server will keep presenting is not retried.
+			if attempt < transport.retries && retrypolicy.Replayable(request.Method) &&
+				outcome.Retriable(outcome.Of(request).Classify(err)) {
 				transport.logger.Warn("http request failed", fields)
 				if sleepErr := sleepWithContext(request.Context(), time.Duration(attempt+1)*transport.baseBackoff); sleepErr != nil {
 					return nil, sleepErr
