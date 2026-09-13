@@ -254,9 +254,8 @@ func (h *liveHarness) seedRepositories(ctx context.Context, projectKey, projectN
 	seeded := seededProject{Key: projectKey, Name: projectName, Repos: make([]seededRepository, 0, repositoryCount)}
 
 	for index := 0; index < repositoryCount; index++ {
-		// A counter rather than the clock: two tests seeding at the same
-		// instant used to pick the same name, which only mattered once they
-		// could run at the same instant.
+		// A random suffix rather than the clock: two tests seeding at the same
+		// instant used to pick the same name (ADR-085).
 		repoName := fmt.Sprintf("lt-repo-%d-%s", index+1, uniqueSuffix())
 		scmID := "git"
 		forkable := true

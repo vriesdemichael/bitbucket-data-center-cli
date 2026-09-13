@@ -452,7 +452,8 @@ func TestLiveCLIProjectCreateDryRunNoSideEffect(t *testing.T) {
 	// with the suite running in parallel, another test seeding one between the
 	// two calls made the listings differ for a reason that had nothing to do
 	// with the dry run.
-	newKey := "DRY" + uniqueSuffix()
+	// Upper-cased, as Bitbucket stores a project key (ADR-085).
+	newKey := strings.ToUpper("DRY" + uniqueSuffix())
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "project", "create", newKey, "--name", "Dry Run Project")
 	if err != nil {
 		t.Fatalf("project create dry-run failed: %v\noutput: %s", err, dryRunOutput)
