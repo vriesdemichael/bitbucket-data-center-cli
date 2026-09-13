@@ -354,6 +354,11 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			// Neither annotation endpoint pages or takes a cap, so both answer
+			// with every annotation. --limit did nothing: the listing printed all
+			// of them and still reported reaching the limit.
+			annotations = paging.Truncate(reportPaging, annotations)
+
 			if d.JSONEnabled() {
 				return d.WriteJSONList(cmd.OutOrStdout(), annotationsFrom(annotations), paging.LimitReached(reportPaging, len(annotations)))
 			}

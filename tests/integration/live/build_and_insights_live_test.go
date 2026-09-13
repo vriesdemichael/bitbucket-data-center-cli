@@ -133,6 +133,24 @@ func TestLiveInsightsAnnotationSet(t *testing.T) {
 	if !strings.Contains(listOutput, "annotation from the live suite") {
 		t.Fatalf("expected the annotation just set in the listing, got: %s", listOutput)
 	}
+
+	// Neither annotation endpoint pages, so --limit did nothing: a listing
+	// asked for one of two printed both and still reported reaching the
+	// limit (#573).
+	secondOutput, err := executeLiveCLI(t, "--json", "insights", "annotation", "set", commit, reportKey, "live-annotation-2",
+		"--message", "a second annotation from the live suite", "--severity", "LOW", "--type", "CODE_SMELL",
+		"--path", "file-1.txt", "--line", "2", "--link", "http://localhost:7990/annotation/2", "--repo", repoRef)
+	if err != nil {
+		t.Fatalf("second insights annotation set failed: %v\noutput: %s", err, secondOutput)
+	}
+
+	cutOutput, err := executeLiveCLI(t, "--json", "insights", "annotation", "list", commit, reportKey, "--repo", repoRef, "--limit", "1")
+	if err != nil {
+		t.Fatalf("insights annotation list --limit 1 failed: %v\noutput: %s", err, cutOutput)
+	}
+	if got := strings.Count(cutOutput, `"externalId"`); got != 1 || !strings.Contains(cutOutput, `"limitReached": true`) {
+		t.Fatalf("a listing of two annotations under --limit 1 returned %d and should say it stopped:\n%s", got, cutOutput)
+	}
 }
 
 // TestLiveBranchModelInspect covers bb branch model inspect, which classifies a
