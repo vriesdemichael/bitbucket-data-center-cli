@@ -203,6 +203,45 @@ func kindFromException(body []byte) (apperrors.Kind, bool) {
 	return "", false
 }
 
+// jsonMappingException is the exception Bitbucket's JSON serialiser raises.
+const jsonMappingException = "com.fasterxml.jackson.databind.JsonMappingException"
+
+// FailedWritingAnswer reports a 400 Bitbucket sent because writing its answer
+// failed, not because it refused the request.
+//
+// Seen answering a webhook create: the serialiser tripped over the
+// configuration it was echoing while it was still being changed, and threw
+// "(was java.util.ConcurrentModificationException) (through reference chain:
+// ...RestWebhook["configuration"])". The webhook was stored by then. The same
+// exception also answers a body Bitbucket could not parse, which is a real
+// refusal, so the nested ConcurrentModificationException is what tells the two
+// apart: a Java class name, which Bitbucket does not reword the way it rewords
+// a message.
+func FailedWritingAnswer(status int, body []byte) bool {
+	if status != http.StatusBadRequest {
+		return false
+	}
+
+	var envelope struct {
+		Errors []struct {
+			Message       string `json:"message"`
+			ExceptionName string `json:"exceptionName"`
+		} `json:"errors"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(body), &envelope); err != nil {
+		return false
+	}
+
+	for _, one := range envelope.Errors {
+		if strings.TrimSpace(one.ExceptionName) == jsonMappingException &&
+			strings.Contains(one.Message, "java.util.ConcurrentModificationException") {
+			return true
+		}
+	}
+
+	return false
+}
+
 // MissingPayload says what a 2xx that carried no usable payload means.
 //
 // It answers one question ten call sites used to answer four different ways:

@@ -282,15 +282,36 @@ func (service *Service) ListRepositoryWebhooks(ctx context.Context, repo Reposit
 	return WebhookList{Count: count, Payload: payload}, nil
 }
 
+// CreateRepositoryWebhook creates a repository webhook, and looks for it when
+// the create's outcome is unknown (see webhookfields.CreateChecked).
 func (service *Service) CreateRepositoryWebhook(ctx context.Context, repo RepositoryRef, input WebhookCreateInput) (any, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-	body, err := webhookfields.NewCreateBody(input)
+
+	return webhookfields.CreateChecked(ctx, input,
+		func(ctx context.Context, start, limit int) (openapi.Page[json.RawMessage], error) {
+			return service.repositoryWebhookPage(ctx, repo, start, limit)
+		},
+		func(ctx context.Context, body openapigenerated.RestWebhook) (any, error) {
+			return service.createRepositoryWebhook(ctx, repo, body)
+		})
+}
+
+// repositoryWebhookPage reads one page of a repository's webhooks.
+func (service *Service) repositoryWebhookPage(ctx context.Context, repo RepositoryRef, start, limit int) (openapi.Page[json.RawMessage], error) {
+	response, err := service.client.FindWebhooks1WithResponse(ctx, repo.ProjectKey, repo.Slug, nil, openapi.PageQuery(start, limit))
 	if err != nil {
-		return nil, err
+		return openapi.Page[json.RawMessage]{}, apperrors.Transport("failed to list repository webhooks", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapi.Page[json.RawMessage]{}, err
 	}
 
+	return webhookfields.DecodePage(response.Body)
+}
+
+func (service *Service) createRepositoryWebhook(ctx context.Context, repo RepositoryRef, body openapigenerated.RestWebhook) (any, error) {
 	response, err := service.client.CreateWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {
 		return nil, apperrors.Transport("failed to create repository webhook", err)

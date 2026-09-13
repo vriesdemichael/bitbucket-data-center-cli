@@ -10,10 +10,15 @@ decision: >
 
   unknown_outcome is exit 13 and means the request reached the server and no usable answer came
   back, so bb cannot say whether it was applied: a mutation whose connection was lost, timed out or
-  was interrupted after it was sent, or that a gateway answered with 502 or 504. It sits apart from
+  was interrupted after it was sent, that a gateway answered with 502 or 504, or that Bitbucket
+  answered with an error it raised while writing the answer. It sits apart from
   transient, which invites a retry; from permanent, which says the work did not happen; and from
   cancelled, exit 12, an interrupt that stopped the request before the server could act on it. A
   mutation that may have been applied has to be checked rather than repeated.
+
+  Where bb can tell what a mutation made, it makes that check itself. A webhook create lists the
+  scope's webhooks before and after, and one new webhook matching the request is reported as
+  created; anything else stays unknown_outcome. The mutation is never sent again.
 agent_instructions: >
   Map transport and service errors into canonical categories before returning from workflows.
   Do not report a failed mutation as transient when its outcome is unknown: exit 10 tells a
@@ -26,4 +31,9 @@ rationale: >
 rejected_alternatives:
   - alternative: Free-form error strings and ad-hoc exit codes
     reason: Breaks machine consumption and makes behavior unpredictable.
+  - alternative: Send the mutation again when the check does not find what it made
+    reason: >
+      A request that timed out can still be in progress, so not finding its result is not proof
+      it will not land, and a second send then duplicates it: the failure #454 removed from the
+      retry policy.
 provenance: guided-ai

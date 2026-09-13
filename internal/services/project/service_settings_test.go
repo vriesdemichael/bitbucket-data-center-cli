@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestProjectWebhookService(t *testing.T) {
@@ -37,26 +38,12 @@ func TestProjectWebhookService(t *testing.T) {
 		}
 	})
 
-	t.Run("CreateWebhook", func(t *testing.T) {
-		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			if r.Method == http.MethodPost && r.URL.Path == "/rest/api/latest/projects/PRJ/webhooks" {
-				w.WriteHeader(http.StatusCreated)
-				_, _ = w.Write([]byte(`{"id":123,"name":"wh","url":"http://url","active":true}`))
-				return
-			}
-			http.NotFound(w, r)
-		})
+	// A create, and what it does when its answer is lost, run against
+	// Bitbucket in the live suite. What is left here is what the service
+	// refuses before it sends anything.
+	t.Run("CreateWebhook refuses before sending", func(t *testing.T) {
+		service := newProjectTestService(t, testsupport.UnreachedHandler(t))
 
-		res, err := service.CreateProjectWebhook(context.Background(), "PRJ", WebhookCreateInput{Name: "wh", URL: "http://url", Events: []string{"repo:refs_changed"}, Active: true})
-		if err != nil {
-			t.Fatalf("unexpected create error: %v", err)
-		}
-		if res == nil {
-			t.Fatal("expected non-nil created webhook")
-		}
-
-		// Validation error
 		if _, err := service.CreateProjectWebhook(context.Background(), "", WebhookCreateInput{Name: "wh", URL: "http://url", Active: true}); err == nil {
 			t.Fatal("expected validation error for empty project key")
 		}
