@@ -41,18 +41,20 @@ func TestLiveWebhookCreateLooksBeforeReportingAnUnknownOutcome(t *testing.T) {
 	for _, scope := range []struct {
 		name     string
 		listPath string
-		create   func(name string) []string
+		create   func(t *testing.T, name string) (string, error)
 	}{
 		{
 			name:     "repository",
 			listPath: fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/webhooks", seeded.Key, repo.Slug),
-			create:   func(name string) []string { return []string{"--json", "webhook", "create", name, receiver} },
+			create: func(t *testing.T, name string) (string, error) {
+				return executeLiveCLI(t, "--json", "webhook", "create", name, receiver)
+			},
 		},
 		{
 			name:     "project",
 			listPath: fmt.Sprintf("/rest/api/latest/projects/%s/webhooks", seeded.Key),
-			create: func(name string) []string {
-				return []string{"--json", "project", "webhook", "create", seeded.Key, name, receiver}
+			create: func(t *testing.T, name string) (string, error) {
+				return executeLiveCLI(t, "--json", "project", "webhook", "create", seeded.Key, name, receiver)
 			},
 		},
 	} {
@@ -60,7 +62,7 @@ func TestLiveWebhookCreateLooksBeforeReportingAnUnknownOutcome(t *testing.T) {
 			t.Setenv("BITBUCKET_URL", loseWebhookCreateAnswer(t, harness.config.BitbucketURL, true))
 			name := testsupport.UniqueName("lost-answer-")
 
-			output, err := executeLiveCLI(t, scope.create(name)...)
+			output, err := scope.create(t, name)
 			if err != nil {
 				t.Fatalf("Bitbucket stored the webhook and bb reported a failure: %v\n%s", err, output)
 			}
@@ -76,7 +78,7 @@ func TestLiveWebhookCreateLooksBeforeReportingAnUnknownOutcome(t *testing.T) {
 			t.Setenv("BITBUCKET_URL", loseWebhookCreateAnswer(t, harness.config.BitbucketURL, false))
 			name := testsupport.UniqueName("never-sent-")
 
-			output, err := executeLiveCLI(t, scope.create(name)...)
+			output, err := scope.create(t, name)
 			if !apperrors.IsKind(err, apperrors.KindUnknownOutcome) {
 				t.Fatalf("got %v, want unknown_outcome\n%s", err, output)
 			}
