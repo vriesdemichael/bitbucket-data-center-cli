@@ -2,6 +2,7 @@ package prcmd
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	jiraservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/jira"
@@ -35,6 +36,9 @@ func init() {
 
 	listEnums := repositoryEnums("pullRequests.")
 	listEnums["reviewSummaries.countsSource"] = countsSources
+	// The slice --state is registered with, so the published vocabulary and
+	// the accepted one are one list rather than two that drifted (#577).
+	listEnums["filters.state"] = openapi.PullRequestStateFilters
 	result.Declare("pr list", result.For[PullRequests](listEnums))
 	getEnums := repositoryEnums("pullRequest.")
 	getEnums["reviewSummary.countsSource"] = countsSources
@@ -63,11 +67,15 @@ func init() {
 	result.Declare("pr comment list", result.For[CommentThreads](map[string][]string{
 		"threads.state":  commentStates,
 		"comments.state": commentStates,
+		"state":          echoedThreadStates,
 	}))
 	result.Declare("pr comment get", result.For[SingleComment](map[string][]string{"comment.state": commentStates}))
 	result.Declare("pr comment resolve", result.For[SingleComment](map[string][]string{"comment.state": commentStates}))
 	result.Declare("pr comment reopen", result.For[SingleComment](map[string][]string{"comment.state": commentStates}))
-	result.Declare("pr comment add", result.For[AddedComment](map[string][]string{"comment.state": commentStates}))
+	result.Declare("pr comment add", result.For[AddedComment](map[string][]string{
+		"comment.state": commentStates,
+		"lineType":      openapi.DiffLineTypes,
+	}))
 	result.Declare("pr comment react", result.For[Reaction](map[string][]string{"action": {"added", "removed"}}))
 	result.Declare("pr comment apply-suggestion", result.For[AppliedSuggestion](nil))
 

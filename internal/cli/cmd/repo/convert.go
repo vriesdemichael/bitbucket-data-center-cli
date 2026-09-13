@@ -19,7 +19,7 @@ var (
 	repoPermissionNames = []string{"REPO_READ", "REPO_WRITE", "REPO_ADMIN"}
 	subjectKinds        = []string{"user", "group"}
 	commentStates       = []string{"OPEN", "RESOLVED", "PENDING"}
-	syncActions         = []string{"MERGE", "DISCARD"}
+	syncActions         = []string{"MERGE", "DISCARD", "REBASE"}
 	syncRefStates       = []string{"AHEAD", "DIVERGED", "ORPHANED"}
 )
 

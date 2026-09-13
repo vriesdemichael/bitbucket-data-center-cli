@@ -16,24 +16,30 @@ import (
 	"sort"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outputschemas"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/docsite"
 )
 
 func main() {
 	outputDir := flag.String("out", "docs/reference/schemas/output", "directory for the exported envelope schemas")
+	// A release publishes its own copy of every schema, so each has to claim the
+	// version it is published under rather than the latest alias. bulk-schema-export
+	// took this flag and this did not, so every versioned snapshot identified its
+	// output schemas as /latest/.
+	siteVersion := flag.String("site-version", docsite.LatestVersion, "documentation site version the exported $id values claim")
 	flag.Parse()
 
-	if err := export(*outputDir); err != nil {
+	if err := export(*outputDir, *siteVersion); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func export(outputDir string) error {
+func export(outputDir, siteVersion string) error {
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}
 
-	schemas := outputschemas.Schemas()
+	schemas := outputschemas.SchemasFor(siteVersion)
 	if len(schemas) == 0 {
 		return fmt.Errorf("no output schemas are registered, which means the registry broke rather than that the CLI stopped declaring its output")
 	}

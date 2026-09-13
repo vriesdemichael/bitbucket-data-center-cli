@@ -94,6 +94,25 @@ func (enum *value) Set(raw string) error {
 
 func (enum *value) Type() string { return "string" }
 
+// Allowed reports the values a flag registered here accepts, and false for a
+// flag that is not one of these.
+//
+// For the tests that hold what a command publishes to what its flags take: a
+// field that echoes --state back has to describe the values --state accepts
+// (#577), and the flag is the authority on those.
+func Allowed(flag *pflag.Flag) ([]string, bool) {
+	if flag == nil {
+		return nil, false
+	}
+
+	enum, ok := flag.Value.(*value)
+	if !ok {
+		return nil, false
+	}
+
+	return append([]string{}, enum.allowed...), true
+}
+
 // Register declares a flag whose value must come from allowed. An empty value
 // means "not given" and resets the flag to defaultValue.
 //

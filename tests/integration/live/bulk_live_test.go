@@ -430,7 +430,7 @@ func bulkOperationIDFrom(t *testing.T, err error) string {
 
 // assertLiveDescribedShapeMatches checks every field --describe promises is
 // present in a payload the server actually produced, and that the payload
-// carries nothing required which the schema omits.
+// carries nothing the schema does not declare.
 func assertLiveDescribedShapeMatches(t *testing.T, command, output string) {
 	t.Helper()
 
@@ -448,7 +448,8 @@ func assertLiveDescribedShapeMatches(t *testing.T, command, output string) {
 	var schema struct {
 		Data struct {
 			Schema struct {
-				Required []string `json:"required"`
+				Required   []string       `json:"required"`
+				Properties map[string]any `json:"properties"`
 			} `json:"schema"`
 		} `json:"data"`
 	}
@@ -469,6 +470,16 @@ func assertLiveDescribedShapeMatches(t *testing.T, command, output string) {
 	for _, field := range schema.Data.Schema.Required {
 		if _, present := envelope.Data[field]; !present {
 			t.Errorf("%s --describe requires %q, and the server's payload has no such field", command, field)
+		}
+	}
+
+	// And the other way, which this function promised and did not do. A field the
+	// payload carries that the schema does not declare is one --describe never
+	// told the caller about; the placeholder schemas passed the check above and
+	// would have failed this one (#577).
+	for field := range envelope.Data {
+		if _, declared := schema.Data.Schema.Properties[field]; !declared {
+			t.Errorf("%s emits %q, which --describe does not declare", command, field)
 		}
 	}
 }
