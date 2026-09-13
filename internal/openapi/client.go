@@ -73,7 +73,10 @@ type classifyingDoer struct {
 func (doer classifyingDoer) Do(request *http.Request) (*http.Response, error) {
 	tracked, exchange := outcome.Track(request)
 
-	response, err := doer.client.Do(tracked)
+	// The request is the generated client's own, built from the configured
+	// Bitbucket URL and a path from the specification; this adds a trace and
+	// classifies what comes back, and never chooses where it goes.
+	response, err := doer.client.Do(tracked) //nolint:gosec // G704: the destination is the configured Bitbucket host, not caller input
 	if err != nil {
 		return nil, exchange.Classify(err)
 	}
