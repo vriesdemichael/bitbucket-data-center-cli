@@ -24,6 +24,11 @@ import (
 var Version = "dev"
 
 func main() {
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
+
+// run is main short of exiting, so a test reaches everything main sets up.
+func run(args []string, stdout, stderr io.Writer) int {
 	cmd := cli.NewRootCommand()
 	cmd.Version = Version
 
@@ -39,15 +44,15 @@ func main() {
 	// caught. stop restores the default, so a second interrupt still ends a
 	// command that is not listening to its context.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	go func() {
 		<-ctx.Done()
 		stop()
 	}()
 	cmd.SetContext(ctx)
+	cmd.SetArgs(args)
 
-	code := executeRootCommand(cmd, os.Args[1:], os.Stdout, os.Stderr)
-	stop()
-	os.Exit(code)
+	return executeRootCommand(cmd, args, stdout, stderr)
 }
 
 func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io.Writer) int {
