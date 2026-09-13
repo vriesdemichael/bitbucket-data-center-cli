@@ -3,6 +3,7 @@ package config
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -1064,32 +1065,19 @@ func writeFileAtomically(path string, contents []byte) error {
 		path = resolved
 	}
 
+	// CreateTemp opens the file 0600, the mode the config is written with.
 	temporary, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*.tmp")
 	if err != nil {
 		return err
 	}
-	discard := func() { _ = os.Remove(temporary.Name()) }
 
-	if _, err := temporary.Write(contents); err != nil {
-		_ = temporary.Close()
-		discard()
-		return err
-	}
-	if err := temporary.Sync(); err != nil {
-		_ = temporary.Close()
-		discard()
-		return err
-	}
-	if err := temporary.Close(); err != nil {
-		discard()
-		return err
-	}
-	if err := os.Chmod(temporary.Name(), 0o600); err != nil {
-		discard()
+	_, writeErr := temporary.Write(contents)
+	if err := errors.Join(writeErr, temporary.Sync(), temporary.Close()); err != nil {
+		_ = os.Remove(temporary.Name())
 		return err
 	}
 	if err := os.Rename(temporary.Name(), path); err != nil {
-		discard()
+		_ = os.Remove(temporary.Name())
 		return err
 	}
 
@@ -2429,18 +2417,18 @@ func credentialKey(host string) string {
 // because at the first login the file does not exist yet and the directory
 // does.
 func canonicalConfigPath(path string) string {
-	absolute, err := filepath.Abs(path)
-	if err != nil {
-		absolute = filepath.Clean(path)
+	canonical := filepath.Clean(path)
+	if absolute, err := filepath.Abs(canonical); err == nil {
+		canonical = absolute
 	}
-	if directory, err := filepath.EvalSymlinks(filepath.Dir(absolute)); err == nil {
-		absolute = filepath.Join(directory, filepath.Base(absolute))
+	if directory, err := filepath.EvalSymlinks(filepath.Dir(canonical)); err == nil {
+		canonical = filepath.Join(directory, filepath.Base(canonical))
 	}
 	if runtime.GOOS == "windows" {
-		absolute = strings.ToLower(absolute)
+		canonical = strings.ToLower(canonical)
 	}
 
-	return absolute
+	return canonical
 }
 
 // storedSecrets reads the token and password stored for a host.
