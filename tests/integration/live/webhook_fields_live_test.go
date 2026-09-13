@@ -755,6 +755,16 @@ func TestLiveWebhookListingsAreUsable(t *testing.T) {
 		if !strings.Contains(full, `"limitReached": false`) {
 			t.Errorf("a complete listing did not say so:\n%s", full)
 		}
+
+		// A person reading the text listing has the same question, and is
+		// answered on stderr. executeLiveCLI rather than mustLiveCLI, which
+		// adds --json.
+		if text, err := executeLiveCLI(t, "webhook", "list", "--limit", "1"); err != nil || !strings.Contains(text, "Stopped at the limit of 1") {
+			t.Errorf("a text listing cut to one of two did not say so (err: %v):\n%s", err, text)
+		}
+		if text, err := executeLiveCLI(t, "webhook", "list", "--limit", "50"); err != nil || strings.Contains(text, "Stopped at the limit") {
+			t.Errorf("a complete text listing said it was cut (err: %v):\n%s", err, text)
+		}
 	})
 
 	t.Run("the settings listing renders the webhooks rather than counting them", func(t *testing.T) {

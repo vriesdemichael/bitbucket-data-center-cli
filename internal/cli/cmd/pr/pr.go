@@ -199,6 +199,7 @@ func New(deps Dependencies) *cobra.Command {
 					indicator,
 				)
 			}
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(pullRequests))
 
 			return nil
 		},
@@ -324,6 +325,7 @@ func New(deps Dependencies) *cobra.Command {
 			for _, commit := range commits {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", shortCommitID(commit), firstMessageLine(commit.Message))
 			}
+			paging.Hint(cmd.ErrOrStderr(), commitsPaging, len(commits))
 			return nil
 		},
 	}
@@ -375,6 +377,7 @@ func New(deps Dependencies) *cobra.Command {
 				}
 				fmt.Fprintln(cmd.OutOrStdout(), line)
 			}
+			paging.Hint(cmd.ErrOrStderr(), filesPaging, len(changes))
 			return nil
 		},
 	}
@@ -1970,6 +1973,7 @@ changes as readily as an approval, which its name does not suggest.`,
 			for _, thread := range threads {
 				fmt.Fprintln(cmd.OutOrStdout(), formatThread(thread))
 			}
+			paging.Hint(cmd.ErrOrStderr(), commentPaging, len(threads))
 
 			return nil
 		},
@@ -2361,8 +2365,8 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 				return err
 			}
 
-			// PageSize is named honestly here and reads to exhaustion, so the
-			// cap has to be applied on the way out (#473).
+			// The service already stops at the cap (ADR-074); this keeps --limit
+			// honest if one ever does not. A no-op under --all.
 			activities = paging.Truncate(activityPaging, activities)
 
 			if deps.JSONEnabled() {
@@ -2377,6 +2381,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			for _, activity := range activities {
 				fmt.Fprintln(cmd.OutOrStdout(), formatPullRequestActivitySummary(activity))
 			}
+			paging.Hint(cmd.ErrOrStderr(), activityPaging, len(activities))
 
 			return nil
 		},
@@ -2414,7 +2419,8 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 					return err
 				}
 
-				// Reads to exhaustion, so --limit only sized the pages (#473).
+				// The service already stops at the cap (ADR-074); this keeps --limit
+				// honest if one ever does not. A no-op under --all.
 				statuses = paging.Truncate(statusPaging, statuses)
 
 				if deps.JSONEnabled() {
@@ -2433,6 +2439,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 				for _, s := range statuses {
 					fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", s.Key, s.State, s.URL)
 				}
+				paging.Hint(cmd.ErrOrStderr(), statusPaging, len(statuses))
 
 				return nil
 			},

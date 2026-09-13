@@ -18,6 +18,7 @@ type GetBuildStatusInput struct {
 // GetBuildStatusOutput names the collection it holds.
 type GetBuildStatusOutput struct {
 	BuildStatuses []openapigenerated.RestBuildStatus `json:"build_statuses"`
+	LimitReached  bool                               `json:"limit_reached" jsonschema:"True when the result stopped at limit, so there may be more; call again with a higher limit to see them"`
 }
 
 func specGetBuildStatus() Spec {
@@ -29,11 +30,13 @@ func specGetBuildStatus() Spec {
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[GetBuildStatusInput, GetBuildStatusOutput] {
 		svc := qualityservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in GetBuildStatusInput) (*mcp.CallToolResult, GetBuildStatusOutput, error) {
-			statuses, err := svc.GetBuildStatuses(ctx, in.CommitID, limitOrDefault(in.Limit), "")
+			limit := limitOrDefault(in.Limit)
+			statuses, err := svc.GetBuildStatuses(ctx, in.CommitID, limit, "")
 			if err != nil {
 				return nil, GetBuildStatusOutput{}, fmt.Errorf("get_build_status failed: %w", err)
 			}
-			return nil, GetBuildStatusOutput{BuildStatuses: statuses}, nil
+			statuses, reached := capped(limit, statuses)
+			return nil, GetBuildStatusOutput{BuildStatuses: statuses, LimitReached: reached}, nil
 		}
 	})
 }
@@ -95,6 +98,7 @@ type ListRequiredBuildsInput struct {
 // ListRequiredBuildsOutput names the collection it holds.
 type ListRequiredBuildsOutput struct {
 	RequiredBuilds []openapigenerated.RestRequiredBuildCondition `json:"required_builds"`
+	LimitReached   bool                                          `json:"limit_reached" jsonschema:"True when the result stopped at limit, so there may be more; call again with a higher limit to see them"`
 }
 
 func specListRequiredBuilds() Spec {
@@ -106,14 +110,16 @@ func specListRequiredBuilds() Spec {
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListRequiredBuildsInput, ListRequiredBuildsOutput] {
 		svc := qualityservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListRequiredBuildsInput) (*mcp.CallToolResult, ListRequiredBuildsOutput, error) {
+			limit := limitOrDefault(in.Limit)
 			checks, err := svc.ListRequiredBuildChecks(ctx,
 				qualityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
-				limitOrDefault(in.Limit),
+				limit,
 			)
 			if err != nil {
 				return nil, ListRequiredBuildsOutput{}, fmt.Errorf("list_required_builds failed: %w", err)
 			}
-			return nil, ListRequiredBuildsOutput{RequiredBuilds: checks}, nil
+			checks, reached := capped(limit, checks)
+			return nil, ListRequiredBuildsOutput{RequiredBuilds: checks, LimitReached: reached}, nil
 		}
 	})
 }

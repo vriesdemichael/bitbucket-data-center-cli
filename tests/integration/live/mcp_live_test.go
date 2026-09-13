@@ -321,6 +321,7 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 				Commits []struct {
 					ID string `json:"id"`
 				} `json:"commits"`
+				LimitReached bool `json:"limit_reached"`
 			}
 			callAndDecode(t, session, callCtx, "list_commits", map[string]any{
 				"project": seeded.Key, "repo": repo.Slug, "limit": 10,
@@ -333,6 +334,29 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 			sort.Strings(got)
 			if strings.Join(got, ",") != strings.Join(wantCommits, ",") {
 				t.Errorf("list_commits returned %v, but bb commit list returned %v", got, wantCommits)
+			}
+
+			// #573: every commit under a limit of ten is all of them and must
+			// say so, and a limit of one stops short and must say that instead.
+			if len(wantCommits) < 2 {
+				t.Fatalf("the seeded repository has %d commits; telling a cut listing from a whole one needs two", len(wantCommits))
+			}
+			if payload.LimitReached {
+				t.Errorf("list_commits returned all %d commits under a limit of 10 but reported limit_reached", len(payload.Commits))
+			}
+
+			var cut struct {
+				Commits []struct {
+					ID string `json:"id"`
+				} `json:"commits"`
+				LimitReached bool `json:"limit_reached"`
+			}
+			callAndDecode(t, session, callCtx, "list_commits", map[string]any{
+				"project": seeded.Key, "repo": repo.Slug, "limit": 1,
+			}, &cut)
+			if len(cut.Commits) != 1 || !cut.LimitReached {
+				t.Errorf("list_commits with limit 1 over %d commits returned %d with limit_reached %v, want 1 with true",
+					len(wantCommits), len(cut.Commits), cut.LimitReached)
 			}
 		})
 

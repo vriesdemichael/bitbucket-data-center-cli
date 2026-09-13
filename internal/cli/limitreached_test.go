@@ -22,6 +22,10 @@ var jsonWrite = regexp.MustCompile(`\b(?:d|deps)\.(WriteJSONList|WriteJSON)\(`)
 // reportsTruncation matches the command working out whether it hit that limit.
 var reportsTruncation = regexp.MustCompile(`paging\.LimitReached\(`)
 
+// hintsInText matches the command telling a person reading text output that it
+// stopped at the limit.
+var hintsInText = regexp.MustCompile(`paging\.Hint\(`)
+
 // notAListing is the way out for a command that takes --limit in order to find
 // something rather than to return a page. It has to carry a reason, because the
 // whole failure mode here was a field quietly missing.
@@ -108,6 +112,12 @@ func TestACappedListingSaysSoIsEnforced(t *testing.T) {
 				// A document written through a helper is invisible here, which is
 				// exactly how a silent listing would hide.
 				silent = append(silent, at(start, "("+command+"): no JSON write in its RunE to check"))
+			}
+
+			// A person reading 25 rows has the same problem a pipeline reading
+			// 25 results had, so the text output owes them the same answer.
+			if !hintsInText.MatchString(block) {
+				silent = append(silent, at(start, "("+command+"): text output never says it stopped at --limit; call paging.Hint"))
 			}
 		}
 

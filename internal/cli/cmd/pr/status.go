@@ -69,6 +69,7 @@ func newPullRequestStatusCommand(deps Dependencies, repositorySelector *string) 
 			}
 
 			writePullRequestStatus(cmd, payload)
+			paging.Hint(cmd.ErrOrStderr(), listPaging, max(len(created), len(reviewing)))
 
 			return nil
 		},

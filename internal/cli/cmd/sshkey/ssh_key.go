@@ -100,6 +100,7 @@ func New(deps Dependencies) *cobra.Command {
 			for _, key := range reported {
 				fmt.Fprintf(cmd.OutOrStdout(), "%-8d %-30s %-50s\n", key.ID, key.Label, key.Fingerprint)
 			}
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(reported))
 			return nil
 		},
 	}

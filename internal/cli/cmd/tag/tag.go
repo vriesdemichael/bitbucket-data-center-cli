@@ -129,6 +129,7 @@ func New(deps Dependencies) *cobra.Command {
 			for _, tag := range reported {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", tag.DisplayID, tag.Type, tag.LatestCommit)
 			}
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(reported))
 
 			return nil
 		},
