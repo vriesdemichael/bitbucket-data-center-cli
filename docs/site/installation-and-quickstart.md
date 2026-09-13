@@ -130,7 +130,7 @@ bb auth status
 ```
 
 !!! note "Secrets cannot be passed as flag values"
-    `--token` and `--password` were removed in v4. A flag value lands in the process argument
+    There are no `--token` or `--password` flags: a flag value lands in the process argument
     list, where any local user can read it via `ps` or `/proc/<pid>/cmdline`, where Windows shows
     it in Task Manager details, and where process-auditing and EDR tooling records it -- and your
     shell keeps it in history. Use `--token-stdin` or `--password-stdin`, or set `BITBUCKET_TOKEN`.
@@ -139,10 +139,6 @@ bb auth status
 
 `bb auth login` stores the secret in your operating system's keyring — Credential Manager on
 Windows, Keychain on macOS, Secret Service on Linux.
-
-A keyring entry belongs to the configuration file it was stored for, so two `BB_CONFIG_PATH`
-values can hold two identities for the same host — a personal account and a service
-account, say. Move or rename a configuration file and log in again from its new location.
 
 Where no keyring is available — headless servers, most containers, WSL without `gnome-keyring` —
 bb falls back to writing the secret in plaintext into its config file (`0600`, in a `0700`

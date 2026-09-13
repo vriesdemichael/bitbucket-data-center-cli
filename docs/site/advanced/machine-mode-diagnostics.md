@@ -89,11 +89,17 @@ fi
 ## Listings that stop at `--limit`
 
 A command that lists something returns at most `--limit` results, and says whether
-it reached that limit:
+it reached that limit. `bb --json repo list --limit 1`, on a server holding more than
+one repository:
 
-<!-- docs-lint: envelope-shape -->
+<!-- docs-lint: output-of bb repo list -->
 ```json
-{ "data": { }, "meta": { "bbVersion": "[[ bb_version_tag ]]", "limitReached": true } }
+{
+  "data": [
+    { "projectKey": "PAY", "slug": "payments", "name": "Payments", "public": false }
+  ],
+  "meta": { "bbVersion": "[[ bb_version_tag ]]", "limitReached": true }
+}
 ```
 
 `limitReached: true` means there may be more: raise `--limit`, or pass `--all`. It is
@@ -125,26 +131,6 @@ the code a retry loop should key on.
 A failure retrying cannot fix is `permanent`: a rejected TLS certificate, a host that
 does not resolve. bb does not retry those itself either.
 
-### Changed since v4.0.0
-
-What a script may notice after upgrading:
-
-- A request whose TLS certificate is rejected, or whose host does not resolve, exits `1`
-  (`permanent`) rather than `10`, and is not retried.
-- A POST or PATCH that reached the server without a usable answer exits `13`
-  (`unknown_outcome`) rather than `10`, and so does one a gateway answered with `502` or
-  `504`.
-- An interrupt ends a command with exit `12` (`cancelled`), or `13` for a mutation it had
-  already sent.
-- A configuration file that exists and cannot be read fails every command with exit `1`
-  instead of reading as empty.
-- `error.message` carries Bitbucket's own sentence, redacted and cut to 300 characters
-  unless `--full-error-body` is passed, and `error.details` carries `upstreamStatus` and
-  `upstreamException`.
-- Listings report `meta.limitReached`, and print a line on stderr in text output when they
-  stop at `--limit`. `bb insights annotation list` now stops at `--limit` too, 25 by
-  default; it used to return every annotation.
-
 ### Handles on the failure envelope
 
 A failure may carry an optional `error.details` object: a flat map of strings naming what you
@@ -165,27 +151,8 @@ A failure Bitbucket answered carries `upstreamStatus`, the HTTP status, and
 part: branch on it rather than on the wording of `error.message`, which Bitbucket
 rewords between releases.
 
-#### Changed in v4: `bb bulk apply --json` on the failure path
-
-Through v3, a `bb bulk apply --json` run that failed printed **two** documents: the status
-envelope, then the failure envelope. A strict JSON parser rejects that outright; `jq` reads a
-value stream, so it prints a result per document and exits `0` — meaning a pipeline that took
-the last line silently read the wrong one.
-
-From v4 a failing or cancelled run writes only the failure envelope, so `.data` is absent.
-Scripts that read the artifact from `bb bulk apply` output must fetch it by id instead:
-
-```bash
-# Through v3 — no longer returns the artifact
-bb bulk apply --from-plan plan.json --json | jq -r '.data.summary.failedTargets'
-
-# v4
-output=$(bb bulk apply --from-plan plan.json --json) || true
-operationId=$(printf '%s' "$output" | jq -r '.error.details.operationId // empty')
-bb bulk status "$operationId" --json | jq -r '.data.summary.failedTargets'
-```
-
-Human output is unchanged: the status still goes to stdout and the error line to stderr.
+For such a failure, `error.message` is Bitbucket's own message, redacted and cut to 300
+characters unless `--full-error-body` is passed.
 
 Example failure behavior:
 
