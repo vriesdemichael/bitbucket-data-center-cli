@@ -60,16 +60,18 @@ func newPullRequestStatusCommand(deps Dependencies, repositorySelector *string) 
 			payload.RequestingYourReview = StatusSection{PullRequests: result.PullRequestsFrom(reviewing)}
 
 			if deps.JSONEnabled() {
-				// Either section being capped makes the dashboard incomplete, and a
-				// caller cannot tell which half it is missing from the payload.
-				reachedLimit := paging.LimitReached(listPaging, len(created)) ||
+				// Any of the three sections being capped makes the dashboard
+				// incomplete, and a caller cannot tell which part is missing from the
+				// payload. The current-branch section is capped like the other two.
+				reachedLimit := paging.LimitReached(listPaging, len(payload.CurrentBranch.PullRequests)) ||
+					paging.LimitReached(listPaging, len(created)) ||
 					paging.LimitReached(listPaging, len(reviewing))
 
 				return deps.WriteJSONList(cmd.OutOrStdout(), payload, reachedLimit)
 			}
 
 			writePullRequestStatus(cmd, payload)
-			paging.Hint(cmd.ErrOrStderr(), listPaging, max(len(created), len(reviewing)))
+			paging.Hint(cmd.ErrOrStderr(), listPaging, max(len(payload.CurrentBranch.PullRequests), len(created), len(reviewing)))
 
 			return nil
 		},
