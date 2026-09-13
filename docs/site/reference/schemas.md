@@ -3,7 +3,7 @@
 ## Per-command `--json` output schemas
 
 **Ask the binary, not the site.** Every command answers `--describe` with the JSON Schema for
-its own `--json` output, read from the copy compiled in:
+the `data` payload of its `--json` output, read from the copy compiled in:
 
 ```bash
 bb pr get --describe
@@ -91,16 +91,29 @@ Equivalent repository-relative schema association is also valid for local develo
 
 ## The envelope, and the failure envelope
 
-`--describe` answers at one level: the `data` payload a command returns. The
-envelope around it is the same for every command, so it is published once
-rather than repeated in each schema.
+`--describe` answers at one level: the `data` payload a command returns. It
+does not describe the envelope around it, so it cannot on its own validate a
+whole `--json` document. That envelope is the same for every command, so its
+parts are published once rather than repeated in each schema.
+
+Two things `--describe` does not cover yet. Under `--dry-run` a command
+that changes something answers with a preview rather than its normal `data`,
+and `--describe` still returns the normal schema. And there is no published
+schema for a whole success document. Both are deliberate, not oversights.
+Describing the complete document properly means settling how `--describe`
+answers per mode, which top-level member `--dry-run` returns, and what a
+preview contains -- and each of those changes the shape of output that
+exists today, which is a breaking change. That work belongs to the next
+major release and is tracked in #616.
 
 - [`output/output.error.schema.json`](schemas/output/output.error.schema.json)
   is the failure envelope. It carries the full `error.kind` vocabulary and the
   exit code each kind maps to, so a consumer can branch on a failure from a
   command it has never seen without provoking one first.
 - `meta` is described there too: `meta.bbVersion`, and `meta.limitReached`,
-  which says whether a listing was capped by `--limit`. An absent
+  which says whether a listing was capped by `--limit`. `meta` is open: it may
+  gain fields in a minor release, so validate the fields you use rather than
+  rejecting ones you do not know. An absent
   `limitReached` reads as "not truncated", so a command that caps a result set
   always emits it.
 

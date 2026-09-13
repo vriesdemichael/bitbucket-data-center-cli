@@ -109,8 +109,15 @@ func ErrorEnvelopeSchema(schemaFileName string) map[string]any {
 
 func metaSchema() map[string]any {
 	return map[string]any{
-		"type":                 "object",
-		"additionalProperties": false,
+		"type": "object",
+		// Open, unlike the envelope around it. meta is provenance, and it is
+		// expected to grow: #616 adds meta.command, and it can only land in a
+		// minor release if a document carrying a field this schema does not
+		// name still validates. Closed, the first published version of this
+		// schema would have turned every later meta field into a breaking
+		// change for anyone validating strictly. The set of top-level members
+		// stays closed; only what sits inside meta may widen.
+		"additionalProperties": true,
 		"properties": map[string]any{
 			"bbVersion": map[string]any{
 				"type":        "string",

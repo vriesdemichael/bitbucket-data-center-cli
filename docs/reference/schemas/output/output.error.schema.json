@@ -60,7 +60,7 @@
       "type": "object"
     },
     "meta": {
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "bbVersion": {
           "description": "Version of the bb binary that produced this document. Provenance for stored output, not a compatibility switch: pin the binary to pin the contract (ADR-064).",
