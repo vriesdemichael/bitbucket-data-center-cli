@@ -5,7 +5,7 @@
 // The value is a cap on results, not on requests. And a page is not something a
 // CLI caller can navigate: there is no cursor to advance, so a "page size" names
 // an HTTP detail the services already handle rather than anything the caller can
-// act on. See ADR-050.
+// act on. See ADR-074.
 package paging
 
 import (
@@ -62,11 +62,9 @@ func (options *Options) register(command *cobra.Command, flags *pflag.FlagSet, d
 // extra result to make truncation precisely detectable, and the comment here
 // described it long after it was abandoned. See LimitReached for why it was.
 //
-// What a service does with this number is not uniform. Eight take it as a total
-// cap (MaxResults, #471); the rest take it as a page size and read to
-// exhaustion. Pass the results through Truncate either way -- on a service that
-// already capped it changes nothing, and on one that did not it is what makes
-// --limit mean what its help text says.
+// Every service takes it as a total cap, MaxResults (ADR-074). Pass the results
+// through Truncate anyway: on a service that capped it changes nothing, and it
+// keeps --limit meaning what its help text says if one ever does not.
 func (options Options) ServiceLimit() int {
 	if options.all {
 		return unlimitedLimit
@@ -103,10 +101,10 @@ func LimitReached(options Options, count int) bool {
 
 // Truncate caps a result set to what --limit asked for.
 //
-// Needed because ServiceLimit means a page size to some services, which then
-// page to exhaustion: `project permissions users list --limit 5` fetched every
-// entry in the project, in pages of five, and printed all of them. A smaller
-// --limit produced more requests and the same complete answer (#473).
+// It was needed when ServiceLimit meant a page size to some services, which then
+// paged to exhaustion: `project permissions users list --limit 5` fetched every
+// entry in the project, in pages of five, and printed all of them (#473). Every
+// service caps now (ADR-074), so this is belt and braces.
 //
 // Truncating a result set a service already capped is a no-op, so this does not
 // require knowing which semantic the backing service uses -- which is the

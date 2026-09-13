@@ -216,7 +216,7 @@ func TestLimitReached(t *testing.T) {
 
 // TestTruncateCapsWhatAServiceDidNot is the fix for #473.
 //
-// ServiceLimit means a page size to several services, which then read to
+// ServiceLimit meant a page size to several services, which then read to
 // exhaustion: `project permissions users list --limit 5` fetched every entry in
 // the project, in pages of five, and printed all of them.
 func TestTruncateCapsWhatAServiceDidNot(t *testing.T) {

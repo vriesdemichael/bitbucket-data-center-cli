@@ -100,8 +100,8 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			// The backing service reads to exhaustion, so --limit only sized the
-			// pages until now. A no-op under --all.
+			// The service already stops at the cap (ADR-074); this keeps --limit
+			// honest if one ever does not. A no-op under --all.
 			comments = paging.Truncate(listPaging, comments)
 
 			// Flattened, so replies are reachable. Bitbucket nests them under
@@ -122,6 +122,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 			for _, comment := range listed {
 				fmt.Fprintln(cmd.OutOrStdout(), result.FormatComment(comment))
 			}
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(listed))
 
 			return nil
 		},

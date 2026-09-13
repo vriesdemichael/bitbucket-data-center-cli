@@ -242,7 +242,8 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			// Reads to exhaustion, so --limit only sized the pages (#473).
+			// The service already stops at the cap (ADR-074); this keeps --limit
+			// honest if one ever does not. A no-op under --all.
 			statuses = paging.Truncate(getPaging, statuses)
 
 			if d.JSONEnabled() {
@@ -260,6 +261,7 @@ func New(deps Dependencies) *cobra.Command {
 				rows[i] = []string{style.Resource.Render(safederef.String(status.Key)), style.ActionStyle(state).Render(state), style.Secondary.Render(safederef.String(status.Url))}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
+			paging.Hint(cmd.ErrOrStderr(), getPaging, len(statuses))
 
 			return nil
 		},
@@ -368,8 +370,8 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			// The backing service reads to exhaustion, so --limit only sized the
-			// pages until now. A no-op under --all.
+			// The service already stops at the cap (ADR-074); this keeps --limit
+			// honest if one ever does not. A no-op under --all.
 			checks = paging.Truncate(requiredPaging, checks)
 
 			converted := result.RequiredBuildChecksFrom(checks)
@@ -387,6 +389,7 @@ func New(deps Dependencies) *cobra.Command {
 				rows[i] = requiredCheckRow(check)
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
+			paging.Hint(cmd.ErrOrStderr(), requiredPaging, len(checks))
 
 			return nil
 		},
@@ -525,8 +528,8 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				// The backing service reads to exhaustion, so --limit only sized the
-				// pages until now. A no-op under --all.
+				// The service already stops at the cap (ADR-074); this keeps --limit
+				// honest if one ever does not. A no-op under --all.
 				checks = paging.Truncate(requiredPaging, checks)
 
 				predicted := "no-op"

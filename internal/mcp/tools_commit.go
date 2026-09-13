@@ -20,7 +20,8 @@ type ListCommitsInput struct {
 
 // ListCommitsOutput names the collection it holds.
 type ListCommitsOutput struct {
-	Commits []openapigenerated.RestCommit `json:"commits"`
+	Commits      []openapigenerated.RestCommit `json:"commits"`
+	LimitReached bool                          `json:"limit_reached" jsonschema:"True when the result stopped at limit, so there may be more; call again with a higher limit to see them"`
 }
 
 func specListCommits() Spec {
@@ -32,18 +33,20 @@ func specListCommits() Spec {
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListCommitsInput, ListCommitsOutput] {
 		svc := commitservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListCommitsInput) (*mcp.CallToolResult, ListCommitsOutput, error) {
+			limit := limitOrDefault(in.Limit)
 			commits, err := svc.List(ctx,
 				commitservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 				commitservice.ListOptions{
 					Since:      in.Since,
 					Until:      in.Until,
-					MaxResults: limitOrDefault(in.Limit),
+					MaxResults: limit,
 				},
 			)
 			if err != nil {
 				return nil, ListCommitsOutput{}, fmt.Errorf("list_commits failed: %w", err)
 			}
-			return nil, ListCommitsOutput{Commits: commits}, nil
+			commits, reached := capped(limit, commits)
+			return nil, ListCommitsOutput{Commits: commits, LimitReached: reached}, nil
 		}
 	})
 }
@@ -92,7 +95,8 @@ type CompareRefsInput struct {
 
 // CompareRefsOutput names the collection it holds.
 type CompareRefsOutput struct {
-	Commits []openapigenerated.RestCommit `json:"commits"`
+	Commits      []openapigenerated.RestCommit `json:"commits"`
+	LimitReached bool                          `json:"limit_reached" jsonschema:"True when the result stopped at limit, so there may be more; call again with a higher limit to see them"`
 }
 
 func specCompareRefs() Spec {
@@ -104,18 +108,20 @@ func specCompareRefs() Spec {
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[CompareRefsInput, CompareRefsOutput] {
 		svc := commitservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in CompareRefsInput) (*mcp.CallToolResult, CompareRefsOutput, error) {
+			limit := limitOrDefault(in.Limit)
 			commits, err := svc.Compare(ctx,
 				commitservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 				commitservice.CompareOptions{
 					From:       in.From,
 					To:         in.To,
-					MaxResults: limitOrDefault(in.Limit),
+					MaxResults: limit,
 				},
 			)
 			if err != nil {
 				return nil, CompareRefsOutput{}, fmt.Errorf("compare_refs failed: %w", err)
 			}
-			return nil, CompareRefsOutput{Commits: commits}, nil
+			commits, reached := capped(limit, commits)
+			return nil, CompareRefsOutput{Commits: commits, LimitReached: reached}, nil
 		}
 	})
 }

@@ -20,6 +20,7 @@ type SearchRepositoriesInput struct {
 // SearchRepositoriesOutput names the collection it holds.
 type SearchRepositoriesOutput struct {
 	Repositories []repositoryservice.Repository `json:"repositories"`
+	LimitReached bool                           `json:"limit_reached" jsonschema:"True when the result stopped at limit, so there may be more; call again with a higher limit to see them"`
 }
 
 func specSearchRepositories() Spec {
@@ -31,9 +32,10 @@ func specSearchRepositories() Spec {
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[SearchRepositoriesInput, SearchRepositoriesOutput] {
 		svc := repositoryservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in SearchRepositoriesInput) (*mcp.CallToolResult, SearchRepositoriesOutput, error) {
+			limit := limitOrDefault(in.Limit)
 			opts := repositoryservice.ListOptions{
 				Name:       in.Name,
-				MaxResults: limitOrDefault(in.Limit),
+				MaxResults: limit,
 			}
 			project := strings.TrimSpace(in.Project)
 			var repos []repositoryservice.Repository
@@ -46,7 +48,8 @@ func specSearchRepositories() Spec {
 			if err != nil {
 				return nil, SearchRepositoriesOutput{}, fmt.Errorf("search_repositories failed: %w", err)
 			}
-			return nil, SearchRepositoriesOutput{Repositories: repos}, nil
+			repos, reached := capped(limit, repos)
+			return nil, SearchRepositoriesOutput{Repositories: repos, LimitReached: reached}, nil
 		}
 	})
 }

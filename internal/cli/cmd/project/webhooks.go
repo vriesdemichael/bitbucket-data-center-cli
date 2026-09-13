@@ -70,6 +70,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 				}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(webhooks))
 			return nil
 		},
 	}
