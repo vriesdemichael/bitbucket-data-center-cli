@@ -1919,7 +1919,7 @@ changes as readily as an approval, which its name does not suggest.`,
 				if deps.JSONEnabled() {
 					// Present even when empty: its absence is what says --full
 					// was not passed, so an empty file must still carry the key.
-					return deps.WriteJSON(cmd.OutOrStdout(), CommentThreads{
+					return deps.WriteJSONList(cmd.OutOrStdout(), CommentThreads{
 						Repository:    repositoryOf(repo),
 						PullRequestID: target.PullRequestID,
 						Source:        source,
@@ -1928,7 +1928,7 @@ changes as readily as an approval, which its name does not suggest.`,
 						Summary:       threadSummaryFrom(summary),
 						Threads:       threadsFrom(threads),
 						Comments:      &ungrouped,
-					})
+					}, paging.LimitReached(commentPaging, len(threads)))
 				}
 
 				if len(ungrouped) == 0 {
@@ -1943,7 +1943,7 @@ changes as readily as an approval, which its name does not suggest.`,
 			}
 
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), CommentThreads{
+				return deps.WriteJSONList(cmd.OutOrStdout(), CommentThreads{
 					Repository:    repositoryOf(repo),
 					PullRequestID: target.PullRequestID,
 					Source:        source,
@@ -1951,7 +1951,7 @@ changes as readily as an approval, which its name does not suggest.`,
 					State:         normalizedState,
 					Summary:       threadSummaryFrom(summary),
 					Threads:       threadsFrom(threads),
-				})
+				}, paging.LimitReached(commentPaging, len(threads)))
 			}
 
 			if summary.TotalThreads == 0 {
