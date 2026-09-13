@@ -59,7 +59,9 @@ func TestLiveDryRunPreviewsAndLeaveNoTrace(t *testing.T) {
 	})
 
 	t.Run("creating a project", func(t *testing.T) {
-		key := testsupport.UniqueName("DRYP")
+		// Upper-cased, as Bitbucket stores a project key: the follow-up lookup that
+		// proves the dry run created nothing has to ask for the key it would have.
+		key := strings.ToUpper(testsupport.UniqueName("DRYP"))
 
 		output := mustLiveCLI(t, "--dry-run", "project", "create", key, "--name", "Dry run project")
 		assertLivePreview(t, output, "create")

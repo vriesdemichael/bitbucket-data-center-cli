@@ -7,29 +7,21 @@ import (
 )
 
 // uniqueAlphabet is base32 without padding, lowercased: digits and letters
-// only, which every Bitbucket identifier accepts -- project keys, repository
-// slugs, branch and tag names, build keys, label names.
+// only, which Bitbucket identifiers accept -- repository slugs, branch and tag
+// names, build keys, label names. A project key is stored upper-cased, so a
+// test naming a project upper-cases the result.
 var uniqueAlphabet = base32.StdEncoding.WithPadding(base32.NoPadding)
 
 // UniqueSuffix returns a random identifier for a test fixture's name.
 //
-// Not a timestamp. Names built from the clock collide in three ways this suite
-// has actually hit:
+// Not a timestamp (ADR-085). Names built from the clock collide in three ways
+// this suite has hit: truncated, they repeat within a run; the clock is coarser
+// than the suite is parallel, so two tests read the same value; and a counter
+// beside the clock restarts with the process, so a run collides with what a
+// crashed run left behind.
 //
-//   - Truncated. 65 names used UnixNano()%100000, which repeats every 100
-//     microseconds while the suite runs eight ways in parallel. Bitbucket
-//     answered the resulting duplicate label with 500 "A database error has
-//     occurred".
-//   - Coarse. time.Now() is not guaranteed finer than a millisecond, and on
-//     Windows often is not, so two goroutines can read the same nanosecond
-//     value however many digits it has.
-//   - Restarted. A process-local counter beside a low-resolution clock repeats
-//     from the beginning on the next run, so a run that crashed and left
-//     fixtures behind collides with the run that follows it.
-//
-// 40 bits of randomness, which is enough that a suite creating thousands of
-// fixtures a day will not see a collision, and short enough to read in a
-// failure message.
+// 40 bits of randomness: enough that a suite creating thousands of fixtures a
+// day will not see a collision, and short enough to read in a failure message.
 func UniqueSuffix() string {
 	raw := make([]byte, 5)
 	if _, err := rand.Read(raw); err != nil {
