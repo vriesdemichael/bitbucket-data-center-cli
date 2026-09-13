@@ -32,7 +32,7 @@ disk, which is what makes it the right choice for CI and containers.
 | `BITBUCKET_PASSWORD` | none | Password for basic authentication. Falls back to `ADMIN_PASSWORD`. |
 | `BB_REQUIRE_KEYRING` | unset | `1` makes `bb` refuse to read or write credentials through the plaintext config fallback. Use it where storing a secret unencrypted is not acceptable — see [keyring storage](../installation-and-quickstart.md#where-credentials-are-stored). |
 | `BB_DISABLE_STORED_CONFIG` | unset | `1` ignores `~/.config/bb/config.yaml` entirely, so only flags and environment variables are consulted. Useful in CI, where a stray config file on a shared runner would otherwise be picked up. |
-| `BB_CONFIG_PATH` | `~/.config/bb/config.yaml` | Path to the stored configuration file. |
+| `BB_CONFIG_PATH` | `~/.config/bb/config.yaml` | Path to the stored configuration file. Keyring credentials belong to the file they were stored for, so two paths keep two identities for one host, and a login made through one path is not seen through another. |
 | `BB_WORKSPACE_CONFIG_PATH` | unset | Path to the per-workspace configuration file. Unset, `bb` looks for `.bb/config.yaml`, searching upward from the working directory and stopping at the repository root. |
 
 `BITBUCKET_USER`, `ADMIN_USER` and `ADMIN_PASSWORD` exist because the test

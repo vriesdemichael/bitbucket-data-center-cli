@@ -18,16 +18,16 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 
 An issue closes when the release carrying its fix is published, not when the fix merges.
 On main this needs nothing: a Closes footer reaching main closes the issue and the release follows in the same push. On next GitHub does not close from a non-default branch, and that gap is the mechanism -- the issue stays open for the whole integration window and closes when next reaches main. It is not closed by hand in the meantime.
-A staged fix is marked rather than closed: the label staged-on-next, and one comment naming the pull request and the milestone. One label across every major; the milestone names the release.
+A staged fix is marked rather than closed: the label "staged on next", and one comment naming the pull request and the milestone. One label across every major; the milestone names the release.
 The closing keyword goes in the commit body, not only in the pull request description. main takes rebase merges, so the commit message is what arrives on the default branch.
-Remaining work is the query is:open milestone:vN.0.0 -label:staged-on-next. The milestone progress bar reads zero until the major lands, and the tracking issue holds the ordering.
+Remaining work is the query is:open milestone:vN.0.0 -label:"staged on next". The milestone progress bar reads zero until the major lands, and the tracking issue holds the ordering.
 The release workflow closes what the keywords missed: on publish it closes the milestone's open issues with a link to the release, then closes the milestone.
 This takes effect after v4.0.0. That major was worked the other way throughout -- its issues were closed as their fixes merged to next -- and switching for the last few would leave one board holding both conventions while the reason for the record, a reporter who can tell shipped from merged, is already lost for that release.
-Two things have to exist before it can be followed: the staged-on-next label, and the closing step in the release workflow. Neither does yet.
+Two things have to exist before it can be followed: the "staged on next" label, and the closing step in the release workflow. Neither does yet.
 
 ## Agent Instructions
 
-From v5.0.0 on, do not close an issue because its fix merged to next. Apply staged-on-next and leave it open; the release closes it. For v4.0.0 keep closing on merge, which is how the rest of that milestone was worked.
+From v5.0.0 on, do not close an issue because its fix merged to next. Apply "staged on next" and leave it open; the release closes it. For v4.0.0 keep closing on merge, which is how the rest of that milestone was worked.
 Put the Closes footer in the commit body of the change itself. A keyword that lives only in a pull request description does not survive into main's history.
 Do not add a label per release, and do not mirror a milestone as sub-issues of its tracking issue. Both put the same work in two places, and the copy is the one that goes stale.
 

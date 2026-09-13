@@ -27,7 +27,8 @@ agent_instructions: >
   Exit codes stay owned by the taxonomy. The envelope reports exitCode; it does not decide it.
   Route errors from cmd/bb through cli.ClassifyUsageError before reporting them. It maps pflag's
   typed errors and Cobra's usage errors onto validation and leaves everything else untouched, so a
-  transport or server failure still reports internal and exit 1.
+  transport or server failure keeps the kind it was classified as, and internal is what an
+  unclassified one becomes.
   Cobra raises its own usage errors as plain fmt.Errorf values, so recognising them means matching
   message text. Do not add a marker to cobraUsageErrorMarkers without a case in
   TestClassifyUsageErrorMatchesCobrasRealMessages that drives the real condition through a command

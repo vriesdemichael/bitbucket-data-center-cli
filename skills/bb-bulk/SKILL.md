@@ -246,7 +246,7 @@ When queried via `bb bulk status <operation-id> --json`, the response `data` obj
   - `success`: All targets and operations completed successfully.
   - `partial_failure`: Some targets succeeded, while one or more targets encountered failures.
   - `failed`: All targets failed, or a fatal error halted execution.
-  - `cancelled`: The run was interrupted (Ctrl-C, or an expired deadline) before every
+  - `cancelled`: The run was interrupted (Ctrl-C) before every
     repository was attempted. Repositories the run never reached are recorded as
     `cancelled` rather than `failed`, so the artifact still says what was applied.
     The command exits `12`. Do not re-run it unattended: read the artifact first and
@@ -441,11 +441,14 @@ Responses follow the machine output contract:
 
 - `validation` (`exit 2`): Invalid policy syntax or unresolvable selectors.
 - `authentication` (`exit 3`): Missing or invalid Bitbucket token.
-- `authorization` (`exit 4`): Insufficient permissions (e.g. requires project or repo admin).
+- `authorization` (`exit 3`): Insufficient permissions (e.g. requires project or repo admin).
 - `conflict` (`exit 5`): One or more targets failed during execution.
-- `cancelled` (`exit 12`): Interrupted, or a deadline expired, before every repository was
-  attempted. Not a retry signal — re-running replays mutations across the whole plan.
-- `transient` / `internal`: Network connectivity issue or server failure.
+- `cancelled` (`exit 12`): Interrupted before every repository was attempted. Not a retry
+  signal — re-running replays mutations across the whole plan.
+- `unknown_outcome` (`exit 13`): A mutation reached Bitbucket and no answer came back, so it
+  may have been applied. Read the status artifact before re-running.
+- `transient` (`exit 10`): A failure a retry may fix. `permanent` or `internal` (`exit 1`):
+  one it will not, or a bb bug.
 
 ## Error Reporting
 

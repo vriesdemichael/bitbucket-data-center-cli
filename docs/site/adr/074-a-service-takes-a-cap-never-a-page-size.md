@@ -20,7 +20,7 @@ A service list option is called MaxResults and caps the total returned. It is no
 
 ## Agent Instructions
 
-Name a new list option MaxResults, field or parameter, and drive it through openapi.PageThrough. Do not add one called Limit or PageSize, and do not hand-roll the walk. A CLI --limit flag is a total and maps straight to MaxResults; paging.Truncate afterwards is then belt and braces rather than the thing that makes the flag work. Unexported helpers may still speak of pages. A new list command passes paging.LimitReached to WriteJSONList and calls paging.Hint before its text output returns. A new MCP list tool returns its collection through capped and sets limit_reached from it.
+Name a new list option MaxResults, field or parameter, and drive it through openapi.PageThrough. Do not add one called Limit or PageSize, and do not hand-roll the walk. A CLI --limit flag is a total and maps straight to MaxResults; paging.Truncate afterwards is then belt and braces rather than the thing that makes the flag work. Unexported helpers may still speak of pages. A new list command passes paging.LimitReached to WriteJSONList and calls paging.Hint before its text output returns. A new MCP list tool returns its collection through capped and sets limit_reached from it. A command that takes --limit only to find one thing rather than to return a page says so in its RunE with a `limit-not-reported:` comment giving the reason.
 
 ## Rationale
 
@@ -30,4 +30,4 @@ This began as a rule about ambiguity. Eleven services capped and eight paged to 
 
 - `Keep both names and document which is which`: Documentation is what was already missing, and it does not fail a build.
 - `Keep PageSize and check the call sites statically instead`: The check would have to know whether a value flowing into a parameter is a cap, which needs type resolution the guard does not have, and would still pass the dashboard.
-- `Return a truncated flag alongside the results`: Composes with the envelope's meta.limitReached and is worth having, but it makes truncation observable rather than unambiguous.
+- `Keep PageSize and have each service report whether it truncated`: It makes a page size observable rather than removing it. The signal a caller reads comes from the cap itself -- meta.limitReached, limit_reached, the text hint -- and needs no second meaning to exist.

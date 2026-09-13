@@ -10,14 +10,14 @@ decision: >
   gap is the mechanism -- the issue stays open for the whole integration window and closes when
   next reaches main. It is not closed by hand in the meantime.
 
-  A staged fix is marked rather than closed: the label staged-on-next, and one comment naming
+  A staged fix is marked rather than closed: the label "staged on next", and one comment naming
   the pull request and the milestone. One label across every major; the milestone names the
   release.
 
   The closing keyword goes in the commit body, not only in the pull request description. main
   takes rebase merges, so the commit message is what arrives on the default branch.
 
-  Remaining work is the query is:open milestone:vN.0.0 -label:staged-on-next. The milestone
+  Remaining work is the query is:open milestone:vN.0.0 -label:"staged on next". The milestone
   progress bar reads zero until the major lands, and the tracking issue holds the ordering.
 
   The release workflow closes what the keywords missed: on publish it closes the milestone's
@@ -28,10 +28,10 @@ decision: >
   board holding both conventions while the reason for the record, a reporter who can tell
   shipped from merged, is already lost for that release.
 
-  Two things have to exist before it can be followed: the staged-on-next label, and the closing
+  Two things have to exist before it can be followed: the "staged on next" label, and the closing
   step in the release workflow. Neither does yet.
 agent_instructions: >
-  From v5.0.0 on, do not close an issue because its fix merged to next. Apply staged-on-next and
+  From v5.0.0 on, do not close an issue because its fix merged to next. Apply "staged on next" and
   leave it open; the release closes it. For v4.0.0 keep closing on merge, which is how the rest
   of that milestone was worked.
 
