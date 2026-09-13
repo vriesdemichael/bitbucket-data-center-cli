@@ -69,6 +69,7 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 			for _, file := range files {
 				fmt.Fprintln(cmd.OutOrStdout(), file)
 			}
+			paging.Hint(cmd.ErrOrStderr(), treePaging, len(files))
 
 			return nil
 		},
@@ -272,6 +273,7 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 				rows[i] = []string{style.Secondary.Render(safederef.String(commit.DisplayId)), strings.Split(safederef.String(commit.Message), "\n")[0]}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
+			paging.Hint(cmd.ErrOrStderr(), historyPaging, len(commits))
 
 			return nil
 		},

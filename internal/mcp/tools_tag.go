@@ -19,7 +19,8 @@ type ListTagsInput struct {
 
 // ListTagsOutput names the collection it holds.
 type ListTagsOutput struct {
-	Tags []openapigenerated.RestTag `json:"tags"`
+	Tags         []openapigenerated.RestTag `json:"tags"`
+	LimitReached bool                       `json:"limit_reached" jsonschema:"True when the result stopped at limit, so there may be more; call again with a higher limit to see them"`
 }
 
 func specListTags() Spec {
@@ -31,17 +32,19 @@ func specListTags() Spec {
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListTagsInput, ListTagsOutput] {
 		svc := tagservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListTagsInput) (*mcp.CallToolResult, ListTagsOutput, error) {
+			limit := limitOrDefault(in.Limit)
 			tags, err := svc.List(ctx,
 				tagservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 				tagservice.ListOptions{
 					FilterText: in.Filter,
-					MaxResults: limitOrDefault(in.Limit),
+					MaxResults: limit,
 				},
 			)
 			if err != nil {
 				return nil, ListTagsOutput{}, fmt.Errorf("list_tags failed: %w", err)
 			}
-			return nil, ListTagsOutput{Tags: tags}, nil
+			tags, reached := capped(limit, tags)
+			return nil, ListTagsOutput{Tags: tags, LimitReached: reached}, nil
 		}
 	})
 }

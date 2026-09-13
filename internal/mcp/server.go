@@ -319,6 +319,24 @@ func limitOrDefault(limit int) int {
 	return limit
 }
 
+// capped cuts a result to limit and reports whether it reached it (#573).
+//
+// Every list tool returns through it. An agent that asked for 25 and received
+// 25 cannot otherwise tell a full page from all there is, and a field that is
+// only sometimes present reads as "not truncated" when it is absent. Reaching
+// the limit is the signal the CLI gives as meta.limitReached: there may be
+// more, so call again with a higher limit.
+//
+// The cut is belt and braces, as paging.Truncate is for the CLI (ADR-074): the
+// services already stop at the limit, and this keeps the flag honest if one
+// ever does not.
+func capped[T any](limit int, results []T) ([]T, bool) {
+	if len(results) > limit {
+		results = results[:limit]
+	}
+	return results, len(results) >= limit
+}
+
 // toSet converts a string slice into a presence map, trimming whitespace.
 func toSet(items []string) map[string]bool {
 	m := make(map[string]bool, len(items))

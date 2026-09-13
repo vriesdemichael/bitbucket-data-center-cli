@@ -143,6 +143,7 @@ func newProjectPermissionListCommand(deps Dependencies, subjectFor projectPermis
 				rows[index] = []string{style.Resource.Render(entry.display), entry.permission}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(entries))
 
 			return nil
 		},

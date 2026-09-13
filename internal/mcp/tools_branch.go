@@ -21,7 +21,8 @@ type ListBranchesInput struct {
 // ListBranchesOutput names the collection so an agent reading the result knows
 // what it is holding without inferring it from the tool it called.
 type ListBranchesOutput struct {
-	Branches []openapigenerated.RestBranch `json:"branches"`
+	Branches     []openapigenerated.RestBranch `json:"branches"`
+	LimitReached bool                          `json:"limit_reached" jsonschema:"True when the result stopped at limit, so there may be more; call again with a higher limit to see them"`
 }
 
 func specListBranches() Spec {
@@ -33,17 +34,19 @@ func specListBranches() Spec {
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListBranchesInput, ListBranchesOutput] {
 		svc := branchservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListBranchesInput) (*mcp.CallToolResult, ListBranchesOutput, error) {
+			limit := limitOrDefault(in.Limit)
 			branches, err := svc.List(ctx,
 				branchservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 				branchservice.ListOptions{
 					FilterText: in.Filter,
-					MaxResults: limitOrDefault(in.Limit),
+					MaxResults: limit,
 				},
 			)
 			if err != nil {
 				return nil, ListBranchesOutput{}, fmt.Errorf("list_branches failed: %w", err)
 			}
-			return nil, ListBranchesOutput{Branches: branches}, nil
+			branches, reached := capped(limit, branches)
+			return nil, ListBranchesOutput{Branches: branches, LimitReached: reached}, nil
 		}
 	})
 }

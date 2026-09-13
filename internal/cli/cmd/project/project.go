@@ -120,6 +120,7 @@ func New(deps Dependencies) *cobra.Command {
 				rows[i] = []string{style.Resource.Render(safederef.String(p.Key)), safederef.String(p.Name)}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(projects))
 
 			return nil
 		},

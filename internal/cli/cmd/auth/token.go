@@ -128,6 +128,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%-12s %-30s %-25s\n", id, name, created)
 			}
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(tokens))
 			return nil
 		},
 	}

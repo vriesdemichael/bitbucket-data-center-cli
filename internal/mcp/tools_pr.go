@@ -90,6 +90,7 @@ type ListPullRequestsInput struct {
 // ListPullRequestsOutput names the collection it holds.
 type ListPullRequestsOutput struct {
 	PullRequests []pullrequestservice.PullRequest `json:"pull_requests"`
+	LimitReached bool                             `json:"limit_reached" jsonschema:"True when the result stopped at limit, so there may be more; call again with a higher limit to see them"`
 }
 
 func specListPullRequests() Spec {
@@ -148,7 +149,8 @@ func specListPullRequests() Spec {
 			if err != nil {
 				return nil, ListPullRequestsOutput{}, fmt.Errorf("list_pull_requests failed: %w", err)
 			}
-			return nil, ListPullRequestsOutput{PullRequests: prs}, nil
+			prs, reached := capped(limit, prs)
+			return nil, ListPullRequestsOutput{PullRequests: prs, LimitReached: reached}, nil
 		}
 	})
 }
@@ -214,8 +216,9 @@ type ListPRCommentsInput struct {
 // ListPRCommentsOutput carries the thread list and its summary. Both names
 // predate the envelope convention and are kept as they are.
 type ListPRCommentsOutput struct {
-	Summary pullrequestactivityservice.Summary  `json:"summary"`
-	Threads []pullrequestactivityservice.Thread `json:"threads"`
+	Summary      pullrequestactivityservice.Summary  `json:"summary"`
+	Threads      []pullrequestactivityservice.Thread `json:"threads"`
+	LimitReached bool                                `json:"limit_reached" jsonschema:"True when the result stopped at limit, so there may be more; call again with a higher limit to see them"`
 }
 
 func specListPRComments() Spec {
@@ -282,11 +285,9 @@ func specListPRComments() Spec {
 				threads, summary = pullrequestactivityservice.ThreadsFromComments(comments, threadOptions)
 			}
 
-			if len(threads) > limit {
-				threads = threads[:limit]
-			}
+			threads, reached := capped(limit, threads)
 
-			return nil, ListPRCommentsOutput{Summary: summary, Threads: threads}, nil
+			return nil, ListPRCommentsOutput{Summary: summary, Threads: threads, LimitReached: reached}, nil
 		}
 	})
 }

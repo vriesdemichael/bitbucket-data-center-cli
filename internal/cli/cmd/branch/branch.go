@@ -260,6 +260,7 @@ func New(deps Dependencies) *cobra.Command {
 				}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(branches))
 
 			return nil
 		},
@@ -548,6 +549,7 @@ func New(deps Dependencies) *cobra.Command {
 				rows[i] = []string{style.Resource.Render(safederef.String(ref.DisplayId)), style.Secondary.Render(safederef.String(ref.Id))}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(refs))
 
 			return nil
 		},
@@ -677,6 +679,7 @@ func New(deps Dependencies) *cobra.Command {
 				}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(restrictions))
 
 			return nil
 		},

@@ -1125,6 +1125,7 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%-8s %-30s %-15s %-50s\n", id, label, permission, fingerprint)
 			}
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(keys))
 			return nil
 		},
 	}

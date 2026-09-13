@@ -133,6 +133,7 @@ func New(deps Dependencies) *cobra.Command {
 				rows[i] = []string{style.Secondary.Render(commit.DisplayID), commit.Subject()}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(commits))
 
 			return nil
 		},
@@ -223,6 +224,7 @@ func New(deps Dependencies) *cobra.Command {
 				rows[i] = []string{style.Secondary.Render(commit.DisplayID), commit.Subject()}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
+			paging.Hint(cmd.ErrOrStderr(), listPaging, len(commits))
 
 			return nil
 		},

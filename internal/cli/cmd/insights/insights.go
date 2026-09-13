@@ -254,8 +254,8 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			// The backing service reads to exhaustion, so --limit only sized the
-			// pages until now. A no-op under --all.
+			// The service already stops at the cap (ADR-074); this keeps --limit
+			// honest if one ever does not. A no-op under --all.
 			reports = paging.Truncate(reportPaging, reports)
 
 			if d.JSONEnabled() {
@@ -270,6 +270,7 @@ func New(deps Dependencies) *cobra.Command {
 			for _, report := range reports {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", safederef.String(report.Key), safederef.String(report.Title), safeStringFromInsightResult(report.Result))
 			}
+			paging.Hint(cmd.ErrOrStderr(), reportPaging, len(reports))
 
 			return nil
 		},
@@ -365,6 +366,7 @@ func New(deps Dependencies) *cobra.Command {
 			for _, annotation := range annotations {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", safederef.String(annotation.ExternalId), safederef.String(annotation.Severity), safederef.String(annotation.Message))
 			}
+			paging.Hint(cmd.ErrOrStderr(), reportPaging, len(annotations))
 
 			return nil
 		},
