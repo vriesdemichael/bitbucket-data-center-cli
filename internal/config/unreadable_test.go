@@ -225,7 +225,7 @@ func TestAnAliasResolvesTheHostsCredential(t *testing.T) {
 	}
 
 	// The credential is read for the canonical host the alias resolved to.
-	if secret := keyringSecret(match.Host, "token"); secret != "aliased-token" {
+	if secret, _ := storedSecrets(match.Host); secret != "aliased-token" {
 		t.Fatalf("reaching the host through its alias resolved %q", secret)
 	}
 }
@@ -263,7 +263,7 @@ func TestACredentialUnderTheMapKeyStillResolves(t *testing.T) {
 		t.Fatalf("seed the entry: %v", err)
 	}
 
-	if secret := keyringSecret("https://something-else.example", "token", hostKey(host)); secret != "under-the-map-key" {
+	if secret, _ := storedSecrets("https://something-else.example", hostKey(host)); secret != "under-the-map-key" {
 		t.Fatalf("the map-key fallback did not resolve, got %q", secret)
 	}
 }

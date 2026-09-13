@@ -413,49 +413,21 @@ func (service *Service) Reopen(ctx context.Context, repository RepositoryRef, pu
 }
 
 func (service *Service) Approve(ctx context.Context, repository RepositoryRef, pullRequestID string) (PullRequest, error) {
-	if err := validateRepositoryRef(repository); err != nil {
-		return PullRequest{}, err
-	}
+	return service.review(ctx, repository, pullRequestID, func(resolvedID string) (pullRequestParticipant, error) {
+		var participant pullRequestParticipant
+		err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/approve", pullRequestPath(repository), resolvedID), nil, map[string]any{}, &participant)
 
-	resolvedID, err := normalizePullRequestID(pullRequestID)
-	if err != nil {
-		return PullRequest{}, err
-	}
-
-	if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/approve", pullRequestPath(repository), resolvedID), nil, map[string]any{}, nil); err != nil {
-		return PullRequest{}, err
-	}
-
-	// The participant endpoints answer with the participant, not the pull
-	// request -- the spec calls it "Details of the new participant" -- so
-	// decoding the reply as a pull request left a zero in every field, and
-	// `bb pr review approve` reported "pull request #0" while succeeding
-	// against the right one (#587). Read the pull request back instead: the
-	// shape callers already parse stays the same, and now it is true.
-	return service.Get(ctx, repository, resolvedID)
+		return participant, err
+	})
 }
 
 func (service *Service) Unapprove(ctx context.Context, repository RepositoryRef, pullRequestID string) (PullRequest, error) {
-	if err := validateRepositoryRef(repository); err != nil {
-		return PullRequest{}, err
-	}
+	return service.review(ctx, repository, pullRequestID, func(resolvedID string) (pullRequestParticipant, error) {
+		var participant pullRequestParticipant
+		err := service.client.DeleteJSON(ctx, fmt.Sprintf("%s/%s/approve", pullRequestPath(repository), resolvedID), nil, nil, &participant)
 
-	resolvedID, err := normalizePullRequestID(pullRequestID)
-	if err != nil {
-		return PullRequest{}, err
-	}
-
-	if err := service.client.DeleteJSON(ctx, fmt.Sprintf("%s/%s/approve", pullRequestPath(repository), resolvedID), nil, nil, nil); err != nil {
-		return PullRequest{}, err
-	}
-
-	// The participant endpoints answer with the participant, not the pull
-	// request -- the spec calls it "Details of the new participant" -- so
-	// decoding the reply as a pull request left a zero in every field, and
-	// `bb pr review approve` reported "pull request #0" while succeeding
-	// against the right one (#587). Read the pull request back instead: the
-	// shape callers already parse stays the same, and now it is true.
-	return service.Get(ctx, repository, resolvedID)
+		return participant, err
+	})
 }
 
 // NeedsWork sets the current user's review status to NEEDS_WORK on a pull
@@ -463,6 +435,36 @@ func (service *Service) Unapprove(ctx context.Context, repository RepositoryRef,
 // there is no dedicated endpoint, so this updates the participant record
 // directly via PUT .../participants/{userSlug}.
 func (service *Service) NeedsWork(ctx context.Context, repository RepositoryRef, pullRequestID string) (PullRequest, error) {
+	return service.review(ctx, repository, pullRequestID, func(resolvedID string) (pullRequestParticipant, error) {
+		userSlug, err := service.client.CurrentUserSlug(ctx)
+		if err != nil {
+			return pullRequestParticipant{}, err
+		}
+
+		var participant pullRequestParticipant
+		path := fmt.Sprintf("%s/%s/participants/%s", pullRequestPath(repository), resolvedID, url.PathEscape(userSlug))
+		err = service.client.PutJSON(ctx, path, nil, map[string]any{"status": "NEEDS_WORK"}, &participant)
+
+		return participant, err
+	})
+}
+
+// review changes the caller's own review and returns the pull request it
+// leaves behind.
+//
+// The participant endpoints answer with the participant, not the pull request
+// -- the spec calls it "Details of the new participant" -- so decoding the
+// reply as a pull request left a zero in every field, and `bb pr review
+// approve` reported "pull request #0" while succeeding against the right one
+// (#587).
+//
+// So the pull request is read, before the change and after it. Before, so a
+// pull request that cannot be read fails the command while nothing has been
+// applied. After, so the result shows what the change did. The read after can
+// fail too, and by then the review has landed: reporting a failure would send a
+// caller to repeat an approval it had already given. The first read stands in,
+// with the participant Bitbucket confirmed applied to it.
+func (service *Service) review(ctx context.Context, repository RepositoryRef, pullRequestID string, change func(resolvedID string) (pullRequestParticipant, error)) (PullRequest, error) {
 	if err := validateRepositoryRef(repository); err != nil {
 		return PullRequest{}, err
 	}
@@ -472,25 +474,71 @@ func (service *Service) NeedsWork(ctx context.Context, repository RepositoryRef,
 		return PullRequest{}, err
 	}
 
-	userSlug, err := service.client.CurrentUserSlug(ctx)
+	before, err := service.Get(ctx, repository, resolvedID)
 	if err != nil {
 		return PullRequest{}, err
 	}
 
-	path := fmt.Sprintf("%s/%s/participants/%s", pullRequestPath(repository), resolvedID, url.PathEscape(userSlug))
-	payload := map[string]any{"status": "NEEDS_WORK"}
-
-	if err := service.client.PutJSON(ctx, path, nil, payload, nil); err != nil {
+	participant, err := change(resolvedID)
+	if err != nil {
 		return PullRequest{}, err
 	}
 
-	// The participant endpoints answer with the participant, not the pull
-	// request -- the spec calls it "Details of the new participant" -- so
-	// decoding the reply as a pull request left a zero in every field, and
-	// `bb pr review approve` reported "pull request #0" while succeeding
-	// against the right one (#587). Read the pull request back instead: the
-	// shape callers already parse stays the same, and now it is true.
-	return service.Get(ctx, repository, resolvedID)
+	return service.readBack(ctx, repository, resolvedID, before, func(reviewers []Reviewer) []Reviewer {
+		return withParticipant(reviewers, participant)
+	}), nil
+}
+
+// readBack reads a pull request after a change that has already been applied.
+// When that read fails it returns before, with the change applied to its
+// reviewers by apply -- see review for why a failed read is not a failure.
+func (service *Service) readBack(ctx context.Context, repository RepositoryRef, resolvedID string, before PullRequest, apply func([]Reviewer) []Reviewer) PullRequest {
+	if after, err := service.Get(ctx, repository, resolvedID); err == nil {
+		return after
+	}
+
+	before.Reviewers = apply(before.Reviewers)
+
+	return before
+}
+
+// withParticipant returns reviewers with a participant's record in place of
+// the one with the same name, or added where there was none. A reply that
+// names nobody, or names the author, leaves the list as it was.
+func withParticipant(reviewers []Reviewer, participant pullRequestParticipant) []Reviewer {
+	mapped := mapReviewers([]pullRequestParticipant{participant}, nil)
+	if len(mapped) == 0 {
+		return reviewers
+	}
+
+	updated := make([]Reviewer, 0, len(reviewers)+1)
+	replaced := false
+	for _, reviewer := range reviewers {
+		if strings.EqualFold(reviewer.Name, mapped[0].Name) {
+			updated = append(updated, mapped[0])
+			replaced = true
+
+			continue
+		}
+		updated = append(updated, reviewer)
+	}
+	if !replaced {
+		updated = append(updated, mapped[0])
+	}
+
+	return updated
+}
+
+// withoutReviewer returns reviewers without the one named.
+func withoutReviewer(reviewers []Reviewer, name string) []Reviewer {
+	remaining := make([]Reviewer, 0, len(reviewers))
+	for _, reviewer := range reviewers {
+		if !strings.EqualFold(reviewer.Name, name) {
+			remaining = append(remaining, reviewer)
+		}
+	}
+
+	return remaining
 }
 
 // InlineCommentAnchor specifies the file location for an inline PR comment.
@@ -1220,8 +1268,16 @@ func (service *Service) updateReviewer(ctx context.Context, repository Repositor
 		return PullRequest{}, apperrors.New(apperrors.KindValidation, "reviewer username is required", nil)
 	}
 
-	var response pullRequestValue
+	// Read before and after, as review does and for the same reasons. Adding a
+	// participant answers with the participant, and removing one answers with
+	// nothing at all -- which decoded as a pull request was #0 again (#587).
+	before, err := service.Get(ctx, repository, resolvedID)
+	if err != nil {
+		return PullRequest{}, err
+	}
+
 	if add {
+		var participant pullRequestParticipant
 		path := fmt.Sprintf("%s/%s/participants", pullRequestPath(repository), resolvedID)
 		payload := map[string]any{
 			"user": map[string]any{
@@ -1229,17 +1285,23 @@ func (service *Service) updateReviewer(ctx context.Context, repository Repositor
 			},
 			"role": "REVIEWER",
 		}
-		if err := service.client.PostJSON(ctx, path, nil, payload, &response); err != nil {
+		if err := service.client.PostJSON(ctx, path, nil, payload, &participant); err != nil {
 			return PullRequest{}, err
 		}
-	} else {
-		path := fmt.Sprintf("%s/%s/participants/%s", pullRequestPath(repository), resolvedID, url.PathEscape(trimmedUsername))
-		if err := service.client.DeleteJSON(ctx, path, nil, nil, &response); err != nil {
-			return PullRequest{}, err
-		}
+
+		return service.readBack(ctx, repository, resolvedID, before, func(reviewers []Reviewer) []Reviewer {
+			return withParticipant(reviewers, participant)
+		}), nil
 	}
 
-	return mapPullRequest(response), nil
+	path := fmt.Sprintf("%s/%s/participants/%s", pullRequestPath(repository), resolvedID, url.PathEscape(trimmedUsername))
+	if err := service.client.DeleteJSON(ctx, path, nil, nil, nil); err != nil {
+		return PullRequest{}, err
+	}
+
+	return service.readBack(ctx, repository, resolvedID, before, func(reviewers []Reviewer) []Reviewer {
+		return withoutReviewer(reviewers, trimmedUsername)
+	}), nil
 }
 
 func branchDisplayName(reference *pullRequestRef) string {

@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -645,6 +646,11 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 	// so a host names one profile in it. The credential store is shared by
 	// every config file on the machine, which is why its key carries the file
 	// as well (#587).
+	// The key digests the config file's resolved directory, which has to exist
+	// for this login to resolve it the way every later read will.
+	if path, pathErr := ConfigPath(); pathErr == nil {
+		_ = os.MkdirAll(filepath.Dir(path), 0o700)
+	}
 	secretKey := credentialKey(host)
 
 	// Aliases are host-recognition config, not credentials: re-authenticating
@@ -899,12 +905,20 @@ func Logout(host string) error {
 	}
 
 	key := hostKey(hostURL)
-	// Both keys. A logout that left the unscoped entry behind would leave a
-	// credential on the machine with no profile naming it.
-	_ = keyringDelete(keyringServiceName, credentialKey(hostURL)+":token")
-	_ = keyringDelete(keyringServiceName, credentialKey(hostURL)+":password")
-	_ = keyringDelete(keyringServiceName, key+":token")
-	_ = keyringDelete(keyringServiceName, key+":password")
+	scoped := credentialKey(hostURL)
+
+	// The host-only entries answer only for a config with none of its own
+	// (storedSecrets), so they are this config's to delete only then. Deleting
+	// them every time logged out each other config still reading them -- the
+	// eviction #587 was about, moved from login to logout.
+	ownsHostOnlyEntries := keyringValue(scoped, "token") == "" && keyringValue(scoped, "password") == ""
+
+	_ = keyringDelete(keyringServiceName, scoped+":token")
+	_ = keyringDelete(keyringServiceName, scoped+":password")
+	if ownsHostOnlyEntries {
+		_ = keyringDelete(keyringServiceName, key+":token")
+		_ = keyringDelete(keyringServiceName, key+":password")
+	}
 
 	delete(stored.Hosts, key)
 	delete(stored.InsecureSecrets, key)
@@ -1684,10 +1698,11 @@ func credentialsForStoredHost(stored StoredConfig, key string, profile StoredPro
 		ClientKeyFile:     profile.ClientKey,
 	}
 
-	if token := keyringSecret(profile.URL, "token", key); token != "" {
+	token, password := storedSecrets(profile.URL, key)
+	if token != "" {
 		resolved.BitbucketToken = token
 	}
-	if password := keyringSecret(profile.URL, "password", key); password != "" {
+	if password != "" {
 		resolved.BitbucketPassword = password
 	}
 
@@ -2399,18 +2414,45 @@ func credentialKey(host string) string {
 		return base
 	}
 
-	sum := sha256.Sum256([]byte(filepath.Clean(path)))
+	sum := sha256.Sum256([]byte(canonicalConfigPath(path)))
 
 	return base + "#" + hex.EncodeToString(sum[:8])
 }
 
-// keyringSecret reads a secret written under either key.
+// canonicalConfigPath is one spelling for one file.
+//
+// BB_CONFIG_PATH is taken as written, so one file arrived as a relative path,
+// an absolute one, or in another case on Windows, and each spelling digested
+// to its own key: a credential saved under one was not found under another,
+// and config.yaml in two directories shared a key and evicted each other
+// (#587). The directory's symlinks are resolved rather than the file's,
+// because at the first login the file does not exist yet and the directory
+// does.
+func canonicalConfigPath(path string) string {
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		absolute = filepath.Clean(path)
+	}
+	if directory, err := filepath.EvalSymlinks(filepath.Dir(absolute)); err == nil {
+		absolute = filepath.Join(directory, filepath.Base(absolute))
+	}
+	if runtime.GOOS == "windows" {
+		absolute = strings.ToLower(absolute)
+	}
+
+	return absolute
+}
+
+// storedSecrets reads the token and password stored for a host.
 //
 // Entries written before credentialKey existed are keyed by host alone, and a
-// user who has one should not have to log in again to keep it: the scoped key
-// is tried first, and the unscoped one answers for anything already stored.
-// A new login writes only the scoped key, so the two stop overlapping as
-// credentials are refreshed.
+// user who has one should not have to log in again to keep it. But every
+// config file on the machine sees that entry, and only one of them wrote it.
+// So it answers only for a config that has nothing of its own: once this config
+// holds a scoped token or password, the host-only entry is another config's,
+// or this one's from before, superseded. Reading it anyway let a token stored
+// before the upgrade override a username and password logged in since, and let
+// a second config act as the first (#587).
 //
 // legacyKeys carries the map key the profile is filed under. For anything bb
 // wrote that equals hostKey(profile.URL), but a hand-edited config can hold a
@@ -2421,17 +2463,31 @@ func credentialKey(host string) string {
 // canonical profile.URL before any key is built, so an alias never becomes a
 // key, and ensureAliasOwnership already refuses to let two hosts in one file
 // claim the same one.
-func keyringSecret(host, suffix string, legacyKeys ...string) string {
-	candidates := append([]string{credentialKey(host), hostKey(host)}, legacyKeys...)
+func storedSecrets(host string, legacyKeys ...string) (string, string) {
+	scoped := credentialKey(host)
+	if token, password := keyringValue(scoped, "token"), keyringValue(scoped, "password"); token != "" || password != "" {
+		return token, password
+	}
 
-	for _, candidate := range candidates {
+	for _, candidate := range append([]string{hostKey(host)}, legacyKeys...) {
 		if strings.TrimSpace(candidate) == "" {
 			continue
 		}
-		if secret, err := keyringGet(keyringServiceName, candidate+":"+suffix); err == nil && strings.TrimSpace(secret) != "" {
-			return secret
+		if token, password := keyringValue(candidate, "token"), keyringValue(candidate, "password"); token != "" || password != "" {
+			return token, password
 		}
 	}
 
-	return ""
+	return "", ""
+}
+
+// keyringValue reads one keyring entry, and nothing for one that is absent or
+// blank.
+func keyringValue(key, suffix string) string {
+	secret, err := keyringGet(keyringServiceName, key+":"+suffix)
+	if err != nil || strings.TrimSpace(secret) == "" {
+		return ""
+	}
+
+	return secret
 }
