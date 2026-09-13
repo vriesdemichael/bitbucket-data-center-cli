@@ -37,8 +37,10 @@ func Schemas() map[string]map[string]any {
 func SchemasFor(siteVersion string) map[string]map[string]any {
 	all := make(map[string]map[string]any)
 
-	// Bulk command group — envelope-wrapped versions of the existing bulk schemas
-	for k, v := range bulkOutputSchemas(bulkworkflow.PlanJSONSchema(), bulkworkflow.ApplyStatusJSONSchema()) {
+	// Bulk command group -- the artifact schemas, wrapped in the envelope, and
+	// identified against the same site version as the envelope around them.
+	artifacts := bulkworkflow.SchemasFor(siteVersion)
+	for k, v := range bulkOutputSchemas(artifacts["bulk-plan.schema.json"], artifacts["bulk-apply-status.schema.json"]) {
 		all[k] = v
 	}
 

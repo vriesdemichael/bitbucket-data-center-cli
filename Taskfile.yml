@@ -157,6 +157,7 @@ tasks:
       # published snapshot names the version it belongs to while the committed
       # copies stay on the alias and docs:verify-generated stays stable.
       - go run ./tools/bulk-schema-export -out docs/site/reference/schemas -site-version '{{.VERSION}}'
+      - go run ./tools/output-schema-export -out docs/site/reference/schemas/output -site-version '{{.VERSION}}'
       - uv run --project '{{.DOCS_PROJECT_DIR}}' mike deploy --push --update-aliases {{.VERSION}} latest
       - uv run --project '{{.DOCS_PROJECT_DIR}}' mike set-default --push latest
 

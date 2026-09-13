@@ -143,7 +143,10 @@ type Participant struct {
 // Reported so a caller reading a saved document knows what it is looking at: an
 // empty list means something different under state=open than under state=all.
 type ListFilters struct {
-	State        string `json:"state,omitempty" jsonschema:"State filter, one of: open, closed, all. Kept in step with openapi.PullRequestStateFilters, which --state validates against; the vocabulary published here named two values the flag rejects and omitted the one it accepts."`
+	// State publishes its values as an enum declared from the slice --state is
+	// registered with. Written here as prose, the vocabulary named two values the
+	// flag rejects and left out the one it accepts (#577).
+	State        string `json:"state,omitempty" jsonschema:"State filter the listing was narrowed by."`
 	Start        int    `json:"start" jsonschema:"Offset the page started at."`
 	Limit        int    `json:"limit" jsonschema:"Maximum entries requested."`
 	SourceBranch string `json:"sourceBranch,omitempty" jsonschema:"Source branch filter, when one was given."`
@@ -240,7 +243,7 @@ type CommentThreads struct {
 	PullRequestID string            `json:"pullRequestId" jsonschema:"Pull request the comments belong to."`
 	Source        string            `json:"source" jsonschema:"Which endpoint answered: activity for the timeline, path for the path-scoped endpoint, blocker for the task endpoint. It decides what summary spans."`
 	Path          string            `json:"path,omitempty" jsonschema:"File the listing was scoped to, when --path was given."`
-	State         string            `json:"state,omitempty" jsonschema:"State filter that was applied: open, resolved, pending or all."`
+	State         string            `json:"state,omitempty" jsonschema:"State filter that was applied. --state unresolved is reported as open."`
 	Summary       ThreadSummary     `json:"summary"`
 	Threads       []Thread          `json:"threads" jsonschema:"Comment threads, unresolved first. Empty rather than absent when there are none."`
 	Comments      *[]result.Comment `json:"comments,omitempty" jsonschema:"Every comment, ungrouped. Present only with --full, and then present even when there are none: its absence means the flag was not passed, not that the file has no comments."`

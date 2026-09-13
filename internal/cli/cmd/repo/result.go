@@ -239,7 +239,7 @@ type SyncTriggered struct {
 	result.Status
 	Repository result.Repository `json:"repository"`
 	Ref        string            `json:"ref" jsonschema:"Ref that was synchronised."`
-	Action     string            `json:"action" jsonschema:"MERGE or DISCARD, which decides what happens to local commits."`
+	Action     string            `json:"action" jsonschema:"How the ref was reconciled with upstream, which decides what happens to local commits."`
 }
 
 // FileEdit is what `bb repo edit` returns.

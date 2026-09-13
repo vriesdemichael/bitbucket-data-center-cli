@@ -188,8 +188,14 @@ func TestDescribeAnswersAtTheDataLevel(t *testing.T) {
 	if _, ok := properties["planHash"]; !ok {
 		t.Errorf("the payload's own fields are missing: %+v", properties)
 	}
-	if _, stale := document["$id"]; stale {
-		t.Error("the payload schema kept the envelope's $id, which points at a directory bb no longer publishes")
+	// The payload is the published plan artifact, identified as that artifact:
+	// its references into $defs resolve against it. What must not reach the
+	// payload is the envelope's identity, under output/.
+	if id, _ := document["$id"].(string); !strings.HasSuffix(id, "/reference/schemas/bulk-plan.schema.json") {
+		t.Errorf("the payload schema is not identified as the plan artifact: %q", id)
+	}
+	if _, ok := document["$defs"]; !ok {
+		t.Error("the payload schema carries no $defs, so its references resolve to nothing")
 	}
 }
 
