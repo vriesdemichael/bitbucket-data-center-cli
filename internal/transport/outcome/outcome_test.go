@@ -79,6 +79,17 @@ func send(ctx context.Context, client *http.Client, method, url string) (*http.R
 	return response, exchange, err
 }
 
+// attempt sends a request that is expected to fail before a response arrives,
+// and closes whatever did arrive, so a surprise success leaks nothing.
+func attempt(ctx context.Context, client *http.Client, method, url string) (*outcome.Exchange, error) {
+	response, exchange, err := send(ctx, client, method, url)
+	if response != nil {
+		_ = response.Body.Close()
+	}
+
+	return exchange, err
+}
+
 func assertKind(t *testing.T, err error, want apperrors.Kind, says string) {
 	t.Helper()
 
@@ -103,7 +114,7 @@ func TestARequestThatNeverReachedTheServerIsTransient(t *testing.T) {
 	// A POST included: nothing was sent, so nothing can have been applied, and
 	// retrying later is the honest advice even for a mutation.
 	for _, method := range []string{http.MethodPost, http.MethodGet} {
-		_, exchange, err := send(context.Background(), &http.Client{Timeout: 2 * time.Second}, method, refused)
+		exchange, err := attempt(context.Background(), &http.Client{Timeout: 2 * time.Second}, method, refused)
 		if err == nil {
 			t.Fatalf("%s to a closed port succeeded", method)
 		}
@@ -118,7 +129,7 @@ func TestAMutationWhoseAnswerWasLostHasAnUnknownOutcome(t *testing.T) {
 	// had everything it needed to act, and bb heard nothing back.
 	url, _ := listen(t, func(net.Conn) {})
 
-	_, exchange, err := send(context.Background(), &http.Client{Timeout: 2 * time.Second}, http.MethodPost, url)
+	exchange, err := attempt(context.Background(), &http.Client{Timeout: 2 * time.Second}, http.MethodPost, url)
 	if err == nil {
 		t.Fatal("a dropped connection succeeded")
 	}
@@ -129,7 +140,7 @@ func TestAMutationWhoseAnswerWasLostHasAnUnknownOutcome(t *testing.T) {
 	}
 
 	// The same loss on a GET is only a failed read, and safe to repeat.
-	_, exchange, err = send(context.Background(), &http.Client{Timeout: 2 * time.Second}, http.MethodGet, url)
+	exchange, err = attempt(context.Background(), &http.Client{Timeout: 2 * time.Second}, http.MethodGet, url)
 	if err == nil {
 		t.Fatal("a dropped connection succeeded")
 	}
@@ -142,13 +153,13 @@ func TestAMutationThatTimedOutHasAnUnknownOutcome(t *testing.T) {
 	url, _ := listen(t, stall(t))
 	client := &http.Client{Timeout: 300 * time.Millisecond}
 
-	_, exchange, err := send(context.Background(), client, http.MethodPost, url)
+	exchange, err := attempt(context.Background(), client, http.MethodPost, url)
 	if err == nil {
 		t.Fatal("a stalled request succeeded")
 	}
 	assertKind(t, exchange.Classify(err), apperrors.KindUnknownOutcome, "timed out")
 
-	_, exchange, err = send(context.Background(), client, http.MethodGet, url)
+	exchange, err = attempt(context.Background(), client, http.MethodGet, url)
 	if err == nil {
 		t.Fatal("a stalled request succeeded")
 	}
@@ -165,7 +176,7 @@ func TestAnInterruptIsCancelledUnlessTheMutationHadAlreadyGone(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		_, exchange, err := send(ctx, &http.Client{}, http.MethodPost, url)
+		exchange, err := attempt(ctx, &http.Client{}, http.MethodPost, url)
 		if err == nil {
 			t.Fatal("a cancelled request succeeded")
 		}
@@ -186,7 +197,7 @@ func TestAnInterruptIsCancelledUnlessTheMutationHadAlreadyGone(t *testing.T) {
 			cancel()
 		}()
 
-		_, exchange, err := send(ctx, &http.Client{}, http.MethodPost, url)
+		exchange, err := attempt(ctx, &http.Client{}, http.MethodPost, url)
 		if err == nil {
 			t.Fatal("an interrupted request succeeded")
 		}
@@ -230,7 +241,7 @@ func TestARejectedCertificateIsPermanent(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	// A client that does not trust the test server's certificate.
-	_, exchange, err := send(context.Background(), &http.Client{Timeout: 2 * time.Second}, http.MethodGet, server.URL)
+	exchange, err := attempt(context.Background(), &http.Client{Timeout: 2 * time.Second}, http.MethodGet, server.URL)
 	if err == nil {
 		t.Fatal("an untrusted certificate was accepted")
 	}
@@ -307,7 +318,7 @@ func TestAClassificationSurvivesBeingWrapped(t *testing.T) {
 	t.Parallel()
 
 	url, _ := listen(t, func(net.Conn) {})
-	_, exchange, err := send(context.Background(), &http.Client{Timeout: 2 * time.Second}, http.MethodPost, url)
+	exchange, err := attempt(context.Background(), &http.Client{Timeout: 2 * time.Second}, http.MethodPost, url)
 	if err == nil {
 		t.Fatal("a dropped connection succeeded")
 	}
