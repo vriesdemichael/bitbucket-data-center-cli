@@ -134,7 +134,16 @@ bb stay in agreement and no token is ever written into a repository.`,
 				return nil
 			}
 
-			username, password, ok := resolveGitCredential(request)
+			username, password, ok, err := resolveGitCredential(request)
+			if err != nil {
+				// Nothing on stdout and exit 0, so git still falls through to its
+				// other helpers or a prompt, as the protocol expects. But said on
+				// stderr, which git shows: silence here was "not logged in" again,
+				// for a config bb could not read (#567).
+				fmt.Fprintf(cmd.ErrOrStderr(), "bb: %s\n", apperrors.MessageOf(err))
+
+				return nil
+			}
 			if !ok {
 				// No stored credentials for this host. Silence lets git fall
 				// through to its other helpers or prompt the user.
@@ -158,10 +167,13 @@ bb stay in agreement and no token is ever written into a repository.`,
 // personal access token is supplied as the password. Bitbucket Data Center
 // accepts an HTTP access token in that position over Basic auth, which is what
 // makes this work without the Bearer header the REST client uses.
-func resolveGitCredential(request credentialRequest) (string, string, bool) {
+func resolveGitCredential(request credentialRequest) (string, string, bool, error) {
 	stored, ok, err := config.LoadStoredAuthForHostStrict(request.URL())
-	if err != nil || !ok {
-		return "", "", false
+	if err != nil {
+		return "", "", false, err
+	}
+	if !ok {
+		return "", "", false, nil
 	}
 
 	if token := strings.TrimSpace(stored.BitbucketToken); token != "" {
@@ -174,16 +186,16 @@ func resolveGitCredential(request credentialRequest) (string, string, bool) {
 			// access token, but git requires the field to be present.
 			username = "x-token-auth"
 		}
-		return username, token, true
+		return username, token, true, nil
 	}
 
 	username := strings.TrimSpace(stored.BitbucketUsername)
 	password := stored.BitbucketPassword
 	if username != "" && password != "" {
-		return username, password, true
+		return username, password, true, nil
 	}
 
-	return "", "", false
+	return "", "", false, nil
 }
 
 // newSetupGitCommand wires bb in as git's credential helper for a Bitbucket

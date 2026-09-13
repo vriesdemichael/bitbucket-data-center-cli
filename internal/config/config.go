@@ -337,9 +337,15 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		return AppConfig{}, unreadableConfig(WorkspaceConfigPath, "workspace configuration", err)
 	}
 
-	storedConfig, err := LoadStoredConfig()
-	if err != nil {
-		return AppConfig{}, unreadableConfig(ConfigPath, "stored configuration", err)
+	// BB_DISABLE_STORED_CONFIG promises the stored file is ignored entirely, so
+	// it is not read at all. Reading it anyway made a damaged file on a shared
+	// CI runner fail every run the variable exists to isolate from it.
+	var storedConfig StoredConfig
+	if os.Getenv("BB_DISABLE_STORED_CONFIG") != "1" {
+		storedConfig, err = LoadStoredConfig()
+		if err != nil {
+			return AppConfig{}, err
+		}
 	}
 
 	tlsSettings, err := resolveTLSSettings(policy, sysConfig, overrides, flagSourced)
@@ -624,7 +630,7 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 	// not read is the same hazard with a longer name.
 	stored, err := LoadStoredConfig()
 	if err != nil {
-		return LoginResult{}, unreadableConfig(ConfigPath, "stored configuration", err)
+		return LoginResult{}, err
 	}
 	if stored.Hosts == nil {
 		stored.Hosts = map[string]StoredProfile{}
@@ -877,7 +883,13 @@ func MatchStoredHost(host string) (AliasMatch, bool, error) {
 }
 
 func Logout(host string) error {
-	stored, _ := LoadStoredConfig()
+	// Refused as a login is, for the same reason: this reads the file, drops
+	// one host and writes the rest back, so a damaged file read as empty was
+	// written back as empty and every host was gone (#567).
+	stored, err := LoadStoredConfig()
+	if err != nil {
+		return err
+	}
 	hostURL := normalizeURL(strings.TrimSpace(host))
 	if hostURL == "" {
 		if stored.DefaultHost == "" {
@@ -964,27 +976,37 @@ func SetDefaultHost(host string) (string, error) {
 	return normalizeURL(profile.URL), nil
 }
 
+// LoadStoredConfig reads the user's stored configuration.
+//
+// A file that is absent is an empty configuration. So is a location that
+// cannot be worked out at all -- no %AppData%, no $HOME -- because there is
+// no file there bb could have misread; saving still fails, where there is
+// somewhere to write. A file that exists and cannot be read is an error that
+// names it, for every caller: the alias and server commands returned the bare
+// parse error, which said what was wrong and not where (#567).
 func LoadStoredConfig() (StoredConfig, error) {
+	empty := StoredConfig{Hosts: map[string]StoredProfile{}, InsecureSecrets: map[string]StoredSecret{}}
+
 	path, err := ConfigPath()
 	if err != nil {
-		return StoredConfig{}, err
+		return empty, nil
 	}
 
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return StoredConfig{Hosts: map[string]StoredProfile{}, InsecureSecrets: map[string]StoredSecret{}}, nil
+			return empty, nil
 		}
-		return StoredConfig{}, err
+		return StoredConfig{}, unreadableConfig(ConfigPath, "stored configuration", err)
 	}
 
 	if err := ValidateConfigYAML(raw); err != nil {
-		return StoredConfig{}, err
+		return StoredConfig{}, unreadableConfig(ConfigPath, "stored configuration", err)
 	}
 
 	var stored StoredConfig
 	if err := yaml.Unmarshal(raw, &stored); err != nil {
-		return StoredConfig{}, err
+		return StoredConfig{}, unreadableConfig(ConfigPath, "stored configuration", err)
 	}
 	if stored.Hosts == nil {
 		stored.Hosts = map[string]StoredProfile{}
@@ -1011,7 +1033,53 @@ func SaveStoredConfig(stored StoredConfig) error {
 		return err
 	}
 
-	return os.WriteFile(path, encoded, 0o600)
+	return writeFileAtomically(path, encoded)
+}
+
+// writeFileAtomically replaces a file so that a reader sees the old contents
+// or the new ones and never a mixture.
+//
+// os.WriteFile truncates first and writes after. A crash between the two, or
+// a second bb reading in that gap, found an empty file -- which is a valid
+// empty configuration, so it read as "no hosts" without a word, and the next
+// login or logout wrote that back (#567). Writing beside the file and renaming
+// over it closes the gap. A symlink is followed rather than replaced, so a
+// config kept elsewhere and linked into place stays linked.
+func writeFileAtomically(path string, contents []byte) error {
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		path = resolved
+	}
+
+	temporary, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return err
+	}
+	discard := func() { _ = os.Remove(temporary.Name()) }
+
+	if _, err := temporary.Write(contents); err != nil {
+		_ = temporary.Close()
+		discard()
+		return err
+	}
+	if err := temporary.Sync(); err != nil {
+		_ = temporary.Close()
+		discard()
+		return err
+	}
+	if err := temporary.Close(); err != nil {
+		discard()
+		return err
+	}
+	if err := os.Chmod(temporary.Name(), 0o600); err != nil {
+		discard()
+		return err
+	}
+	if err := os.Rename(temporary.Name(), path); err != nil {
+		discard()
+		return err
+	}
+
+	return nil
 }
 
 func ConfigPath() (string, error) {
@@ -1332,22 +1400,36 @@ func ResolveUpdateBaseURL(flagValue string) (string, error) {
 	if envVal := strings.TrimSpace(os.Getenv("BB_UPDATE_BASE_URL")); envVal != "" {
 		return normalizeURL(envVal), nil
 	}
-	if ws, err := LoadWorkspaceConfig(); err == nil && strings.TrimSpace(ws.UpdateBaseURL) != "" {
+	// A damaged file is an error here as everywhere else (#567). Skipping it
+	// sent bb update to whichever base URL the next file happened to name.
+	ws, err := LoadWorkspaceConfig()
+	if err != nil {
+		return "", unreadableConfig(WorkspaceConfigPath, "workspace configuration", err)
+	}
+	if strings.TrimSpace(ws.UpdateBaseURL) != "" {
 		return normalizeURL(ws.UpdateBaseURL), nil
 	}
-	if stored, err := LoadStoredConfig(); err == nil && strings.TrimSpace(stored.UpdateBaseURL) != "" {
-		return normalizeURL(stored.UpdateBaseURL), nil
+	if os.Getenv("BB_DISABLE_STORED_CONFIG") != "1" {
+		stored, err := LoadStoredConfig()
+		if err != nil {
+			return "", err
+		}
+		if strings.TrimSpace(stored.UpdateBaseURL) != "" {
+			return normalizeURL(stored.UpdateBaseURL), nil
+		}
 	}
-	if sys, err := LoadSystemConfig(); err == nil {
-		if strings.TrimSpace(sys.UpdateBaseURL) != "" {
-			return normalizeURL(sys.UpdateBaseURL), nil
-		}
-		if sys.Policies != nil && strings.TrimSpace(sys.Policies.UpdateBaseURL) != "" {
-			return normalizeURL(sys.Policies.UpdateBaseURL), nil
-		}
-		if sys.Policy != nil && strings.TrimSpace(sys.Policy.UpdateBaseURL) != "" {
-			return normalizeURL(sys.Policy.UpdateBaseURL), nil
-		}
+	sys, err := LoadSystemConfig()
+	if err != nil {
+		return "", unreadableConfig(SystemConfigPath, "system configuration", err)
+	}
+	if strings.TrimSpace(sys.UpdateBaseURL) != "" {
+		return normalizeURL(sys.UpdateBaseURL), nil
+	}
+	if sys.Policies != nil && strings.TrimSpace(sys.Policies.UpdateBaseURL) != "" {
+		return normalizeURL(sys.Policies.UpdateBaseURL), nil
+	}
+	if sys.Policy != nil && strings.TrimSpace(sys.Policy.UpdateBaseURL) != "" {
+		return normalizeURL(sys.Policy.UpdateBaseURL), nil
 	}
 	policy, err := LoadPolicy()
 	if err == nil && strings.TrimSpace(policy.UpdateBaseURL) != "" {
@@ -2265,23 +2347,37 @@ func UseOSKeyring() {
 // So this names the file and stops. Repairing it is the reader's decision,
 // with the path in front of them, rather than a suggestion from the tool that
 // has already misread it once.
+//
+// Permanent, exit 1. Nothing about the invocation is wrong and running it
+// again reads the same file; validation, exit 2, told a script its command
+// line was at fault. The system file is not the reader's to remove: it
+// carries the administrator's policy and fails closed so that damaging it
+// cannot switch the policy off, so it is theirs to repair.
 func unreadableConfig(pathOf func() (string, error), what string, cause error) error {
-	// The cause is not repeated in the message: AppError.Error appends it, and
-	// embedding it too produced the parse error twice, each with its own kind
-	// prefix.
-	path, pathErr := pathOf()
-	if pathErr != nil || strings.TrimSpace(path) == "" {
-		return apperrors.New(apperrors.KindValidation,
-			fmt.Sprintf("the %s could not be read", what), cause)
+	remedy := "Fix or remove that file; bb will not rewrite a file it could not read"
+	if what == "system configuration" {
+		remedy = "It carries your administrator's policy, so bb stops rather than run without it; ask them to repair it"
 	}
 
-	return apperrors.New(apperrors.KindValidation,
-		fmt.Sprintf(
-			"the %s at %s could not be read. Fix or remove that file; bb will not rewrite a file it could not read",
-			what, path,
-		),
-		cause)
+	// The cause's kind is dropped from how it reads: this error says what kind
+	// of failure it is, and the parse error carried "validation:" into the
+	// middle of the sentence.
+	cause = kindless{cause}
+
+	path, pathErr := pathOf()
+	if pathErr != nil || strings.TrimSpace(path) == "" {
+		return apperrors.New(apperrors.KindPermanent, fmt.Sprintf("the %s could not be read. %s", what, remedy), cause)
+	}
+
+	return apperrors.New(apperrors.KindPermanent, fmt.Sprintf("the %s at %s could not be read. %s", what, path, remedy), cause)
 }
+
+// kindless reads as its cause without the kind prefix, and unwraps to it.
+type kindless struct{ error }
+
+func (cause kindless) Error() string { return apperrors.MessageOf(cause.error) }
+
+func (cause kindless) Unwrap() error { return cause.error }
 
 // credentialKey scopes a keyring entry to the config file it belongs to.
 //

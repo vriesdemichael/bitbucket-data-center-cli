@@ -108,7 +108,9 @@ server -- give this server a narrower PAT than your own through env.`,
 			if strings.TrimSpace(host) == "" {
 				contexts, err := config.ListServerContexts()
 				if err != nil {
-					return apperrors.New(apperrors.KindInternal, "failed to list server contexts", err)
+					// Already classified, and naming the file; wrapping it as internal
+					// said bb was broken when a config file was (#567).
+					return err
 				}
 				if len(contexts) > 1 {
 					return apperrors.New(apperrors.KindValidation,
