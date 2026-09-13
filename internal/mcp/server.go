@@ -129,6 +129,29 @@ func enumInputSchema[In any](enums map[string][]string) *jsonschema.Schema {
 	return schema
 }
 
+// describedInputSchema derives the input schema for In and replaces named
+// properties' descriptions.
+//
+// For a description built from the values a validator checks, which a struct
+// tag cannot hold: a vocabulary written into the tag is a second copy, and the
+// second copy is the one that drifted (#577). Panics on a property In does
+// not have, as enumInputSchema does.
+func describedInputSchema[In any](descriptions map[string]string) *jsonschema.Schema {
+	schema, err := jsonschema.For[In](nil)
+	if err != nil {
+		panic(fmt.Sprintf("deriving input schema for %T: %v", *new(In), err))
+	}
+	for property, description := range descriptions {
+		target, ok := schema.Properties[property]
+		if !ok {
+			panic(fmt.Sprintf("description declared for property %q which %T does not have", property, *new(In)))
+		}
+		target.Description = description
+	}
+
+	return schema
+}
+
 // readOnly and mutating say whether a tool writes at all. That is the one thing
 // they say: DestructiveHint is not set here, because it answers the same
 // question as Safe and is derived from it in toolSpec.

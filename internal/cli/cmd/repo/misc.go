@@ -520,7 +520,10 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 		},
 	}
 	syncCmd.Flags().StringVar(&syncRefID, "ref", "", "Ref to synchronize (defaults to the repository default branch)")
-	enumflag.Register(syncCmd.Flags(), &syncAction, "action", "MERGE", []string{"MERGE", "DISCARD", "REBASE"}, "How to reconcile the ref")
+	// syncActions, the slice the output schema's enum is declared from: the flag
+	// listed REBASE inline and the schema did not, so a successful rebase sync
+	// emitted a document its own schema rejected (#577).
+	enumflag.Register(syncCmd.Flags(), &syncAction, "action", "MERGE", syncActions, "How to reconcile the ref")
 	syncCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	statusCmd := &cobra.Command{

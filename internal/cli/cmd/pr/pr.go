@@ -3242,6 +3242,10 @@ func isAuthor(author, authorUsername, username string) bool {
 var (
 	reviewStatuses = []string{"APPROVED", "NEEDS_WORK", "UNAPPROVED"}
 	threadStates   = []string{"open", "unresolved", "resolved", "pending", "all"}
+
+	// echoedThreadStates are the filters pr comment list writes back: every
+	// one --state takes, except the synonym it normalises to open.
+	echoedThreadStates = []string{"open", "resolved", "pending", "all"}
 )
 
 // mergeBlockerLines renders one line per veto for `bb pr get`.

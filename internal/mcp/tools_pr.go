@@ -78,9 +78,12 @@ func specGetPullRequest() Spec {
 
 // ListPullRequestsInput is the argument set for list_pull_requests.
 type ListPullRequestsInput struct {
-	Project      string `json:"project,omitempty" jsonschema:"Bitbucket project key (omit for dashboard mode)"`
-	Repo         string `json:"repo,omitempty" jsonschema:"Repository slug (omit for dashboard mode)"`
-	State        string `json:"state,omitempty" jsonschema:"Filter by state: OPEN (default), MERGED, DECLINED, ALL"`
+	Project string `json:"project,omitempty" jsonschema:"Bitbucket project key (omit for dashboard mode)"`
+	Repo    string `json:"repo,omitempty" jsonschema:"Repository slug (omit for dashboard mode)"`
+	// State's description is set in specListPullRequests, built from the values
+	// the service accepts. As a tag it advertised MERGED and DECLINED, which are
+	// refused, and left out closed, which is not (#577).
+	State        string `json:"state,omitempty"`
 	Role         string `json:"role,omitempty" jsonschema:"Filter by role: REVIEWER, AUTHOR, or PARTICIPANT (dashboard mode only; omit project and repo to use it)"`
 	SourceBranch string `json:"source_branch,omitempty" jsonschema:"Filter by source branch name (repo mode only)"`
 	TargetBranch string `json:"target_branch,omitempty" jsonschema:"Filter by target branch name (repo mode only)"`
@@ -99,8 +102,12 @@ func specListPullRequests() Spec {
 		Description: "List pull requests. Without project/repo, lists the current user's PRs across all repositories (dashboard).",
 		// No enum on state or role: the service normalises case, so pinning the
 		// upper-case spellings would reject "author", which works today. The
-		// permitted values are in the field descriptions instead.
+		// permitted values are in the field descriptions instead, and state's is
+		// built from the list the service validates against.
 		Annotations: readOnly(),
+		InputSchema: describedInputSchema[ListPullRequestsInput](map[string]string{
+			"state": "Filter by state, in any case: " + strings.Join(openapi.PullRequestStateFilters, ", ") + ". Defaults to open.",
+		}),
 	}
 	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListPullRequestsInput, ListPullRequestsOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)

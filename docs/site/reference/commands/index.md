@@ -3093,7 +3093,16 @@ Use "bb commit [command] --help" for more information about a command.
 Compare two commits or refs
 
 ```text
-Compare two commits or refs
+List the commits reachable from <from> but not from <to>.
+
+The direction is Bitbucket's, and it is the reverse of git's. To list what a
+branch or a failing commit has that another does not, pass it first.
+
+  bb commit compare feature/x main        # commits feature/x adds
+  bb commit compare <failing> <green>     # commits since the last green build
+
+Given git log base..feature reads the other way round, the git-natural order
+lists nothing for refs that do differ.
 
 Usage:
   bb commit compare <from> <to> [flags]
