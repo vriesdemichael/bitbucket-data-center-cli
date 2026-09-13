@@ -20,7 +20,7 @@ func (service *Service) ListProjectWebhooks(ctx context.Context, projectKey stri
 
 	response, err := service.client.FindWebhooksWithResponse(ctx, trimmedProject, nil)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list project webhooks", err)
+		return nil, apperrors.Transport("failed to list project webhooks", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (service *Service) CreateProjectWebhook(ctx context.Context, projectKey str
 
 	response, err := service.client.CreateWebhookWithResponse(ctx, trimmedProject, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to create project webhook", err)
+		return nil, apperrors.Transport("failed to create project webhook", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func (service *Service) GetProjectWebhook(ctx context.Context, projectKey string
 
 	response, err := service.client.GetWebhookWithResponse(ctx, trimmedProject, trimmedID, nil)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get project webhook", err)
+		return nil, apperrors.Transport("failed to get project webhook", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (service *Service) GetProjectWebhook(ctx context.Context, projectKey string
 func (service *Service) projectWebhookForUpdate(ctx context.Context, projectKey string, id string) (openapigenerated.RestWebhook, error) {
 	response, err := service.client.GetWebhookWithResponse(ctx, projectKey, id, nil)
 	if err != nil {
-		return openapigenerated.RestWebhook{}, apperrors.New(apperrors.KindTransient, "failed to read the project webhook before updating it", err)
+		return openapigenerated.RestWebhook{}, apperrors.Transport("failed to read the project webhook before updating it", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestWebhook{}, err
@@ -147,7 +147,7 @@ func (service *Service) UpdateProjectWebhook(ctx context.Context, projectKey str
 
 	response, err := service.client.UpdateWebhookWithResponse(ctx, trimmedProject, trimmedID, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to update project webhook", err)
+		return nil, apperrors.Transport("failed to update project webhook", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (service *Service) DeleteProjectWebhook(ctx context.Context, projectKey str
 
 	response, err := service.client.DeleteWebhookWithResponse(ctx, trimmedProject, trimmedID)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete project webhook", err)
+		return apperrors.Transport("failed to delete project webhook", err)
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
@@ -218,7 +218,7 @@ func (service *Service) TestProjectWebhook(ctx context.Context, projectKey strin
 
 	response, err := service.client.TestWebhookWithResponse(ctx, trimmedProject, params, body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to test project webhook", err)
+		return nil, apperrors.Transport("failed to test project webhook", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -245,7 +245,7 @@ func (service *Service) GetProjectWebhookStatistics(ctx context.Context, project
 
 	response, err := service.client.GetStatisticsWithResponse(ctx, trimmedProject, trimmedID, nil)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get project webhook statistics", err)
+		return nil, apperrors.Transport("failed to get project webhook statistics", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -272,7 +272,7 @@ func (service *Service) GetProjectWebhookStatisticsSummary(ctx context.Context, 
 
 	response, err := service.client.GetStatisticsSummaryWithResponse(ctx, trimmedProject, trimmedID)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get project webhook statistics summary", err)
+		return nil, apperrors.Transport("failed to get project webhook statistics summary", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err

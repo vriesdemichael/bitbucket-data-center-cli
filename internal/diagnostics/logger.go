@@ -297,19 +297,40 @@ func strconvQuote(value string) string {
 	return string(encoded)
 }
 
+// credentialField matches a JSON field whose name marks it sensitive, and its
+// string value.
+//
+// Matched in the text rather than decoded and encoded again. That covers a
+// body that is not JSON as a whole -- a page with a JSON blob inside it -- and
+// leaves one that is as it was: re-encoding sorted its keys, escaped its angle
+// brackets and rounded integers past 2^53.
+var credentialField = regexp.MustCompile(`(?i)("[a-z0-9_.-]*(?:token|password|passwd|secret|authorization|cookie|apikey|api-key|api_key|credential)[a-z0-9_.-]*"\s*:\s*")((?:[^"\\]|\\.)*)(")`)
+
 // credentialInURL matches a URL carrying userinfo, which is where a token
 // hides in text that is not a URL field: clone links, Location headers, and the
-// echoed request line in an upstream error page.
-var credentialInURL = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.-]*://)([^/\s:@]+):([^/\s@]+)@`)
+// echoed request line in an upstream error page. The slashes may arrive escaped,
+// as some JSON encoders write them, and the secret may contain a slash, as a
+// base64 token can.
+var credentialInURL = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.-]*:(?:\\?/){2})([^/\\\s:@"']+):([^\s@"']+)@`)
 
-// authorizationHeader matches an Authorization header and everything it
-// carries, up to whatever ends the value.
+// credentialQuery matches a credential carried as a query parameter.
+var credentialQuery = regexp.MustCompile(`(?i)([?&;](?:access_token|private_token|token|api[_-]?key|password|passwd|secret|client_secret|auth|sig|signature)=)([^&\s"'<#]+)`)
+
+// cookieHeader matches a Cookie or Set-Cookie header. The value is a list of
+// pairs, any of which can be a session, so it runs to the end of the line
+// rather than to the first semicolon.
+var cookieHeader = regexp.MustCompile(`(?i)((?:set-)?cookie["']?\s*[:=]\s*["']?)([^\r\n"'<]+)`)
+
+// credentialHeader matches a header, or a key shaped like one, whose value is a
+// credential -- through to the credential itself.
 //
-// It has to reach past the scheme. Written as \S+ it matched "Bearer" and left
-// the credential after it untouched, which is the one thing this exists to
-// prevent. The stop set is what ends a value in the places a header turns up:
-// a line break, a quote in JSON, a tag in an HTML page.
-var authorizationHeader = regexp.MustCompile(`(?i)(authorization\s*[:=]\s*)([^\r\n"'<;]+)`)
+// It has to reach past a scheme and past quoting. Written as \S+ it matched
+// "Bearer" and left the token after it. Written to stop at a quote, it matched
+// nothing of `Authorization: "Bearer X"` and put the marker in front of the
+// secret, which looks redacted and is not. So quotes and HTML spacing between
+// the name and the value are skipped, a scheme word is kept for the reader,
+// and the value runs to whatever ends it.
+var credentialHeader = regexp.MustCompile(`(?i)((?:proxy-)?authorization|x-[a-z0-9-]*(?:token|key|secret)|api[-_]?key)(["']?\s*[:=](?:\s|&nbsp;|["'])*)((?:bearer|basic|token|negotiate|digest)(?:\s|&nbsp;)+)?([^\s"'<>;,}&]+)`)
 
 // RedactText removes credentials from free text.
 //
@@ -319,62 +340,21 @@ var authorizationHeader = regexp.MustCompile(`(?i)(authorization\s*[:=]\s*)([^\r
 // request line, a clone URL, or an Authorization header puts a live credential
 // in there, and nothing on that path was redacting anything (#574).
 //
-// Three passes, cheapest first. A body that parses as JSON is redacted by key,
-// which is exact. Everything else is matched: a URL carrying userinfo, and an
-// Authorization header. Matching is a blunt instrument and will not catch a
-// secret a server invents a new shape for -- it is the floor, not the ceiling.
+// Every pass is a match on the text, for the shapes a credential arrives in: a
+// sensitive JSON field, a URL with userinfo, a query parameter, a cookie, and
+// a credential header. Matching is a blunt instrument and will not catch a
+// secret a server invents a new shape for -- a bare token as a URL's username
+// is indistinguishable from a username -- so this is the floor, not the
+// ceiling.
 func RedactText(text string) string {
 	if strings.TrimSpace(text) == "" {
 		return text
 	}
 
-	if redacted, ok := redactJSONText(text); ok {
-		text = redacted
-	}
-
+	text = credentialField.ReplaceAllString(text, "${1}[REDACTED]${3}")
 	text = credentialInURL.ReplaceAllString(text, "${1}${2}:[REDACTED]@")
+	text = credentialQuery.ReplaceAllString(text, "${1}[REDACTED]")
+	text = cookieHeader.ReplaceAllString(text, "${1}[REDACTED]")
 
-	return authorizationHeader.ReplaceAllString(text, "${1}[REDACTED]")
-}
-
-// redactJSONText redacts a JSON document by key, and reports whether the text
-// was JSON at all.
-func redactJSONText(text string) (string, bool) {
-	var decoded any
-	if err := json.Unmarshal([]byte(text), &decoded); err != nil {
-		return text, false
-	}
-
-	encoded, err := json.Marshal(redactAny("", decoded))
-	if err != nil {
-		return text, false
-	}
-
-	return string(encoded), true
-}
-
-// redactAny walks a decoded document, redacting by the key a value sits under.
-func redactAny(key string, value any) any {
-	if isSensitiveKey(key) {
-		return "[REDACTED]"
-	}
-
-	switch typed := value.(type) {
-	case map[string]any:
-		redacted := make(map[string]any, len(typed))
-		for nestedKey, nested := range typed {
-			redacted[nestedKey] = redactAny(nestedKey, nested)
-		}
-		return redacted
-	case []any:
-		redacted := make([]any, 0, len(typed))
-		for _, nested := range typed {
-			redacted = append(redacted, redactAny(key, nested))
-		}
-		return redacted
-	case string:
-		return redactURLString(typed)
-	default:
-		return value
-	}
+	return credentialHeader.ReplaceAllString(text, "${1}${2}${3}[REDACTED]")
 }

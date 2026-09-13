@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -18,8 +19,9 @@ const (
 	KindPermanent      Kind = "permanent"
 	KindNotImplemented Kind = "not_implemented"
 	KindInternal       Kind = "internal"
-	// KindCancelled is work the operator stopped, or a deadline that expired,
-	// before it finished.
+	// KindCancelled is work the operator stopped before it finished: an
+	// interrupt, not a timeout. A request that timed out is transient, or
+	// unknown_outcome when it may already have been applied.
 	//
 	// It is deliberately not transient. Transient is documented as "retry
 	// later", and a caller that retries a Ctrl-C re-runs the very thing
@@ -55,6 +57,36 @@ type AppError struct {
 }
 
 func New(kind Kind, message string, cause error) *AppError {
+	return &AppError{
+		Kind:    kind,
+		Message: message,
+		Cause:   cause,
+	}
+}
+
+// Transport wraps the failure of a call that went over the network, keeping
+// the kind the transport classified it as.
+//
+// The transport is where a failure gets its meaning -- transient, permanent,
+// cancelled, or unknown_outcome -- and the kind a caller sees is the outermost
+// one. So a service that wrapped with New(KindTransient, ...) overwrote that
+// answer with "retry later" for every failure it wrapped: a rejected
+// certificate, an interrupt, and a POST that may already have been applied
+// (#574). This adds the caller's context and leaves the classification alone.
+//
+// A cause nothing classified is transient, which is what every one of these
+// sites said before; an interrupt nothing classified is cancelled.
+func Transport(message string, cause error) *AppError {
+	kind := KindTransient
+
+	var classified *AppError
+	switch {
+	case errors.As(cause, &classified) && classified.Kind != "":
+		kind = classified.Kind
+	case errors.Is(cause, context.Canceled):
+		kind = KindCancelled
+	}
+
 	return &AppError{
 		Kind:    kind,
 		Message: message,
@@ -215,15 +247,29 @@ func WithDetail(err error, key, value string) error {
 }
 
 // DetailsOf returns the machine-readable details attached to err, if any.
+//
+// Collected from every classified error in the chain, the outermost winning
+// a key two of them carry. A detail belongs to the failure, not to whichever
+// layer attached it: the upstream status an error mapping attached has to
+// survive a service wrapping that error with context of its own.
 func DetailsOf(err error) map[string]string {
-	var appError *AppError
-	if !errors.As(err, &appError) || len(appError.Details) == 0 {
-		return nil
-	}
+	var details map[string]string
 
-	details := make(map[string]string, len(appError.Details))
-	for key, value := range appError.Details {
-		details[key] = value
+	for current := err; current != nil; current = errors.Unwrap(current) {
+		//nolint:errorlint // walking the chain one link at a time, deliberately
+		appError, ok := current.(*AppError)
+		if !ok || appError == nil {
+			continue
+		}
+
+		for key, value := range appError.Details {
+			if details == nil {
+				details = make(map[string]string, len(appError.Details))
+			}
+			if _, taken := details[key]; !taken {
+				details[key] = value
+			}
+		}
 	}
 
 	return details

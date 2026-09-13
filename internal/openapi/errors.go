@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync/atomic"
 
@@ -83,6 +84,48 @@ func MapStatusError(status int, body []byte) error {
 
 	baseMessage := fmt.Sprintf("bitbucket API returned %d: %s", status, message)
 
+	return withUpstreamDetails(mapStatus(status, body, baseMessage), status, body)
+}
+
+// withUpstreamDetails attaches what Bitbucket answered as fields a caller can
+// branch on rather than a sentence to match (#574): the status and, when the
+// body names one, the exception.
+//
+// The exception name is the stable part of a Bitbucket error. The message is
+// written for people and is reworded between releases; a script telling "you
+// cannot approve your own pull request" from any other refusal reads
+// upstreamException rather than the words.
+func withUpstreamDetails(mapped error, status int, body []byte) error {
+	mapped = apperrors.WithDetail(mapped, "upstreamStatus", strconv.Itoa(status))
+	if exception := firstException(body); exception != "" {
+		mapped = apperrors.WithDetail(mapped, "upstreamException", exception)
+	}
+
+	return mapped
+}
+
+// firstException is the first exception name a Bitbucket error envelope
+// carries, or nothing when the body is not one.
+func firstException(body []byte) string {
+	var envelope struct {
+		Errors []struct {
+			ExceptionName *string `json:"exceptionName"`
+		} `json:"errors"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(body), &envelope); err != nil {
+		return ""
+	}
+
+	for _, one := range envelope.Errors {
+		if one.ExceptionName != nil && strings.TrimSpace(*one.ExceptionName) != "" {
+			return strings.TrimSpace(*one.ExceptionName)
+		}
+	}
+
+	return ""
+}
+
+func mapStatus(status int, body []byte, baseMessage string) error {
 	switch status {
 	case http.StatusBadRequest:
 		if kind, ok := kindFromException(body); ok {
@@ -181,6 +224,10 @@ func kindFromException(body []byte) (apperrors.Kind, bool) {
 //     documented type. Same disagreement, and the body goes into the message
 //     because it is the evidence for the OPENAPI-* entry that should be written.
 //
+// The body is summarised and redacted like any other upstream body: an SSO
+// proxy answering 200 with its login page put 18KB of HTML, and whatever
+// credential the page echoed, into the message (#574).
+//
 // Both are permanent: a retry sends the identical request and gets the
 // identical answer. Neither is internal, which is the word bb uses for its own
 // bugs and which sends the reader to the wrong repository.
@@ -201,7 +248,7 @@ func MissingPayload(status int, body []byte, what string) error {
 	return apperrors.New(apperrors.KindPermanent, fmt.Sprintf(
 		"%s: the server answered %d with a body this client could not read as the documented payload, "+
 			"so the specification and the server disagree: %s",
-		what, status, strings.TrimSpace(string(body))), nil)
+		what, status, summarizeUpstream(body)), nil)
 }
 
 // NamesException reports whether a Bitbucket error body names a given exception.
@@ -260,6 +307,11 @@ func SetFullUpstreamBodies(enabled bool) {
 	fullUpstreamBodies.Store(enabled)
 }
 
+// FullUpstreamBodies reports whether --full-error-body is in effect.
+func FullUpstreamBodies() bool {
+	return fullUpstreamBodies.Load()
+}
+
 // summarizeUpstream turns a response body into one line worth reading.
 //
 // Bitbucket's own sentence is preferred where there is one: the body for a
@@ -281,13 +333,17 @@ func summarizeUpstream(body []byte) string {
 		return diagnostics.RedactText(strings.Join(messages, "; "))
 	}
 
-	if fullUpstreamBodies.Load() || len(trimmed) <= upstreamBodyLimit {
+	// Counted and cut in characters, not bytes. A byte slice can end halfway
+	// through one, which put invalid UTF-8 on stderr and overstated how much
+	// was left out.
+	characters := []rune(trimmed)
+	if fullUpstreamBodies.Load() || len(characters) <= upstreamBodyLimit {
 		return trimmed
 	}
 
 	return fmt.Sprintf(
 		"%s... (%d more characters; pass --full-error-body to see all of it)",
-		trimmed[:upstreamBodyLimit], len(trimmed)-upstreamBodyLimit,
+		string(characters[:upstreamBodyLimit]), len(characters)-upstreamBodyLimit,
 	)
 }
 

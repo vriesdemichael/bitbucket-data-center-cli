@@ -82,7 +82,7 @@ func (s *Service) List(ctx context.Context, scope ScopeType, target string, maxR
 				resp, err := s.client.GetAllAccessTokens2WithResponse(ctx, user,
 					&openapigenerated.GetAllAccessTokens2Params{Start: &startValue, Limit: &limitValue})
 				if err != nil {
-					return tokenPage{}, apperrors.New(apperrors.KindTransient, "failed to list user tokens", err)
+					return tokenPage{}, apperrors.Transport("failed to list user tokens", err)
 				}
 				statusCode, raw = resp.StatusCode(), resp.Body
 				if body := resp.ApplicationjsonCharsetUTF8200; body != nil && body.Values != nil {
@@ -93,7 +93,7 @@ func (s *Service) List(ctx context.Context, scope ScopeType, target string, maxR
 				resp, err := s.client.GetAllAccessTokensWithResponse(ctx, project,
 					&openapigenerated.GetAllAccessTokensParams{Start: &startValue, Limit: &limitValue})
 				if err != nil {
-					return tokenPage{}, apperrors.New(apperrors.KindTransient, "failed to list project tokens", err)
+					return tokenPage{}, apperrors.Transport("failed to list project tokens", err)
 				}
 				statusCode, raw = resp.StatusCode(), resp.Body
 				if body := resp.ApplicationjsonCharsetUTF8200; body != nil && body.Values != nil {
@@ -104,7 +104,7 @@ func (s *Service) List(ctx context.Context, scope ScopeType, target string, maxR
 				resp, err := s.client.GetAllAccessTokens1WithResponse(ctx, project, repository,
 					&openapigenerated.GetAllAccessTokens1Params{Start: &startValue, Limit: &limitValue})
 				if err != nil {
-					return tokenPage{}, apperrors.New(apperrors.KindTransient, "failed to list repository tokens", err)
+					return tokenPage{}, apperrors.Transport("failed to list repository tokens", err)
 				}
 				statusCode, raw = resp.StatusCode(), resp.Body
 				if body := resp.ApplicationjsonCharsetUTF8200; body != nil && body.Values != nil {
@@ -134,7 +134,7 @@ func (s *Service) Get(ctx context.Context, scope ScopeType, target string, id st
 		}
 		resp, err := s.client.GetById2WithResponse(ctx, trimmedUser, trimmedId)
 		if err != nil {
-			return openapigenerated.RestAccessToken{}, apperrors.New(apperrors.KindTransient, "failed to get user token", err)
+			return openapigenerated.RestAccessToken{}, apperrors.Transport("failed to get user token", err)
 		}
 		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 			return openapigenerated.RestAccessToken{}, err
@@ -150,7 +150,7 @@ func (s *Service) Get(ctx context.Context, scope ScopeType, target string, id st
 		}
 		resp, err := s.client.GetByIdWithResponse(ctx, trimmedProj, trimmedId)
 		if err != nil {
-			return openapigenerated.RestAccessToken{}, apperrors.New(apperrors.KindTransient, "failed to get project token", err)
+			return openapigenerated.RestAccessToken{}, apperrors.Transport("failed to get project token", err)
 		}
 		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 			return openapigenerated.RestAccessToken{}, err
@@ -166,7 +166,7 @@ func (s *Service) Get(ctx context.Context, scope ScopeType, target string, id st
 		}
 		resp, err := s.client.GetById1WithResponse(ctx, proj, repo, trimmedId)
 		if err != nil {
-			return openapigenerated.RestAccessToken{}, apperrors.New(apperrors.KindTransient, "failed to get repository token", err)
+			return openapigenerated.RestAccessToken{}, apperrors.Transport("failed to get repository token", err)
 		}
 		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 			return openapigenerated.RestAccessToken{}, err
@@ -217,7 +217,7 @@ func (s *Service) Create(ctx context.Context, scope ScopeType, target string, na
 		}
 		resp, err := s.client.CreateAccessToken2WithResponse(ctx, trimmedUser, body)
 		if err != nil {
-			return openapigenerated.RestRawAccessToken{}, apperrors.New(apperrors.KindTransient, "failed to create user token", err)
+			return openapigenerated.RestRawAccessToken{}, apperrors.Transport("failed to create user token", err)
 		}
 		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 			return openapigenerated.RestRawAccessToken{}, err
@@ -233,7 +233,7 @@ func (s *Service) Create(ctx context.Context, scope ScopeType, target string, na
 		}
 		resp, err := s.client.CreateAccessTokenWithResponse(ctx, trimmedProj, body)
 		if err != nil {
-			return openapigenerated.RestRawAccessToken{}, apperrors.New(apperrors.KindTransient, "failed to create project token", err)
+			return openapigenerated.RestRawAccessToken{}, apperrors.Transport("failed to create project token", err)
 		}
 		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 			return openapigenerated.RestRawAccessToken{}, err
@@ -249,7 +249,7 @@ func (s *Service) Create(ctx context.Context, scope ScopeType, target string, na
 		}
 		resp, err := s.client.CreateAccessToken1WithResponse(ctx, proj, repo, body)
 		if err != nil {
-			return openapigenerated.RestRawAccessToken{}, apperrors.New(apperrors.KindTransient, "failed to create repository token", err)
+			return openapigenerated.RestRawAccessToken{}, apperrors.Transport("failed to create repository token", err)
 		}
 		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 			return openapigenerated.RestRawAccessToken{}, err
@@ -287,7 +287,7 @@ func (s *Service) Update(ctx context.Context, scope ScopeType, target string, id
 		}
 		resp, err := s.client.UpdateAccessToken2WithResponse(ctx, trimmedUser, trimmedId, body)
 		if err != nil {
-			return openapigenerated.RestAccessToken{}, apperrors.New(apperrors.KindTransient, "failed to update user token", err)
+			return openapigenerated.RestAccessToken{}, apperrors.Transport("failed to update user token", err)
 		}
 		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 			return openapigenerated.RestAccessToken{}, err
@@ -303,7 +303,7 @@ func (s *Service) Update(ctx context.Context, scope ScopeType, target string, id
 		}
 		resp, err := s.client.UpdateAccessTokenWithResponse(ctx, trimmedProj, trimmedId, body)
 		if err != nil {
-			return openapigenerated.RestAccessToken{}, apperrors.New(apperrors.KindTransient, "failed to update project token", err)
+			return openapigenerated.RestAccessToken{}, apperrors.Transport("failed to update project token", err)
 		}
 		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 			return openapigenerated.RestAccessToken{}, err
@@ -319,7 +319,7 @@ func (s *Service) Update(ctx context.Context, scope ScopeType, target string, id
 		}
 		resp, err := s.client.UpdateAccessToken1WithResponse(ctx, proj, repo, trimmedId, body)
 		if err != nil {
-			return openapigenerated.RestAccessToken{}, apperrors.New(apperrors.KindTransient, "failed to update repository token", err)
+			return openapigenerated.RestAccessToken{}, apperrors.Transport("failed to update repository token", err)
 		}
 		if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 			return openapigenerated.RestAccessToken{}, err
@@ -349,7 +349,7 @@ func (s *Service) Revoke(ctx context.Context, scope ScopeType, target string, id
 		}
 		resp, err := s.client.DeleteById2WithResponse(ctx, trimmedUser, trimmedId)
 		if err != nil {
-			return apperrors.New(apperrors.KindTransient, "failed to revoke user token", err)
+			return apperrors.Transport("failed to revoke user token", err)
 		}
 		return openapi.MapStatusError(resp.StatusCode(), resp.Body)
 
@@ -360,7 +360,7 @@ func (s *Service) Revoke(ctx context.Context, scope ScopeType, target string, id
 		}
 		resp, err := s.client.DeleteByIdWithResponse(ctx, trimmedProj, trimmedId)
 		if err != nil {
-			return apperrors.New(apperrors.KindTransient, "failed to revoke project token", err)
+			return apperrors.Transport("failed to revoke project token", err)
 		}
 		return openapi.MapStatusError(resp.StatusCode(), resp.Body)
 
@@ -371,7 +371,7 @@ func (s *Service) Revoke(ctx context.Context, scope ScopeType, target string, id
 		}
 		resp, err := s.client.DeleteById1WithResponse(ctx, proj, repo, trimmedId)
 		if err != nil {
-			return apperrors.New(apperrors.KindTransient, "failed to revoke repository token", err)
+			return apperrors.Transport("failed to revoke repository token", err)
 		}
 		return openapi.MapStatusError(resp.StatusCode(), resp.Body)
 

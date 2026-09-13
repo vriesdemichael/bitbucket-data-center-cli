@@ -30,7 +30,7 @@ func (service *Service) ListProjectConditions(ctx context.Context, projectKey st
 
 	response, err := service.client.GetPullRequestConditionsWithResponse(ctx, projectKey)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list project reviewer conditions", err)
+		return nil, apperrors.Transport("failed to list project reviewer conditions", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (service *Service) ListRepositoryConditions(ctx context.Context, projectKey
 
 	response, err := service.client.GetPullRequestConditions1WithResponse(ctx, projectKey, repositorySlug)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list repository reviewer conditions", err)
+		return nil, apperrors.Transport("failed to list repository reviewer conditions", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (service *Service) DeleteProjectCondition(ctx context.Context, projectKey s
 
 	response, err := service.client.DeletePullRequestConditionWithResponse(ctx, projectKey, conditionID)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete project reviewer condition", err)
+		return apperrors.Transport("failed to delete project reviewer condition", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -87,7 +87,7 @@ func (service *Service) DeleteRepositoryCondition(ctx context.Context, projectKe
 
 	response, err := service.client.DeletePullRequestCondition1WithResponse(ctx, projectKey, repositorySlug, int32(id))
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete repository reviewer condition", err)
+		return apperrors.Transport("failed to delete repository reviewer condition", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -99,7 +99,7 @@ func (service *Service) CreateProjectCondition(ctx context.Context, projectKey s
 
 	response, err := service.client.CreatePullRequestConditionWithResponse(ctx, projectKey, condition)
 	if err != nil {
-		return openapigenerated.RestPullRequestCondition{}, apperrors.New(apperrors.KindTransient, "failed to create project reviewer condition", err)
+		return openapigenerated.RestPullRequestCondition{}, apperrors.Transport("failed to create project reviewer condition", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestPullRequestCondition{}, err
@@ -127,7 +127,7 @@ func (service *Service) CreateRepositoryCondition(ctx context.Context, projectKe
 
 	response, err := service.client.CreatePullRequestCondition1WithResponse(ctx, projectKey, repositorySlug, condition)
 	if err != nil {
-		return openapigenerated.RestPullRequestCondition{}, apperrors.New(apperrors.KindTransient, "failed to create repository reviewer condition", err)
+		return openapigenerated.RestPullRequestCondition{}, apperrors.Transport("failed to create repository reviewer condition", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestPullRequestCondition{}, err
@@ -155,7 +155,7 @@ func (service *Service) UpdateProjectCondition(ctx context.Context, projectKey s
 
 	response, err := service.client.UpdatePullRequestConditionWithResponse(ctx, projectKey, conditionID, condition)
 	if err != nil {
-		return openapigenerated.RestPullRequestCondition{}, apperrors.New(apperrors.KindTransient, "failed to update project reviewer condition", err)
+		return openapigenerated.RestPullRequestCondition{}, apperrors.Transport("failed to update project reviewer condition", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestPullRequestCondition{}, err
@@ -175,7 +175,7 @@ func (service *Service) UpdateRepositoryCondition(ctx context.Context, projectKe
 
 	response, err := service.client.UpdatePullRequestCondition1WithResponse(ctx, projectKey, repositorySlug, conditionID, condition)
 	if err != nil {
-		return openapigenerated.RestPullRequestCondition{}, apperrors.New(apperrors.KindTransient, "failed to update repository reviewer condition", err)
+		return openapigenerated.RestPullRequestCondition{}, apperrors.Transport("failed to update repository reviewer condition", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestPullRequestCondition{}, err
@@ -195,7 +195,7 @@ func (service *Service) ListRepositoryReviewerGroups(ctx context.Context, projec
 
 	response, err := service.client.GetReviewerGroups1WithResponse(ctx, projectKey, repositorySlug, nil)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list repository reviewer groups", err)
+		return nil, apperrors.Transport("failed to list repository reviewer groups", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -230,7 +230,7 @@ func (service *Service) CreateRepositoryReviewerGroup(ctx context.Context, proje
 
 	response, err := service.client.Create2WithResponse(ctx, projectKey, repositorySlug, body)
 	if err != nil {
-		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindTransient, "failed to create repository reviewer group", err)
+		return openapigenerated.RestReviewerGroup{}, apperrors.Transport("failed to create repository reviewer group", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestReviewerGroup{}, err
@@ -257,7 +257,7 @@ func (service *Service) GetRepositoryReviewerGroup(ctx context.Context, projectK
 
 	response, err := service.client.GetReviewerGroup1WithResponse(ctx, projectKey, repositorySlug, id)
 	if err != nil {
-		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindTransient, "failed to get repository reviewer group", err)
+		return openapigenerated.RestReviewerGroup{}, apperrors.Transport("failed to get repository reviewer group", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestReviewerGroup{}, err
@@ -295,7 +295,7 @@ func (service *Service) UpdateRepositoryReviewerGroup(ctx context.Context, proje
 
 	response, err := service.client.Update2WithResponse(ctx, projectKey, repositorySlug, id, body)
 	if err != nil {
-		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindTransient, "failed to update repository reviewer group", err)
+		return openapigenerated.RestReviewerGroup{}, apperrors.Transport("failed to update repository reviewer group", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestReviewerGroup{}, err
@@ -317,7 +317,7 @@ func (service *Service) DeleteRepositoryReviewerGroup(ctx context.Context, proje
 	// order, so upstream additions renumber them. Pinned by TestGeneratedOperationPaths.
 	response, err := service.client.Delete9WithResponse(ctx, projectKey, repositorySlug, id)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete repository reviewer group", err)
+		return apperrors.Transport("failed to delete repository reviewer group", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -329,7 +329,7 @@ func (service *Service) ListRepositoryReviewerGroupUsers(ctx context.Context, pr
 
 	response, err := service.client.GetUsersWithResponse(ctx, projectKey, repositorySlug, id)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list repository reviewer group users", err)
+		return nil, apperrors.Transport("failed to list repository reviewer group users", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -349,7 +349,7 @@ func (service *Service) ListProjectReviewerGroups(ctx context.Context, projectKe
 
 	response, err := service.client.GetReviewerGroupsWithResponse(ctx, projectKey, nil)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list project reviewer groups", err)
+		return nil, apperrors.Transport("failed to list project reviewer groups", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -384,7 +384,7 @@ func (service *Service) CreateProjectReviewerGroup(ctx context.Context, projectK
 
 	response, err := service.client.Create1WithResponse(ctx, projectKey, body)
 	if err != nil {
-		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindTransient, "failed to create project reviewer group", err)
+		return openapigenerated.RestReviewerGroup{}, apperrors.Transport("failed to create project reviewer group", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestReviewerGroup{}, err
@@ -411,7 +411,7 @@ func (service *Service) GetProjectReviewerGroup(ctx context.Context, projectKey 
 
 	response, err := service.client.GetReviewerGroupWithResponse(ctx, projectKey, id)
 	if err != nil {
-		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindTransient, "failed to get project reviewer group", err)
+		return openapigenerated.RestReviewerGroup{}, apperrors.Transport("failed to get project reviewer group", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestReviewerGroup{}, err
@@ -449,7 +449,7 @@ func (service *Service) UpdateProjectReviewerGroup(ctx context.Context, projectK
 
 	response, err := service.client.Update1WithResponse(ctx, projectKey, id, body)
 	if err != nil {
-		return openapigenerated.RestReviewerGroup{}, apperrors.New(apperrors.KindTransient, "failed to update project reviewer group", err)
+		return openapigenerated.RestReviewerGroup{}, apperrors.Transport("failed to update project reviewer group", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return openapigenerated.RestReviewerGroup{}, err
@@ -470,7 +470,7 @@ func (service *Service) DeleteProjectReviewerGroup(ctx context.Context, projectK
 	// Delete8, not Delete6: see the note on DeleteRepositoryReviewerGroup.
 	response, err := service.client.Delete8WithResponse(ctx, projectKey, id)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to delete project reviewer group", err)
+		return apperrors.Transport("failed to delete project reviewer group", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -489,7 +489,7 @@ func (service *Service) GetDefaultReviewers(ctx context.Context, projectKey, rep
 
 	response, err := service.client.GetReviewersWithResponse(ctx, projectKey, repositorySlug, params)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to get default reviewers", err)
+		return nil, apperrors.Transport("failed to get default reviewers", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -556,7 +556,7 @@ func (service *Service) RepositoryID(ctx context.Context, projectKey, repository
 
 	response, err := service.client.GetRepositoryWithResponse(ctx, projectKey, repositorySlug)
 	if err != nil {
-		return "", apperrors.New(apperrors.KindTransient, "failed to look up repository", err)
+		return "", apperrors.Transport("failed to look up repository", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return "", err
@@ -890,7 +890,7 @@ func (service *Service) resolveGroupMembers(ctx context.Context, usernames []str
 
 		response, err := service.client.GetUserWithResponse(ctx, trimmed)
 		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, fmt.Sprintf("failed to look up user %q", trimmed), err)
+			return nil, apperrors.Transport(fmt.Sprintf("failed to look up user %q", trimmed), err)
 		}
 		if response.StatusCode() == http.StatusNotFound {
 			// Validation rather than not_found: the group is what the caller

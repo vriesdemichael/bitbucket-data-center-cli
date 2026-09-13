@@ -1348,7 +1348,7 @@ func (service *Service) Watch(ctx context.Context, repository RepositoryRef, pul
 
 	response, err := service.apiClient.Watch1WithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to watch pull request", err)
+		return apperrors.Transport("failed to watch pull request", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -1367,7 +1367,7 @@ func (service *Service) Unwatch(ctx context.Context, repository RepositoryRef, p
 
 	response, err := service.apiClient.Unwatch1WithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to unwatch pull request", err)
+		return apperrors.Transport("failed to unwatch pull request", err)
 	}
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
@@ -1386,7 +1386,7 @@ func (service *Service) CanRebase(ctx context.Context, repository RepositoryRef,
 
 	response, err := service.apiClient.CanRebaseWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to check rebase status", err)
+		return nil, apperrors.Transport("failed to check rebase status", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -1449,7 +1449,7 @@ func (service *Service) Rebase(ctx context.Context, repository RepositoryRef, pu
 
 		response, err := service.apiClient.RebaseWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID, request)
 		if err != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to rebase pull request", err)
+			return nil, apperrors.Transport("failed to rebase pull request", err)
 		}
 
 		return response, nil
@@ -1530,7 +1530,7 @@ func (service *Service) ListPullRequestsContainingCommit(ctx context.Context, re
 
 	response, err := service.apiClient.GetPullRequestsWithResponse(ctx, repository.ProjectKey, repository.Slug, trimmedCommit, nil)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to list pull requests containing commit", err)
+		return nil, apperrors.Transport("failed to list pull requests containing commit", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
@@ -1571,7 +1571,7 @@ func (service *Service) SearchParticipants(ctx context.Context, repository Repos
 		Filter: &trimmedFilter,
 	})
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to search participants", err)
+		return nil, apperrors.Transport("failed to search participants", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err

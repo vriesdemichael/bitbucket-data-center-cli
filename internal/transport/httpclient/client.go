@@ -3,13 +3,8 @@ package httpclient
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -20,6 +15,7 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/outcome"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/retrypolicy"
 )
 
@@ -219,7 +215,8 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 			client.applyAuth(request)
 		}
 
-		response, err := client.http.Do(request)
+		tracked, exchange := outcome.Track(request)
+		response, err := client.http.Do(tracked)
 		if err != nil {
 			fields := map[string]any{
 				"method":      method,
@@ -229,11 +226,11 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 				"duration_ms": time.Since(started).Milliseconds(),
 				"error":       err.Error(),
 			}
-			lastErr = classifyTransportError(method, err)
-			if attempt < client.retries && retrypolicy.Replayable(method) {
+			lastErr = exchange.Classify(err)
+			if attempt < client.retries && retrypolicy.Replayable(method) && outcome.Retriable(lastErr) {
 				client.logger.Warn("http request failed", fields)
 				if sleepErr := sleepWithContext(ctx, time.Duration(attempt+1)*client.backoff); sleepErr != nil {
-					return nil, apperrors.New(apperrors.KindTransient, "request canceled while waiting to retry", sleepErr)
+					return nil, apperrors.Transport("request canceled while waiting to retry", sleepErr)
 				}
 				continue
 			}
@@ -244,7 +241,7 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 		body, readErr := io.ReadAll(response.Body)
 		_ = response.Body.Close()
 		if readErr != nil {
-			return nil, apperrors.New(apperrors.KindTransient, "failed to read response", readErr)
+			return nil, exchange.ClassifyRead(readErr)
 		}
 
 		if response.StatusCode >= 200 && response.StatusCode < 300 {
@@ -273,6 +270,13 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 			"duration_ms": time.Since(started).Milliseconds(),
 			"error":       mappedErr.Error(),
 		}
+		// A gateway's 502 or 504 to a request that will not be replayed leaves
+		// its outcome unknown, which transient would misreport as retriable.
+		if unknown := exchange.Status(response.StatusCode, mappedErr); unknown != nil {
+			client.logger.Error("http request returned error status", fields)
+			return nil, unknown
+		}
+
 		if retrypolicy.RetriableStatus(method, response.StatusCode) {
 			lastErr = mappedErr
 			retryDelay := retrypolicy.Delay(response.Header, attempt, client.backoff)
@@ -280,7 +284,7 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 			if attempt < client.retries {
 				client.logger.Warn("http request returned error status", fields)
 				if sleepErr := sleepWithContext(ctx, retryDelay); sleepErr != nil {
-					return nil, apperrors.New(apperrors.KindTransient, "request canceled while waiting to retry", sleepErr)
+					return nil, apperrors.Transport("request canceled while waiting to retry", sleepErr)
 				}
 				continue
 			}
@@ -345,7 +349,8 @@ func (client *Client) Health(ctx context.Context) (HealthStatus, error) {
 		request.Header.Set("Accept", "application/json")
 		client.applyAuth(request)
 
-		response, err := client.http.Do(request)
+		tracked, exchange := outcome.Track(request)
+		response, err := client.http.Do(tracked)
 		if err != nil {
 			fields := map[string]any{
 				"method":      http.MethodGet,
@@ -355,8 +360,8 @@ func (client *Client) Health(ctx context.Context) (HealthStatus, error) {
 				"duration_ms": time.Since(started).Milliseconds(),
 				"error":       err.Error(),
 			}
-			lastErr = apperrors.New(apperrors.KindTransient, "health probe failed", err)
-			if attempt < client.retries {
+			lastErr = apperrors.Transport("health probe failed", exchange.Classify(err))
+			if attempt < client.retries && outcome.Retriable(lastErr) {
 				client.logger.Warn("health probe failed", fields)
 				time.Sleep(time.Duration(attempt+1) * client.backoff)
 				continue
@@ -411,7 +416,7 @@ func (client *Client) Health(ctx context.Context) (HealthStatus, error) {
 			if attempt < client.retries {
 				client.logger.Warn("health probe returned retriable status", fields)
 				if sleepErr := sleepWithContext(ctx, retryDelay); sleepErr != nil {
-					return HealthStatus{}, apperrors.New(apperrors.KindTransient, "health check canceled while waiting to retry", sleepErr)
+					return HealthStatus{}, apperrors.Transport("health check canceled while waiting to retry", sleepErr)
 				}
 				continue
 			}
@@ -454,46 +459,4 @@ func sleepWithContext(ctx context.Context, delay time.Duration) error {
 	case <-timer.C:
 		return nil
 	}
-}
-
-// classifyTransportError says whether a failed request is worth trying again.
-//
-// Every transport failure used to be transient, exit 10, "retry later" -- and
-// retried three times. That is wrong twice (#574).
-//
-// A rejected certificate or a name that does not resolve will not fix itself,
-// so reporting it as transient sends the caller round a retry loop that cannot
-// succeed and buries the real cause under three attempts.
-//
-// And a mutation that timed out has an unknown outcome. The retry policy is
-// already careful here -- it refuses to replay POST and PATCH after a transport
-// error -- but exit 10 then told the caller's own wrapper to perform exactly
-// the replay the policy declined. The server may well have applied it.
-func classifyTransportError(method string, err error) error {
-	var certificateError *tls.CertificateVerificationError
-	var unknownAuthority x509.UnknownAuthorityError
-	var invalidCertificate x509.CertificateInvalidError
-	var wrongHostname x509.HostnameError
-
-	switch {
-	case errors.As(err, &certificateError),
-		errors.As(err, &unknownAuthority),
-		errors.As(err, &invalidCertificate),
-		errors.As(err, &wrongHostname):
-		return apperrors.New(apperrors.KindPermanent,
-			"the server's TLS certificate was rejected, which retrying will not change", err)
-	}
-
-	var dnsError *net.DNSError
-	if errors.As(err, &dnsError) && dnsError.IsNotFound {
-		return apperrors.New(apperrors.KindPermanent,
-			"the host does not resolve, which retrying will not change", err)
-	}
-
-	if errors.Is(err, context.DeadlineExceeded) && !retrypolicy.Replayable(method) {
-		return apperrors.New(apperrors.KindUnknownOutcome,
-			fmt.Sprintf("the %s timed out and its outcome is unknown: check whether it was applied before sending it again", method), err)
-	}
-
-	return apperrors.New(apperrors.KindTransient, "request failed", err)
 }

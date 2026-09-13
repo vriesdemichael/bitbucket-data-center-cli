@@ -188,7 +188,7 @@ func (client *Client) fetchAsset(ctx context.Context, resolvedURL string) ([]byt
 
 	response, err := client.http.Do(request)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to download release asset", err)
+		return nil, apperrors.Transport("failed to download release asset", err)
 	}
 	defer func() { _ = response.Body.Close() }()
 
@@ -198,7 +198,7 @@ func (client *Client) fetchAsset(ctx context.Context, resolvedURL string) ([]byt
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindTransient, "failed to read release asset", err)
+		return nil, apperrors.Transport("failed to read release asset", err)
 	}
 
 	return body, nil
@@ -216,7 +216,7 @@ func (client *Client) do(ctx context.Context, method, requestURL string, out any
 
 	response, err := client.http.Do(request)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to fetch release metadata", err)
+		return apperrors.Transport("failed to fetch release metadata", err)
 	}
 	defer func() { _ = response.Body.Close() }()
 
@@ -226,7 +226,7 @@ func (client *Client) do(ctx context.Context, method, requestURL string, out any
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to read release metadata", err)
+		return apperrors.Transport("failed to read release metadata", err)
 	}
 
 	if err := decodeJSON(body, out); err != nil {

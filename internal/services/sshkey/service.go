@@ -31,7 +31,7 @@ func (s *Service) ListUserKeys(ctx context.Context, maxResults int, start int) (
 				Limit: &limitValue,
 			})
 			if err != nil {
-				return openapi.Page[openapigenerated.RestSshKey]{}, apperrors.New(apperrors.KindTransient, "failed to list user SSH keys", err)
+				return openapi.Page[openapigenerated.RestSshKey]{}, apperrors.Transport("failed to list user SSH keys", err)
 			}
 			if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 				return openapi.Page[openapigenerated.RestSshKey]{}, err
@@ -66,7 +66,7 @@ func (s *Service) AddUserKey(ctx context.Context, label string, publicKeyText st
 
 	resp, err := s.client.AddSshKeyWithResponse(ctx, nil, body)
 	if err != nil {
-		return openapigenerated.RestSshKey{}, apperrors.New(apperrors.KindTransient, "failed to add user SSH key", err)
+		return openapigenerated.RestSshKey{}, apperrors.Transport("failed to add user SSH key", err)
 	}
 	if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 		return openapigenerated.RestSshKey{}, err
@@ -86,7 +86,7 @@ func (s *Service) RemoveUserKey(ctx context.Context, keyId string) error {
 
 	resp, err := s.client.DeleteSshKeyWithResponse(ctx, trimmedId)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to remove user SSH key", err)
+		return apperrors.Transport("failed to remove user SSH key", err)
 	}
 	return openapi.MapStatusError(resp.StatusCode(), resp.Body)
 }
@@ -106,7 +106,7 @@ func (s *Service) ListProjectKeys(ctx context.Context, projectKey string, maxRes
 			resp, err := s.client.GetSshKeysForProjectWithResponse(ctx, trimmedProj,
 				&openapigenerated.GetSshKeysForProjectParams{Start: &startValue, Limit: &limitValue})
 			if err != nil {
-				return openapi.Page[openapigenerated.RestSshAccessKey]{}, apperrors.New(apperrors.KindTransient, "failed to list project SSH keys", err)
+				return openapi.Page[openapigenerated.RestSshAccessKey]{}, apperrors.Transport("failed to list project SSH keys", err)
 			}
 			if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 				return openapi.Page[openapigenerated.RestSshAccessKey]{}, err
@@ -167,7 +167,7 @@ func (s *Service) AddProjectKey(ctx context.Context, projectKey string, label st
 
 	resp, err := s.client.AddForProjectWithResponse(ctx, trimmedProj, body)
 	if err != nil {
-		return openapigenerated.RestSshAccessKey{}, apperrors.New(apperrors.KindTransient, "failed to add project SSH key", err)
+		return openapigenerated.RestSshAccessKey{}, apperrors.Transport("failed to add project SSH key", err)
 	}
 	if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 		return openapigenerated.RestSshAccessKey{}, err
@@ -191,7 +191,7 @@ func (s *Service) RemoveProjectKey(ctx context.Context, projectKey string, keyId
 
 	resp, err := s.client.RevokeForProjectWithResponse(ctx, trimmedProj, trimmedId)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to remove project SSH key", err)
+		return apperrors.Transport("failed to remove project SSH key", err)
 	}
 	return openapi.MapStatusError(resp.StatusCode(), resp.Body)
 }
@@ -212,7 +212,7 @@ func (s *Service) ListRepoKeys(ctx context.Context, projectKey string, repoSlug 
 			resp, err := s.client.GetForRepository1WithResponse(ctx, trimmedProj, trimmedRepo,
 				&openapigenerated.GetForRepository1Params{Start: &startValue, Limit: &limitValue})
 			if err != nil {
-				return openapi.Page[openapigenerated.RestSshAccessKey]{}, apperrors.New(apperrors.KindTransient, "failed to list repository SSH keys", err)
+				return openapi.Page[openapigenerated.RestSshAccessKey]{}, apperrors.Transport("failed to list repository SSH keys", err)
 			}
 			if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 				return openapi.Page[openapigenerated.RestSshAccessKey]{}, err
@@ -277,7 +277,7 @@ func (s *Service) AddRepoKey(ctx context.Context, projectKey string, repoSlug st
 
 	resp, err := s.client.AddForRepositoryWithResponse(ctx, trimmedProj, trimmedRepo, body)
 	if err != nil {
-		return openapigenerated.RestSshAccessKey{}, apperrors.New(apperrors.KindTransient, "failed to add repository SSH key", err)
+		return openapigenerated.RestSshAccessKey{}, apperrors.Transport("failed to add repository SSH key", err)
 	}
 	if err := openapi.MapStatusError(resp.StatusCode(), resp.Body); err != nil {
 		return openapigenerated.RestSshAccessKey{}, err
@@ -305,7 +305,7 @@ func (s *Service) RemoveRepoKey(ctx context.Context, projectKey string, repoSlug
 
 	resp, err := s.client.RevokeForRepositoryWithResponse(ctx, trimmedProj, trimmedRepo, trimmedId)
 	if err != nil {
-		return apperrors.New(apperrors.KindTransient, "failed to remove repository SSH key", err)
+		return apperrors.Transport("failed to remove repository SSH key", err)
 	}
 	return openapi.MapStatusError(resp.StatusCode(), resp.Body)
 }
