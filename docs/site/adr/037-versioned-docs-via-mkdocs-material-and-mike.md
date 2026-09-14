@@ -17,16 +17,20 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 ## Decision
 
 Adopt MkDocs with the Material theme as the documentation framework and use mike for versioned deployments to GitHub Pages. Build docs in CI and publish versioned docs from the release workflow.
+The site is versioned by major. A release deploys to its major version, v4.0.1 to v4, replacing that major's previous build, so the version selector holds one entry per major. The entry's title is the full release version, and the full version is also kept as an alias of the major, so a link naming a release resolves to the newest build of its major. The `latest` alias follows the newest major and is the site's default.
 
 ## Agent Instructions
 
-Keep docs source in a dedicated MkDocs docs directory and validate with strict builds. Use Taskfile tasks for docs build/serve/deploy workflows. In release automation, publish the computed release version and update a stable alias (for example `latest`). Prefer uv/uvx as the first-choice tooling for Python-based scripts and docs tasks; use docs/pyproject.toml dependency metadata rather than ad-hoc virtualenv setup.
+Keep docs source in a dedicated MkDocs docs directory and validate with strict builds. Use Taskfile tasks for docs build/serve/deploy workflows. Publish through `task docs:deploy-version`, which deploys to the major with the full version as title and alias and moves `latest`. Do not deploy a release as a mike version of its own. Prefer uv/uvx as the first-choice tooling for Python-based scripts and docs tasks; use docs/pyproject.toml dependency metadata rather than ad-hoc virtualenv setup.
 
 ## Rationale
 
 MkDocs Material provides a modern interface with minimal maintenance overhead in a Python-light repository, and mike adds simple versioned docs semantics that align with release tags. This supports incremental docs delivery while keeping publication automated.
+A selector entry per release grows without bound and stops being a list anyone can pick from. Within a major, a newer release's docs describe what a reader of an older one can use, so one build per major loses nothing a reader needs.
 
 ## Rejected Alternatives
 
 - `Keep README-only documentation`: Not sufficient for scalable, navigable, versioned public docs.
 - `Use a Node-based docs stack`: Adds avoidable ecosystem/tooling overhead for this repository.
+- `Deploy each release as its own version and prune old ones`: Pruning is a second step every release has to remember, and the selector grows back whenever it is forgotten.
+- `Deploy to the major without keeping the full version as an alias`: Published schemas take their $id from the full version, and release notes link to it, so each of those addresses would stop resolving at the next release.

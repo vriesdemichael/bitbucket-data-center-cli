@@ -143,35 +143,41 @@ tasks:
       - uv run --project '{{.DOCS_PROJECT_DIR}}' mkdocs serve --dev-addr 127.0.0.1:8000
 
   docs:deploy-version:
-    desc: Deploy versioned docs to gh-pages via mike (requires VERSION)
+    desc: Deploy a release's docs to gh-pages via mike, under its major version (requires VERSION)
     requires:
       vars:
         - VERSION
+    # The version selector holds one entry per major. A release replaces its
+    # major's build -- v4.0.1 deploys to v4 -- because an entry per release
+    # makes a list nobody can pick from. The full version is the entry's title,
+    # so the selector still says which release it shows, and an alias, so a
+    # link or a schema $id naming a release keeps resolving.
+    vars:
+      DOCS_MAJOR: '{{regexReplaceAll "^(v[0-9]+)\\..*$" .VERSION "${1}"}}'
+    preconditions:
+      # Anything else has no major to derive, and mike would be handed one name
+      # as both the version and its alias.
+      - sh: '{{if regexMatch "^v[0-9]+\\.[0-9]+\\.[0-9]+$" .VERSION}}true{{else}}false{{end}}'
+        msg: 'VERSION must be a release tag such as v4.0.1, got {{.VERSION}}'
     # The version reaches the pages through BB_DOCS_VERSION, which docs/main.py
-    # reads at build time. Nothing is committed back, so a release no longer
-    # leaves the checked-in sources a version behind.
+    # reads at build time. It is the full version, so the pages name the release
+    # they were built from rather than the major they are filed under.
     env:
       BB_DOCS_VERSION: '{{.VERSION}}'
     cmds:
-      # A schema $id is a canonical identity, not an address. Every release
-      # publishes a full copy of the schemas and mike also serves the newest
-      # copy under the latest alias, so identifying them against the alias
-      # would have every release assert one identity for a different document.
-      # Re-exported here, into the working tree the site is built from, so the
-      # published snapshot names the version it belongs to while the committed
-      # copies stay on the alias and docs:verify-generated stays stable.
+      # A schema $id is a canonical identity, not an address. mike serves the
+      # newest copy of the schemas under the major and under the latest alias,
+      # so identifying them against either would have every release assert one
+      # identity for a different document. Re-exported here, into the working
+      # tree the site is built from, so the published copy names the release it
+      # belongs to while the committed copies stay on the alias and
+      # docs:verify-generated stays stable.
       - go run ./tools/bulk-schema-export -out docs/site/reference/schemas -site-version '{{.VERSION}}'
       - go run ./tools/output-schema-export -out docs/site/reference/schemas/output -site-version '{{.VERSION}}'
-      - uv run --project '{{.DOCS_PROJECT_DIR}}' mike deploy --push --update-aliases {{.VERSION}} latest
+      # latest moves unconditionally: releases are cut from main in version
+      # order, so the release being published belongs to the newest major.
+      - uv run --project '{{.DOCS_PROJECT_DIR}}' mike deploy --push --update-aliases --title '{{.VERSION}}' '{{.DOCS_MAJOR}}' '{{.VERSION}}' latest
       - uv run --project '{{.DOCS_PROJECT_DIR}}' mike set-default --push latest
-
-  docs:bootstrap-pages:
-    desc: Bootstrap initial gh-pages docs publish (requires VERSION)
-    requires:
-      vars:
-        - VERSION
-    cmds:
-      - task docs:deploy-version VERSION={{.VERSION}}
 
   models:generate:
     desc: Generate Go models from the vendored Bitbucket OpenAPI spec
