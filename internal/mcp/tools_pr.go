@@ -78,13 +78,13 @@ func specGetPullRequest() Spec {
 
 // ListPullRequestsInput is the argument set for list_pull_requests.
 type ListPullRequestsInput struct {
-	Project string `json:"project,omitempty" jsonschema:"Bitbucket project key (omit for dashboard mode)"`
-	Repo    string `json:"repo,omitempty" jsonschema:"Repository slug (omit for dashboard mode)"`
+	Project string `json:"project,omitempty" jsonschema:"Bitbucket project key. With repo, lists that repository; alone, narrows your own pull requests to the project"`
+	Repo    string `json:"repo,omitempty" jsonschema:"Repository slug; needs project. Omit it for your own pull requests (the dashboard)"`
 	// State's description is set in specListPullRequests, built from the values
 	// the service accepts. As a tag it advertised MERGED and DECLINED, which are
 	// refused, and left out closed, which is not (#577).
 	State        string `json:"state,omitempty"`
-	Role         string `json:"role,omitempty" jsonschema:"Filter by role: REVIEWER, AUTHOR, or PARTICIPANT (dashboard mode only; omit project and repo to use it)"`
+	Role         string `json:"role,omitempty" jsonschema:"Narrow your own pull requests to a role: REVIEWER, AUTHOR, or PARTICIPANT. Omit for all three. Not available with repo"`
 	SourceBranch string `json:"source_branch,omitempty" jsonschema:"Filter by source branch name (repo mode only)"`
 	TargetBranch string `json:"target_branch,omitempty" jsonschema:"Filter by target branch name (repo mode only)"`
 	Limit        int    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 25)"`
@@ -99,7 +99,7 @@ type ListPullRequestsOutput struct {
 func specListPullRequests() Spec {
 	tool := &mcp.Tool{
 		Name:        "list_pull_requests",
-		Description: "List pull requests. Without project/repo, lists the current user's PRs across all repositories (dashboard).",
+		Description: "List pull requests. With project and repo, lists that repository's. Without repo, lists your own pull requests across every repository (the dashboard), narrowed to project when one is given.",
 		// No enum on state or role: the service normalises case, so pinning the
 		// upper-case spellings would reject "author", which works today. The
 		// permitted values are in the field descriptions instead, and state's is
@@ -129,7 +129,7 @@ func specListPullRequests() Spec {
 				// would act on all of them believing they were.
 				if in.Role != "" {
 					return nil, ListPullRequestsOutput{}, fmt.Errorf(
-						"list_pull_requests cannot filter a repository by role; omit project and repo to ask the dashboard, which can")
+						"list_pull_requests cannot filter a repository by role; omit repo to ask the dashboard, which can")
 				}
 				prs, err = svc.List(ctx,
 					pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
@@ -140,16 +140,18 @@ func specListPullRequests() Spec {
 						MaxResults:   limit,
 					},
 				)
-			case in.Project != "" || in.Repo != "":
-				return nil, ListPullRequestsOutput{}, fmt.Errorf("list_pull_requests requires both project and repo, or neither for dashboard mode")
+			case in.Repo != "":
+				return nil, ListPullRequestsOutput{}, fmt.Errorf("list_pull_requests needs the project a repo is in: pass project with repo, or omit repo for your own pull requests")
 			default:
-				role := in.Role
-				if role == "" {
-					role = "REVIEWER"
-				}
+				// Your own pull requests, in every role unless one is named:
+				// sending REVIEWER for a missing role left an author who
+				// reviews nothing with an empty list (#576). A project narrows
+				// them, which is also how a project-scoped server answers a
+				// call with no arguments; see scopeOptionalProjectRepo.
 				prs, err = svc.ListDashboard(ctx, pullrequestservice.DashboardListOptions{
 					State:      state,
-					Role:       role,
+					Role:       in.Role,
+					ProjectKey: in.Project,
 					MaxResults: limit,
 				})
 			}

@@ -164,29 +164,30 @@ func TestAddPRCommentRejectsAnUnknownLineType(t *testing.T) {
 	}
 }
 
-// TestListPullRequestsRejectsHalfARepository covers the one thing the mode
-// selection decides locally.
+// TestListPullRequestsRefusesARepositoryWithoutItsProject covers the one thing
+// the mode selection decides locally. A project alone is not refused: it asks
+// for the caller's own pull requests in that project, which the live test covers.
 //
 // Which endpoint each mode reaches, and what each answers, is Bitbucket's --
 // TestLiveMCPListPullRequestsModeSelection holds that, including the refusal
 // to filter a repository by a role the repository endpoint does not have.
-// Naming one half of a repository reaches no endpoint at all, so the recorder
+// A repository without its project reaches no endpoint at all, so the recorder
 // here is a guard: a request would mean the check did not run.
-func TestListPullRequestsRejectsHalfARepository(t *testing.T) {
+func TestListPullRequestsRefusesARepositoryWithoutItsProject(t *testing.T) {
 	t.Parallel()
 
 	clients := newUnreachedClients(t)
 
 	for _, args := range []map[string]any{
-		{"project": "TEST"},
 		{"repo": "demo"},
+		{"repo": "demo", "role": "author"},
 	} {
 		result := callTool(t, specListPullRequests(), clients, args)
 		if !result.IsError {
 			t.Fatalf("expected an error result for %#v, got: %+v", args, result)
 		}
-		if text := resultText(result); !strings.Contains(text, "both project and repo") {
-			t.Fatalf("expected a both-or-neither message, got %q", text)
+		if text := resultText(result); !strings.Contains(text, "needs the project a repo is in") {
+			t.Fatalf("expected the refusal to ask for the project, got %q", text)
 		}
 	}
 }

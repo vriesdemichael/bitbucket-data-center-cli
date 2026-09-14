@@ -76,7 +76,7 @@ func exportToolReference(outputPath string) error {
 	writeTable(&out, gated, false)
 
 	out.WriteString("\n## What the split means\n\n")
-	out.WriteString("The line is drawn by consequence, not by whether a tool writes. Opening a pull request or tagging a commit changes no branch and gates nothing, so both are available by default even though they write. Merging, enabling auto-merge, submitting a review and reporting a build status are held back: the first two are irreversible or cause a later merge, and the last two feed the checks that decide whether a merge is allowed.\n\n")
+	out.WriteString("The line is drawn by consequence, not by whether a tool writes. Opening a pull request or tagging a commit changes no branch and gates nothing, so both are available by default even though they write. Merging, enabling auto-merge, submitting a review and reporting a build status are held back: the first two are irreversible or cause a later merge, and the last two feed the checks that decide whether a merge is allowed. Disabling auto-merge stays available by default: it can hold a merge back but never cause one.\n\n")
 	out.WriteString("See [Enterprise Hardening](../advanced/enterprise-hardening.md#5-ai-ide-mcp-server-governance-bb-ai-mcp-serve) for scoping a server to a project or repository, restricting it with a read-only token, and mandating an audit trail by policy.\n")
 
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
