@@ -39,7 +39,7 @@
     {
       "status": 400,
       "exception": "com.atlassian.bitbucket.repository.DuplicateRefException",
-      "bbKind": "validation",
+      "bbKind": "conflict",
       "exampleMessage": "Branch 'feature/dup-test' already exists in repository 'lt-repo-1-1800'",
       "endpoints": [
         "POST /rest/branch-utils/latest/projects/LT{id}/repos/{repo}{id}/branches"
@@ -59,7 +59,7 @@
     {
       "status": 401,
       "exception": "com.atlassian.bitbucket.AuthorisationException",
-      "bbKind": "authentication",
+      "bbKind": "authorization",
       "exampleMessage": "You are not permitted to access this resource",
       "endpoints": [
         "DELETE /rest/access-tokens/latest/users/ltuser{id}/{id}",
@@ -81,7 +81,7 @@
     {
       "status": 401,
       "exception": "com.atlassian.bitbucket.auth.NoAccessAuthenticationException",
-      "bbKind": "authentication",
+      "bbKind": "authorization",
       "exampleMessage": "You are not currently licensed to use Bitbucket.\nPlease contact your administrator to resolve this issue.",
       "endpoints": [
         "DELETE /rest/api/latest/projects/LT{id}",
