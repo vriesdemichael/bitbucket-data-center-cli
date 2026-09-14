@@ -11,13 +11,17 @@ decision: >
   is required, whether the OS keyring answers a read.
   It needs no host, makes no network call, and never carries a secret's value: a token or password is
   reported as configured, with where it is held.
-  An invalid file bb reads is permanent, exit 1, the kind every command loading that file returns.
-  Under --json the report is the one document and the exit status is zero, with the verdict in ok, as
-  for bb auth status (ADR-075). An unreachable keyring and a valid key in the wrong file are findings,
-  not failures.
+  Exit 0 means there is nothing to fix. Any issue the report shows -- an invalid file, a key its file
+  never reads, a setting a command would refuse, a required keyring that cannot be reached -- is a
+  permanent failure, exit 1. Under --json that run writes only the failure envelope (ADR-075): the
+  message summarises the issues, and error.details names each under a key built from its kind, its
+  file and its key path. A run with nothing to fix writes the report. A failure of bb doctor itself is
+  a bug, not a finding, and keeps its own kind.
 agent_instructions: >
   When loading changes precedence or starts reading a key, change bb doctor's resolution in
   internal/config/doctor.go with it; TestDiagnoseAgreesWithTheLoader compares the two.
+  Anything bb doctor shows as wrong must fail the run and appear in error.details; do not add a
+  finding that only prints.
   Do not let bb doctor print a secret, reach the network, or require a host.
   Point a message about a damaged configuration file at bb doctor, not at an external validator.
 rationale: >
@@ -25,11 +29,11 @@ rationale: >
   published schema already knew every key, but reaching it needed Python, Node or an editor with YAML
   schema support, and an online validator uploads a file that can hold plaintext credentials. The one
   tool certain to be present where bb's configuration is broken is bb.
-  A keyring that cannot be reached does not fail the check: BITBUCKET_TOKEN is the documented answer
-  on a host without one, whatever the policy says about stored credentials.
+  The exit status is what a caller reads first, so it carries the verdict, and error.details carries
+  what a script needs to act on it without the report.
 rejected_alternatives:
   - alternative: bb auth config check
     reason: The configuration carries TLS, update and policy settings as well as credentials.
-  - alternative: Exit non-zero under --json as well
-    reason: A failed run emits only the error envelope (ADR-075), which drops the report when it is most wanted.
+  - alternative: Exit 0 with the verdict in ok, as bb auth status does
+    reason: The exit status is the signal a caller reads first; 0 must mean there is nothing to fix.
 provenance: guided-ai

@@ -443,9 +443,9 @@ func TestKeysValidOnlyInAnotherFileAreReportedAsIgnored(t *testing.T) {
 	}, nil))
 
 	want := map[string][]IgnoredKey{
-		TierStored:    {{Key: "require_keyring", ReadFrom: []string{TierSystem}}, {Key: "project_key", ReadFrom: []string{TierWorkspace}}},
-		TierWorkspace: {{Key: "insecure_secrets", ReadFrom: []string{TierStored, TierSystem}}},
-		TierSystem:    {{Key: "project_key", ReadFrom: []string{TierWorkspace}}},
+		TierStored:    {{Key: "require_keyring", Line: 2, ReadFrom: []string{TierSystem}}, {Key: "project_key", Line: 3, ReadFrom: []string{TierWorkspace}}},
+		TierWorkspace: {{Key: "insecure_secrets", Line: 1, ReadFrom: []string{TierStored, TierSystem}}},
+		TierSystem:    {{Key: "project_key", Line: 1, ReadFrom: []string{TierWorkspace}}},
 	}
 	for tier, expected := range want {
 		file := diagnosedFile(t, diagnosis, tier)
